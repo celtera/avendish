@@ -1,0 +1,40 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/effect_container.hpp>
+#include <standalone/standalone.hpp>
+#include <standalone/configure.hpp>
+
+namespace boost
+{
+void throw_exception( std::exception const & e )
+{
+  std::abort();
+}
+}
+
+int main(int argc, char** argv)
+{
+  // Create the object
+  using type = decltype(avnd::configure<standalone::config, @AVND_MAIN_CLASS@>())::type;
+  avnd::effect_container< type > object;
+
+#if AVND_STANDALONE_OSCQUERY
+  // Create an oscquery interface to it.
+  standalone::oscquery_mapper< type > oscq{object};
+
+  std::thread t{[&] { oscq.run(); }};
+#endif
+
+#if AVND_STANDALONE_QML
+  QGuiApplication app(argc, argv);
+
+  qml::qml_ui< type > ui{object};
+  app.exec();
+#endif
+
+#if AVND_STANDALONE_OSCQUERY
+  oscq.stop();
+  t.join();
+#endif
+}

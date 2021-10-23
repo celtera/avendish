@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <python/configure.hpp>
+#include <python/processor.hpp>
+
+PYBIND11_MODULE(@AVND_C_NAME@, m)
+{
+  using type = decltype(avnd::configure<python::config, @AVND_MAIN_CLASS@>())::type;
+  static const python::processor< type > instance{m};
+}
