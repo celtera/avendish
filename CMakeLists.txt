@@ -4,16 +4,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(avendish)
 
-include_directories(
-  /opt/libossia/include
-  /usr/include/qt
-  /usr/include/qt/QtCore
-  /usr/include/qt/QtGui
-  /usr/include/qt/QtQuick
-  /usr/include/qt/QtQml
-  /usr/include/python3.9
-)
-
 include(avendish)
-include(avendish.examples)
-include(avendish.tests)
+
+# Only build examples and tests if we are building this repo directly,
+# not if it is add_subdirectory'd
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+  include(avendish.examples)
+  include(avendish.tests)
+endif()
