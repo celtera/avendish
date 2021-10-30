@@ -16,12 +16,7 @@ namespace avnd
 
 // Concepts related to inputs / outputs
 template <typename T>
-concept parameter = requires(T t)
-{
-  {
-    t.value
-    } -> std::default_initializable;
-};
+concept parameter = std::is_default_constructible_v<decltype(T::value)>;
 
 template <typename T>
 concept int_ish = std::is_same_v < std::remove_reference_t<T>,

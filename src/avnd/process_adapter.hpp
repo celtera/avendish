@@ -592,8 +592,11 @@ requires(
             {
               if constexpr (avnd::generic_audio_sample_port<Field>)
               {
-                field.sample = in[k][i];
-                ++k;
+                if(k < in.size())
+                {
+                  field.sample = in[k][i];
+                  ++k;
+                }
               }
             });
       }
@@ -611,8 +614,11 @@ requires(
             {
               if constexpr (avnd::generic_audio_sample_port<Field>)
               {
-                out[k][i] = field.sample;
-                ++k;
+                if(k < out.size())
+                {
+                  out[k][i] = field.sample;
+                  ++k;
+                }
               }
             });
       }

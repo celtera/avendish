@@ -111,16 +111,20 @@ struct Controls
     for_nth_parameter(
         self,
         index,
-        [ptr](const auto& param)
+        [ptr]<typename C>(const C& param)
         {
+          using val_type = std::decay_t<decltype(param.value)>;
+          const val_type& value = param.value;
+          auto cstr = reinterpret_cast<char*>(ptr);
+
           if constexpr (requires
-                        { param.display((char*)nullptr, param.value); })
+                        { param.display(cstr, value); })
           {
-            param.display(reinterpret_cast<char*>(ptr), param.value);
+            param.display(cstr, value);
           }
-          else if constexpr (requires { param.display((char*)nullptr); })
+          else if constexpr (requires { param.display(cstr); })
           {
-            param.display(reinterpret_cast<char*>(ptr));
+            param.display(cstr);
           }
           else if constexpr (requires { param.display(); })
           {
@@ -128,25 +132,38 @@ struct Controls
           }
           else
           {
-            auto cstr = reinterpret_cast<char*>(ptr);
-#if __has_include(<fmt/format.h>) && 0
-            if constexpr (std::is_same_v<decltype(param.value), float>)
-              fmt::format_to(cstr, "{:.2f}", param.value);
+#if __has_include(<fmt/format.h>)
+            if constexpr (std::floating_point<val_type>)
+            { fmt::format_to(cstr, "{:.2f}", value); }
+            else if constexpr (std::is_enum_v<val_type>)
+            {
+              const int enum_index = static_cast<int>(value);
+              if(enum_index >= 0 && enum_index < C::choices().size())
+                fmt::format_to(cstr, "{}", C::choices()[enum_index]);
+              else
+                fmt::format_to(cstr, "{}", enum_index);
+            }
             else
-              fmt::format_to(cstr, "{}", param.value);
+            { fmt::format_to(cstr, "{}", value); }
 #else
-            if constexpr (std::is_same_v<decltype(param.value), float>)
-              snprintf(cstr, 16, "%.2f", param.value);
-            else if constexpr (std::is_same_v<decltype(param.value), int>)
-              snprintf(cstr, 16, "%d", param.value);
-            else if constexpr (std::is_same_v<
-                                   decltype(param.value),
-                                   const char*>)
-              snprintf(cstr, 16, "%s", param.value);
-            else if constexpr (std::is_same_v<
-                                   decltype(param.value),
-                                   std::string>)
-              snprintf(cstr, 16, "%s", param.value.data());
+            if constexpr (std::floating_point<val_type>)
+              snprintf(cstr, 16, "%.2f", value);
+            else if constexpr (std::is_same_v<val_type, int>)
+              snprintf(cstr, 16, "%d", value);
+            else if constexpr (std::is_same_v<val_type, bool>)
+              snprintf(cstr, 16, value ? "true" : "false");
+            else if constexpr (std::is_same_v<val_type, const char*>)
+              snprintf(cstr, 16, "%s", value);
+            else if constexpr (std::is_same_v<val_type, std::string>)
+              snprintf(cstr, 16, "%s", value.data());
+            else if constexpr (std::is_enum_v<val_type>)
+            {
+              const int enum_index = static_cast<int>(value);
+              if(enum_index >= 0 && enum_index < C::choices().size())
+                snprintf(cstr, 16, "%s", C::choices()[enum_index]);
+              else
+                snprintf(cstr, 16, "%d", enum_index);
+            }
 #endif
           }
         });

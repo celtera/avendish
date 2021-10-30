@@ -47,8 +47,7 @@ struct effect_container<T>
 
   void init_channels(int input, int output)
   {
-    assert(input == output);
-    effect.resize(input);
+    effect.resize(std::max(input, output));
   }
 
   auto& inputs() noexcept { return inputs_storage; }

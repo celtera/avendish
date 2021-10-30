@@ -6,6 +6,7 @@
 
 #include <string_view>
 
+#include <common/widechar.hpp>
 namespace avnd
 {
 
@@ -27,6 +28,16 @@ struct limited_string_view : std::string_view
   void copy_to(void* dest) const noexcept
   {
     std::copy_n(data(), size(), reinterpret_cast<char*>(dest));
+  }
+
+  void copy_to(char* dest) const noexcept
+  {
+    std::copy_n(data(), size(), dest);
+  }
+
+  void copy_to(char16_t* dest) const noexcept
+  {
+    utf8_to_utf16(data(), data() + size(), dest);
   }
 };
 

@@ -33,4 +33,39 @@ requires(
   midi_messages_vectors storage;
 };
 
+
+template <typename T>
+struct midi_storage
+{
+  [[no_unique_address]] avnd::midi_port_storage<T> midiPortStorage;
+
+  void
+  reserve_space(avnd::dynamic_container_midi_port auto& port, int buffer_size)
+  {
+    // Here we use the vector in the port directly.
+    port.midi_messages.clear();
+    port.midi_messages.reserve(buffer_size);
+  }
+
+  void reserve_space(avnd::raw_container_midi_port auto& port, int buffer_size)
+  {
+    // In this API we have a single port, so we can check index 0 directly...
+    // We allocate some memory locally and save a pointer in the structure.
+    auto& buf = get<0>(midiPortStorage.storage);
+    buf.resize(buffer_size);
+
+    port.midi_messages = buf.data();
+    port.size = 0;
+  }
+
+  void clear(avnd::dynamic_container_midi_port auto& port)
+  {
+    port.midi_messages.clear();
+  }
+
+  void clear(avnd::raw_container_midi_port auto& port)
+  {
+    port.size = 0;
+  }
+};
 }

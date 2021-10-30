@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(avendish)
 
-include(avendish)
+include(cmake/avendish.cmake)
 
 # Only build examples and tests if we are building this repo directly,
 # not if it is add_subdirectory'd

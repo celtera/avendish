@@ -107,7 +107,12 @@ t_symbol* symbol_for_port(avnd::string_parameter auto& port)
   return &s_symbol;
 }
 
-t_symbol* symbol_for_port(avnd::audio_channel auto& port)
+t_symbol* symbol_for_port(avnd::mono_audio_port auto& port)
+{
+  return &s_signal;
+}
+
+t_symbol* symbol_for_port(avnd::poly_audio_port auto& port)
 {
   return &s_signal;
 }

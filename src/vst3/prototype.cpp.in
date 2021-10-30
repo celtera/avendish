@@ -1,0 +1,92 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+
+#include <vst3/audio_effect.hpp>
+#include <vst3/configure.hpp>
+
+#include <common/export.hpp>
+
+
+bool InitModule ()
+{
+  return true;
+}
+
+bool DeinitModule ()
+{
+  return true;
+}
+
+extern "C"
+AVND_EXPORTED_SYMBOL Steinberg::IPluginFactory* GetPluginFactory()
+{
+  using type = decltype(avnd::configure<stv3::config, @AVND_MAIN_CLASS@ >())::type;
+  //  return new stv3::factory<type>{};
+
+  using component_t = stv3::Component<type>;
+  using controller_t = stv3::Controller<type>;
+  static stv3::factory<type, component_t, controller_t> fact;
+  return &fact;
+}
+
+namespace Steinberg {
+namespace Vst {
+
+//----VST 3.0--------------------------------
+DEF_CLASS_IID (IComponent)
+DEF_CLASS_IID (IAudioProcessor)
+DEF_CLASS_IID (IUnitData)
+DEF_CLASS_IID (IProgramListData)
+
+DEF_CLASS_IID (IEditController)
+DEF_CLASS_IID (IUnitInfo)
+
+DEF_CLASS_IID (IConnectionPoint)
+
+DEF_CLASS_IID (IComponentHandler)
+DEF_CLASS_IID (IUnitHandler)
+
+DEF_CLASS_IID (IParamValueQueue)
+DEF_CLASS_IID (IParameterChanges)
+
+DEF_CLASS_IID (IEventList)
+DEF_CLASS_IID (IMessage)
+
+DEF_CLASS_IID (IHostApplication)
+DEF_CLASS_IID (IAttributeList)
+
+//----VST 3.0.1--------------------------------
+DEF_CLASS_IID (IMidiMapping)
+
+//----VST 3.0.2--------------------------------
+
+//----VST 3.1----------------------------------
+DEF_CLASS_IID (IComponentHandler2)
+DEF_CLASS_IID (IEditController2)
+DEF_CLASS_IID (IAudioPresentationLatency)
+DEF_CLASS_IID (IVst3ToVst2Wrapper)
+DEF_CLASS_IID (IVst3ToAUWrapper)
+
+//----VST 3.5----------------------------------
+DEF_CLASS_IID (INoteExpressionController)
+DEF_CLASS_IID (IKeyswitchController)
+DEF_CLASS_IID (IEditControllerHostEditing)
+
+//----VST 3.6----------------------------------
+DEF_CLASS_IID (IStreamAttributes)
+
+//----VST 3.6.5--------------------------------
+DEF_CLASS_IID (IUnitHandler2)
+
+//----VST 3.6.8--------------------------------
+DEF_CLASS_IID (IComponentHandlerBusActivation)
+DEF_CLASS_IID (IVst3ToAAXWrapper)
+
+DEF_CLASS_IID (IVst3WrapperMPESupport)
+
+
+//----VST 3.7-----------------------------------
+DEF_CLASS_IID (IProcessContextRequirements)
+DEF_CLASS_IID (IProgress)
+}}

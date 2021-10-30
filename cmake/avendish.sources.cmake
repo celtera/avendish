@@ -24,6 +24,8 @@ target_sources(Avendish
     src/avnd/concepts.hpp
     src/avnd/configure.hpp
     src/avnd/controls.hpp
+    src/avnd/controls_fp.hpp
+    src/avnd/control_display.hpp
     src/avnd/effect_container.hpp
     src/avnd/port_introspection.hpp
     src/avnd/input_introspection.hpp
@@ -43,6 +45,7 @@ target_sources(Avendish
     src/common/limited_string.hpp
     src/common/limited_string_view.hpp
     src/common/struct_reflection.hpp
+    src/common/widechar.hpp
 
     src/pd/atom_iterator.hpp
     src/pd/audio_processor.hpp
@@ -88,6 +91,7 @@ target_sources(Avendish
     src/helpers/reactive_value.hpp
     src/helpers/controls.hpp
     src/helpers/log.hpp
+    src/helpers/meta.hpp
 
     src/ui/qml_ui.hpp
     src/ui/qml/enum_control.hpp
@@ -100,6 +104,19 @@ target_sources(Avendish
     src/ui/qml/int_control.hpp
     src/ui/qml/int_knob.hpp
     src/ui/qml/int_slider.hpp
+
+    src/vst3/audio_effect.hpp
+    src/vst3/component.hpp
+    src/vst3/component_base.hpp
+    src/vst3/configure.hpp
+    src/vst3/connection_point.hpp
+    src/vst3/controller.hpp
+    src/vst3/controller_base.hpp
+    src/vst3/factory.hpp
+    src/vst3/helpers.hpp
+    src/vst3/metadata.hpp
+    src/vst3/programs.hpp
+    src/vst3/refcount.hpp
 
     src/dummy.cpp
 )

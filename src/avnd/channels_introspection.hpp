@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/concepts/channels.hpp>
+#include <avnd/concepts/processor.hpp>
 
 namespace avnd
 {
@@ -65,5 +66,79 @@ output_channels(int if_undefined = undefined_channels)
     return if_undefined;
   return channels_introspection<T>::output_channels;
 }
+
+
+
+template <typename T>
+struct bus_introspection
+{
+  static constexpr const auto input_busses = 0;
+  static constexpr const auto output_busses = 0;
+};
+
+// float operator()(float in);
+template <typename T>
+requires mono_per_sample_arg_processor<float, T> || mono_per_sample_arg_processor<double, T>
+struct bus_introspection<T>
+{
+  static constexpr const auto input_busses = 1;
+  static constexpr const auto output_busses = 1;
+};
+
+// void operator()(float* in, float* out);
+template <typename T>
+requires monophonic_arg_audio_effect<float, T> || monophonic_arg_audio_effect<double, T>
+struct bus_introspection<T>
+{
+  static constexpr const auto input_busses = 1;
+  static constexpr const auto output_busses = 1;
+};
+
+// void operator()(float** in, float** out);
+template <typename T>
+requires polyphonic_arg_audio_effect<float, T> || polyphonic_arg_audio_effect<double, T>
+struct bus_introspection<T>
+{
+  static constexpr const auto input_busses = 1;
+  static constexpr const auto output_busses = 1;
+};
+
+
+template <typename T>
+requires (sample_input_port_count<float, T> != 0)
+      || (sample_output_port_count<float, T> != 0)
+      || (sample_input_port_count<double, T> != 0)
+      || (sample_output_port_count<double, T> != 0)
+struct bus_introspection<T>
+{
+  // TODO group them as busses instead ?
+  static constexpr const auto input_busses = 1;
+  static constexpr const auto output_busses = 1;
+};
+
+template <typename T>
+requires (mono_sample_array_input_port_count<float, T> != 0)
+      || (mono_sample_array_output_port_count<float, T> != 0)
+      || (mono_sample_array_input_port_count<double, T> != 0)
+      || (mono_sample_array_output_port_count<double, T> != 0)
+struct bus_introspection<T>
+{
+  // TODO group them as busses instead ?
+  static constexpr const auto input_busses = 1;
+  static constexpr const auto output_busses = 1;
+};
+
+template <typename T>
+requires (poly_sample_array_input_port_count<float, T> != 0)
+      || (poly_sample_array_output_port_count<float, T> != 0)
+      || (poly_sample_array_input_port_count<double, T> != 0)
+      || (poly_sample_array_output_port_count<double, T> != 0)
+struct bus_introspection<T>
+{
+  static constexpr const auto input_busses
+  = audio_bus_input_introspection<T>::size;
+  static constexpr const auto output_busses
+  = audio_bus_input_introspection<T>::size;
+};
 
 }

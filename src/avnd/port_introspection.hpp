@@ -44,12 +44,12 @@ using raw_container_midi_port_introspection
     = predicate_introspection<T, is_raw_container_midi_port_t>;
 
 template <typename Field>
-using is_audio_bus_t = boost::mp11::mp_bool<audio_bus<Field>>;
+using is_audio_bus_t = boost::mp11::mp_bool<poly_audio_port<Field>>;
 template <typename T>
 using audio_bus_introspection = predicate_introspection<T, is_audio_bus_t>;
 
 template <typename Field>
-using is_audio_channel_t = boost::mp11::mp_bool<audio_channel<Field>>;
+using is_audio_channel_t = boost::mp11::mp_bool<mono_audio_port<Field>>;
 template <typename T>
 using audio_channel_introspection
     = predicate_introspection<T, is_audio_channel_t>;
