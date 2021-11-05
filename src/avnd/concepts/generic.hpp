@@ -11,6 +11,7 @@ namespace avnd
 struct dummy
 {
 };
+static constexpr dummy dummy_instance;
 
 #define if_possible(action)           \
   if constexpr (requires { action; }) \
@@ -55,6 +56,18 @@ concept string_ish = requires(T t, std::string_view v)
 {
   v = t;
 };
+
+template <typename T>
+concept int_ish = std::is_same_v < std::remove_reference_t<T>,
+signed int >
+    || std::is_same_v<std::remove_reference_t<T>, signed short> || std::is_same_v<std::remove_reference_t<T>, signed long> || std::is_same_v<std::remove_reference_t<T>, signed long long> || std::is_same_v<std::remove_reference_t<T>, unsigned int> || std::is_same_v<std::remove_reference_t<T>, unsigned short> || std::is_same_v<std::remove_reference_t<T>, unsigned long> || std::is_same_v<std::remove_reference_t<T>, unsigned long long>;
+
+template <typename T>
+concept fp_ish = std::is_floating_point_v<std::remove_reference_t<T>>;
+
+template <typename T>
+concept bool_ish = std::is_same_v < std::remove_reference_t<T>,
+bool > ;
 
 template <typename T>
 struct is_type_list : std::false_type

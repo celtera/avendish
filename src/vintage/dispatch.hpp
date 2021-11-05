@@ -150,41 +150,43 @@ intptr_t default_dispatch(
       return 0;
     case EffectOpcodes::GetParameterProperties: // 56
     {
-      auto& props = *(vintage::ParameterProperties*)ptr;
+      if constexpr(avnd::has_inputs<effect_type>)
+      {
+        auto& props = *(vintage::ParameterProperties*)ptr;
 
-      for_nth_parameter(
-          container,
-          index,
-          [&props, index](const auto& param)
-          {
-            props.stepFloat = 0.01;
-            props.smallStepFloat = 0.01;
-            props.largeStepFloat = 0.01;
+        avnd::float_parameter_input_introspection<effect_type>::for_nth(
+            container.inputs(), index,
+            [&props, index](const auto& param)
+            {
+              props.stepFloat = 0.01;
+              props.smallStepFloat = 0.01;
+              props.largeStepFloat = 0.01;
 
-            if constexpr (requires { param.label(); })
-            {
-              vintage::label{param.label()}.copy_to(props.label);
-            }
-            props.flags = {};
-            props.minInteger = 0;
-            props.maxInteger = 1;
-            props.stepInteger = 1;
-            props.largeStepInteger = 1;
+              if constexpr (requires { param.label(); })
+              {
+                vintage::label{param.label()}.copy_to(props.label);
+              }
+              props.flags = {};
+              props.minInteger = 0;
+              props.maxInteger = 1;
+              props.stepInteger = 1;
+              props.largeStepInteger = 1;
 
-            if constexpr (requires { param.shortLabel(); })
-            {
-              vintage::short_label{param.shortLabel()}.copy_to(
-                  props.shortLabel);
-            }
-            props.displayIndex = index;
-            props.category = 0;
-            props.numParametersInCategory = 2;
-            if constexpr (requires { param.categoryLabel(); })
-            {
-              vintage::category_label{param.categoryLabel()}.copy_to(
-                  props.categoryLabel);
-            }
-          });
+              if constexpr (requires { param.shortLabel(); })
+              {
+                vintage::short_label{param.shortLabel()}.copy_to(
+                    props.shortLabel);
+              }
+              props.displayIndex = index;
+              props.category = 0;
+              props.numParametersInCategory = 2;
+              if constexpr (requires { param.categoryLabel(); })
+              {
+                vintage::category_label{param.categoryLabel()}.copy_to(
+                    props.categoryLabel);
+              }
+            });
+      }
       return 1;
     }
     case EffectOpcodes::CanBeAutomated: // 26

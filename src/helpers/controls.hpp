@@ -1,24 +1,13 @@
 #pragma once
-#include <algorithm>
+#include <helpers/static_string.hpp>
+
 #include <array>
 #include <cstddef>
 #include <string>
-
 #include <string_view>
 
 namespace avnd
 {
-
-template <std::size_t N>
-struct static_string
-{
-  consteval static_string(const char (&str)[N]) noexcept
-  {
-    std::copy_n(str, N, value);
-  }
-
-  char value[N];
-};
 
 template <typename T>
 struct range_t
@@ -257,14 +246,6 @@ template <static_string lit, range setup = default_range<int>>
 using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
 
 
-/// Refers to a member or free function ///
-
-template <static_string lit, auto M>
-struct func_ref
-{
-  static consteval auto name() { return std::string_view{lit.value}; }
-  static consteval auto func() { return M; }
-};
 
 }
 

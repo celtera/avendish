@@ -12,11 +12,23 @@ static const constexpr int undefined_channels = -1;
 
 // Channels set explicitely by the plug-in author
 template <typename T>
-concept explicit_io_channels
-    = (T::input_channels > 0) || (T::output_channels > 0);
+concept explicit_input_channels
+    = (T::input_channels > 0);
+template <typename T>
+concept explicit_output_channels
+    = (T::output_channels > 0);
+
+template <typename T>
+concept explicit_input_channels_func
+    = (T::input_channels() > 0);
+template <typename T>
+concept explicit_output_channels_func
+    = (T::output_channels() > 0);
 
 template <typename T>
 concept explicit_channels = (T::channels > 0);
+template <typename T>
+concept explicit_channels_func = (T::channels() > 0);
 
 // Channels detected implicitely through the number of audio channels
 template <typename T>

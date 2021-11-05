@@ -72,38 +72,44 @@ struct message_processor
     output_setup.init(implementation, x_obj);
 
     /// Initialize controls
-    avnd::init_controls(implementation.inputs);
+    if constexpr(avnd::has_inputs<T>)
+    {
+      avnd::init_controls(implementation.inputs);
+    }
   }
 
   void destroy() { }
 
   void process_first_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
-    switch (argv[0].a_type)
+    if constexpr(avnd::has_inputs<T>)
     {
-      case A_FLOAT:
+      switch (argv[0].a_type)
       {
-        // This is the float that is supposed to go inside the first inlet if any ?
-        auto& first_inlet = boost::pfr::get<0>(implementation.inputs);
-        if constexpr (requires { first_inlet.value = 0.f; })
+        case A_FLOAT:
         {
-          first_inlet.value = argv[0].a_w.w_float;
+          // This is the float that is supposed to go inside the first inlet if any ?
+          auto& first_inlet = boost::pfr::get<0>(implementation.inputs);
+          if constexpr (requires { first_inlet.value = 0.f; })
+          {
+            first_inlet.value = argv[0].a_w.w_float;
+          }
+          break;
         }
-        break;
-      }
 
-      case A_SYMBOL:
-      {
-        auto& first_inlet = boost::pfr::get<0>(implementation.inputs);
-        if constexpr (requires { first_inlet.value = "string"; })
+        case A_SYMBOL:
         {
-          first_inlet.value = argv[0].a_w.w_symbol->s_name;
+          auto& first_inlet = boost::pfr::get<0>(implementation.inputs);
+          if constexpr (requires { first_inlet.value = "string"; })
+          {
+            first_inlet.value = argv[0].a_w.w_symbol->s_name;
+          }
+          break;
         }
-        break;
-      }
 
-      default:
-        break;
+        default:
+          break;
+      }
     }
   }
 

@@ -8,6 +8,11 @@
 
 namespace avnd
 {
+// Has a "struct tick" member that will be passed as argument
+// to the main processing function
+template <typename T>
+concept has_tick = std::is_default_constructible_v<typename T::tick>;
+
 
 template <typename FP, typename T>
 static constexpr int sample_input_port_count = boost::mp11::mp_count_if_q<
@@ -73,11 +78,21 @@ concept effect_is_sane = requires(T t)
 /// Definition of what is an audio effect ///
 template <typename FP, typename T>
 concept monophonic_port_audio_effect
+= mono_sample_array_input_port_count<FP, T>
+> 0 && mono_sample_array_output_port_count<FP, T> > 0;
+
+template <typename FP, typename T>
+concept polyphonic_port_audio_effect
+= poly_sample_array_input_port_count<FP, T>
+> 0 && poly_sample_array_output_port_count<FP, T> > 0;
+
+template <typename FP, typename T>
+concept monophonic_single_port_audio_effect
     = mono_sample_array_input_port_count<FP, T>
 == 1 && mono_sample_array_output_port_count<FP, T> == 1;
 
 template <typename FP, typename T>
-concept polyphonic_port_audio_effect
+concept polyphonic_single_port_audio_effect
     = poly_sample_array_input_port_count<FP, T>
 == 1 && poly_sample_array_output_port_count<FP, T> == 1;
 
@@ -162,5 +177,6 @@ concept monophonic_audio_processor
 template <typename T>
 concept polyphonic_audio_processor
     = polyphonic_processor<float, T> || polyphonic_processor<double, T>;
+
 
 }

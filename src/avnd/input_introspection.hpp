@@ -36,7 +36,7 @@ using audio_channel_input_introspection
 template <typename T>
 using input_introspection
     = fields_introspection<typename inputs_type<T>::type>;
-
+/*
 template <typename T>
 void for_nth_parameter(
     avnd::effect_container<T>& object,
@@ -45,7 +45,7 @@ void for_nth_parameter(
 {
   float_parameter_input_introspection<T>::for_nth(object.inputs(), n, func);
 }
-
+*/
 template <typename T>
 auto& get_inputs(avnd::effect_container<T>& t)
 {

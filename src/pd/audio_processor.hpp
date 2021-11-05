@@ -256,7 +256,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
 {
   audio_processor_metaclass::instance = this;
   using instance = audio_processor<T>;
-  static_assert(std::is_aggregate_v<T>);
+  //static_assert(std::is_aggregate_v<T>);
   static_assert(std::is_aggregate_v<instance>);
   static_assert(std::is_nothrow_constructible_v<instance>);
   static_assert(std::is_nothrow_move_constructible_v<instance>);

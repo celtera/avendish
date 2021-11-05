@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/concepts/channels.hpp>
 #include <avnd/effect_container.hpp>
 #include <avnd/input_introspection.hpp>
 #include <avnd/output_introspection.hpp>
@@ -50,13 +51,8 @@ requires(
 template <typename FP, typename T>
 using buffer_type = std::conditional_t<
     needs_storage<FP, T>::value,
-    std::vector<
-        typename needs_storage<FP, T>::needed_storage_t> // TODO aligned alloc
-    ,
-    dummy>;
-
-template <typename T>
-concept has_tick = std::is_default_constructible_v<typename T::tick>;
+    std::vector<typename needs_storage<FP, T>::needed_storage_t> // TODO aligned alloc
+    , dummy>;
 
 // Original idea was to pass everything by arguments here.
 // Sadly hard to do as soon as there are references as we cannot do it piecewise
@@ -65,7 +61,7 @@ auto current_tick(avnd::effect_container<T>& implementation)
 {
   // Nice little C++20 goodie: remove_cvref_t
   // unused in the end using tick_setup_t = std::remove_cvref_t<avnd::second_argument<&T::operator()>>;
-  if constexpr (requires { typename T::tick; })
+  if constexpr (has_tick<T>)
   {
     using tick_t = typename T::tick;
     static_assert(std::is_aggregate_v<tick_t>);
@@ -76,21 +72,67 @@ auto current_tick(avnd::effect_container<T>& implementation)
   }
 }
 
+template <typename T>
+void invoke_effect(avnd::effect_container<T>& implementation, int frames)
+{
+  if constexpr(has_tick<T>)
+  {
+    // Set-up the "tick" struct
+    auto t = current_tick(implementation);
+    if_possible(t.frames = frames);
+
+    // Do the process call
+    if_possible(implementation.effect(t))
+    else if_possible(implementation.effect(frames))
+    else if_possible(implementation.effect(frames, t))
+    else if_possible(implementation.effect());
+  }
+  else
+  {
+    if_possible(implementation.effect(frames))
+    else if_possible(implementation.effect());
+  }
+}
+
 /**
  * This class is used to adapt between hosts that will send audio as arrays of float** / double** channels
  * to various useful cases
  */
-template <typename T>
-struct process_adapter;
 
-/**
- * Handles case where inputs / outputs are e.g. float** ports
- */
+// Default case when it's not an audio object - still
+// bang it at regular intervals
 template <typename T>
-requires polyphonic_audio_processor<T> &&(
-    poly_array_port_based<
-        float,
-        T> || poly_array_port_based<double, T>)struct process_adapter<T>
+struct process_adapter
+{
+  template <std::floating_point SrcFP>
+  void allocate_buffers(process_setup setup, SrcFP f)
+  {
+
+  }
+
+  template <std::floating_point FP>
+  void process(
+      avnd::effect_container<T>& implementation,
+      std::span<FP*> in,
+      std::span<FP*> out,
+      int32_t n)
+  {
+    // Audio buffers aren't used at all
+    invoke_effect(implementation, n);
+  }
+};
+
+template<typename T>
+concept single_audio_bus_poly_port_processor = polyphonic_audio_processor<T> &&
+    ((poly_array_port_based<float, T>) || (poly_array_port_based<double, T>)) &&
+    (audio_bus_input_introspection<T>::size == 1 &&
+     audio_bus_output_introspection<T>::size == 1 &&
+     dynamic_poly_audio_port<typename audio_bus_input_introspection<T>::template nth_element<0>> &&
+     dynamic_poly_audio_port<typename audio_bus_output_introspection<T>::template nth_element<0>>
+);
+
+template<typename T>
+struct audio_buffer_storage
 {
   // buffers used in case we need to convert float -> double
   [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_input_f;
@@ -117,6 +159,14 @@ requires polyphonic_audio_processor<T> &&(
           .resize(setup.frames_per_buffer * setup.output_channels);
     }
   }
+};
+
+template <typename T>
+requires single_audio_bus_poly_port_processor<T>
+struct process_adapter<T> : audio_buffer_storage<T>
+{
+  using i_info = avnd::audio_bus_input_introspection<T>;
+  using o_info = avnd::audio_bus_output_introspection<T>;
 
   template <typename SrcFP, typename DstFP>
   void process_port(
@@ -125,8 +175,6 @@ requires polyphonic_audio_processor<T> &&(
       std::span<SrcFP*> out,
       int32_t n)
   {
-    using i_info = avnd::audio_bus_input_introspection<T>;
-    using o_info = avnd::audio_bus_output_introspection<T>;
     auto& ins = implementation.inputs();
     auto& outs = implementation.outputs();
 
@@ -134,20 +182,21 @@ requires polyphonic_audio_processor<T> &&(
     const int output_channels = out.size();
 
     // Here we get the first audio port declared
-    auto& in_port = boost::pfr::get<i_info::index_map[0]>(ins);
-    auto& out_port = boost::pfr::get<o_info::index_map[0]>(outs);
+    auto& in_port = i_info::template get<0>(ins);
+    auto& out_port = o_info::template get<0>(outs);
 
     if constexpr (needs_storage<SrcFP, T>::value)
     {
       // Fetch the required temporary storage
       using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
-      auto& dsp_buffer_input = input_buffer_for(needed_type{});
-      auto& dsp_buffer_output = output_buffer_for(needed_type{});
+      auto& dsp_buffer_input = audio_buffer_storage<T>::input_buffer_for(needed_type{});
+      auto& dsp_buffer_output = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
       // Convert inputs and outputs to double
       in_port.samples = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
       out_port.samples = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
-      in_port.channels = input_channels;
+
+      if_possible(in_port.channels = input_channels);
       if_possible(out_port.channels = output_channels);
 
       // Copy & convert input channels
@@ -162,7 +211,7 @@ requires polyphonic_audio_processor<T> &&(
         out_port.samples[c] = dsp_buffer_output.data() + c * n;
       }
 
-      implementation.effect(n);
+      invoke_effect(implementation, n);
 
       // Copy & convert output channels
       for (int c = 0; c < output_channels; ++c)
@@ -174,15 +223,127 @@ requires polyphonic_audio_processor<T> &&(
     {
       // Pass the buffers directly
       in_port.samples = in.data();
-      in_port.channels = input_channels;
+      if_possible(in_port.channels = input_channels);
 
       out_port.samples = out.data();
       if_possible(out_port.channels = output_channels);
 
-      implementation.effect(n);
+      invoke_effect(implementation, n);
 
       in_port.samples = nullptr;
       out_port.samples = nullptr;
+    }
+  }
+
+  template <std::floating_point FP>
+  void process(
+      avnd::effect_container<T>& implementation,
+      std::span<FP*> in,
+      std::span<FP*> out,
+      int32_t n)
+  {
+    // Note: here we have a redundant check. This is to make sure that we always check the case
+    // where we won't have to do a conversion first.
+    if constexpr (avnd::polyphonic_single_port_audio_effect<FP, T>)
+      process_port<FP, FP>(implementation, in, out, n);
+    else if constexpr (avnd::polyphonic_single_port_audio_effect<float, T>)
+      process_port<FP, float>(implementation, in, out, n);
+    else if constexpr (avnd::polyphonic_single_port_audio_effect<double, T>)
+      process_port<FP, double>(implementation, in, out, n);
+    else
+      STATIC_TODO(FP)
+  }
+};
+
+/**
+ * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.
+ */
+template <typename T>
+requires polyphonic_audio_processor<T>
+    && ((poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
+    && (!single_audio_bus_poly_port_processor<T>)
+struct process_adapter<T> : audio_buffer_storage<T>
+{
+  using i_info = avnd::audio_bus_input_introspection<T>;
+  using o_info = avnd::audio_bus_output_introspection<T>;
+
+  template<typename Info, typename Ports>
+  void initialize_busses(
+      Ports& ports,
+      auto buffers)
+  {
+    int k = 0;
+    Info::for_all(ports, [&] (auto& bus) {
+      if(k + bus.channels() < buffers.size())
+        bus.samples = buffers.data() + k;
+      else
+        bus.samples = nullptr;
+      k += bus.channels();
+    });
+  }
+
+  template <typename SrcFP, typename DstFP>
+  void process_port(
+      avnd::effect_container<T>& implementation,
+      std::span<SrcFP*> in,
+      std::span<SrcFP*> out,
+      int32_t n)
+  {
+    auto& ins = implementation.inputs();
+    auto& outs = implementation.outputs();
+
+    const int input_channels = in.size();
+    const int output_channels = out.size();
+
+    if constexpr (needs_storage<SrcFP, T>::value)
+    {
+      // Here we get the first audio port declared
+      auto& in_port = boost::pfr::get<i_info::index_map[0]>(ins);
+      auto& out_port = boost::pfr::get<o_info::index_map[0]>(outs);
+
+      // Fetch the required temporary storage
+      using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
+      auto& dsp_buffer_input = audio_buffer_storage<T>::input_buffer_for(needed_type{});
+      auto& dsp_buffer_output = audio_buffer_storage<T>::output_buffer_for(needed_type{});
+
+      // Convert inputs to the right FP type, init outputs
+      auto i_conv = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
+      for (int c = 0; c < input_channels; ++c)
+      {
+        i_conv[c] = dsp_buffer_input.data() + c * n;
+        std::copy_n(in[c], n, i_conv[c]);
+      }
+
+      auto o_conv = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
+      for (int c = 0; c < output_channels; ++c)
+      {
+        o_conv[c] = dsp_buffer_output.data() + c * n;
+      }
+
+      initialize_busses<i_info>(implementation.inputs(), std::span(i_conv, input_channels));
+      initialize_busses<o_info>(implementation.outputs(), std::span(o_conv, output_channels));
+
+      invoke_effect(implementation, n);
+
+      // Copy & convert back output channels
+      for (int c = 0; c < output_channels; ++c)
+      {
+        std::copy_n(out_port.samples[c], n, out[c]);
+      }
+    }
+    else
+    {
+      initialize_busses<i_info>(implementation.inputs(), in);
+      initialize_busses<o_info>(implementation.outputs(), out);
+
+      invoke_effect(implementation, n);
+
+      i_info::for_all(implementation.inputs(), [&] (auto& bus) {
+        bus.samples = nullptr;
+      });
+      o_info::for_all(implementation.outputs(), [&] (auto& bus) {
+        bus.samples = nullptr;
+      });
     }
   }
 

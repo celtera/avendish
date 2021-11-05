@@ -92,8 +92,8 @@ struct Controls
   void name(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    for_nth_parameter(
-        self,
+    inputs_info_t::for_nth(
+        self.inputs(),
         index,
         [ptr]<typename P>(const P& param)
         {
@@ -108,8 +108,8 @@ struct Controls
   void display(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    for_nth_parameter(
-        self,
+    inputs_info_t::for_nth(
+        self.inputs(),
         index,
         [ptr]<typename C>(const C& param)
         {
@@ -173,8 +173,8 @@ struct Controls
   void label(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    for_nth_parameter(
-        self,
+    inputs_info_t::for_nth(
+        self.inputs(),
         index,
         [ptr](const auto& param)
         {

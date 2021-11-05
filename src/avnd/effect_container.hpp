@@ -9,6 +9,9 @@
 
 namespace avnd
 {
+/**
+ * @brief used to adapt monophonic effects to polyphonic hosts
+ */
 template <typename T>
 struct effect_container
 {
@@ -27,6 +30,44 @@ struct effect_container
   auto& outputs() const noexcept { return effect.outputs; }
 
   member_iterator<T> effects() { co_yield effect; }
+};
+
+template <typename T>
+requires (!has_inputs<T> && !has_outputs<T>)
+struct effect_container<T>
+{
+  using type = T;
+
+  T effect;
+
+  void init_channels(int input, int output)
+  {
+    // TODO maybe a runtime check
+  }
+
+  auto& inputs() noexcept { return dummy_instance; }
+  auto& inputs() const noexcept { return dummy_instance; }
+  auto& outputs() noexcept { return dummy_instance; }
+  auto& outputs() const noexcept { return dummy_instance; }
+
+  member_iterator<T> effects() { co_yield effect; }
+
+  struct ref
+  {
+    T& effect;
+
+    [[no_unique_address]]
+    dummy inputs;
+
+    [[no_unique_address]]
+    dummy outputs;
+  };
+
+  member_iterator<ref> full_state()
+  {
+    ref r{effect, {}, {}};
+    co_yield r;
+  }
 };
 
 template <avnd::monophonic_audio_processor T>

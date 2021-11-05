@@ -5,6 +5,7 @@
 #include <boost/mp11.hpp>
 #include <boost/pfr.hpp>
 #include <common/index_sequence.hpp>
+#include <avnd/concepts/generic.hpp>
 
 namespace avnd
 {
@@ -118,6 +119,13 @@ struct fields_introspection
       (indices_n{});
     }
   }
+
+  static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept
+  { }
+  static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
+  { }
+  static constexpr void for_all_unless(avnd::dummy fields, int n, auto&& func) noexcept
+  { }
 };
 
 /**
@@ -171,6 +179,16 @@ struct predicate_introspection
     }
   }
 
+  template<std::size_t N>
+  using nth_element = std::decay_t<decltype(boost::pfr::get<index_map[N]>(type{}))>;
+
+  template<std::size_t N>
+  static constexpr auto get(type& unfiltered_fields) noexcept
+    -> decltype(auto)
+  {
+    return boost::pfr::get<index_map[N]>(unfiltered_fields);
+  }
+
   static constexpr void for_all(type& unfiltered_fields, auto&& func) noexcept
   {
     if constexpr (size > 0)
@@ -218,6 +236,13 @@ struct predicate_introspection
       (indices_n{});
     }
   }
+
+  static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept
+  { }
+  static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
+  { }
+  static constexpr void for_all_unless(avnd::dummy fields, int n, auto&& func) noexcept
+  { }
 };
 
 }

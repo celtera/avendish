@@ -79,4 +79,9 @@ struct no_logger
 
 static_assert(avnd::logger<basic_logger>);
 static_assert(avnd::logger<no_logger>);
+
+template<typename C>
+concept has_logger = requires {
+  { typename C::logger_type { } } -> avnd::logger;
+};
 }

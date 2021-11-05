@@ -74,4 +74,12 @@ template <typename T>
 concept poly_audio_port
     = poly_array_sample_port<float, T> || poly_array_sample_port<double, T>;
 
+template <typename T>
+concept fixed_poly_audio_port = poly_audio_port<T> &&
+    requires (T t) {
+  { t.channels() } -> avnd::int_ish;
+};
+
+template <typename T>
+concept dynamic_poly_audio_port = poly_audio_port<T> && !fixed_poly_audio_port<T>;
 }
