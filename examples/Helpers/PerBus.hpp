@@ -1,0 +1,100 @@
+#pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <helpers/audio.hpp>
+#include <helpers/controls.hpp>
+#include <helpers/meta.hpp>
+#include <common/concepts_polyfill.hpp>
+#include <cmath>
+
+
+namespace examples::helpers
+{
+// First example with classic array-based processing
+struct PerBusAsArgs
+{
+  $(name, "Per-bus processing (args, helpers)")
+  $(c_name, "avnd_helpers_per_bus_as_args")
+  $(uuid, "23a4de57-800b-453a-99b6-481db19d834f")
+  $(input_channels, 2)
+  $(output_channels, 2)
+
+  void operator()(double** inputs, double** outputs, int frames)
+  {
+    using namespace std;
+    for(int c = 0; c < input_channels(); ++c) {
+      for(int k = 0; k < frames; k++) {
+        outputs[c][k] = tanh(inputs[c][k]);
+      }
+    }
+  }
+};
+
+// Here we specify each bus's port count.
+struct PerBusAsPortsFixed
+{
+  $(name, "Per-bus processing (args, helpers)")
+  $(c_name, "avnd_helpers_per_bus_as_args")
+  $(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
+
+  struct
+  {
+    avnd::fixed_audio_bus<"In", double, 2> audio;
+    avnd::fixed_audio_bus<"Sidechain", double, 2> sidechain;
+  } inputs;
+
+  struct
+  {
+    avnd::fixed_audio_bus<"Out", double, 2> audio;
+  } outputs;
+
+  void operator()(int frames)
+  {
+    using namespace std;
+    double** ins = inputs.audio.samples;
+    double** sc = inputs.sidechain.samples;
+    double** outs = outputs.audio.samples;
+
+    for(int c = 0; c < inputs.audio.channels(); ++c) {
+      for(int k = 0; k < frames; k++) {
+        outs[c][k] = tanh(ins[c][k] * sc[c][k]);
+      }
+    }
+  }
+};
+
+// Special case: if there is only one dynamic_audio_bus (no channels specified)
+// the host will choose the channels
+// (or they will be taken from the global channels / input_channels / ... metadatas
+struct PerBusAsPortsDynamic
+{
+  $(name, "Per-bus processing (args, helpers)")
+  $(c_name, "avnd_helpers_per_bus_as_args")
+  $(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
+
+  struct
+  {
+    avnd::dynamic_audio_bus<"In", double> audio;
+  } inputs;
+
+  struct
+  {
+    avnd::dynamic_audio_bus<"Out", double> audio;
+  } outputs;
+
+  void operator()(int frames)
+  {
+    using namespace std;
+    double** ins = inputs.audio.samples;
+    double** outs = outputs.audio.samples;
+
+    for(int c = 0; c < inputs.audio.channels; ++c) {
+      for(int k = 0; k < frames; k++) {
+        outs[c][k] = tanh(ins[c][k]);
+      }
+    }
+  }
+};
+}
+

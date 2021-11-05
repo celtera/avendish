@@ -87,11 +87,13 @@ target_sources(Avendish
     src/vintage/programs.hpp
     src/vintage/vintage.hpp
 
+    src/helpers/audio.hpp
     src/helpers/callback.hpp
     src/helpers/reactive_value.hpp
     src/helpers/controls.hpp
     src/helpers/log.hpp
     src/helpers/meta.hpp
+    src/helpers/static_string.hpp
 
     src/ui/qml_ui.hpp
     src/ui/qml/enum_control.hpp

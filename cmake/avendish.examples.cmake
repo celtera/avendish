@@ -64,15 +64,6 @@ avnd_make_object(
   C_NAME avnd_messages
 )
 
-if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-  avnd_make_object(
-    TARGET Helpers
-    MAIN_FILE examples/Helpers.hpp
-    MAIN_CLASS examples::Helpers
-    C_NAME avnd_helpers
-    )
-endif()
-
 avnd_make_object(
   TARGET Init
   MAIN_FILE examples/Init.hpp
@@ -90,9 +81,74 @@ avnd_make_object(
 
 # This one does not really make sense as a Pd or Max object
 # (Pd has no notion of MIDI port)
-avnd_make_vintage(
+avnd_make_audioplug(
   TARGET Midi
   MAIN_FILE examples/Midi.hpp
   MAIN_CLASS examples::Midi
   C_NAME avnd_midi
 )
+
+if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+  avnd_make_all(
+    TARGET HelpersLogger
+    MAIN_FILE examples/Helpers/Logger.hpp
+    MAIN_CLASS examples::helpers::Logger
+    C_NAME avnd_helpers_logger
+    )
+endif()
+
+avnd_make_all(
+  TARGET HelpersMessages
+  MAIN_FILE examples/Helpers/Messages.hpp
+  MAIN_CLASS examples::helpers::Messages
+  C_NAME avnd_helpers_messages
+  )
+
+avnd_make_all(
+  TARGET HelpersControls
+  MAIN_FILE examples/Helpers/Controls.hpp
+  MAIN_CLASS examples::helpers::Controls
+  C_NAME avnd_helpers_controls
+  )
+
+avnd_make_all(
+  TARGET HelpersPerBusAsArgs
+  MAIN_FILE examples/Helpers/PerBus.hpp
+  MAIN_CLASS examples::helpers::PerBusAsArgs
+  C_NAME avnd_helpers_per_bus_as_args
+)
+
+avnd_make_all(
+  TARGET HelpersPerBusAsPortsFixed
+  MAIN_FILE examples/Helpers/PerBus.hpp
+  MAIN_CLASS examples::helpers::PerBusAsPortsFixed
+  C_NAME avnd_helpers_per_bus_as_ports_fixed
+  )
+
+avnd_make_all(
+  TARGET HelpersPerBusAsPortsDynamic
+  MAIN_FILE examples/Helpers/PerBus.hpp
+  MAIN_CLASS examples::helpers::PerBusAsPortsDynamic
+  C_NAME avnd_helpers_per_bus_as_ports_dynamic
+  )
+
+avnd_make_all(
+  TARGET HelpersPerSampleAsArgs
+  MAIN_FILE examples/Helpers/PerSample.hpp
+  MAIN_CLASS examples::helpers::PerSampleAsArgs
+  C_NAME avnd_helpers_per_sample_as_args
+)
+
+avnd_make_all(
+  TARGET HelpersPerSampleAsPorts
+  MAIN_FILE examples/Helpers/PerSample.hpp
+  MAIN_CLASS examples::helpers::PerSampleAsPorts
+  C_NAME avnd_helpers_per_sample_as_ports
+  )
+
+avnd_make_all(
+  TARGET HelpersLowpass
+  MAIN_FILE examples/Helpers/Lowpass.hpp
+  MAIN_CLASS examples::helpers::Lowpass
+  C_NAME avnd_helpers_lowpass
+  )
