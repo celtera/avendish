@@ -27,17 +27,16 @@ struct range_t
 };
 using range = range_t<long double>;
 template <typename T>
-constexpr auto default_range = range{0., 1., 0.5};
+inline constexpr auto default_range = range{0., 1., 0.5};
 template <>
-constexpr auto default_range<int> = range{0., 127., 64.};
+inline constexpr auto default_range<int> = range{0., 127., 64.};
+
+
+/// Sliders ///
 
 template <typename T, static_string lit, range setup>
 struct slider_t
 {
-  enum widget
-  {
-    slider
-  };
   static consteval auto control()
   {
     return range_t<T>{
@@ -47,6 +46,54 @@ struct slider_t
 
   T value = setup.init;
 };
+
+template <typename T, static_string lit, range setup>
+struct hslider_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    hslider, slider
+  };
+};
+
+template <typename T, static_string lit, range setup>
+struct vslider_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    vslider, slider
+  };
+};
+
+template <static_string lit, range setup = default_range<float>>
+using hslider_f32 = avnd::hslider_t<float, lit, setup>;
+template <static_string lit, range setup = default_range<int>>
+using hslider_i32 = avnd::hslider_t<int, lit, setup>;
+
+template <static_string lit, range setup = default_range<float>>
+using vslider_f32 = avnd::vslider_t<float, lit, setup>;
+template <static_string lit, range setup = default_range<int>>
+using vslider_i32 = avnd::vslider_t<int, lit, setup>;
+
+
+/// Spinbox ///
+
+template <typename T, static_string lit, range setup>
+struct spinbox_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    spinbox
+  };
+};
+
+template <static_string lit, range setup = default_range<float>>
+using spinbox_f32 = avnd::spinbox_t<float, lit, setup>;
+template <static_string lit, range setup = default_range<int>>
+using spinbox_i32 = avnd::spinbox_t<int, lit, setup>;
+
+
+/// Knob ///
 
 template <typename T, static_string lit, range setup>
 struct knob_t
@@ -64,6 +111,14 @@ struct knob_t
 
   T value = setup.init;
 };
+
+template <static_string lit, range setup = default_range<float>>
+using knob_f32 = avnd::knob_t<float, lit, setup>;
+template <static_string lit, range setup = default_range<int>>
+using knob_i32 = avnd::knob_t<int, lit, setup>;
+
+
+/// Toggle ///
 
 struct toggle_setup
 {
@@ -87,6 +142,29 @@ struct toggle_t
 // Necessary because we have that "toggle" enum member..
 template <static_string lit, toggle_setup setup>
 using toggle = toggle_t<lit, setup>;
+
+
+/// Button ///
+
+template <static_string lit>
+struct maintained_button_t
+{
+  enum widget
+  {
+    button,
+    pushbutton
+  };
+  static consteval auto control() { struct { } dummy; return dummy; }
+  static consteval auto name() { return std::string_view{lit.value}; }
+
+  bool value = false;
+};
+
+template <static_string lit>
+using maintained_button = maintained_button_t<lit>;
+
+
+/// LineEdit ///
 
 struct lineedit_setup
 {
@@ -119,14 +197,19 @@ struct lineedit_t
 template <static_string lit, static_string setup>
 using lineedit = lineedit_t<lit, setup>;
 
+
+/// ComboBox / Enum ///
+
 template <typename Enum, static_string lit>
 struct enum_t
 {
   enum widget
   {
+    enumeration,
     list,
     combobox
   };
+
   static consteval auto control()
   {
     struct enum_setup
@@ -142,15 +225,39 @@ struct enum_t
   Enum value{};
 };
 
-template <static_string lit, range setup = default_range<float>>
-using slider_f32 = avnd::slider_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
-using slider_i32 = avnd::slider_t<int, lit, setup>;
+
+/// Bargraph ///
+
+template <typename T, static_string lit, range setup>
+struct hbargraph_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    hbargraph, bargraph
+  };
+};
+
+template <typename T, static_string lit, range setup>
+struct vbargraph_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    vbargraph, bargraph
+  };
+};
 
 template <static_string lit, range setup = default_range<float>>
-using knob_f32 = avnd::knob_t<float, lit, setup>;
+using hbargraph_f32 = avnd::hbargraph_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
-using knob_i32 = avnd::knob_t<int, lit, setup>;
+using hbargraph_i32 = avnd::hbargraph_t<int, lit, setup>;
+
+template <static_string lit, range setup = default_range<float>>
+using vbargraph_f32 = avnd::vbargraph_t<float, lit, setup>;
+template <static_string lit, range setup = default_range<int>>
+using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
+
+
+/// Refers to a member or free function ///
 
 template <static_string lit, auto M>
 struct func_ref
@@ -161,7 +268,7 @@ struct func_ref
 
 }
 
-// Helpers for enums
+// Helpers for defining an enumeration without repeating the enumerated members
 #define AVND_NUM_ARGS_(_10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
 #define AVND_NUM_ARGS(...) \
   AVND_NUM_ARGS_(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
@@ -194,6 +301,14 @@ struct func_ref
     {                                                                         \
       __VA_ARGS__                                                             \
     } value;                                                                  \
+                                                                              \
+    enum widget                                                               \
+    {                                                                         \
+      enumeration,                                                            \
+      list,                                                                   \
+      combobox                                                                \
+    };                                                                        \
+                                                                              \
     static consteval auto name() { return Name; }                             \
     static consteval auto control()                                           \
     {                                                                         \
