@@ -6,6 +6,9 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     -fno-rtti
   )
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
+  target_compile_definitions(DisableExceptions INTERFACE
+    _LIBCPP_NO_EXCEPTIONS=1
+  )
   target_compile_options(DisableExceptions INTERFACE
     -fno-exceptions
     -fno-rtti

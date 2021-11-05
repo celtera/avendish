@@ -154,14 +154,21 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
           -fcoroutines-ts
           -stdlib=libc++
           -flto
-          -fvisibility-inlines-hidden-static-local-var
           -fno-stack-protector
           -fno-ident
           -fno-plt
-          -fvirtual-function-elimination
           -ffunction-sections
           -fdata-sections
     )
+
+    if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 13.0)
+      target_compile_options(
+        ${AVND_FX_TARGET}
+        PUBLIC
+          -fvisibility-inlines-hidden-static-local-var
+          -fvirtual-function-elimination
+      )
+    endif()
   endif()
 
   target_compile_definitions(
