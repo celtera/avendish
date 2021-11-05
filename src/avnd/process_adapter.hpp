@@ -327,25 +327,41 @@ requires(
   FP process_sample(
       avnd::effect_container<T>& implementation,
       FP in,
-      auto& ref,
+      T& fx, auto& ins, auto& outs,
       auto&& tick)
   {
-    return std::apply(
-        [&]<typename... Args>(T & fx, Args && ... args)
-        { return fx(in, args..., tick); },
-        boost::pfr::structure_tie(ref));
+    if constexpr(requires { fx(in, ins, outs, tick); })
+      return fx(in, ins, outs, tick);
+    else if constexpr(requires { fx(in, ins, tick); })
+      return fx(in, ins, tick);
+    else if constexpr(requires { fx(in, outs, tick); })
+      return fx(in, outs, tick);
+    else if constexpr(requires { fx(in, tick); })
+      return fx(in, tick);
+    else if constexpr(requires { fx(tick); })
+      return fx(tick);
+    else
+      static_assert(std::is_void_v<FP>, "Canno call processor");
   }
 
   template <typename FP>
   FP process_sample(
       avnd::effect_container<T>& implementation,
       FP in,
-      auto& ref)
+      T& fx, auto& ins, auto& outs)
   {
-    return std::apply(
-        [&]<typename... Args>(T & fx, Args && ... args)
-        { return fx(in, args...); },
-        boost::pfr::structure_tie(ref));
+    if constexpr(requires { fx(in, ins, outs); })
+      return fx(in, ins, outs);
+    else if constexpr(requires { fx(in, ins); })
+      return fx(in, ins);
+    else if constexpr(requires { fx(in, outs); })
+      return fx(in, outs);
+    else if constexpr(requires { fx(in); })
+      return fx(in);
+    else if constexpr(requires { fx(); })
+      return fx(in);
+    else
+      static_assert(std::is_void_v<FP>, "Canno call processor");
   }
 
   template <std::floating_point FP>
@@ -385,19 +401,23 @@ requires(
       for (int c = 0; c < channels; c++)
       {
         assert(effects_it != effects_range.end());
+        auto& [impl, ins, outs] = *effects_it;
 
         if constexpr (requires { sizeof(current_tick(implementation)); })
         {
           out[c][i] = process_sample(
               implementation,
               input_buf[c],
-              *effects_it,
+              impl, ins, outs,
               current_tick(implementation));
         }
         else
         {
           out[c][i]
-              = process_sample(implementation, input_buf[c], *effects_it);
+              = process_sample(
+                implementation,
+                input_buf[c],
+                impl, ins, outs);
         }
 
         ++effects_it;

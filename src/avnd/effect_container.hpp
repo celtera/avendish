@@ -163,12 +163,12 @@ struct effect_container<T>
       co_yield e;
   }
 
-  member_iterator<typename T::inputs> inputs()
+  member_iterator<decltype(T::inputs)> inputs()
   {
     for (auto& e : effect)
       co_yield e.input;
   }
-  member_iterator<typename T::outputs> outputs()
+  member_iterator<decltype(T::outputs)> outputs()
   {
     for (auto& e : effect)
       co_yield e.output;

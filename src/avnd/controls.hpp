@@ -10,7 +10,7 @@
 
 namespace avnd
 {
-static constexpr void init_controls(auto& inputs)
+static constexpr void init_controls(auto&& inputs)
 {
   boost::pfr::for_each_field(
       inputs,
