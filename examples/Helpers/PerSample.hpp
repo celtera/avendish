@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <helpers/audio.hpp>
-#include <helpers/controls.hpp>
-#include <helpers/meta.hpp>
-#include <common/concepts_polyfill.hpp>
+#include <avnd/helpers/audio.hpp>
+#include <avnd/helpers/controls.hpp>
+#include <avnd/helpers/meta.hpp>
+#include <avnd/common/concepts_polyfill.hpp>
 #include <cmath>
 
 namespace examples::helpers

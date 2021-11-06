@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <helpers/messages.hpp>
-#include <helpers/meta.hpp>
+#include <avnd/helpers/messages.hpp>
+#include <avnd/helpers/meta.hpp>
 
 #include <cstdio>
 

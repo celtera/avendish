@@ -1,6 +1,6 @@
-#include <common/function_reflection.hpp>
+#include <avnd/common/function_reflection.hpp>
 #include <avnd/concepts/callback.hpp>
-#include <helpers/callback.hpp>
+#include <avnd/helpers/callback.hpp>
 
 using namespace avnd;
 

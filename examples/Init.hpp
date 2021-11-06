@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <helpers/meta.hpp>
+#include <avnd/helpers/meta.hpp>
 
 #include <iostream>
 #include <variant>

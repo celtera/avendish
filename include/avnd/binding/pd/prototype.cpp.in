@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/pd/audio_processor.hpp>
+#include <avnd/binding/pd/message_processor.hpp>
+#include <avnd/binding/pd/configure.hpp>
+
+extern "C" AVND_EXPORTED_SYMBOL void @AVND_C_NAME@_setup()
+{
+  using type = decltype(avnd::configure<pd::config, @AVND_MAIN_CLASS@>())::type;
+  if constexpr(avnd::monophonic_audio_processor<type> || avnd::polyphonic_audio_processor<type>)
+  {
+    // If we're an audio effect, make a type with the whole DSP stuff
+    static const pd::audio_processor_metaclass< type > instance{};
+  }
+  else
+  {
+    // Simpler case which just processes messages
+    static const pd::message_processor_metaclass< type > instance{};
+  }
+}
+

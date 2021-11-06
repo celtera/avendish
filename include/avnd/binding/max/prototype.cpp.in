@@ -1,0 +1,25 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/max/audio_processor.hpp>
+#include <avnd/binding/max/message_processor.hpp>
+#include <avnd/binding/max/configure.hpp>
+#include "commonsyms.h"
+
+extern "C" AVND_EXPORTED_SYMBOL void ext_main(void* r)
+{
+  common_symbols_init();
+
+  using type = decltype(avnd::configure<max::config, @AVND_MAIN_CLASS@>())::type;
+  if constexpr(avnd::monophonic_audio_processor<type> || avnd::polyphonic_audio_processor<type>)
+  {
+    // If we're an audio effect, make a type with the whole DSP stuff
+    static const max::audio_processor_metaclass< type > instance{};
+  }
+  else
+  {
+    // Simpler case which just processes messages
+    static const max::message_processor_metaclass< type > instance{};
+  }
+}
+

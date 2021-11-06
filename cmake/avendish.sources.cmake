@@ -1,124 +1,58 @@
-
 add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
 target_sources(Avendish
   PRIVATE
-    src/avnd/concepts/audio_port.hpp
-    src/avnd/concepts/audio_processor.hpp
-    src/avnd/concepts/callback.hpp
-    src/avnd/concepts/channels.hpp
-    src/avnd/concepts/generic.hpp
-    src/avnd/concepts/message.hpp
-    src/avnd/concepts/midi.hpp
-    src/avnd/concepts/midi_port.hpp
-    src/avnd/concepts/modules.hpp
-    src/avnd/concepts/object.hpp
-    src/avnd/concepts/parameter.hpp
-    src/avnd/concepts/port.hpp
-    src/avnd/concepts/processor.hpp
-    src/avnd/concepts/synth.hpp
+    include/avnd/concepts/audio_port.hpp
+    include/avnd/concepts/audio_processor.hpp
+    include/avnd/concepts/callback.hpp
+    include/avnd/concepts/channels.hpp
+    include/avnd/concepts/generic.hpp
+    include/avnd/concepts/message.hpp
+    include/avnd/concepts/midi.hpp
+    include/avnd/concepts/midi_port.hpp
+    include/avnd/concepts/modules.hpp
+    include/avnd/concepts/object.hpp
+    include/avnd/concepts/parameter.hpp
+    include/avnd/concepts/port.hpp
+    include/avnd/concepts/processor.hpp
+    include/avnd/concepts/synth.hpp
 
-    src/avnd/avnd.hpp
-    src/avnd/channels_introspection.hpp
-    src/avnd/concepts.hpp
-    src/avnd/configure.hpp
-    src/avnd/controls.hpp
-    src/avnd/controls_fp.hpp
-    src/avnd/control_display.hpp
-    src/avnd/effect_container.hpp
-    src/avnd/port_introspection.hpp
-    src/avnd/input_introspection.hpp
-    src/avnd/messages_introspection.hpp
-    src/avnd/midi_introspection.hpp
-    src/avnd/modules_introspection.hpp
-    src/avnd/output_introspection.hpp
-    src/avnd/prepare.hpp
-    src/avnd/process_adapter.hpp
+    include/avnd/wrappers/avnd.hpp
+    include/avnd/wrappers/channels_introspection.hpp
+    include/avnd/wrappers/concepts.hpp
+    include/avnd/wrappers/configure.hpp
+    include/avnd/wrappers/controls.hpp
+    include/avnd/wrappers/controls_fp.hpp
+    include/avnd/wrappers/control_display.hpp
+    include/avnd/wrappers/effect_container.hpp
+    include/avnd/wrappers/port_introspection.hpp
+    include/avnd/wrappers/input_introspection.hpp
+    include/avnd/wrappers/messages_introspection.hpp
+    include/avnd/wrappers/midi_introspection.hpp
+    include/avnd/wrappers/modules_introspection.hpp
+    include/avnd/wrappers/output_introspection.hpp
+    include/avnd/wrappers/prepare.hpp
+    include/avnd/wrappers/process_adapter.hpp
 
-    src/common/coroutines.hpp
-    src/common/concepts_polyfill.hpp
-    src/common/export.hpp
-    src/common/for_nth.hpp
-    src/common/function_reflection.hpp
-    src/common/index_sequence.hpp
-    src/common/limited_string.hpp
-    src/common/limited_string_view.hpp
-    src/common/struct_reflection.hpp
-    src/common/widechar.hpp
+    include/avnd/common/coroutines.hpp
+    include/avnd/common/concepts_polyfill.hpp
+    include/avnd/common/export.hpp
+    include/avnd/common/for_nth.hpp
+    include/avnd/common/function_reflection.hpp
+    include/avnd/common/index_sequence.hpp
+    include/avnd/common/limited_string.hpp
+    include/avnd/common/limited_string_view.hpp
+    include/avnd/common/struct_reflection.hpp
+    include/avnd/common/widechar.hpp
 
-    src/pd/atom_iterator.hpp
-    src/pd/audio_processor.hpp
-    src/pd/configure.hpp
-    src/pd/dsp.hpp
-    src/pd/init.hpp
-    src/pd/inputs.hpp
-    src/pd/message_processor.hpp
-    src/pd/messages.hpp
-    src/pd/outputs.hpp
-    src/pd/helpers.hpp
-
-    src/python/processor.hpp
-    src/python/configure.hpp
-
-    src/max/atom_iterator.hpp
-    src/max/audio_processor.hpp
-    src/max/configure.hpp
-    src/max/dsp.hpp
-    src/max/init.hpp
-    src/max/message_processor.hpp
-    src/max/inputs.hpp
-    src/max/messages.hpp
-    src/max/outputs.hpp
-    src/max/helpers.hpp
-
-    src/standalone/audio.hpp
-    src/standalone/configure.hpp
-    src/standalone/standalone.hpp
-    src/standalone/oscquery_mapper.hpp
-
-    src/vintage/audio_effect.hpp
-    src/vintage/atomic_controls.hpp
-    src/vintage/configure.hpp
-    src/vintage/dispatch.hpp
-    src/vintage/helpers.hpp
-    src/vintage/midi_processor.hpp
-    src/vintage/processor_setup.hpp
-    src/vintage/programs.hpp
-    src/vintage/vintage.hpp
-
-    src/helpers/audio.hpp
-    src/helpers/callback.hpp
-    src/helpers/reactive_value.hpp
-    src/helpers/controls.hpp
-    src/helpers/log.hpp
-    src/helpers/meta.hpp
-    src/helpers/static_string.hpp
-
-    src/ui/qml_ui.hpp
-    src/ui/qml/enum_control.hpp
-    src/ui/qml/enum_ui.hpp
-    src/ui/qml/toggle_control.hpp
-    src/ui/qml/toggle_ui.hpp
-    src/ui/qml/float_control.hpp
-    src/ui/qml/float_knob.hpp
-    src/ui/qml/float_slider.hpp
-    src/ui/qml/int_control.hpp
-    src/ui/qml/int_knob.hpp
-    src/ui/qml/int_slider.hpp
-
-    src/vst3/audio_effect.hpp
-    src/vst3/component.hpp
-    src/vst3/component_base.hpp
-    src/vst3/configure.hpp
-    src/vst3/connection_point.hpp
-    src/vst3/controller.hpp
-    src/vst3/controller_base.hpp
-    src/vst3/factory.hpp
-    src/vst3/helpers.hpp
-    src/vst3/metadata.hpp
-    src/vst3/programs.hpp
-    src/vst3/refcount.hpp
+    include/avnd/helpers/audio.hpp
+    include/avnd/helpers/callback.hpp
+    include/avnd/helpers/reactive_value.hpp
+    include/avnd/helpers/controls.hpp
+    include/avnd/helpers/log.hpp
+    include/avnd/helpers/meta.hpp
+    include/avnd/helpers/static_string.hpp
 
     src/dummy.cpp
 )
@@ -180,7 +114,7 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
   target_include_directories(
       ${AVND_FX_TARGET}
       PUBLIC
-        src
+        include
   )
 
   if(UNIX AND NOT APPLE)

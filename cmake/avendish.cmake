@@ -5,8 +5,9 @@ find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)
 
 include(avendish.disableexceptions)
-include(avendish.ui.qt)
 include(avendish.sources)
+
+include(avendish.ui.qt)
 include(avendish.max)
 include(avendish.pd)
 include(avendish.python)

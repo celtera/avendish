@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <helpers/meta.hpp>
-#include <helpers/audio.hpp>
-#include <helpers/controls.hpp>
+#include <avnd/helpers/meta.hpp>
+#include <avnd/helpers/audio.hpp>
+#include <avnd/helpers/controls.hpp>
 #include <vector>
 
 namespace examples::helpers

@@ -6,7 +6,7 @@ function(avnd_make_standalone)
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
-    src/standalone/prototype.cpp.in
+    include/avnd/binding/standalone/prototype.cpp.in
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_standalone.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -48,4 +48,11 @@ function(avnd_make_standalone)
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+
+  target_sources(Avendish PRIVATE
+    include/avnd/binding/standalone/audio.hpp
+    include/avnd/binding/standalone/configure.hpp
+    include/avnd/binding/standalone/standalone.hpp
+    include/avnd/binding/standalone/oscquery_mapper.hpp
+  )
 endfunction()

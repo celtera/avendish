@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <helpers/controls.hpp>
-#include <helpers/log.hpp>
-#include <helpers/meta.hpp>
+#include <avnd/helpers/controls.hpp>
+#include <avnd/helpers/log.hpp>
+#include <avnd/helpers/meta.hpp>
 
 #include <cstdio>
 

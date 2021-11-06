@@ -1,16 +1,19 @@
 find_path(PD_HEADER NAMES m_pd.h)
 
-function(avnd_make_pd)
-  if(NOT PD_HEADER)
-    return()
-  endif()
+if(NOT PD_HEADER)
+  function(avnd_make_pd)
+  endfunction()
 
+  return()
+endif()
+
+function(avnd_make_pd)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
-    src/pd/prototype.cpp.in
+    include/avnd/binding/pd/prototype.cpp.in
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_pd.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -64,7 +67,19 @@ function(avnd_make_pd)
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
 
-
 add_library(Avendish_pd INTERFACE)
 target_link_libraries(Avendish_pd INTERFACE Avendish)
 add_library(Avendish::Avendish_pd ALIAS Avendish_pd)
+
+target_sources(Avendish PRIVATE
+  include/avnd/binding/pd/atom_iterator.hpp
+  include/avnd/binding/pd/audio_processor.hpp
+  include/avnd/binding/pd/configure.hpp
+  include/avnd/binding/pd/dsp.hpp
+  include/avnd/binding/pd/init.hpp
+  include/avnd/binding/pd/inputs.hpp
+  include/avnd/binding/pd/message_processor.hpp
+  include/avnd/binding/pd/messages.hpp
+  include/avnd/binding/pd/outputs.hpp
+  include/avnd/binding/pd/helpers.hpp
+)

@@ -1,4 +1,4 @@
-#include <avnd/channels_introspection.hpp>
+#include <avnd/wrappers/channels_introspection.hpp>
 
 using namespace avnd;
 namespace test_1

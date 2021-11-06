@@ -4,7 +4,7 @@ function(avnd_make_vintage)
   add_library(${AVND_FX_TARGET} SHARED)
 
   configure_file(
-    src/vintage/prototype.cpp.in
+    include/avnd/binding/vintage/prototype.cpp.in
     "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vintage.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -37,3 +37,15 @@ endfunction()
 add_library(Avendish_vintage INTERFACE)
 target_link_libraries(Avendish_vintage INTERFACE Avendish)
 add_library(Avendish::Avendish_vintage ALIAS Avendish_vintage)
+
+target_sources(Avendish PRIVATE
+  include/avnd/binding/vintage/audio_effect.hpp
+  include/avnd/binding/vintage/atomic_controls.hpp
+  include/avnd/binding/vintage/configure.hpp
+  include/avnd/binding/vintage/dispatch.hpp
+  include/avnd/binding/vintage/helpers.hpp
+  include/avnd/binding/vintage/midi_processor.hpp
+  include/avnd/binding/vintage/processor_setup.hpp
+  include/avnd/binding/vintage/programs.hpp
+  include/avnd/binding/vintage/vintage.hpp
+)

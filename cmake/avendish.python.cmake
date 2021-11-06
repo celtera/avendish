@@ -1,16 +1,19 @@
 find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
+if(NOT pybind11_FOUND)
+  function(avnd_make_python)
+  endfunction()
+
+  return()
+endif()
 
 function(avnd_make_python)
-  if(NOT pybind11_FOUND)
-    return()
-  endif()
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
-    src/python/prototype.cpp.in
+    include/avnd/binding/python/prototype.cpp.in
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_python.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -46,3 +49,8 @@ endfunction()
 add_library(Avendish_python INTERFACE)
 target_link_libraries(Avendish_python INTERFACE Avendish)
 add_library(Avendish::Avendish_python ALIAS Avendish_python)
+
+target_sources(Avendish PRIVATE
+  include/avnd/binding/python/processor.hpp
+  include/avnd/binding/python/configure.hpp
+)
