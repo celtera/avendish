@@ -67,7 +67,7 @@ bool display_control(const T& value, char* cstr)
     {
       const int enum_index = static_cast<int>(value);
       if(enum_index >= 0 && enum_index < C::choices().size())
-        snprintf(cstr, 16, "%s", C::choices()[enum_index]);
+        snprintf(cstr, 16, "%s", C::choices()[enum_index].data());
       else
         snprintf(cstr, 16, "%d", enum_index);
     }

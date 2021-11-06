@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <vst3/metadata.hpp>
-#include <vst3/connection_point.hpp>
+#include <avnd/binding/vst3/metadata.hpp>
+#include <avnd/binding/vst3/connection_point.hpp>
 
 #include <base/source/fstreamer.h>
 #include <base/source/fstring.h>

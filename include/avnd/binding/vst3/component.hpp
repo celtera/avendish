@@ -2,12 +2,13 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <vst3/component_base.hpp>
-#include <vst3/refcount.hpp>
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
+#include <avnd/binding/vst3/component_base.hpp>
+#include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/wrappers/midi_introspection.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
 
 namespace stv3
 {
@@ -478,16 +479,20 @@ struct Component final
   }
 
 
-  void add_message(avnd::raw_container_midi_port auto& bus, uint8_t a, uint8_t b, uint8_t c, auto ts)
+  template<typename Bus>
+  void add_message(Bus& bus, uint8_t a, uint8_t b, uint8_t c, auto ts)
   {
-    // TODO
-  }
-  void add_message(avnd::dynamic_container_midi_port auto& bus, uint8_t a, uint8_t b, uint8_t c, auto ts)
-  {
-    bus.midi_messages.push_back({
-                                  .bytes = {a,b,c},
-                                  .timestamp = ts
-                                });
+    if constexpr(avnd::dynamic_container_midi_port<Bus>)
+    {
+      bus.midi_messages.push_back({
+                                    .bytes = {a,b,c},
+                                    .timestamp = ts
+                                  });
+    }
+    else
+    {
+      //STATIC_TODO(Bus);
+    }
   }
 
 
@@ -631,7 +636,7 @@ struct Component final
     if constexpr (avnd::midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
-      i_info::for_all(effect.inputs, [&] (auto& midi_port) {
+      i_info::for_all(effect.inputs(), [&] (auto& midi_port) {
         this->midi.clear(midi_port);
       });
     }
@@ -653,17 +658,24 @@ struct Component final
     // called when we load a preset, the model has to be reloaded
 
     IBStreamer streamer(state, kLittleEndian);
-    bool ok = inputs_info_t::for_all_unless(
-          this->effect.inputs(),
-          [&] <typename C> (C& field) -> bool{
-            double param = 0.f;
-            if (streamer.readDouble(param) == false)
-              return false;
-            field.value = avnd::map_control_from_01<C>(param);
-            return true;
-          });
+    if constexpr(avnd::has_inputs<T>)
+    {
+      bool ok = inputs_info_t::for_all_unless(
+            this->effect.inputs(),
+            [&] <typename C> (C& field) -> bool{
+              double param = 0.f;
+              if (streamer.readDouble(param) == false)
+                return false;
+              field.value = avnd::map_control_from_01<C>(param);
+              return true;
+            });
 
-    return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+    }
+    else
+    {
+      return Steinberg::kResultOk;
+    }
   }
 
   tresult getState(IBStream* state) override
@@ -671,18 +683,21 @@ struct Component final
     using namespace Steinberg;
 
     IBStreamer streamer(state, kLittleEndian);
+    if constexpr(avnd::has_inputs<T>)
+    {
+      bool ok = inputs_info_t::for_all_unless(
+            this->effect.inputs(),
+            [&] <typename C> (C& field) -> bool{
+              double param = avnd::map_control_to_01<C>(field.value);
+              return streamer.writeDouble(param);
+            });
 
-    bool ok = inputs_info_t::for_all_unless(
-          this->effect.inputs(),
-          [&] <typename C> (C& field) -> bool{
-            double param = avnd::map_control_to_01<C>(field.value);
-            if (streamer.writeDouble(param) == false)
-              return false;
-            avnd::map_control_from_01(field, param);
-            return true;
-          });
-
-    return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+    }
+    else
+    {
+      return Steinberg::kResultOk;
+    }
   }
 
 

@@ -55,32 +55,6 @@ static void apply_control(auto& ctl, std::string&& v)
 /**
  * @brief Used for the case where the "host" works in a fixed [0. ; 1.] range
  */
-template <avnd::parameter T>
-static constexpr void map_control_from_01(T& ctl, std::floating_point auto v)
-{
-  // Apply the value
-  if constexpr (requires { ctl.value = v; })
-  {
-    if constexpr (requires { T::control().min; })
-    {
-      constexpr auto c = T::control();
-      ctl.value = c.min + v * (c.max - c.min);
-    }
-    else
-    {
-      ctl.value = v;
-    }
-  }
-  else if constexpr (requires { ctl.value = ""; })
-  {
-    // TODO if we have a range, use it
-  }
-  else
-  {
-    static_assert(std::is_void_v<T>, "Error: unhandled control type");
-  }
-}
-
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
@@ -123,7 +97,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
-  int res = std::round(v * (T::choices().size - 1));
+  int res = std::round(v * (T::choices().size() - 1));
   return static_cast<decltype(T::value)>(res);
 }
 
@@ -190,8 +164,8 @@ static constexpr auto map_control_to_01(const auto& value)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_to_01(const auto& value)
 {
-  static_assert(T::choices().size > 0);
-  return ((static_cast<int>(value) + 0.5) / T::choices().size);
+  static_assert(T::choices().size() > 0);
+  return ((static_cast<int>(value) + 0.5) / T::choices().size());
 }
 
 template <typename T>

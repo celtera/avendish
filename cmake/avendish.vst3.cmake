@@ -54,10 +54,16 @@ function(avnd_make_vst3)
     PRIVATE
       Avendish::Avendish_vst3
       sdk_common pluginterfaces
-
       DisableExceptions
-      -Wl,-z,defs
   )
+  if(APPLE)
+    find_library(COREFOUNDATION_FK CoreFoundation)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PRIVATE
+        ${COREFOUNDATION_FK}
+    )
+  endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()

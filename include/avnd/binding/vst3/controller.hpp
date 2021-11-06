@@ -1,13 +1,13 @@
 #pragma once
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
-#include <avnd/wrappers/([a-z_0-9]+)\.hpp>
+#include <avnd/wrappers/controls_fp.hpp>
+#include <avnd/wrappers/control_display.hpp>
 
-#include <vst3/controller_base.hpp>
-#include <vst3/refcount.hpp>
-#include <vst3/programs.hpp>
+#include <avnd/binding/vst3/controller_base.hpp>
+#include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/binding/vst3/programs.hpp>
 
 #include <pluginterfaces/vst/ivstmidicontrollers.h>
 #include <cstdio>
@@ -106,13 +106,16 @@ public:
   normalizedParamToPlain(ParamID tag, ParamValue valueNormalized) override
   {
     ParamValue res = valueNormalized;
-    inputs_info_t::for_nth(
-          this->inputs_mirror,
-          tag,
-          [&] <typename C> (C& field) {
-            res = avnd::map_control_from_01_to_fp<C>(valueNormalized);
-          });
 
+    if constexpr(avnd::has_inputs<T>)
+    {
+      inputs_info_t::for_nth(
+            this->inputs_mirror,
+            tag,
+            [&] <typename C> (C& field) {
+              res = avnd::map_control_from_01_to_fp<C>(valueNormalized);
+            });
+    }
     return res;
   }
 
@@ -120,13 +123,16 @@ public:
   plainParamToNormalized(ParamID tag, ParamValue plainValue) override
   {
     ParamValue res = plainValue;
-    inputs_info_t::for_nth(
-          this->inputs_mirror,
-          tag,
-          [&] <typename C> (C& field) {
-            res = avnd::map_control_from_fp_to_01<C>(plainValue);
-          });
 
+    if constexpr(avnd::has_inputs<T>)
+    {
+      inputs_info_t::for_nth(
+            this->inputs_mirror,
+            tag,
+            [&] <typename C> (C& field) {
+              res = avnd::map_control_from_fp_to_01<C>(plainValue);
+            });
+    }
     return res;
   }
 
@@ -134,13 +140,15 @@ public:
   {
     ParamValue res{};
 
-    inputs_info_t::for_nth(
-          this->inputs_mirror,
-          tag,
-          [&] <typename C> (C& field) {
-            res = avnd::map_control_to_01(field);
-          });
-
+    if constexpr(avnd::has_inputs<T>)
+    {
+      inputs_info_t::for_nth(
+            this->inputs_mirror,
+            tag,
+            [&] <typename C> (C& field) {
+              res = avnd::map_control_to_01(field);
+            });
+    }
     return res;
   }
 
@@ -148,12 +156,16 @@ public:
   {
     if(tag < 0 || tag >= inputs_info_t::size)
       return Steinberg::kInvalidArgument;
-    inputs_info_t::for_nth(
-          this->inputs_mirror,
-          tag,
-          [&] <typename C> (C& field) {
-            avnd::map_control_from_01(field, value);
-          });
+
+    if constexpr(avnd::has_inputs<T>)
+    {
+      inputs_info_t::for_nth(
+            this->inputs_mirror,
+            tag,
+            [&] <typename C> (C& field) {
+              field.value = avnd::map_control_from_01<C>(value);
+            });
+    }
 
     return Steinberg::kResultTrue;
   }
@@ -172,17 +184,24 @@ public:
 
     IBStreamer streamer(state, kLittleEndian);
 
-    bool ok = inputs_info_t::for_all_unless(
-          this->inputs_mirror,
-          [&] <typename C> (C& field) -> bool{
-            double param = 0.f;
-            if (streamer.readDouble(param) == false)
-              return false;
-            field.value = avnd::map_control_from_01<C>(param);
-            return true;
-          });
+    if constexpr(avnd::has_inputs<T>)
+    {
+      bool ok = inputs_info_t::for_all_unless(
+            this->inputs_mirror,
+            [&] <typename C> (C& field) -> bool{
+              double param = 0.f;
+              if (streamer.readDouble(param) == false)
+                return false;
+              field.value = avnd::map_control_from_01<C>(param);
+              return true;
+            });
 
-    return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+    }
+    else
+    {
+      return Steinberg::kResultOk;
+    }
   }
 
   Steinberg::tresult setState(IBStream* state) override

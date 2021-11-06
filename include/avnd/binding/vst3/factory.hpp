@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <vst3/metadata.hpp>
+#include <avnd/binding/vst3/metadata.hpp>
 
 #include <avnd/common/limited_string_view.hpp>
 

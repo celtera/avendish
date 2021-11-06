@@ -36,6 +36,12 @@ function(avnd_make_pd)
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_pd.cpp"
   )
 
+  target_include_directories(
+    ${AVND_FX_TARGET}
+    PRIVATE
+      "${PD_HEADER}"
+  )
+
   target_compile_definitions(
     ${AVND_FX_TARGET}
     PRIVATE

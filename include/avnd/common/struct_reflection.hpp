@@ -124,7 +124,7 @@ struct fields_introspection
   { }
   static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
   { }
-  static constexpr void for_all_unless(avnd::dummy fields, int n, auto&& func) noexcept
+  static constexpr void for_all_unless(avnd::dummy fields, auto&& func) noexcept
   { }
 };
 
@@ -241,7 +241,7 @@ struct predicate_introspection
   { }
   static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
   { }
-  static constexpr void for_all_unless(avnd::dummy fields, int n, auto&& func) noexcept
+  static constexpr void for_all_unless(avnd::dummy fields, auto&& func) noexcept
   { }
 };
 

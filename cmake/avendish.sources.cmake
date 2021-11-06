@@ -87,7 +87,7 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
         PUBLIC
           -fcoroutines-ts
           -stdlib=libc++
-          -flto
+          # -flto
           -fno-stack-protector
           -fno-ident
           -fno-plt
@@ -96,12 +96,12 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
     )
 
     if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 13.0)
-      target_compile_options(
-        ${AVND_FX_TARGET}
-        PUBLIC
-          -fvisibility-inlines-hidden-static-local-var
-          -fvirtual-function-elimination
-      )
+      # target_compile_options(
+      #   ${AVND_FX_TARGET}
+      #   PUBLIC
+      #     -fvisibility-inlines-hidden-static-local-var
+      #     -fvirtual-function-elimination
+      # )
     endif()
   endif()
 
@@ -118,7 +118,11 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
   )
 
   if(UNIX AND NOT APPLE)
-    target_link_libraries(${AVND_FX_TARGET} PRIVATE -static-libgcc -static-libstdc++ -Wl,--gc-sections)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE
+      -static-libgcc
+      -static-libstdc++
+      -Wl,--gc-sections
+    )
   endif()
 
   if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")

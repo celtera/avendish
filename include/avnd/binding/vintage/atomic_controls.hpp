@@ -80,9 +80,8 @@ struct Controls
       auto& source = this->parameters;
       auto& sink = implementation.inputs();
       using inputs_t = std::remove_reference_t<decltype(sink)>;
-      ((avnd::map_control_from_01(
-           boost::pfr::get<inputs_info_t::index_map[Index]>(sink),
-           source[Index].load(std::memory_order_relaxed))),
+      ((inputs_info_t::template get<Index>(sink).value =
+          avnd::map_control_from_01<typename inputs_info_t::template nth_element<Index>>(source[Index].load(std::memory_order_relaxed))),
        ...);
     }
     (std::make_index_sequence<parameter_count>());

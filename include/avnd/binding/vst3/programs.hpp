@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <vst3/helpers.hpp>
+#include <avnd/binding/vst3/helpers.hpp>
 #include <pluginterfaces/vst/ivstunits.h>
 
 namespace stv3
