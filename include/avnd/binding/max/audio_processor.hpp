@@ -162,7 +162,7 @@ struct audio_processor
         float res = argv[0].a_w.w_float;
         boost::pfr::for_each_field(
             implementation.inputs(),
-            [this, s, res]<typename C>(C& ctl)
+            [s, res]<typename C>(C& ctl)
             {
               if constexpr (requires { ctl.value = float{}; })
               {
@@ -181,7 +181,7 @@ struct audio_processor
         std::string res = argv[0].a_w.w_sym->s_name;
         boost::pfr::for_each_field(
             implementation.inputs(),
-            [this, s, &res](auto& ctl)
+            [s, &res](auto& ctl)
             {
               if constexpr (requires { ctl.value = std::string{}; })
               {

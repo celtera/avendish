@@ -53,7 +53,6 @@ struct Controls
         std::integer_sequence<std::size_t, Index...>)
     {
       auto& sink = this->parameters;
-      using inputs_t = std::remove_reference_t<decltype(source)>;
       (sink[Index].store(
            avnd::map_control_to_01(
                boost::pfr::get<inputs_info_t::index_map[Index]>(source)),
@@ -79,7 +78,6 @@ struct Controls
     {
       auto& source = this->parameters;
       auto& sink = implementation.inputs();
-      using inputs_t = std::remove_reference_t<decltype(sink)>;
       ((inputs_info_t::template get<Index>(sink).value =
           avnd::map_control_from_01<typename inputs_info_t::template nth_element<Index>>(source[Index].load(std::memory_order_relaxed))),
        ...);

@@ -42,7 +42,7 @@ static constexpr void apply_control(T& ctl, std::floating_point auto v)
       ctl.value = c.max;
   }
 }
-
+/*
 static void apply_control(auto& ctl, std::string&& v)
 {
   // Apply the value
@@ -51,7 +51,7 @@ static void apply_control(auto& ctl, std::string&& v)
   // Clamp in range
   TODO;
 }
-
+*/
 /**
  * @brief Used for the case where the "host" works in a fixed [0. ; 1.] range
  */

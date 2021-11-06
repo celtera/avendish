@@ -18,9 +18,9 @@ namespace vintage
 {
 static constexpr int32_t hash_uuid(std::string_view uuid)
 {
-  int32_t res;
+  int32_t res = 0;
   int k = 0;
-  for (int i = 0; i < uuid.size(); i++)
+  for (std::size_t i = 0; i < uuid.size(); i++)
   {
     res += unsigned(uuid[i]) << (k * 8);
     k = (k + 1) % 4;

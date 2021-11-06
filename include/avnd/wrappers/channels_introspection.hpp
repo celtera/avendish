@@ -108,7 +108,7 @@ struct channels_introspection
 };
 
 template <typename T>
-static constexpr const int
+static constexpr int
 input_channels(int if_undefined = undefined_channels)
 {
   if constexpr (
@@ -118,7 +118,7 @@ input_channels(int if_undefined = undefined_channels)
 }
 
 template <typename T>
-static constexpr const int
+static constexpr int
 output_channels(int if_undefined = undefined_channels)
 {
   if constexpr (

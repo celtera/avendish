@@ -34,7 +34,7 @@ struct midi_processor
     using bytes_type = decltype(in.bytes);
     static_assert(sizeof(in.bytes[0]) == sizeof(msg.midiData[0]));
 
-    in.bytes = reinterpret_cast<decltype(in.bytes)>(msg.midiData);
+    in.bytes = reinterpret_cast<bytes_type>(msg.midiData);
     in.size = 4;
     if_possible(in.timestamp = msg.deltaFrames);
   }

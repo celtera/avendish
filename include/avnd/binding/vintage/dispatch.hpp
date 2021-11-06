@@ -5,6 +5,7 @@
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
+#include <array>
 
 namespace vintage
 {
@@ -313,14 +314,14 @@ intptr_t default_dispatch(
     {
       if constexpr (can_event<Effect>)
       {
-        static const std::set<std::string_view> available{
+        static const std::array<std::string_view, 3> available{
             //"MPE",
             //"hasCockosExtensions",
             "receiveVstEvents",
             "receiveVstMidiEvent",
             "receiveVstSysexEvent",
         };
-        return available.find(reinterpret_cast<const char*>(ptr))
+        return std::find(available.begin(), available.end(), reinterpret_cast<const char*>(ptr))
                        != available.end()
                    ? 1
                    : 0;

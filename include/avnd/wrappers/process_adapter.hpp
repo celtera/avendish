@@ -753,12 +753,6 @@ requires(
       std::span<FP*> out,
       int32_t n)
   {
-    // We have N input channels.
-    const int input_channels = in.size();
-    const int output_channels = out.size();
-
-    // TODO assert that channel count matches !
-
     auto& fx = implementation.effect;
 
     for (int32_t i = 0; i < n; i++)
