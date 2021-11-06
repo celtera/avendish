@@ -80,6 +80,7 @@ jobs:
           fi
 
           export SDK_3RDPARTY=$PWD/../score/3rdparty
+          export VERBOSE=1
 
           cmake .. \
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
@@ -103,6 +104,7 @@ jobs:
           fi
 
           export SDK_3RDPARTY=$PWD/../score/3rdparty
+          export VERBOSE=1
 
           cmake .. \
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
