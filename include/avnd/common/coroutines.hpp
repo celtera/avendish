@@ -6,6 +6,12 @@
 #include <coroutine>
 #elif __has_include(<experimental/coroutine>)
 #include <experimental/coroutine>
+namespace std
+{
+using suspend_always = std::experimental::suspend_always;
+template<typename T>
+using coroutine_handle = std::experimental::coroutine_handle<T>;
+}
 #else
 #error No coroutine support
 #endif
@@ -15,10 +21,7 @@
 #else
 namespace std
 {
-using namespace std::experimental;
-struct default_sentinel_t
-{
-};
+struct default_sentinel_t { };
 inline constexpr default_sentinel_t default_sentinel{};
 }
 #endif

@@ -43,11 +43,11 @@ constexpr int utf8_header_byte(char8_t const in, char32_t& out) noexcept {
 }
 }  // namespace detail
 
-template<typename Char_T>
+template<typename Char_T, typename WChar_T>
 constexpr std::ptrdiff_t utf8_to_utf16(
     const Char_T* u8_begin,
     const Char_T* const u8_end,
-    char16_t* u16out) noexcept {
+    WChar_T* u16out) noexcept {
   std::ptrdiff_t outstr_size = 0;
   while (u8_begin < u8_end)
   {
@@ -63,13 +63,13 @@ constexpr std::ptrdiff_t utf8_to_utf16(
 
     if (code_point < 0xFFFF) {
       if (u16out)
-        *u16out++ = static_cast<char16_t>(code_point);
+        *u16out++ = static_cast<WChar_T>(code_point);
       ++outstr_size;
     } else {
       if (u16out) {
         code_point -= 0x10000;
-        *u16out++ = static_cast<char16_t>((code_point >> 10) + 0xD800);
-        *u16out++ = static_cast<char16_t>((code_point & 0x3FF) + 0xDC00);
+        *u16out++ = static_cast<WChar_T>((code_point >> 10) + 0xD800);
+        *u16out++ = static_cast<WChar_T>((code_point & 0x3FF) + 0xDC00);
       }
       outstr_size += 2;
     }

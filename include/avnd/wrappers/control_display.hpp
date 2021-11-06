@@ -86,4 +86,15 @@ bool display_control(const T& value, char16_t* string)
   }
   return false;
 }
+template<typename C, typename T>
+bool display_control(const T& value, wchar_t* string)
+{
+  char temp[512];
+  if(display_control<C>(value, temp))
+  {
+    utf8_to_utf16(temp, temp + strlen(temp), string);
+    return true;
+  }
+  return false;
+}
 }

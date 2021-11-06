@@ -17,7 +17,7 @@ jobs:
               common_flags: "-GNinja -DCMAKE_C_COMPILER=c:/ossia-sdk/llvm/bin/clang.exe -DCMAKE_CXX_COMPILER=c:/ossia-sdk/llvm/bin/clang++.exe",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
-              build_flags: "-w dupbuild=warn",
+              build_flags: "",
               dependencies: "cinst ninja",
               sdk: "/c/ossia-sdk",
             }
@@ -25,15 +25,21 @@ jobs:
               name: "Ubuntu",
               os: ubuntu-latest,
               path: "/opt/ossia-sdk/llvm/bin",
-              common_flags: "-DCMAKE_C_COMPILER=/opt/ossia-sdk/llvm/bin/clang \
-                             -DCMAKE_CXX_COMPILER=/opt/ossia-sdk/llvm/bin/clang++ \
+              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-13 \
+                             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-13 \
                              -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld \
                              -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld \
                              -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
-              dependencies: "sudo apt install ninja-build",
+              dependencies: "sudo apt update ; \
+                             sudo apt install lsb-release wget software-properties-common ; \
+                             curl -L https://apt.llvm.org/llvm.sh > llvm.sh ; \
+                             chmod +x ./llvm.sh ; \
+                             sudo ./llvm.sh ; \
+                             sudo apt update ; \
+                             sudo apt install ninja-build clang-13 lld-13 libc++-13-dev libc++1-13 libc++abi1-13 libc++abi-13-dev",
               sdk: "/opt/ossia-sdk",
             }
           - {

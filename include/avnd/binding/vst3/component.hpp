@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/vst3/helpers.hpp>
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
@@ -98,7 +99,7 @@ struct Component final
       /* .mediaType = */ MediaTypes::kAudio,
           /* .direction = */ BusDirections::kInput,
           /* .channelCount = */ 2,
-          /* .name = */ u"Stereo In",
+          /* .name = */ u16"Stereo In",
           /* .busType = */ BusTypes::kMain,
           /* .flags = */ BusInfo::kDefaultActive,
           /* .arrangement = */ Steinberg::Vst::SpeakerArr::kStereo}
@@ -110,7 +111,7 @@ struct Component final
       /* .mediaType = */ MediaTypes::kAudio,
           /* .direction = */ BusDirections::kOutput,
           /* .channelCount = */ 2,
-          /* .name = */ u"Stereo Out",
+          /* .name = */ u16"Stereo Out",
           /* .busType = */ BusTypes::kMain,
           /* .flags = */ BusInfo::kDefaultActive,
           /* .arrangement = */ Steinberg::Vst::SpeakerArr::kStereo}
@@ -121,7 +122,7 @@ struct Component final
 //      /* .mediaType = */ MediaTypes::kEvent,
 //          /* .direction = */ BusDirections::kInput,
 //          /* .channelCount = */ 1,
-//          /* .name = */ u"Event In",
+//          /* .name = */ VST3_WSTR "Event In",
 //          /* .busType = */ BusTypes::kMain,
 //          /* .flags = */ BusInfo::kDefaultActive,
 //    }

@@ -25,7 +25,7 @@ function(avnd_make_python)
   set_target_properties(
     ${AVND_FX_TARGET}
     PROPERTIES
-      OUTPUT_NAME "${AVND_C_NAME}"
+      OUTPUT_NAME "py${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY python
       RUNTIME_OUTPUT_DIRECTORY python
   )

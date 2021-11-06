@@ -19,7 +19,7 @@ function(avnd_make_vintage)
   set_target_properties(
     ${AVND_FX_TARGET}
     PROPERTIES
-      OUTPUT_NAME "${AVND_C_NAME}"
+      OUTPUT_NAME "${AVND_C_NAME}.vintage"
       LIBRARY_OUTPUT_DIRECTORY vintage
       RUNTIME_OUTPUT_DIRECTORY vintage
   )

@@ -39,6 +39,11 @@ struct limited_string_view : std::string_view
   {
     utf8_to_utf16(data(), data() + size(), dest);
   }
+
+  void copy_to(wchar_t* dest) const noexcept
+  {
+    utf8_to_utf16(data(), data() + size(), dest);
+  }
 };
 
 }

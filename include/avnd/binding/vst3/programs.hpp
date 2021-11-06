@@ -18,7 +18,7 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
   {
     info.id = 1;
     info.parentUnitId = Steinberg::Vst::kRootUnitId;
-    setStr(info.name, u"Unit1");
+    setStr(info.name, u16"Unit1");
     info.programListId = Steinberg::Vst::kNoProgramListId;
     return Steinberg::kResultTrue;
   }

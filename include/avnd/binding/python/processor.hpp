@@ -20,6 +20,7 @@
 
 namespace python
 {
+inline consteval const char* c_str(std::string v) noexcept = delete;
 inline consteval const char* c_str(std::string_view v) noexcept
 {
   return v.data();
