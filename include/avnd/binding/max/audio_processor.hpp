@@ -97,7 +97,7 @@ struct audio_processor
       long flags)
   {
     int a_chans
-        = (long)object_method(dsp64, gensym("getnuminputchannels"), &x_obj, 0);
+        = (intptr_t)object_method(dsp64, gensym("getnuminputchannels"), &x_obj, 0);
 
     int input_chans = std::max(this->input_channels, a_chans);
     int output_chans = std::max(this->output_channels, input_chans);
