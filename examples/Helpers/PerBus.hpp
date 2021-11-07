@@ -52,13 +52,10 @@ struct PerBusAsPortsFixed
   void operator()(int frames)
   {
     using namespace std;
-    double** ins = inputs.audio.samples;
-    double** sc = inputs.sidechain.samples;
-    double** outs = outputs.audio.samples;
 
     for(int c = 0; c < inputs.audio.channels(); ++c) {
       for(int k = 0; k < frames; k++) {
-        outs[c][k] = tanh(ins[c][k] * sc[c][k]);
+        outputs.audio[c][k] = tanh(inputs.audio[c][k] * inputs.sidechain[c][k]);
       }
     }
   }
@@ -86,12 +83,9 @@ struct PerBusAsPortsDynamic
   void operator()(int frames)
   {
     using namespace std;
-    double** ins = inputs.audio.samples;
-    double** outs = outputs.audio.samples;
-
     for(int c = 0; c < inputs.audio.channels; ++c) {
       for(int k = 0; k < frames; k++) {
-        outs[c][k] = tanh(ins[c][k]);
+        outputs.audio[c][k] = tanh(inputs.audio[c][k]);
       }
     }
   }

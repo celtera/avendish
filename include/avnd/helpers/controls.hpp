@@ -34,6 +34,10 @@ struct slider_t
   static consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
+
+  operator T&() noexcept { return value; }
+  operator T() const noexcept { return value; }
+  auto& operator=(T t) noexcept { value = t; return *this; }
 };
 
 template <typename T, static_string lit, range setup>
@@ -99,6 +103,10 @@ struct knob_t
   static consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
+
+  operator T&() noexcept { return value; }
+  operator T() const noexcept { return value; }
+  auto& operator=(T t) noexcept { value = t; return *this; }
 };
 
 template <static_string lit, range setup = default_range<float>>
@@ -126,6 +134,10 @@ struct toggle_t
   static consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = setup.init;
+
+  operator bool&() noexcept { return value; }
+  operator bool() const noexcept { return value; }
+  auto& operator=(bool t) noexcept { value = t; return *this; }
 };
 
 // Necessary because we have that "toggle" enum member..
@@ -147,6 +159,9 @@ struct maintained_button_t
   static consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = false;
+  operator bool&() noexcept { return value; }
+  operator bool() const noexcept { return value; }
+  auto& operator=(bool t) noexcept { value = t; return *this; }
 };
 
 template <static_string lit>
@@ -182,6 +197,11 @@ struct lineedit_t
   static consteval auto name() { return std::string_view{lit.value}; }
 
   std::string value = setup.value;
+  operator std::string&() noexcept { return value; }
+  operator const std::string&() const noexcept { return value; }
+  auto& operator=(std::string&& t) noexcept { value = std::move(t); return *this; }
+  auto& operator=(const std::string& t) noexcept { value = t; return *this; }
+  auto& operator=(std::string_view t) noexcept { value = t; return *this; }
 };
 template <static_string lit, static_string setup>
 using lineedit = lineedit_t<lit, setup>;
@@ -212,6 +232,9 @@ struct enum_t
   static consteval auto name() { return std::string_view{lit.value}; }
 
   Enum value{};
+  operator Enum&() noexcept { return value; }
+  operator Enum() const noexcept { return value; }
+  auto& operator=(Enum t) noexcept { value = t; return *this; }
 };
 
 
@@ -224,6 +247,7 @@ struct hbargraph_t : slider_t<T, lit, setup>
   {
     hbargraph, bargraph
   };
+  auto& operator=(T t) noexcept { this->value = t; return *this; }
 };
 
 template <typename T, static_string lit, range setup>
@@ -233,6 +257,7 @@ struct vbargraph_t : slider_t<T, lit, setup>
   {
     vbargraph, bargraph
   };
+  auto& operator=(T t) noexcept { this->value = t; return *this; }
 };
 
 template <static_string lit, range setup = default_range<float>>
@@ -299,6 +324,10 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
       } ctl;                                                                  \
       return ctl;                                                             \
     }                                                                         \
+                                                                              \
+    operator enum_type&() noexcept { return value; }                          \
+    operator enum_type() const noexcept { return value; }                     \
+    auto& operator=(enum_type t) noexcept { value = t; return *this; }        \
     static consteval std::array<std::string_view, AVND_NUM_ARGS(__VA_ARGS__)> \
     choices()                                                                 \
     {                                                                         \

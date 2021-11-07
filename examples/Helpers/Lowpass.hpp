@@ -42,23 +42,17 @@ public:
   // Do our processing for N samples
   void operator()(avnd::tick t)
   {
-    const auto weight = inputs.weight.value;
-    auto& p1 = inputs.audio;
-    auto& p2 = outputs.audio;
-
-    const auto chans = p1.channels;
-
     // Process the input buffer
-    for (int i = 0; i < chans; i++)
+    for (int i = 0; i < inputs.audio.channels; i++)
     {
-      auto& in = p1.samples[i];
-      auto& out = p2.samples[i];
+      auto* in = inputs.audio[i];
+      auto* out = outputs.audio[i];
 
       float& prev = this->previous_values[i];
 
       for (int j = 0; j < t.frames; j++)
       {
-        out[j] = weight * in[j] + (1.0 - weight) * prev;
+        out[j] = inputs.weight * in[j] + (1.0 - inputs.weight) * prev;
         prev = out[j];
       }
     }

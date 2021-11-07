@@ -47,9 +47,9 @@ struct Controls
 
   void operator()()
   {
-    if (inputs.f.value == inputs.f.Foo)
+    if (inputs.f == inputs.f.Foo)
     {
-      outputs.display.value = inputs.a.value + inputs.b.value;
+      outputs.display = inputs.a + inputs.b;
     }
   }
 };

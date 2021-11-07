@@ -40,7 +40,7 @@ struct PerSampleAsPorts
 
   void operator()(const inputs& ins, outputs& outs)
   {
-    outs.audio.sample = std::tanh(ins.audio.sample);
+    outs.audio = std::tanh(ins.audio);
   }
 };
 }
