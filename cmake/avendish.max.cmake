@@ -76,6 +76,9 @@ function(avnd_make_max)
   )
 
   if(APPLE)
+    find_library(MAXSDK_API_LIBRARY NAMES MaxAPI HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
+    find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudioAPI HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
+
     target_compile_definitions(${AVND_FX_TARGET} PRIVATE MAC_VERSION)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE True)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE_EXTENSION "mxo")
@@ -85,10 +88,16 @@ function(avnd_make_max)
     target_compile_definitions(${AVND_FX_TARGET} PRIVATE WIN_VERSION _CRT_SECURE_NO_WARNINGS)
     if("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
         set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe64")
+        find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}/x64")
+        find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}/x64")
     else()
         set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe")
+        find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
+        find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
     endif()
   endif()
+
+  target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY})
 
   # We only export ext_main to prevent conflicts in e.g. Max4Live.
   #if(APPLE)
