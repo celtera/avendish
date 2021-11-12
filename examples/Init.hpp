@@ -99,9 +99,8 @@ struct Init
     struct
     {
       $(name, "float_call");
-      $(
-          func,
-          +[](Init& self, float v)
+      $(func,
+          [](Init& self, float v)
           { std::cerr << "value 2: " << v << std::endl; })
     } bar;
   } messages;

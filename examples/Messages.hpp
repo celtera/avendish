@@ -12,6 +12,7 @@
 #define post printf
 #endif
 
+#include <avnd/concepts/message.hpp>
 namespace examples
 {
 static void free_function(float a)
@@ -59,22 +60,20 @@ struct Messages
       static consteval auto name() { return "member"; }
       static consteval auto func() { return &Messages::bamboozle; }
     } member;
-#if (defined(__clang__) || defined(_MSC_VER))
-    // broken in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258
     struct
     {
       static consteval auto name() { return "lambda_function"; }
       static consteval auto func()
       {
-        return +[] { post("lambda"); };
+        return [] { post("lambda"); };
       }
     } lambda;
-#endif
     struct
     {
       static consteval auto name() { return "function"; }
       static consteval auto func() { return free_function; }
     } freefunc;
+
   } messages;
 
   void bamboozle(float x, float y, const char* str)

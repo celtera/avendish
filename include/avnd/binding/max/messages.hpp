@@ -11,11 +11,13 @@ namespace max
 template <typename T>
 struct messages
 {
-  template <auto f>
+  template <typename M>
   static void
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<f>::count;
+    using refl = avnd::message_reflection<M>;
+    constexpr auto f = M::func();
+    constexpr auto arg_counts = refl::count;
 
     if (arg_counts != argc)
     {
@@ -24,7 +26,7 @@ struct messages
       return;
     }
 
-    using arg_list_t = typename avnd::function_reflection<f>::arguments;
+    using arg_list_t = typename refl::arguments;
 
     // Check if all arguments passed are convertible to the expected
     // type of the method:
@@ -54,14 +56,16 @@ struct messages
     (arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
-  template <auto f>
+  template <typename M>
   static void call_instance(
       T& implementation,
       std::string_view name,
       int argc,
       t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<f>::count;
+    using refl = avnd::message_reflection<M>;
+    constexpr auto f = M::func();
+    constexpr auto arg_counts = refl::count;
 
     if (arg_counts != (argc + 1))
     {
@@ -70,7 +74,7 @@ struct messages
       return;
     }
 
-    using arg_list_t = typename avnd::function_reflection<f>::arguments;
+    using arg_list_t = typename refl::arguments;
 
     // Check if all arguments passed are convertible to the expected
     // type of the method:
@@ -108,23 +112,22 @@ struct messages
       int argc,
       t_atom* argv)
   {
-    if constexpr (requires { avnd::function_reflection<M::func()>::count; })
+    if constexpr (!std::is_void_v<avnd::message_reflection<M>>)
     {
-      constexpr auto arg_count = avnd::function_reflection<M::func()>::count;
+      constexpr auto arg_count = avnd::message_reflection<M>::count;
       if constexpr (arg_count == 0)
       {
-        call_static<M::func()>(implementation, sym, argc, argv);
+        call_static<M>(implementation, sym, argc, argv);
       }
       else
       {
-        if constexpr (std::is_same_v<avnd::first_argument<M::func()>, T&>)
+        if constexpr (std::is_same_v<avnd::first_message_argument<M>, T&>)
         {
-          call_instance<M::func()>(implementation, sym, argc, argv);
-          return true;
+          call_instance<M>(implementation, sym, argc, argv);
         }
         else
         {
-          call_static<M::func()>(implementation, sym, argc, argv);
+          call_static<M>(implementation, sym, argc, argv);
         }
       }
       return true;

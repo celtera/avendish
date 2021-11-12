@@ -242,6 +242,7 @@ template <auto F>
 using third_argument
     = boost::mp11::mp_third<typename function_reflection<F>::arguments>;
 
+// For std::function-like things
 template <typename T>
 struct function_reflection_t;
 template <typename R, typename... Args>
@@ -266,5 +267,17 @@ using second_argument_t
 template <typename T>
 using third_argument_t
     = boost::mp11::mp_third<typename function_reflection_t<T>::arguments>;
+
+// For functors / lambdas
+template <typename T>
+struct function_reflection_o;
+template <typename T>
+requires requires { function_reflection<&T::operator()>{}; }
+struct function_reflection_o<T>
+    : function_reflection<&T::operator()>
+{
+
+};
+
 
 }
