@@ -2,17 +2,13 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
-#include <boost/pfr.hpp>
+#include <avnd/common/dummy.hpp>
 
+#include <boost/pfr.hpp>
 #include <type_traits>
 
 namespace avnd
 {
-struct dummy
-{
-};
-static constexpr dummy dummy_instance;
-
 #define if_possible(action)           \
   if constexpr (requires { action; }) \
   {                                   \

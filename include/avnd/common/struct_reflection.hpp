@@ -5,7 +5,7 @@
 #include <boost/mp11.hpp>
 #include <boost/pfr.hpp>
 #include <avnd/common/index_sequence.hpp>
-#include <avnd/concepts/generic.hpp>
+#include <avnd/common/dummy.hpp>
 
 namespace avnd
 {
@@ -119,13 +119,6 @@ struct fields_introspection
       (indices_n{});
     }
   }
-
-  static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept
-  { }
-  static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
-  { }
-  static constexpr void for_all_unless(avnd::dummy fields, auto&& func) noexcept
-  { }
 };
 
 /**
@@ -236,7 +229,54 @@ struct predicate_introspection
       (indices_n{});
     }
   }
+};
 
+
+
+
+
+template <>
+struct fields_introspection<avnd::dummy>
+{
+  using type = avnd::dummy;
+  using fields = std::tuple<>;
+  static constexpr auto index_map = std::array<int, 0>{};
+  static constexpr auto size = 0;
+
+  static constexpr void for_all(auto&& func) noexcept
+  { }
+  static constexpr void for_nth(int n, auto&& func) noexcept
+  { }
+  static constexpr void for_all_unless(auto&& func) noexcept
+  { }
+  static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept
+  { }
+  static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
+  { }
+  static constexpr void for_all_unless(avnd::dummy fields, auto&& func) noexcept
+  { }
+};
+
+template <template <typename...> typename P>
+struct predicate_introspection<avnd::dummy, P>
+{
+  using type = avnd::dummy;
+  using fields = std::tuple<>;
+  static constexpr auto index_map = std::array<int, 0>{};
+  static constexpr auto size = 0;
+
+  template<std::size_t N>
+  using nth_element = void;
+
+  template<std::size_t N>
+  static constexpr void get(avnd::dummy unfiltered_fields) noexcept
+  { }
+  static constexpr void for_all(auto&& func) noexcept
+  { }
+  static constexpr void for_nth(int n, auto&& func) noexcept
+  { }
+  static constexpr void for_all_unless(auto&& func) noexcept
+  { }
   static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept
   { }
   static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept

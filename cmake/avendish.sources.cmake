@@ -38,6 +38,7 @@ target_sources(Avendish
 
     include/avnd/common/coroutines.hpp
     include/avnd/common/concepts_polyfill.hpp
+    include/avnd/common/dummy.hpp
     include/avnd/common/export.hpp
     include/avnd/common/for_nth.hpp
     include/avnd/common/function_reflection.hpp
