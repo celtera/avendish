@@ -86,7 +86,7 @@ struct Init
       // Messages can also support a range-ish generic argument
       // (this is useful for hosts which support dynamic number of arguments)
       $(func,
-        [](Init& self, auto range)
+        [](Init& self, INPUT_RANGE auto range)
         {
           for (std::variant value : range)
           {

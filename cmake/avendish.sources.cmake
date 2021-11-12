@@ -28,6 +28,7 @@ target_sources(Avendish
     include/avnd/wrappers/effect_container.hpp
     include/avnd/wrappers/port_introspection.hpp
     include/avnd/wrappers/input_introspection.hpp
+    include/avnd/wrappers/metadatas.hpp
     include/avnd/wrappers/messages_introspection.hpp
     include/avnd/wrappers/midi_introspection.hpp
     include/avnd/wrappers/modules_introspection.hpp

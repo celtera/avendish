@@ -139,11 +139,11 @@ struct predicate_introspection
       std::make_index_sequence<boost::pfr::tuple_size_v<type>>>;
 
   template <typename IntT>
-  using is_parameter_i = P<boost::pfr::tuple_element_t<IntT::value, type>>;
+  using matches_predicate_i = P<boost::pfr::tuple_element_t<IntT::value, type>>;
 
   using fields = boost::mp11::mp_copy_if<as_tuple<type>, P>;
   using indices_n = numbered_index_sequence_t<
-      boost::mp11::mp_copy_if<indices, is_parameter_i>>;
+      boost::mp11::mp_copy_if<indices, matches_predicate_i>>;
   static constexpr auto index_map = integer_sequence_to_array(indices_n{});
   static constexpr auto size = indices_n::size();
 

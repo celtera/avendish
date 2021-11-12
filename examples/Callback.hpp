@@ -2,7 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/reactive_value.hpp>
+#include <avnd/helpers/callback.hpp>
+#include <avnd/concepts/callback.hpp>
 
 #include <functional>
 #include <iostream>

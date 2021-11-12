@@ -88,12 +88,20 @@ avnd_make_audioplug(
   C_NAME avnd_midi
 )
 
+# GCC segfaults with those two...
 if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   avnd_make_all(
     TARGET HelpersLogger
     MAIN_FILE examples/Helpers/Logger.hpp
     MAIN_CLASS examples::helpers::Logger
     C_NAME avnd_helpers_logger
+    )
+
+  avnd_make_all(
+    TARGET HelpersControls
+    MAIN_FILE examples/Helpers/Controls.hpp
+    MAIN_CLASS examples::helpers::Controls
+    C_NAME avnd_helpers_controls
     )
 endif()
 
@@ -102,13 +110,6 @@ avnd_make_all(
   MAIN_FILE examples/Helpers/Messages.hpp
   MAIN_CLASS examples::helpers::Messages
   C_NAME avnd_helpers_messages
-  )
-
-avnd_make_all(
-  TARGET HelpersControls
-  MAIN_FILE examples/Helpers/Controls.hpp
-  MAIN_CLASS examples::helpers::Controls
-  C_NAME avnd_helpers_controls
   )
 
 avnd_make_all(
@@ -159,3 +160,9 @@ avnd_make_all(
   MAIN_CLASS examples::helpers::Midi
   C_NAME avnd_helpers_midi
   )
+
+
+# Demo: dump all the known metadata.
+
+add_executable(demo_dump examples/Demos/Dump.cpp)
+target_link_libraries(demo_dump PRIVATE Avendish)

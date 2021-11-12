@@ -28,9 +28,6 @@ template <typename T>
 concept callback = requires(T t)
 {
   {
-    t.name()
-    } -> string_ish;
-  {
     t.call
     } -> function_ish;
 };

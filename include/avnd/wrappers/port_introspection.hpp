@@ -54,10 +54,10 @@ template <typename T>
 using audio_channel_introspection
     = predicate_introspection<T, is_audio_channel_t>;
 
-template <typename Field>
-using is_message_t = boost::mp11::mp_bool<message<Field>>;
-template <typename T>
-using message_introspection = predicate_introspection<T, is_message_t>;
+// template <typename Field>
+// using is_message_t = boost::mp11::mp_bool<message<Field>>;
+// template <typename T>
+// using message_introspection = predicate_introspection<T, is_message_t>;
 
 template <typename Field>
 using is_callback_t = boost::mp11::mp_bool<callback<Field>>;

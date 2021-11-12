@@ -26,8 +26,13 @@ struct looks_like_std_function<F<R(Args...)>> : std::true_type
 {
 };
 
+template <template <typename...> typename F, typename R, typename... Args, typename... Rem>
+struct looks_like_std_function<F<R(Args...), Rem...>> : std::true_type
+{
+};
+
 template <typename T>
-concept function_ish = looks_like_std_function<T>::value;
+concept function_ish = looks_like_std_function<std::decay_t<T>>::value;
 
 template <auto f>
 struct function_reflection;

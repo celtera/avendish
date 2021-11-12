@@ -18,7 +18,7 @@ struct Ui
     return "e1f0f202-6732-4d2d-8ee9-5957a51ae667";
   }
 
-  struct
+  struct ins
   {
     struct
     {
@@ -91,5 +91,13 @@ struct Ui
   } outputs;
 
   void operator()(int N) { }
+
+
+  static void layout(auto ui)
+  {
+    auto ctl1 = ui.create_control(&ins::int_ctl);
+    auto ctl2 = ui.create_control(&ins::float_ctl);
+
+  }
 };
 }
