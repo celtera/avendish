@@ -1,0 +1,69 @@
+name: VS2022 build
+
+on: push
+
+jobs:
+  build:
+    name: VS2022
+    runs-on: windows-2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Checkout dependencies
+        uses: actions/checkout@v2
+        with:
+          repository: ossia/score
+          submodules: "recursive"
+          path: score
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          ${{ matrix.config.dependencies }}
+
+      - name: Download SDK
+        shell: bash
+        run: |
+          curl -L https://raw.githubusercontent.com/ossia/score/master/tools/fetch-sdk.sh > fetch-sdk.sh
+          chmod +x ./fetch-sdk.sh
+          ./fetch-sdk.sh
+
+      - name: Build debug
+        shell: bash
+        run: |
+          mkdir build-debug
+          cd build-debug
+
+          export SDK_3RDPARTY=$PWD/../score/3rdparty
+          export VERBOSE=1
+
+          cmake .. \
+            -DBOOST_ROOT=/c/ossia-sdk/boost \
+            -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
+            -DAVND_MAXSDK_PATH=$SDK_3RDPARTY/libossia/3rdparty/max-sdk \
+            -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
+            -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
+            -G "Visual Studio 17 2022"
+
+          cmake --build . --config Debug
+
+      - name: Build release
+        shell: bash
+        run: |
+          mkdir build-release
+          cd build-release
+
+
+          export SDK_3RDPARTY=$PWD/../score/3rdparty
+          export VERBOSE=1
+
+          cmake .. \
+            -DBOOST_ROOT=/c/ossia-sdk/boost \
+            -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
+            -DAVND_MAXSDK_PATH=$SDK_3RDPARTY/libossia/3rdparty/max-sdk \
+            -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
+            -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
+            -G "Visual Studio 17 2022"
+
+          cmake --build . --config Release
