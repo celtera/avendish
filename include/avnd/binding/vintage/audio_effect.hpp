@@ -96,12 +96,14 @@ struct SimpleAudioEffect : vintage::Effect
     buffer_size = request(HostOpcodes::GetBlockSize, 0, 0, nullptr, 0.f);
 
     /// Read the initial state of the controls
+    if constexpr (avnd::has_inputs<T>)
+    {
+      // First the default value
+      avnd::init_controls(effect.inputs());
 
-    // First the default value
-    avnd::init_controls(effect.inputs());
-
-    // Then the preset
-    controls.read(effect);
+      // Then the preset
+      controls.read(effect.inputs());
+    }
   }
 
   // effMainsChanged lifecycle

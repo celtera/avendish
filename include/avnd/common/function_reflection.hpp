@@ -221,6 +221,7 @@ struct function_reflection<func>
   static constexpr const bool is_noexcept = false;
 };
 
+#if !defined(_MSC_VER)
 template <typename R, typename... Args, R (*func)(Args...) noexcept>
 struct function_reflection<func>
 {
@@ -229,6 +230,7 @@ struct function_reflection<func>
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_noexcept = true;
 };
+#endif
 
 template <auto F>
 using first_argument

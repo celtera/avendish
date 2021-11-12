@@ -19,9 +19,34 @@ namespace vintage
 template <typename T>
 struct Controls
 {
+  static const constexpr int32_t parameter_count = 0;
+  template <typename Effect_T>
+  void init(Effect_T& effect)
+  {
+  }
+  void read(auto&&) { }
+  void write(auto&&) { }
+  template <typename Effect_T>
+  void display(Effect_T& effect, int index, void* ptr)
+  {
+  }
+  template <typename Effect_T>
+  void name(Effect_T& effect, int index, void* ptr)
+  {
+  }
+  template <typename Effect_T>
+  void label(Effect_T& effect, int index, void* ptr)
+  {
+  }
+};
+
+template <typename T>
+requires (float_parameter_input_introspection<T>::size > 0)
+struct Controls<T>
+{
   using inputs_info_t = float_parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
-  std::atomic<float> parameters[parameter_count];
+  std::atomic<float> parameters[std::max(parameter_count, 1)];
 
   template <typename Effect_T>
   void init(Effect_T& effect)
@@ -62,11 +87,6 @@ struct Controls
     (std::make_index_sequence<parameter_count>());
 
     std::atomic_thread_fence(std::memory_order_release);
-  }
-
-  void read(const avnd::effect_container<T>& implementation)
-  {
-    read(implementation.inputs());
   }
 
   void write(avnd::effect_container<T>& implementation)

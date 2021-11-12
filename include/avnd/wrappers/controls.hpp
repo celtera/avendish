@@ -17,7 +17,10 @@ static constexpr void init_controls(auto&& inputs)
       []<typename C>(C& ctl)
       {
         if constexpr (requires { C::control().init; })
-          ctl.value = C::control().init;
+        {
+          constexpr auto c = C::control();
+          ctl.value = c.init;
+        }
       });
 }
 

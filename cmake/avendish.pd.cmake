@@ -20,7 +20,7 @@ function(avnd_make_pd)
   )
 
   set(AVND_FX_TARGET "${AVND_TARGET}_pd")
-  add_library(${AVND_FX_TARGET} SHARED)
+  add_library(${AVND_FX_TARGET} MODULE)
 
   set_target_properties(
     ${AVND_FX_TARGET}

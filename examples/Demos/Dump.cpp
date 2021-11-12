@@ -12,6 +12,7 @@
 #include <examples/Messages.hpp>
 #include <examples/Init.hpp>
 
+#if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include <fmt/ranges.h>
@@ -341,3 +342,9 @@ int main()
 {
   dump<examples::Lowpass>();
 }
+#else
+int main()
+{
+ 
+}
+#endif

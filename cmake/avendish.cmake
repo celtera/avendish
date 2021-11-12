@@ -1,6 +1,9 @@
 set(CMAKE_INCLUDE_CURRENT_DIR 1)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
-unset(CMAKE_IMPORT_LIBRARY_SUFFIX) # To prevent windows errors with ninja
+
+if(NOT MSVC)
+  unset(CMAKE_IMPORT_LIBRARY_SUFFIX) # To prevent windows errors with ninja
+endif()
 
 find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)

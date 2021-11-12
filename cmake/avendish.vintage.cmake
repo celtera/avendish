@@ -1,7 +1,7 @@
 function(avnd_make_vintage)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
   set(AVND_FX_TARGET "${AVND_TARGET}_vintage")
-  add_library(${AVND_FX_TARGET} SHARED)
+  add_library(${AVND_FX_TARGET} MODULE)
 
   configure_file(
     include/avnd/binding/vintage/prototype.cpp.in
@@ -22,6 +22,7 @@ function(avnd_make_vintage)
       OUTPUT_NAME "${AVND_C_NAME}.vintage"
       LIBRARY_OUTPUT_DIRECTORY vintage
       RUNTIME_OUTPUT_DIRECTORY vintage
+      VS_GLOBAL_IgnoreImportLibrary true
   )
 
   target_link_libraries(
