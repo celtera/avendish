@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED 20)
 if(NOT MSVC)
   unset(CMAKE_IMPORT_LIBRARY_SUFFIX) # To prevent windows errors with ninja
 else()
-  add_definitions(NOMINMAX=1 WIN32_LEAN_AND_MEAN=1)
+  add_definitions(-DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
 endif()
 
 find_package(Boost QUIET REQUIRED)

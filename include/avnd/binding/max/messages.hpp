@@ -48,6 +48,7 @@ struct messages
     [&]<typename... Args, std::size_t... I>(
         boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
     {
+      constexpr auto f = M::func();
       if constexpr (std::is_member_function_pointer_v<decltype(f)>)
         return (implementation.*f)(convert<Args>(argv[I])...);
       else
