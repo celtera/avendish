@@ -18,7 +18,7 @@ concept midi_message = requires(T t)
 
 template <typename T>
 concept dynamic_midi_message
-    = midi_message<T> && vector_ish<decltype(T::midi_messages)>;
+    = midi_message<T> && vector_ish<decltype(T::bytes)>;
 
 template <typename T>
 concept raw_midi_message = midi_message<T> && std::is_pointer_v<

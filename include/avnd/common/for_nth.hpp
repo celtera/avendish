@@ -10,7 +10,7 @@ template <std::size_t N>
 void for_nth(int k, auto&& f)
 {
   [k]<std::size_t... Index>(
-      std::integer_sequence<std::size_t, Index...>, auto&& f)
+      std::index_sequence<Index...>, auto&& f)
   {
     ((void)(Index == k && (f.template operator()<Index>(), true)), ...);
   }

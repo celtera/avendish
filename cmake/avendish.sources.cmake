@@ -52,6 +52,7 @@ target_sources(Avendish
     include/avnd/helpers/controls.hpp
     include/avnd/helpers/log.hpp
     include/avnd/helpers/meta.hpp
+    include/avnd/helpers/midi.hpp
     include/avnd/helpers/static_string.hpp
 
     src/dummy.cpp

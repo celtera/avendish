@@ -16,7 +16,8 @@ struct midi_processor
       avnd::dynamic_midi_message auto& in,
       const vintage::MidiEvent& msg)
   {
-    using bytes_type = decltype(in.bytes);
+    using byte_type = typename decltype(in.bytes)::value_type;
+    using bytes_type = const byte_type*;
     static_assert(sizeof(in.bytes[0]) == sizeof(msg.midiData[0]));
     // todo: if the size is different, do a copy instead
 
@@ -43,7 +44,8 @@ struct midi_processor
       avnd::dynamic_container_midi_port auto& port,
       const vintage::MidiEvent& msg)
   {
-    auto& elt = port.midi_messages.emplace_back({});
+    port.midi_messages.push_back({});
+    auto& elt = port.midi_messages.back();
     init_midi_message(elt, msg);
   }
 

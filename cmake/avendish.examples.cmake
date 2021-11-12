@@ -152,3 +152,10 @@ avnd_make_all(
   MAIN_CLASS examples::helpers::Lowpass
   C_NAME avnd_helpers_lowpass
   )
+
+avnd_make_all(
+  TARGET HelpersMidi
+  MAIN_FILE examples/Helpers/Midi.hpp
+  MAIN_CLASS examples::helpers::Midi
+  C_NAME avnd_helpers_midi
+  )
