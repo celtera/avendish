@@ -7,7 +7,7 @@
 #include <iostream>
 #include <variant>
 
-#if __has_include(<ranges>)
+#if __has_include(<ranges>) && defined(__cpp_lib_ranges)
 #include <ranges>
 #define INPUT_RANGE std::ranges::input_range
 #else
