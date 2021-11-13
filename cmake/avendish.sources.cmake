@@ -117,7 +117,7 @@ function(avnd_target_setup AVND_FX_TARGET)
   target_include_directories(
       ${AVND_FX_TARGET}
       PUBLIC
-        include
+        $<BUILD_INTERFACE:${AVND_SOURCE_DIR}/include>
   )
 
   if(UNIX AND NOT APPLE)
