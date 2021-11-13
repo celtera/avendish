@@ -4,7 +4,7 @@ function(avnd_make_vintage)
   add_library(${AVND_FX_TARGET} MODULE)
 
   configure_file(
-    include/avnd/binding/vintage/prototype.cpp.in
+    "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vintage.cpp"
     @ONLY
     NEWLINE_STYLE LF

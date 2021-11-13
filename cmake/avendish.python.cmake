@@ -13,7 +13,7 @@ function(avnd_make_python)
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
-    include/avnd/binding/python/prototype.cpp.in
+    "${AVND_SOURCE_DIR}/include/avnd/binding/python/prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_python.cpp"
     @ONLY
     NEWLINE_STYLE LF

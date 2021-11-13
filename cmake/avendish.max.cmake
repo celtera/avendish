@@ -33,7 +33,7 @@ function(avnd_make_max)
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
-    include/avnd/binding/max/prototype.cpp.in
+    "${AVND_SOURCE_DIR}/include/avnd/binding/max/prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_max.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -83,7 +83,7 @@ function(avnd_make_max)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE True)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE_EXTENSION "mxo")
     target_link_libraries(${AVND_FX_TARGET} PRIVATE -Wl,-undefined,dynamic_lookup)
-    file(COPY include/avnd/binding/max/resources/PkgInfo DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/)
+    file(COPY "${AVND_SOURCE_DIR}/include/avnd/binding/max/resources/PkgInfo" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/)
   elseif(WIN32)
     target_compile_definitions(${AVND_FX_TARGET} PRIVATE WIN_VERSION _CRT_SECURE_NO_WARNINGS)
     if("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")

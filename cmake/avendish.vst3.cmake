@@ -32,7 +32,7 @@ function(avnd_make_vst3)
   add_library(${AVND_FX_TARGET} MODULE)
 
   configure_file(
-    include/avnd/binding/vst3/prototype.cpp.in
+    "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vst3.cpp"
     @ONLY
     NEWLINE_STYLE LF

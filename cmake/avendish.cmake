@@ -1,5 +1,6 @@
 set(CMAKE_INCLUDE_CURRENT_DIR 1)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
+set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
 if(MSVC)
   add_compile_options (/std:c++latest)
