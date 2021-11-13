@@ -148,7 +148,7 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
       PREFIX ""
       POSITION_INDEPENDENT_CODE 1
       VISIBILITY_INLINES_HIDDEN 1
-      # CXX_VISIBILITY_PRESET internal
+      CXX_VISIBILITY_PRESET hidden
   )
 
   target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost)

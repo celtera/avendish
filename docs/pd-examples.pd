@@ -1,0 +1,52 @@
+#N canvas 977 704 1234 480 12;
+#X obj 31 117 avnd_addition;
+#X floatatom 31 89 5 0 0 0 - - -;
+#X floatatom 119 89 5 0 0 0 - - -;
+#X obj 31 150 print;
+#X obj 421 261 avnd_lowpass;
+#X obj 422 295 dac~;
+#X msg 421 134 Weight \$1;
+#X obj 424 102 hsl 128 15 0 1 0 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 0 1;
+#X obj 446 161 phasor~ 200;
+#X obj 447 226 avnd_persample_1;
+#X msg 563 172 Gain 10;
+#X msg 563 195 Gain 50;
+#X msg 564 150 Gain 1;
+#X obj 853 66 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
+-1;
+#X obj 853 124 print;
+#X obj 853 94 avnd_init 456 yeah;
+#X text 30 35 Addition.hpp: showcases a basic message processor;
+#X text 846 33 Example of handling init arguments (Init.hpp);
+#X obj 848 353 avnd_messages;
+#X msg 848 241 member 1 3 foo;
+#X msg 872 303 lambda_function;
+#X msg 862 273 function 100;
+#X obj 821 328 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 848 382 print;
+#X text 841 210 Example of handling various messages (Messages.hpp)
+;
+#X text 417 32 In pd \, multi-channel must be handled by hand :-D still
+\, notice that Lowpass.hpp implements per-buffer processing while PerSampleProcessor.hpp
+processes per-sample.;
+#X connect 0 0 3 0;
+#X connect 1 0 0 0;
+#X connect 2 0 0 1;
+#X connect 4 0 5 0;
+#X connect 4 0 5 1;
+#X connect 6 0 4 0;
+#X connect 7 0 6 0;
+#X connect 8 0 9 0;
+#X connect 9 0 4 0;
+#X connect 10 0 9 0;
+#X connect 11 0 9 0;
+#X connect 12 0 9 0;
+#X connect 13 0 15 0;
+#X connect 15 0 14 0;
+#X connect 18 0 23 0;
+#X connect 19 0 18 0;
+#X connect 20 0 18 0;
+#X connect 21 0 18 0;
+#X connect 22 0 18 0;
