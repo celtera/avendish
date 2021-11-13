@@ -152,8 +152,11 @@ intptr_t default_dispatch(
       return 0;
     case EffectOpcodes::GetParameterProperties: // 56
     {
-      object.controls.properties(object, index, ptr);
-      return 1;
+      //looks very broken in this API
+      //object.controls.properties(object, index, ptr);
+      //return 1;
+
+      return 0;
     }
     case EffectOpcodes::CanBeAutomated: // 26
       return 1;

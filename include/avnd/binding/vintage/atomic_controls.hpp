@@ -3,10 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
-
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 #else
@@ -46,10 +46,10 @@ struct Controls
 };
 
 template <typename T>
-requires (avnd::float_parameter_input_introspection<T>::size > 0)
+requires (avnd::parameter_input_introspection<T>::size > 0)
 struct Controls<T>
 {
-  using inputs_info_t = avnd::float_parameter_input_introspection<T>;
+  using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
   std::atomic<float> parameters[std::max(parameter_count, 1)];
 
@@ -139,59 +139,7 @@ struct Controls<T>
         index,
         [ptr]<typename C>(const C& param)
         {
-          using val_type = std::decay_t<decltype(param.value)>;
-          const val_type& value = param.value;
-          auto cstr = reinterpret_cast<char*>(ptr);
-
-          if constexpr (requires
-                        { param.display(cstr, value); })
-          {
-            param.display(cstr, value);
-          }
-          else if constexpr (requires { param.display(cstr); })
-          {
-            param.display(cstr);
-          }
-          else if constexpr (requires { param.display(); })
-          {
-            vintage::param_display{param.display()}.copy_to(ptr);
-          }
-          else
-          {
-#if __has_include(<fmt/format.h>)
-            if constexpr (std::floating_point<val_type>)
-            { fmt::format_to(cstr, "{:.2f}", value); }
-            else if constexpr (std::is_enum_v<val_type>)
-            {
-              const int enum_index = static_cast<int>(value);
-              if(enum_index >= 0 && enum_index < C::choices().size())
-                fmt::format_to(cstr, "{}", C::choices()[enum_index]);
-              else
-                fmt::format_to(cstr, "{}", enum_index);
-            }
-            else
-            { fmt::format_to(cstr, "{}", value); }
-#else
-            if constexpr (std::floating_point<val_type>)
-              snprintf(cstr, 16, "%.2f", value);
-            else if constexpr (std::is_same_v<val_type, int>)
-              snprintf(cstr, 16, "%d", value);
-            else if constexpr (std::is_same_v<val_type, bool>)
-              snprintf(cstr, 16, value ? "true" : "false");
-            else if constexpr (std::is_same_v<val_type, const char*>)
-              snprintf(cstr, 16, "%s", value);
-            else if constexpr (std::is_same_v<val_type, std::string>)
-              snprintf(cstr, 16, "%s", value.data());
-            else if constexpr (std::is_enum_v<val_type>)
-            {
-              const int enum_index = static_cast<int>(value);
-              if(enum_index >= 0 && enum_index < C::choices().size())
-                snprintf(cstr, 16, "%s", C::choices()[enum_index]);
-              else
-                snprintf(cstr, 16, "%d", enum_index);
-            }
-#endif
-          }
+          avnd::display_control<C>(param.value, reinterpret_cast<char*>(ptr));
         });
   }
 

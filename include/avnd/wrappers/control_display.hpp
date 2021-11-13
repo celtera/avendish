@@ -31,8 +31,8 @@ bool display_control(const T& value, char* cstr)
   }
   else if constexpr(requires { C{value}.display(); })
   {
-    auto str = C{value}.display();
-    std::copy_n(str, strlen(str) + 1, cstr);
+    const std::string_view str = C{value}.display();
+    std::copy_n(str.data(), str.length() + 1, cstr);
     return true;
   }
   else
@@ -41,7 +41,10 @@ bool display_control(const T& value, char* cstr)
 
 #if __has_include(<fmt/format.h>)
     if constexpr (std::floating_point<val_type>)
-    { fmt::format_to(cstr, "{:.2f}", value); }
+    {
+      fmt::format_to(cstr, "{:.2f}", value);
+      return true;
+    }
     else if constexpr (std::is_enum_v<val_type>)
     {
       const int enum_index = static_cast<int>(value);
@@ -49,20 +52,39 @@ bool display_control(const T& value, char* cstr)
         fmt::format_to(cstr, "{}", C::choices()[enum_index]);
       else
         fmt::format_to(cstr, "{}", enum_index);
+      return true;
     }
     else
-    { fmt::format_to(cstr, "{}", value); }
+    {
+      fmt::format_to(cstr, "{}", value);
+      return true;
+    }
 #else
     if constexpr (std::floating_point<val_type>)
+    {
         snprintf(cstr, 16, "%.2f", value);
+        return true;
+    }
     else if constexpr (std::is_same_v<val_type, int>)
+    {
         snprintf(cstr, 16, "%d", value);
+        return true;
+    }
     else if constexpr (std::is_same_v<val_type, bool>)
+    {
         snprintf(cstr, 16, value ? "true" : "false");
+        return true;
+    }
     else if constexpr (std::is_same_v<val_type, const char*>)
+    {
         snprintf(cstr, 16, "%s", value);
+        return true;
+    }
     else if constexpr (std::is_same_v<val_type, std::string>)
+    {
         snprintf(cstr, 16, "%s", value.data());
+        return true;
+    }
     else if constexpr (std::is_enum_v<val_type>)
     {
       const int enum_index = static_cast<int>(value);
@@ -70,6 +92,7 @@ bool display_control(const T& value, char* cstr)
         snprintf(cstr, 16, "%s", C::choices()[enum_index].data());
       else
         snprintf(cstr, 16, "%d", enum_index);
+      return true;
     }
 #endif
     return false;

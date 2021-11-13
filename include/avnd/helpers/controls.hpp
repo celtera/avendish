@@ -315,6 +315,12 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
       combobox                                                                \
     };                                                                        \
                                                                               \
+    static consteval std::array<std::string_view, AVND_NUM_ARGS(__VA_ARGS__)> \
+    choices()                                                                 \
+    {                                                                         \
+      return {STRING_LITERAL_ARRAY(__VA_ARGS__)};                             \
+    }                                                                         \
+                                                                              \
     static consteval auto name() { return Name; }                             \
     static consteval auto control()                                           \
     {                                                                         \
@@ -328,9 +334,4 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
     operator enum_type&() noexcept { return value; }                          \
     operator enum_type() const noexcept { return value; }                     \
     auto& operator=(enum_type t) noexcept { value = t; return *this; }        \
-    static consteval std::array<std::string_view, AVND_NUM_ARGS(__VA_ARGS__)> \
-    choices()                                                                 \
-    {                                                                         \
-      return {STRING_LITERAL_ARRAY(__VA_ARGS__)};                             \
-    }                                                                         \
   }
