@@ -4,7 +4,7 @@
 
 # declarative polyamorous cross-system intermedia objects
 
-![C++](https://img.shields.io/badge/language-c%2B%2B-green) [![Sponsor](https://img.shields.io/github/sponsors/jcelerier)](https://github.com/sponsors/jcelerier) ![License](https://img.shields.io/badge/license-GPLv3-brightgreen)  ![Platforms](https://img.shields.io/badge/platforms-all-blue)
+![C++](https://img.shields.io/badge/language-c%2B%2B-green) [![Sponsor](https://img.shields.io/github/sponsors/jcelerier)](https://github.com/sponsors/jcelerier) ![License](https://img.shields.io/badge/license-GPLv3-brightgreen)  ![Platforms](https://img.shields.io/badge/platforms-all-blue) [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/celtera/avendish/CMake%20build)](https://github.com/celtera/avendish/actions/workflows/build_cmake.yml)
 
 A zero-cost, compile-time, reflection-based, pure C++ solution to the quadratic glue MxN problem:
 
