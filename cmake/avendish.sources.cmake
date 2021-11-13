@@ -60,7 +60,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/src/dummy.cpp"
 )
 
-function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
+function(avnd_target_setup AVND_FX_TARGET)
   target_compile_features(
       ${AVND_FX_TARGET}
       PUBLIC
@@ -152,8 +152,14 @@ function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
   )
 
   target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost)
+endfunction()
+
+function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
+  avnd_target_setup("${AVND_FX_TARGET}")
 
   if(TARGET "${AVND_TARGET}")
+    avnd_target_setup("${AVND_TARGET}")
+
     target_link_libraries(
       ${AVND_FX_TARGET}
       PUBLIC
