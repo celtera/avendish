@@ -1,5 +1,12 @@
 find_path(PD_HEADER NAMES m_pd.h)
 
+if(WIN32)
+  find_library(PD_LIB NAMES pd)
+  if(NOT PD_LIB)
+    unset(PD_HEADER)
+  endif()
+endif()
+
 if(NOT PD_HEADER)
   function(avnd_make_pd)
   endfunction()
@@ -68,6 +75,8 @@ function(avnd_make_pd)
     else()
       set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".pd_linux")
     endif()
+  elseif(WIN32)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE ${PD_LIB})
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
