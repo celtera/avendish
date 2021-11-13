@@ -3,7 +3,10 @@ find_path(PD_HEADER NAMES m_pd.h)
 if(WIN32)
   find_library(PD_LIB NAMES pd)
   if(NOT PD_LIB)
-    unset(PD_HEADER)
+    function(avnd_make_pd)
+    endfunction()
+
+    return()
   endif()
 endif()
 
