@@ -61,7 +61,7 @@ Committee if you hear us :)
 
 See https://github.com/celtera/avendish/tree/main/examples for a list of examples.
 
-Here is an example of various Max/MSP & Pdobjects generated from the examples folder ; the patches are available in https://github.com/celtera/avendish/tree/main/docs.
+Here is an example of various Max/MSP & PureData objects generated from the examples folder ; the patches are available in https://github.com/celtera/avendish/tree/main/docs.
 
 ![Max/MSP example](https://user-images.githubusercontent.com/2772730/139532911-59c101a0-800f-471e-a0be-18c68ce40910.png)
 
