@@ -212,6 +212,13 @@ If a mono processor is written, the library will wrap it automatically in the ca
    * https://github.com/leomccormack/Spatial_Audio_Framework
    * https://github.com/micknoise/Maximilian
    * https://github.com/jamoma
+   * https://github.com/v7b1/vb-objects
+   * https://github.com/thestk/stk
+   * https://github.com/TonicAudio/ofxTonic
+   * https://github.com/mhamilt/AudioEffectsSuite
+   * https://github.com/mohabouje/eDSP
+   * https://github.com/LabSound/LabSound
+   * etc...
    
 
 # Licensing
