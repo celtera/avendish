@@ -40,13 +40,13 @@ target_link_libraries(Avendish_vintage INTERFACE Avendish)
 add_library(Avendish::Avendish_vintage ALIAS Avendish_vintage)
 
 target_sources(Avendish PRIVATE
-  include/avnd/binding/vintage/audio_effect.hpp
-  include/avnd/binding/vintage/atomic_controls.hpp
-  include/avnd/binding/vintage/configure.hpp
-  include/avnd/binding/vintage/dispatch.hpp
-  include/avnd/binding/vintage/helpers.hpp
-  include/avnd/binding/vintage/midi_processor.hpp
-  include/avnd/binding/vintage/processor_setup.hpp
-  include/avnd/binding/vintage/programs.hpp
-  include/avnd/binding/vintage/vintage.hpp
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/audio_effect.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/atomic_controls.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/configure.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/dispatch.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/helpers.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/midi_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/processor_setup.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/programs.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/vintage.hpp"
 )

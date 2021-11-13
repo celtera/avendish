@@ -76,17 +76,17 @@ target_link_libraries(Avendish_vst3 INTERFACE Avendish)
 add_library(Avendish::Avendish_vst3 ALIAS Avendish_vst3)
 
 target_sources(Avendish PRIVATE
-  include/avnd/binding/vst3/audio_effect.hpp
-  include/avnd/binding/vst3/bus_info.hpp
-  include/avnd/binding/vst3/component.hpp
-  include/avnd/binding/vst3/component_base.hpp
-  include/avnd/binding/vst3/configure.hpp
-  include/avnd/binding/vst3/connection_point.hpp
-  include/avnd/binding/vst3/controller.hpp
-  include/avnd/binding/vst3/controller_base.hpp
-  include/avnd/binding/vst3/factory.hpp
-  include/avnd/binding/vst3/helpers.hpp
-  include/avnd/binding/vst3/metadata.hpp
-  include/avnd/binding/vst3/programs.hpp
-  include/avnd/binding/vst3/refcount.hpp
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/audio_effect.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/bus_info.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/component.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/component_base.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/configure.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/connection_point.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/controller.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/controller_base.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/factory.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/helpers.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/metadata.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/programs.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/vst3/refcount.hpp"
 )

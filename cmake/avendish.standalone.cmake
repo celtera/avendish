@@ -50,9 +50,9 @@ function(avnd_make_standalone)
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
   target_sources(Avendish PRIVATE
-    include/avnd/binding/standalone/audio.hpp
-    include/avnd/binding/standalone/configure.hpp
-    include/avnd/binding/standalone/standalone.hpp
-    include/avnd/binding/standalone/oscquery_mapper.hpp
+    "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/audio.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/configure.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/standalone.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/oscquery_mapper.hpp"
   )
 endfunction()

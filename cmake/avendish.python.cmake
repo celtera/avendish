@@ -51,6 +51,6 @@ target_link_libraries(Avendish_python INTERFACE Avendish)
 add_library(Avendish::Avendish_python ALIAS Avendish_python)
 
 target_sources(Avendish PRIVATE
-  include/avnd/binding/python/processor.hpp
-  include/avnd/binding/python/configure.hpp
+  "${AVND_SOURCE_DIR}/include/avnd/binding/python/processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/python/configure.hpp"
 )

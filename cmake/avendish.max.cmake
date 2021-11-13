@@ -113,14 +113,14 @@ target_link_libraries(Avendish_max INTERFACE Avendish)
 add_library(Avendish::Avendish_max ALIAS Avendish_max)
 
 target_sources(Avendish PRIVATE
-  include/avnd/binding/max/atom_iterator.hpp
-  include/avnd/binding/max/audio_processor.hpp
-  include/avnd/binding/max/configure.hpp
-  include/avnd/binding/max/dsp.hpp
-  include/avnd/binding/max/init.hpp
-  include/avnd/binding/max/message_processor.hpp
-  include/avnd/binding/max/inputs.hpp
-  include/avnd/binding/max/messages.hpp
-  include/avnd/binding/max/outputs.hpp
-  include/avnd/binding/max/helpers.hpp
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_iterator.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/audio_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/configure.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/init.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/message_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/inputs.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/messages.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/outputs.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"
 )

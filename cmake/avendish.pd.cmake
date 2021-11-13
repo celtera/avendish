@@ -90,14 +90,14 @@ target_link_libraries(Avendish_pd INTERFACE Avendish)
 add_library(Avendish::Avendish_pd ALIAS Avendish_pd)
 
 target_sources(Avendish PRIVATE
-  include/avnd/binding/pd/atom_iterator.hpp
-  include/avnd/binding/pd/audio_processor.hpp
-  include/avnd/binding/pd/configure.hpp
-  include/avnd/binding/pd/dsp.hpp
-  include/avnd/binding/pd/init.hpp
-  include/avnd/binding/pd/inputs.hpp
-  include/avnd/binding/pd/message_processor.hpp
-  include/avnd/binding/pd/messages.hpp
-  include/avnd/binding/pd/outputs.hpp
-  include/avnd/binding/pd/helpers.hpp
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/atom_iterator.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/audio_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/configure.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/dsp.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/init.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/inputs.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/message_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/messages.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/outputs.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/pd/helpers.hpp"
 )

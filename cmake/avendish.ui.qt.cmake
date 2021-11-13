@@ -4,15 +4,15 @@ if(NOT TARGET Qt5::Core)
 endif()
 
 target_sources(Avendish PRIVATE
-  include/avnd/binding/ui/qml_ui.hpp
-  include/avnd/binding/ui/qml/enum_control.hpp
-  include/avnd/binding/ui/qml/enum_ui.hpp
-  include/avnd/binding/ui/qml/toggle_control.hpp
-  include/avnd/binding/ui/qml/toggle_ui.hpp
-  include/avnd/binding/ui/qml/float_control.hpp
-  include/avnd/binding/ui/qml/float_knob.hpp
-  include/avnd/binding/ui/qml/float_slider.hpp
-  include/avnd/binding/ui/qml/int_control.hpp
-  include/avnd/binding/ui/qml/int_knob.hpp
-  include/avnd/binding/ui/qml/int_slider.hpp
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml_ui.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/enum_control.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/enum_ui.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/toggle_control.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/toggle_ui.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/float_control.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/float_knob.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/float_slider.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/int_control.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/int_knob.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/int_slider.hpp"
 )

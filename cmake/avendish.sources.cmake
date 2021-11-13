@@ -3,61 +3,61 @@ add_library(Avendish::Avendish ALIAS Avendish)
 
 target_sources(Avendish
   PRIVATE
-    include/avnd/concepts/audio_port.hpp
-    include/avnd/concepts/audio_processor.hpp
-    include/avnd/concepts/callback.hpp
-    include/avnd/concepts/channels.hpp
-    include/avnd/concepts/generic.hpp
-    include/avnd/concepts/message.hpp
-    include/avnd/concepts/midi.hpp
-    include/avnd/concepts/midi_port.hpp
-    include/avnd/concepts/modules.hpp
-    include/avnd/concepts/object.hpp
-    include/avnd/concepts/parameter.hpp
-    include/avnd/concepts/port.hpp
-    include/avnd/concepts/processor.hpp
-    include/avnd/concepts/synth.hpp
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_processor.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/callback.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/channels.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/generic.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/message.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/midi.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/midi_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/modules.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/object.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/parameter.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/processor.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/synth.hpp"
 
-    include/avnd/wrappers/avnd.hpp
-    include/avnd/wrappers/channels_introspection.hpp
-    include/avnd/wrappers/concepts.hpp
-    include/avnd/wrappers/configure.hpp
-    include/avnd/wrappers/controls.hpp
-    include/avnd/wrappers/controls_fp.hpp
-    include/avnd/wrappers/control_display.hpp
-    include/avnd/wrappers/effect_container.hpp
-    include/avnd/wrappers/port_introspection.hpp
-    include/avnd/wrappers/input_introspection.hpp
-    include/avnd/wrappers/metadatas.hpp
-    include/avnd/wrappers/messages_introspection.hpp
-    include/avnd/wrappers/midi_introspection.hpp
-    include/avnd/wrappers/modules_introspection.hpp
-    include/avnd/wrappers/output_introspection.hpp
-    include/avnd/wrappers/prepare.hpp
-    include/avnd/wrappers/process_adapter.hpp
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/avnd.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/channels_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/concepts.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/configure.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_fp.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/control_display.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/effect_container.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/port_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/input_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/metadatas.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/messages_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/midi_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/modules_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/output_introspection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/prepare.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_adapter.hpp"
 
-    include/avnd/common/coroutines.hpp
-    include/avnd/common/concepts_polyfill.hpp
-    include/avnd/common/dummy.hpp
-    include/avnd/common/export.hpp
-    include/avnd/common/for_nth.hpp
-    include/avnd/common/function_reflection.hpp
-    include/avnd/common/index_sequence.hpp
-    include/avnd/common/limited_string.hpp
-    include/avnd/common/limited_string_view.hpp
-    include/avnd/common/struct_reflection.hpp
-    include/avnd/common/widechar.hpp
+    "${AVND_SOURCE_DIR}/include/avnd/common/coroutines.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/concepts_polyfill.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/dummy.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/export.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/for_nth.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/function_reflection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/index_sequence.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/limited_string.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/limited_string_view.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/struct_reflection.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/widechar.hpp"
 
-    include/avnd/helpers/audio.hpp
-    include/avnd/helpers/callback.hpp
-    include/avnd/helpers/reactive_value.hpp
-    include/avnd/helpers/controls.hpp
-    include/avnd/helpers/log.hpp
-    include/avnd/helpers/meta.hpp
-    include/avnd/helpers/midi.hpp
-    include/avnd/helpers/static_string.hpp
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/audio.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/callback.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/reactive_value.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/controls.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/log.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/meta.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/midi.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/helpers/static_string.hpp"
 
-    src/dummy.cpp
+    "${AVND_SOURCE_DIR}/src/dummy.cpp"
 )
 
 function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
