@@ -154,18 +154,31 @@ struct predicate_introspection
     }
   }
 
-  static constexpr void for_nth(int n, auto&& func) noexcept
+  // n is in [0; total number of ports[ (even those that don't match the predicate)
+  static constexpr void for_nth_raw(int n, auto&& func) noexcept
   {
-    // TODO maybe there is some dirty hack to do here with offsetof computations...
-    // technically, we ought to be able to compute the address of member "n" at compile time...
-    // and reinterpret_cast &fields+addr....
-
     if constexpr (size > 0)
     {
       [ n, &func ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
         // TODO compare with || logical-or fold ?
         ((void)(Index == n && (func(field_reflection<Index, boost::pfr::tuple_element_t<Index, T>>{}), true)),
+         ...);
+      }
+      (indices_n{});
+    }
+  }
+
+
+  // n is in [0; number of ports matching that predicate[
+  static constexpr void for_nth_mapped(int n, auto&& func) noexcept
+  {
+    if constexpr (size > 0)
+    {
+      [ k = index_map[n], &func ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+      {
+        // TODO compare with || logical-or fold ?
+        ((void)(Index == k && (func(field_reflection<Index, boost::pfr::tuple_element_t<Index, T>>{}), true)),
          ...);
       }
       (indices_n{});
@@ -215,7 +228,7 @@ struct predicate_introspection
     }
   }
 
-  static constexpr void for_nth(type& fields, int n, auto&& func) noexcept
+  static constexpr void for_nth_raw(type& fields, int n, auto&& func) noexcept
   {
     if constexpr (size > 0)
     {
@@ -225,6 +238,21 @@ struct predicate_introspection
         auto&& ppl = boost::pfr::detail::tie_as_tuple(fields);
         ((void)(Index == n && (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
          ...);
+      }
+      (indices_n{});
+    }
+  }
+
+  static constexpr void for_nth_mapped(type& fields, int n, auto&& func) noexcept
+  {
+    if constexpr (size > 0)
+    {
+      [ k = index_map[n], &func, &
+          fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+      {
+        auto&& ppl = boost::pfr::detail::tie_as_tuple(fields);
+        ((void)(Index == k && (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
+            ...);
       }
       (indices_n{});
     }
@@ -273,13 +301,17 @@ struct predicate_introspection<avnd::dummy, P>
   { }
   static constexpr void for_all(auto&& func) noexcept
   { }
-  static constexpr void for_nth(int n, auto&& func) noexcept
+  static constexpr void for_nth_raw(int n, auto&& func) noexcept
+  { }
+  static constexpr void for_nth_mapped(int n, auto&& func) noexcept
   { }
   static constexpr void for_all_unless(auto&& func) noexcept
   { }
   static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept
   { }
-  static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept
+  static constexpr void for_nth_raw(avnd::dummy fields, int n, auto&& func) noexcept
+  { }
+  static constexpr void for_nth_mapped(avnd::dummy fields, int n, auto&& func) noexcept
   { }
   static constexpr void for_all_unless(avnd::dummy fields, auto&& func) noexcept
   { }

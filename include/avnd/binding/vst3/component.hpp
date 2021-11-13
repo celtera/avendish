@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/vst3/helpers.hpp>
+#include <avnd/binding/vst3/bus_info.hpp>
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
@@ -13,6 +14,7 @@
 
 namespace stv3
 {
+
 template<typename T>
 struct Component final
     : public stv3::ComponentCommon
@@ -75,62 +77,14 @@ struct Component final
   [[no_unique_address]]
   avnd::midi_storage<T> midi;
 
-  static const constexpr int input_audio_busses = avnd::bus_introspection<T>::input_busses;
-  static const constexpr int output_audio_busses = avnd::bus_introspection<T>::output_busses;
-  static const constexpr int input_event_busses = avnd::midi_input_introspection<T>::size;
-  static const constexpr int output_event_busses = avnd::midi_output_introspection<T>::size;
+  [[no_unique_address]]
+  stv3::audio_bus_info<T> audio_busses;
 
-  static const constexpr int input_channels = avnd::input_channels<T>(2);
-  static const constexpr int output_channels = avnd::output_channels<T>(2);
-
-  int runtime_input_channel_count = input_channels;
-  int runtime_output_channel_count = output_channels;
+  [[no_unique_address]]
+  stv3::event_bus_info<T> event_busses;
 
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
-
-  bool audioInputActive[input_audio_busses];
-  bool audioOutputActive[output_audio_busses];
-  bool eventInputActive[input_event_busses];
-  bool eventOutputActive[output_event_busses];
-
-  static constexpr AudioBusInfo audioInputs[]{
-    {
-      /* .mediaType = */ MediaTypes::kAudio,
-          /* .direction = */ BusDirections::kInput,
-          /* .channelCount = */ 2,
-          /* .name = */ u16"Stereo In",
-          /* .busType = */ BusTypes::kMain,
-          /* .flags = */ BusInfo::kDefaultActive,
-          /* .arrangement = */ Steinberg::Vst::SpeakerArr::kStereo}
-  };
-
-  static constexpr AudioBusInfo audioOutputs[]
-  {
-    {
-      /* .mediaType = */ MediaTypes::kAudio,
-          /* .direction = */ BusDirections::kOutput,
-          /* .channelCount = */ 2,
-          /* .name = */ u16"Stereo Out",
-          /* .busType = */ BusTypes::kMain,
-          /* .flags = */ BusInfo::kDefaultActive,
-          /* .arrangement = */ Steinberg::Vst::SpeakerArr::kStereo}
-  };
-
-  static constexpr EventBusInfo eventInputs[]{
-//    {
-//      /* .mediaType = */ MediaTypes::kEvent,
-//          /* .direction = */ BusDirections::kInput,
-//          /* .channelCount = */ 1,
-//          /* .name = */ VST3_WSTR "Event In",
-//          /* .busType = */ BusTypes::kMain,
-//          /* .flags = */ BusInfo::kDefaultActive,
-//    }
-  };
-
-  static constexpr EventBusInfo eventOutputs[]{
-
-  };
 
   Component()
   {
@@ -143,7 +97,7 @@ struct Component final
     processSetup.symbolicSampleSize = kSample32;
 
     // Setup modules
-    effect.init_channels(input_channels, output_channels);
+    effect.init_channels(audio_busses.defaultInputChannelCount(), audio_busses.defaultOutputChannelCount());
 
     /// Read the initial state of the controls
 
@@ -180,9 +134,9 @@ struct Component final
         switch (dir)
         {
           case kInput:
-            return input_audio_busses;
+            return audio_busses.inputCount();
           case kOutput:
-            return output_audio_busses;
+            return audio_busses.outputCount();
           default:
             break;
         }
@@ -192,9 +146,9 @@ struct Component final
         switch (dir)
         {
           case kInput:
-            return input_event_busses;
+            return event_busses.inputCount();
           case kOutput:
-            return output_event_busses;
+            return event_busses.outputCount();
           default:
             break;
         }
@@ -218,19 +172,9 @@ struct Component final
         switch (dir)
         {
           case kInput:
-            if(index < input_audio_busses) {
-              audioInputActive[index] = state;
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            return audio_busses.activateInput(index, state);
           case kOutput:
-            if(index < output_audio_busses) {
-              audioOutputActive[index] = state;
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            return audio_busses.activateOutput(index, state);
           default:
             break;
         }
@@ -240,19 +184,9 @@ struct Component final
         switch (dir)
         {
           case kInput:
-            if(index < input_event_busses) {
-              eventInputActive[index] = state;
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            return event_busses.activateInput(index, state);
           case kOutput:
-            if(index < output_event_busses) {
-              eventOutputActive[index] = state;
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            return event_busses.activateOutput(index, state);
           default:
             break;
         }
@@ -272,22 +206,16 @@ struct Component final
     {
       case kAudio:
       {
+        info.mediaType = MediaTypes::kAudio;
+        info.flags = BusInfo::kDefaultActive;
         switch (dir)
         {
           case kInput:
-            if(index < input_audio_busses) {
-              memcpy(&info, &audioInputs[index], sizeof(BusInfo));
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            info.direction = BusDirections::kInput;
+            return audio_busses.inputInfo(index, info);
           case kOutput:
-            if(index < output_audio_busses) {
-              memcpy(&info, &audioOutputs[index], sizeof(BusInfo));
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            info.direction = BusDirections::kOutput;
+            return audio_busses.outputInfo(index, info);
           default:
             break;
         }
@@ -297,19 +225,11 @@ struct Component final
         switch (dir)
         {
           case kInput:
-            if(index < input_event_busses) {
-              memcpy(&info, &eventInputs[index], sizeof(BusInfo));
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            info.direction = BusDirections::kInput;
+            return event_busses.inputInfo(index, info);
           case kOutput:
-            if(index < output_event_busses) {
-              memcpy(&info, &eventOutputs[index], sizeof(BusInfo));
-              return Steinberg::kResultTrue;
-            } else {
-              return Steinberg::kInvalidArgument;
-            }
+            info.direction = BusDirections::kOutput;
+            return event_busses.outputInfo(index, info);
           default:
             break;
         }
@@ -340,19 +260,9 @@ struct Component final
     switch (dir)
     {
       case kInput:
-        if(index < input_audio_busses) {
-          arr = audioInputs[index].arrangement;
-          return Steinberg::kResultTrue;
-        } else {
-          return Steinberg::kInvalidArgument;
-        }
+        return audio_busses.inputArrangement(index, arr);
       case kOutput:
-        if(index < output_audio_busses) {
-          arr = audioOutputs[index].arrangement;
-          return Steinberg::kResultTrue;
-        } else {
-          return Steinberg::kInvalidArgument;
-        }
+        return audio_busses.outputArrangement(index, arr);
       default:
         break;
     }
@@ -369,21 +279,7 @@ struct Component final
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if(numIns == input_audio_busses && numOuts == output_audio_busses)
-    {
-      // Count the total number of requested channels
-      for(int i = 0; i < numIns; i++)
-        runtime_input_channel_count += SpeakerArr::getChannelCount(inputs[i]);
-
-      for(int i = 0; i < numOuts; i++)
-        runtime_output_channel_count += SpeakerArr::getChannelCount(outputs[i]);
-
-      effect.init_channels(runtime_input_channel_count, runtime_output_channel_count);
-
-      // TODO we may have to recopy the controls
-      return kResultTrue;
-    }
-    return kResultFalse;
+    return audio_busses.setBusArrangements(effect, inputs, numIns, outputs, numOuts);
   }
 
 
@@ -419,8 +315,8 @@ struct Component final
 
     // Allocate buffers, setup everything
     avnd::process_setup setup_info{
-        .input_channels = runtime_input_channel_count,
-        .output_channels = runtime_output_channel_count,
+        .input_channels = audio_busses.runtime_input_channel_count,
+        .output_channels = audio_busses.runtime_output_channel_count,
         .frames_per_buffer = newSetup.maxSamplesPerBlock,
         .rate = newSetup.sampleRate};
 
@@ -428,6 +324,8 @@ struct Component final
     // We always do so for float, as the plug-in API requires the existence of this
     processor.allocate_buffers(setup_info, float{});
     processor.allocate_buffers(setup_info, double{});
+
+    effect.init_channels(audio_busses.runtime_input_channel_count, audio_busses.runtime_output_channel_count);
 
     // Setup buffers for storing MIDI messages
     if constexpr (avnd::midi_input_introspection<T>::size > 0)
@@ -452,7 +350,7 @@ struct Component final
     int id = queue.getParameterId();
     if (queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
     {
-      avnd::parameter_input_introspection<T>::for_nth(
+      avnd::parameter_input_introspection<T>::for_nth_raw(
             effect.inputs(), id,
             [&] <typename C> (C& ctl) {
         ctl.value = avnd::map_control_from_01<C>(value);
@@ -512,17 +410,16 @@ struct Component final
     using refl = avnd::midi_input_introspection<T>;
     // 0 <= event.busIndex < count(midi_ports)
     // thus we have to map to the actual port index in our input struct
-    const int idx = refl::index_map[event.busIndex];
     switch (event.type)
     {
       case Event::kNoteOnEvent:
       {
-        refl::for_nth(this->effect.inputs(), idx, [&] (auto& bus) { this->processEvent(bus, event.noteOn, event.sampleOffset); });
+        refl::for_nth_mapped(this->effect.inputs(), event.busIndex, [&] (auto& bus) { this->processEvent(bus, event.noteOn, event.sampleOffset); });
         break;
       }
       case Event::kNoteOffEvent:
       {
-        refl::for_nth(this->effect.inputs(), idx, [&] (auto& bus) { this->processEvent(bus, event.noteOff, event.sampleOffset); });
+        refl::for_nth_mapped(this->effect.inputs(), event.busIndex, [&] (auto& bus) { this->processEvent(bus, event.noteOff, event.sampleOffset); });
         break;
       }
       case Event::kDataEvent:

@@ -46,7 +46,7 @@ public:
   template <typename Val>
   void value_changed(int idx, const Val& value)
   {
-    avnd::parameter_input_introspection<T>::for_nth(
+    avnd::parameter_input_introspection<T>::for_nth_raw(
         avnd::get_inputs(implementation),
         idx,
         [value]<typename C>(C& ctl) { ctl.value = value; });
@@ -57,7 +57,7 @@ public:
   {
     QString res;
 
-    avnd::parameter_input_introspection<T>::for_nth(
+    avnd::parameter_input_introspection<T>::for_nth_raw(
         avnd::get_inputs(implementation),
         idx,
         [&res, value]<typename C>(C& ctl)

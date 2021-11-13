@@ -34,7 +34,7 @@ struct PerBusAsArgs
 // Here we specify each bus's port count.
 struct PerBusAsPortsFixed
 {
-  $(name, "Per-bus processing (args, helpers)")
+  $(name, "Per-bus processing (fixed ports, helpers)")
   $(c_name, "avnd_helpers_per_bus_as_args")
   $(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
 
@@ -66,7 +66,7 @@ struct PerBusAsPortsFixed
 // (or they will be taken from the global channels / input_channels / ... metadatas
 struct PerBusAsPortsDynamic
 {
-  $(name, "Per-bus processing (args, helpers)")
+  $(name, "Per-bus processing (dynamic ports, helpers)")
   $(c_name, "avnd_helpers_per_bus_as_args")
   $(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
 

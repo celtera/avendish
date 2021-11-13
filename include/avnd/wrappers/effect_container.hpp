@@ -181,6 +181,16 @@ struct effect_container<T>
   void init_channels(int input, int output)
   {
     // TODO maybe a runtime check
+    int orig = effect.size();
+    int sz = std::max(input, output);
+    effect.resize(sz);
+    if(orig > 0)
+    {
+      for(int i = orig; i < sz; i++)
+      {
+        effect[i].inputs = effect[0].inputs;
+      }
+    }
   }
 
   struct ref

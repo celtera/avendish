@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
 
@@ -38,13 +39,17 @@ struct Controls
   void label(Effect_T& effect, int index, void* ptr)
   {
   }
+  template <typename Effect_T>
+  void properties(Effect_T& effect, int index, void* ptr)
+  {
+  }
 };
 
 template <typename T>
-requires (float_parameter_input_introspection<T>::size > 0)
+requires (avnd::float_parameter_input_introspection<T>::size > 0)
 struct Controls<T>
 {
-  using inputs_info_t = float_parameter_input_introspection<T>;
+  using inputs_info_t = avnd::float_parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
   std::atomic<float> parameters[std::max(parameter_count, 1)];
 
@@ -109,7 +114,7 @@ struct Controls<T>
   void name(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    inputs_info_t::for_nth(
+    inputs_info_t::for_nth_mapped(
         self.inputs(),
         index,
         [ptr]<typename P>(const P& param)
@@ -118,6 +123,10 @@ struct Controls<T>
           {
             vintage::name{P::name()}.copy_to(ptr);
           }
+          else if constexpr (requires { P::label(); })
+          {
+            vintage::label{P::label()}.copy_to(ptr);
+          }
         });
   }
 
@@ -125,7 +134,7 @@ struct Controls<T>
   void display(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    inputs_info_t::for_nth(
+    inputs_info_t::for_nth_mapped(
         self.inputs(),
         index,
         [ptr]<typename C>(const C& param)
@@ -190,14 +199,59 @@ struct Controls<T>
   void label(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    inputs_info_t::for_nth(
+    inputs_info_t::for_nth_mapped(
         self.inputs(),
         index,
-        [ptr](const auto& param)
+        [ptr]<typename P>(const P& param)
         {
+          if constexpr (requires { P::label(); })
+          {
+            vintage::label{P::label()}.copy_to(ptr);
+          }
+          else if constexpr (requires { P::name(); })
+          {
+            vintage::label{P::name()}.copy_to(ptr);
+          }
+        });
+  }
+
+  template <typename Effect_T>
+  void properties(Effect_T& effect, int index, void* ptr)
+  {
+    auto& self = effect.effect;
+    auto& props = *(vintage::ParameterProperties*)ptr;
+
+    inputs_info_t::for_nth_mapped(
+        self.inputs(),
+        index,
+        [&props, index](const auto& param)
+        {
+          props.stepFloat = 0.01;
+          props.smallStepFloat = 0.01;
+          props.largeStepFloat = 0.01;
+
           if constexpr (requires { param.label(); })
           {
-            vintage::label{param.label()}.copy_to(ptr);
+            vintage::label{param.label()}.copy_to(props.label);
+          }
+          props.flags = {};
+          props.minInteger = 0;
+          props.maxInteger = 1;
+          props.stepInteger = 1;
+          props.largeStepInteger = 1;
+
+          if constexpr (requires { param.shortLabel(); })
+          {
+            vintage::short_label{param.shortLabel()}.copy_to(
+                props.shortLabel);
+          }
+          props.displayIndex = index;
+          props.category = 0;
+          props.numParametersInCategory = 2;
+          if constexpr (requires { param.categoryLabel(); })
+          {
+            vintage::category_label{param.categoryLabel()}.copy_to(
+                props.categoryLabel);
           }
         });
   }

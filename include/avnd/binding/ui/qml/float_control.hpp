@@ -17,7 +17,7 @@ struct float_control
   void changed(Parent& parent, int idx, float value)
   {
     using T = typename Parent::type;
-    avnd::parameter_input_introspection<T>::for_nth(
+    avnd::parameter_input_introspection<T>::for_nth_raw(
         avnd::get_inputs(parent.implementation),
         idx,
         [value]<typename C>(C& ctl)

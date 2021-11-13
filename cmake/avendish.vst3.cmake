@@ -16,6 +16,9 @@ endif()
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0)
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0 CACHE INTERNAL "")
 
+add_definitions(-DDEVELOPMENT)
+include_directories("${VST3_SDK_ROOT}")
+
 # VST3 uses COM APIs which require no virtual dtors in interfaces
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-non-virtual-dtor")
@@ -74,6 +77,7 @@ add_library(Avendish::Avendish_vst3 ALIAS Avendish_vst3)
 
 target_sources(Avendish PRIVATE
   include/avnd/binding/vst3/audio_effect.hpp
+  include/avnd/binding/vst3/bus_info.hpp
   include/avnd/binding/vst3/component.hpp
   include/avnd/binding/vst3/component_base.hpp
   include/avnd/binding/vst3/configure.hpp

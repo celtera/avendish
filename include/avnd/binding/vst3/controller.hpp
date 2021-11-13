@@ -83,7 +83,7 @@ public:
       return Steinberg::kInvalidArgument;
 
     info.id = inputs_info_t::index_map[paramIndex];
-    inputs_info_t::for_nth(
+    inputs_info_t::for_nth_raw(
           info.id,
           [&] <std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
       setStr(info.title, C::name());
@@ -109,7 +109,7 @@ public:
 
     if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth(
+      inputs_info_t::for_nth_raw(
             this->inputs_mirror,
             tag,
             [&] <typename C> (C& field) {
@@ -126,7 +126,7 @@ public:
 
     if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth(
+      inputs_info_t::for_nth_raw(
             this->inputs_mirror,
             tag,
             [&] <typename C> (C& field) {
@@ -142,7 +142,7 @@ public:
 
     if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth(
+      inputs_info_t::for_nth_raw(
             this->inputs_mirror,
             tag,
             [&] <typename C> (C& field) {
@@ -159,7 +159,7 @@ public:
 
     if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth(
+      inputs_info_t::for_nth_raw(
             this->inputs_mirror,
             tag,
             [&] <typename C> (C& field) {
@@ -234,7 +234,7 @@ public:
     using namespace Steinberg;
     using namespace Steinberg::Vst;
     bool ok = false;
-    inputs_info_t::for_nth(
+    inputs_info_t::for_nth_raw(
           tag,
           [&] <auto Idx, typename C> (avnd::field_reflection<Idx, C> tag) {
             ok = avnd::display_control<C>(

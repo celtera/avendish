@@ -179,4 +179,24 @@ concept polyphonic_audio_processor
     = polyphonic_processor<float, T> || polyphonic_processor<double, T>;
 
 
+template <typename T>
+concept sample_arg_processor
+    = mono_per_sample_arg_processor<float, T> || mono_per_sample_arg_processor<double, T>;
+template <typename T>
+concept channel_arg_processor
+    = monophonic_arg_audio_effect<float, T> || monophonic_arg_audio_effect<double, T>;
+template <typename T>
+concept bus_arg_processor
+    = polyphonic_arg_audio_effect<float, T> || polyphonic_arg_audio_effect<double, T>;
+
+template <typename T>
+concept sample_port_processor
+= mono_per_sample_port_processor<float, T> || mono_per_sample_port_processor<double, T>;
+template <typename T>
+concept channel_port_processor
+= monophonic_port_audio_effect<float, T> || monophonic_port_audio_effect<double, T>;
+template <typename T>
+concept bus_port_processor
+= polyphonic_port_audio_effect<float, T> || polyphonic_port_audio_effect<double, T>;
+
 }

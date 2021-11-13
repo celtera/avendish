@@ -42,28 +42,6 @@ inline uint32 getSampleFramesSizeInBytes (const Steinberg::Vst::ProcessSetup& pr
                        : sizeof(Sample64));
 }
 
-struct AudioBusInfo
-{
-  Steinberg::Vst::MediaType mediaType;
-  Steinberg::Vst::BusDirection direction;
-  int32 channelCount;
-  Steinberg::Vst::String128 name;
-  Steinberg::Vst::BusType busType;
-  uint32 flags;
-
-  Steinberg::Vst::SpeakerArrangement arrangement{};
-};
-
-struct EventBusInfo
-{
-  Steinberg::Vst::MediaType mediaType;
-  Steinberg::Vst::BusDirection direction;
-  int32 channelCount;
-  Steinberg::Vst::String128 name;
-  Steinberg::Vst::BusType busType;
-  uint32 flags;
-};
-
 class ComponentCommon
     : public Steinberg::Vst::IComponent
     , public Steinberg::IDependent
