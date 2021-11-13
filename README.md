@@ -67,6 +67,12 @@ Here is an example of various Max/MSP & PureData objects generated from the exam
 
 ![PureData example](https://user-images.githubusercontent.com/2772730/141643674-84ad6ddc-3a52-4f83-97e7-dcaf8acd3565.png)
 
+## Usage
+
+The simplest way to get started is to take a look at the examples, and clone the [template repository](https://github.com/celtera/avendish-audio-processor-template).
+
+A recent enough clang version is provided for all platforms (check the CI scripts in `.github/workflows/cmake`).
+
 ### Audio processor
 
 A most basic avendish audio processor would look like this:
@@ -194,10 +200,19 @@ If a mono processor is written, the library will wrap it automatically in the ca
 
  - Continue porting the concepts developed in https://github.com/jcelerier/score-simple-api-2/ ; in particular for CPU-based image processing. Extend to e.g. Krita plug-ins.
  - Implement concepts for GPU-based processing.
- - Improving the handling of callbacks.
+ - Have a basic UI story.
+ - Improve the handling of callbacks.
  - Port many effects :-)
- - Setup CI
- - Setup a template repository
+   * https://github.com/pcastine-lp/LitterPower 
+   * https://github.com/MTG/essentia/tree/master/src/algorithms
+   * https://github.com/cycfi/q/tree/master/q_lib/include/q
+   * https://github.com/VCVRack/Fundamental/tree/v1/src
+   * https://github.com/BespokeSynth/BespokeSynth/tree/main/Source
+   * https://github.com/LMMS/lmms/tree/master/plugins
+   * https://github.com/leomccormack/Spatial_Audio_Framework
+   * https://github.com/micknoise/Maximilian
+   * https://github.com/jamoma
+   
 
 # Licensing
 
