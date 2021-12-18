@@ -221,6 +221,7 @@ If a mono processor is written, the library will wrap it automatically in the ca
    * https://github.com/mohabouje/eDSP
    * https://github.com/LabSound/LabSound
    * https://github.com/porres/pd-else
+   * https://github.com/free-audio/clap
    * etc...
 
 
