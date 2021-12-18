@@ -203,7 +203,7 @@ If a mono processor is written, the library will wrap it automatically in the ca
  - Have a basic UI story.
  - Improve the handling of callbacks.
  - Port many effects :-)
-   * https://github.com/pcastine-lp/LitterPower 
+   * https://github.com/pcastine-lp/LitterPower
    * https://github.com/MTG/essentia/tree/master/src/algorithms
    * https://github.com/cycfi/q/tree/master/q_lib/include/q
    * https://github.com/VCVRack/Fundamental/tree/v1/src
@@ -218,8 +218,9 @@ If a mono processor is written, the library will wrap it automatically in the ca
    * https://github.com/mhamilt/AudioEffectsSuite
    * https://github.com/mohabouje/eDSP
    * https://github.com/LabSound/LabSound
+   * https://github.com/porres/pd-else
    * etc...
-   
+
 
 # Licensing
 
