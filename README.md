@@ -202,6 +202,8 @@ If a mono processor is written, the library will wrap it automatically in the ca
  - Implement concepts for GPU-based processing.
  - Have a basic UI story.
  - Improve the handling of callbacks.
+ - WebAudio backend.
+ - WASM component backend: https://radu-matei.com/blog/intro-wasm-components/
  - Port many effects :-)
    * https://github.com/pcastine-lp/LitterPower
    * https://github.com/MTG/essentia/tree/master/src/algorithms
