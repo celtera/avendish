@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/clap/audio_effect.hpp>
+#include <avnd/binding/clap/configure.hpp>
+
+using plug_type = decltype(avnd::configure<avnd_clap::config, @AVND_MAIN_CLASS@>())::type;
+using effect_type = avnd_clap::SimpleAudioEffect<plug_type>;
+
+AVND_EXPORTED_SYMBOL const struct clap_plugin_entry clap_plugin_entry = {
+   CLAP_VERSION,
+   +[] (const char* path) -> bool { /* init */ return true; },
+   +[] () { /* deinit */ },
+   +[] () -> uint32_t { /* count */ return 1; },
+   +[] (uint32_t) -> const clap_plugin_descriptor* { return &effect_type::descriptor; },
+
+   +[] (const clap_host *host, const char *plugin_id) -> const clap_plugin* { return new effect_type{host}; },
+
+   +[] () -> uint32_t { return 0; },
+   +[] (uint32_t) -> const clap_plugin_invalidation_source* { return nullptr; },
+
+   +[] () { /* refresh */ },
+};

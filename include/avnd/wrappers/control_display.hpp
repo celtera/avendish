@@ -17,7 +17,7 @@ namespace avnd
 // FIXME refactor with vintage::Controls
 
 template<typename C, typename T>
-bool display_control(const T& value, char* cstr)
+bool display_control(const T& value, char* cstr, std::size_t len)
 {
   if constexpr(requires { C::display(cstr, value); })
   {
@@ -32,7 +32,7 @@ bool display_control(const T& value, char* cstr)
   else if constexpr(requires { C{value}.display(); })
   {
     const std::string_view str = C{value}.display();
-    std::copy_n(str.data(), str.length() + 1, cstr);
+    std::copy_n(str.data(), std::min(str.length() + 1, len - 1), cstr);
     return true;
   }
   else
@@ -42,21 +42,21 @@ bool display_control(const T& value, char* cstr)
 #if __has_include(<fmt/format.h>)
     if constexpr (std::floating_point<val_type>)
     {
-      fmt::format_to(cstr, "{:.2f}\0", value);
+      *fmt::format_to_n(cstr, len, "{:.2f}", value).out = '\0';
       return true;
     }
     else if constexpr (std::is_enum_v<val_type>)
     {
       const int enum_index = static_cast<int>(value);
       if(enum_index >= 0 && enum_index < C::choices().size())
-        fmt::format_to(cstr, "{}\0", C::choices()[enum_index]);
+        *fmt::format_to_n(cstr, len, "{}", C::choices()[enum_index]).out = '\0';
       else
-        fmt::format_to(cstr, "{}\0", enum_index);
+        *fmt::format_to_n(cstr, len, "{}", enum_index).out = '\0';
       return true;
     }
     else
     {
-      fmt::format_to(cstr, "{}\0", value);
+      *fmt::format_to_n(cstr, len, "{}", value).out = '\0';
       return true;
     }
 #else
@@ -99,10 +99,10 @@ bool display_control(const T& value, char* cstr)
   }
 }
 template<typename C, typename T>
-bool display_control(const T& value, char16_t* string)
+bool display_control(const T& value, char16_t* string, std::size_t sz)
 {
-  char temp[512];
-  if(display_control<C>(value, temp))
+  char temp[512] = { 0 };
+  if(display_control<C>(value, temp, sz))
   {
     utf8_to_utf16(temp, temp + strlen(temp), string);
     return true;
@@ -110,10 +110,10 @@ bool display_control(const T& value, char16_t* string)
   return false;
 }
 template<typename C, typename T>
-bool display_control(const T& value, wchar_t* string)
+bool display_control(const T& value, wchar_t* string, std::size_t sz)
 {
-  char temp[512];
-  if(display_control<C>(value, temp))
+  char temp[512] = { 0 };
+  if(display_control<C>(value, temp, sz))
   {
     utf8_to_utf16(temp, temp + strlen(temp), string);
     return true;

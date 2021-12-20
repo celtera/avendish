@@ -239,7 +239,8 @@ public:
           [&] <auto Idx, typename C> (avnd::field_reflection<Idx, C> tag) {
             ok = avnd::display_control<C>(
               avnd::map_control_from_01<C>(valueNormalized),
-              string
+              string,
+              128
             );
             }
           );

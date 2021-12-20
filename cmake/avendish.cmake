@@ -22,6 +22,7 @@ include(avendish.pd)
 include(avendish.python)
 include(avendish.vintage)
 include(avendish.vst3)
+include(avendish.clap)
 include(avendish.standalone)
 
 # Used for getting completion in IDEs...
@@ -44,6 +45,7 @@ endfunction()
 function(avnd_make_audioplug)
   avnd_register(${ARGV})
   avnd_make_vintage(${ARGV})
+  avnd_make_clap(${ARGV})
   avnd_make_vst3(${ARGV})
 endfunction()
 

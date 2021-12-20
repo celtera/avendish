@@ -139,7 +139,7 @@ struct Controls<T>
         index,
         [ptr]<typename C>(const C& param)
         {
-          avnd::display_control<C>(param.value, reinterpret_cast<char*>(ptr));
+          avnd::display_control<C>(param.value, reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen);
         });
   }
 

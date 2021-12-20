@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <array>
 
 namespace avnd
 {
@@ -29,6 +30,10 @@ define_get_property(short_label, std::string_view, "(short label)")
 define_get_property(category, std::string_view, "(category)")
 define_get_property(copyright, std::string_view, "(copyright)")
 define_get_property(license, std::string_view, "(license)")
+define_get_property(url, std::string_view, "(url)")
+define_get_property(manual_url, std::string_view, "(manual_url)")
+define_get_property(support_url, std::string_view, "(support_url)")
+define_get_property(description, std::string_view, "(description)")
 
 /* constexpr */  std::string array_to_string(auto& authors)
 {
@@ -72,5 +77,42 @@ template<typename T>
     return array_to_string(T::creators);
   else
     return "(author)";
+}
+
+template<typename T, char Sep>
+constexpr std::array<char, 256> get_keywords()
+{
+  if constexpr(requires { T::keywords(); })
+  {
+    const auto& w = T::keywords();
+    constexpr auto n = std::ssize(w);
+    if(n > 0)
+    {
+      constexpr int cmax = 255;
+      std::array<char, 256> kw;
+      kw.fill(0);
+
+      int c = 0;
+      for(int i = 0; i < n; i++)
+      {
+        for(char ch : w[i])
+        {
+          if(c >= cmax)
+            break;
+          kw[c++] = ch;
+        }
+        if(c >= cmax)
+          break;
+
+        if(i < n - 1)
+          kw[c++] = Sep;
+      }
+
+      return kw;
+    }
+  }
+
+  return {};
+
 }
 }
