@@ -37,8 +37,7 @@ struct Midi
       static consteval auto name() { return "MIDI"; }
       struct
       {
-        const uint8_t* bytes{};
-        std::size_t size{};
+        uint8_t bytes[3]{};
         int timestamp{}; // relative to the beginning of the tick
       } * midi_messages{};
       std::size_t size{};

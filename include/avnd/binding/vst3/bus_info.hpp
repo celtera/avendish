@@ -22,7 +22,7 @@ struct event_bus_info
   }
   static constexpr int outputCount() noexcept
   {
-    return avnd::midi_input_introspection<T>::size;
+    return avnd::midi_output_introspection<T>::size;
   }
 
   static Steinberg::tresult inputInfo(

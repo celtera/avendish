@@ -21,7 +21,8 @@ concept dynamic_midi_message
     = midi_message<T> && vector_ish<decltype(T::bytes)>;
 
 template <typename T>
-concept raw_midi_message = midi_message<T> && std::is_pointer_v<
-    decltype(T::bytes)> && std::is_integral_v<decltype(T::size)>;
+concept raw_midi_message = midi_message<T>
+    && array_ish<decltype(T::bytes), 3>
+;
 
 }
