@@ -42,21 +42,21 @@ bool display_control(const T& value, char* cstr)
 #if __has_include(<fmt/format.h>)
     if constexpr (std::floating_point<val_type>)
     {
-      fmt::format_to(cstr, "{:.2f}", value);
+      fmt::format_to(cstr, "{:.2f}\0", value);
       return true;
     }
     else if constexpr (std::is_enum_v<val_type>)
     {
       const int enum_index = static_cast<int>(value);
       if(enum_index >= 0 && enum_index < C::choices().size())
-        fmt::format_to(cstr, "{}", C::choices()[enum_index]);
+        fmt::format_to(cstr, "{}\0", C::choices()[enum_index]);
       else
-        fmt::format_to(cstr, "{}", enum_index);
+        fmt::format_to(cstr, "{}\0", enum_index);
       return true;
     }
     else
     {
-      fmt::format_to(cstr, "{}", value);
+      fmt::format_to(cstr, "{}\0", value);
       return true;
     }
 #else
