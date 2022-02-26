@@ -260,8 +260,8 @@ struct SimpleAudioEffect : clap_plugin
 
     processor.process(
         effect,
-        std::span{inputs, std::size_t(in_N)},
-        std::span{outputs, std::size_t(out_N)},
+        avnd::span{inputs, std::size_t(in_N)},
+        avnd::span{outputs, std::size_t(out_N)},
         process.frames_count);
   }
 

@@ -7,17 +7,17 @@
 #include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/channels_introspection.hpp>
 #include <avnd/wrappers/prepare.hpp>
-#include <boost/pfr.hpp>
 #include <avnd/common/function_reflection.hpp>
+#include <avnd/common/span_polyfill.hpp>
+
+#include <boost/pfr.hpp>
 
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
-#include <span>
+#include <type_traits>
 #include <utility>
 #include <vector>
-
-#include <type_traits>
 
 namespace avnd
 {
@@ -113,8 +113,8 @@ struct process_adapter
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     // Audio buffers aren't used at all
@@ -171,8 +171,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
   template <typename SrcFP, typename DstFP>
   void process_port(
       avnd::effect_container<T>& implementation,
-      std::span<SrcFP*> in,
-      std::span<SrcFP*> out,
+      avnd::span<SrcFP*> in,
+      avnd::span<SrcFP*> out,
       int32_t n)
   {
     auto& ins = implementation.inputs();
@@ -242,8 +242,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     // Note: here we have a redundant check. This is to make sure that we always check the case
@@ -289,8 +289,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
   template <typename SrcFP, typename DstFP>
   void process_port(
       avnd::effect_container<T>& implementation,
-      std::span<SrcFP*> in,
-      std::span<SrcFP*> out,
+      avnd::span<SrcFP*> in,
+      avnd::span<SrcFP*> out,
       int32_t n)
   {
     auto& ins = implementation.inputs();
@@ -324,8 +324,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
         o_conv[c] = dsp_buffer_output.data() + c * n;
       }
 
-      initialize_busses<i_info>(implementation.inputs(), std::span(i_conv, input_channels));
-      initialize_busses<o_info>(implementation.outputs(), std::span(o_conv, output_channels));
+      initialize_busses<i_info>(implementation.inputs(), avnd::span(i_conv, input_channels));
+      initialize_busses<o_info>(implementation.outputs(), avnd::span(o_conv, output_channels));
 
       invoke_effect(implementation, n);
 
@@ -354,8 +354,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     // Note: here we have a redundant check. This is to make sure that we always check the case
@@ -409,8 +409,8 @@ requires polyphonic_audio_processor<T> &&(
   template <typename SrcFP, typename DstFP>
   void process_arg(
       avnd::effect_container<T>& implementation,
-      std::span<SrcFP*> in,
-      std::span<SrcFP*> out,
+      avnd::span<SrcFP*> in,
+      avnd::span<SrcFP*> out,
       int32_t n)
   {
     const int input_channels = in.size();
@@ -456,8 +456,8 @@ requires polyphonic_audio_processor<T> &&(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     // Note: here we have a redundant check. This is to make sure that we always check the case
@@ -532,8 +532,8 @@ requires(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     const int input_channels = in.size();
@@ -682,8 +682,8 @@ requires(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     const int input_channels = in.size();
@@ -753,8 +753,8 @@ requires(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation,
-      std::span<FP*> in,
-      std::span<FP*> out,
+      avnd::span<FP*> in,
+      avnd::span<FP*> out,
       int32_t n)
   {
     auto& fx = implementation.effect;

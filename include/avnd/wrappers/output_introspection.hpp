@@ -23,6 +23,10 @@ using raw_container_midi_output_introspection
     = raw_container_midi_port_introspection<typename outputs_type<T>::type>;
 
 template <typename T>
+using texture_output_introspection
+    = texture_port_introspection<typename outputs_type<T>::type>;
+
+template <typename T>
 using audio_bus_output_introspection
     = audio_bus_introspection<typename outputs_type<T>::type>;
 

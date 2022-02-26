@@ -18,6 +18,10 @@ using midi_input_introspection
     = midi_port_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
+using texture_input_introspection
+    = texture_port_introspection<typename inputs_type<T>::type>;
+
+template <typename T>
 using raw_container_midi_input_introspection
     = raw_container_midi_port_introspection<typename inputs_type<T>::type>;
 

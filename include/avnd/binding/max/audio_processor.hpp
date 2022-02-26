@@ -146,8 +146,8 @@ struct audio_processor
   {
     processor.process(
         implementation,
-        std::span{ins, std::size_t(numins)},
-        std::span{outs, std::size_t(numouts)},
+        avnd::span{ins, std::size_t(numins)},
+        avnd::span{outs, std::size_t(numouts)},
         sampleframes);
   }
 

@@ -86,4 +86,13 @@ concept enum_parameter = std::is_enum_v<decltype(T::value)>;
  *   float value;
  * };
  */
+
+template <typename T>
+concept control = parameter<T> && (has_range<T> || has_widget<T>);
+
+
+/**
+ * A sample-accurate parameter has an additional "values" member
+ * which allows to know at which sample did a control change
+ */
 }

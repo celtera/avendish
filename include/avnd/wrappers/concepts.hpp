@@ -6,6 +6,7 @@
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/callback.hpp>
 #include <avnd/concepts/generic.hpp>
+#include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/message.hpp>
 #include <avnd/concepts/midi.hpp>
 #include <avnd/concepts/midi_port.hpp>

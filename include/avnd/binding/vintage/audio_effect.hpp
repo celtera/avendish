@@ -164,8 +164,8 @@ struct SimpleAudioEffect : vintage::Effect
     // Actual processing
     processor.process(
         effect,
-        std::span{inputs, std::size_t(this->Effect::numInputs)},
-        std::span{outputs, std::size_t(this->Effect::numOutputs)},
+        avnd::span{inputs, std::size_t(this->Effect::numInputs)},
+        avnd::span{outputs, std::size_t(this->Effect::numOutputs)},
         sampleFrames);
 
     // Clear our midi ports

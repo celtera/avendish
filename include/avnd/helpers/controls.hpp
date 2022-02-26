@@ -20,6 +20,12 @@ inline constexpr auto default_range = range{0., 1., 0.5};
 template <>
 inline constexpr auto default_range<int> = range{0., 127., 64.};
 
+template <typename T>
+struct init_range_t
+{
+  T init;
+};
+using init_range = init_range_t<long double>;
 
 /// Sliders ///
 
@@ -146,14 +152,15 @@ using toggle = toggle_t<lit, setup>;
 
 
 /// Button ///
-
+struct impulse { };
 template <static_string lit>
 struct maintained_button_t
 {
   enum widget
   {
     button,
-    pushbutton
+    pushbutton,
+    bang
   };
   static consteval auto range() { struct { } dummy; return dummy; }
   static consteval auto name() { return std::string_view{lit.value}; }
@@ -167,9 +174,29 @@ struct maintained_button_t
 template <static_string lit>
 using maintained_button = maintained_button_t<lit>;
 
+template <static_string lit>
+struct impulse_button_t
+{
+    enum widget
+    {
+        bang,
+        button,
+        pushbutton
+    };
+    static consteval auto range() { struct { } dummy; return dummy; }
+    static consteval auto name() { return std::string_view{lit.value}; }
+
+    bool value = false;
+    operator bool&() noexcept { return value; }
+    operator bool() const noexcept { return value; }
+    auto& operator=(bool t) noexcept { value = t; return *this; }
+};
+
+template <static_string lit>
+using impulse_button = maintained_button_t<lit>;
+
 
 /// LineEdit ///
-
 struct lineedit_setup
 {
   std::string_view init;
@@ -237,6 +264,99 @@ struct enum_t
   auto& operator=(Enum t) noexcept { value = t; return *this; }
 };
 
+// { { "foo", 1.5 },  { "bar", 4.0 } }
+template<typename T>
+struct combo_pair {
+  std::string_view first;
+  T second;
+};
+
+/* the science isn't there yet...
+template<typename T>
+using combo_init = combo_pair<T>[];
+
+template <static_string lit, typename ValueType, combo_init in, int idx>
+struct combobox_t
+{
+  using value_type = ValueType;
+  enum widget
+  {
+    enumeration,
+    list,
+    combobox
+  };
+
+  static consteval auto range()
+  {
+    struct {
+      combo_pair<ValueType> init[std::size(in)];
+    } a{in};
+    return a;
+  }
+
+  static consteval auto name() { return std::string_view{lit.value}; }
+
+  value_type value{};
+  operator value_type&() noexcept { return value; }
+  operator value_type() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept { value = t; return *this; }
+};
+*/
+
+/// XY position ///
+template <typename T, static_string lit, range setup>
+struct xy_pad_t
+{
+  struct value_type {
+    T x, y;
+  };
+  enum widget
+  {
+    xy
+  };
+  static consteval auto range()
+  {
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+  }
+  static consteval auto name() { return std::string_view{lit.value}; }
+
+  value_type value = {setup.init, setup.init};
+
+  operator value_type&() noexcept { return value; }
+  operator value_type() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept { value = t; return *this; }
+};
+
+template <static_string lit, range setup = default_range<float>>
+using xy_pad_f32 = avnd::xy_pad_t<float, lit, setup>;
+
+/// RGBA color ///
+struct color_type {
+  float r,g,b,a;
+};
+
+using color_init = init_range_t<color_type>;
+
+template <static_string lit, color_init setup = color_init{.init = {1., 1., 1., 1.} }>
+struct color_chooser
+{
+  using value_type = color_type;
+  enum widget
+  {
+    color
+  };
+  static consteval auto range()
+  {
+    return init_range_t<value_type>{ .init = value_type(setup.init) };
+  }
+  static consteval auto name() { return std::string_view{lit.value}; }
+
+  value_type value = setup.init;
+
+  operator value_type&() noexcept { return value; }
+  operator value_type() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept { value = t; return *this; }
+};
 
 /// Bargraph ///
 
@@ -322,7 +442,7 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
     }                                                                         \
                                                                               \
     static consteval auto name() { return Name; }                             \
-    static consteval auto range()                                           \
+    static consteval auto range()                                             \
     {                                                                         \
       struct                                                                  \
       {                                                                       \
