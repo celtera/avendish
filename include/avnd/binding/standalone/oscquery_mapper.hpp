@@ -7,6 +7,7 @@
 #include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <ossia/audio/audio_engine.hpp>
 #include <ossia/detail/config.hpp>
 #include <ossia/detail/timer.hpp>
@@ -75,9 +76,9 @@ struct oscquery_mapper
     param.set_value_type(type_for_arg<decltype(Field::value)>());
 
     // Set-up the metadata
-    if constexpr (avnd::parameter_with_range<Field>)
+    if constexpr (avnd::parameter_with_full_range<Field>)
     {
-      constexpr auto ctl = Field::control();
+      constexpr auto ctl = avnd::get_range<Field>();
       param.set_domain(ossia::make_domain(ctl.min, ctl.max));
       param.set_value(ctl.init);
     }
@@ -98,7 +99,7 @@ struct oscquery_mapper
     static constexpr const auto choices = Field::choices();
     ossia::domain_base<std::string> dom{{choices.begin(), choices.end()}};
     // Set-up the metadata
-    param.set_value(dom.values[(int) Field::control().init]);
+    param.set_value(dom.values[(int) avnd::get_range<Field>().init]);
     param.set_domain(std::move(dom));
     param.set_access(ossia::access_mode::BI);
 
@@ -511,9 +512,9 @@ struct oscquery_mapper
             node, name))
     {
       param->set_value_type(type_for_arg<decltype(Field::value)>());
-      if constexpr (requires { Field::control(); })
+      if constexpr (requires { avnd::get_range<Field>(); })
       {
-        constexpr auto ctl = Field::control();
+        constexpr auto ctl = avnd::get_range<Field>();
         param->set_domain(ossia::make_domain(ctl.min, ctl.max));
       }
 
@@ -533,6 +534,7 @@ struct oscquery_mapper
 
   void create_ports()
   {
+      /*
     if constexpr (avnd::float_parameter_input_introspection<T>::size > 0)
     {
       boost::pfr::for_each_field(
@@ -546,7 +548,7 @@ struct oscquery_mapper
           object.outputs(),
           [this]<typename Field>(Field& f) { create_output(f); });
     }
-
+*/
     if constexpr (avnd::has_messages<T>)
     {
       boost::pfr::for_each_field(

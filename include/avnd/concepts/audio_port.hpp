@@ -28,7 +28,11 @@ struct is_audio_sample_port_q
 
 // struct { float* sample; };
 template <typename FP, typename T>
-concept mono_array_sample_port = std::same_as<decltype(T::samples), FP*>;
+concept mono_array_sample_port =
+   std::same_as<decltype(T::samples), FP*>
+|| std::same_as<decltype(T::samples), const FP*>
+;
+
 
 template <typename FP, typename T>
 using is_mono_array_sample_port = std::conditional_t<
@@ -48,7 +52,10 @@ struct is_mono_array_sample_port_q
 
 // struct { float** sample; };
 template <typename FP, typename T>
-concept poly_array_sample_port = std::same_as<decltype(T::samples), FP**>;
+concept poly_array_sample_port =
+   std::same_as<decltype(T::samples), FP**>
+|| std::same_as<decltype(T::samples), const FP**>
+;
 
 template <typename FP, typename T>
 using is_poly_array_sample_port = std::conditional_t<
@@ -82,4 +89,7 @@ concept fixed_poly_audio_port = poly_audio_port<T> &&
 
 template <typename T>
 concept dynamic_poly_audio_port = poly_audio_port<T> && !fixed_poly_audio_port<T>;
+
+template <typename T>
+concept audio_port = mono_audio_port<T> || poly_audio_port<T>;
 }

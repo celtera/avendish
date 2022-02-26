@@ -8,8 +8,10 @@
 namespace avnd
 {
 
-type_or_value_qualification(inputs) type_or_value_reflection(inputs)
+type_or_value_qualification(inputs)
+type_or_value_reflection(inputs)
 
-    type_or_value_qualification(outputs) type_or_value_reflection(outputs)
+type_or_value_qualification(outputs)
+type_or_value_reflection(outputs)
 
 }

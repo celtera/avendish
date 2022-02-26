@@ -14,10 +14,6 @@ using parameter_input_introspection
     = parameter_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
-using float_parameter_input_introspection
-    = float_parameter_introspection<typename inputs_type<T>::type>;
-
-template <typename T>
 using midi_input_introspection
     = midi_port_introspection<typename inputs_type<T>::type>;
 
@@ -46,7 +42,7 @@ auto& get_inputs(avnd::effect_container<T>& t)
 template <avnd::inputs_is_type T>
 auto& get_inputs(T& t)
 {
-  static_assert(std::is_void_v<T>, "Cannot get inputs on T");
+  AVND_ERROR(T, "Cannot get inputs on T");
 }
 template <avnd::inputs_is_value T>
 auto& get_inputs(T& t)

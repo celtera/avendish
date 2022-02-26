@@ -24,23 +24,20 @@ struct Lowpass
     {
       // Same for the inlet / outlet metadata.
       static consteval auto name() { return "Input"; }
-      double** samples;
+      const double** samples;
       int channels;
     } audio;
 
     struct
     {
       static consteval auto name() { return "Weight"; }
-      static consteval auto control()
+
+      struct range
       {
-        struct
-        {
-          const float min = 0.;
-          const float max = 1.;
-          const float init = 0.5;
-        } c;
-        return c;
-      }
+        const float min = 0.;
+        const float max = 1.;
+        const float init = 0.5;
+      };
 
       float value;
     } weight;

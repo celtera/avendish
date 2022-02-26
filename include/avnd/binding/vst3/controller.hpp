@@ -4,6 +4,7 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_fp.hpp>
 #include <avnd/wrappers/control_display.hpp>
+#include <avnd/wrappers/widgets.hpp>
 
 #include <avnd/binding/vst3/controller_base.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
@@ -90,10 +91,10 @@ public:
       setStr(info.shortTitle, C::name());
       if constexpr(requires { C::units(); })
         setStr(info.shortTitle, C::units());
-      if constexpr(requires { C::control().init; })
-        info.defaultNormalizedValue = avnd::map_control_to_01<C>(C::control().init);
-      if constexpr(requires { C::control().step; })
-        info.stepCount = C::control().step;
+      if constexpr(requires { avnd::get_range<C>().init; })
+        info.defaultNormalizedValue = avnd::map_control_to_01<C>(avnd::get_range<C>().init);
+      if constexpr(requires { avnd::get_range<C>().step; })
+        info.stepCount = avnd::get_range<C>().step;
     });
 
     info.unitId = 1;

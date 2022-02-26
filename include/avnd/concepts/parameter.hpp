@@ -4,12 +4,15 @@
 
 #include <avnd/concepts/generic.hpp>
 #include <avnd/common/concepts_polyfill.hpp>
+#include <avnd/wrappers/widgets.hpp>
 
 #include <string>
 
 namespace avnd
 {
-/** A "parameter" port is something that has a value:
+/**
+ * A "parameter" port is something that has a value:
+ *
  * struct {
  *   float value;
  * };
@@ -51,15 +54,36 @@ concept string_parameter = requires(T t)
     } -> std::convertible_to<std::string>;
 };
 
-template <typename T>
-concept parameter_with_range = requires
+template <typename C>
+concept parameter_with_full_range = requires
 {
-  T::control().min;
-  T::control().max;
-  T::control().init;
+  avnd::get_range<C>().min;
+  avnd::get_range<C>().max;
+  avnd::get_range<C>().init;
 };
 
 template <typename T>
 concept enum_parameter = std::is_enum_v<decltype(T::value)>;
 
+/**
+ * A "control" is a parameter + some metadata:
+ *
+ * struct
+ * {
+ *   // see widgets.hpp
+ *   enum widget { slider };
+ *
+ *
+ *   static consteval auto range() {
+ *     struct {
+ *       float min = 0.;
+ *       float max = 1.;
+ *       float init = 0.25;
+ *     } r;
+ *     return r;
+ *   }
+ *
+ *   float value;
+ * };
+ */
 }

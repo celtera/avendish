@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <cmath>
 
 #include <string>
@@ -16,9 +17,9 @@ namespace avnd
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  if constexpr (requires { T::control().min; })
+  if constexpr (requires { avnd::get_range<T>().min; })
   {
-    constexpr auto c = T::control();
+    constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else
@@ -30,9 +31,9 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 template <avnd::int_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  if constexpr (requires { T::control().min; })
+  if constexpr (requires { avnd::get_range<T>().min; })
   {
-    constexpr auto c = T::control();
+    constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else
@@ -79,9 +80,9 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   // Apply the value
   double v{};
-  if constexpr (requires { T::control().min; })
+  if constexpr (requires { avnd::get_range<T>().min; })
   {
-    constexpr auto c = T::control();
+    constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
@@ -97,11 +98,11 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   // Apply the value
   double v{};
-  if constexpr (requires { T::control().min; })
+  if constexpr (requires { avnd::get_range<T>().min; })
   {
     // TODO generalize
-    static_assert(T::control().max != T::control().min);
-    constexpr auto c = T::control();
+    static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);
+    constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }

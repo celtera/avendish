@@ -26,7 +26,7 @@ inline constexpr auto default_range<int> = range{0., 127., 64.};
 template <typename T, static_string lit, range setup>
 struct slider_t
 {
-  static consteval auto control()
+  static consteval auto range()
   {
     return range_t<T>{
         .min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
@@ -95,7 +95,7 @@ struct knob_t
   {
     knob
   };
-  static consteval auto control()
+  static consteval auto range()
   {
     return range_t<T>{
         .min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
@@ -130,7 +130,7 @@ struct toggle_t
     toggle,
     checkbox
   };
-  static consteval auto control() { return setup; }
+  static consteval auto range() { return setup; }
   static consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = setup.init;
@@ -155,7 +155,7 @@ struct maintained_button_t
     button,
     pushbutton
   };
-  static consteval auto control() { struct { } dummy; return dummy; }
+  static consteval auto range() { struct { } dummy; return dummy; }
   static consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = false;
@@ -189,7 +189,7 @@ struct lineedit_t
     textedit,
     text
   };
-  static consteval auto control()
+  static consteval auto range()
   {
     return lineedit_setup{.init = setup.value};
   }
@@ -219,7 +219,7 @@ struct enum_t
     combobox
   };
 
-  static consteval auto control()
+  static consteval auto range()
   {
     struct enum_setup
     {
@@ -322,7 +322,7 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
     }                                                                         \
                                                                               \
     static consteval auto name() { return Name; }                             \
-    static consteval auto control()                                           \
+    static consteval auto range()                                           \
     {                                                                         \
       struct                                                                  \
       {                                                                       \

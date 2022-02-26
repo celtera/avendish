@@ -185,6 +185,9 @@ struct process_adapter<T> : audio_buffer_storage<T>
     auto& in_port = i_info::template get<0>(ins);
     auto& out_port = o_info::template get<0>(outs);
 
+    // Inputs may be double** or const double**
+    using input_fp_type = std::remove_reference_t<decltype(**in_port.samples)>;
+
     if constexpr (needs_storage<SrcFP, T>::value)
     {
       // Fetch the required temporary storage
@@ -193,7 +196,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
       auto& dsp_buffer_output = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
       // Convert inputs and outputs to double
-      in_port.samples = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
+      in_port.samples = (input_fp_type**)alloca(sizeof(DstFP*) * input_channels);
       out_port.samples = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
 
       if_possible(in_port.channels = input_channels);
@@ -202,8 +205,9 @@ struct process_adapter<T> : audio_buffer_storage<T>
       // Copy & convert input channels
       for (int c = 0; c < input_channels; ++c)
       {
-        in_port.samples[c] = dsp_buffer_input.data() + c * n;
-        std::copy_n(in[c], n, in_port.samples[c]);
+        auto in_ptr = dsp_buffer_input.data() + c * n;
+        std::copy_n(in[c], n, in_ptr);
+        in_port.samples[c] = const_cast<input_fp_type*>(in_ptr);
       }
 
       for (int c = 0; c < output_channels; ++c)
@@ -222,7 +226,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     else
     {
       // Pass the buffers directly
-      in_port.samples = in.data();
+      in_port.samples = const_cast<input_fp_type**>(in.data());
       if_possible(in_port.channels = input_channels);
 
       out_port.samples = out.data();

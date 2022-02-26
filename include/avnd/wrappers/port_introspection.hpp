@@ -26,15 +26,14 @@ template <typename T>
 using parameter_introspection = predicate_introspection<T, is_parameter_t>;
 
 template <typename Field>
-using is_float_parameter_t = boost::mp11::mp_bool<float_parameter<Field>>;
-template <typename T>
-using float_parameter_introspection
-    = predicate_introspection<T, is_float_parameter_t>;
-
-template <typename Field>
 using is_midi_port_t = boost::mp11::mp_bool<midi_port<Field>>;
 template <typename T>
 using midi_port_introspection = predicate_introspection<T, is_midi_port_t>;
+
+template <typename Field>
+using is_audio_port_t = boost::mp11::mp_bool<audio_port<Field>>;
+template <typename T>
+using audio_port_introspection = predicate_introspection<T, is_audio_port_t>;
 
 template <typename Field>
 using is_raw_container_midi_port_t

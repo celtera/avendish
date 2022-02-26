@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <fmt/format.h>
 
 #include <QString>
@@ -37,10 +38,10 @@ struct float_control
   void create(Parent& parent, C& c, int control_k)
   {
     std::string_view name = value_if_possible(C::name(), else, "Control");
-    float min = value_if_possible(C::control().min, else, 0.f);
-    float max = value_if_possible(C::control().max, else, 1.f);
-    float init = value_if_possible(C::control().init, else, 0.5f);
-    float step = value_if_possible(C::control().step, else, 0.0f);
+    float min = value_if_possible(avnd::get_range<C>().min, else, 0.f);
+    float max = value_if_possible(avnd::get_range<C>().max, else, 1.f);
+    float init = value_if_possible(avnd::get_range<C>().init, else, 0.5f);
+    float step = value_if_possible(avnd::get_range<C>().step, else, 0.0f);
 
     if constexpr (requires { C::widget::knob; })
     {

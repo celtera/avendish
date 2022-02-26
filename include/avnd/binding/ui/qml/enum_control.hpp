@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <fmt/format.h>
 
 #include <QString>
@@ -30,7 +31,7 @@ struct enum_control
   void create(Parent& parent, C& c, int control_k)
   {
     std::string_view name = value_if_possible(C::name(), else, "Control");
-    int init = static_cast<int>(value_if_possible(C::control().init, else, 0));
+    int init = static_cast<int>(value_if_possible(avnd::get_range<C>().init, else, 0));
 
     // Concat enumerator texts
     std::string enumerators;

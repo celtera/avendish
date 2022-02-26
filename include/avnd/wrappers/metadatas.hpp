@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/common/coroutines.hpp>
 
 #include <vector>
 #include <string>
@@ -17,9 +18,20 @@ consteval Type get_ ## PropName() \
     return T::PropName; \
   else \
     return Default; \
+}\
+\
+template<typename T> \
+constexpr Type get_ ## PropName(const T&) \
+{ \
+  if constexpr(requires { Type{T::PropName()}; }) \
+    return T::PropName(); \
+  else if constexpr(requires { Type{T::PropName}; }) \
+    return T::PropName; \
+  else \
+    return Default; \
 }
 
-define_get_property(name, std::string_view, "(processor)")
+define_get_property(name, std::string_view, "(name)")
 define_get_property(c_name, std::string_view, "(c name)")
 define_get_property(vendor, std::string_view, "(vendor)")
 define_get_property(product, std::string_view, "(product)")
@@ -113,6 +125,37 @@ constexpr std::array<char, 256> get_keywords()
   }
 
   return {};
-
 }
+
+#if !AVND_DISABLE_COROUTINES
+using tag_iterator = avnd::generator<std::string_view>;
+template<typename T>
+inline tag_iterator get_tags()
+{
+  if constexpr(requires { T::tags(); })
+    for(std::string_view tag : T::tags())
+      co_yield tag;
+  else if constexpr(requires { T::tags; })
+    for(std::string_view tag : T::tags)
+      co_yield tag;
+}
+#else
+template<typename T>
+inline std::vector<std::string_view> get_tags()
+{
+  if constexpr(requires { T::tags(); })
+  {
+    constexpr auto t = T::tags();
+    return std::vector<std::string_view>(std::begin(t), std::end(t));
+  }
+  else if constexpr(requires { T::tags; })
+  {
+    return std::vector<std::string_view>(std::begin(T::tags), std::end(T::tags));
+  }
+  else
+  {
+    return {};
+  }
+}
+#endif
 }

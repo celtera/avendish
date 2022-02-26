@@ -5,6 +5,7 @@
 #include <avnd/wrappers/messages_introspection.hpp>
 #include <avnd/wrappers/channels_introspection.hpp>
 #include <avnd/wrappers/metadatas.hpp>
+#include <avnd/wrappers/widgets.hpp>
 
 #include <examples/Helpers/Controls.hpp>
 #include <examples/Lowpass.hpp>
@@ -217,8 +218,8 @@ void print_parameters()
             fmt::print("   - Name: '{}'\n", avnd::get_name<type>());
             fmt::print("   - Control type: {}\n", parameter_value_type(wrap));
 
-            if constexpr(avnd::parameter_with_range<type>) {
-              constexpr auto ctl = type::control();
+            if constexpr(avnd::parameter_with_full_range<type>) {
+              constexpr auto ctl = avnd::get_range<type>();
               if constexpr(requires { ctl.min; })
                 fmt::print("   - Min: {}\n", ctl.min);
               if constexpr(requires { ctl.max; })

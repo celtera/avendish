@@ -15,10 +15,6 @@ using parameter_output_introspection
     = parameter_introspection<typename outputs_type<T>::type>;
 
 template <typename T>
-using float_parameter_output_introspection
-    = float_parameter_introspection<typename outputs_type<T>::type>;
-
-template <typename T>
 using midi_output_introspection
     = midi_port_introspection<typename outputs_type<T>::type>;
 
@@ -50,7 +46,7 @@ auto& get_outputs(avnd::effect_container<T>& t)
 template <avnd::outputs_is_type T>
 auto& get_outputs(T& t)
 {
-  static_assert(std::is_void_v<T>, "Cannot get outputs on T");
+  AVND_ERROR(T, "Cannot get outputs on T");
 }
 template <avnd::outputs_is_value T>
 auto& get_outputs(T& t)

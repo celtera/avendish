@@ -38,7 +38,7 @@ struct Ui
         slider
       };
 
-      static consteval auto control()
+      static consteval auto range()
       {
         struct
         {
@@ -66,7 +66,7 @@ struct Ui
         knob
       };
 
-      static consteval auto control()
+      static consteval auto range()
       {
         struct
         {

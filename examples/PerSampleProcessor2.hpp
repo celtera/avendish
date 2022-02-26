@@ -31,7 +31,7 @@ struct PerSampleProcessor2
     struct
     {
       static consteval auto name() { return "Gain"; }
-      static consteval auto control()
+      static consteval auto range()
       {
         struct
         {

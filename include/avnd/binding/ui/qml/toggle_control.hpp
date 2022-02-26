@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <fmt/format.h>
 
 #include <QString>
@@ -31,7 +32,7 @@ struct toggle_control
   {
     std::string_view name = value_if_possible(C::name(), else, "Control");
     bool init
-        = static_cast<bool>(value_if_possible(C::control().init, else, 0));
+        = static_cast<bool>(value_if_possible(avnd::get_range<C>().init, else, 0));
 
     // Add the control
     fmt::format_to(

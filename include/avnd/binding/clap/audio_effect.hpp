@@ -8,6 +8,7 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
 #include <avnd/wrappers/control_display.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <avnd/wrappers/midi_introspection.hpp>
 #include </home/jcelerier/projets/perso/avendish/include/avnd/binding/vst3/bus_info.hpp>
 #include <avnd/common/export.hpp>
@@ -400,8 +401,8 @@ struct SimpleAudioEffect : clap_plugin
     param_in_info::for_nth_raw(
           info->id,
           [&] <std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
-            if constexpr(requires { C::control().init; })
-              info->default_value = avnd::map_control_to_double<C>(C::control().init);
+            if constexpr(requires { avnd::get_range<C>().init; })
+              info->default_value = avnd::map_control_to_double<C>(avnd::get_range<C>().init);
 
             if constexpr(avnd::enum_parameter<C>)
             {
@@ -411,11 +412,11 @@ struct SimpleAudioEffect : clap_plugin
             }
             else
             {
-              if constexpr(requires { C::control().min; })
-                info->min_value = avnd::map_control_to_double<C>(C::control().min);
-              if constexpr(requires { C::control().max; })
-                info->max_value = avnd::map_control_to_double<C>(C::control().max);
-              if constexpr(requires { C::control().step; })
+              if constexpr(requires { avnd::get_range<C>().min; })
+                info->min_value = avnd::map_control_to_double<C>(avnd::get_range<C>().min);
+              if constexpr(requires { avnd::get_range<C>().max; })
+                info->max_value = avnd::map_control_to_double<C>(avnd::get_range<C>().max);
+              if constexpr(requires { avnd::get_range<C>().step; })
                 info->flags |= CLAP_PARAM_IS_STEPPED;
             }
 

@@ -37,7 +37,7 @@ struct Minimal
       static consteval auto name() { return "Grunge"; }
       // Controls are just pre-made types with some metadata
       // relevant for setting them up it up.
-      static consteval auto control()
+      static consteval auto range()
       {
         struct
         {
