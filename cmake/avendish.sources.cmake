@@ -60,6 +60,15 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/src/dummy.cpp"
 )
 
+if(AVENDISH_INCLUDE_SOURCE_ONLY)
+  target_include_directories(
+      Avendish
+      PUBLIC
+        $<BUILD_INTERFACE:${AVND_SOURCE_DIR}/include>
+  )
+  return()
+endif()
+
 function(avnd_target_setup AVND_FX_TARGET)
   target_compile_features(
       ${AVND_FX_TARGET}
