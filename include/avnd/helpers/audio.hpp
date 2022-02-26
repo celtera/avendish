@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/helpers/static_string.hpp>
 #include <string_view>
+#include <cstdint>
 
 namespace avnd
 {
