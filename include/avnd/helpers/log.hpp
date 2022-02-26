@@ -16,7 +16,7 @@ concept logger = requires(T t)
 #if defined(__APPLE__)
   T{};
 #else
-#if defined(__clang__) && (__clang_major__ >= 12)
+#if defined(__clang__) && (__clang_major__ >= 12) && (__clang_major__ < 14)
   &T::log;
   &T::error;
 #else
