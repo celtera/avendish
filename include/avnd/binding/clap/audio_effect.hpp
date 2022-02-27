@@ -258,10 +258,11 @@ struct SimpleAudioEffect : clap_plugin
       }
     }
 
+    using samples_t = std::decay_t<decltype(inputs[0][0])>;
     processor.process(
         effect,
-        avnd::span{inputs, std::size_t(in_N)},
-        avnd::span{outputs, std::size_t(out_N)},
+        avnd::span<samples_t*>{inputs, std::size_t(in_N)},
+        avnd::span<samples_t*>{outputs, std::size_t(out_N)},
         process.frames_count);
   }
 

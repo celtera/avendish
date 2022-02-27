@@ -495,16 +495,16 @@ struct Component final
     {
       processor.process(
             effect,
-            avnd::span{(Sample32**)in, std::size_t(data.inputs[0].numChannels)},
-            avnd::span{(Sample32**)out, std::size_t(data.outputs[0].numChannels)},
+            avnd::span<Sample32*>{(Sample32**)in, std::size_t(data.inputs[0].numChannels)},
+            avnd::span<Sample32*>{(Sample32**)out, std::size_t(data.outputs[0].numChannels)},
             data.numSamples);
     }
     else
     {
       processor.process(
             effect,
-            avnd::span{(Sample64**)in, std::size_t(data.inputs[0].numChannels)},
-            avnd::span{(Sample64**)out, std::size_t(data.outputs[0].numChannels)},
+            avnd::span<Sample64*>{(Sample64**)in, std::size_t(data.inputs[0].numChannels)},
+            avnd::span<Sample64*>{(Sample64**)out, std::size_t(data.outputs[0].numChannels)},
             data.numSamples);
     }
   }
