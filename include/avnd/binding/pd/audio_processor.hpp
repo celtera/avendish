@@ -155,8 +155,8 @@ struct audio_processor
 
     processor.process(
         implementation,
-        avnd::span{input, input_channels},
-        avnd::span{output, output_channels},
+        avnd::span<t_sample*>{input, input_channels},
+        avnd::span<t_sample*>{output, output_channels},
         n);
 
     return ++w;

@@ -162,10 +162,11 @@ struct SimpleAudioEffect : vintage::Effect
     controls.write(effect);
 
     // Actual processing
+    using fp_t = std::decay_t<decltype(inputs[0][0])>;
     processor.process(
         effect,
-        avnd::span{inputs, std::size_t(this->Effect::numInputs)},
-        avnd::span{outputs, std::size_t(this->Effect::numOutputs)},
+        avnd::span<fp_t*>{inputs, std::size_t(this->Effect::numInputs)},
+        avnd::span<fp_t*>{outputs, std::size_t(this->Effect::numOutputs)},
         sampleFrames);
 
     // Clear our midi ports

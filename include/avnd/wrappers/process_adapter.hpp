@@ -324,8 +324,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
         o_conv[c] = dsp_buffer_output.data() + c * n;
       }
 
-      initialize_busses<i_info>(implementation.inputs(), avnd::span(i_conv, input_channels));
-      initialize_busses<o_info>(implementation.outputs(), avnd::span(o_conv, output_channels));
+      initialize_busses<i_info>(implementation.inputs(), avnd::span<DstFP*>(i_conv, input_channels));
+      initialize_busses<o_info>(implementation.outputs(), avnd::span<DstFP*>(o_conv, output_channels));
 
       invoke_effect(implementation, n);
 
