@@ -10,7 +10,7 @@
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <avnd/wrappers/midi_introspection.hpp>
-#include </home/jcelerier/projets/perso/avendish/include/avnd/binding/vst3/bus_info.hpp>
+
 #include <avnd/common/export.hpp>
 
 #include <avnd/binding/clap/helpers.hpp>

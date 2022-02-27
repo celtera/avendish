@@ -182,13 +182,13 @@ template <typename C>
 concept has_range =
    requires { C::range(); }
 || requires { sizeof(C::range); }
-|| requires { typename C::range{}; }
+|| requires { sizeof(typename C::range); }
 ;
 
 template<typename T>
 consteval auto get_range()
 {
-  if constexpr(requires { typename T::range{}; })
+  if constexpr(requires { sizeof(typename T::range); })
     return typename T::range{};
   else if constexpr(requires { T::range(); })
     return T::range();
@@ -210,13 +210,13 @@ template <typename C>
 concept has_normalize =
    requires { C::normalize(); }
 || requires { sizeof(C::normalize); }
-|| requires { typename C::normalize{}; }
+|| requires { sizeof(typename C::normalize); }
 ;
 
 template<avnd::has_normalize T>
 consteval auto get_normalize()
 {
-  if constexpr(requires { typename T::normalize{}; })
+  if constexpr(requires { sizeof(typename T::normalize); })
     return typename T::normalize{};
   else if constexpr(requires { T::normalize(); })
     return T::normalize();
