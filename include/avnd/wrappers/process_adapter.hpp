@@ -221,11 +221,18 @@ struct process_adapter<T> : audio_buffer_storage<T>
     int k = 0;
     Info::for_all(ports, [&] (auto& bus) {
       using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
-      if(k + bus.channels() < buffers.size())
-        bus.samples = buffers.data() + k;
+      const int channels = avnd::get_channels(bus);
+      if(k + channels < buffers.size())
+      {
+        auto buffer = buffers.data() + k;
+        bus.samples = const_cast<decltype(bus.samples)>(buffer);
+      }
       else
-        bus.samples = this->zero_storage_for(sample_type{}).zero_pointers.data();
-      k += bus.channels();
+      {
+        auto buffer = this->zero_storage_for(sample_type{}).zero_pointers.data();
+        bus.samples = const_cast<decltype(bus.samples)>(buffer);
+      }
+      k += channels;
       // FIXME for variable channels, we have to set them beforehand !!
     });
   }
@@ -245,43 +252,59 @@ struct process_adapter<T> : audio_buffer_storage<T>
 
     if constexpr (needs_storage<SrcFP, T>::value)
     {
-      // Here we get the first audio port declared
-      auto& in_port = boost::pfr::get<i_info::index_map[0]>(ins);
-      auto& out_port = boost::pfr::get<o_info::index_map[0]>(outs);
-
-      // Fetch the required temporary storage
+      // In this case we need to convert, e.g. from float to double or conversely
       using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
-      auto& dsp_buffer_input = audio_buffer_storage<T>::input_buffer_for(needed_type{});
-      auto& dsp_buffer_output = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
-      // Convert inputs to the right FP type, init outputs
-      auto i_conv = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
-      for (int c = 0; c < input_channels; ++c)
+      // If there are inputs:
+      if constexpr(i_info::size > 0)
       {
-        i_conv[c] = dsp_buffer_input.data() + c * n;
-        std::copy_n(in[c], n, i_conv[c]);
+        // Here we get the first audio port declared
+        auto& in_port = boost::pfr::get<i_info::index_map[0]>(ins);
+
+        // Fetch the required temporary storage
+        auto& dsp_buffer_input = audio_buffer_storage<T>::input_buffer_for(needed_type{});
+
+        // Convert inputs to the right FP type, init outputs
+        auto i_conv = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
+        for (int c = 0; c < input_channels; ++c)
+        {
+          i_conv[c] = dsp_buffer_input.data() + c * n;
+          std::copy_n(in[c], n, i_conv[c]);
+        }
+
+        initialize_busses<i_info>(implementation.inputs(), avnd::span<DstFP*>(i_conv, input_channels));
       }
 
-      auto o_conv = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
-      for (int c = 0; c < output_channels; ++c)
+      // Same process for the outputs
+      if constexpr(o_info::size > 0)
       {
-        o_conv[c] = dsp_buffer_output.data() + c * n;
+        auto& out_port = boost::pfr::get<o_info::index_map[0]>(outs);
+
+        auto& dsp_buffer_output = audio_buffer_storage<T>::output_buffer_for(needed_type{});
+
+        auto o_conv = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
+        for (int c = 0; c < output_channels; ++c)
+        {
+          o_conv[c] = dsp_buffer_output.data() + c * n;
+        }
+
+        initialize_busses<o_info>(implementation.outputs(), avnd::span<DstFP*>(o_conv, output_channels));
       }
-
-      initialize_busses<i_info>(implementation.inputs(), avnd::span<DstFP*>(i_conv, input_channels));
-      initialize_busses<o_info>(implementation.outputs(), avnd::span<DstFP*>(o_conv, output_channels));
-
+      // Invoke the effect
       invoke_effect(implementation, n);
 
       // Copy & convert back output channels
-      for (int c = 0; c < output_channels; ++c)
+      if constexpr(o_info::size > 0)
       {
-        std::copy_n(out_port.samples[c], n, out[c]);
+        auto& out_port = boost::pfr::get<o_info::index_map[0]>(outs);
+        for (int c = 0; c < output_channels; ++c)
+        {
+          std::copy_n(out_port.samples[c], n, out[c]);
+        }
       }
     }
     else
     {
-      fprintf(stderr, " --- %d %d --- \n", in.size(), out.size());
       initialize_busses<i_info>(implementation.inputs(), in);
       initialize_busses<o_info>(implementation.outputs(), out);
 

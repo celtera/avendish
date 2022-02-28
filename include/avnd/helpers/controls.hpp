@@ -37,6 +37,7 @@ struct slider_t
     return range_t<T>{
         .min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
+
   static consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
@@ -304,12 +305,21 @@ struct combobox_t
 */
 
 /// XY position ///
+
+template<typename T>
+struct xy_type {
+  T x, y;
+
+  constexpr xy_type& operator=(T single) noexcept {
+    x = single;
+    y = single;
+    return *this;
+  }
+};
 template <typename T, static_string lit, range setup>
 struct xy_pad_t
 {
-  struct value_type {
-    T x, y;
-  };
+  using value_type = xy_type<T>;
   enum widget
   {
     xy
@@ -333,6 +343,13 @@ using xy_pad_f32 = avnd::xy_pad_t<float, lit, setup>;
 /// RGBA color ///
 struct color_type {
   float r,g,b,a;
+  constexpr color_type& operator=(float single) noexcept {
+    r = single;
+    g = single;
+    b = single;
+    a = single;
+    return *this;
+  }
 };
 
 using color_init = init_range_t<color_type>;

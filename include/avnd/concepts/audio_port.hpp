@@ -94,5 +94,12 @@ template <typename T>
 concept audio_port = mono_audio_port<T> || poly_audio_port<T>;
 
 
+int get_channels(fixed_poly_audio_port auto& port) {
+  return port.channels();
+}
+int get_channels(dynamic_poly_audio_port auto& port) {
+  return port.channels;
+}
+
 
 }

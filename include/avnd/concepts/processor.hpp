@@ -85,12 +85,12 @@ concept effect_is_sane = requires(T t)
 template <typename FP, typename T>
 concept monophonic_port_audio_effect
 = mono_sample_array_input_port_count<FP, T>
-> 0 && mono_sample_array_output_port_count<FP, T> > 0;
+> 0 || mono_sample_array_output_port_count<FP, T> > 0;
 
 template <typename FP, typename T>
 concept polyphonic_port_audio_effect
 = poly_sample_array_input_port_count<FP, T>
-> 0 && poly_sample_array_output_port_count<FP, T> > 0;
+> 0 || poly_sample_array_output_port_count<FP, T> > 0;
 
 template <typename FP, typename T>
 concept monophonic_single_port_audio_effect

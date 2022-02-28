@@ -363,8 +363,8 @@ struct audio_channel_manager<T>
     + avnd::poly_sample_array_input_port_count<double, T>;
 
     static constexpr int output_bus_count =
-        avnd::poly_sample_array_input_port_count<float, T>
-    + avnd::poly_sample_array_input_port_count<double, T>;
+        avnd::poly_sample_array_output_port_count<float, T>
+    + avnd::poly_sample_array_output_port_count<double, T>;
 
     [[no_unique_address]]
     std::array<int, input_bus_count> input_channels;
