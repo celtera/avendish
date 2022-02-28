@@ -20,9 +20,16 @@ struct Lowpass
 
   struct
   {
+    /** A special case for audio processors with ports is:
+     *  if the processor's first audio ports are dynamic
+     *  (that is, "channels" is not a mutable thing), then they will
+     *  be assigned the same amount of channels.
+     *  That is, they are treated implicitly as mimicking.
+     *
+     *  See the sidechain example.
+     */
     struct
     {
-      // Same for the inlet / outlet metadata.
       static consteval auto name() { return "Input"; }
       const double** samples;
       int channels;

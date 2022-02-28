@@ -83,7 +83,9 @@ struct PerBusAsPortsDynamic
   void operator()(int frames)
   {
     using namespace std;
-    for(int c = 0; c < inputs.audio.channels; ++c) {
+    int max_channels = std::min(inputs.audio.channels, outputs.audio.channels);
+
+    for(int c = 0; c < max_channels; ++c) {
       for(int k = 0; k < frames; k++) {
         outputs.audio[c][k] = tanh(inputs.audio[c][k]);
       }

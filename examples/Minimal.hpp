@@ -71,6 +71,7 @@ struct Minimal
     {
       static consteval auto name() { return "Output"; }
       double** samples;
+      int channels;
     } audio;
   } outputs;
 
