@@ -104,6 +104,17 @@ jobs:
 
           cmake --build . -- ${{ matrix.config.build_flags }}
 
+      - name: Test debug
+        shell: bash
+        run: |
+          cd build-debug
+
+          if [[ "${{ matrix.config.path }}" != "" ]]; then
+            export PATH=${{ matrix.config.path }}:$PATH
+          fi
+
+          cmake --build . --target test
+
       - name: Build release
         shell: bash
         run: |
@@ -127,3 +138,14 @@ jobs:
             ${{ matrix.config.release_flags }}
 
           cmake --build . -- ${{ matrix.config.build_flags }}
+
+      - name: Test release
+        shell: bash
+        run: |
+          cd build-release
+
+          if [[ "${{ matrix.config.path }}" != "" ]]; then
+            export PATH=${{ matrix.config.path }}:$PATH
+          fi
+
+          cmake --build . --target test

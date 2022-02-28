@@ -48,12 +48,18 @@ jobs:
 
           cmake --build . --config Debug
 
+      - name: Test debug
+        shell: bash
+        run: |
+          cd build-debug
+
+          cmake --build . --target test
+
       - name: Build release
         shell: bash
         run: |
           mkdir build-release
           cd build-release
-
 
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
@@ -67,3 +73,10 @@ jobs:
             -G "Visual Studio 17 2022"
 
           cmake --build . --config Release
+
+      - name: Test release
+        shell: bash
+        run: |
+          cd build-release
+
+          cmake --build . --target test
