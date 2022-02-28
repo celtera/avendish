@@ -2,7 +2,6 @@
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/widechar.hpp>
 #include <cstring>
-#include <algorithm>
 
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
@@ -32,7 +31,11 @@ bool display_control(const T& value, char* cstr, std::size_t len)
   else if constexpr(requires { C{value}.display(); })
   {
     const std::string_view str = C{value}.display();
-    std::copy_n(str.data(), std::min(str.length() + 1, len - 1), cstr);
+    int N = std::min(str.length() + 1, len - 1);
+    const auto src = str.data();
+    const auto dst = cstr;
+    for(int i = 0; i < N; i++)
+      dst[i] = src[i];
     return true;
   }
   else

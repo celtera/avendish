@@ -1,5 +1,5 @@
 #pragma once
-#include <algorithm>
+#include <cstddef>
 
 namespace avnd
 {
@@ -9,7 +9,9 @@ struct static_string
 {
   consteval static_string(const char (&str)[N]) noexcept
   {
-    std::copy_n(str, N, value);
+    for(int i = 0; i < N; i++) {
+      value[i] = str[i];
+    }
   }
 
   char value[N];

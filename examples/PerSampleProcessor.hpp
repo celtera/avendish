@@ -3,8 +3,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
-
-#include <algorithm>
 #include <numeric>
 
 namespace examples
@@ -64,8 +62,8 @@ struct PerSampleProcessor
   // Process one sample.
   float operator()(float input, const inputs& ins, outputs& outs, tick tick)
   {
-    float out = std::clamp(
-        std::fmod(input * ins.gain.value, internal_state + 1.0f), -0.5f, 0.5f);
+    float x = std::fmod(input * ins.gain.value, internal_state + 1.0f);
+    float out = x < -0.5f ? -0.5f : x > 0.5f ? 0.5f : x;
     internal_state = std::exp(out) + 0.1;
     return out;
   }

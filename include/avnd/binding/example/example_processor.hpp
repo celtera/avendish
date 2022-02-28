@@ -125,6 +125,9 @@ class example_processor
         avnd::init_controls(effect.inputs());
       }
 
+      // FIXME also initialize ports, channels, etc...
+      // to make sure that we never have uninitialized values
+
       /// Initialize the callbacks for nodes which have them.
       /// They allow the plug-in to notify the host.
       /// Mostly useful for programming-language-ish things, Pd, Max, etc.

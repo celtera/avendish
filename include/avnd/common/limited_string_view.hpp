@@ -2,11 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <algorithm>
+#include <avnd/common/widechar.hpp>
 
 #include <string_view>
 
-#include <avnd/common/widechar.hpp>
 namespace avnd
 {
 

@@ -3,8 +3,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
-
-#include <algorithm>
 #include <numeric>
 
 namespace examples
@@ -85,6 +83,11 @@ struct Modular
       float value;
     } level;
   } outputs;
+
+  float clamp(float x, float min, float max)
+  {
+    return x < min ? min : x > max ? max : x;
+  }
 
   void operator()()
   {
