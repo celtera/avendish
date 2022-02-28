@@ -19,6 +19,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/concepts/synth.hpp"
 
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/avnd.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/audio_channel_manager.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/channels_introspection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/concepts.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/configure.hpp"

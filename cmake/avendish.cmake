@@ -24,6 +24,7 @@ include(avendish.vintage)
 include(avendish.vst3)
 include(avendish.clap)
 include(avendish.standalone)
+include(avendish.example)
 
 # Used for getting completion in IDEs...
 function(avnd_register)

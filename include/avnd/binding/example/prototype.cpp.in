@@ -1,0 +1,40 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/example/example_processor.hpp>
+
+using type = decltype(avnd::configure<exhs::config, @AVND_MAIN_CLASS@>())::type;
+
+int main()
+{
+  exhs::example_processor<type> f;
+
+  {
+    using test_type = float;
+    test_type buffer[512];
+    test_type* inputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
+    test_type* outputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
+
+    f.start(512, 44100);
+
+    for(int i = 0; i < 16; i++)
+      for(int j = 0; j < 16; j++)
+        f.process(inputs, i, outputs, j, 512);
+
+    f.stop();
+  }
+  {
+    using test_type = double;
+    test_type buffer[512];
+    test_type* inputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
+    test_type* outputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
+
+    f.start(512, 44100);
+
+    for(int i = 0; i < 16; i++)
+      for(int j = 0; j < 16; j++)
+        f.process(inputs, i, outputs, j, 512);
+
+    f.stop();
+  }
+}
