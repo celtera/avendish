@@ -40,14 +40,17 @@ function(avnd_make_object)
   avnd_make_pd(${ARGV})
   avnd_make_max(${ARGV})
   avnd_make_standalone(${ARGV})
+  avnd_make_example_host(${ARGV})
 endfunction()
 
 # Bindings to audio plug-in APIs
 function(avnd_make_audioplug)
   avnd_register(${ARGV})
+
   avnd_make_vintage(${ARGV})
   avnd_make_clap(${ARGV})
   avnd_make_vst3(${ARGV})
+  avnd_make_example_host(${ARGV})
 endfunction()
 
 function(avnd_make_all)

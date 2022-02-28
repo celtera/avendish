@@ -3,6 +3,12 @@ include(CTest)
 function(avnd_make_example_host)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS" "" ${ARGN})
 
+  set(AVND_FX_TARGET "${AVND_TARGET}_example_host")
+  if(TARGET "${AVND_FX_TARGET}")
+    # Target has already been created in avendish.cmake
+    return()
+  endif()
+
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
@@ -12,7 +18,6 @@ function(avnd_make_example_host)
     NEWLINE_STYLE LF
   )
 
-  set(AVND_FX_TARGET "${AVND_TARGET}_example_host")
   add_executable(${AVND_FX_TARGET})
   add_test(NAME ${AVND_FX_TARGET} COMMAND ${AVND_FX_TARGET})
 
