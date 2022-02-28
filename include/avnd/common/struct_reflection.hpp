@@ -6,6 +6,7 @@
 #include <boost/pfr.hpp>
 #include <avnd/common/index_sequence.hpp>
 #include <avnd/common/dummy.hpp>
+#include <avnd/common/coroutines.hpp>
 
 namespace avnd
 {
@@ -209,6 +210,24 @@ struct predicate_introspection
     }
   }
 
+  template<typename U>
+  static constexpr void for_all(member_iterator<U> unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr (size > 0)
+    {
+      [&func, &unfiltered_fields]<typename K, K... Index>(
+            std::integer_sequence<K, Index...>)
+      {
+        for(auto& m : unfiltered_fields)
+        {
+          auto&& ppl = boost::pfr::detail::tie_as_tuple(m);
+          (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+        }
+      }
+      (indices_n{});
+    }
+  }
+
   // Will stop if an error is encountered (func should return bool)
   static constexpr bool for_all_unless(type& unfiltered_fields, auto&& func) noexcept
   {
@@ -221,6 +240,20 @@ struct predicate_introspection
         return (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)) && ...);
       }
       (indices_n{});
+    }
+    else
+    {
+      return true;
+    }
+  }
+
+  template<typename U>
+  static constexpr bool for_all_unless(member_iterator<U> unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr (size > 0)
+    {
+      AVND_ERROR(U, "Cannot use for_all_unless when there are multiple instances");
+      return false;
     }
     else
     {

@@ -258,6 +258,26 @@ struct function_reflection_t<R(Args...)>
   static constexpr const bool is_rvalue_reference = false;
 };
 
+template <typename R, typename... Args>
+struct function_reflection_t<R(&)(Args...)>
+{
+  using arguments = boost::mp11::mp_list<Args...>;
+  using return_type = R;
+  static constexpr const auto count = sizeof...(Args);
+  static constexpr const bool is_const = false;
+  static constexpr const bool is_volatile = false;
+  static constexpr const bool is_noexcept = false;
+  static constexpr const bool is_reference = false;
+  static constexpr const bool is_rvalue_reference = false;
+
+  static constexpr auto synthesize() {
+    if constexpr(std::is_void_v<R>)
+      return [] (Args...) -> void { return; };
+    else
+      return [] (Args...) -> R { return {}; };
+  }
+};
+
 template <typename T>
 using first_argument_t
     = boost::mp11::mp_first<typename function_reflection_t<T>::arguments>;

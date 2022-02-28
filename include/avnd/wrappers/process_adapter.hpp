@@ -7,6 +7,7 @@
 #include <avnd/wrappers/process_execution.hpp>
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/common/span_polyfill.hpp>
+#include <avnd/common/for_nth.hpp>
 
 #include <boost/pfr.hpp>
 
@@ -19,6 +20,14 @@
 
 namespace avnd
 {
+
+template<typename Fp>
+struct zero_storage
+{
+  std::vector<Fp> zeros;
+  std::vector<Fp*> zero_pointers;
+};
+
 /**
  * This class is used to adapt between hosts that will send audio as arrays of float** / double** channels
  * to various useful cases
@@ -55,11 +64,15 @@ struct audio_buffer_storage
   [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_output_f;
   [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_input_d;
   [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_output_d;
+  [[no_unique_address]] zero_storage<float> m_zero_storage_f;
+  [[no_unique_address]] zero_storage<double> m_zero_storage_d;
 
   auto& input_buffer_for(float) { return m_dsp_buffer_input_f; }
   auto& input_buffer_for(double) { return m_dsp_buffer_input_d; }
   auto& output_buffer_for(float) { return m_dsp_buffer_output_f; }
   auto& output_buffer_for(double) { return m_dsp_buffer_output_d; }
+  auto& zero_storage_for(float) { return m_zero_storage_f; }
+  auto& zero_storage_for(double) { return m_zero_storage_d; }
 
   template <std::floating_point SrcFP>
   void allocate_buffers(process_setup setup, SrcFP f)
@@ -73,6 +86,19 @@ struct audio_buffer_storage
           .resize(setup.frames_per_buffer * setup.input_channels);
       output_buffer_for(needed_type{})
           .resize(setup.frames_per_buffer * setup.output_channels);
+    }
+
+    // Let's play it safe for the cases where the host does not supply
+    // enough buffers
+    zero_storage_for(float{}).zeros.resize(setup.frames_per_buffer);
+    zero_storage_for(double{}).zeros.resize(setup.frames_per_buffer);
+
+    int max_channels = (16 + std::max(setup.input_channels, setup.output_channels)) * 16;
+    zero_storage_for(float{}).zero_pointers.resize(max_channels);
+    zero_storage_for(double{}).zero_pointers.resize(max_channels);
+    for(int i = 0; i < max_channels; i++) {
+      zero_storage_for(float{}).zero_pointers[i] = zero_storage_for(float{}).zeros.data();
+      zero_storage_for(double{}).zero_pointers[i] = zero_storage_for(double{}).zeros.data();
     }
   }
 };
@@ -194,11 +220,13 @@ struct process_adapter<T> : audio_buffer_storage<T>
   {
     int k = 0;
     Info::for_all(ports, [&] (auto& bus) {
+      using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
       if(k + bus.channels() < buffers.size())
         bus.samples = buffers.data() + k;
       else
-        bus.samples = nullptr;
+        bus.samples = this->zero_storage_for(sample_type{}).zero_pointers.data();
       k += bus.channels();
+      // FIXME for variable channels, we have to set them beforehand !!
     });
   }
 
@@ -253,6 +281,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     }
     else
     {
+      fprintf(stderr, " --- %d %d --- \n", in.size(), out.size());
       initialize_busses<i_info>(implementation.inputs(), in);
       initialize_busses<o_info>(implementation.outputs(), out);
 
@@ -294,34 +323,9 @@ template <typename T>
 requires polyphonic_audio_processor<T> &&(
     polyphonic_arg_audio_effect<
         double,
-        T> || polyphonic_arg_audio_effect<float, T>)struct process_adapter<T>
+        T> || polyphonic_arg_audio_effect<float, T>)
+struct process_adapter<T> : audio_buffer_storage<T>
 {
-  // buffers used in case we need to convert float -> double
-  [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_input_f;
-  [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_output_f;
-  [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_input_d;
-  [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_output_d;
-
-  auto& input_buffer_for(float) { return m_dsp_buffer_input_f; }
-  auto& input_buffer_for(double) { return m_dsp_buffer_input_d; }
-  auto& output_buffer_for(float) { return m_dsp_buffer_output_f; }
-  auto& output_buffer_for(double) { return m_dsp_buffer_output_d; }
-
-  template <std::floating_point SrcFP>
-  void allocate_buffers(process_setup setup, SrcFP f)
-  {
-    // If our effect is written with doubles, and we're in a host
-    // which requires floats, we allocate buffers to store the converted data
-    if constexpr (needs_storage<SrcFP, T>::value)
-    {
-      using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
-      input_buffer_for(needed_type{})
-          .resize(setup.frames_per_buffer * setup.input_channels);
-      output_buffer_for(needed_type{})
-          .resize(setup.frames_per_buffer * setup.output_channels);
-    }
-  }
-
   template <typename SrcFP, typename DstFP>
   void process_arg(
       avnd::effect_container<T>& implementation,
@@ -335,8 +339,8 @@ requires polyphonic_audio_processor<T> &&(
     {
       // Fetch the required temporary storage
       using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
-      auto& dsp_buffer_input = input_buffer_for(needed_type{});
-      auto& dsp_buffer_output = output_buffer_for(needed_type{});
+      auto& dsp_buffer_input = audio_buffer_storage<T>::input_buffer_for(needed_type{});
+      auto& dsp_buffer_output = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
       // Convert inputs and outputs to double
       auto in_samples = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
@@ -479,9 +483,8 @@ requires(
       // C++20: we're using our coroutine here !
       auto effects_range = implementation.full_state();
       auto effects_it = effects_range.begin();
-      for (int c = 0; c < channels; c++)
+      for (int c = 0; c < channels && effects_it != effects_range.end(); ++c, ++effects_it)
       {
-        assert(effects_it != effects_range.end());
         auto& [impl, ins, outs] = *effects_it;
 
         if constexpr (requires { sizeof(current_tick(implementation)); })
@@ -500,8 +503,6 @@ requires(
                 input_buf[c],
                 impl, ins, outs);
         }
-
-        ++effects_it;
       }
     }
   }
@@ -629,10 +630,8 @@ requires(
       // C++20: we're using our coroutine here !
       auto effects_range = implementation.full_state();
       auto effects_it = effects_range.begin();
-      for (int c = 0; c < channels; c++)
+      for (int c = 0; c < channels && effects_it != effects_range.end(); ++c, ++effects_it)
       {
-        assert(effects_it != effects_range.end());
-
         if constexpr (requires { sizeof(current_tick(implementation)); })
         {
           out[c][i] = process_0(
@@ -645,7 +644,6 @@ requires(
         {
           out[c][i] = process_0(implementation, input_buf[c], *effects_it);
         }
-        ++effects_it;
       }
     }
   }
@@ -681,7 +679,7 @@ requires(
       {
         int k = 0;
         // Here we know that we have a single effect. We copy the sample data directly inside.
-        boost::pfr::for_each_field(
+        avnd::for_each_field_ref(
             fx.inputs,
             [&k, in, i]<typename Field>(Field& field)
             {

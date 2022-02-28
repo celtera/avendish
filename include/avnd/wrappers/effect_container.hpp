@@ -24,10 +24,34 @@ struct effect_container
     // TODO maybe a runtime check
   }
 
-  auto& inputs() noexcept { return effect.inputs; }
-  auto& inputs() const noexcept { return effect.inputs; }
-  auto& outputs() noexcept { return effect.outputs; }
-  auto& outputs() const noexcept { return effect.outputs; }
+  auto& inputs() noexcept
+  {
+    if constexpr(has_inputs<T>)
+      return effect.inputs;
+    else
+      return dummy_instance;
+  }
+  auto& inputs() const noexcept
+  {
+    if constexpr(has_inputs<T>)
+      return effect.inputs;
+    else
+      return dummy_instance;
+  }
+  auto& outputs() noexcept
+  {
+    if constexpr(has_outputs<T>)
+      return effect.outputs;
+    else
+      return dummy_instance;
+  }
+  auto& outputs() const noexcept
+  {
+    if constexpr(has_outputs<T>)
+      return effect.outputs;
+    else
+      return dummy_instance;
+  }
 
   member_iterator<T> effects() { co_yield effect; }
 };

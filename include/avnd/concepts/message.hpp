@@ -33,7 +33,8 @@ concept message = reflectable_message<T> && requires(T t)
     } -> string_ish;
 };
 
-type_or_value_qualification(messages) type_or_value_reflection(messages)
+type_or_value_qualification(messages)
+type_or_value_reflection(messages)
 
 
 template<typename M>

@@ -30,7 +30,7 @@ concept logger = requires(T t)
 struct basic_logger
 {
   template <typename... T>
-  void log(fmt::format_string<T...> fmt, T&&... args)
+  static void log(fmt::format_string<T...> fmt, T&&... args) noexcept
   {
     fmt::print(stdout, fmt, std::forward<T>(args)...);
     fputc('\n', stdout);
@@ -38,7 +38,7 @@ struct basic_logger
   }
 
   template <typename... T>
-  void error(fmt::format_string<T...> fmt, T&&... args)
+  static void error(fmt::format_string<T...> fmt, T&&... args) noexcept
   {
     fmt::print(stderr, fmt, std::forward<T>(args)...);
     fputc('\n', stderr);
@@ -49,14 +49,14 @@ struct basic_logger
 struct basic_logger
 {
   template <typename... T>
-  void log(T&&... args)
+  static void log(T&&... args) noexcept
   {
     ((std::cout << args), ...);
     std::cout << std::endl;
   }
 
   template <typename... T>
-  void error(T&&... args)
+  static void error(T&&... args) noexcept
   {
     ((std::cerr << args), ...);
     std::cerr << std::endl;
@@ -67,12 +67,12 @@ struct basic_logger
 struct no_logger
 {
   template <typename... T>
-  void log(T&&... args)
+  static void log(T&&... args) noexcept
   {
   }
 
   template <typename... T>
-  void error(T&&... args)
+  static void error(T&&... args) noexcept
   {
   }
 };

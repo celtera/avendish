@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/helpers/static_string.hpp>
 #include <avnd/common/span_polyfill.hpp>
+#include <avnd/common/concepts_polyfill.hpp>
 
 #include <string_view>
 #include <cstdint>

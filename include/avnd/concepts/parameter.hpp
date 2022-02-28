@@ -90,9 +90,34 @@ concept enum_parameter = std::is_enum_v<decltype(T::value)>;
 template <typename T>
 concept control = parameter<T> && (has_range<T> || has_widget<T>);
 
+/**
+ * A value port is a parameter which is not a control.
+ */
+template <typename T>
+concept value_port = parameter<T> && !control<T>;
+
 
 /**
  * A sample-accurate parameter has an additional "values" member
  * which allows to know at which sample did a control change
  */
+template <typename T>
+concept sample_accurate_parameter =
+   parameter<T>
+&& requires (T t) { t.value = t.values[1]; };
+
+/**
+ * Like control but sample-accurate
+ */
+template <typename T>
+concept sample_accurate_control =
+  sample_accurate_parameter<T> && control<T>;
+
+/**
+ * Like value_port but sample-accurate
+ */
+template <typename T>
+concept sample_accurate_value_port =
+  sample_accurate_parameter<T> && !control<T>;
+
 }

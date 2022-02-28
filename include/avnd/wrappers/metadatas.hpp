@@ -22,14 +22,8 @@ consteval Type get_ ## PropName() \
 \
 template<typename T> \
 constexpr Type get_ ## PropName(const T&) \
-{ \
-  if constexpr(requires { Type{T::PropName()}; }) \
-    return T::PropName(); \
-  else if constexpr(requires { Type{T::PropName}; }) \
-    return T::PropName; \
-  else \
-    return Default; \
-}
+{ return get_ ## PropName<T>(); }
+
 
 define_get_property(name, std::string_view, "(name)")
 define_get_property(c_name, std::string_view, "(c name)")

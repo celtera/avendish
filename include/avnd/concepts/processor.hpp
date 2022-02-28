@@ -8,6 +8,12 @@
 
 namespace avnd
 {
+// FIXME refactor the terminology:
+// - audiosample: float sample;
+// - audioframe: float[2] frame;
+// - audochannel: float* samples;
+// - audiobus: float** bus;
+
 // Has a "struct tick" member that will be passed as argument
 // to the main processing function
 template <typename T>
@@ -113,35 +119,84 @@ concept same_arguments = std::is_same_v<
     typename function_reflection<Func>::arguments,
     boost::mp11::mp_list<Args...>>;
 
-// C++17: is_invocable
-template <typename FP, typename T>
-concept mono_per_sample_arg_processor = std::is_same_v<typename function_reflection<&T::operator()>::return_type, FP> &&(
-    std::
-        is_invocable_r_v<
-            FP,
-            T,
-            FP> || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&> || std::is_invocable_r_v<FP, T, FP, typename T::outputs&> || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, typename T::outputs&> || std::is_invocable_r_v<FP, T, FP, const typename T::tick&> || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, const typename T::tick&> || std::is_invocable_r_v<FP, T, FP, typename T::outputs&, const typename T::tick&> || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
-
-// TODO use FP
+// clang-format off
 // If a node has exactly one audio in and one audio out it can be considered monophonic
 // (and thus be instanced).
 // Otherwise, it'll be treated as polyphonic with a single instance.
+
+template <typename FP, typename T>
+concept port_invocations =
+    (std::is_invocable_r_v<void, T>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&>
+  || std::is_invocable_r_v<void, T, typename T::outputs&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&>
+  || std::is_invocable_r_v<void, T, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, typename T::outputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
+
+// C++17: is_invocable
+template <typename FP, typename T>
+concept mono_per_sample_arg_processor
+    = std::is_same_v<typename function_reflection<&T::operator()>::return_type, FP>
+      && (std::is_invocable_r_v<FP, T, FP>
+          || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&>
+          || std::is_invocable_r_v<FP, T, FP, typename T::outputs&>
+          || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, typename T::outputs&>
+          || std::is_invocable_r_v<FP, T, FP, const typename T::tick&>
+          || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, const typename T::tick&>
+          || std::is_invocable_r_v<FP, T, FP, typename T::outputs&, const typename T::tick&>
+          || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
+
 template <typename FP, typename T>
 concept mono_per_sample_port_processor
     = (sample_input_port_count<FP, T> == 1)
-      && (sample_output_port_count<FP, T> == 1)
-      && (std::
-              is_invocable_r_v<
-                  void,
-                  T> || std::is_invocable_r_v<void, T, const typename T::inputs&> || std::is_invocable_r_v<void, T, typename T::outputs&> || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&> || std::is_invocable_r_v<void, T, const typename T::tick&> || std::is_invocable_r_v<void, T, const typename T::inputs&, const typename T::tick&> || std::is_invocable_r_v<void, T, typename T::outputs&, const typename T::tick&> || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
+   && (sample_output_port_count<FP, T> == 1)
+   && port_invocations<FP, T>;
 template <typename FP, typename T>
-concept poly_per_sample_port_processor = ((sample_input_port_count<FP, T> > 1) || (sample_output_port_count<FP, T> > 1)) && (std::is_invocable_r_v<void, T> || std::is_invocable_r_v<void, T, const typename T::inputs&> || std::is_invocable_r_v<void, T, typename T::outputs&> || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&> || std::is_invocable_r_v<void, T, const typename T::tick&> || std::is_invocable_r_v<void, T, const typename T::inputs&, const typename T::tick&> || std::is_invocable_r_v<void, T, typename T::outputs&, const typename T::tick&> || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
+concept poly_per_sample_port_processor =
+    ((sample_input_port_count<FP, T> > 1)
+     || (sample_output_port_count<FP, T> > 1)
+     || (sample_input_port_count<FP, T> != sample_output_port_count<FP, T>))
+    && port_invocations<FP, T>;
 
 template <typename T>
 concept sample_processor
-    = mono_per_sample_arg_processor<double, T> || mono_per_sample_port_processor<
-        double,
-        T> || mono_per_sample_arg_processor<float, T> || mono_per_sample_port_processor<float, T>;
+ = mono_per_sample_arg_processor<double, T>
+|| mono_per_sample_port_processor<double, T>
+|| mono_per_sample_arg_processor<float, T>
+|| mono_per_sample_port_processor<float, T>;
+
+/////////////////
+
+// FIXME: we could support other cases here, such as T, FP*, FP*, T::tick, etc...
+// like above, for mono_per_sample_arg_processor
+template <typename FP, typename T>
+concept mono_per_channel_arg_processor = (std::is_invocable_r_v<void, T, FP*, FP*, int>);
+
+template <typename FP, typename T>
+concept mono_per_channel_port_processor
+    = (mono_sample_array_input_port_count<FP, T> == 1)
+   && (mono_sample_array_output_port_count<FP, T> == 1)
+   && port_invocations<FP, T>;
+
+template <typename FP, typename T>
+concept poly_per_channel_port_processor =
+    ((mono_sample_array_input_port_count<FP, T> > 1)
+     || (mono_sample_array_output_port_count<FP, T> > 1)
+     || (mono_sample_array_input_port_count<FP, T> != mono_sample_array_output_port_count<FP, T>))
+    && port_invocations<FP, T>;
+
+template <typename T>
+concept channel_processor
+ = mono_per_channel_arg_processor<double, T>
+|| mono_per_channel_port_processor<double, T>
+|| mono_per_channel_arg_processor<float, T>
+|| mono_per_channel_port_processor<float, T>;
+
+// clang-format on
+
+///////////////////
 
 // We have two axes of "adaptation":
 // - monophonic / polyphonic

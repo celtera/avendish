@@ -154,6 +154,7 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   {                                                                         \
     using type = dummy;                                                     \
     using tuple = std::tuple<>;                                             \
+    static constexpr const auto size = std::tuple_size_v<tuple>;            \
   };                                                                        \
                                                                             \
   template <Name##_is_type T>                                               \
@@ -161,6 +162,7 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   {                                                                         \
     using type = typename T::Name;                                          \
     using tuple = decltype(boost::pfr::structure_to_tuple(type{}));         \
+    static constexpr const auto size = std::tuple_size_v<tuple>;            \
   };                                                                        \
                                                                             \
   template <Name##_is_value T>                                              \
@@ -168,5 +170,6 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   {                                                                         \
     using type = std::remove_reference_t<decltype(std::declval<T>().Name)>; \
     using tuple = decltype(boost::pfr::structure_to_tuple(type{}));         \
+    static constexpr const auto size = std::tuple_size_v<tuple>;            \
   };
 }
