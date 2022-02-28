@@ -2,20 +2,20 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
 #include <avnd/binding/ui/qml/enum_control.hpp>
 #include <avnd/binding/ui/qml/float_control.hpp>
 #include <avnd/binding/ui/qml/int_control.hpp>
 #include <avnd/binding/ui/qml/toggle_control.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/messages_introspection.hpp>
 
 #include <QDebug>
+#include <QGuiApplication>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlProperty>
 #include <QQuickItem>
 #include <QQuickView>
-#include <QGuiApplication>
 
 #include <verdigris>
 
@@ -135,8 +135,7 @@ Item {{
         });
 
     // The footer
-    fmt::format_to(
-        std::back_inserter(this->componentData), "\n    }}\n  }}\n}}\n");
+    fmt::format_to(std::back_inserter(this->componentData), "\n    }}\n  }}\n}}\n");
 
     /// Create and instantiate the QML component
     QObject::connect(

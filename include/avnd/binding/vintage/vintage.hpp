@@ -36,8 +36,7 @@ struct HostCanDos
   static constexpr const char* SendTimeInfo = "sendVstTimeInfo";
   static constexpr const char* ReceiveEvents = "receiveVstEvents";
   static constexpr const char* ReceiveMidiEvent = "receiveVstMidiEvent";
-  static constexpr const char* ReportConnectionChanges
-      = "reportConnectionChanges";
+  static constexpr const char* ReportConnectionChanges = "reportConnectionChanges";
   static constexpr const char* AcceptIOChanges = "acceptIOChanges";
   static constexpr const char* SizeWindow = "sizeWindow";
   static constexpr const char* Offline = "offline";
@@ -244,8 +243,7 @@ enum class TimeInfoFlags : int32_t
   ClockValid = 1 << 15
 };
 
-constexpr TimeInfoFlags
-operator|(TimeInfoFlags lhs, TimeInfoFlags rhs) noexcept
+constexpr TimeInfoFlags operator|(TimeInfoFlags lhs, TimeInfoFlags rhs) noexcept
 {
   return TimeInfoFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
@@ -293,8 +291,7 @@ enum class ParameterFlags : int32_t
   CanRamp = 1 << 6
 };
 
-constexpr ParameterFlags
-operator|(ParameterFlags lhs, ParameterFlags rhs) noexcept
+constexpr ParameterFlags operator|(ParameterFlags lhs, ParameterFlags rhs) noexcept
 {
   return ParameterFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
@@ -309,8 +306,7 @@ enum class PinPropertiesFlags : int32_t
 constexpr PinPropertiesFlags
 operator|(PinPropertiesFlags lhs, PinPropertiesFlags rhs) noexcept
 {
-  return PinPropertiesFlags(
-      static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
+  return PinPropertiesFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
 
 enum class PlugCategory : int32_t
@@ -338,8 +334,7 @@ enum class MidiProgramNameFlags : int32_t
 constexpr MidiProgramNameFlags
 operator|(MidiProgramNameFlags lhs, MidiProgramNameFlags rhs) noexcept
 {
-  return MidiProgramNameFlags(
-      static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
+  return MidiProgramNameFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
 
 enum class SpeakerType : int32_t
@@ -454,11 +449,9 @@ enum class OfflineTaskFlags : int32_t
   NoThread = 1 << 16
 };
 
-constexpr OfflineTaskFlags
-operator|(OfflineTaskFlags lhs, OfflineTaskFlags rhs) noexcept
+constexpr OfflineTaskFlags operator|(OfflineTaskFlags lhs, OfflineTaskFlags rhs) noexcept
 {
-  return OfflineTaskFlags(
-      static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
+  return OfflineTaskFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
 
 enum class OfflineOption : int32_t
@@ -486,8 +479,7 @@ enum class AudioFileFlags : int32_t
   WantSelect = 1 << 16
 };
 
-constexpr AudioFileFlags
-operator|(AudioFileFlags lhs, AudioFileFlags rhs) noexcept
+constexpr AudioFileFlags operator|(AudioFileFlags lhs, AudioFileFlags rhs) noexcept
 {
   return AudioFileFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
@@ -563,8 +555,7 @@ enum class ModifierKey : unsigned char
 
 constexpr ModifierKey operator|(ModifierKey lhs, ModifierKey rhs) noexcept
 {
-  return ModifierKey(
-      static_cast<unsigned char>(lhs) | static_cast<unsigned char>(rhs));
+  return ModifierKey(static_cast<unsigned char>(lhs) | static_cast<unsigned char>(rhs));
 }
 
 enum class FileSelectCommand : int32_t
@@ -617,8 +608,7 @@ enum class MidiSysexFlags : int32_t
 {
 };
 
-constexpr MidiSysexFlags
-operator|(MidiSysexFlags lhs, MidiSysexFlags rhs) noexcept
+constexpr MidiSysexFlags operator|(MidiSysexFlags lhs, MidiSysexFlags rhs) noexcept
 {
   return MidiSysexFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
@@ -630,19 +620,16 @@ enum class MidiProgramCategoryFlags : int32_t
 constexpr MidiProgramCategoryFlags
 operator|(MidiProgramCategoryFlags lhs, MidiProgramCategoryFlags rhs) noexcept
 {
-  return MidiProgramCategoryFlags(
-      static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
+  return MidiProgramCategoryFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
 
 enum class MidiKeyNameFlags : int32_t
 {
 };
 
-constexpr MidiKeyNameFlags
-operator|(MidiKeyNameFlags lhs, MidiKeyNameFlags rhs) noexcept
+constexpr MidiKeyNameFlags operator|(MidiKeyNameFlags lhs, MidiKeyNameFlags rhs) noexcept
 {
-  return MidiKeyNameFlags(
-      static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
+  return MidiKeyNameFlags(static_cast<int32_t>(lhs) | static_cast<int32_t>(rhs));
 }
 
 struct Rect
@@ -991,18 +978,11 @@ using EffectDispatcherProc = intptr_t (*)(
     intptr_t value,
     void* ptr,
     float opt);
-using EffectProcessProc = void (*)(
-    Effect* effect,
-    float** inputs,
-    float** outputs,
-    int32_t sampleFrames);
-using EffectProcessDoubleProc = void (*)(
-    Effect* effect,
-    double** inputs,
-    double** outputs,
-    int32_t sampleFrames);
-using EffectSetParameterProc
-    = void (*)(Effect* effect, int32_t index, float parameter);
+using EffectProcessProc
+    = void (*)(Effect* effect, float** inputs, float** outputs, int32_t sampleFrames);
+using EffectProcessDoubleProc
+    = void (*)(Effect* effect, double** inputs, double** outputs, int32_t sampleFrames);
+using EffectSetParameterProc = void (*)(Effect* effect, int32_t index, float parameter);
 using EffectGetParameterProc = float (*)(Effect* effect, int32_t index);
 
 struct Effect

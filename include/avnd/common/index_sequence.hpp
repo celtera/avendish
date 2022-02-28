@@ -27,8 +27,7 @@ template <typename T>
 struct numbered_index_sequence;
 
 template <typename T, T... Seq>
-struct numbered_index_sequence<
-    boost::mp11::mp_list<std::integral_constant<T, Seq>...>>
+struct numbered_index_sequence<boost::mp11::mp_list<std::integral_constant<T, Seq>...>>
 {
   using type = std::integer_sequence<T, Seq...>;
 };

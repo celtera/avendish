@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/messages_introspection.hpp>
 #include <avnd/binding/max/atom_iterator.hpp>
 #include <avnd/binding/max/helpers.hpp>
+#include <avnd/wrappers/messages_introspection.hpp>
 
 namespace max
 {
@@ -21,8 +21,7 @@ struct messages
 
     if (arg_counts != argc)
     {
-      object_error(
-          nullptr, "Error: invalid argument count for call %s: ", name.data());
+      object_error(nullptr, "Error: invalid argument count for call %s: ", name.data());
       return;
     }
 
@@ -39,8 +38,7 @@ struct messages
 
     if (!can_apply_args)
     {
-      object_error(
-          nullptr, "Error: invalid arguments for call %s: ", name.data());
+      object_error(nullptr, "Error: invalid arguments for call %s: ", name.data());
       return;
     }
 
@@ -53,16 +51,12 @@ struct messages
         return (implementation.*f)(convert<Args>(argv[I])...);
       else
         return f(convert<Args>(argv[I])...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   template <typename M>
-  static void call_instance(
-      T& implementation,
-      std::string_view name,
-      int argc,
-      t_atom* argv)
+  static void
+  call_instance(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
     constexpr auto f = M::func();
@@ -70,8 +64,7 @@ struct messages
 
     if (arg_counts != (argc + 1))
     {
-      object_error(
-          nullptr, "Error: invalid argument count for call %s: ", name.data());
+      object_error(nullptr, "Error: invalid argument count for call %s: ", name.data());
       return;
     }
 
@@ -88,8 +81,7 @@ struct messages
 
     if (!can_apply_args)
     {
-      object_error(
-          nullptr, "Error: invalid arguments for call %s: ", name.data());
+      object_error(nullptr, "Error: invalid arguments for call %s: ", name.data());
       return;
     }
 
@@ -101,8 +93,7 @@ struct messages
         return (implementation.*f)(implementation, convert<Args>(argv[I])...);
       else
         return f(implementation, convert<Args>(argv[I])...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
   }
 
   template <typename M>
@@ -136,29 +127,25 @@ struct messages
     else
     {
       if constexpr (requires {
-                      M::func()(
-                          implementation, make_atom_iterator(argc, argv));
+                      M::func()(implementation, make_atom_iterator(argc, argv));
                     })
       {
         M::func()(implementation, make_atom_iterator(argc, argv));
       }
-      else if constexpr (requires
-                         { M::func()(make_atom_iterator(argc, argv)); })
+      else if constexpr (requires { M::func()(make_atom_iterator(argc, argv)); })
       {
         M::func()(make_atom_iterator(argc, argv));
       }
       else
       {
-        static_assert(
-            std::is_void_v<M>, "func() does not return a viable function");
+        static_assert(std::is_void_v<M>, "func() does not return a viable function");
       }
     }
 
     return false;
   }
 
-  static bool
-  process_messages(auto& implementation, t_symbol* s, int argc, t_atom* argv)
+  static bool process_messages(auto& implementation, t_symbol* s, int argc, t_atom* argv)
   {
     if constexpr (avnd::has_messages<T>)
     {

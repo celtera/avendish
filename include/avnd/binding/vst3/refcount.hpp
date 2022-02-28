@@ -5,11 +5,8 @@
 #include <atomic>
 namespace stv3
 {
-struct refcount {
+struct refcount
+{
   std::atomic<int> m_refcount{1};
 };
 }
-
-
-
-

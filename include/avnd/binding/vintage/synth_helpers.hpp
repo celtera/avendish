@@ -24,20 +24,16 @@ struct SynthControls : Controls<T>
         switch (index)
         {
           default:
-            self.controls.parameters[index].store(
-                parameter, std::memory_order_release);
+            self.controls.parameters[index].store(parameter, std::memory_order_release);
             break;
           case Controls<T>::parameter_count:
-            self.controls.unison_voices.store(
-                parameter, std::memory_order_release);
+            self.controls.unison_voices.store(parameter, std::memory_order_release);
             break;
           case Controls<T>::parameter_count + 1:
-            self.controls.unison_detune.store(
-                parameter, std::memory_order_release);
+            self.controls.unison_detune.store(parameter, std::memory_order_release);
             break;
           case Controls<T>::parameter_count + 2:
-            self.controls.unison_volume.store(
-                parameter, std::memory_order_release);
+            self.controls.unison_volume.store(parameter, std::memory_order_release);
             break;
         }
       }
@@ -52,8 +48,7 @@ struct SynthControls : Controls<T>
         switch (index)
         {
           default:
-            return self.controls.parameters[index].load(
-                std::memory_order_acquire);
+            return self.controls.parameters[index].load(std::memory_order_acquire);
           case Controls<T>::parameter_count:
             return self.controls.unison_voices.load(std::memory_order_acquire);
           case Controls<T>::parameter_count + 1:

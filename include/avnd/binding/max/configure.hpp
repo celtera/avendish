@@ -3,8 +3,8 @@
 #undef post
 #undef error
 
-#include <avnd/wrappers/configure.hpp>
 #include <avnd/helpers/log.hpp>
+#include <avnd/wrappers/configure.hpp>
 
 #include <utility>
 
@@ -20,15 +20,13 @@ struct logger
   template <typename... T>
   void log(fmt::format_string<T...> fmt, T&&... args)
   {
-    object_post(
-        NULL, "%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
+    object_post(NULL, "%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
   }
 
   template <typename... T>
   void error(fmt::format_string<T...> fmt, T&&... args)
   {
-    object_error(
-        NULL, "%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
+    object_error(NULL, "%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
   }
 };
 #else

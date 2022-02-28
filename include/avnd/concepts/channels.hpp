@@ -12,18 +12,14 @@ static const constexpr int undefined_channels = -1;
 
 // Channels set explicitely by the plug-in author
 template <typename T>
-concept explicit_input_channels
-    = (T::input_channels > 0);
+concept explicit_input_channels = (T::input_channels > 0);
 template <typename T>
-concept explicit_output_channels
-    = (T::output_channels > 0);
+concept explicit_output_channels = (T::output_channels > 0);
 
 template <typename T>
-concept explicit_input_channels_func
-    = (T::input_channels() > 0);
+concept explicit_input_channels_func = (T::input_channels() > 0);
 template <typename T>
-concept explicit_output_channels_func
-    = (T::output_channels() > 0);
+concept explicit_output_channels_func = (T::output_channels() > 0);
 
 template <typename T>
 concept explicit_channels = (T::channels > 0);
@@ -32,9 +28,8 @@ concept explicit_channels_func = (T::channels() > 0);
 
 // Channels detected implicitely through the number of audio channels
 template <typename T>
-concept implicit_io_channels
-    = (audio_channel_input_introspection<T>::size > 0)
-      || (audio_channel_output_introspection<T>::size > 0);
+concept implicit_io_channels = (audio_channel_input_introspection<T>::size > 0)
+                               || (audio_channel_output_introspection<T>::size > 0);
 
 template <typename T>
 consteval int channels_in_bus() noexcept
@@ -82,10 +77,9 @@ consteval int count_output_channels_in_busses() noexcept
 template <typename T>
 concept implicit_io_busses = (audio_bus_input_introspection<T>::size > 0
                               || audio_bus_output_introspection<T>::size > 0)
-                             && requires
-{
-  count_input_channels_in_busses<T>();
-  count_output_channels_in_busses<T>();
-};
+                             && requires {
+                                  count_input_channels_in_busses<T>();
+                                  count_output_channels_in_busses<T>();
+                                };
 
 }

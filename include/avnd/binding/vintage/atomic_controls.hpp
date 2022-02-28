@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/control_display.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
+#include <avnd/wrappers/control_display.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 #else
@@ -46,7 +46,7 @@ struct Controls
 };
 
 template <typename T>
-requires (avnd::parameter_input_introspection<T>::size > 0)
+  requires(avnd::parameter_input_introspection<T>::size > 0)
 struct Controls<T>
 {
   using inputs_info_t = avnd::parameter_input_introspection<T>;
@@ -62,8 +62,7 @@ struct Controls<T>
       auto& self = *static_cast<Effect_T*>(effect);
 
       if (index < Controls<T>::parameter_count)
-        self.controls.parameters[index].store(
-            parameter, std::memory_order_release);
+        self.controls.parameters[index].store(parameter, std::memory_order_release);
     };
 
     effect.Effect::getParameter = [](Effect* effect, int32_t index) noexcept
@@ -79,8 +78,7 @@ struct Controls<T>
 
   void read(const typename avnd::inputs_type<T>::type& source)
   {
-    [ this, &source ]<std::size_t... Index>(
-        std::integer_sequence<std::size_t, Index...>)
+    [ this, &source ]<std::size_t... Index>(std::integer_sequence<std::size_t, Index...>)
     {
       auto& sink = this->parameters;
       (sink[Index].store(
@@ -103,8 +101,9 @@ struct Controls<T>
     {
       auto& source = this->parameters;
       auto& sink = implementation.inputs();
-      ((inputs_info_t::template get<Index>(sink).value =
-          avnd::map_control_from_01<typename inputs_info_t::template nth_element<Index>>(source[Index].load(std::memory_order_relaxed))),
+      ((inputs_info_t::template get<Index>(sink).value
+        = avnd::map_control_from_01<typename inputs_info_t::template nth_element<Index>>(
+            source[Index].load(std::memory_order_relaxed))),
        ...);
     }
     (std::make_index_sequence<parameter_count>());
@@ -139,7 +138,10 @@ struct Controls<T>
         index,
         [ptr]<typename C>(const C& param)
         {
-          avnd::display_control<C>(param.value, reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen);
+          avnd::display_control<C>(
+              param.value,
+              reinterpret_cast<char*>(ptr),
+              vintage::Constants::ParamStrLen);
         });
   }
 
@@ -190,16 +192,14 @@ struct Controls<T>
 
           if constexpr (requires { param.shortLabel(); })
           {
-            vintage::short_label{param.shortLabel()}.copy_to(
-                props.shortLabel);
+            vintage::short_label{param.shortLabel()}.copy_to(props.shortLabel);
           }
           props.displayIndex = index;
           props.category = 0;
           props.numParametersInCategory = 2;
           if constexpr (requires { param.categoryLabel(); })
           {
-            vintage::category_label{param.categoryLabel()}.copy_to(
-                props.categoryLabel);
+            vintage::category_label{param.categoryLabel()}.copy_to(props.categoryLabel);
           }
         });
   }

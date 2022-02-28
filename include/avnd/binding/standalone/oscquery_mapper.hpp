@@ -5,8 +5,8 @@
 #include <avnd/wrappers/concepts.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <ossia/audio/audio_engine.hpp>
 #include <ossia/detail/config.hpp>
@@ -22,8 +22,11 @@
 
 namespace standalone
 {
-template<typename T>
-struct tag { using type = T; };
+template <typename T>
+struct tag
+{
+  using type = T;
+};
 
 template <typename T>
 struct oscquery_mapper
@@ -70,7 +73,7 @@ struct oscquery_mapper
   }
 
   template <avnd::parameter Field>
-  requires (!avnd::enum_parameter<Field>)
+    requires(!avnd::enum_parameter<Field>)
   void setup_control(Field& field, ossia::net::parameter_base& param)
   {
     param.set_value_type(type_for_arg<decltype(Field::value)>());
@@ -86,9 +89,8 @@ struct oscquery_mapper
     param.set_access(ossia::access_mode::BI);
 
     // Set-up the external callback
-    param.add_callback(
-        [&field](const ossia::value& val)
-    { field.value = convert(val, tag<decltype(field.value)>{}); });
+    param.add_callback([&field](const ossia::value& val)
+                       { field.value = convert(val, tag<decltype(field.value)>{}); });
   }
 
   template <avnd::enum_parameter Field>
@@ -99,38 +101,40 @@ struct oscquery_mapper
     static constexpr const auto choices = Field::choices();
     ossia::domain_base<std::string> dom{{choices.begin(), choices.end()}};
     // Set-up the metadata
-    param.set_value(dom.values[(int) avnd::get_range<Field>().init]);
+    param.set_value(dom.values[(int)avnd::get_range<Field>().init]);
     param.set_domain(std::move(dom));
     param.set_access(ossia::access_mode::BI);
 
     // Set-up the external callback
 
     param.add_callback(
-          [&field](const ossia::value& val)
-    {
-      if(const int* iindex = val.target<int>()) {
-        if(*iindex >= 0 && *iindex < Field::choices().size())
+        [&field](const ossia::value& val)
         {
-          field.value = static_cast<decltype(field.value)>(*iindex);
-        }
-      }
-      else if(const float* findex = val.target<float>()) {
-        int index = *findex;
-        if(index >= 0 && index < Field::choices().size())
-        {
-          field.value = static_cast<decltype(field.value)>(index);
-        }
-      }
-      else if(const std::string* txt = val.target<std::string>()) {
-        auto it = std::find(choices.begin(), choices.end(), *txt);
-        if(it != choices.end())
-        {
-          int index = std::distance(choices.begin(), it);
-          field.value = static_cast<decltype(field.value)>(index);
-        }
-      }
-    });
-
+          if (const int* iindex = val.target<int>())
+          {
+            if (*iindex >= 0 && *iindex < Field::choices().size())
+            {
+              field.value = static_cast<decltype(field.value)>(*iindex);
+            }
+          }
+          else if (const float* findex = val.target<float>())
+          {
+            int index = *findex;
+            if (index >= 0 && index < Field::choices().size())
+            {
+              field.value = static_cast<decltype(field.value)>(index);
+            }
+          }
+          else if (const std::string* txt = val.target<std::string>())
+          {
+            auto it = std::find(choices.begin(), choices.end(), *txt);
+            if (it != choices.end())
+            {
+              int index = std::distance(choices.begin(), it);
+              field.value = static_cast<decltype(field.value)>(index);
+            }
+          }
+        });
   }
 
   template <avnd::parameter Field>
@@ -142,8 +146,7 @@ struct oscquery_mapper
       name = Field::name();
 
     if (auto param
-        = ossia::net::create_parameter<ossia::net::generic_parameter>(
-            node, name))
+        = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
     {
       setup_control(field, *param);
     }
@@ -188,7 +191,6 @@ struct oscquery_mapper
   {
     return ossia::convert<std::string>(atom);
   }
-
 
   template <typename Arg>
   static Arg& deref(Arg& self, tag<Arg>) noexcept
@@ -300,11 +302,9 @@ struct oscquery_mapper
     // Check if all arguments passed are convertible to the expected
     // type of the method:
     auto can_apply_args = [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
-    {
+                              boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
       return (compatible<Args>(argv[I].get_type()) && ...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
 
     if (!can_apply_args)
     {
@@ -318,8 +318,7 @@ struct oscquery_mapper
     {
       std::tuple args{convert(argv[I], tag<Args>{})...};
       call_message_impl<f>(deref(std::get<I>(args), tag<Args>{})...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   template <auto f>
@@ -353,7 +352,7 @@ struct oscquery_mapper
     }
     else
     {
-      if constexpr(std::is_same_v<avnd::first_argument<f>, T&>)
+      if constexpr (std::is_same_v<avnd::first_argument<f>, T&>)
       {
         if constexpr (arg_counts == 1)
         {
@@ -466,25 +465,24 @@ struct oscquery_mapper
   template <typename Field>
   void create_message(Field& field)
   {
-    if constexpr(requires { avnd::function_reflection<Field::func()>::count; })
+    if constexpr (requires { avnd::function_reflection<Field::func()>::count; })
     {
       ossia::net::node_base& node = m_dev.get_root_node();
       std::string name{Field::name()};
-      if (auto param
-          = ossia::net::create_parameter<ossia::net::generic_parameter>(
+      if (auto param = ossia::net::create_parameter<ossia::net::generic_parameter>(
               node, name)) // TODO
       {
         // Set-up the parameter
-        using arg_list_t =
-            typename avnd::function_reflection<Field::func()>::arguments;
+        using arg_list_t = typename avnd::function_reflection<Field::func()>::arguments;
         init_message_arguments(*param, arg_list_t{});
 
         // Set-up the external callback
         param->add_callback(
             [this, &field](auto& val)
             {
-              if constexpr (requires
-                            { avnd::function_reflection<Field::func()>::count; })
+              if constexpr (requires {
+                              avnd::function_reflection<Field::func()>::count;
+                            })
               {
                 call_message<Field::func()>(val);
                 return true;
@@ -508,8 +506,7 @@ struct oscquery_mapper
       name = Field::name();
 
     if (auto param
-        = ossia::net::create_parameter<ossia::net::generic_parameter>(
-            node, name))
+        = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
     {
       param->set_value_type(type_for_arg<decltype(Field::value)>());
       if constexpr (requires { avnd::get_range<Field>(); })
@@ -534,7 +531,7 @@ struct oscquery_mapper
 
   void create_ports()
   {
-      /*
+    /*
     if constexpr (avnd::float_parameter_input_introspection<T>::size > 0)
     {
       boost::pfr::for_each_field(

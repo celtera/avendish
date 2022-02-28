@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
-#include <avnd/concepts/generic.hpp>
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/function_reflection.hpp>
+#include <avnd/concepts/generic.hpp>
 
 #include <string_view>
 
@@ -12,39 +12,36 @@ namespace avnd
 {
 
 template <typename T>
-concept stateless_message =
-    requires{ typename avnd::function_reflection<T::func()>::return_type; }
-;
+concept stateless_message
+    = requires { typename avnd::function_reflection<T::func()>::return_type; };
 template <typename T>
-concept stateful_message =
-    requires{ typename avnd::function_reflection_o<decltype(T::func())>::return_type; }
-;
-
-template <typename T>
-concept reflectable_message =
-    stateless_message<T> || stateful_message<T>
-;
+concept stateful_message
+    = requires {
+        typename avnd::function_reflection_o<decltype(T::func())>::return_type;
+      };
 
 template <typename T>
-concept message = reflectable_message<T> && requires(T t)
-{
-  {
-    t.name()
-    } -> string_ish;
-};
+concept reflectable_message = stateless_message<T> || stateful_message<T>;
 
-type_or_value_qualification(messages)
-type_or_value_reflection(messages)
+template <typename T>
+concept message = reflectable_message<T> && requires(T t) {
+                                              {
+                                                t.name()
+                                                } -> string_ish;
+                                            };
 
+type_or_value_qualification(messages) type_or_value_reflection(messages)
 
-template<typename M>
-consteval auto message_function_reflection()
+    template <typename M>
+    consteval auto message_function_reflection()
 {
   if constexpr (requires { avnd::function_reflection<M::func()>::count; })
   {
     return avnd::function_reflection<M::func()>{};
   }
-  else if constexpr (requires { avnd::function_reflection_o<decltype(M::func())>::count; })
+  else if constexpr (requires {
+                       avnd::function_reflection_o<decltype(M::func())>::count;
+                     })
   {
     return avnd::function_reflection_o<decltype(M::func())>{};
   }
@@ -54,9 +51,8 @@ consteval auto message_function_reflection()
   }
 }
 
-template<typename M>
+template <typename M>
 using message_reflection = decltype(message_function_reflection<M>());
-
 
 template <typename M>
 using first_message_argument

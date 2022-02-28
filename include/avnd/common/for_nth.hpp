@@ -2,8 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <utility>
 #include <boost/pfr.hpp>
+
+#include <utility>
 
 namespace avnd
 {
@@ -11,8 +12,7 @@ namespace avnd
 template <std::size_t N>
 void for_nth(int k, auto&& f)
 {
-  [k]<std::size_t... Index>(
-      std::index_sequence<Index...>, auto&& f)
+  [k]<std::size_t... Index>(std::index_sequence<Index...>, auto&& f)
   {
     ((void)(Index == k && (f.template operator()<Index>(), true)), ...);
   }
@@ -28,9 +28,11 @@ void for_each_field_ref(T&& value, F&& func)
 
   auto t = tie_as_tuple(value, size_t_<fields_count_val>{});
 
-  [&] <std::size_t... I> (std::index_sequence<I...>){
+  [&]<std::size_t... I>(std::index_sequence<I...>)
+  {
     (func(sequence_tuple::get<I>(t)), ...);
-  }(make_index_sequence<fields_count_val>{});
+  }
+  (make_index_sequence<fields_count_val>{});
 }
 
 }

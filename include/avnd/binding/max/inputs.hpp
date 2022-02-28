@@ -2,9 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/max/helpers.hpp>
 #include <avnd/wrappers/concepts.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/binding/max/helpers.hpp>
+
 #include <array>
 namespace max
 {
@@ -12,13 +13,11 @@ namespace max
 template <typename T>
 struct inputs
 {
-  void init(T& implementation, t_object& x_obj)
-  {
-  }
+  void init(T& implementation, t_object& x_obj) { }
 };
 
 template <typename T>
-requires (avnd::parameter_input_introspection<T>::size > 0)
+  requires(avnd::parameter_input_introspection<T>::size > 0)
 struct inputs<T>
 {
   using refl = avnd::parameter_input_introspection<T>;
@@ -34,8 +33,8 @@ struct inputs<T>
         implementation.inputs,
         [&x_obj, &n, &k, this](auto& ctl)
         {
-        if(n-- > 0)
-          proxies[k++] = proxy_new(&x_obj, n + 1, 0L);
+          if (n-- > 0)
+            proxies[k++] = proxy_new(&x_obj, n + 1, 0L);
         });
   }
 };

@@ -4,7 +4,6 @@
 
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/widgets.hpp>
-
 #include <cmath>
 
 #include <string>
@@ -105,13 +104,11 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
   return static_cast<decltype(T::value)>(res);
 }
 
-
 template <typename T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
   static_assert(std::is_void_v<T>, "Error: unhandled control type");
 }
-
 
 template <avnd::float_parameter T>
 static constexpr auto map_control_to_01(const auto& value)

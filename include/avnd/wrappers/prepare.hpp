@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/concepts.hpp>
-#include <avnd/concepts/audio_processor.hpp>
-#include <avnd/wrappers/effect_container.hpp>
 #include <avnd/common/function_reflection.hpp>
+#include <avnd/concepts/audio_processor.hpp>
+#include <avnd/wrappers/concepts.hpp>
+#include <avnd/wrappers/effect_container.hpp>
 
 namespace avnd
 {

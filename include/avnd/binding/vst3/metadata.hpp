@@ -5,10 +5,12 @@
 #include <base/source/fstring.h>
 #include <pluginterfaces/base/funknown.h>
 #include <pluginterfaces/vst/vsttypes.h>
-#include <cstdint>
-#include <string_view>
+
 #include <cinttypes>
+#include <cstdint>
 #include <exception>
+
+#include <string_view>
 
 namespace stv3
 {
@@ -21,8 +23,10 @@ using uint8 = Steinberg::uint8;
 using uint16 = Steinberg::uint16;
 using uint32 = Steinberg::uint32;
 using tresult = Steinberg::tresult;
-struct UnionID {
-  union {
+struct UnionID
+{
+  union
+  {
     uint32_t raw[4];
     Steinberg::TUID tuid;
   };
@@ -30,23 +34,46 @@ struct UnionID {
 
 static consteval uint8_t hex_to_int(char c1)
 {
-  switch(c1) {
-    case '0': return 0;
-    case '1': return 1;
-    case '2': return 2;
-    case '3': return 3;
-    case '4': return 4;
-    case '5': return 5;
-    case '6': return 6;
-    case '7': return 7;
-    case '8': return 8;
-    case '9': return 9;
-    case 'a': case 'A': return 10;
-    case 'b': case 'B': return 11;
-    case 'c': case 'C': return 12;
-    case 'd': case 'D': return 13;
-    case 'e': case 'E': return 14;
-    case 'f': case 'F': return 15;
+  switch (c1)
+  {
+    case '0':
+      return 0;
+    case '1':
+      return 1;
+    case '2':
+      return 2;
+    case '3':
+      return 3;
+    case '4':
+      return 4;
+    case '5':
+      return 5;
+    case '6':
+      return 6;
+    case '7':
+      return 7;
+    case '8':
+      return 8;
+    case '9':
+      return 9;
+    case 'a':
+    case 'A':
+      return 10;
+    case 'b':
+    case 'B':
+      return 11;
+    case 'c':
+    case 'C':
+      return 12;
+    case 'd':
+    case 'D':
+      return 13;
+    case 'e':
+    case 'E':
+      return 14;
+    case 'f':
+    case 'F':
+      return 15;
     default:
       std::terminate();
   }
@@ -59,7 +86,7 @@ static consteval uint8_t decode_hex(char c1, char c2)
 
 // Note: it's likely that the endianness here isn't good because
 // I just wanted to have something that works quickly
-template<typename T>
+template <typename T>
 static consteval UnionID component_uuid_for_type()
 {
   constexpr std::string_view chars = T::uuid();
@@ -89,14 +116,17 @@ static consteval UnionID component_uuid_for_type()
   return id;
 }
 
-template<typename T>
+template <typename T>
 static consteval UnionID controller_uuid_for_type()
 {
   UnionID component_id = component_uuid_for_type<T>();
 
   // We just swap the values to get a new uuid...
-  constexpr auto exch = [] (char& a, char& b) consteval {
-      char tmp = a; a = b; b = tmp;
+  constexpr auto exch = [](char& a, char& b) consteval
+  {
+    char tmp = a;
+    a = b;
+    b = tmp;
   };
   exch(component_id.tuid[0], component_id.tuid[15]);
   exch(component_id.tuid[1], component_id.tuid[14]);
@@ -111,18 +141,18 @@ static consteval UnionID controller_uuid_for_type()
   return component_id;
 }
 
-#define INIT_FROM_TUID(ID) {                       \
-  ID.tuid[0], ID.tuid[1], ID.tuid[2], ID.tuid[3],    \
-  ID.tuid[4], ID.tuid[5], ID.tuid[6], ID.tuid[7],    \
-  ID.tuid[8], ID.tuid[9], ID.tuid[10], ID.tuid[11],  \
-  ID.tuid[12], ID.tuid[13], ID.tuid[14], ID.tuid[15] \
- }
+#define INIT_FROM_TUID(ID)                                                              \
+  {                                                                                     \
+    ID.tuid[0], ID.tuid[1], ID.tuid[2], ID.tuid[3], ID.tuid[4], ID.tuid[5], ID.tuid[6], \
+        ID.tuid[7], ID.tuid[8], ID.tuid[9], ID.tuid[10], ID.tuid[11], ID.tuid[12],      \
+        ID.tuid[13], ID.tuid[14], ID.tuid[15]                                           \
+  }
 
-#define TUID_FROM_UNION(ID) {                       \
- ID.tuid[3], ID.tuid[2], ID.tuid[1], ID.tuid[0],    \
- ID.tuid[7], ID.tuid[6], ID.tuid[5], ID.tuid[4],    \
- ID.tuid[11], ID.tuid[10], ID.tuid[9], ID.tuid[8],  \
- ID.tuid[15], ID.tuid[14], ID.tuid[13], ID.tuid[12] \
-}
+#define TUID_FROM_UNION(ID)                                                             \
+  {                                                                                     \
+    ID.tuid[3], ID.tuid[2], ID.tuid[1], ID.tuid[0], ID.tuid[7], ID.tuid[6], ID.tuid[5], \
+        ID.tuid[4], ID.tuid[11], ID.tuid[10], ID.tuid[9], ID.tuid[8], ID.tuid[15],      \
+        ID.tuid[14], ID.tuid[13], ID.tuid[12]                                           \
+  }
 
 }

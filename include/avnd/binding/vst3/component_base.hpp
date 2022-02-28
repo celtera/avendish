@@ -2,10 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/binding/vst3/metadata.hpp>
 #include <avnd/binding/vst3/connection_point.hpp>
 #include <avnd/binding/vst3/helpers.hpp>
-
+#include <avnd/binding/vst3/metadata.hpp>
 #include <base/source/fstreamer.h>
 #include <base/source/fstring.h>
 #include <pluginterfaces/base/fplatform.h>
@@ -14,12 +13,12 @@
 #include <pluginterfaces/vst/ivstevents.h>
 #include <pluginterfaces/vst/ivstparameterchanges.h>
 
-#include <cassert>
 #include <algorithm>
+#include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <vector>
-#include <array>
 
 namespace stv3
 {
@@ -29,17 +28,18 @@ inline void** getChannelBuffersPointer(
     const Steinberg::Vst::AudioBusBuffers& bufs)
 {
   using namespace Steinberg::Vst;
-  return (processSetup.symbolicSampleSize == kSample32)
-      ? (void**)bufs.channelBuffers32
-      : (void**)bufs.channelBuffers64;
+  return (processSetup.symbolicSampleSize == kSample32) ? (void**)bufs.channelBuffers32
+                                                        : (void**)bufs.channelBuffers64;
 }
 
-inline uint32 getSampleFramesSizeInBytes (const Steinberg::Vst::ProcessSetup& processSetup, int32 numSamples)
+inline uint32 getSampleFramesSizeInBytes(
+    const Steinberg::Vst::ProcessSetup& processSetup,
+    int32 numSamples)
 {
   using namespace Steinberg::Vst;
-  return numSamples * (processSetup.symbolicSampleSize == kSample32
-                       ? sizeof(Sample32)
-                       : sizeof(Sample64));
+  return numSamples
+         * (processSetup.symbolicSampleSize == kSample32 ? sizeof(Sample32)
+                                                         : sizeof(Sample64));
 }
 
 class ComponentCommon
@@ -49,9 +49,7 @@ class ComponentCommon
 {
 public:
   Steinberg::IPtr<FUnknown> hostContext{};
-  void update(FUnknown* /*changedUnknown*/, int32 /*message*/) final override
-  {
-  }
+  void update(FUnknown* /*changedUnknown*/, int32 /*message*/) final override { }
 
   tresult initialize(FUnknown* context) final override
   {
@@ -87,7 +85,9 @@ public:
   {
     return Steinberg::kNotImplemented;
   }
-  Steinberg::tresult getRoutingInfo(Steinberg::Vst::RoutingInfo& inInfo, Steinberg::Vst::RoutingInfo& outInfo) final override
+  Steinberg::tresult getRoutingInfo(
+      Steinberg::Vst::RoutingInfo& inInfo,
+      Steinberg::Vst::RoutingInfo& outInfo) final override
   {
     return Steinberg::kNotImplemented;
   }

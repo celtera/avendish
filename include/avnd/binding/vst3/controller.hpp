@@ -1,25 +1,23 @@
 #pragma once
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/binding/vst3/controller_base.hpp>
+#include <avnd/binding/vst3/programs.hpp>
+#include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/common/widechar.hpp>
+#include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_fp.hpp>
-#include <avnd/wrappers/control_display.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/widgets.hpp>
-
-#include <avnd/binding/vst3/controller_base.hpp>
-#include <avnd/binding/vst3/refcount.hpp>
-#include <avnd/binding/vst3/programs.hpp>
-
-#include <pluginterfaces/vst/ivstmidicontrollers.h>
-#include <cstdio>
 #include <cmath>
+#include <pluginterfaces/vst/ivstmidicontrollers.h>
 
-#include <avnd/common/widechar.hpp>
+#include <cstdio>
 
 namespace stv3
 {
 
-template<typename T>
+template <typename T>
 class Controller final
     : public stv3::ControllerCommon
     , public stv3::UnitInfo
@@ -66,36 +64,34 @@ class Controller final
 
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
+
 public:
-  Controller()
-  {
-  }
+  Controller() { }
 
   virtual ~Controller();
 
-  int32 getParameterCount() override
-  {
-    return inputs_info_t::size;
-  }
+  int32 getParameterCount() override { return inputs_info_t::size; }
 
   Steinberg::tresult getParameterInfo(int32 paramIndex, ParameterInfo& info) override
   {
-    if(paramIndex < 0 || paramIndex >= inputs_info_t::size)
+    if (paramIndex < 0 || paramIndex >= inputs_info_t::size)
       return Steinberg::kInvalidArgument;
 
     info.id = inputs_info_t::index_map[paramIndex];
     inputs_info_t::for_nth_raw(
-          info.id,
-          [&] <std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
-      setStr(info.title, C::name());
-      setStr(info.shortTitle, C::name());
-      if constexpr(requires { C::units(); })
-        setStr(info.shortTitle, C::units());
-      if constexpr(requires { avnd::get_range<C>().init; })
-        info.defaultNormalizedValue = avnd::map_control_to_01<C>(avnd::get_range<C>().init);
-      if constexpr(requires { avnd::get_range<C>().step; })
-        info.stepCount = avnd::get_range<C>().step;
-    });
+        info.id,
+        [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field)
+        {
+          setStr(info.title, C::name());
+          setStr(info.shortTitle, C::name());
+          if constexpr (requires { C::units(); })
+            setStr(info.shortTitle, C::units());
+          if constexpr (requires { avnd::get_range<C>().init; })
+            info.defaultNormalizedValue
+                = avnd::map_control_to_01<C>(avnd::get_range<C>().init);
+          if constexpr (requires { avnd::get_range<C>().step; })
+            info.stepCount = avnd::get_range<C>().step;
+        });
 
     info.unitId = 1;
     info.flags = ParameterInfo::kCanAutomate;
@@ -103,36 +99,32 @@ public:
     return Steinberg::kResultTrue;
   }
 
-  ParamValue
-  normalizedParamToPlain(ParamID tag, ParamValue valueNormalized) override
+  ParamValue normalizedParamToPlain(ParamID tag, ParamValue valueNormalized) override
   {
     ParamValue res = valueNormalized;
 
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(
-            this->inputs_mirror,
-            tag,
-            [&] <typename C> (C& field) {
-              res = avnd::map_control_from_01_to_fp<C>(valueNormalized);
-            });
+          this->inputs_mirror,
+          tag,
+          [&]<typename C>(C& field)
+          { res = avnd::map_control_from_01_to_fp<C>(valueNormalized); });
     }
     return res;
   }
 
-  ParamValue
-  plainParamToNormalized(ParamID tag, ParamValue plainValue) override
+  ParamValue plainParamToNormalized(ParamID tag, ParamValue plainValue) override
   {
     ParamValue res = plainValue;
 
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(
-            this->inputs_mirror,
-            tag,
-            [&] <typename C> (C& field) {
-              res = avnd::map_control_from_fp_to_01<C>(plainValue);
-            });
+          this->inputs_mirror,
+          tag,
+          [&]<typename C>(C& field)
+          { res = avnd::map_control_from_fp_to_01<C>(plainValue); });
     }
     return res;
   }
@@ -141,40 +133,34 @@ public:
   {
     ParamValue res{};
 
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(
-            this->inputs_mirror,
-            tag,
-            [&] <typename C> (C& field) {
-              res = avnd::map_control_to_01(field);
-            });
+          this->inputs_mirror,
+          tag,
+          [&]<typename C>(C& field) { res = avnd::map_control_to_01(field); });
     }
     return res;
   }
 
   Steinberg::tresult setParamNormalized(ParamID tag, ParamValue value) override
   {
-    if(tag < 0 || tag >= inputs_info_t::size)
+    if (tag < 0 || tag >= inputs_info_t::size)
       return Steinberg::kInvalidArgument;
 
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(
-            this->inputs_mirror,
-            tag,
-            [&] <typename C> (C& field) {
-              field.value = avnd::map_control_from_01<C>(value);
-            });
+          this->inputs_mirror,
+          tag,
+          [&]<typename C>(C& field)
+          { field.value = avnd::map_control_from_01<C>(value); });
     }
 
     return Steinberg::kResultTrue;
   }
 
-
-  void update(FUnknown* changedUnknown, int32 message) override
-  {
-  }
+  void update(FUnknown* changedUnknown, int32 message) override { }
 
   Steinberg::tresult setComponentState(IBStream* state) override
   {
@@ -185,17 +171,18 @@ public:
 
     IBStreamer streamer(state, kLittleEndian);
 
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       bool ok = inputs_info_t::for_all_unless(
-            this->inputs_mirror,
-            [&] <typename C> (C& field) -> bool{
-              double param = 0.f;
-              if (streamer.readDouble(param) == false)
-                return false;
-              field.value = avnd::map_control_from_01<C>(param);
-              return true;
-            });
+          this->inputs_mirror,
+          [&]<typename C>(C& field) -> bool
+          {
+            double param = 0.f;
+            if (streamer.readDouble(param) == false)
+              return false;
+            field.value = avnd::map_control_from_01<C>(param);
+            return true;
+          });
 
       return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
     }
@@ -236,23 +223,16 @@ public:
     using namespace Steinberg::Vst;
     bool ok = false;
     inputs_info_t::for_nth_raw(
-          tag,
-          [&] <auto Idx, typename C> (avnd::field_reflection<Idx, C> tag) {
-            ok = avnd::display_control<C>(
-              avnd::map_control_from_01<C>(valueNormalized),
-              string,
-              128
-            );
-            }
-          );
+        tag, [&]<auto Idx, typename C>(avnd::field_reflection<Idx, C> tag) {
+          ok = avnd::display_control<C>(
+              avnd::map_control_from_01<C>(valueNormalized), string, 128);
+        });
 
     return ok ? Steinberg::kResultTrue : Steinberg::kResultFalse;
   }
 
-  Steinberg::tresult getParamValueByString(
-      ParamID tag,
-      TChar* string,
-      ParamValue& valueNormalized) override
+  Steinberg::tresult
+  getParamValueByString(ParamID tag, TChar* string, ParamValue& valueNormalized) override
   {
     using namespace Steinberg;
     using namespace Steinberg::Vst;
@@ -271,6 +251,8 @@ public:
   }
 };
 
-template<typename T>
-Controller<T>::~Controller() { }
+template <typename T>
+Controller<T>::~Controller()
+{
+}
 }

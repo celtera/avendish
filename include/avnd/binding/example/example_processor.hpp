@@ -58,6 +58,13 @@ void introspect()
   avnd::callback_output_introspection<T>::for_all(print_name);
 }
 
+struct midi_buffer_allocator
+{
+    void initialize(int frames)
+    {
+
+    }
+};
 
 template<typename T>
 class example_processor
@@ -80,6 +87,9 @@ class example_processor
 
     [[no_unique_address]]
     avnd::audio_channel_manager<T> channels;
+
+    [[no_unique_address]]
+    avnd::midi_storage<T> midi;
 
     int buffer_size{};
     double sample_rate{};
@@ -172,21 +182,15 @@ class example_processor
       effect.init_channels(setup_info.input_channels, setup_info.output_channels);
 
       // Setup buffers for storing MIDI messages
-      if constexpr (midi_in_info::size > 0)
+      if constexpr (midi_in_info::size > 0 || midi_out_info::size)
       {
-        midi_in_info::for_all(
-              this->effect.inputs(),
-              [&] <avnd::midi_port C> (C& in_port) {
-                // Reserve space in the midi buffers
-                /* CUSTOMIZATION POINT */
-        });
+        midi.reserve_space(effect, buffer_size);
       }
 
       // FIXME Setup buffers for storing sample-accurate events & ports
 
       // Effect-specific preparation
       avnd::prepare(effect, setup_info);
-
     }
 
     void start(int buffer_size, double sample_rate)

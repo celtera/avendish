@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/concepts/generic.hpp>
-#include <avnd/concepts/object.hpp>
 #include <avnd/binding/max/atom_iterator.hpp>
 #include <avnd/binding/max/helpers.hpp>
+#include <avnd/concepts/generic.hpp>
+#include <avnd/concepts/object.hpp>
 
 namespace max
 {
@@ -22,23 +22,18 @@ struct init_arguments
       return f();
   }
 
-  static void
-  call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
+  static void call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     // TODO std::vector<variant<float, string>>
   }
 
-  static void
-  call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
+  static void call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     // TODO avnd::span<variant<float, string>>
   }
 
-  static void call_coroutine(
-      T& implementation,
-      std::string_view name,
-      int argc,
-      t_atom* argv)
+  static void
+  call_coroutine(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     auto iterator = make_atom_iterator(argc, argv);
 
@@ -46,9 +41,7 @@ struct init_arguments
                     implementation.initialize(make_atom_iterator(argc, argv));
                   })
       return implementation.initialize(make_atom_iterator(argc, argv));
-    else if constexpr (requires {
-                         implementation.initialize(implementation, iterator);
-                       })
+    else if constexpr (requires { implementation.initialize(implementation, iterator); })
       return implementation.initialize(implementation, iterator);
     else
       STATIC_TODO(T);
@@ -58,13 +51,16 @@ struct init_arguments
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     constexpr auto f = &T::initialize;
-    constexpr auto arg_counts
-        = avnd::function_reflection<&T::initialize>::count;
+    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if (arg_counts != argc)
     {
       object_error(
-          nullptr, "Error: invalid argument count for call %s: %d (expected %d)", name.data(), argc, arg_counts);
+          nullptr,
+          "Error: invalid argument count for call %s: %d (expected %d)",
+          name.data(),
+          argc,
+          arg_counts);
       return;
     }
 
@@ -81,26 +77,22 @@ struct init_arguments
 
     if (!can_apply_args)
     {
-      object_error(
-          nullptr, "Error: invalid arguments for call %s: ", name.data());
+      object_error(nullptr, "Error: invalid arguments for call %s: ", name.data());
       return;
     }
 
     // Call the method
     [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
-    {
+        boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
       return implementation.initialize(convert<Args>(argv[I])...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   static void
   call_simple(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     constexpr auto f = &T::initialize;
-    constexpr auto arg_counts
-        = avnd::function_reflection<&T::initialize>::count;
+    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if constexpr (arg_counts == 0)
     {
@@ -122,8 +114,7 @@ struct init_arguments
         return;
       }
       else if constexpr (requires {
-                           implementation.initialize(
-                               make_atom_iterator(argc, argv));
+                           implementation.initialize(make_atom_iterator(argc, argv));
                          })
       {
         implementation.initialize(make_atom_iterator(argc, argv));
@@ -143,18 +134,12 @@ struct init_arguments
   }
 
   template <typename F>
-  static bool call_instance(
-      F f,
-      T& implementation,
-      std::string_view name,
-      int argc,
-      t_atom* argv)
+  static bool
+  call_instance(F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts
-        = avnd::function_reflection<decltype(+f){}>::count;
+    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
 
-    using arg_list_t =
-        typename avnd::function_reflection<decltype(+f){}>::arguments;
+    using arg_list_t = typename avnd::function_reflection<decltype(+f){}>::arguments;
 
     // Check if all arguments passed are convertible to the expected
     // type of the method (we expect that the first argument is a T&:
@@ -172,11 +157,9 @@ struct init_arguments
 
     // Call the method
     [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>)
-    {
+        boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>) {
       return f(implementation, convert<Args>(argv[I])...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
 
     return true;
   }
@@ -189,8 +172,7 @@ struct init_arguments
       int argc,
       t_atom* argv)
   {
-    constexpr auto arg_counts
-        = avnd::function_reflection<decltype(+f){}>::count;
+    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
     if (arg_counts != (argc + 1))
       return false;
 
@@ -210,33 +192,24 @@ struct init_arguments
     }
   }
 
-  static void call_overloaded(
-      T& implementation,
-      std::string_view name,
-      int argc,
-      t_atom* argv)
+  static void
+  call_overloaded(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     // Generate an array with the required types for the overload set.
     std::apply(
-        [&]<typename... Args>(const Args&... args) {
-          (call_overloaded_impl(args, implementation, name, argc, argv)
-           || ...);
-        },
+        [&]<typename... Args>(const Args&... args)
+        { (call_overloaded_impl(args, implementation, name, argc, argv) || ...); },
         T::initialize);
   }
 
-  static void call_template(
-      T& implementation,
-      std::string_view name,
-      int argc,
-      t_atom* argv)
+  static void
+  call_template(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     // Here we will have a coroutine which will iterate across our arguments
     if_possible(implementation.initialize(make_atom_iterator(argc, argv)));
   }
 
-  static void
-  call(T& implementation, std::string_view name, int argc, t_atom* argv)
+  static void call(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using namespace std;
     if constexpr (requires { avnd::type_list<decltype(T::initialize)>; })

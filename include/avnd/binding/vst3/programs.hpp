@@ -14,11 +14,12 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
 
   int32 getUnitCount() override { return 1; }
 
-  Steinberg::tresult getUnitInfo(int32 unitIndex, Steinberg::Vst::UnitInfo& info /*out*/) override
+  Steinberg::tresult
+  getUnitInfo(int32 unitIndex, Steinberg::Vst::UnitInfo& info /*out*/) override
   {
     info.id = 1;
     info.parentUnitId = Steinberg::Vst::kRootUnitId;
-    setStr(info.name, u16"Unit1");
+    setStr(info.name, u16 "Unit1");
     info.programListId = Steinberg::Vst::kNoProgramListId;
     return Steinberg::kResultTrue;
   }
@@ -29,12 +30,13 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
     //return static_cast<int32>(programLists.size());
   }
 
-  Steinberg::tresult
-  getProgramListInfo(int32 listIndex, Steinberg::Vst::ProgramListInfo& info /*out*/) override
+  Steinberg::tresult getProgramListInfo(
+      int32 listIndex,
+      Steinberg::Vst::ProgramListInfo& info /*out*/) override
   {
-    if(listIndex < 0)
+    if (listIndex < 0)
       return Steinberg::kResultFalse;
-      /*
+    /*
     if (listIndex < 0 || listIndex >= static_cast<int32>(programLists.size()))
       return Steinberg::kResultFalse;
     info = programLists[listIndex]->getInfo();
@@ -127,6 +129,5 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
   {
     return Steinberg::kResultFalse;
   }
-
 };
 }

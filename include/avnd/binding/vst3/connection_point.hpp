@@ -4,8 +4,9 @@
 
 #include <avnd/binding/vst3/metadata.hpp>
 #include <base/source/fstring.h>
-#include <pluginterfaces/vst/ivstmessage.h>
 #include <pluginterfaces/vst/ivsthostapplication.h>
+#include <pluginterfaces/vst/ivstmessage.h>
+
 #include <cstdio>
 namespace stv3
 {
@@ -15,10 +16,7 @@ class ConnectionPoint : public Steinberg::Vst::IConnectionPoint
 public:
   Steinberg::IPtr<IConnectionPoint> peerConnection{};
 
-  Steinberg::tresult receiveText(const char* text)
-  {
-    return Steinberg::kResultOk;
-  }
+  Steinberg::tresult receiveText(const char* text) { return Steinberg::kResultOk; }
 
   Steinberg::tresult connect(IConnectionPoint* other) final override
   {

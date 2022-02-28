@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <math.h>
-#include <avnd/binding/vintage/vintage.hpp>
 
 #include <atomic>
 #include <set>

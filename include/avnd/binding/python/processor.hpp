@@ -2,13 +2,13 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/avnd.hpp>
-#include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/process_adapter.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
-#include <cmath>
 #include <avnd/common/export.hpp>
 #include <avnd/helpers/callback.hpp>
+#include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
+#include <cmath>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
@@ -46,8 +46,7 @@ struct processor
       class_def.def_property(
           c_str(C::name()),
           [](const T& t) { return boost::pfr::get<Idx>(t.inputs).value; },
-          [](T& t, decltype(C::value) x)
-          { boost::pfr::get<Idx>(t.inputs).value = x; });
+          [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.inputs).value = x; });
     }
   }
 
@@ -59,8 +58,7 @@ struct processor
       class_def.def_property(
           c_str(C::name()),
           [](const T& t) { return boost::pfr::get<Idx>(t.outputs).value; },
-          [](T& t, decltype(C::value) x)
-          { boost::pfr::get<Idx>(t.outputs).value = x; });
+          [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.outputs).value = x; });
     }
   }
 
@@ -72,8 +70,7 @@ struct processor
       constexpr auto mem_fun = M::func();
       class_def.def(c_str(M::name()), mem_fun);
     }
-    else if constexpr (requires
-                       { avnd::function_reflection<M::func()>::count; })
+    else if constexpr (requires { avnd::function_reflection<M::func()>::count; })
     {
       // TODO other cases: see pd
       class_def.def_static(c_str(M::name()), M::func());
@@ -105,8 +102,7 @@ struct processor
                                                       { setup_callback(a); });
     }
 
-    avnd::messages_introspection<T>::for_all([this](auto a)
-                                             { setup_message(a); });
+    avnd::messages_introspection<T>::for_all([this](auto a) { setup_message(a); });
   }
 
   template <std::size_t Idx, typename C>

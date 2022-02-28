@@ -2,8 +2,12 @@
 #include <boost/container/vector.hpp>
 namespace avnd
 {
-struct rgba_texture {
-  enum format { RGBA };
+struct rgba_texture
+{
+  enum format
+  {
+    RGBA
+  };
   unsigned char* bytes{};
   int width{};
   int height{};
@@ -17,6 +21,11 @@ struct rgba_texture {
   }
 
   void update(unsigned char* data, int w, int h)
-  { bytes = data; width = w; height = h; changed = true; }
+  {
+    bytes = data;
+    width = w;
+    height = h;
+    changed = true;
+  }
 };
 }

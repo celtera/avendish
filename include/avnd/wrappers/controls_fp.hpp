@@ -70,11 +70,6 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
   static_assert(std::is_void_v<T>, "Error: unhandled control type");
 }
 
-
-
-
-
-
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
@@ -139,7 +134,5 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   static_assert(std::is_void_v<T>, "Error: unhandled control type");
 }
-
-
 
 }

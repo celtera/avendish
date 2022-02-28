@@ -29,10 +29,7 @@ struct limited_string_view : std::string_view
     std::copy_n(data(), size(), reinterpret_cast<char*>(dest));
   }
 
-  void copy_to(char* dest) const noexcept
-  {
-    std::copy_n(data(), size(), dest);
-  }
+  void copy_to(char* dest) const noexcept { std::copy_n(data(), size(), dest); }
 
   void copy_to(char16_t* dest) const noexcept
   {

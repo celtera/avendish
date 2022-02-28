@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/concepts.hpp>
 #include <avnd/common/coroutines.hpp>
+#include <avnd/wrappers/concepts.hpp>
 
 #include <vector>
 
@@ -26,28 +26,28 @@ struct effect_container
 
   auto& inputs() noexcept
   {
-    if constexpr(has_inputs<T>)
+    if constexpr (has_inputs<T>)
       return effect.inputs;
     else
       return dummy_instance;
   }
   auto& inputs() const noexcept
   {
-    if constexpr(has_inputs<T>)
+    if constexpr (has_inputs<T>)
       return effect.inputs;
     else
       return dummy_instance;
   }
   auto& outputs() noexcept
   {
-    if constexpr(has_outputs<T>)
+    if constexpr (has_outputs<T>)
       return effect.outputs;
     else
       return dummy_instance;
   }
   auto& outputs() const noexcept
   {
-    if constexpr(has_outputs<T>)
+    if constexpr (has_outputs<T>)
       return effect.outputs;
     else
       return dummy_instance;
@@ -57,7 +57,7 @@ struct effect_container
 };
 
 template <typename T>
-requires (!has_inputs<T> && !has_outputs<T>)
+  requires(!has_inputs<T> && !has_outputs<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -80,11 +80,9 @@ struct effect_container<T>
   {
     T& effect;
 
-    [[no_unique_address]]
-    dummy inputs;
+    [[no_unique_address]] dummy inputs;
 
-    [[no_unique_address]]
-    dummy outputs;
+    [[no_unique_address]] dummy outputs;
   };
 
   member_iterator<ref> full_state()
@@ -95,7 +93,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
+  requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
 struct effect_container<T>
 {
   using type = T;
@@ -110,10 +108,7 @@ struct effect_container<T>
 
   std::vector<state> effect;
 
-  void init_channels(int input, int output)
-  {
-    effect.resize(std::max(input, output));
-  }
+  void init_channels(int input, int output) { effect.resize(std::max(input, output)); }
 
   auto& inputs() noexcept { return inputs_storage; }
   auto& inputs() const noexcept { return inputs_storage; }
@@ -148,7 +143,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
+  requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
@@ -195,7 +190,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
+  requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
@@ -208,9 +203,9 @@ struct effect_container<T>
     int orig = effect.size();
     int sz = std::max(input, output);
     effect.resize(sz);
-    if(orig > 0)
+    if (orig > 0)
     {
-      for(int i = orig; i < sz; i++)
+      for (int i = orig; i < sz; i++)
       {
         effect[i].inputs = effect[0].inputs;
       }

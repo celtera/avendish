@@ -10,7 +10,7 @@
 namespace std
 {
 using suspend_always = std::experimental::suspend_always;
-template<typename T>
+template <typename T>
 using coroutine_handle = std::experimental::coroutine_handle<T>;
 }
 #else
@@ -22,7 +22,9 @@ using coroutine_handle = std::experimental::coroutine_handle<T>;
 #else
 namespace std
 {
-struct default_sentinel_t { };
+struct default_sentinel_t
+{
+};
 inline constexpr default_sentinel_t default_sentinel{};
 }
 #endif
@@ -81,10 +83,7 @@ public:
 
     void operator++() noexcept { m_coroutine.resume(); }
 
-    T& operator*() const noexcept
-    {
-      return *m_coroutine.promise().current_value;
-    }
+    T& operator*() const noexcept { return *m_coroutine.promise().current_value; }
 
     bool operator==(std::default_sentinel_t) const noexcept
     {
@@ -158,10 +157,7 @@ public:
   // Types used by the coroutine
   struct promise_type
   {
-    generator get_return_object()
-    {
-      return generator{handle::from_promise(*this)};
-    }
+    generator get_return_object() { return generator{handle::from_promise(*this)}; }
 
     static std::suspend_always initial_suspend() noexcept { return {}; }
 
@@ -196,10 +192,7 @@ public:
 
     void operator++() noexcept { m_coroutine.resume(); }
 
-    T& operator*() const noexcept
-    {
-      return m_coroutine.promise().current_value;
-    }
+    T& operator*() const noexcept { return m_coroutine.promise().current_value; }
 
     bool operator==(std::default_sentinel_t) const noexcept
     {

@@ -2,15 +2,14 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/message.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-#include <avnd/common/struct_reflection.hpp>
 
 namespace avnd
 {
 template <typename T>
-using messages_introspection
-    = fields_introspection<typename messages_type<T>::type>;
+using messages_introspection = fields_introspection<typename messages_type<T>::type>;
 
 template <typename T>
 auto& get_messages(avnd::effect_container<T>& t)

@@ -13,8 +13,7 @@ namespace avnd
 {
 
 template <typename T>
-concept function
-    = std::is_function_v<std::remove_pointer_t<std::remove_reference_t<T>>>;
+concept function = std::is_function_v<std::remove_pointer_t<std::remove_reference_t<T>>>;
 
 template <class T>
 struct looks_like_std_function : std::false_type
@@ -26,7 +25,12 @@ struct looks_like_std_function<F<R(Args...)>> : std::true_type
 {
 };
 
-template <template <typename...> typename F, typename R, typename... Args, typename... Rem>
+template <
+    template <typename...>
+    typename F,
+    typename R,
+    typename... Args,
+    typename... Rem>
 struct looks_like_std_function<F<R(Args...), Rem...>> : std::true_type
 {
 };
@@ -50,11 +54,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) const>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...) const>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -67,11 +67,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) volatile>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...) volatile>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -110,11 +106,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = true;
 };
 
-template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) const&>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...) const&>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -127,11 +119,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) const&&>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...) const&&>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -144,11 +132,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = true;
 };
 
-template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) volatile&>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...) volatile&>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -161,11 +145,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) volatile&&>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...) volatile&&>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -233,14 +213,12 @@ struct function_reflection<func>
 #endif
 
 template <auto F>
-using first_argument
-    = boost::mp11::mp_first<typename function_reflection<F>::arguments>;
+using first_argument = boost::mp11::mp_first<typename function_reflection<F>::arguments>;
 template <auto F>
 using second_argument
     = boost::mp11::mp_second<typename function_reflection<F>::arguments>;
 template <auto F>
-using third_argument
-    = boost::mp11::mp_third<typename function_reflection<F>::arguments>;
+using third_argument = boost::mp11::mp_third<typename function_reflection<F>::arguments>;
 
 // For std::function-like things
 template <typename T>
@@ -259,7 +237,7 @@ struct function_reflection_t<R(Args...)>
 };
 
 template <typename R, typename... Args>
-struct function_reflection_t<R(&)(Args...)>
+struct function_reflection_t<R (&)(Args...)>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
@@ -270,11 +248,12 @@ struct function_reflection_t<R(&)(Args...)>
   static constexpr const bool is_reference = false;
   static constexpr const bool is_rvalue_reference = false;
 
-  static constexpr auto synthesize() {
-    if constexpr(std::is_void_v<R>)
-      return [] (Args...) -> void { return; };
+  static constexpr auto synthesize()
+  {
+    if constexpr (std::is_void_v<R>)
+      return [](Args...) -> void { return; };
     else
-      return [] (Args...) -> R { return {}; };
+      return [](Args...) -> R { return {}; };
   }
 };
 
@@ -292,12 +271,9 @@ using third_argument_t
 template <typename T>
 struct function_reflection_o;
 template <typename T>
-requires requires { function_reflection<&T::operator()>{}; }
-struct function_reflection_o<T>
-    : function_reflection<&T::operator()>
+  requires requires { function_reflection<&T::operator()>{}; }
+struct function_reflection_o<T> : function_reflection<&T::operator()>
 {
-
 };
-
 
 }

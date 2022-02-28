@@ -2,10 +2,6 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/channels_introspection.hpp>
-#include <avnd/wrappers/process_adapter.hpp>
-#include <avnd/wrappers/controls.hpp>
-#include <avnd/common/export.hpp>
 #include <avnd/binding/vintage/atomic_controls.hpp>
 #include <avnd/binding/vintage/dispatch.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
@@ -13,6 +9,10 @@
 #include <avnd/binding/vintage/processor_setup.hpp>
 #include <avnd/binding/vintage/programs.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
+#include <avnd/common/export.hpp>
+#include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
 
 namespace vintage
 {
@@ -46,9 +46,9 @@ struct SimpleAudioEffect : vintage::Effect
 
   float sample_rate{44100.};
   int buffer_size{512};
-  vintage::ProcessPrecision precision
-      = avnd::double_processor<T> ? vintage::ProcessPrecision::Double
-                                  : vintage::ProcessPrecision::Single;
+  vintage::ProcessPrecision precision = avnd::double_processor<T>
+                                            ? vintage::ProcessPrecision::Double
+                                            : vintage::ProcessPrecision::Single;
 
   int current_program = 0;
 
@@ -128,7 +128,7 @@ struct SimpleAudioEffect : vintage::Effect
       using i_info = avnd::midi_input_introspection<T>;
       auto& in_port = boost::pfr::get<i_info::index_map[0]>(effect.inputs());
 
-      midi.reserve_space(in_port, buffer_size);
+      midi.reserve_space(this->effect, buffer_size);
     }
 
     // Effect-specific preparation
@@ -188,7 +188,7 @@ struct SimpleAudioEffect : vintage::Effect
 
       // In case we need to allocate more storage:
       const int n = evs->numEvents;
-      midi.reserve_space(in_port, n);
+      midi.reserve_space(this->effect, n);
 
       for (int32_t i = 0; i < n; i++)
       {

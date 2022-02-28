@@ -23,7 +23,8 @@ struct limited_string : std::string
     const auto src = data();
     const int n = size() + 1;
     const auto dst = reinterpret_cast<char*>(dest);
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++)
+    {
       dst[i] = src[i];
     }
   }

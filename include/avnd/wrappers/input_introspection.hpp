@@ -1,10 +1,10 @@
 #pragma once
+#include <avnd/common/index_sequence.hpp>
+#include <avnd/common/struct_reflection.hpp>
 #include <avnd/wrappers/concepts.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/wrappers/output_introspection.hpp>
 #include <boost/pfr.hpp>
-#include <avnd/common/index_sequence.hpp>
-#include <avnd/common/struct_reflection.hpp>
 
 namespace avnd
 {
@@ -14,8 +14,7 @@ using parameter_input_introspection
     = parameter_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
-using midi_input_introspection
-    = midi_port_introspection<typename inputs_type<T>::type>;
+using midi_input_introspection = midi_port_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
 using texture_input_introspection
@@ -26,6 +25,10 @@ using raw_container_midi_input_introspection
     = raw_container_midi_port_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
+using dynamic_container_midi_input_introspection
+    = dynamic_container_midi_port_introspection<typename inputs_type<T>::type>;
+
+template <typename T>
 using audio_bus_input_introspection
     = audio_bus_introspection<typename inputs_type<T>::type>;
 
@@ -34,9 +37,7 @@ using audio_channel_input_introspection
     = audio_channel_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
-using input_introspection
-    = fields_introspection<typename inputs_type<T>::type>;
-
+using input_introspection = fields_introspection<typename inputs_type<T>::type>;
 
 template <typename T>
 auto& get_inputs(avnd::effect_container<T>& t)

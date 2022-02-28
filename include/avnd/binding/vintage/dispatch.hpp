@@ -2,30 +2,23 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/avnd.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
+#include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
+
 #include <array>
 
 namespace vintage
 {
 
 template <typename T>
-concept can_dispatch = requires(T t)
-{
-  t.dispatch(nullptr, 0, 0, 0, nullptr, 0.f);
-};
+concept can_dispatch = requires(T t) { t.dispatch(nullptr, 0, 0, 0, nullptr, 0.f); };
 
 template <typename T>
-concept can_event = requires(T eff)
-{
-  eff.midi_input(std::declval<const vintage::MidiEvent&>());
-}
-|| requires(T eff)
-{
-  eff.event_input({});
-};
+concept can_event = requires(T eff) {
+                      eff.midi_input(std::declval<const vintage::MidiEvent&>());
+                    } || requires(T eff) { eff.event_input({}); };
 
 template <typename Self_T>
 intptr_t default_dispatch(
@@ -50,8 +43,7 @@ intptr_t default_dispatch(
       return 0;
     case EffectOpcodes::SetProcessPrecision: // 77
     {
-      object.precision
-          = value ? ProcessPrecision::Double : ProcessPrecision::Single;
+      object.precision = value ? ProcessPrecision::Double : ProcessPrecision::Single;
       return 1;
     }
     case EffectOpcodes::SetBlockSizeAndSampleRate: // 43
@@ -201,8 +193,7 @@ intptr_t default_dispatch(
       {
         if (object.current_program < std::ssize(effect_type::programs))
         {
-          vintage::program_name{
-              effect_type::programs[object.current_program].name}
+          vintage::program_name{effect_type::programs[object.current_program].name}
               .copy_to(ptr);
           return 1;
         }
@@ -216,8 +207,7 @@ intptr_t default_dispatch(
       {
         if (index >= 0 && index < std::ssize(effect_type::programs))
         {
-          vintage::program_name{effect_type::programs[index].name}.copy_to(
-              ptr);
+          vintage::program_name{effect_type::programs[index].name}.copy_to(ptr);
           return 1;
         }
       }
@@ -246,8 +236,7 @@ intptr_t default_dispatch(
     {
       auto evs = reinterpret_cast<const vintage::Events*>(ptr);
       if constexpr (requires {
-                      object.midi_input(
-                          std::declval<const vintage::MidiEvent&>());
+                      object.midi_input(std::declval<const vintage::MidiEvent&>());
                     })
       {
         for (int32_t i = 0, n = evs->numEvents; i < n; i++)
@@ -256,8 +245,7 @@ intptr_t default_dispatch(
           switch (ev->type)
           {
             case vintage::EventTypes::Midi:
-              object.midi_input(
-                  *reinterpret_cast<const vintage::MidiEvent*>(ev));
+              object.midi_input(*reinterpret_cast<const vintage::MidiEvent*>(ev));
               break;
             default:
               break;
@@ -289,7 +277,10 @@ intptr_t default_dispatch(
             "receiveVstMidiEvent",
             "receiveVstSysexEvent",
         };
-        return std::find(available.begin(), available.end(), reinterpret_cast<const char*>(ptr))
+        return std::find(
+                   available.begin(),
+                   available.end(),
+                   reinterpret_cast<const char*>(ptr))
                        != available.end()
                    ? 1
                    : 0;

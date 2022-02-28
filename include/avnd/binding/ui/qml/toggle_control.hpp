@@ -31,8 +31,7 @@ struct toggle_control
   void create(Parent& parent, C& c, int control_k)
   {
     std::string_view name = value_if_possible(C::name(), else, "Control");
-    bool init
-        = static_cast<bool>(value_if_possible(avnd::get_range<C>().init, else, 0));
+    bool init = static_cast<bool>(value_if_possible(avnd::get_range<C>().init, else, 0));
 
     // Add the control
     fmt::format_to(

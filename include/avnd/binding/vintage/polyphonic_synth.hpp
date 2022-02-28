@@ -9,14 +9,13 @@ namespace vintage
 {
 
 template <typename T>
-concept synth_voice = requires(T t)
-{
-  t.frequency;
-  t.volume;
-  t.elapsed;
-  t.release_frame;
-  t.recycle;
-};
+concept synth_voice = requires(T t) {
+                        t.frequency;
+                        t.volume;
+                        t.elapsed;
+                        t.release_frame;
+                        t.recycle;
+                      };
 
 template <typename T>
 struct PolyphonicSynthesizer : vintage::Effect
@@ -52,12 +51,10 @@ struct PolyphonicSynthesizer : vintage::Effect
       }
 
       if constexpr (requires {
-                      self.implementation.dispatch(
-                          nullptr, 0, 0, 0, nullptr, 0.f);
+                      self.implementation.dispatch(nullptr, 0, 0, 0, nullptr, 0.f);
                     })
       {
-        return self.implementation.dispatch(
-            self, code, index, value, ptr, opt);
+        return self.implementation.dispatch(self, code, index, value, ptr, opt);
       }
       else
       {
@@ -94,8 +91,7 @@ struct PolyphonicSynthesizer : vintage::Effect
 
   void note_on(int32_t note, int32_t velocity)
   {
-    voices.push_back(
-        {.note = float(note), .velocity = float(velocity), .detune = 0.0f});
+    voices.push_back({.note = float(note), .velocity = float(velocity), .detune = 0.0f});
     float unison = this->controls.unison_voices * 20.0;
     float detune = this->controls.unison_detune;
     float vol = this->controls.unison_volume;
@@ -182,8 +178,7 @@ struct PolyphonicSynthesizer : vintage::Effect
     typename T::voice implementation;
 
     template <typename sample_t>
-    void
-    process(PolyphonicSynthesizer& self, sample_t** outputs, int32_t frames)
+    void process(PolyphonicSynthesizer& self, sample_t** outputs, int32_t frames)
     {
       implementation.frequency
           = 440. * std::pow(2.0, (note - 69) / 12.0) + detune + bend;

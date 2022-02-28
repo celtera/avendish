@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/concepts.hpp>
-#include <avnd/wrappers/port_introspection.hpp>
-#include <avnd/wrappers/effect_container.hpp>
-#include <boost/pfr.hpp>
 #include <avnd/common/index_sequence.hpp>
+#include <avnd/wrappers/concepts.hpp>
+#include <avnd/wrappers/effect_container.hpp>
+#include <avnd/wrappers/port_introspection.hpp>
+#include <boost/pfr.hpp>
 
 namespace avnd
 {
@@ -21,6 +21,10 @@ using midi_output_introspection
 template <typename T>
 using raw_container_midi_output_introspection
     = raw_container_midi_port_introspection<typename outputs_type<T>::type>;
+
+template <typename T>
+using dynamic_container_midi_output_introspection
+    = dynamic_container_midi_port_introspection<typename outputs_type<T>::type>;
 
 template <typename T>
 using texture_output_introspection
@@ -39,8 +43,7 @@ using callback_output_introspection
     = callback_introspection<typename outputs_type<T>::type>;
 
 template <typename T>
-using output_introspection
-    = fields_introspection<typename outputs_type<T>::type>;
+using output_introspection = fields_introspection<typename outputs_type<T>::type>;
 
 template <typename T>
 auto& get_outputs(avnd::effect_container<T>& t)

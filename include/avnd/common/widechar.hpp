@@ -1,7 +1,6 @@
 #pragma once
 #include <cstddef>
 
-
 namespace avnd
 {
 namespace detail
@@ -19,35 +18,42 @@ constexpr bool utf8_trail_byte(char8_t const in, char32_t& out) noexcept
 
 // Returns number of trailing bytes.
 // -1 on illegal header bytes.
-constexpr int utf8_header_byte(char8_t const in, char32_t& out) noexcept {
-  if (in < 0x80) {  // ASCII
+constexpr int utf8_header_byte(char8_t const in, char32_t& out) noexcept
+{
+  if (in < 0x80)
+  { // ASCII
     out = in;
     return 0;
   }
-  if (in < 0xC0) {  // not a header
+  if (in < 0xC0)
+  { // not a header
     return -1;
   }
-  if (in < 0xE0) {
+  if (in < 0xE0)
+  {
     out = in & 0x1F;
     return 1;
   }
-  if (in < 0xF0) {
+  if (in < 0xF0)
+  {
     out = in & 0x0F;
     return 2;
   }
-  if (in < 0xF8) {
+  if (in < 0xF8)
+  {
     out = in & 0x7;
     return 3;
   }
   return -1;
 }
-}  // namespace detail
+} // namespace detail
 
-template<typename Char_T, typename WChar_T>
+template <typename Char_T, typename WChar_T>
 constexpr std::ptrdiff_t utf8_to_utf16(
     const Char_T* u8_begin,
     const Char_T* const u8_end,
-    WChar_T* u16out) noexcept {
+    WChar_T* u16out) noexcept
+{
   std::ptrdiff_t outstr_size = 0;
   while (u8_begin < u8_end)
   {
@@ -61,12 +67,16 @@ constexpr std::ptrdiff_t utf8_to_utf16(
       if (!detail::utf8_trail_byte(*u8_begin++, code_point))
         return -1;
 
-    if (code_point < 0xFFFF) {
+    if (code_point < 0xFFFF)
+    {
       if (u16out)
         *u16out++ = static_cast<WChar_T>(code_point);
       ++outstr_size;
-    } else {
-      if (u16out) {
+    }
+    else
+    {
+      if (u16out)
+      {
         code_point -= 0x10000;
         *u16out++ = static_cast<WChar_T>((code_point >> 10) + 0xD800);
         *u16out++ = static_cast<WChar_T>((code_point & 0x3FF) + 0xDC00);
@@ -76,4 +86,4 @@ constexpr std::ptrdiff_t utf8_to_utf16(
   }
   return outstr_size;
 }
-}  // namespace utf_converter
+} // namespace utf_converter

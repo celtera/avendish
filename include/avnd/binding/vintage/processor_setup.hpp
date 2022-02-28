@@ -15,10 +15,8 @@ struct ProcessorSetup
     using T = typename Self_T::effect_type;
 
     // Mandatory
-    effect.Effect::processReplacing = [](Effect* effect,
-                                         float** inputs,
-                                         float** outputs,
-                                         int32_t sampleFrames)
+    effect.Effect::processReplacing
+        = [](Effect* effect, float** inputs, float** outputs, int32_t sampleFrames)
     {
       auto& self = *static_cast<Self_T*>(effect);
       return self.process(inputs, outputs, sampleFrames);
@@ -26,10 +24,8 @@ struct ProcessorSetup
 
     if constexpr (avnd::double_processor<T>)
     {
-      effect.Effect::processDoubleReplacing = [](Effect* effect,
-                                                 double** inputs,
-                                                 double** outputs,
-                                                 int32_t sampleFrames)
+      effect.Effect::processDoubleReplacing
+          = [](Effect* effect, double** inputs, double** outputs, int32_t sampleFrames)
       {
         auto& self = *static_cast<Self_T*>(effect);
         return self.process(inputs, outputs, sampleFrames);

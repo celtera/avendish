@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/messages_introspection.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/messages_introspection.hpp>
 #include <avnd/wrappers/output_introspection.hpp>
 #include <m_pd.h>
 
@@ -13,8 +13,8 @@ namespace pd
 {
 static constexpr bool valid_char_for_name(char c)
 {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-         || (c >= '0' && c <= '9') || (c == '.' || c == '~');
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+         || (c == '.' || c == '~');
 }
 
 template <typename T>
@@ -55,19 +55,12 @@ static void process_generic_message(T& implementation, t_symbol* s)
           {
             if constexpr (requires { (float)ctl.value; })
             {
-              post(
-                  "[dumpall] %s : [%d] = %f",
-                  object_type::name(),
-                  k,
-                  (float)ctl.value);
+              post("[dumpall] %s : [%d] = %f", object_type::name(), k, (float)ctl.value);
             }
             else if constexpr (requires { ctl.value = std::string{}; })
             {
               post(
-                  "[dumpall] %s : [%d] = %s",
-                  object_type::name(),
-                  k,
-                  ctl.value.c_str());
+                  "[dumpall] %s : [%d] = %s", object_type::name(), k, ctl.value.c_str());
             }
           }
           k++;

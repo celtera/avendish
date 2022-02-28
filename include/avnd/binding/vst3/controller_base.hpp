@@ -2,9 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/binding/vst3/metadata.hpp>
 #include <avnd/binding/vst3/connection_point.hpp>
-
+#include <avnd/binding/vst3/metadata.hpp>
 #include <base/source/fstreamer.h>
 #include <base/source/fstring.h>
 #include <base/source/updatehandler.h>
@@ -23,10 +22,7 @@ struct ControllerCommon
     , public Steinberg::Vst::IEditController2
 {
 public:
-  ControllerCommon()
-  {
-    Steinberg::UpdateHandler::instance();
-  }
+  ControllerCommon() { Steinberg::UpdateHandler::instance(); }
 
   Steinberg::tresult initialize(Steinberg::FUnknown* context) final override
   {
@@ -69,7 +65,8 @@ public:
     return Steinberg::kResultOk;
   }
 
-  Steinberg::tresult setComponentHandler(Steinberg::Vst::IComponentHandler* newHandler) final override
+  Steinberg::tresult
+  setComponentHandler(Steinberg::Vst::IComponentHandler* newHandler) final override
   {
     if (componentHandler == newHandler)
     {
@@ -102,10 +99,7 @@ public:
     return Steinberg::kResultTrue;
   }
 
-  Steinberg::IPlugView* createView(const char* name) override
-  {
-    return nullptr;
-  }
+  Steinberg::IPlugView* createView(const char* name) override { return nullptr; }
 
   Steinberg::tresult setKnobMode(Steinberg::Vst::KnobMode mode) override
   {
