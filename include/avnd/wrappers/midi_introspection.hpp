@@ -62,6 +62,8 @@ struct midi_storage
      : midi_input_storage<T>
      , midi_output_storage<T>
 {
+  using midi_in_info = avnd::midi_input_introspection<T>;
+  using midi_out_info = avnd::midi_output_introspection<T>;
   using raw_midi_in_info = avnd::raw_container_midi_input_introspection<T>;
   using raw_midi_out_info = avnd::raw_container_midi_output_introspection<T>;
   using dyn_midi_in_info = avnd::dynamic_container_midi_input_introspection<T>;
@@ -106,11 +108,24 @@ struct midi_storage
     dyn_midi_out_info::for_all(avnd::get_outputs(t),init_dyn);
   }
 
-  void clear(avnd::dynamic_container_midi_port auto& port)
+  void do_clear(avnd::dynamic_container_midi_port auto& port)
   {
     port.midi_messages.clear();
   }
 
-  void clear(avnd::raw_container_midi_port auto& port) { port.size = 0; }
+  void do_clear(avnd::raw_container_midi_port auto& port) { port.size = 0; }
+
+  void clear(avnd::effect_container<T>& t)
+  {
+    auto clearer = [this] (auto&& port) {
+      this->do_clear(port);
+    };
+
+    if constexpr(midi_in_info::size > 0)
+      midi_in_info::for_all(avnd::get_inputs(t), clearer);
+
+    if constexpr(midi_out_info::size > 0)
+      midi_out_info::for_all(avnd::get_outputs(t), clearer);
+  }
 };
 }

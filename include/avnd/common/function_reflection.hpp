@@ -257,6 +257,12 @@ struct function_reflection_t<R (&)(Args...)>
   }
 };
 
+template <template<typename ...> typename F, typename R, typename... Args>
+struct function_reflection_t<F<R(Args...)>>
+  : function_reflection_t<R(Args...)>
+{
+};
+
 template <typename T>
 using first_argument_t
     = boost::mp11::mp_first<typename function_reflection_t<T>::arguments>;

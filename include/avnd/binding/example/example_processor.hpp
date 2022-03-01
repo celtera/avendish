@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/wrappers/callbacks_adapter.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
 #include <avnd/wrappers/control_display.hpp>
@@ -59,14 +60,6 @@ void introspect()
   avnd::callback_output_introspection<T>::for_all(print_name);
 }
 
-struct midi_buffer_allocator
-{
-    void initialize(int frames)
-    {
-
-    }
-};
-
 template<typename T>
 class example_processor
 {
@@ -90,10 +83,13 @@ class example_processor
     avnd::audio_channel_manager<T> channels;
 
     [[no_unique_address]]
-    avnd::midi_storage<T> midi;
+    avnd::midi_storage<T> midi_buffers;
 
     [[no_unique_address]]
     avnd::control_storage<T> control_buffers;
+
+    [[no_unique_address]]
+    avnd::callback_storage<T> callbacks;
 
     int buffer_size{};
     double sample_rate{};
@@ -145,25 +141,27 @@ class example_processor
       /// Initialize the callbacks for nodes which have them.
       /// They allow the plug-in to notify the host.
       /// Mostly useful for programming-language-ish things, Pd, Max, etc.
-      avnd::callback_introspection<outputs_t>::for_all(
-            effect.outputs(), [] <typename C> (C& cb) {
-        /* CUSTOMIZATION POINT */
-        using call_type = decltype(C::call);
-        if constexpr (avnd::function_view_ish<call_type>)
-        {
-          // Generate a dummy function if we don't have anything to bind it to.
-          // This version does not allocate, it's a plain old C callback.
-          using func_type = decltype(*cb.call.function);
-          using func_reflect = avnd::function_reflection_t<func_type>;
-          cb.call.function = func_reflect::synthesize();
-          cb.call.context = nullptr;
-        }
-        else if constexpr (avnd::function_ish<call_type>)
-        {
-          // Here, "cb.call" is something like std::function
-          cb.call = [] (auto&&...) { };
-        }
-      });
+      if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
+      {
+        auto callbacks_initializer =
+            [this] <typename R, template<typename...> typename L, typename... Args>
+            (std::string_view message, L<Args...>) {
+          // This method will be called for every callback.
+          // It must return a function that takes Args... in arguments, and
+          // returns a value of type R
+
+          // One can take inspiration of the Pd and Max bindings to implement
+          // some run-time safety, by rejecting any type that cannot cleanly
+          // convert to these arguments.
+
+          /* CUSTOMIZATION POINT */
+          if constexpr(std::is_void_v<R>)
+            return [this] (Args...) { return; };
+          else
+            return [this] (Args...) { return R{}; };
+        };
+        this->callbacks.wrap_callbacks(effect, callbacks_initializer);
+      }
     }
 
     void audio_configuration_changed()
@@ -188,7 +186,7 @@ class example_processor
       // Setup buffers for storing MIDI messages
       if constexpr (midi_in_info::size > 0 || midi_out_info::size)
       {
-        midi.reserve_space(effect, buffer_size);
+        midi_buffers.reserve_space(effect, buffer_size);
       }
       if constexpr(sizeof(control_buffers) > 1)
       {
@@ -284,12 +282,12 @@ class example_processor
     {
       if(in_N != this->channels.actual_runtime_inputs)
       {
-        logger.error("Host provided incorrect input channel count: expected {}, got {}", this->channels.actual_runtime_inputs, in_N);
+        // logger.error("Host provided incorrect input channel count: expected {}, got {}", this->channels.actual_runtime_inputs, in_N);
         return;
       }
       if(out_N != this->channels.actual_runtime_outputs)
       {
-        logger.error("Host provided incorrect output channel count", this->channels.actual_runtime_outputs, out_N);
+        // logger.error("Host provided incorrect output channel count", this->channels.actual_runtime_outputs, out_N);
         return;
       }
 
@@ -318,15 +316,11 @@ class example_processor
 
       process_output_events();
 
+      // Clean up inputs
+      // FIXME
+
       // Clean up MIDI ports
-      if constexpr (midi_in_info::size > 0)
-      {
-        midi_in_info::for_all(
-              this->effect.inputs(),
-              [&] <avnd::midi_port C> (C& in_port) {
-                // Clear the content of the allocated buffers
-              });
-      }
+      this->midi_buffers.clear(effect);
     }
 
     void stop()

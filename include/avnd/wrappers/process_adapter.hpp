@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <utility>
 #include <vector>
-
 #include <type_traits>
 
 namespace avnd

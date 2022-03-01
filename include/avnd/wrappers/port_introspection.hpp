@@ -89,4 +89,14 @@ using is_callback_t = boost::mp11::mp_bool<callback<Field>>;
 template <typename T>
 using callback_introspection = predicate_introspection<T, is_callback_t>;
 
+template <typename Field>
+using is_dynamic_callback_t = boost::mp11::mp_bool<dynamic_callback<Field>>;
+template <typename T>
+using dynamic_callback_introspection = predicate_introspection<T, is_dynamic_callback_t>;
+
+template <typename Field>
+using is_view_callback_t = boost::mp11::mp_bool<view_callback<Field>>;
+template <typename T>
+using view_callback_introspection = predicate_introspection<T, is_view_callback_t>;
+
 }
