@@ -1,11 +1,23 @@
 find_path(CLAP_HEADER NAMES clap/clap.h)
 if(NOT CLAP_HEADER)
+  message(STATUS "Clap not found, skipping bindings...")
+
   function(avnd_make_clap)
   endfunction()
-
   return()
 endif()
 
+# Define a PCH
+add_library(Avendish_clap_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
+
+target_precompile_headers(Avendish_clap_pch
+  PUBLIC
+    include/avnd/binding/clap/all.hpp
+    include/avnd/prefix.hpp
+)
+avnd_common_setup("" "Avendish_clap_pch")
+
+# Function that can be used to wrap an object
 function(avnd_make_clap)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
   set(AVND_FX_TARGET "${AVND_TARGET}_clap")
@@ -37,6 +49,11 @@ function(avnd_make_clap)
     ${AVND_FX_TARGET}
     PRIVATE
       ${CLAP_HEADER}
+  )
+
+  target_precompile_headers(${AVND_FX_TARGET}
+    REUSE_FROM
+      Avendish_clap_pch
   )
 
   target_link_libraries(

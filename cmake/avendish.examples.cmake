@@ -48,7 +48,7 @@ avnd_make_all(
   C_NAME avnd_presets
   )
 
-# This one does not really make sense as a VST
+# These really make sense as a VST
 # (it's not an audio processor)
 avnd_make_object(
   TARGET Addition
@@ -71,13 +71,20 @@ avnd_make_object(
   C_NAME avnd_init
   )
 
-## Neither does this one
 avnd_make_object(
   TARGET Callback
   MAIN_FILE examples/Callback.hpp
   MAIN_CLASS examples::Callback
   C_NAME avnd_callback
 )
+
+avnd_make_object(
+  TARGET CCC
+  MAIN_FILE examples/LitterPower/CCC.hpp
+  MAIN_CLASS examples::CCC
+  C_NAME avnd_ccc
+)
+
 
 # This one does not really make sense as a Pd or Max object
 # (Pd has no notion of MIDI port)
@@ -167,6 +174,43 @@ avnd_make_all(
   MAIN_CLASS examples::SampleAccurateControls
   C_NAME avnd_sample_accurate_controls
 )
+
+
+set(OSCR_EXAMPLES
+  AudioEffectExample
+  AudioSidechainExample
+  Distortion
+  EmptyExample
+  SampleAccurateFilterExample
+  SampleAccurateGeneratorExample
+  TrivialFilterExample
+  TrivialGeneratorExample
+  ZeroDependencyAudioEffect
+)
+foreach(theTarget ${OSCR_EXAMPLES})
+  avnd_make_all(
+    TARGET Oscr_${theTarget}
+    MAIN_FILE examples/Oscr/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+  )
+endforeach()
+
+# This one needs libossia
+set(OSSIA_EXAMPLES
+  ControlGallery
+  Synth
+  TextureFilterExample
+  TextureGeneratorExample
+)
+foreach(theTarget ${OSSIA_EXAMPLES})
+  avnd_make_ossia(
+    TARGET Oscr_${theTarget}
+    MAIN_FILE examples/Oscr/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+  )
+endforeach()
 
 
 # Demo: dump all the known metadata.

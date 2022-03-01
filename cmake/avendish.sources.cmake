@@ -93,6 +93,7 @@ function(avnd_target_setup AVND_FX_TARGET)
       ${AVND_FX_TARGET}
       PUBLIC
         -fno-semantic-interposition
+        -fPIC
     )
   endif()
 
@@ -101,7 +102,7 @@ function(avnd_target_setup AVND_FX_TARGET)
         ${AVND_FX_TARGET}
         PUBLIC
           -fcoroutines
-          -flto
+          # -flto
           -ffunction-sections
           -fdata-sections
     )
@@ -129,10 +130,14 @@ function(avnd_target_setup AVND_FX_TARGET)
     endif()
   endif()
 
-  target_compile_definitions(
+  # target_compile_definitions(
+  #     ${AVND_FX_TARGET}
+  #     PUBLIC
+  #       FMT_HEADER_ONLY=1
+  # )
+  target_link_libraries(
       ${AVND_FX_TARGET}
-      PUBLIC
-        FMT_HEADER_ONLY=1
+      PUBLIC fmt
   )
 
   target_include_directories(
@@ -153,13 +158,13 @@ function(avnd_target_setup AVND_FX_TARGET)
     target_link_libraries(${AVND_FX_TARGET}
       PRIVATE
         -Bsymbolic
-        -flto
+        # -flto
     )
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_link_libraries(${AVND_FX_TARGET} PRIVATE
       -lc++
       -Bsymbolic
-      -flto
+      # -flto
     )
   endif()
 
@@ -169,7 +174,7 @@ function(avnd_target_setup AVND_FX_TARGET)
       PREFIX ""
       POSITION_INDEPENDENT_CODE 1
       VISIBILITY_INLINES_HIDDEN 1
-      CXX_VISIBILITY_PRESET hidden
+      CXX_VISIBILITY_PRESET internal
   )
 
   target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost)

@@ -1,3 +1,19 @@
+
+# Define a PCH
+add_library(Avendish_vintage_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
+
+target_precompile_headers(Avendish_vintage_pch
+  PUBLIC
+    include/avnd/binding/vintage/all.hpp
+    include/avnd/prefix.hpp
+)
+
+target_link_libraries(Avendish_vintage_pch
+  PUBLIC
+    DisableExceptions
+)
+avnd_common_setup("" "Avendish_vintage_pch")
+
 function(avnd_make_vintage)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
   set(AVND_FX_TARGET "${AVND_TARGET}_vintage")
@@ -14,6 +30,11 @@ function(avnd_make_vintage)
     ${AVND_FX_TARGET}
     PRIVATE
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vintage.cpp"
+  )
+
+  target_precompile_headers(${AVND_FX_TARGET}
+    REUSE_FROM
+      Avendish_vintage_pch
   )
 
   set_target_properties(

@@ -8,10 +8,10 @@ struct rgba_texture
   {
     RGBA
   };
-  unsigned char* bytes{};
-  int width{};
-  int height{};
-  bool changed{};
+  unsigned char* bytes;
+  int width;
+  int height;
+  bool changed;
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)

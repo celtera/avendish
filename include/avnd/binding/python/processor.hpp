@@ -6,6 +6,7 @@
 #include <avnd/helpers/callback.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/messages_introspection.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <cmath>
@@ -41,10 +42,10 @@ struct processor
   template <auto Idx, typename C>
   void setup_input(avnd::field_reflection<Idx, C>)
   {
-    if constexpr (requires { C::name(); })
+    if constexpr (requires { avnd::get_name<C>(); })
     {
       class_def.def_property(
-          c_str(C::name()),
+          c_str(avnd::get_name<C>()),
           [](const T& t) { return boost::pfr::get<Idx>(t.inputs).value; },
           [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.inputs).value = x; });
     }
@@ -53,10 +54,10 @@ struct processor
   template <auto Idx, typename C>
   void setup_output(avnd::field_reflection<Idx, C>)
   {
-    if constexpr (requires { C::name(); })
+    if constexpr (requires { avnd::get_name<C>(); })
     {
       class_def.def_property(
-          c_str(C::name()),
+          c_str(avnd::get_name<C>()),
           [](const T& t) { return boost::pfr::get<Idx>(t.outputs).value; },
           [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.outputs).value = x; });
     }
@@ -68,19 +69,19 @@ struct processor
     if constexpr (std::is_member_function_pointer_v<decltype(M::func())>)
     {
       constexpr auto mem_fun = M::func();
-      class_def.def(c_str(M::name()), mem_fun);
+      class_def.def(c_str(avnd::get_name<M>()), mem_fun);
     }
     else if constexpr (requires { avnd::function_reflection<M::func()>::count; })
     {
       // TODO other cases: see pd
-      class_def.def_static(c_str(M::name()), M::func());
+      class_def.def_static(c_str(avnd::get_name<M>()), M::func());
     }
   }
 
   explicit processor(pybind11::module_& m)
       : class_def(m, "processor")
   {
-    m.doc() = c_str(T::name());
+    m.doc() = c_str(avnd::get_name<T>());
 
     class_def.def(py::init<>());
     if constexpr (requires { T{}(); })
@@ -108,7 +109,7 @@ struct processor
   template <std::size_t Idx, typename C>
   void setup_callback(const avnd::field_reflection<Idx, C>& out)
   {
-    if constexpr (requires { C::name(); })
+    if constexpr (requires { avnd::get_name<C>(); })
     {
       using call_type = decltype(C::call);
       if constexpr (avnd::function_view_ish<call_type>)
@@ -124,7 +125,7 @@ struct processor
       else if constexpr (avnd::function_ish<call_type>)
       {
         class_def.def_property(
-            c_str(C::name()),
+            c_str(avnd::get_name<C>()),
             [](T& t) { return boost::pfr::get<Idx>(t.outputs).call; },
             [](T& t, call_type cb)
             { boost::pfr::get<Idx>(t.outputs).call = std::move(cb); });

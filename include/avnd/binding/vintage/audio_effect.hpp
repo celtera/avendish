@@ -170,13 +170,7 @@ struct SimpleAudioEffect : vintage::Effect
         sampleFrames);
 
     // Clear our midi ports
-    if constexpr (midi_input_introspection<T>::size > 0)
-    {
-      using i_info = avnd::midi_input_introspection<T>;
-      auto& in_port = boost::pfr::get<i_info::index_map[0]>(effect.inputs());
-
-      midi.clear(in_port);
-    }
+    midi.clear(effect);
   }
 
   void event_input(const vintage::Events* evs)

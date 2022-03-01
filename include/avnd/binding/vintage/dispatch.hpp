@@ -5,6 +5,7 @@
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
 
 #include <array>
@@ -29,7 +30,7 @@ intptr_t default_dispatch(
     void* ptr,
     float opt)
 {
-  using effect_type = typename decltype(object.effect)::type;
+  using effect_type = typename Self_T::effect_type;
   auto& container = object.effect;
   // std::cerr << int(opcode) << ": " << index << " ; " << value << " ;" << ptr
   //           << " ;" << opt << std::endl;
@@ -69,8 +70,10 @@ intptr_t default_dispatch(
     }
     case EffectOpcodes::GetPlugCategory: // 35
     {
-      if constexpr (requires { effect_type::category; })
-        return static_cast<int32_t>(container.category);
+      if constexpr (requires { (int32_t)effect_type::category(); })
+        return static_cast<int32_t>(effect_type::category());
+      else if constexpr (requires { (int32_t)effect_type::category; })
+        return static_cast<int32_t>(effect_type::category);
       return 0;
     }
 
@@ -155,16 +158,16 @@ intptr_t default_dispatch(
     case EffectOpcodes::GetEffectName: // 45
     {
       // Should be able to pass it directly, but apparently GCC bugs...
-      constexpr std::string_view name = effect_type::name();
+      constexpr std::string_view name = avnd::get_name<effect_type>();
       vintage::name{name}.copy_to(ptr);
       return 1;
     }
 
     case EffectOpcodes::GetVendorString: // 47
     {
-      if constexpr (requires { effect_type::vendor(); })
+      if constexpr (avnd::has_vendor<effect_type>)
       {
-        vintage::vendor_name{effect_type::vendor()}.copy_to(ptr);
+        vintage::vendor_name{avnd::get_vendor<effect_type>()}.copy_to(ptr);
         return 1;
       }
       else

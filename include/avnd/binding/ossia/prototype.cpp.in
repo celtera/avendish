@@ -1,0 +1,13 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/ossia/all.hpp>
+#include <avnd/binding/ossia/configure.hpp>
+
+using type = decltype(avnd::configure<oscr::config, @AVND_MAIN_CLASS@>())::type;
+
+void test_instantiate(ossia::exec_state_facade st)
+{
+  oscr::safe_node<type> f{st};
+  f.run(ossia::token_request{}, st);
+}

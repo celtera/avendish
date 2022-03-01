@@ -3,6 +3,7 @@ find_path(PD_HEADER NAMES m_pd.h)
 if(WIN32)
   find_library(PD_LIB NAMES pd)
   if(NOT PD_LIB)
+    message(STATUS "PureData not found, skipping bindings...")
     function(avnd_make_pd)
     endfunction()
 
@@ -11,11 +12,28 @@ if(WIN32)
 endif()
 
 if(NOT PD_HEADER)
+  message(STATUS "PureData not found, skipping bindings...")
   function(avnd_make_pd)
   endfunction()
 
   return()
 endif()
+
+# Define a PCH
+add_library(Avendish_pd_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
+
+target_precompile_headers(Avendish_pd_pch
+  PUBLIC
+    include/avnd/binding/pd/all.hpp
+    include/avnd/prefix.hpp
+)
+
+target_link_libraries(Avendish_pd_pch
+  PUBLIC
+    DisableExceptions
+)
+
+avnd_common_setup("" "Avendish_pd_pch")
 
 function(avnd_make_pd)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
@@ -52,10 +70,9 @@ function(avnd_make_pd)
       "${PD_HEADER}"
   )
 
-  target_compile_definitions(
-    ${AVND_FX_TARGET}
-    PRIVATE
-      AVND_PUREDATA=1
+  target_precompile_headers(${AVND_FX_TARGET}
+    REUSE_FROM
+      Avendish_pd_pch
   )
 
   target_link_libraries(

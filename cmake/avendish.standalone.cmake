@@ -1,5 +1,38 @@
 find_package(ossia QUIET)
 
+add_library(Avendish_standalone_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
+
+target_precompile_headers(Avendish_standalone_pch
+  PUBLIC
+    include/avnd/binding/standalone/all.hpp
+    include/avnd/prefix.hpp
+)
+
+if(TARGET Qt5::Quick)
+  target_link_libraries(Avendish_standalone_pch PRIVATE
+    Qt5::Quick
+  )
+
+  target_precompile_headers(Avendish_standalone_pch
+    PUBLIC
+      <QObject>
+      <QQuickItem>
+  )
+endif()
+
+if(TARGET ossia::ossia)
+  target_link_libraries(Avendish_standalone_pch PRIVATE
+    ossia::ossia
+  )
+
+  target_precompile_headers(Avendish_standalone_pch
+    PUBLIC
+      <ossia/prefix.hpp>
+  )
+endif()
+
+avnd_common_setup("" "Avendish_standalone_pch")
+
 function(avnd_make_standalone)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS" "" ${ARGN})
 
@@ -36,6 +69,7 @@ function(avnd_make_standalone)
       ${AVND_FX_TARGET}
       PUBLIC
         ossia::ossia
+        SDL2
     )
   endif()
 

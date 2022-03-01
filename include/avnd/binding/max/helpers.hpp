@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/channels_introspection.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/wrappers/messages_introspection.hpp>
@@ -43,29 +44,37 @@ static void process_generic_message(T& implementation, t_symbol* s)
             {
               post(
                   "[dumpall] %s : %s = %f",
-                  object_type::name(),
+                  avnd::get_name<object_type>(),
                   C::name(),
                   (float)ctl.value);
             }
-            else if constexpr (requires { ctl.value = std::string{}; })
+            else if constexpr (requires { ctl.value.c_str(); })
             {
               post(
                   "[dumpall] %s : %s = %s",
-                  object_type::name(),
+                  avnd::get_name<object_type>(),
                   C::name(),
                   ctl.value.c_str());
+            }
+            else if constexpr (requires { (const char*)ctl.value.data(); })
+            {
+              post(
+                  "[dumpall] %s : %s = %s",
+                  avnd::get_name<object_type>(),
+                  C::name(),
+                  ctl.value.data());
             }
           }
           else
           {
             if constexpr (requires { (float)ctl.value; })
             {
-              post("[dumpall] %s : [%d] = %f", object_type::name(), k, (float)ctl.value);
+              post("[dumpall] %s : [%d] = %f", avnd::get_name<object_type>(), k, (float)ctl.value);
             }
             else if constexpr (requires { ctl.value = std::string{}; })
             {
               post(
-                  "[dumpall] %s : [%d] = %s", object_type::name(), k, ctl.value.c_str());
+                  "[dumpall] %s : [%d] = %s", avnd::get_name<object_type>(), k, ctl.value.c_str());
             }
           }
           k++;

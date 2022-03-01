@@ -25,37 +25,33 @@ namespace avnd
   constexpr Type get_##PropName(const T&)               \
   {                                                     \
     return get_##PropName<T>();                         \
-  }
+} \
+\
+template<typename T> \
+concept has_##PropName = \
+   requires { Type{T::PropName()}; } \
+|| requires { Type{T::PropName}; };
 
-define_get_property(name, std::string_view, "(name)") define_get_property(
-    c_name,
-    std::string_view,
-    "(c name)") define_get_property(vendor, std::string_view, "(vendor)")
-    define_get_property(product, std::string_view, "(product)")
-        define_get_property(version, std::string_view, "(version)")
-            define_get_property(label, std::string_view, "(label)") define_get_property(
-                uuid,
-                std::string_view,
-                "00000000-0000-0000-0000-000000000000")
-                define_get_property(short_label, std::string_view, "(short label)")
-                    define_get_property(category, std::string_view, "(category)")
-                        define_get_property(copyright, std::string_view, "(copyright)")
-                            define_get_property(license, std::string_view, "(license)")
-                                define_get_property(url, std::string_view, "(url)")
-                                    define_get_property(
-                                        manual_url,
-                                        std::string_view,
-                                        "(manual_url)")
-                                        define_get_property(
-                                            support_url,
-                                            std::string_view,
-                                            "(support_url)")
-                                            define_get_property(
-                                                description,
-                                                std::string_view,
-                                                "(description)")
+// clang-format: off
+define_get_property(name, std::string_view, "(name)")
+define_get_property(c_name, std::string_view, "(c name)")
+define_get_property(vendor, std::string_view, "(vendor)")
+define_get_property(product, std::string_view, "(product)")
+define_get_property(version, std::string_view, "(version)")
+define_get_property(label, std::string_view, "(label)")
+define_get_property(uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
+define_get_property(short_label, std::string_view, "(short label)")
+define_get_property(category, std::string_view, "(category)")
+define_get_property(copyright, std::string_view, "(copyright)")
+define_get_property(license, std::string_view, "(license)")
+define_get_property(url, std::string_view, "(url)")
+define_get_property(manual_url, std::string_view, "(manual_url)")
+define_get_property(support_url, std::string_view, "(support_url)")
+define_get_property(description, std::string_view, "(description)")
+// clang-format: on
 
-    /* constexpr */ std::string array_to_string(auto& authors)
+// FIXME: C++23: constexpr ?
+std::string array_to_string(auto& authors)
 {
   std::string ret;
   for (int i = 0; i < std::ssize(authors); i++)

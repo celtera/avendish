@@ -34,7 +34,6 @@ struct audio_processor_metaclass
   static inline t_class* g_class{};
   static inline audio_processor_metaclass* instance{};
 
-  static t_symbol* symbol_from_name();
   audio_processor_metaclass();
 };
 
@@ -177,7 +176,7 @@ struct audio_processor
             {
               if constexpr (requires { ctl.value = float{}; })
               {
-                if (std::string_view{C::name()} == s->s_name)
+                if (avnd::get_name<C>() == s->s_name)
                 {
                   avnd::apply_control(ctl, res);
                 }
@@ -295,7 +294,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      symbol_from_name(),
+      symbol_from_name<T>(),
       (t_newmethod)obj_new,
       (t_method)obj_free,
       sizeof(audio_processor<T>),
@@ -311,22 +310,4 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   class_addanything(g_class, (t_method)obj_process);
 }
 
-template <typename T>
-t_symbol* audio_processor_metaclass<T>::symbol_from_name()
-{
-  if constexpr (const char* str; requires { str = T::c_name(); })
-  {
-    return gensym(T::c_name());
-  }
-  else
-  {
-    std::string name{T::name()};
-    for (char& c : name)
-    {
-      if (!valid_char_for_name(c))
-        c = '_';
-    }
-    return gensym(name.c_str());
-  }
-}
 }
