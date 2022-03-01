@@ -8,7 +8,6 @@
 #include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/port_introspection.hpp>
 #include <boost/mp11.hpp>
-#include <iostream>
 namespace avnd
 {
 // Field: struct { std::optional<float>* values; }
@@ -150,15 +149,14 @@ struct control_storage
       if constexpr(span_in::size > 0)
       {
         auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
-          // Get the matching buffer in our storage
+          // Get the matching buffer in our storage, a std::vector<timed_value>
           auto& buf = std::get<Idx>(this->span_inputs);
 
           // Allocate enough space for the new buffer size
           buf.resize(buffer_size);
 
-          // Assign the pointer to the std::optional<float*> values; member in the port
-          port.values = buf;
-          std::cerr << "2/allocated: " << buf.size() <<" in :" << &port.values << std::endl;
+          // Assign the pointer to the std::span<timed_value> values; member in the port
+          port.values = {buf.data(), buf.size()};
         };
         span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
       }
