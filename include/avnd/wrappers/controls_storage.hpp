@@ -165,7 +165,7 @@ struct control_storage
         auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
           auto& buf = std::get<Idx>(this->span_outputs);
           buf.resize(buffer_size);
-          port.values = buf;
+          port.values = {buf.data(), buf.size()};
         };
         span_out::for_all_n(avnd::get_outputs(t), init_raw_out);
       }
