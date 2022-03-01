@@ -5,8 +5,9 @@
 #include <vector>
 #include <optional>
 #include <iostream>
+#include <map>
 #include <span>
-
+#include <avnd/concepts/parameter.hpp>
 namespace examples
 {
 /**
@@ -21,7 +22,7 @@ struct SampleAccurateControls
     return "e6c34e9e-fc66-44d4-8798-dd3cd67b7fb2";
   }
 
-  struct
+  struct inputs_t
   {
     struct
     {
@@ -56,11 +57,25 @@ struct SampleAccurateControls
       std::span<timestamped_value> values{};
       float value{};
     } weight_B;
+
+    struct
+    {
+      static consteval auto name() { return "API C"; }
+
+      struct range
+      {
+        const float min = 0.;
+        const float max = 1.;
+        const float init = 0.5;
+      };
+
+      std::map<int, float> values{};
+      float value{};
+    } weight_C;
   } inputs;
 
-  struct
-  {
-  } outputs;
+
+  inputs_t outputs;
 
   void operator()(int N)
   {

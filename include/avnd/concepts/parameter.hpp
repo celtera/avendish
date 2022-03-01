@@ -92,13 +92,67 @@ template <typename T>
 concept value_port = parameter<T> && !
 control<T>;
 
+
+/**
+ * Timed values are used for sample-accurate ports.
+ * That is, ports where the time (sample) at which the value
+ * happened is known.
+ */
+
+/**
+ * Here T is for instance `std::optional<float>* values`
+ * where values[5] = 123.f; means that the value 123
+ * happened at sample 5 since the beginning of the audio buffer.
+ */
+template<typename T>
+concept linear_timed_values =
+    std::is_pointer_v<T> &&
+    requires (T t) {
+  *(t[0]);
+};
+
+/**
+ * Here T is a e.g. std::span<timed_value>
+ * where
+ *
+ * struct timed_value {
+ *   int frame;
+ *   float value;
+ * };
+ */
+template<typename T>
+concept span_timed_values =
+    requires (T t)
+{
+  { T::value_type::frame } -> avnd::int_ish;
+  T::value_type::value;
+}
+&& std::is_constructible_v<T, typename T::value_type*, std::size_t>
+&& std::is_trivially_copy_constructible_v<T>
+;
+
+/**
+ * Here T is a e.g. std::map<int, float> and manages its own allocations
+ */
+template<typename T>
+concept dynamic_timed_values =
+    requires (T t)
+{
+  typename T::allocator_type;
+}
+;
+
 /**
  * A sample-accurate parameter has an additional "values" member
  * which allows to know at which sample did a control change
  */
 template <typename T>
 concept sample_accurate_parameter
-    = parameter<T> && requires(T t) { t.value = t.values[1]; };
+    = parameter<T>
+&& (   requires(T t) { t.value = *t.values[1]; } // linear map
+    || requires(T t) { t.value = t.values[1]; } // dynamic map
+    || requires(T t) { t.value = t.values.begin()->value; } // span
+);
 
 /**
  * Like control but sample-accurate
@@ -113,4 +167,16 @@ template <typename T>
 concept sample_accurate_value_port = sample_accurate_parameter<T> && !
 control<T>;
 
+
+
+
+template <typename T>
+concept linear_sample_accurate_parameter
+= sample_accurate_parameter<T> && linear_timed_values<std::decay_t<decltype(T::values)>>;
+template <typename T>
+concept span_sample_accurate_parameter
+= sample_accurate_parameter<T> && span_timed_values<std::decay_t<decltype(T::values)>>;
+template <typename T>
+concept dynamic_sample_accurate_parameter
+= sample_accurate_parameter<T> && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
 }

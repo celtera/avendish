@@ -4,11 +4,50 @@
 #include <array>
 #include <cstddef>
 #include <string>
-
+#include <type_traits>
 #include <string_view>
 
 namespace avnd
 {
+template <static_string lit, typename T>
+struct val_port
+{
+  static consteval auto name() { return std::string_view{lit.value}; }
+
+  operator T&() noexcept { return value; }
+  operator const T&() const noexcept { return value; }
+  auto& operator=(const T& t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+  auto& operator=(T&& t) noexcept
+  {
+    value = std::move(t);
+    return *this;
+  }
+
+  // Running value (last value before the tick started)
+  T value;
+};
+
+template <static_string lit, typename T>
+requires std::is_trivial_v<T>
+struct val_port<lit, T>
+{
+  static consteval auto name() { return std::string_view{lit.value}; }
+
+  operator T&() noexcept { return value; }
+  operator const T&() const noexcept { return value; }
+  auto& operator=(T t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+
+  // Running value (last value before the tick started)
+  T value;
+};
 
 template <typename T>
 struct range_t

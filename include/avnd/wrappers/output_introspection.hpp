@@ -11,39 +11,51 @@
 namespace avnd
 {
 template <typename T>
-using parameter_output_introspection
-    = parameter_introspection<typename outputs_type<T>::type>;
+struct parameter_output_introspection
+    : parameter_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using midi_output_introspection
-    = midi_port_introspection<typename outputs_type<T>::type>;
+struct linear_timed_parameter_output_introspection
+    : linear_timed_parameter_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using raw_container_midi_output_introspection
-    = raw_container_midi_port_introspection<typename outputs_type<T>::type>;
+struct span_timed_parameter_output_introspection
+    : span_timed_parameter_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using dynamic_container_midi_output_introspection
-    = dynamic_container_midi_port_introspection<typename outputs_type<T>::type>;
+struct dynamic_timed_parameter_output_introspection
+    : dynamic_timed_parameter_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using texture_output_introspection
-    = texture_port_introspection<typename outputs_type<T>::type>;
+struct midi_output_introspection
+    : midi_port_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using audio_bus_output_introspection
-    = audio_bus_introspection<typename outputs_type<T>::type>;
+struct raw_container_midi_output_introspection
+    : raw_container_midi_port_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using audio_channel_output_introspection
-    = audio_channel_introspection<typename outputs_type<T>::type>;
+struct dynamic_container_midi_output_introspection
+    : dynamic_container_midi_port_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using callback_output_introspection
-    = callback_introspection<typename outputs_type<T>::type>;
+struct texture_output_introspection
+    : texture_port_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-using output_introspection = fields_introspection<typename outputs_type<T>::type>;
+struct audio_bus_output_introspection
+    : audio_bus_introspection<typename outputs_type<T>::type> {};
+
+template <typename T>
+struct audio_channel_output_introspection
+    : audio_channel_introspection<typename outputs_type<T>::type> {};
+
+template <typename T>
+struct callback_output_introspection
+    : callback_introspection<typename outputs_type<T>::type> {};
+
+template <typename T>
+struct output_introspection : fields_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
 auto& get_outputs(avnd::effect_container<T>& t)

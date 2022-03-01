@@ -10,34 +10,46 @@ namespace avnd
 {
 
 template <typename T>
-using parameter_input_introspection
-    = parameter_introspection<typename inputs_type<T>::type>;
+struct parameter_input_introspection
+    : parameter_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using midi_input_introspection = midi_port_introspection<typename inputs_type<T>::type>;
+struct linear_timed_parameter_input_introspection
+    : linear_timed_parameter_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using texture_input_introspection
-    = texture_port_introspection<typename inputs_type<T>::type>;
+struct span_timed_parameter_input_introspection
+    : span_timed_parameter_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using raw_container_midi_input_introspection
-    = raw_container_midi_port_introspection<typename inputs_type<T>::type>;
+struct dynamic_timed_parameter_input_introspection
+    : dynamic_timed_parameter_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using dynamic_container_midi_input_introspection
-    = dynamic_container_midi_port_introspection<typename inputs_type<T>::type>;
+struct midi_input_introspection : midi_port_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using audio_bus_input_introspection
-    = audio_bus_introspection<typename inputs_type<T>::type>;
+struct texture_input_introspection
+    : texture_port_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using audio_channel_input_introspection
-    = audio_channel_introspection<typename inputs_type<T>::type>;
+struct raw_container_midi_input_introspection
+    : raw_container_midi_port_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-using input_introspection = fields_introspection<typename inputs_type<T>::type>;
+struct dynamic_container_midi_input_introspection
+    : dynamic_container_midi_port_introspection<typename inputs_type<T>::type> {};
+
+template <typename T>
+struct audio_bus_input_introspection
+    : audio_bus_introspection<typename inputs_type<T>::type> {};
+
+template <typename T>
+struct audio_channel_input_introspection
+    : audio_channel_introspection<typename inputs_type<T>::type> {};
+
+template <typename T>
+struct input_introspection : fields_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
 auto& get_inputs(avnd::effect_container<T>& t)

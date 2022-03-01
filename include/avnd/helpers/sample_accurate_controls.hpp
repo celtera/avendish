@@ -11,7 +11,7 @@ struct sample_accurate_values
 {
   std::map<int, T> values;
 };
-
+/*
 namespace sample_accurate
 {
 
@@ -85,7 +85,7 @@ struct vslider_i32
 };
 
 }
-
+*/
 template <typename T>
 struct accurate
     : T

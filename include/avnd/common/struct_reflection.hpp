@@ -113,6 +113,10 @@ struct fields_introspection
 /**
  * Utilities to introspect all fields in a struct which match a given predicate
  */
+
+template <typename T, template <typename...> typename P, typename IntT>
+struct matches_predicate : P<boost::pfr::tuple_element_t<IntT::value, T>> { };
+
 template <typename T, template <typename...> typename P>
 struct predicate_introspection
 {
@@ -121,7 +125,7 @@ struct predicate_introspection
       = typed_index_sequence_t<std::make_index_sequence<boost::pfr::tuple_size_v<type>>>;
 
   template <typename IntT>
-  using matches_predicate_i = P<boost::pfr::tuple_element_t<IntT::value, type>>;
+    struct matches_predicate_i : matches_predicate<T, P, IntT> {};
 
   using fields = boost::mp11::mp_copy_if<as_tuple<type>, P>;
   using indices_n

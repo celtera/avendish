@@ -23,12 +23,27 @@ static_assert(check<CONCEPT(std::floating_point), float>::value);
 template <typename Field>
 using is_parameter_t = boost::mp11::mp_bool<parameter<Field>>;
 template <typename T>
-using parameter_introspection = predicate_introspection<T, is_parameter_t>;
+struct parameter_introspection : predicate_introspection<T, is_parameter_t> {};
+
+template <typename Field>
+using is_linear_timed_parameter_t = boost::mp11::mp_bool<linear_sample_accurate_parameter<Field>>;
+template <typename T>
+using linear_timed_parameter_introspection = predicate_introspection<T, is_linear_timed_parameter_t>;
+
+template <typename Field>
+using is_span_timed_parameter_t = boost::mp11::mp_bool<span_sample_accurate_parameter<Field>>;
+template <typename T>
+using span_timed_parameter_introspection = predicate_introspection<T, is_span_timed_parameter_t>;
+
+template <typename Field>
+using is_dynamic_timed_parameter_t = boost::mp11::mp_bool<dynamic_sample_accurate_parameter<Field>>;
+template <typename T>
+using dynamic_timed_parameter_introspection = predicate_introspection<T, is_dynamic_timed_parameter_t>;
 
 template <typename Field>
 using is_midi_port_t = boost::mp11::mp_bool<midi_port<Field>>;
 template <typename T>
-using midi_port_introspection = predicate_introspection<T, is_midi_port_t>;
+struct midi_port_introspection : predicate_introspection<T, is_midi_port_t> {};
 
 template <typename Field>
 using is_texture_port_t = boost::mp11::mp_bool<texture_port<Field>>;
@@ -38,7 +53,7 @@ using texture_port_introspection = predicate_introspection<T, is_texture_port_t>
 template <typename Field>
 using is_audio_port_t = boost::mp11::mp_bool<audio_port<Field>>;
 template <typename T>
-using audio_port_introspection = predicate_introspection<T, is_audio_port_t>;
+struct audio_port_introspection : predicate_introspection<T, is_audio_port_t> {};
 
 template <typename Field>
 using is_raw_container_midi_port_t

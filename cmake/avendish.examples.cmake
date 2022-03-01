@@ -159,7 +159,14 @@ avnd_make_all(
   MAIN_FILE examples/Helpers/Midi.hpp
   MAIN_CLASS examples::helpers::Midi
   C_NAME avnd_helpers_midi
-  )
+)
+
+avnd_make_all(
+  TARGET SampleAccurateControls
+  MAIN_FILE examples/SampleAccurateControls.hpp
+  MAIN_CLASS examples::SampleAccurateControls
+  C_NAME avnd_sample_accurate_controls
+)
 
 
 # Demo: dump all the known metadata.

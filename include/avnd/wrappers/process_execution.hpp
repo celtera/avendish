@@ -75,6 +75,7 @@ auto current_tick(avnd::effect_container<T>& implementation)
 template <typename T>
 void invoke_effect(avnd::effect_container<T>& implementation, int frames)
 {
+  // clang-format off
   if constexpr (has_tick<T>)
   {
     // Set-up the "tick" struct
@@ -82,15 +83,16 @@ void invoke_effect(avnd::effect_container<T>& implementation, int frames)
     if_possible(t.frames = frames);
 
     // Do the process call
-    if_possible(implementation.effect(t)) else if_possible(implementation.effect(
-        frames)) else if_possible(implementation
-                                      .effect(
-                                          frames,
-                                          t)) else if_possible(implementation.effect());
+    if_possible(implementation.effect(t))
+    else if_possible(implementation.effect(frames))
+    else if_possible(implementation.effect(frames,t))
+    else if_possible(implementation.effect());
   }
   else
   {
-    if_possible(implementation.effect(frames)) else if_possible(implementation.effect());
+    if_possible(implementation.effect(frames))
+    else if_possible(implementation.effect());
   }
+  // clang-format on
 }
 }

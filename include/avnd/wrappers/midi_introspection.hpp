@@ -4,6 +4,7 @@
 
 #include <avnd/wrappers/concepts.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/port_introspection.hpp>
 #include <boost/mp11.hpp>
 
@@ -14,11 +15,17 @@ template <raw_container_midi_port Field>
 using midi_message_type
     = std::remove_pointer_t<std::remove_reference_t<decltype(Field::midi_messages)>>;
 
+/**
+ * Stores midi input buffers when there are raw ports being used.
+ */
 template <typename T>
 struct midi_input_storage
 {
 };
 
+/**
+ * Stores midi output buffers when there are raw ports being used.
+ */
 template <typename T>
 struct midi_output_storage
 {
@@ -65,7 +72,6 @@ struct midi_storage
     if constexpr(raw_midi_in_info::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
-        static_assert(raw_midi_in_info::size > 0);
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.
         auto& buf = std::get<Idx>(this->inputs_storage);

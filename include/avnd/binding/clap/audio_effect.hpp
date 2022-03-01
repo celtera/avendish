@@ -15,8 +15,6 @@
 #include <avnd/wrappers/widgets.hpp>
 #include <clap/all.h>
 
-#include <iostream>
-
 namespace avnd_clap
 {
 template <typename T>

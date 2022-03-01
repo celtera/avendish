@@ -91,6 +91,9 @@ class example_processor
     [[no_unique_address]]
     avnd::midi_storage<T> midi;
 
+    [[no_unique_address]]
+    avnd::control_storage<T> control_buffers;
+
     int buffer_size{};
     double sample_rate{};
 
@@ -185,6 +188,10 @@ class example_processor
       if constexpr (midi_in_info::size > 0 || midi_out_info::size)
       {
         midi.reserve_space(effect, buffer_size);
+      }
+      if constexpr(sizeof(control_buffers) > 1)
+      {
+        control_buffers.reserve_space(effect, buffer_size);
       }
 
       // FIXME Setup buffers for storing sample-accurate events & ports
