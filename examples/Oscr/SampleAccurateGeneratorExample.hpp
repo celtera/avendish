@@ -11,7 +11,7 @@ namespace examples
 
 struct SampleAccurateGeneratorExample
 {
-  $(pretty_name, "My sample-accurate generator");
+  $(name, "My sample-accurate generator");
   $(script_name, "sample_acc_gen");
   $(category, "Demo");
   $(author, "<AUTHOR>");

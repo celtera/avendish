@@ -19,7 +19,7 @@ struct Distortion
    * An audio effect plug-in must provide some metadata: name, author, etc.
    * UUIDs are important to uniquely identify plug-ins: you can use uuidgen for instance.
    */
-  $(pretty_name, "My pretty distortion");
+  $(name, "My pretty distortion");
   $(script_name, "disto_123");
   $(category, "Demo");
   $(author, "<AUTHOR>");

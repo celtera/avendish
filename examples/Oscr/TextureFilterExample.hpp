@@ -12,7 +12,7 @@ namespace examples
 {
 struct TextureFilterExample
 {
-  $(pretty_name, "My example texture filter");
+  $(name, "My example texture filter");
   $(script_name, "texture_filt");
   $(category, "Demo");
   $(author, "<AUTHOR>");

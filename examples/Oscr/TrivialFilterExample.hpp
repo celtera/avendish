@@ -13,7 +13,7 @@ namespace examples
 
 struct TrivialFilterExample
 {
-  $(pretty_name, "My trivial filter");
+  $(name, "My trivial filter");
   $(script_name, "trivial_effect_filter");
   $(category, "Demo");
   $(author, "<AUTHOR>");

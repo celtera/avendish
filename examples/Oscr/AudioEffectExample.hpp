@@ -12,7 +12,7 @@ namespace examples
  */
 struct AudioEffectExample
 {
-  $(pretty_name, "My example effect");
+  $(name, "My example effect");
   $(script_name, "effect_123");
   $(category, "Demo");
   $(author, "<AUTHOR>");

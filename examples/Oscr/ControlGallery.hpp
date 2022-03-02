@@ -65,7 +65,7 @@ namespace examples
 
 struct ControlGallery
 {
-  $(pretty_name, "Control gallery");
+  $(name, "Control gallery");
   $(script_name, "control_gallery");
   $(category, "Demo");
   $(author, "<AUTHOR>");

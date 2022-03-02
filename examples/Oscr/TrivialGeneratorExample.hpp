@@ -12,7 +12,7 @@ namespace examples
 
 struct TrivialGeneratorExample
 {
-  $(pretty_name, "My trivial generator");
+  $(name, "My trivial generator");
   $(script_name, "trivial_effect_gen");
   $(category, "Demo");
   $(author, "<AUTHOR>");

@@ -7,7 +7,7 @@
 //// {
 //// struct RawPortsExample
 //// {
-////   $(pretty_name, "Raw ports example");
+////   $(name, "Raw ports example");
 ////   $(script_name, raw_ports_test_plugin);
 ////   $(category, Demo);
 ////   $(author, "<AUTHOR>");

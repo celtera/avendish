@@ -2,22 +2,14 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-// See Helpers.hpp for a better example
-#if AVND_PUREDATA
-#include <m_pd.h>
-#elif AVND_MAXMSP
-#include <ext.h>
-#else
+// See Helpers/Messages.hpp for a better example
 #include <cstdio>
-#define post printf
-#endif
 
-#include <avnd/concepts/message.hpp>
 namespace examples
 {
 static void free_function(float a)
 {
-  post("free_function: %f", a);
+  printf("free_function: %f\n", a);
 }
 
 /**
@@ -65,7 +57,7 @@ struct Messages
       static consteval auto name() { return "lambda_function"; }
       static consteval auto func()
       {
-        return [] { post("lambda"); };
+        return [] { printf("lambda\n"); };
       }
     } lambda;
     struct
@@ -81,7 +73,7 @@ struct Messages
     inputs.a.value = x;
     inputs.b.value = y;
 
-    post("bamboozle: %f %f %s", x, y, str);
+    printf("bamboozle: %f %f %s\n", x, y, str);
   }
 
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }

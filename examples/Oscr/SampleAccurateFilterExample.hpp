@@ -18,7 +18,7 @@ namespace examples
 
 struct SampleAccurateFilterExample
 {
-  $(pretty_name, "My sample-accurate filter");
+  $(name, "My sample-accurate filter");
   $(script_name, "sample_acc_filt");
   $(category, "Demo");
   $(author, "<AUTHOR>");

@@ -14,7 +14,7 @@ namespace examples
  */
 struct CCC
 {
-  $(pretty_name, "CCC");
+  $(name, "CCC");
   $(script_name, "CCC");
   $(category, "Demo");
   $(author, "Peter Castine");

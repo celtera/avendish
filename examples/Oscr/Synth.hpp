@@ -21,7 +21,7 @@ namespace examples
  */
 struct Synth
 {
-  $(pretty_name, "My example synth");
+  $(name, "My example synth");
   $(script_name, "synth_123");
   $(category, "Demo");
   $(author, "<AUTHOR>");

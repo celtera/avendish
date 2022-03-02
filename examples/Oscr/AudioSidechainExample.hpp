@@ -12,7 +12,7 @@ namespace examples
  */
 struct AudioSidechainExample
 {
-  $(pretty_name, "Sidechain example");
+  $(name, "Sidechain example");
   $(script_name, "effect_sidechain");
   $(category, "Demo");
   $(author, "<AUTHOR>");

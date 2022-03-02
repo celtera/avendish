@@ -16,7 +16,7 @@ namespace examples
 struct EmptyExample
 {
   /** Here are the metadata of the plug-ins, to display to the user **/
-  $(pretty_name, "Hello world");
+  $(name, "Hello world");
   $(script_name, "empty_example");
   $(category, "Demo");
   $(author, "<AUTHOR>");

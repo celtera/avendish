@@ -27,7 +27,7 @@ namespace examples
  */
 struct TextureGeneratorExample
 {
-  $(pretty_name, "My example texture generator");
+  $(name, "My example texture generator");
   $(script_name, "texture_gen");
   $(category, "Demo");
   $(author, "<AUTHOR>");
