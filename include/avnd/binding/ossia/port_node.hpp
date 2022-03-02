@@ -5,15 +5,23 @@
 namespace oscr
 {
 template <typename T>
-class safe_node : public safe_node_base<T>
-{
-//  [[no_unique_address]] avnd::audio_channel_manager<T> channels;
-
-public:
-  explicit safe_node(ossia::exec_state_facade st) noexcept
-  {
-  }
+struct safe_node : safe_node_base<T> {
+    using safe_node_base<T>::safe_node_base;
 };
+
+////
+//// template <typename T>
+//// class safe_node : public safe_node_base<T>
+//// {
+//// //  [[no_unique_address]] avnd::audio_channel_manager<T> channels;
+////
+//// public:
+////     using safe_node_bas
+////   explicit safe_node(ossia::exec_state_facade st) noexcept
+////   {
+////   }
+//// };
+
 /*
 template <typename T>
 requires avnd::port_arg_audio_effect<double, T>

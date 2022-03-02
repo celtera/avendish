@@ -279,9 +279,24 @@ class example_processor
       /* CUSTOMIZATION POINT */
     }
 
+    void before_process()
+    {
+      // Clean up MIDI output ports
+      this->midi_buffers.clear_outputs(effect);
+
+      // Clean up sample-accurate control output ports
+      this->control_buffers.clear_outputs(effect);
+
+      // Process inputs of all sorts
+      process_input_controls();
+
+      process_input_events();
+    }
+
     template<std::floating_point Fp>
     void process(Fp** inputs, int in_N, Fp** outputs, int out_N, int frames)
     {
+      // Sanity checks
       if(in_N != this->channels.actual_runtime_inputs)
       {
         // logger.error("Host provided incorrect input channel count: expected {}, got {}", this->channels.actual_runtime_inputs, in_N);
@@ -293,23 +308,20 @@ class example_processor
         return;
       }
 
+      before_process();
+
       // Check if processing is to be bypassed
       if constexpr (avnd::can_bypass<T>)
       {
         for (auto& impl : effect.effects())
+        {
           if (impl.bypass)
+          {
+            after_process();
             return;
+          }
+        }
       }
-      // Clean up MIDI output ports
-      this->midi_buffers.clear_outputs(effect);
-
-      // Clean up sample-accurate control output ports
-      this->control_buffers.clear_outputs(effect);
-
-      // Process inputs of all sorts
-      process_input_controls();
-
-      process_input_events();
 
       // Run the actual audio processing
       processor.process(
@@ -318,13 +330,15 @@ class example_processor
           avnd::span<Fp*>{outputs, std::size_t(out_N)},
           frames);
 
+      after_process();
+    }
+
+    void after_process()
+    {
       // Copy output events
       process_output_controls();
 
       process_output_events();
-
-      // Clean up inputs
-      // FIXME
 
       // Clean up MIDI inputs
       this->midi_buffers.clear_inputs(effect);
@@ -332,6 +346,7 @@ class example_processor
       // Clean up sample-accurate control input ports
       this->control_buffers.clear_inputs(effect);
     }
+
 
     void stop()
     {

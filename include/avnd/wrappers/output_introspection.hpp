@@ -58,7 +58,7 @@ template <typename T>
 struct output_introspection : fields_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
-auto& get_outputs(avnd::effect_container<T>& t)
+auto&& get_outputs(avnd::effect_container<T>& t)
 {
   return t.outputs();
 }

@@ -8,6 +8,6 @@ using type = decltype(avnd::configure<oscr::config, @AVND_MAIN_CLASS@>())::type;
 
 void test_instantiate(ossia::exec_state_facade st)
 {
-  oscr::safe_node<type> f{st};
+  oscr::safe_node<type> f{st.bufferSize(), (double)st.sampleRate()};;
   f.run(ossia::token_request{}, st);
 }

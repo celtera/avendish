@@ -501,15 +501,20 @@ public:
   using midi_in_info = avnd::midi_input_introspection<T>;
   using midi_out_info = avnd::midi_output_introspection<T>;
 
-  [[no_unique_address]] avnd::effect_container<T> impl;
+  [[no_unique_address]]
+  avnd::effect_container<T> impl;
 
-  [[no_unique_address]] inlet_storage<T> ossia_inlets;
+  [[no_unique_address]]
+  inlet_storage<T> ossia_inlets;
 
-  [[no_unique_address]] outlet_storage<T> ossia_outlets;
+  [[no_unique_address]]
+  outlet_storage<T> ossia_outlets;
 
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  [[no_unique_address]]
+  avnd::process_adapter<T> processor;
 
-  [[no_unique_address]] avnd::audio_channel_manager<T> channels;
+  [[no_unique_address]]
+  avnd::audio_channel_manager<T> channels;
 
   [[no_unique_address]]
   avnd::midi_storage<T> midi_buffers;
@@ -517,17 +522,22 @@ public:
   [[no_unique_address]]
   avnd::control_storage<T> control_buffers;
 
+  // FIXME
   [[no_unique_address]]
   avnd::callback_storage<T> callbacks;
+
   static constexpr int total_input_ports = avnd::total_input_count<T>();
   static constexpr int total_output_ports = avnd::total_output_count<T>();
 
   int buffer_size{};
   double sample_rate{};
 
-  safe_node_base()
+  safe_node_base(int buffer_size, double sample_rate)
     : channels{this->impl}
   {
+    this->buffer_size = buffer_size;
+    this->sample_rate = sample_rate;
+
     this->m_inlets.reserve(total_input_ports);
     this->m_outlets.reserve(total_output_ports);
 
@@ -549,7 +559,21 @@ public:
     // Initialize the controls with their default values
     avnd::init_controls(this->impl.inputs());
 
-    // FIXME initialize callbacks
+    // Initialize the callbacks
+    if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
+    {
+      auto callbacks_initializer =
+          [this] <typename Refl, template<typename...> typename L, typename... Args>
+          (std::string_view message, L<Args...>, Refl refl) {
+        using return_type = typename Refl::return_type;
+        // TODO!
+        if constexpr(std::is_void_v<return_type>)
+          return [this] (Args...) { return; };
+        else
+          return [this] (Args...) { return return_type{}; };
+      };
+      this->callbacks.wrap_callbacks(impl, callbacks_initializer);
+    }
 
     // Initialize the other ports
     this->initialize_all_ports();
@@ -575,11 +599,11 @@ public:
     impl.init_channels(setup_info.input_channels, setup_info.output_channels);
 
     // Setup buffers for storing MIDI messages
-    if constexpr (midi_in_info::size > 0 || midi_out_info::size > 0)
+
     {
       midi_buffers.reserve_space(impl, buffer_size);
     }
-    if constexpr(sizeof(control_buffers) > 1)
+
     {
       control_buffers.reserve_space(impl, buffer_size);
     }
@@ -587,29 +611,187 @@ public:
     // Effect-specific preparation
     avnd::prepare(impl, setup_info);
   }
-  bool prepare_run()
+
+  void process_input_controls()
   {
-    // FIXME copy controls
+    // Here, copy the input controls to the ports in the object
+    /* CUSTOMIZATION POINT */
+  }
+
+  void process_input_events()
+  {
+    // Here, copy the input midi events to the relevant ports in the object
+    /* CUSTOMIZATION POINT */
+  }
+
+  void process_output_controls()
+  {
+    // Here, copy the output controls to the ports in the object
+    // (e.g. db feedback, etc...)
+    /* CUSTOMIZATION POINT */
+  }
+
+  void process_output_events()
+  {
+    // Here, copy the output MIDI events to the ports in the object
+    /* CUSTOMIZATION POINT */
+  }
+
+  void set_channels(ossia::audio_port& port, int channels)
+  {
+    const int cur = port.channels();
+    if(cur != channels)
+      port.set_channels(channels);
+
+    for(auto& chan : port)
+    {
+      if(chan.size() < this->buffer_size)
+        chan.resize(this->buffer_size);
+    }
+  }
+
+  struct audio_inlet_scan {
+      safe_node_base& self;
+      int k = 0;
+      bool ok{true};
+
+      void operator()(ossia::audio_inlet& in) noexcept {
+        int expected = in.data.channels();
+        self.channels.set_input_channels(self.impl, k, expected);
+        int actual = self.channels.get_input_channels(self.impl, k);
+        ok &= (expected == actual);
+        self.set_channels(in.data, actual);
+        ++k;
+      }
+      void operator()(const auto& other) noexcept { }
+  };
+  struct audio_outlet_scan {
+      safe_node_base& self;
+      int k = 0;
+      void operator()(ossia::audio_outlet& out) noexcept {
+        int actual = self.channels.get_output_channels(self.impl, k);
+        self.set_channels(out.data, actual);
+        ++k;
+      }
+      void operator()(const auto& other) noexcept { }
+  };
+
+  void scan_audio_input_channels()
+  {
+    const int current_input_channels = this->channels.actual_runtime_inputs;
+    const int current_output_channels = this->channels.actual_runtime_outputs;
+
+    // Scan the input channels
+    bool ok = std::apply([&] (auto&&... ports) {
+      audio_inlet_scan match{*this};
+      (match(ports), ...);
+      return match.ok;
+    }, ossia_inlets.ports);
+
+    // Ensure that we have enough output space
+    std::apply([&] (auto&&... ports) {
+      audio_outlet_scan match{*this};
+      (match(ports), ...);
+    }, ossia_inlets.ports);
+
+    bool changed = !ok;
+    changed |= (current_input_channels != this->channels.actual_runtime_inputs);
+    changed |= (current_output_channels != this->channels.actual_runtime_outputs);
+    if(changed)
+    {
+      audio_configuration_changed();
+    }
+  }
+
+  bool prepare_run(int start, int frames)
+  {
+    // Check all the audio channels
+    scan_audio_input_channels();
+
+    // Clean up MIDI output ports
+    this->midi_buffers.clear_outputs(impl);
+
+    // Clean up sample-accurate control output ports
+    this->control_buffers.clear_outputs(impl);
+
+    // Process inputs of all sorts
+    process_input_controls();
+
+    process_input_events();
 
     return true;
   }
 
+  struct initialize_audio {
+      const double** ins{};
+      double** outs{};
+      int k = 0;
+      void operator()(const ossia::audio_inlet& in) noexcept {
+        for(auto& c : in.data) {
+          ins[k] = c.data();
+          k++;
+        }
+      }
+      void operator()(const ossia::audio_outlet& in) noexcept {
+        for(auto& c : in.data) {
+          ins[k] = c.data();
+          k++;
+        }
+      }
+      void operator()(const auto& other) noexcept { }
+  };
+  void initialize_audio_arrays(const double** ins, double** outs)
+  {
+
+    std::apply([&] (auto&&... ports) {
+      initialize_audio match{ins, outs, 0};
+      (match(ports), ...);
+    }, ossia_inlets.ports);
+
+    std::apply([&] (auto&&... ports) {
+      initialize_audio match{ins, outs, 0};
+      (match(ports), ...);
+    }, ossia_outlets.ports);
+  }
+
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
-    if (!this->prepare_run())
+    auto [start, frames] = st.timings(tk);
+
+    if (!this->prepare_run(start, frames))
       return;
 
     // Initialize audio ports
-    auto [start, frames] = st.timings(tk);
+    const int current_input_channels = this->channels.actual_runtime_inputs;
+    const int current_output_channels = this->channels.actual_runtime_outputs;
+    const double** audio_ins = (const double**)alloca(sizeof(double*) * (1 + current_input_channels));
+
+    double** audio_outs = (double**)alloca(sizeof(double*) * (1 + current_output_channels));
+    initialize_audio_arrays(audio_ins, audio_outs);
 
     // Run
-    // FIXMEthis->impl.effect(ins, outs, frames);
+    processor.process(
+        impl,
+        avnd::span<double*>{const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
+        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
+        frames);
+
 
     this->finish_run();
   }
+
   void finish_run()
   {
-    // FIXME copy control outs
+      // Copy output events
+      process_output_controls();
+
+      process_output_events();
+
+      // Clean up MIDI inputs
+      this->midi_buffers.clear_inputs(impl);
+
+      // Clean up sample-accurate control input ports
+      this->control_buffers.clear_inputs(impl);
   }
 
   void initialize_all_ports()

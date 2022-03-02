@@ -196,12 +196,30 @@ struct predicate_introspection
 
   template <typename U>
   static constexpr void
-  for_all(member_iterator<U> unfiltered_fields, auto&& func) noexcept
+  for_all(member_iterator<U>&& unfiltered_fields, auto&& func) noexcept
   {
     if constexpr (size > 0)
     {
       [&func,
        &unfiltered_fields]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+      {
+        for (auto& m : unfiltered_fields)
+        {
+          auto&& ppl = boost::pfr::detail::tie_as_tuple(m);
+          (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+        }
+      }(indices_n{});
+    }
+  }
+
+  template <typename U>
+  static constexpr void
+  for_all(member_iterator<U>& unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr (size > 0)
+    {
+      [&func,
+          &unfiltered_fields]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
         for (auto& m : unfiltered_fields)
         {

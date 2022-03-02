@@ -52,7 +52,7 @@ template <typename T>
 struct input_introspection : fields_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-auto& get_inputs(avnd::effect_container<T>& t)
+auto&& get_inputs(avnd::effect_container<T>& t)
 {
   return t.inputs();
 }

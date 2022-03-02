@@ -377,9 +377,9 @@ struct audio_channel_manager<T>
     return bool(ok);
   }
 
-  int get_input_channels(T& processor, int input_id) { return input_channels[input_id]; }
+  int get_input_channels(auto& processor, int input_id) { return input_channels[input_id]; }
 
-  int get_output_channels(T& processor, int output_id)
+  int get_output_channels(auto& processor, int output_id)
   {
     return output_channels[output_id];
   }

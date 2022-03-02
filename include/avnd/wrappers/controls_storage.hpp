@@ -153,10 +153,10 @@ struct control_storage
           auto& buf = std::get<Idx>(this->span_inputs);
 
           // Allocate enough space for the new buffer size
-          buf.resize(buffer_size);
+          buf.reserve(buffer_size);
 
           // Assign the pointer to the std::span<timed_value> values; member in the port
-          port.values = {buf.data(), buf.size()};
+          port.values = {buf.data(), std::size_t(0)};
         };
         span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
       }
@@ -164,8 +164,8 @@ struct control_storage
       {
         auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
           auto& buf = std::get<Idx>(this->span_outputs);
-          buf.resize(buffer_size);
-          port.values = {buf.data(), buf.size()};
+          buf.reserve(buffer_size);
+          port.values = {buf.data(), std::size_t(0)};
         };
         span_out::for_all_n(avnd::get_outputs(t), init_raw_out);
       }
@@ -177,6 +177,60 @@ struct control_storage
       };
       dyn_in::for_all(avnd::get_inputs(t),init_dyn);
       dyn_out::for_all(avnd::get_outputs(t),init_dyn);
+    }
+
+    void clear_inputs(avnd::effect_container<T>& t)
+    {
+      if constexpr(lin_in::size > 0)
+      {
+        auto clear_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+          auto& buf = std::get<Idx>(this->linear_inputs);
+          for(auto& b : buf)
+            b = {};
+        };
+        lin_in::for_all_n(avnd::get_inputs(t), clear_raw_in);
+      }
+
+      if constexpr(span_in::size > 0)
+      {
+        auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+          auto& buf = std::get<Idx>(this->span_inputs);
+          buf.resize(0);
+        };
+        span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
+      }
+
+      auto init_dyn = [&](auto&& port) {
+        port.values.clear();
+      };
+      dyn_in::for_all(avnd::get_inputs(t),init_dyn);
+    }
+
+    void clear_outputs(avnd::effect_container<T>& t)
+    {
+      if constexpr(lin_out::size > 0)
+      {
+        auto clear_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+          auto& buf = std::get<Idx>(this->linear_outputs);
+          for(auto& b : buf)
+            b = {};
+        };
+        lin_out::for_all_n(avnd::get_outputs(t), clear_raw_out);
+      }
+
+      if constexpr(span_out::size > 0)
+      {
+        auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+          auto& buf = std::get<Idx>(this->span_outputs);
+          buf.resize(0);
+        };
+        span_out::for_all_n(avnd::get_outputs(t), init_raw_out);
+      }
+
+      auto init_dyn = [&](auto& port) {
+        port.values.clear();
+      };
+      dyn_out::for_all(avnd::get_outputs(t), init_dyn);
     }
 };
 
