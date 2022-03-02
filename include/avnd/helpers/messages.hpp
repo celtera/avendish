@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/helpers/polyfill.hpp>
 #include <avnd/helpers/static_string.hpp>
 
 #include <string_view>
@@ -18,7 +19,7 @@ template <static_string lit, auto M>
 struct func_ref
 {
   static consteval auto name() { return std::string_view{lit.value}; }
-  static consteval auto func() { return M; }
+  static clang_buggy_consteval auto func() { return M; }
 };
 
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/helpers/polyfill.hpp>
 #include <avnd/helpers/static_string.hpp>
 
 #include <array>
@@ -7,18 +8,12 @@
 #include <type_traits>
 #include <string_view>
 
-#if defined(__APPLE__)
-#define clang_buggy_consteval constexpr
-#else
-#define clang_buggy_consteval consteval
-#endif
-
 namespace avnd
 {
 template <static_string lit, typename T>
 struct val_port
 {
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   operator T&() noexcept { return value; }
   operator const T&() const noexcept { return value; }
@@ -41,7 +36,7 @@ template <static_string lit, typename T>
 requires std::is_trivial_v<T>
 struct val_port<lit, T>
 {
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   operator T&() noexcept { return value; }
   operator const T&() const noexcept { return value; }
@@ -82,7 +77,7 @@ struct slider_t
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
 
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
 
@@ -154,7 +149,7 @@ struct knob_t
   {
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
 
@@ -188,7 +183,7 @@ struct toggle_t
     checkbox
   };
   static clang_buggy_consteval auto range() { return setup; }
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = setup.init;
 
@@ -225,7 +220,7 @@ struct maintained_button_t
     } dummy;
     return dummy;
   }
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = false;
   operator bool&() noexcept { return value; }
@@ -256,7 +251,7 @@ struct impulse_button_t
     } dummy;
     return dummy;
   }
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = false;
   operator bool&() noexcept { return value; }
@@ -293,7 +288,7 @@ struct lineedit_t
   };
   static clang_buggy_consteval auto range() { return lineedit_setup{.init = setup.value}; }
 
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   std::string value = setup.value;
   operator std::string&() noexcept { return value; }
@@ -339,7 +334,7 @@ struct enum_t
     return enum_setup{};
   }
 
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   Enum value{};
   operator Enum&() noexcept { return value; }
@@ -382,7 +377,7 @@ struct combobox_t
     return a;
   }
 
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   value_type value{};
   operator value_type&() noexcept { return value; }
@@ -417,7 +412,7 @@ struct xy_pad_t
   {
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   value_type value = {setup.init, setup.init};
 
@@ -461,7 +456,7 @@ struct color_chooser
   {
     return init_range_t<value_type>{.init = value_type(setup.init)};
   }
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   value_type value = setup.init;
 
@@ -557,12 +552,12 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
       combobox                                                                          \
     };                                                                                  \
                                                                                         \
-    static consteval std::array<std::string_view, AVND_NUM_ARGS(__VA_ARGS__)> choices() \
+    static clang_buggy_consteval std::array<std::string_view, AVND_NUM_ARGS(__VA_ARGS__)> choices() \
     {                                                                                   \
       return {STRING_LITERAL_ARRAY(__VA_ARGS__)};                                       \
     }                                                                                   \
                                                                                         \
-    static consteval auto name()                                                        \
+    static clang_buggy_consteval auto name()                                                        \
     {                                                                                   \
       return Name;                                                                      \
     }                                                                                   \
