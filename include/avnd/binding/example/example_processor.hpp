@@ -186,16 +186,16 @@ class example_processor
       effect.init_channels(setup_info.input_channels, setup_info.output_channels);
 
       // Setup buffers for storing MIDI messages
-      if constexpr (midi_in_info::size > 0 || midi_out_info::size)
+      if constexpr (midi_in_info::size > 0 || midi_out_info::size > 0)
       {
         midi_buffers.reserve_space(effect, buffer_size);
       }
+
+      // Setup buffers for storing sample-accurate controls
       if constexpr(sizeof(control_buffers) > 1)
       {
         control_buffers.reserve_space(effect, buffer_size);
       }
-
-      // FIXME Setup buffers for storing sample-accurate events & ports
 
       // Effect-specific preparation
       avnd::prepare(effect, setup_info);
@@ -303,6 +303,9 @@ class example_processor
       // Clean up MIDI output ports
       this->midi_buffers.clear_outputs(effect);
 
+      // Clean up sample-accurate control output ports
+      this->control_buffers.clear_outputs(effect);
+
       // Process inputs of all sorts
       process_input_controls();
 
@@ -325,6 +328,9 @@ class example_processor
 
       // Clean up MIDI inputs
       this->midi_buffers.clear_inputs(effect);
+
+      // Clean up sample-accurate control input ports
+      this->control_buffers.clear_inputs(effect);
     }
 
     void stop()

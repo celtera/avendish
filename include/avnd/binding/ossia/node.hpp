@@ -13,6 +13,10 @@
 #include <avnd/wrappers/midi_introspection.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/widgets.hpp>
+#include <avnd/wrappers/midi_introspection.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
+#include <avnd/wrappers/callbacks_adapter.hpp>
+#include <avnd/wrappers/messages_introspection.hpp>
 #include <ossia/dataflow/audio_port.hpp>
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/node_process.hpp>
@@ -507,6 +511,14 @@ public:
 
   [[no_unique_address]] avnd::audio_channel_manager<T> channels;
 
+  [[no_unique_address]]
+  avnd::midi_storage<T> midi_buffers;
+
+  [[no_unique_address]]
+  avnd::control_storage<T> control_buffers;
+
+  [[no_unique_address]]
+  avnd::callback_storage<T> callbacks;
   static constexpr int total_input_ports = avnd::total_input_count<T>();
   static constexpr int total_output_ports = avnd::total_output_count<T>();
 
@@ -563,18 +575,14 @@ public:
     impl.init_channels(setup_info.input_channels, setup_info.output_channels);
 
     // Setup buffers for storing MIDI messages
-    if constexpr (midi_in_info::size > 0)
+    if constexpr (midi_in_info::size > 0 || midi_out_info::size > 0)
     {
-      midi_in_info::for_all(
-          this->effect.inputs(),
-          [&]<avnd::midi_port C>(C& in_port)
-          {
-            // Reserve space in the midi buffers
-            /* CUSTOMIZATION POINT */
-          });
+      midi_buffers.reserve_space(impl, buffer_size);
     }
-
-    // FIXME Setup buffers for storing sample-accurate events & ports
+    if constexpr(sizeof(control_buffers) > 1)
+    {
+      control_buffers.reserve_space(impl, buffer_size);
+    }
 
     // Effect-specific preparation
     avnd::prepare(impl, setup_info);

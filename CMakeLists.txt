@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(avendish)
 option(AVENDISH_INCLUDE_SOURCE_ONLY "Create a simple Avendish target for including headers" OFF)
-
+include_directories(/opt/libossia/include)
 if(AVENDISH_INCLUDE_SOURCE_ONLY)
   include(cmake/avendish.sources.cmake)
   return()
