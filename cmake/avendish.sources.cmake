@@ -130,15 +130,17 @@ function(avnd_target_setup AVND_FX_TARGET)
     endif()
   endif()
 
-  # target_compile_definitions(
-  #     ${AVND_FX_TARGET}
-  #     PUBLIC
-  #       FMT_HEADER_ONLY=1
-  # )
-  target_link_libraries(
-      ${AVND_FX_TARGET}
-      PUBLIC fmt
-  )
+  if(TARGET fmt::fmt)
+    target_link_libraries(
+        ${AVND_FX_TARGET}
+        PUBLIC fmt::fmt
+    )
+  elseif(TARGET fmt::fmt_header_only)
+    target_link_libraries(
+        ${AVND_FX_TARGET}
+        PUBLIC fmt::fmt_header_only
+    )
+  endif()
 
   target_include_directories(
       ${AVND_FX_TARGET}

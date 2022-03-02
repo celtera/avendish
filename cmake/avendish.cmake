@@ -12,6 +12,7 @@ endif()
 
 find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)
+find_package(fmt QUIET)
 
 include(avendish.disableexceptions)
 include(avendish.sources)
