@@ -30,10 +30,11 @@ concept message = reflectable_message<T> && requires(T t) {
                                                 } -> string_ish;
                                             };
 
-type_or_value_qualification(messages) type_or_value_reflection(messages)
+type_or_value_qualification(messages)
+type_or_value_reflection(messages)
 
-    template <typename M>
-    consteval auto message_function_reflection()
+template <typename M>
+consteval auto message_function_reflection()
 {
   if constexpr (requires { avnd::function_reflection<M::func()>::count; })
   {

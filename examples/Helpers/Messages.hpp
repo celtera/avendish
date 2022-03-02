@@ -6,6 +6,7 @@
 #include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/log.hpp>
 
+#include <cstdio>
 // Note: we use a generic logger abstraction here, so
 // that we can use e.g. Pd / Max's post in their case, and
 // printf / fmt::print otherwise.
@@ -13,8 +14,14 @@
 
 namespace examples::helpers
 {
-template<typename C>
 inline void free_example()
+{
+  printf("free_example A\n");
+  fflush(stdout);
+}
+
+template<typename C>
+inline void free_template_example()
 {
   using logger = typename C::logger_type;
   logger{}.log("free_example");
@@ -42,11 +49,24 @@ struct Messages
     logger.log("example2: {}", x);
   }
 
+  template <typename U>
+  void example3(U x)
+  {
+    logger.log("example3: {}", x);
+  }
+
   avnd_start_messages(Messages)
     avnd_mem_fun(example)
     avnd_mem_fun(example2)
-    avnd_free_fun(free_example<C>)
+    avnd_mem_fun_t(example3, <int>)
+    avnd_mem_fun_t(example3, <float>)
+    avnd_mem_fun_t(example3, <const char*>)
+    avnd_free_fun(free_example)
+    avnd_free_fun_t(free_template_example, <C>)
     avnd_lambda(my_lambda, [] (Messages& self) { puts("lambda"); })
+
+    // General case:
+    avnd::func_ref<"my_message", &Messages::example> m_my_message;
   avnd_end_messages
 };
 }
