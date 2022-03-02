@@ -7,6 +7,12 @@
 #include <type_traits>
 #include <string_view>
 
+#if defined(__APPLE__)
+#define clang_buggy_consteval constexpr
+#else
+#define clang_buggy_consteval consteval
+#endif
+
 namespace avnd
 {
 template <static_string lit, typename T>
@@ -68,12 +74,6 @@ struct init_range_t
 using init_range = init_range_t<long double>;
 
 /// Sliders ///
-#if defined(__APPLE__)
-#define clang_buggy_consteval constexpr
-#else
-#define clang_buggy_consteval consteval
-#endif
-
 template <typename T, static_string lit, range setup>
 struct slider_t
 {
@@ -218,7 +218,7 @@ struct maintained_button_t
     pushbutton,
     bang
   };
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     struct
     {
@@ -249,7 +249,7 @@ struct impulse_button_t
     button,
     pushbutton
   };
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     struct
     {
@@ -329,7 +329,7 @@ struct enum_t
     combobox
   };
 
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     struct enum_setup
     {
@@ -374,7 +374,7 @@ struct combobox_t
     combobox
   };
 
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     struct {
       combo_pair<ValueType> init[std::size(in)];
@@ -413,7 +413,7 @@ struct xy_pad_t
   {
     xy
   };
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
@@ -457,7 +457,7 @@ struct color_chooser
   {
     color
   };
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     return init_range_t<value_type>{.init = value_type(setup.init)};
   }
@@ -566,7 +566,7 @@ using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
     {                                                                                   \
       return Name;                                                                      \
     }                                                                                   \
-    static consteval auto range()                                                       \
+    static clang_buggy_consteval auto range()                                           \
     {                                                                                   \
       struct                                                                            \
       {                                                                                 \
