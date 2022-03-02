@@ -158,6 +158,9 @@ struct SimpleAudioEffect : vintage::Effect
           return;
     }
 
+    // Clear our midi outputs
+    midi.clear_outputs(effect);
+
     // Before processing starts, we copy all our atomics back into the struct
     controls.write(effect);
 
@@ -169,8 +172,8 @@ struct SimpleAudioEffect : vintage::Effect
         avnd::span<fp_t*>{outputs, std::size_t(this->Effect::numOutputs)},
         sampleFrames);
 
-    // Clear our midi ports
-    midi.clear(effect);
+    // Clear our midi inputs
+    midi.clear_inputs(effect);
   }
 
   void event_input(const vintage::Events* evs)

@@ -70,10 +70,13 @@ intptr_t default_dispatch(
     }
     case EffectOpcodes::GetPlugCategory: // 35
     {
+      // Apple Clang 13 still struggles with that...
+      #if !defined(__APPLE__)
       if constexpr (requires { (int32_t)effect_type::category(); })
         return static_cast<int32_t>(effect_type::category());
       else if constexpr (requires { (int32_t)effect_type::category; })
         return static_cast<int32_t>(effect_type::category);
+      #endif
       return 0;
     }
 

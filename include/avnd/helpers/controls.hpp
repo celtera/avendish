@@ -68,11 +68,16 @@ struct init_range_t
 using init_range = init_range_t<long double>;
 
 /// Sliders ///
+#if defined(__APPLE__)
+#define clang_buggy_consteval constexpr
+#else
+#define clang_buggy_consteval consteval
+#endif
 
 template <typename T, static_string lit, range setup>
 struct slider_t
 {
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
@@ -145,7 +150,7 @@ struct knob_t
   {
     knob
   };
-  static consteval auto range()
+  static clang_buggy_consteval auto range()
   {
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
@@ -182,7 +187,7 @@ struct toggle_t
     toggle,
     checkbox
   };
-  static consteval auto range() { return setup; }
+  static clang_buggy_consteval auto range() { return setup; }
   static consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = setup.init;
@@ -286,7 +291,7 @@ struct lineedit_t
     textedit,
     text
   };
-  static consteval auto range() { return lineedit_setup{.init = setup.value}; }
+  static clang_buggy_consteval auto range() { return lineedit_setup{.init = setup.value}; }
 
   static consteval auto name() { return std::string_view{lit.value}; }
 

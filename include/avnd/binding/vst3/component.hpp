@@ -516,6 +516,10 @@ struct Component final
   {
     using namespace Steinberg;
     using namespace Steinberg::Vst;
+
+    // Clear outputs
+    this->midi.clear_outputs(effect);
+
     processControls(data);
     processEvents(data);
 
@@ -525,13 +529,9 @@ struct Component final
       processOutputs(data);
     }
 
-    // Clear our midi ports
-    if constexpr (avnd::midi_input_introspection<T>::size > 0)
-    {
-      using i_info = avnd::midi_input_introspection<T>;
-      i_info::for_all(
-          effect.inputs(), [&](auto& midi_port) { this->midi.clear(midi_port); });
-    }
+    // Clear inputs
+    this->midi.clear_inputs(effect);
+
     return kResultOk;
   }
 

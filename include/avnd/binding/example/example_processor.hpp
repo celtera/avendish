@@ -111,8 +111,8 @@ class example_processor
         // the functions will return what's passed as their argument.
 
         // Note that a plug-in with dynamic output can only have those
-        constexpr const int total_input_channels = avnd::input_channels<T>(-1);
-        constexpr const int total_output_channels = avnd::output_channels<T>(-1);
+        // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
+        // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
 
         channels.set_input_channels(effect, 0, 2);
         channels.set_output_channels(effect, 0, 2);
@@ -144,8 +144,8 @@ class example_processor
       if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
       {
         auto callbacks_initializer =
-            [this] <typename R, template<typename...> typename L, typename... Args>
-            (std::string_view message, L<Args...>) {
+            [this] <typename Refl, template<typename...> typename L, typename... Args>
+            (std::string_view message, L<Args...>, Refl refl) {
           // This method will be called for every callback.
           // It must return a function that takes Args... in arguments, and
           // returns a value of type R
@@ -155,10 +155,12 @@ class example_processor
           // convert to these arguments.
 
           /* CUSTOMIZATION POINT */
-          if constexpr(std::is_void_v<R>)
+          
+          using return_type = typename Refl::return_type;
+          if constexpr(std::is_void_v<return_type>)
             return [this] (Args...) { return; };
           else
-            return [this] (Args...) { return R{}; };
+            return [this] (Args...) { return return_type{}; };
         };
         this->callbacks.wrap_callbacks(effect, callbacks_initializer);
       }
@@ -298,6 +300,8 @@ class example_processor
           if (impl.bypass)
             return;
       }
+      // Clean up MIDI output ports
+      this->midi_buffers.clear_outputs(effect);
 
       // Process inputs of all sorts
       process_input_controls();
@@ -319,8 +323,8 @@ class example_processor
       // Clean up inputs
       // FIXME
 
-      // Clean up MIDI ports
-      this->midi_buffers.clear(effect);
+      // Clean up MIDI inputs
+      this->midi_buffers.clear_inputs(effect);
     }
 
     void stop()

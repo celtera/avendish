@@ -24,6 +24,25 @@ static constexpr bool valid_char_for_name(char c)
 }
 
 template <typename T>
+t_symbol* symbol_from_name()
+{
+  if constexpr (const char* str; requires { str = T::c_name(); })
+  {
+    return gensym(avnd::get_c_name<T>().data());
+  }
+  else
+  {
+    std::string name{avnd::get_name<T>()};
+    for (char& c : name)
+    {
+      if (!valid_char_for_name(c))
+        c = '_';
+    }
+    return gensym(name.c_str());
+  }
+}
+
+template <typename T>
 static void process_generic_message(T& implementation, t_symbol* s)
 {
   using namespace std::literals;

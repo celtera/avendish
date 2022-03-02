@@ -252,7 +252,7 @@ message_processor_metaclass<T>::message_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      T::c_name(),
+      avnd::get_c_name<T>().data(),
       (method)obj_new,
       (method)obj_free,
       sizeof(message_processor<T>),
@@ -268,24 +268,6 @@ message_processor_metaclass<T>::message_processor_metaclass()
   class_register(CLASS_BOX, g_class);
 }
 
-template <typename T>
-t_symbol* message_processor_metaclass<T>::symbol_from_name()
-{
-  if constexpr (const char* str; requires { str = T::c_name(); })
-  {
-    return gensym(T::c_name());
-  }
-  else
-  {
-    std::string name{T::name()};
-    for (char& c : name)
-    {
-      if (!valid_char_for_name(c))
-        c = '_';
-    }
-    return gensym(name.c_str());
-  }
-}
 }
 
 #define PD_DEFINE_EFFECT(EffectCName, EffectMainClass)                        \

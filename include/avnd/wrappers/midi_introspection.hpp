@@ -115,6 +115,30 @@ struct midi_storage
 
   void do_clear(avnd::raw_container_midi_port auto& port) { port.size = 0; }
 
+  void clear_inputs(avnd::effect_container<T>& t)
+  {
+    if constexpr(midi_in_info::size > 0)
+    {
+      auto clearer = [this] (auto&& port) {
+        this->do_clear(port);
+      };
+
+      midi_in_info::for_all(avnd::get_inputs(t), clearer);
+    }
+  }
+
+  void clear_outputs(avnd::effect_container<T>& t)
+  {
+    if constexpr(midi_in_info::size > 0)
+    {
+      auto clearer = [this] (auto&& port) {
+        this->do_clear(port);
+      };
+
+      midi_out_info::for_all(avnd::get_outputs(t), clearer);
+    }
+  }
+  /*
   void clear(avnd::effect_container<T>& t)
   {
     auto clearer = [this] (auto&& port) {
@@ -127,5 +151,6 @@ struct midi_storage
     if constexpr(midi_out_info::size > 0)
       midi_out_info::for_all(avnd::get_outputs(t), clearer);
   }
+  */
 };
 }

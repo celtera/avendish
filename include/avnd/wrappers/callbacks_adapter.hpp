@@ -46,7 +46,7 @@ struct callback_storage
 
       if constexpr(dynamic_callback_introspection<outputs_t>::size > 0)
       {
-        auto setup_dyn = [=] <typename C> (C& cb)
+        auto setup_dyn = [callback_handler] <typename C> (C& cb)
         {
           using call_type = decltype(C::call);
           using func_type = decltype(cb.call);
@@ -56,7 +56,7 @@ struct callback_storage
 
           // Here, "cb.call" is something like std::function,
           // thus we can store the callback directly.
-          cb.call = callback_handler.template operator()<ret>(C::name(), args{});
+          cb.call = callback_handler(C::name(), args{}, func_reflect{});
         };
 
         avnd::dynamic_callback_introspection<outputs_t>::for_all(
@@ -65,7 +65,7 @@ struct callback_storage
 
       if constexpr(view_callback_introspection<outputs_t>::size > 0)
       {
-        auto setup_view = [=] <auto Idx, typename C> (C& cb, boost::pfr::detail::size_t_<Idx>)
+        auto setup_view = [this,callback_handler] <auto Idx, typename C> (C& cb, boost::pfr::detail::size_t_<Idx>)
         {
             using call_type = decltype(C::call);
 
@@ -77,7 +77,7 @@ struct callback_storage
 
             auto& buf = std::get<Idx>(this->functions_storage);
             using stored_type = std::tuple_element_t<Idx, std::decay_t<decltype(this->functions_storage)>>;
-            buf = callback_handler.template operator()<ret>(C::name(), args{});
+            buf = callback_handler(C::name(), args{}, func_reflect{});
 
             // This version does not allocate, it's a plain old C callback.
             // Thus we store it outside...

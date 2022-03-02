@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/wrappers/metadatas.hpp>
 #include <avnd/binding/vst3/metadata.hpp>
 #include <avnd/common/limited_string_view.hpp>
 #include <pluginterfaces/base/funknown.h>
@@ -49,17 +50,17 @@ public:
   Steinberg::tresult getFactoryInfo(Steinberg::PFactoryInfo* info) override
   {
     if constexpr (requires { T::vendor(); })
-      factory_vendor{T::vendor()}.copy_to(info->vendor);
+      factory_vendor{avnd::get_vendor<T>()}.copy_to(info->vendor);
     else
       factory_vendor{""}.copy_to(info->vendor);
 
     if constexpr (requires { T::url(); })
-      factory_url{T::url()}.copy_to(info->url);
+      factory_url{avnd::get_url<T>()}.copy_to(info->url);
     else
       factory_url{""}.copy_to(info->url);
 
     if constexpr (requires { T::email(); })
-      factory_email{T::email()}.copy_to(info->email);
+      factory_email{avnd::get_email<T>()}.copy_to(info->email);
     else
       factory_email{""}.copy_to(info->email);
 
@@ -80,7 +81,7 @@ public:
         memcpy(info->cid, &component_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstAudioEffectClass}.copy_to(info->category);
-        class_name{T::name()}.copy_to(info->name);
+        class_name{avnd::get_name<T>()}.copy_to(info->name);
         return Steinberg::kResultOk;
       }
       case 1:
@@ -89,7 +90,7 @@ public:
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstComponentControllerClass}.copy_to(info->category);
         snprintf(
-            info->name, Steinberg::PClassInfo::kNameSize, "%sController", T::name());
+            info->name, Steinberg::PClassInfo::kNameSize, "%sController", avnd::get_name<T>().data());
         return Steinberg::kResultOk;
       }
       default:
@@ -139,7 +140,7 @@ public:
         memcpy(info->cid, &component_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstAudioEffectClass}.copy_to(info->category);
-        class_name{T::name()}.copy_to(info->name);
+        class_name{avnd::get_name<T>()}.copy_to(info->name);
 
         info->classFlags = Steinberg::Vst::kDistributable;
         class_subcategories{"Fx"}.copy_to(info->subCategories);
@@ -150,8 +151,8 @@ public:
         memcpy(info->cid, &controller_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstComponentControllerClass}.copy_to(info->category);
-        class_name{T::name()}.copy_to(info->name);
-        constexpr int name_len = std::string_view(T::name()).size();
+        class_name{avnd::get_name<T>()}.copy_to(info->name);
+        constexpr int name_len = avnd::get_name<T>().size();
         avnd::limited_string_view<Steinberg::PClassInfo::kNameSize - name_len>{
             "Controller"}
             .copy_to(info->name + name_len);
@@ -162,12 +163,12 @@ public:
     }
 
     if constexpr (requires { T::vendor(); })
-      class_vendor{T::vendor()}.copy_to(info->vendor);
+      class_vendor{avnd::get_vendor<T>()}.copy_to(info->vendor);
     else
       class_vendor{""}.copy_to(info->vendor);
 
     if constexpr (requires { T::version(); })
-      class_version{T::version()}.copy_to(info->version);
+      class_version{avnd::get_version<T>()}.copy_to(info->version);
     else
       class_version{"0.0.0"}.copy_to(info->version);
 
