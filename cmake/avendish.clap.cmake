@@ -10,6 +10,17 @@ endif()
 # Define a PCH
 add_library(Avendish_clap_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
 
+target_include_directories(
+  Avendish_clap_pch
+  PRIVATE
+    ${CLAP_HEADER}
+)
+
+target_link_libraries(Avendish_clap_pch
+  PUBLIC
+    DisableExceptions
+)
+
 target_precompile_headers(Avendish_clap_pch
   PUBLIC
     include/avnd/binding/clap/all.hpp

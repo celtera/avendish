@@ -251,6 +251,12 @@ struct SimpleAudioEffect : clap_plugin
 
   void process(const clap_process& process)
   {
+    // Clear the control out ports
+    // FIXME
+
+    // Clear the midi out ports
+    midi.clear_outputs(this->effect);
+
     // Process the input events
     process_in_events(process);
 
@@ -278,12 +284,11 @@ struct SimpleAudioEffect : clap_plugin
     // Process the output events
     process_out_events(process);
 
+    // Clear the control in ports
+    // FIXME
+
     // Clear the midi in ports
-    if constexpr (midi_in_info::size > 0)
-    {
-      midi_in_info::for_all(
-          this->effect.inputs(), [&]<typename C>(C& in_port) { midi.clear(in_port); });
-    }
+    midi.clear_inputs(this->effect);
   }
 
   void process_param(const clap_event_param_value& p)

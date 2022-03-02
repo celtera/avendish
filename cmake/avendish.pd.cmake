@@ -22,6 +22,12 @@ endif()
 # Define a PCH
 add_library(Avendish_pd_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
 
+target_include_directories(
+  Avendish_pd_pch
+  PRIVATE
+    ${PD_HEADER}
+)
+
 target_precompile_headers(Avendish_pd_pch
   PUBLIC
     include/avnd/binding/pd/all.hpp
