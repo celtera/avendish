@@ -2,7 +2,6 @@ add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
 target_sources(Avendish
-  PRIVATE
     "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_port.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_processor.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/callback.hpp"

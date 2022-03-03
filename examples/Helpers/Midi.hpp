@@ -15,7 +15,7 @@
 namespace examples::helpers
 {
 /**
- * A very basic example of polyphonic MIDI synthesizer
+ * A very basic example of MIDI pass-through
  */
 struct Midi
 {

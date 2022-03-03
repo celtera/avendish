@@ -26,7 +26,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
         [&](auto& bus)
         {
           using sample_type = std::decay_t<decltype(bus.channel[0])>;
-          if (k + 1 < buffers.size())
+          if (k + 1 <= buffers.size())
           {
             bus.channel = const_cast<decltype(bus.channel)>(buffers[k]);
           }
@@ -53,8 +53,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     int k = 0;
     o_info::for_all(ports, [&](auto& bus)
     {
-      using sample_type = std::decay_t<decltype(bus.channel[0])>;
-      if (k + 1 < buffers.size())
+      if (k + 1 <= buffers.size())
       {
         auto buffer = buffers.data() + k;
         std::copy_n(bus.channel, n, buffer);

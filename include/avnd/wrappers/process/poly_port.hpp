@@ -128,7 +128,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
         {
           using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
           const int channels = avnd::get_channels(bus);
-          if (k + channels < buffers.size())
+
+          if (k + channels <= buffers.size())
           {
             auto buffer = buffers.data() + k;
             bus.samples = const_cast<decltype(bus.samples)>(buffer);

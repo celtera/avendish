@@ -84,9 +84,6 @@ struct Distortion
       // The buffers are accessed through spans.
       auto in = inputs.audio.channel(i, N);
 
-      // Filled with zeros
-      // temp_buffer.resize(std::max(temp_buffer.size(), in.size()));
-
       // Sum samples from the input buffer
       const int64_t samples_to_read = N; //std::min(N, int64_t(in.size()));
       for(int64_t j = 0; j < samples_to_read; j++)

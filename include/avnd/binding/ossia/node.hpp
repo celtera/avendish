@@ -492,7 +492,31 @@ struct InitOutlets
 };
 
 template <typename T>
-class safe_node_base : public ossia::nonowning_graph_node
+struct builtin_arg_audio_ports
+{
+  void init(ossia::inlets& inlets, ossia::outlets& outlets) {}
+};
+
+template <typename T>
+requires
+   avnd::mono_per_sample_arg_processor<double, T>
+|| avnd::monophonic_arg_audio_effect<double, T>
+|| avnd::polyphonic_arg_audio_effect<double, T>
+struct builtin_arg_audio_ports<T>
+{
+  ossia::audio_inlet in;
+  ossia::audio_outlet out;
+
+  void init(ossia::inlets& inlets, ossia::outlets& outlets)
+  {
+    inlets.push_back(&in);
+    outlets.push_back(&out);
+  }
+};
+
+template <typename T>
+class safe_node_base
+        : public ossia::nonowning_graph_node
 {
 public:
   using inputs_t = typename avnd::inputs_type<T>::type;
@@ -503,6 +527,9 @@ public:
 
   [[no_unique_address]]
   avnd::effect_container<T> impl;
+
+  [[no_unique_address]]
+  builtin_arg_audio_ports<T> audio_ports;
 
   [[no_unique_address]]
   inlet_storage<T> ossia_inlets;
@@ -522,7 +549,6 @@ public:
   [[no_unique_address]]
   avnd::control_storage<T> control_buffers;
 
-  // FIXME
   [[no_unique_address]]
   avnd::callback_storage<T> callbacks;
 
@@ -538,11 +564,13 @@ public:
     this->buffer_size = buffer_size;
     this->sample_rate = sample_rate;
 
-    this->m_inlets.reserve(total_input_ports);
-    this->m_outlets.reserve(total_output_ports);
+    this->m_inlets.reserve(total_input_ports + 1);
+    this->m_outlets.reserve(total_output_ports + 1);
 
-    constexpr const int total_input_channels = avnd::input_channels<T>(-1);
-    constexpr const int total_output_channels = avnd::output_channels<T>(-1);
+    this->audio_ports.init(this->m_inlets, this->m_outlets);
+
+    // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
+    // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
 
     channels.set_input_channels(this->impl, 0, 2);
     channels.set_output_channels(this->impl, 0, 2);
@@ -552,6 +580,28 @@ public:
 
     // Initialize the other ports
     this->finish_init();
+  }
+
+  void initialize_all_ports()
+  {
+    if constexpr (avnd::inputs_type<T>::size > 0)
+    {
+      // const auto& ins = this->impl.inputs();
+      // const auto& proc_tuple = boost::pfr::detail::tie_as_tuple(ins);
+      auto& port_tuple = this->ossia_inlets.ports;
+      std::apply(
+          [this](auto&&... port) { (this->m_inlets.push_back(&port), ...); },
+          port_tuple);
+    }
+    if constexpr (avnd::outputs_type<T>::size > 0)
+    {
+      // const auto& outs = this->impl.outputs();
+      // const auto& proc_tuple = boost::pfr::detail::tie_as_tuple(outs);
+      auto& port_tuple = this->ossia_outlets.ports;
+      std::apply(
+          [this](auto&&... port) { (this->m_outlets.push_back(&port), ...); },
+          port_tuple);
+    }
   }
 
   void finish_init()
@@ -577,10 +627,15 @@ public:
 
     // Initialize the other ports
     this->initialize_all_ports();
+
+    this->audio_configuration_changed();
   }
 
   void audio_configuration_changed()
   {
+    // qDebug() << "New Audio configuration: "
+    //          << this->channels.actual_runtime_inputs
+    //          << this->channels.actual_runtime_outputs;
     // Allocate buffers, setup everything
     avnd::process_setup setup_info{
         .input_channels = channels.actual_runtime_inputs,
@@ -641,7 +696,10 @@ public:
   {
     const int cur = port.channels();
     if(cur != channels)
+    {
+      // qDebug() << "Setting port channels: " << channels;
       port.set_channels(channels);
+    }
 
     for(auto& chan : port)
     {
@@ -659,6 +717,7 @@ public:
         int expected = in.data.channels();
         self.channels.set_input_channels(self.impl, k, expected);
         int actual = self.channels.get_input_channels(self.impl, k);
+        // qDebug() << "Scanning inlet " << k << ". Expected: " << expected << " ; actual: " << actual;
         ok &= (expected == actual);
         self.set_channels(in.data, actual);
         ++k;
@@ -670,13 +729,14 @@ public:
       int k = 0;
       void operator()(ossia::audio_outlet& out) noexcept {
         int actual = self.channels.get_output_channels(self.impl, k);
+        // qDebug() << "Scanning outlet " << k << ". Actual: " << actual;
         self.set_channels(out.data, actual);
         ++k;
       }
       void operator()(const auto& other) noexcept { }
   };
 
-  void scan_audio_input_channels()
+  bool scan_audio_input_channels()
   {
     const int current_input_channels = this->channels.actual_runtime_inputs;
     const int current_output_channels = this->channels.actual_runtime_outputs;
@@ -684,6 +744,10 @@ public:
     // Scan the input channels
     bool ok = std::apply([&] (auto&&... ports) {
       audio_inlet_scan match{*this};
+
+      if constexpr(requires { this->audio_ports.in; })
+        match(this->audio_ports.in);
+
       (match(ports), ...);
       return match.ok;
     }, ossia_inlets.ports);
@@ -691,22 +755,33 @@ public:
     // Ensure that we have enough output space
     std::apply([&] (auto&&... ports) {
       audio_outlet_scan match{*this};
+
+      if constexpr(requires { this->audio_ports.out; })
+        match(this->audio_ports.out);
+
       (match(ports), ...);
-    }, ossia_inlets.ports);
+    }, ossia_outlets.ports);
 
     bool changed = !ok;
     changed |= (current_input_channels != this->channels.actual_runtime_inputs);
     changed |= (current_output_channels != this->channels.actual_runtime_outputs);
-    if(changed)
-    {
-      audio_configuration_changed();
-    }
+    return changed;
   }
 
   bool prepare_run(int start, int frames)
   {
     // Check all the audio channels
-    scan_audio_input_channels();
+    bool changed = scan_audio_input_channels();
+
+    if(frames > this->buffer_size)
+    {
+      this->buffer_size = frames;
+      changed = true;
+    }
+    if(changed)
+    {
+      audio_configuration_changed();
+    }
 
     // Clean up MIDI output ports
     this->midi_buffers.clear_outputs(impl);
@@ -727,29 +802,40 @@ public:
       double** outs{};
       int k = 0;
       void operator()(const ossia::audio_inlet& in) noexcept {
-        for(auto& c : in.data) {
+        for(const ossia::audio_channel& c : in.data) {
           ins[k] = c.data();
+          // qDebug() << "Init channel " << k << ". ins[k][0] ==  " << ins[k][0];
           k++;
         }
       }
-      void operator()(const ossia::audio_outlet& in) noexcept {
-        for(auto& c : in.data) {
-          ins[k] = c.data();
+      void operator()(ossia::audio_outlet& out) noexcept {
+        for(ossia::audio_channel& c : out.data) {
+          outs[k] = c.data();
           k++;
         }
       }
-      void operator()(const auto& other) noexcept { }
+      void operator()(const auto& other) noexcept
+      {
+      }
   };
   void initialize_audio_arrays(const double** ins, double** outs)
   {
 
     std::apply([&] (auto&&... ports) {
       initialize_audio match{ins, outs, 0};
+
+      if constexpr(requires { this->audio_ports.in; })
+        match(this->audio_ports.in);
+
       (match(ports), ...);
     }, ossia_inlets.ports);
 
     std::apply([&] (auto&&... ports) {
       initialize_audio match{ins, outs, 0};
+
+      if constexpr(requires { this->audio_ports.out; })
+        match(this->audio_ports.out);
+
       (match(ports), ...);
     }, ossia_outlets.ports);
   }
@@ -765,7 +851,6 @@ public:
     const int current_input_channels = this->channels.actual_runtime_inputs;
     const int current_output_channels = this->channels.actual_runtime_outputs;
     const double** audio_ins = (const double**)alloca(sizeof(double*) * (1 + current_input_channels));
-
     double** audio_outs = (double**)alloca(sizeof(double*) * (1 + current_output_channels));
     initialize_audio_arrays(audio_ins, audio_outs);
 
@@ -782,38 +867,16 @@ public:
 
   void finish_run()
   {
-      // Copy output events
-      process_output_controls();
+     // Copy output events
+     process_output_controls();
 
-      process_output_events();
+     process_output_events();
 
-      // Clean up MIDI inputs
-      this->midi_buffers.clear_inputs(impl);
+     // Clean up MIDI inputs
+     this->midi_buffers.clear_inputs(impl);
 
-      // Clean up sample-accurate control input ports
-      this->control_buffers.clear_inputs(impl);
-  }
-
-  void initialize_all_ports()
-  {
-    if constexpr (avnd::inputs_type<T>::size > 0)
-    {
-      // const auto& ins = this->impl.inputs();
-      // const auto& proc_tuple = boost::pfr::detail::tie_as_tuple(ins);
-      auto& port_tuple = this->ossia_inlets.ports;
-      std::apply(
-          [this](auto&&... port) { (this->m_inlets.push_back(&port), ...); },
-          port_tuple);
-    }
-    if constexpr (avnd::outputs_type<T>::size > 0)
-    {
-      // const auto& outs = this->impl.outputs();
-      // const auto& proc_tuple = boost::pfr::detail::tie_as_tuple(outs);
-      auto& port_tuple = this->ossia_outlets.ports;
-      std::apply(
-          [this](auto&&... port) { (this->m_outlets.push_back(&port), ...); },
-          port_tuple);
-    }
+     // Clean up sample-accurate control input ports
+     this->control_buffers.clear_inputs(impl);
   }
 
   std::string label() const noexcept override
