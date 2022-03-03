@@ -73,7 +73,7 @@ struct midi_storage
   {
     if constexpr(raw_midi_in_info::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+      auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.
         auto& buf = std::get<Idx>(this->inputs_storage);
@@ -87,7 +87,7 @@ struct midi_storage
 
     if constexpr(raw_midi_out_info::size > 0)
     {
-      auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+      auto init_raw_out = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.
         auto& buf = std::get<Idx>(this->outputs_storage);
@@ -113,7 +113,10 @@ struct midi_storage
     port.midi_messages.clear();
   }
 
-  void do_clear(avnd::raw_container_midi_port auto& port) { port.size = 0; }
+  void do_clear(avnd::raw_container_midi_port auto& port)
+  {
+    port.size = 0;
+  }
 
   void clear_inputs(avnd::effect_container<T>& t)
   {

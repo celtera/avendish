@@ -97,6 +97,35 @@ template <typename T>
     return "(author)";
 }
 
+template<typename T>
+concept has_unit =
+   requires { std::string_view{T::unit()}; }
+|| requires { std::string_view{T::unit}; }
+|| requires { std::string_view{T::dataspace()}; }
+|| requires { std::string_view{T::dataspace}; }
+|| requires { std::string_view{T::type()}; }
+|| requires { std::string_view{T::type}; }
+;
+
+template <typename T>
+/* constexpr */ auto get_unit()
+{
+  if constexpr (requires { T::unit(); })
+    return T::unit();
+  else if constexpr (requires { T::unit; })
+    return T::unit;
+  else if constexpr (requires { T::dataspace(); })
+    return T::dataspace();
+  else if constexpr (requires { T::dataspace; })
+    return T::dataspace;
+  else if constexpr (requires { T::type(); })
+    return T::type();
+  else if constexpr (requires { T::type; })
+    return T::type;
+  else
+    return "";
+}
+
 template <typename T, char Sep>
 constexpr std::array<char, 256> get_keywords()
 {

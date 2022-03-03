@@ -10,6 +10,8 @@
 
 namespace avnd
 {
+template<std::size_t N>
+struct num { };
 
 template <typename T>
 struct typed_index_sequence;

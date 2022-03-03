@@ -50,6 +50,19 @@ concept string_parameter = requires(T t) {
                                } -> std::convertible_to<std::string>;
                            };
 
+template <typename T>
+concept xy_parameter = requires(T t) {
+  t.value.x;
+  t.value.y;
+};
+
+template <typename T>
+concept rgb_parameter = requires(T t) {
+  t.value.r;
+  t.value.g;
+  t.value.b;
+};
+
 template <typename C>
 concept parameter_with_full_range = requires {
                                       avnd::get_range<C>().min;
@@ -58,7 +71,9 @@ concept parameter_with_full_range = requires {
                                     };
 
 template <typename T>
-concept enum_parameter = std::is_enum_v<decltype(T::value)>;
+concept enum_parameter =
+  std::is_enum_v<std::decay_t<decltype(T::value)>>
+;
 
 /**
  * A "control" is a parameter + some metadata:

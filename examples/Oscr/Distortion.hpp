@@ -85,7 +85,7 @@ struct Distortion
       auto in = inputs.audio.channel(i, N);
 
       // Sum samples from the input buffer
-      const int64_t samples_to_read = N; //std::min(N, int64_t(in.size()));
+      const int64_t samples_to_read = N;
       for(int64_t j = 0; j < samples_to_read; j++)
       {
         temp_buffer[j] += in[j];

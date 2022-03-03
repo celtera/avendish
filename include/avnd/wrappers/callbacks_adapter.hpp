@@ -65,7 +65,7 @@ struct callback_storage
 
       if constexpr(view_callback_introspection<outputs_t>::size > 0)
       {
-        auto setup_view = [this,callback_handler] <auto Idx, typename C> (C& cb, boost::pfr::detail::size_t_<Idx>)
+        auto setup_view = [this,callback_handler] <auto Idx, typename C> (C& cb, avnd::num<Idx>)
         {
             using call_type = decltype(C::call);
 

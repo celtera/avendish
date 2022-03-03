@@ -76,6 +76,7 @@ function(avnd_make_ossia)
     "${AVND_SOURCE_DIR}/include/avnd/binding/ossia/message_node.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/ossia/mono_arg_node.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/ossia/poly_arg_node.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/ossia/port_setup.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/ossia/port_node.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/ossia/sample_arg_node.hpp"
   )

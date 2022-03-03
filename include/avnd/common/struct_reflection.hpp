@@ -11,6 +11,18 @@
 namespace avnd
 {
 
+template<typename T, T... Idx>
+consteval int index_of_element(int N, std::integer_sequence<T, Idx...>) noexcept
+{
+  int k = 0;
+  for(int i : {Idx...}) {
+    if(i == N)
+      return k;
+    k++;
+  }
+  return -1;
+}
+
 template <typename T>
 using as_tuple_ref = decltype(::boost::pfr::detail::tie_as_tuple(std::declval<T&>()));
 template <typename T>
@@ -172,6 +184,8 @@ struct predicate_introspection
     }
   }
 
+  // Goes from 0, 1, 2 indices to indices in the complete
+  // struct with members that may not match this predicate
   template <std::size_t N>
   using nth_element = std::decay_t<decltype(boost::pfr::get<index_map[N]>(type{}))>;
 
@@ -239,7 +253,7 @@ struct predicate_introspection
           &unfiltered_fields]<typename K, K... Index, size_t... LocalIndex>(std::integer_sequence<K, Index...>, std::integer_sequence<size_t, LocalIndex...>)
       {
         auto&& ppl = boost::pfr::detail::tie_as_tuple(unfiltered_fields);
-        (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl), boost::pfr::detail::size_t_<LocalIndex>{}), ...);
+        (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl), avnd::num<LocalIndex>{}), ...);
       }(indices_n{}, std::make_index_sequence<size>{});
     }
   }
@@ -256,7 +270,7 @@ struct predicate_introspection
         for (auto& m : unfiltered_fields)
         {
           auto&& ppl = boost::pfr::detail::tie_as_tuple(m);
-          (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl), boost::pfr::detail::size_t_<index_map[Index]>{}), ...);
+          (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl), avnd::num<index_map[Index]>{}), ...);
         }
       }(indices_n{});
     }

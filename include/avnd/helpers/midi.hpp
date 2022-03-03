@@ -7,18 +7,18 @@
 namespace avnd
 {
 
+struct midi_msg
+{
+  boost::container::small_vector<uint8_t, 15> bytes;
+  int64_t timestamp{};
+};
+
 template <static_string lit>
 struct midi_bus
 {
   static consteval auto name() { return std::string_view{lit.value}; }
 
-  struct message
-  {
-    boost::container::small_vector<uint8_t, 15> bytes;
-    int64_t timestamp{};
-  };
-
-  boost::container::small_vector<message, 2> midi_messages;
+  boost::container::small_vector<midi_msg, 2> midi_messages;
 
   operator auto &() noexcept { return midi_messages; }
   operator const auto &() const noexcept { return midi_messages; }
@@ -42,8 +42,8 @@ struct midi_bus
 
   auto& operator[](std::size_t i) const noexcept { return midi_messages[i]; }
 
-  void push_back(const message& msg) { midi_messages.push_back(msg); }
-  void push_back(message&& msg) { midi_messages.push_back(std::move(msg)); }
+  void push_back(const midi_msg& msg) { midi_messages.push_back(msg); }
+  void push_back(midi_msg&& msg) { midi_messages.push_back(std::move(msg)); }
   template <typename... Args>
   void emplace_back(Args&&... t)
   {

@@ -124,7 +124,7 @@ struct control_storage
     {
       if constexpr(lin_in::size > 0)
       {
-        auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           // Get the matching buffer in our storage
           auto& buf = std::get<Idx>(this->linear_inputs);
 
@@ -138,7 +138,7 @@ struct control_storage
       }
       if constexpr(lin_out::size > 0)
       {
-        auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto init_raw_out = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           auto& buf = std::get<Idx>(this->linear_outputs);
           buf.resize(buffer_size);
           port.values = buf.data();
@@ -148,7 +148,7 @@ struct control_storage
 
       if constexpr(span_in::size > 0)
       {
-        auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           // Get the matching buffer in our storage, a std::vector<timed_value>
           auto& buf = std::get<Idx>(this->span_inputs);
 
@@ -162,7 +162,7 @@ struct control_storage
       }
       if constexpr(span_out::size > 0)
       {
-        auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto init_raw_out = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           auto& buf = std::get<Idx>(this->span_outputs);
           buf.reserve(buffer_size);
           port.values = {buf.data(), std::size_t(0)};
@@ -183,7 +183,7 @@ struct control_storage
     {
       if constexpr(lin_in::size > 0)
       {
-        auto clear_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto clear_raw_in = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           auto& buf = std::get<Idx>(this->linear_inputs);
           for(auto& b : buf)
             b = {};
@@ -193,7 +193,7 @@ struct control_storage
 
       if constexpr(span_in::size > 0)
       {
-        auto init_raw_in = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           auto& buf = std::get<Idx>(this->span_inputs);
           buf.resize(0);
         };
@@ -210,7 +210,7 @@ struct control_storage
     {
       if constexpr(lin_out::size > 0)
       {
-        auto clear_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto clear_raw_out = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           auto& buf = std::get<Idx>(this->linear_outputs);
           for(auto& b : buf)
             b = {};
@@ -220,7 +220,7 @@ struct control_storage
 
       if constexpr(span_out::size > 0)
       {
-        auto init_raw_out = [&]<auto Idx, typename M>(M& port, boost::pfr::detail::size_t_<Idx>) {
+        auto init_raw_out = [&]<auto Idx, typename M>(M& port, avnd::num<Idx>) {
           auto& buf = std::get<Idx>(this->span_outputs);
           buf.resize(0);
         };

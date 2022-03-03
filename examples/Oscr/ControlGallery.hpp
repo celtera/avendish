@@ -115,7 +115,7 @@ struct ControlGallery
         int init{1}; // Bar
       };
 
-      avnd::combo_pair<float> value;
+      float value{};
     } combobox;
 
     //! Here value will be the string
