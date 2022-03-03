@@ -5,7 +5,6 @@
 #include <avnd/helpers/audio.hpp>
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
-#include <avnd/common/concepts_polyfill.hpp>
 #include <cmath>
 
 
@@ -55,7 +54,7 @@ struct PerBusAsPortsFixed
 
     for(int c = 0; c < inputs.audio.channels(); ++c) {
       for(int k = 0; k < frames; k++) {
-        outputs.audio[c][k] = tanh(inputs.audio[c][k] * inputs.sidechain[c][k]);
+        outputs.audio[c][k] = tanh(10*(inputs.audio[c][k] + inputs.sidechain[c][k]));
       }
     }
   }

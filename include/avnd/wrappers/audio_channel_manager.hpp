@@ -68,12 +68,14 @@ struct audio_channel_manager<T>
 };
 
 /**
- *  Modular-like with multiple CV inputs / outputs.
+ *  Modular-like with multiple CV inputs / outputs, either per-sample
+ *  or per-channel
  */
 template <typename T>
-  requires avnd::poly_per_sample_port_processor<
-               float,
-               T> || avnd::poly_per_sample_port_processor<double, T>
+  requires avnd::poly_per_sample_port_processor<float, T>
+  || avnd::poly_per_sample_port_processor<double, T>
+  || avnd::poly_per_channel_port_processor<float, T>
+  || avnd::poly_per_channel_port_processor<double, T>
 struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
@@ -210,6 +212,7 @@ struct audio_channel_manager<T>
           {
             this->input_channels[i] = p.channels;
           }
+          this->actual_runtime_inputs += this->input_channels[i];
           i++;
         });
 
@@ -227,8 +230,23 @@ struct audio_channel_manager<T>
           {
             this->output_channels[i] = p.channels;
           }
+          this->actual_runtime_outputs += this->output_channels[i];
           i++;
         });
+  }
+
+  void set_input_impl(int id, int count)
+  {
+    this->actual_runtime_inputs -= this->input_channels[id];
+    this->input_channels[id] = count;
+    this->actual_runtime_inputs += count;
+  }
+
+  void set_output_impl(int id, int count)
+  {
+    this->actual_runtime_outputs -= this->output_channels[id];
+    this->output_channels[id] = count;
+    this->actual_runtime_outputs += count;
   }
 
   // By convention, if the processor has audio passed as arguments / return
@@ -264,7 +282,7 @@ struct audio_channel_manager<T>
 
     if (ok)
     {
-      this->input_channels[input_id] = *ok;
+      set_input_impl(input_id, *ok);
 
       // We may have to check our outputs to see if any need updating
       update_outputs_from_input(processor, input_id, *ok);
@@ -287,6 +305,7 @@ struct audio_channel_manager<T>
       if constexpr (avnd::dynamic_poly_audio_port<first_type>)
       {
         first.channels = new_input_channel_count;
+        set_output_impl(0, new_input_channel_count);
         this->output_channels[0] = new_input_channel_count;
       }
 
@@ -304,13 +323,13 @@ struct audio_channel_manager<T>
                 auto& mimicked_port = (inputs.*out.mimick_channel);
                 if constexpr (requires { mimicked_port.channels(); })
                 {
-                  out.channels = mimicked_port.channels();
-                  this->output_channels[i] = out.channels;
+                  out.channels = mimicked_port.channels();                  
+                  set_output_impl(i, out.channels);
                 }
                 else if constexpr (requires { mimicked_port.channels; })
                 {
-                  out.channels = mimicked_port.channels;
-                  this->output_channels[i] = out.channels;
+                  out.channels = mimicked_port.channels;                  
+                  set_output_impl(i, out.channels);
                 }
               }
               i++;
@@ -372,7 +391,7 @@ struct audio_channel_manager<T>
 
     if (ok)
     {
-      this->output_channels[output_id] = *ok;
+      set_output_impl(output_id, *ok);
     }
     return bool(ok);
   }

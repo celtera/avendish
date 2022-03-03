@@ -79,6 +79,13 @@ avnd_make_object(
 )
 
 avnd_make_object(
+  TARGET Peak
+  MAIN_FILE examples/Helpers/Peak.hpp
+  MAIN_CLASS examples::helpers::Peak
+  C_NAME avnd_peak
+)
+
+avnd_make_object(
   TARGET CCC
   MAIN_FILE examples/LitterPower/CCC.hpp
   MAIN_CLASS examples::CCC
@@ -173,6 +180,13 @@ avnd_make_all(
   MAIN_FILE examples/SampleAccurateControls.hpp
   MAIN_CLASS examples::SampleAccurateControls
   C_NAME avnd_sample_accurate_controls
+)
+
+avnd_make_all(
+  TARGET WhiteNoise
+  MAIN_FILE examples/Helpers/Noise.hpp
+  MAIN_CLASS examples::helpers::WhiteNoise
+  C_NAME avnd_white_noise
 )
 
 

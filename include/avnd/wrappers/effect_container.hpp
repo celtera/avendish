@@ -9,11 +9,38 @@
 
 namespace avnd
 {
+template<typename T>
+struct inputs_storage
+{
+
+};
+
+template<inputs_is_type T>
+struct inputs_storage<T>
+{
+  typename T::inputs inputs_storage;
+};
+
+template<typename T>
+struct outputs_storage
+{
+
+};
+
+template<outputs_is_type T>
+struct outputs_storage<T>
+{
+    typename T::outputs outputs_storage;
+};
+
+
 /**
  * @brief used to adapt monophonic effects to polyphonic hosts
  */
 template <typename T>
 struct effect_container
+    : inputs_storage<T>
+    , outputs_storage<T>
 {
   using type = T;
 
@@ -27,28 +54,48 @@ struct effect_container
   auto& inputs() noexcept
   {
     if constexpr (has_inputs<T>)
-      return effect.inputs;
+    {
+      if constexpr(inputs_is_type<T>)
+        return this->inputs_storage;
+      else
+        return effect.inputs;
+    }
     else
       return dummy_instance;
   }
   auto& inputs() const noexcept
   {
     if constexpr (has_inputs<T>)
-      return effect.inputs;
+    {
+      if constexpr(inputs_is_type<T>)
+        return this->inputs_storage;
+      else
+        return effect.inputs;
+    }
     else
       return dummy_instance;
   }
   auto& outputs() noexcept
   {
     if constexpr (has_outputs<T>)
-      return effect.outputs;
+    {
+      if constexpr(outputs_is_type<T>)
+        return this->outputs_storage;
+      else
+        return effect.outputs;
+    }
     else
       return dummy_instance;
   }
   auto& outputs() const noexcept
   {
     if constexpr (has_outputs<T>)
-      return effect.outputs;
+    {
+      if constexpr(outputs_is_type<T>)
+        return this->outputs_storage;
+      else
+        return effect.outputs;
+    }
     else
       return dummy_instance;
   }
@@ -236,12 +283,12 @@ struct effect_container<T>
   member_iterator<decltype(T::inputs)> inputs()
   {
     for (auto& e : effect)
-      co_yield e.input;
+      co_yield e.inputs;
   }
   member_iterator<decltype(T::outputs)> outputs()
   {
     for (auto& e : effect)
-      co_yield e.output;
+      co_yield e.outputs;
   }
 };
 

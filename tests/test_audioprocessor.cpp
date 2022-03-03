@@ -45,13 +45,13 @@ struct test_port_mono_audio_effect
 {
   struct inputs {
     struct audio_t {
-      T* samples{};
+      T* channel{};
     } audio;
   };
 
   struct outputs {
     struct {
-      T* samples{};
+      T* channel{};
     } audio;
   };
 
@@ -144,13 +144,13 @@ struct test_port_mono_audio_effect_value
 {
   struct {
     struct audio_t {
-      T* samples{};
+      T* channel{};
     } audio;
   } inputs;
 
   struct {
     struct {
-      T* samples{};
+      T* channel{};
     } audio;
   } outputs ;
 

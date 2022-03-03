@@ -109,17 +109,6 @@ boost::mp11::mp_list < Args... >> ;
 // (and thus be instanced).
 // Otherwise, it'll be treated as polyphonic with a single instance.
 
-template <typename FP, typename T>
-concept port_invocations =
-    (std::is_invocable_r_v<void, T>
-  || std::is_invocable_r_v<void, T, const typename T::inputs&>
-  || std::is_invocable_r_v<void, T, typename T::outputs&>
-  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&>
-  || std::is_invocable_r_v<void, T, const typename T::tick&>
-  || std::is_invocable_r_v<void, T, const typename T::inputs&, const typename T::tick&>
-  || std::is_invocable_r_v<void, T, typename T::outputs&, const typename T::tick&>
-  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
-
 // C++17: is_invocable
 template <typename FP, typename T>
 concept mono_per_sample_arg_processor
@@ -134,16 +123,27 @@ concept mono_per_sample_arg_processor
           || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
 
 template <typename FP, typename T>
+concept mono_per_sample_port_invocations =
+    (std::is_invocable_r_v<void, T>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&>
+  || std::is_invocable_r_v<void, T, typename T::outputs&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&>
+  || std::is_invocable_r_v<void, T, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, typename T::outputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
+
+template <typename FP, typename T>
 concept mono_per_sample_port_processor
     = (sample_input_port_count<FP, T> == 1)
    && (sample_output_port_count<FP, T> == 1)
-   && port_invocations<FP, T>;
+   && mono_per_sample_port_invocations<FP, T>;
 template <typename FP, typename T>
 concept poly_per_sample_port_processor =
     ((sample_input_port_count<FP, T> > 1)
      || (sample_output_port_count<FP, T> > 1)
      || (sample_input_port_count<FP, T> != sample_output_port_count<FP, T>))
-    && port_invocations<FP, T>;
+    && mono_per_sample_port_invocations<FP, T>;
 
 template <typename T>
 concept sample_processor
@@ -157,20 +157,41 @@ concept sample_processor
 // FIXME: we could support other cases here, such as T, FP*, FP*, T::tick, etc...
 // like above, for mono_per_sample_arg_processor
 template <typename FP, typename T>
-concept mono_per_channel_arg_processor = (std::is_invocable_r_v<void, T, FP*, FP*, int>);
+concept mono_per_channel_arg_processor =
+    (std::is_invocable_r_v<void, T, FP*, FP*, int>
+  || std::is_invocable_r_v<void, T, FP*, FP*, const typename T::inputs&, int>
+  || std::is_invocable_r_v<void, T, FP*, FP*, typename T::outputs&, int>
+  || std::is_invocable_r_v<void, T, FP*, FP*, const typename T::inputs&, typename T::outputs&, int>
+  || std::is_invocable_r_v<void, T, FP*, FP*, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, FP*, FP*, const typename T::inputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, FP*, FP*, typename T::outputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, FP*, FP*, const typename T::inputs&, typename T::outputs&, const typename T::tick&>)
+;
+
+template <typename FP, typename T>
+concept mono_per_channel_port_invocations =
+    (std::is_invocable_r_v<void, T, int>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, int>
+  || std::is_invocable_r_v<void, T, typename T::outputs&, int>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, int>
+  || std::is_invocable_r_v<void, T, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, typename T::outputs&, const typename T::tick&>
+  || std::is_invocable_r_v<void, T, const typename T::inputs&, typename T::outputs&, const typename T::tick&>)
+;
 
 template <typename FP, typename T>
 concept mono_per_channel_port_processor
     = (mono_sample_array_input_port_count<FP, T> == 1)
    && (mono_sample_array_output_port_count<FP, T> == 1)
-   && port_invocations<FP, T>;
+   && mono_per_channel_port_invocations<FP, T>;
 
 template <typename FP, typename T>
 concept poly_per_channel_port_processor =
     ((mono_sample_array_input_port_count<FP, T> > 1)
      || (mono_sample_array_output_port_count<FP, T> > 1)
      || (mono_sample_array_input_port_count<FP, T> != mono_sample_array_output_port_count<FP, T>))
-    && port_invocations<FP, T>;
+    && mono_per_channel_port_invocations<FP, T>;
 
 template <typename T>
 concept channel_processor
@@ -189,9 +210,11 @@ concept channel_processor
 // This gives us the following set of concepts
 template <typename FP, typename T>
 concept monophonic_processor
-    = effect_is_sane<
-          FP,
-          T> && (monophonic_arg_audio_effect<FP, T> || mono_array_port_based<FP, T> || mono_per_sample_arg_processor<FP, T> || mono_per_sample_port_processor<FP, T>);
+    = effect_is_sane<FP, T>
+&& (monophonic_arg_audio_effect<FP, T>
+    || monophonic_single_port_audio_effect<FP, T>
+    || mono_per_sample_arg_processor<FP, T>
+    || mono_per_sample_port_processor<FP, T>);
 
 template <typename FP, typename T>
 concept polyphonic_processor
@@ -203,12 +226,17 @@ template <typename T>
 concept polyphonic_double_processor
     = polyphonic_arg_audio_effect<double, T> || poly_array_port_based<double, T>;
 
+template <typename FP, typename T>
+concept typed_processor =
+    sample_port_based<FP, T> || mono_array_port_based<FP, T> || poly_array_port_based<FP, T>
+ || mono_per_sample_arg_processor<FP, T> || mono_per_channel_arg_processor<FP, T>
+ || monophonic_arg_audio_effect<FP, T> || polyphonic_arg_audio_effect<FP, T>
+;
 template <typename T>
-concept float_processor
-    = monophonic_processor<float, T> || polyphonic_processor<float, T>;
+concept float_processor = typed_processor<float, T>;
 template <typename T>
 concept double_processor
-    = monophonic_processor<double, T> || polyphonic_processor<double, T>;
+    = typed_processor<double, T>;
 
 template <typename T>
 concept monophonic_audio_processor

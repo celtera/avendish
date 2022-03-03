@@ -29,7 +29,7 @@ struct audio_channel
 {
   static consteval auto name() { return std::string_view{lit.value}; }
 
-  FP* channel{};
+  FP* channel;
 
   operator FP*() const noexcept { return channel; }
   FP& operator[](std::size_t i) noexcept { return channel[i]; }

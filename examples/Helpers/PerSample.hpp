@@ -5,7 +5,7 @@
 #include <avnd/helpers/audio.hpp>
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
-#include <avnd/common/concepts_polyfill.hpp>
+#include <avnd/concepts/processor.hpp>
 #include <cmath>
 
 namespace examples::helpers
@@ -43,4 +43,10 @@ struct PerSampleAsPorts
     outs.audio = std::tanh(ins.audio);
   }
 };
+
+static_assert(avnd::monophonic_processor<double, PerSampleAsPorts>);
+static_assert(avnd::mono_per_sample_port_processor<double, PerSampleAsPorts>);
+static_assert(avnd::sample_port_processor<PerSampleAsPorts>);
+static_assert(avnd::inputs_is_type<PerSampleAsPorts>);
+static_assert(avnd::outputs_is_type<PerSampleAsPorts>);
 }

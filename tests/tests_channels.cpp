@@ -51,18 +51,18 @@ namespace test_mono_arrays
 struct object {
   struct {
     struct {
-      float* samples;
+      float* channel;
     } a;
     struct {
-      float* samples;
+      float* channel;
     } b;
     struct {
-      float* samples;
+      float* channel;
     } c;
   } inputs;
   struct {
     struct {
-      float* samples;
+      float* channel;
     } c;
   } outputs;
 };
