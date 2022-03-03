@@ -42,7 +42,7 @@ function(avnd_make_object)
   avnd_make_python(${ARGV})
   avnd_make_pd(${ARGV})
   avnd_make_max(${ARGV})
-  # avnd_make_standalone(${ARGV})
+  avnd_make_standalone(${ARGV})
   avnd_make_example_host(${ARGV})
 endfunction()
 
