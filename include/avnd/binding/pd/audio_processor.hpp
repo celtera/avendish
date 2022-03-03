@@ -86,7 +86,10 @@ struct audio_processor
       outlet_new(&x_obj, &s_signal);
 
     /// Initialize controls
-    avnd::init_controls(implementation.inputs());
+    if constexpr (avnd::has_inputs<T>)
+    {
+      avnd::init_controls(implementation.inputs());
+    }
 
     /// Initialize polyphony
     implementation.init_channels(input_channels, output_channels);
@@ -170,7 +173,7 @@ struct audio_processor
         // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
         // but most pd externals seem to just do a chain of if() so this is equivalent
         float res = argv[0].a_w.w_float;
-        boost::pfr::for_each_field(
+        avnd::for_each_field_ref(
             implementation.inputs(),
             [this, s, res]<typename C>(C& ctl)
             {
@@ -190,7 +193,7 @@ struct audio_processor
         // TODO ?
         std::string res = argv[0].a_w.w_symbol->s_name;
         // thread_local for perf ?
-        boost::pfr::for_each_field(
+        avnd::for_each_field_ref(
             implementation.inputs(),
             [this, s, &res](auto& ctl)
             {

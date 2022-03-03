@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/for_nth.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <cmath>
@@ -10,10 +11,11 @@
 
 namespace avnd
 {
-static constexpr void init_controls(auto&& inputs)
+template<typename I>
+static constexpr void init_controls(I&& inputs)
 {
-  boost::pfr::for_each_field(
-      inputs,
+  avnd::for_each_field_ref(
+      std::forward<I>(inputs),
       []<typename T>(T& ctl)
       {
         if constexpr (requires { T::range().init; })

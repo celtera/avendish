@@ -3,8 +3,7 @@
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
 #include <cmath>
-#include </home/jcelerier/ossia/score/3rdparty/avendish/include/avnd/concepts/audio_port.hpp>
-#include </home/jcelerier/ossia/score/3rdparty/avendish/include/avnd/concepts/processor.hpp>
+
 namespace examples::helpers
 {
 
@@ -34,6 +33,6 @@ struct Peak
     }
   }
 };
-static_assert(avnd::poly_per_channel_port_processor<double, Peak>);
+
 }
 

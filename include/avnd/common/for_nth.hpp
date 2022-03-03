@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/coroutines.hpp>
 #include <boost/pfr.hpp>
 
 #include <utility>
@@ -35,4 +36,25 @@ void for_each_field_ref(T&& value, F&& func)
   (make_index_sequence<fields_count_val>{});
 }
 
+template <class T, class F>
+void for_each_field_ref(avnd::member_iterator<T>&& value, F&& func)
+{
+  for(auto& v : value) {
+    for_each_field_ref(v, func);
+  }
+}
+template <class T, class F>
+void for_each_field_ref(avnd::member_iterator<T>& value, F&& func)
+{
+  for(auto& v : value) {
+    for_each_field_ref(v, func);
+  }
+}
+template <class T, class F>
+void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
+{
+  for(auto& v : value) {
+    for_each_field_ref(v, func);
+  }
+}
 }
