@@ -145,12 +145,14 @@ concept poly_per_sample_port_processor =
      || (sample_input_port_count<FP, T> != sample_output_port_count<FP, T>))
     && mono_per_sample_port_invocations<FP, T>;
 
+/*
 template <typename T>
 concept sample_processor
  = mono_per_sample_arg_processor<double, T>
 || mono_per_sample_port_processor<double, T>
 || mono_per_sample_arg_processor<float, T>
 || mono_per_sample_port_processor<float, T>;
+*/
 
 /////////////////
 

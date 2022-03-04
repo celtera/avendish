@@ -104,7 +104,7 @@ struct effect_container
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T>)
+  requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -136,6 +136,54 @@ struct effect_container<T>
   {
     ref r{effect, {}, {}};
     co_yield r;
+  }
+};
+
+template <typename T>
+  requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>)
+struct effect_container<T>
+{
+  using type = T;
+
+  std::vector<T> effect;
+  void init_channels(int input, int output)
+  {
+    // FIXME do that everywhere
+    // FIXME how to save controls when we go down to 0 channels ?
+    if(effect.empty())
+      effect.resize(input);
+    else if(effect.size() > input)
+      effect.resize(input);
+    else while(effect.size() < input)
+      effect.push_back(effect[0]);
+  }
+
+  auto& inputs() noexcept { return dummy_instance; }
+  auto& inputs() const noexcept { return dummy_instance; }
+  auto& outputs() noexcept { return dummy_instance; }
+  auto& outputs() const noexcept { return dummy_instance; }
+
+  member_iterator<T> effects()
+  {
+    for(auto& eff : effect)
+      co_yield eff;
+  }
+
+  struct ref
+  {
+    T& effect;
+
+    [[no_unique_address]] dummy inputs;
+
+    [[no_unique_address]] dummy outputs;
+  };
+
+  member_iterator<ref> full_state()
+  {
+    for (auto& e : effect) {
+      ref r{e, {}, {}};
+      co_yield r;
+    }
   }
 };
 

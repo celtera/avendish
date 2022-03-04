@@ -114,6 +114,9 @@ requires
    avnd::mono_per_sample_arg_processor<double, T>
 || avnd::monophonic_arg_audio_effect<double, T>
 || avnd::polyphonic_arg_audio_effect<double, T>
+|| avnd::mono_per_sample_arg_processor<float, T>
+|| avnd::monophonic_arg_audio_effect<float, T>
+|| avnd::polyphonic_arg_audio_effect<float, T>
 struct builtin_arg_audio_ports<T>
 {
   ossia::audio_inlet in;
@@ -146,16 +149,18 @@ struct builtin_message_value_ports<T>
 };
 
 template <typename T>
-class safe_node_base
+class safe_node_base_base
         : public ossia::nonowning_graph_node
 {
 public:
-  using processor_type = T;
-  using inputs_t = typename avnd::inputs_type<T>::type;
-  using outputs_t = typename avnd::outputs_type<T>::type;
-  using param_in_info = avnd::parameter_input_introspection<T>;
-  using midi_in_info = avnd::midi_input_introspection<T>;
-  using midi_out_info = avnd::midi_output_introspection<T>;
+  safe_node_base_base(int buffer_size, double sample_rate)
+    : channels{this->impl}
+  {
+
+  }
+
+  int buffer_size{};
+  double sample_rate{};
 
   [[no_unique_address]]
   avnd::effect_container<T> impl;
@@ -187,14 +192,26 @@ public:
   [[no_unique_address]]
   avnd::callback_storage<T> callbacks;
 
+
+};
+
+template <typename T, typename AudioCount>
+class safe_node_base
+        : public safe_node_base_base<T>
+{
+public:
+  using processor_type = T;
+  using inputs_t = typename avnd::inputs_type<T>::type;
+  using outputs_t = typename avnd::outputs_type<T>::type;
+  using param_in_info = avnd::parameter_input_introspection<T>;
+  using midi_in_info = avnd::midi_input_introspection<T>;
+  using midi_out_info = avnd::midi_output_introspection<T>;
+
   static constexpr int total_input_ports = avnd::total_input_count<T>();
   static constexpr int total_output_ports = avnd::total_output_count<T>();
 
-  int buffer_size{};
-  double sample_rate{};
-
   safe_node_base(int buffer_size, double sample_rate)
-    : channels{this->impl}
+      : safe_node_base_base<T>{buffer_size, sample_rate}
   {
     this->buffer_size = buffer_size;
     this->sample_rate = sample_rate;
@@ -208,8 +225,8 @@ public:
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
 
-    channels.set_input_channels(this->impl, 0, 2);
-    channels.set_output_channels(this->impl, 0, 2);
+    this->channels.set_input_channels(this->impl, 0, 2);
+    this->channels.set_output_channels(this->impl, 0, 2);
 
     // TODO
     this->impl.init_channels(2, 2);
@@ -255,9 +272,9 @@ public:
   void process_all_ports(Functor f)
   {
     if constexpr (avnd::inputs_type<T>::size > 0)
-      process_inputs(f, impl.inputs());
+      process_inputs(f, this->impl.inputs());
     if constexpr (avnd::outputs_type<T>::size > 0)
-      process_outputs(f, impl.outputs());
+      process_outputs(f, this->impl.outputs());
   }
 
   void initialize_all_ports()
@@ -270,7 +287,7 @@ public:
       auto& port_tuple = this->ossia_inlets.ports;
 
       [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-          setup_inlets<safe_node_base<T>> init{*this, this->m_inlets};
+          setup_inlets<safe_node_base_base<T>> init{*this, this->m_inlets};
           (init(
             avnd::field_reflection<Index, boost::pfr::tuple_element_t<Index, in_type>>{}
             , std::get<Index>(port_tuple)
@@ -287,7 +304,7 @@ public:
       auto& port_tuple = this->ossia_outlets.ports;
 
       [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-          setup_outlets<safe_node_base<T>> init{*this, this->m_outlets};
+          setup_outlets<safe_node_base_base<T>> init{*this, this->m_outlets};
           (init(
             avnd::field_reflection<Index, boost::pfr::tuple_element_t<Index, out_type>>{}
             , std::get<Index>(port_tuple)
@@ -329,7 +346,7 @@ public:
           (std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>) {
         return do_callback<Idx, typename Refl::return_type, Args...>{*this};
       };
-      this->callbacks.wrap_callbacks(impl, callbacks_initializer);
+      this->callbacks.wrap_callbacks(this->impl, callbacks_initializer);
     }
 
     // Initialize the other ports
@@ -345,33 +362,34 @@ public:
     //          << this->channels.actual_runtime_outputs;
     // Allocate buffers, setup everything
     avnd::process_setup setup_info{
-        .input_channels = channels.actual_runtime_inputs,
-        .output_channels = channels.actual_runtime_outputs,
-        .frames_per_buffer = buffer_size,
-        .rate = sample_rate};
+        .input_channels = this->channels.actual_runtime_inputs,
+        .output_channels = this->channels.actual_runtime_outputs,
+        .frames_per_buffer = this->buffer_size,
+        .rate = this->sample_rate};
 
     // This allocates the buffers that may be used for conversion
     // if e.g. we have an API that works with doubles,
     // and a plug-in that expects floats.
     // Here for instance we allocate buffers for an host that may invoke "process" with either floats or doubles.
-    processor.allocate_buffers(setup_info, float{});
-    processor.allocate_buffers(setup_info, double{});
+    this->processor.allocate_buffers(setup_info, float{});
+    this->processor.allocate_buffers(setup_info, double{});
 
     // Initialize the channels for the effect duplicator
-    impl.init_channels(setup_info.input_channels, setup_info.output_channels);
+    qDebug() << "impl: init_channels: " << setup_info.input_channels<< setup_info.output_channels;
+    this->impl.init_channels(setup_info.input_channels, setup_info.output_channels);
 
     // Setup buffers for storing MIDI messages
 
     {
-      midi_buffers.reserve_space(impl, buffer_size);
+     this->midi_buffers.reserve_space(this->impl, this->buffer_size);
     }
 
     {
-      control_buffers.reserve_space(impl, buffer_size);
+      this->control_buffers.reserve_space(this->impl, this->buffer_size);
     }
 
     // Effect-specific preparation
-    avnd::prepare(impl, setup_info);
+    avnd::prepare(this->impl, setup_info);
   }
 
   void set_channels(ossia::audio_port& port, int channels)
@@ -390,86 +408,28 @@ public:
     }
   }
 
-  struct audio_inlet_scan {
-      safe_node_base& self;
-      int k = 0;
-      bool ok{true};
-
-      void operator()(ossia::audio_inlet& in) noexcept {
-        int expected = in.data.channels();
-        self.channels.set_input_channels(self.impl, k, expected);
-        int actual = self.channels.get_input_channels(self.impl, k);
-        // qDebug() << "Scanning inlet " << k << ". Expected: " << expected << " ; actual: " << actual;
-        ok &= (expected == actual);
-        self.set_channels(in.data, actual);
-        ++k;
-      }
-      void operator()(const auto& other) noexcept { }
-  };
-  struct audio_outlet_scan {
-      safe_node_base& self;
-      int k = 0;
-      void operator()(ossia::audio_outlet& out) noexcept {
-        int actual = self.channels.get_output_channels(self.impl, k);
-        // qDebug() << "Scanning outlet " << k << ". Actual: " << actual;
-        self.set_channels(out.data, actual);
-        ++k;
-      }
-      void operator()(const auto& other) noexcept { }
-  };
-
-  bool scan_audio_input_channels()
-  {
-    const int current_input_channels = this->channels.actual_runtime_inputs;
-    const int current_output_channels = this->channels.actual_runtime_outputs;
-
-    // Scan the input channels
-    bool ok = std::apply([&] (auto&&... ports) {
-      audio_inlet_scan match{*this};
-
-      if constexpr(requires { this->audio_ports.in; })
-        match(this->audio_ports.in);
-
-      (match(ports), ...);
-      return match.ok;
-    }, ossia_inlets.ports);
-
-    // Ensure that we have enough output space
-    std::apply([&] (auto&&... ports) {
-      audio_outlet_scan match{*this};
-
-      if constexpr(requires { this->audio_ports.out; })
-        match(this->audio_ports.out);
-
-      (match(ports), ...);
-    }, ossia_outlets.ports);
-
-    bool changed = !ok;
-    changed |= (current_input_channels != this->channels.actual_runtime_inputs);
-    changed |= (current_output_channels != this->channels.actual_runtime_outputs);
-    return changed;
-  }
 
   bool prepare_run(int start, int frames)
   {
     // Check all the audio channels
-    bool changed = scan_audio_input_channels();
+    bool changed = static_cast<AudioCount&>(*this).scan_audio_input_channels();
 
     if(frames > this->buffer_size)
     {
       this->buffer_size = frames;
       changed = true;
     }
+
     if(changed)
     {
       audio_configuration_changed();
     }
 
     // Clean up MIDI output ports
-    this->midi_buffers.clear_outputs(impl);
+    this->midi_buffers.clear_outputs(this->impl);
 
     // Clean up sample-accurate control output ports
-    this->control_buffers.clear_outputs(impl);
+    this->control_buffers.clear_outputs(this->impl);
 
     // Process inputs of all sorts
     process_all_ports(process_before_run<safe_node_base>{*this});
@@ -558,90 +518,16 @@ public:
     });
   }
 
-  struct initialize_audio
-  {
-    const double** ins{};
-    double** outs{};
-    int k = 0;
-
-    void operator()(const ossia::audio_inlet& in) noexcept {
-      for(const ossia::audio_channel& c : in.data) {
-        ins[k] = c.data();
-        // qDebug() << "Init channel " << k << ". ins[k][0] ==  " << ins[k][0];
-        k++;
-      }
-    }
-
-    void operator()(ossia::audio_outlet& out) noexcept {
-      for(ossia::audio_channel& c : out.data) {
-        outs[k] = c.data();
-        k++;
-      }
-    }
-
-    void operator()(const auto& other) noexcept
-    {
-    }
-  };
-
-  void initialize_audio_arrays(const double** ins, double** outs)
-  {
-    std::apply([&] (auto&&... ports) {
-      initialize_audio match{ins, outs, 0};
-
-      if constexpr(requires { this->audio_ports.in; })
-        match(this->audio_ports.in);
-
-      (match(ports), ...);
-    }, ossia_inlets.ports);
-
-    std::apply([&] (auto&&... ports) {
-      initialize_audio match{ins, outs, 0};
-
-      if constexpr(requires { this->audio_ports.out; })
-        match(this->audio_ports.out);
-
-      (match(ports), ...);
-    }, ossia_outlets.ports);
-  }
-
-  void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
-  {
-    auto [start, frames] = st.timings(tk);
-
-    if (!this->prepare_run(start, frames))
-    {
-      this->finish_run();
-      return;
-    }
-
-    // Initialize audio ports
-    const int current_input_channels = this->channels.actual_runtime_inputs;
-    const int current_output_channels = this->channels.actual_runtime_outputs;
-    const double** audio_ins = (const double**)alloca(sizeof(double*) * (1 + current_input_channels));
-    double** audio_outs = (double**)alloca(sizeof(double*) * (1 + current_output_channels));
-    initialize_audio_arrays(audio_ins, audio_outs);
-
-    // Run
-    processor.process(
-        impl,
-        avnd::span<double*>{const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
-        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
-        frames);
-
-    this->finish_run();
-  }
-
   void finish_run()
   {
      // Copy output events
      process_all_ports(process_after_run<safe_node_base>{*this});
 
      // Clean up MIDI inputs
-     this->midi_buffers.clear_inputs(impl);
+     this->midi_buffers.clear_inputs(this->impl);
 
      // Clean up sample-accurate control input ports
-     this->control_buffers.clear_inputs(impl);
+     this->control_buffers.clear_inputs(this->impl);
   }
 
   std::string label() const noexcept override
@@ -649,5 +535,22 @@ public:
     return std::string{avnd::get_name<T>()};
   }
 };
+
+// FIXME these concepts are super messy
+
+template<typename FP, typename T>
+concept real_mono_processor =
+        avnd::mono_per_sample_arg_processor<FP, T>
+     || avnd::mono_per_sample_port_processor<FP, T>
+     || avnd::monophonic_arg_audio_effect<FP, T>
+     || avnd::monophonic_single_port_audio_effect<FP, T>
+     || avnd::mono_per_channel_arg_processor<FP, T>
+     || avnd::mono_per_channel_port_processor<FP, T>;
+template<typename T>
+concept real_good_mono_processor = real_mono_processor<float, T> || real_mono_processor<double, T>;
+
+template<typename T>
+class safe_node;
+
 
 }

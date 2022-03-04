@@ -53,14 +53,14 @@ struct audio_channel_manager<T>
   {
     if (input_id != 0)
       return 0;
-    return 1;
+    return actual_runtime_inputs;
   }
 
   int get_output_channels(auto& processor, int output_id)
   {
     if (output_id != 0)
       return 0;
-    return 1;
+    return actual_runtime_outputs;
   }
 
   int actual_runtime_inputs = 0;
