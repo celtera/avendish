@@ -39,6 +39,11 @@ struct get_ossia_inlet_type<T>
 {
   using type = ossia::value_inlet;
 };
+template <avnd::unreflectable_message T>
+struct get_ossia_inlet_type<T>
+{
+    using type = ossia::value_inlet;
+};
 
 template <typename T>
 using get_ossia_inlet_type_t = typename get_ossia_inlet_type<T>::type;

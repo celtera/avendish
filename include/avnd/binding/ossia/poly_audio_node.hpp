@@ -19,7 +19,6 @@ public:
         int expected = in.data.channels();
         self.channels.set_input_channels(self.impl, k, expected);
         int actual = self.channels.get_input_channels(self.impl, k);
-        qDebug() << ":: Scanning inlet " << k << ". Expected: " << expected << " ; actual: " << actual;
         ok &= (expected == actual);
         self.set_channels(in.data, actual);
         ++k;
@@ -31,7 +30,6 @@ public:
       int k = 0;
       void operator()(ossia::audio_outlet& out) noexcept {
         int actual = self.channels.get_output_channels(self.impl, k);
-        qDebug() << ":: Scanning outlet " << k << ". Actual: " << actual;
         self.set_channels(out.data, actual);
         ++k;
       }
@@ -77,19 +75,15 @@ public:
     int k = 0;
 
     void operator()(const ossia::audio_inlet& in) noexcept {
-      qDebug("init ibus");
       for(const ossia::audio_channel& c : in.data) {
         ins[k] = c.data();
-        qDebug() << " -- Init input channel " << k << ". ins[k][0] ==  " << ins[k][0];
         k++;
       }
     }
 
     void operator()(ossia::audio_outlet& out) noexcept {
-        qDebug("init obus");
       for(ossia::audio_channel& c : out.data) {
         outs[k] = c.data();
-        qDebug() << " -- Init output channel " << k << ". outs[k][0] ==  " << outs[k][0];
         k++;
       }
     }
@@ -102,12 +96,10 @@ public:
   void initialize_audio_arrays(const double** ins, double** outs)
   {
     std::apply([&] (auto&&... ports) {
-      qDebug() << "INIT: " << sizeof...(ports);
       initialize_audio match{ins, outs, 0};
 
       if constexpr(requires { this->audio_ports.in; })
       {
-        qDebug("arg in");
         match(this->audio_ports.in);
       }
 
@@ -115,12 +107,10 @@ public:
     }, this->ossia_inlets.ports);
 
     std::apply([&] (auto&&... ports) {
-      qDebug() << "OUTIT: " << sizeof...(ports);
       initialize_audio match{ins, outs, 0};
 
       if constexpr(requires { this->audio_ports.out; })
       {
-        qDebug("arg out");
         match(this->audio_ports.out);
       }
 

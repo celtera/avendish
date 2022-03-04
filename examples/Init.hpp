@@ -33,6 +33,7 @@ struct Init
   {
     struct
     {
+      static consteval auto name() { return "Float in"; }
       float value;
     } a;
   } inputs;
@@ -41,6 +42,7 @@ struct Init
   {
     struct
     {
+      static consteval auto name() { return "Float out"; }
       float value;
     } out;
   } outputs;

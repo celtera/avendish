@@ -375,7 +375,6 @@ public:
     this->processor.allocate_buffers(setup_info, double{});
 
     // Initialize the channels for the effect duplicator
-    qDebug() << "impl: init_channels: " << setup_info.input_channels<< setup_info.output_channels;
     this->impl.init_channels(setup_info.input_channels, setup_info.output_channels);
 
     // Setup buffers for storing MIDI messages

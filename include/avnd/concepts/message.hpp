@@ -19,9 +19,14 @@ concept stateful_message
     = requires {
         typename avnd::function_reflection_o<decltype(T::func())>::return_type;
       };
+template <typename T>
+concept stdfunc_message
+    = requires {
+        typename avnd::function_reflection_t<decltype(T::func())>::return_type;
+};
 
 template <typename T>
-concept reflectable_message = stateless_message<T> || stateful_message<T>;
+concept reflectable_message = stateless_message<T> || stateful_message<T> || stdfunc_message<T>;
 
 template <typename T>
 concept message = reflectable_message<T> && requires(T t) {
@@ -30,6 +35,13 @@ concept message = reflectable_message<T> && requires(T t) {
                                                 } -> string_ish;
                                             };
 
+template <typename T>
+concept unreflectable_message =
+  !reflectable_message<T>
+  && requires (T t) {
+    t.name();
+    t.func();
+};
 type_or_value_qualification(messages)
 type_or_value_reflection(messages)
 
