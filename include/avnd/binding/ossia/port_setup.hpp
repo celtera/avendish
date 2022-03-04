@@ -34,6 +34,11 @@ struct get_ossia_inlet_type<T>
 {
   using type = ossia::texture_inlet;
 };
+template <avnd::message T>
+struct get_ossia_inlet_type<T>
+{
+  using type = ossia::value_inlet;
+};
 
 template <typename T>
 using get_ossia_inlet_type_t = typename get_ossia_inlet_type<T>::type;
@@ -68,25 +73,6 @@ struct get_ossia_outlet_type<T>
 
 template <typename T>
 using get_ossia_outlet_type_t = typename get_ossia_outlet_type<T>::type;
-/*
-template <typename T>
-struct refl
-{
-  using inputs_t = typename avnd::inputs_type<T>::type;
-  using outputs_t = typename avnd::outputs_type<T>::type;
-  using in_info = avnd::input_introspection<T>;
-  using out_info = avnd::output_introspection<T>;
-  using param_in_info = avnd::parameter_input_introspection<T>;
-  using param_out_info = avnd::parameter_output_introspection<T>;
-  using midi_in_info = avnd::midi_input_introspection<T>;
-  using midi_out_info = avnd::midi_output_introspection<T>;
-  using raw_midi_out_info = avnd::raw_container_midi_output_introspection<T>;
-  using audio_bus_in_info = avnd::audio_bus_input_introspection<T>;
-  using audio_bus_out_info = avnd::audio_bus_output_introspection<T>;
-  using audio_channel_in_info = avnd::audio_channel_input_introspection<T>;
-  using audio_channel_out_info = avnd::audio_channel_output_introspection<T>;
-};
-*/
 
 template <typename T>
 struct inlet_storage
@@ -128,12 +114,6 @@ struct inlet_storage
   // tuple<float>
   using control_input_values_type = typename oscr::get_control_type_list<control_input_tuple>::type;
 
-  static constexpr auto inlet_size = std::tuple_size_v<inputs_tuple>;
-  static constexpr auto audio_in_count = boost::mp11::mp_count_if<inputs_tuple, IsAudioInput>::value;
-  static constexpr auto value_in_count = boost::mp11::mp_count_if<inputs_tuple, IsValueInput>::value;
-  static constexpr auto midi_in_count = boost::mp11::mp_count_if<inputs_tuple, IsMidiInput>::value;
-  static constexpr auto texture_in_count = boost::mp11::mp_count_if<inputs_tuple, IsTextureInput>::value;
-  static constexpr auto control_in_count = boost::mp11::mp_count_if<inputs_tuple, IsControlInput>::value;
   */
 };
 
@@ -152,116 +132,116 @@ struct outlet_storage
 
 struct setup_value_port
 {
-    template<avnd::parameter_with_full_range T>
-    ossia::domain range_to_domain()
-    {
-      constexpr auto dom = avnd::get_range<T>();
-      return ossia::make_domain(dom.min, dom.max);
-    }
-    template<avnd::string_parameter T>
-    ossia::domain range_to_domain()
-    {
-      return {};
-    }
-    template<avnd::bool_parameter T>
-    ossia::domain range_to_domain()
-    {
-      return ossia::domain_base<bool>{};
-    }
+  template<avnd::parameter_with_full_range T>
+  ossia::domain range_to_domain()
+  {
+    constexpr auto dom = avnd::get_range<T>();
+    return ossia::make_domain(dom.min, dom.max);
+  }
+  template<avnd::string_parameter T>
+  ossia::domain range_to_domain()
+  {
+    return {};
+  }
+  template<avnd::bool_parameter T>
+  ossia::domain range_to_domain()
+  {
+    return ossia::domain_base<bool>{};
+  }
 
-    template<avnd::enum_parameter T>
-    ossia::domain range_to_domain()
+  template<avnd::enum_parameter T>
+  ossia::domain range_to_domain()
+  {
+    constexpr auto dom = T::choices();
+    ossia::domain_base<std::string> d;
+    d.values.assign(std::begin(dom), std::end(dom));
+    return d;
+  }
+
+  template<typename T>
+  ossia::domain range_to_domain()
+  {
+    constexpr auto dom = avnd::get_range<T>();
+    if constexpr(requires { std::string_view{dom.values[0].first}; }) {
+      // Case for combo_pair things
+      using val_type = std::decay_t<decltype(T::value)>;
+      ossia::domain_base<val_type> v;
+      for(auto& val : dom.values) {
+        v.values.push_back(val.second);
+      }
+      return v;
+    }
+    else
     {
-      constexpr auto dom = T::choices();
+      // Just strings
       ossia::domain_base<std::string> d;
-      d.values.assign(std::begin(dom), std::end(dom));
+      d.values.assign(std::begin(dom.values), std::end(dom.values));
       return d;
     }
+  }
 
-    template<typename T>
-    ossia::domain range_to_domain()
-    {
-      constexpr auto dom = avnd::get_range<T>();
-      if constexpr(requires { std::string_view{dom.values[0].first}; }) {
-        // Case for combo_pair things
-        using val_type = std::decay_t<decltype(T::value)>;
-        ossia::domain_base<val_type> v;
-        for(auto& val : dom.values) {
-          v.values.push_back(val.second);
-        }
-        return v;
-      }
-      else
-      {
-        // Just strings
-        ossia::domain_base<std::string> d;
-        d.values.assign(std::begin(dom.values), std::end(dom.values));
-        return d;
-      }
-    }
+  template<avnd::int_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::INT;
+    port.domain = this->range_to_domain<Field>();
+  }
 
-    template<avnd::int_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::val_type::INT;
-      port.domain = this->range_to_domain<Field>();
-    }
+  template<avnd::float_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::FLOAT;
+    port.domain = this->range_to_domain<Field>();
+  }
 
-    template<avnd::float_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::val_type::FLOAT;
-      port.domain = this->range_to_domain<Field>();
-    }
+  template<avnd::bool_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::BOOL;
+    port.domain = this->range_to_domain<Field>();
+  }
 
-    template<avnd::bool_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::val_type::BOOL;
-      port.domain = this->range_to_domain<Field>();
-    }
+  template<avnd::string_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::STRING;
+    port.domain = this->range_to_domain<Field>();
+  }
 
-    template<avnd::string_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::val_type::STRING;
-      port.domain = this->range_to_domain<Field>();
-    }
+  template<avnd::enum_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::INT;
+    port.domain = this->range_to_domain<Field>();
+  }
 
-    template<avnd::enum_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::val_type::INT;
-      port.domain = this->range_to_domain<Field>();
-    }
+  template<avnd::xy_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::cartesian_2d_u{};
+    port.domain = this->range_to_domain<Field>();
+  }
 
-    template<avnd::xy_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::cartesian_2d_u{};
-      port.domain = this->range_to_domain<Field>();
-    }
+  template<avnd::rgb_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::rgba_u{};
+    port.domain = {};
+  }
 
-    template<avnd::rgb_parameter Field>
-    void setup(ossia::value_port& port)
-    {
-      port.is_event = true;
-      port.type = ossia::rgba_u{};
-      port.domain = {};
-    }
-
-    template<typename Field>
-    void setup(ossia::value_port& port)
-    {
-      if constexpr(requires { bool(Field::event); })
-        port.is_event = Field::event;
-    }
+  template<typename Field>
+  void setup(ossia::value_port& port)
+  {
+    if constexpr(requires { bool(Field::event); })
+      port.is_event = Field::event;
+  }
 };
 
 template <typename Exec_T>
@@ -295,6 +275,12 @@ struct setup_inlets
   {
     inlets.push_back(std::addressof(port));
   }
+
+  template<std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_inlet& port) const noexcept
+  {
+    inlets.push_back(std::addressof(port));
+  }
 };
 
 template <typename Exec_T>
@@ -315,6 +301,12 @@ struct setup_outlets
         port->type = ossia::parse_dataspace(unit);
     }
   }
+  template<std::size_t Idx, avnd::callback Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port) const noexcept
+  {
+    // FIXME likely there are interesting things to do
+    outlets.push_back(std::addressof(port));
+  }
 
   template<std::size_t Idx, typename Field>
   void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_outlet& port) const noexcept
@@ -324,6 +316,12 @@ struct setup_outlets
 
   template<std::size_t Idx, typename Field>
   void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_outlet& port) const noexcept
+  {
+    outlets.push_back(std::addressof(port));
+  }
+
+  template<std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_outlet& port) const noexcept
   {
     outlets.push_back(std::addressof(port));
   }

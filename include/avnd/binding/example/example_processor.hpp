@@ -144,8 +144,8 @@ class example_processor
       if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
       {
         auto callbacks_initializer =
-            [this] <typename Refl, template<typename...> typename L, typename... Args>
-            (std::string_view message, L<Args...>, Refl refl) {
+            [this] <typename Refl, template<typename...> typename L, typename... Args, std::size_t Idx>
+            (std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>) {
           // This method will be called for every callback.
           // It must return a function that takes Args... in arguments, and
           // returns a value of type R

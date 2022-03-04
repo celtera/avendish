@@ -75,7 +75,38 @@ struct SampleAccurateControls
   } inputs;
 
 
-  inputs_t outputs;
+  struct outputs
+  {
+    struct
+    {
+      static consteval auto name() { return "API A"; }
+
+      struct range
+      {
+        const float min = 0.;
+        const float max = 1.;
+        const float init = 0.5;
+      };
+
+      std::optional<float>* values;
+      float value{};
+    } weight_A;
+
+    struct
+    {
+      static consteval auto name() { return "API C"; }
+
+      struct range
+      {
+        const float min = 0.;
+        const float max = 1.;
+        const float init = 0.5;
+      };
+
+      std::map<int, float> values{};
+      float value{};
+    } weight_C;
+  };
 
   void operator()(int N)
   {

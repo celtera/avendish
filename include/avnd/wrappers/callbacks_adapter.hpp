@@ -46,7 +46,7 @@ struct callback_storage
 
       if constexpr(dynamic_callback_introspection<outputs_t>::size > 0)
       {
-        auto setup_dyn = [callback_handler] <typename C> (C& cb)
+        auto setup_dyn = [callback_handler] <auto Idx, auto IdxGlob, typename C> (C& cb, avnd::num<Idx>, avnd::num<IdxGlob>)
         {
           using call_type = decltype(C::call);
           using func_type = decltype(cb.call);
@@ -56,16 +56,16 @@ struct callback_storage
 
           // Here, "cb.call" is something like std::function,
           // thus we can store the callback directly.
-          cb.call = callback_handler(C::name(), args{}, func_reflect{});
+          cb.call = callback_handler(C::name(), args{}, func_reflect{}, avnd::num<IdxGlob>{});
         };
 
-        avnd::dynamic_callback_introspection<outputs_t>::for_all(
+        avnd::dynamic_callback_introspection<outputs_t>::for_all_n2(
               effect.outputs(), setup_dyn);
       }
 
       if constexpr(view_callback_introspection<outputs_t>::size > 0)
       {
-        auto setup_view = [this,callback_handler] <auto Idx, typename C> (C& cb, avnd::num<Idx>)
+        auto setup_view = [this,callback_handler] <auto Idx, auto IdxGlob, typename C> (C& cb, avnd::num<Idx>, avnd::num<IdxGlob>)
         {
             using call_type = decltype(C::call);
 
@@ -77,7 +77,7 @@ struct callback_storage
 
             auto& buf = std::get<Idx>(this->functions_storage);
             using stored_type = std::tuple_element_t<Idx, std::decay_t<decltype(this->functions_storage)>>;
-            buf = callback_handler(C::name(), args{}, func_reflect{});
+            buf = callback_handler(C::name(), args{}, func_reflect{}, avnd::num<IdxGlob>{});
 
             // This version does not allocate, it's a plain old C callback.
             // Thus we store it outside...
@@ -101,7 +101,7 @@ struct callback_storage
             cb.call.context = &buf;
         };
 
-        avnd::view_callback_introspection<outputs_t>::for_all_n(
+        avnd::view_callback_introspection<outputs_t>::for_all_n2(
               effect.outputs(), setup_view);
       }
   }

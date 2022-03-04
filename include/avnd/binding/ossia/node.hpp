@@ -127,6 +127,25 @@ struct builtin_arg_audio_ports<T>
 };
 
 template <typename T>
+struct builtin_message_value_ports
+{
+  void init(ossia::inlets& inlets) {}
+};
+
+template <typename T>
+requires (avnd::messages_introspection<T>::size > 0)
+struct builtin_message_value_ports<T>
+{
+  ossia::value_inlet message_inlets[avnd::messages_introspection<T>::size];
+  void init(ossia::inlets& inlets)
+  {
+    for(auto& in : message_inlets) {
+      inlets.push_back(&in);
+    }
+  }
+};
+
+template <typename T>
 class safe_node_base
         : public ossia::nonowning_graph_node
 {
@@ -143,6 +162,9 @@ public:
 
   [[no_unique_address]]
   builtin_arg_audio_ports<T> audio_ports;
+
+  [[no_unique_address]]
+  builtin_message_value_ports<T> message_ports;
 
   [[no_unique_address]]
   inlet_storage<T> ossia_inlets;
@@ -181,6 +203,7 @@ public:
     this->m_outlets.reserve(total_output_ports + 1);
 
     this->audio_ports.init(this->m_inlets, this->m_outlets);
+    this->message_ports.init(this->m_inlets);
 
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
@@ -239,6 +262,7 @@ public:
 
   void initialize_all_ports()
   {
+    // Setup inputs
     if constexpr (avnd::inputs_type<T>::size > 0)
     {
       using in_info = avnd::input_introspection<T>;
@@ -255,6 +279,7 @@ public:
       }(typename in_info::indices_n{});
     }
 
+    // Setup outputs
     if constexpr (avnd::outputs_type<T>::size > 0)
     {
       using out_info = avnd::output_introspection<T>;
@@ -272,6 +297,25 @@ public:
     }
   }
 
+  template<std::size_t Idx, typename R, typename... Args>
+  struct do_callback
+  {
+    safe_node_base& self;
+    R operator()(Args... args)
+    {
+      // Idx is the index of the port in the complete input array.
+      // We need to map it to the callback index.
+      ossia::value_outlet& port = std::get<Idx>(self.ossia_outlets.ports);
+      if constexpr(sizeof...(Args) == 0)
+        port.data.write_value(ossia::impulse{}, 0);
+      else if constexpr(sizeof...(Args) == 1)
+        port.data.write_value(args..., 0);
+
+      if constexpr(!std::is_void_v<R>)
+        return R{};
+    }
+  };
+
   void finish_init()
   {
     // Initialize the controls with their default values
@@ -281,14 +325,9 @@ public:
     if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
     {
       auto callbacks_initializer =
-          [this] <typename Refl, template<typename...> typename L, typename... Args>
-          (std::string_view message, L<Args...>, Refl refl) {
-        using return_type = typename Refl::return_type;
-        // TODO!
-        if constexpr(std::is_void_v<return_type>)
-          return [this] (Args...) { return; };
-        else
-          return [this] (Args...) { return return_type{}; };
+          [this] <typename Refl, template<typename...> typename L, typename... Args, std::size_t Idx>
+          (std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>) {
+        return do_callback<Idx, typename Refl::return_type, Args...>{*this};
       };
       this->callbacks.wrap_callbacks(impl, callbacks_initializer);
     }
@@ -435,7 +474,88 @@ public:
     // Process inputs of all sorts
     process_all_ports(process_before_run<safe_node_base>{*this});
 
+    // Process messages
+
+    if constexpr (avnd::messages_type<T>::size > 0)
+      process_messages();
+
     return true;
+  }
+
+  template <auto Idx, typename M>
+  void invoke_message(const ossia::value& val, avnd::field_reflection<Idx, M>)
+  {
+    if constexpr (!std::is_void_v<avnd::message_reflection<M>>)
+    {
+      using refl = avnd::message_reflection<M>;
+      constexpr auto arg_count = refl::count;
+      constexpr auto f = M::func();
+
+      if constexpr (arg_count == 0)
+      {
+        for(auto& m : this->impl.effects())
+        {
+          if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+            (m.*f)();
+          else
+            f();
+        }
+      }
+      else if constexpr (arg_count == 1)
+      {
+        if constexpr (std::is_same_v<avnd::first_message_argument<M>, T&>)
+        {
+          for(auto& m : this->impl.effects())
+          {
+            if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+              (m.*f)(m);
+            else
+              f(m);
+          }
+        }
+        else
+        {
+          //   FIXME ! oscquery_mapper.hpp already has all this code
+          // using first_arg = boost::mp11::mp_first<typename refl::arguments>;
+          // const auto& v = ossia::convert<std::decay_t<first_arg>>(val);
+          // for(auto& m : this->impl.effects())
+          // {
+          //   if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+          //     (m.*f)(v);
+          //   else
+          //     f(v);
+          // }
+        }
+      }
+      else
+      {
+        // TODO use vecf, list, etc...
+        // FIXME
+      }
+    }
+    else
+    {
+      //FIXME > 1 arguments
+    }
+  }
+
+  template <auto Idx, typename M>
+  void process_message(avnd::field_reflection<Idx, M>)
+  {
+    ossia::value_inlet& inl = this->message_ports.message_inlets[Idx];
+    if(inl.data.get_data().empty())
+      return;
+    for(const auto& val : inl.data.get_data())
+    {
+      invoke_message(val.value, avnd::field_reflection<Idx, M>{});
+    }
+  }
+
+  void process_messages()
+  {
+    avnd::messages_introspection<T>::for_all([&] (auto m) {
+      process_message(m);
+    });
   }
 
   struct initialize_audio

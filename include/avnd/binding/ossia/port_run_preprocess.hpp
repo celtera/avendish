@@ -140,6 +140,11 @@ struct process_before_run
     // FIXME
   }
 
+  template<typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::texture_inlet& port, avnd::num<Idx>) const noexcept
+  {
+  }
+
   template<avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::midi_inlet& port, avnd::num<Idx>) const noexcept
   {
@@ -179,6 +184,16 @@ struct process_before_run
 
   template<typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::midi_outlet& port, avnd::num<Idx>) const noexcept
+  {
+  }
+
+  template<typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::texture_outlet& port, avnd::num<Idx>) const noexcept
+  {
+  }
+
+  template<avnd::callback Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>) const noexcept
   {
   }
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/common/struct_reflection.hpp>
+#include <avnd/helpers/midi.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/input_introspection.hpp>
 #include <avnd/wrappers/metadatas.hpp>
@@ -26,6 +27,11 @@ struct process_after_run
 
   template<typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::midi_inlet& port, avnd::num<Idx>) const noexcept
+  {
+  }
+
+  template<typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::texture_inlet& port, avnd::num<Idx>) const noexcept
   {
   }
 
@@ -88,10 +94,10 @@ struct process_after_run
     for(int i = 0; i < N; i++)
     {
       auto& m = ctrl.midi_messages[i];
-      port.data.messages.push_back({
-                            .bytes = m.bytes
-                          , .timestamp = m.timestamp
-                          });
+      libremidi::message ms;
+      ms.bytes.assign(m.bytes.begin(), m.bytes.end());
+      ms.timestamp = m.timestamp;
+      port.data.messages.push_back(std::move(ms));
     }
   }
 
@@ -102,11 +108,21 @@ struct process_after_run
     port.data.messages.reserve(ctrl.midi_messages.size());
     for(auto& m : ctrl.midi_messages)
     {
-      port.data.messages.push_back({
-                            .bytes = m.bytes
-                          , .timestamp = m.timestamp
-      });
+      libremidi::message ms;
+      ms.bytes.assign(m.bytes.begin(), m.bytes.end());
+      ms.timestamp = m.timestamp;
+      port.data.messages.push_back(std::move(ms));
     }
+  }
+
+  template<typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::texture_outlet& port, avnd::num<Idx>) const noexcept
+  {
+  }
+
+  template<avnd::callback Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>) const noexcept
+  {
   }
 };
 

@@ -35,7 +35,7 @@ struct PerBusAsPortsFixed
 {
   $(name, "Per-bus processing (fixed ports, helpers)")
   $(c_name, "avnd_helpers_per_bus_as_args")
-  $(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
+  $(uuid, "0dd7b1df-7c84-49e9-8427-0532a87bccbe")
 
   struct
   {

@@ -6,6 +6,7 @@
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/processor.hpp>
+#include <avnd/wrappers/messages_introspection.hpp>
 
 /**
  * This file allows to adapt hosts where the audio inputs are bus-based
@@ -44,6 +45,7 @@ consteval int total_output_count()
     return avnd::outputs_type<T>::size;
 }
 
+// !! Important, keep this in sync with safe_node constructor order
 template <typename T>
 void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
 {
@@ -139,6 +141,14 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     } fake_out;
     func_inlets(fake_in);
     func_outlets(fake_out);
+  }
+
+  // Handle message inputs
+  if constexpr (avnd::messages_type<T>::size > 0)
+  {
+    avnd::messages_introspection<T>::for_all([&] (auto m) {
+      func_inlets(m);
+    });
   }
 
   if constexpr (avnd::has_inputs<T>)
