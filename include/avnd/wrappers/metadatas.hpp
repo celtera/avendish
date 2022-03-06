@@ -11,7 +11,7 @@ namespace avnd
 {
 #define define_get_property(PropName, Type, Default)    \
   template <typename T>                                 \
-  consteval Type get_##PropName()                       \
+  constexpr Type get_##PropName()                       \
   {                                                     \
     if constexpr (requires { Type{T::PropName()}; })    \
       return T::PropName();                             \

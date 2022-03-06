@@ -7,11 +7,11 @@ namespace pd
 template <typename T>
 struct inputs
 {
-  void init(T& implementation, t_object& x_obj)
+  void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
     int k = 0;
-    avnd::for_all_inputs(
-        implementation,
+    avnd::input_introspection<T>::for_all(
+        avnd::get_inputs<T>(implementation),
         [&x_obj, &k](auto& ctl)
         {
           if (k++)

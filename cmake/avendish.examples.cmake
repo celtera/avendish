@@ -58,6 +58,13 @@ avnd_make_object(
 )
 
 avnd_make_object(
+  TARGET Random
+  MAIN_FILE examples/Random.hpp
+  MAIN_CLASS examples::Random
+  C_NAME avnd_random
+)
+
+avnd_make_object(
   TARGET Messages
   MAIN_FILE examples/Messages.hpp
   MAIN_CLASS examples::Messages

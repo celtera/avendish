@@ -1,9 +1,8 @@
 #pragma once
 #include <avnd/common/index_sequence.hpp>
-#include <avnd/common/struct_reflection.hpp>
 #include <avnd/wrappers/concepts.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/wrappers/effect_container.hpp>
+#include <avnd/wrappers/port_introspection.hpp>
 #include <boost/pfr.hpp>
 
 namespace avnd
@@ -52,7 +51,8 @@ template <typename T>
 struct input_introspection : fields_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
-auto&& get_inputs(avnd::effect_container<T>& t)
+auto get_inputs(avnd::effect_container<T>& t)
+  -> decltype(t.inputs())
 {
   return t.inputs();
 }

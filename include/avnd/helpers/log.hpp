@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #if __has_include(<fmt/printf.h>)
+#include <fmt/format.h>
 #include <fmt/printf.h>
 #else
 #include <iostream>

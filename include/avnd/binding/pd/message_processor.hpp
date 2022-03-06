@@ -41,7 +41,7 @@ struct message_processor
   t_object x_obj;
 
   // Our actual code
-  T implementation;
+  avnd::effect_container<T> implementation;
 
   // Setup, storage...for the outputs
   [[no_unique_address]] inputs<T> input_setup;
@@ -59,7 +59,7 @@ struct message_processor
     /// Pass arguments
     if constexpr (avnd::can_initialize<T>)
     {
-      init_setup.process(implementation, argc, argv);
+      init_setup.process(implementation.effect, argc, argv);
     }
 
     /// Create ports ///
@@ -72,7 +72,7 @@ struct message_processor
     /// Initialize controls
     if constexpr(avnd::has_inputs<T>)
     {
-      avnd::init_controls(implementation.inputs);
+      avnd::init_controls(implementation.inputs());
     }
   }
 
@@ -87,7 +87,7 @@ struct message_processor
         case A_FLOAT:
         {
           // This is the float that is supposed to go inside the first inlet if any ?
-          auto& first_inlet = boost::pfr::get<0>(implementation.inputs);
+          auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
           if constexpr (requires { first_inlet.value = 0.f; })
           {
             first_inlet.value = argv[0].a_w.w_float;
@@ -97,7 +97,7 @@ struct message_processor
 
         case A_SYMBOL:
         {
-          auto& first_inlet = boost::pfr::get<0>(implementation.inputs);
+          auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
           if constexpr (requires { first_inlet.value = "string"; })
           {
             first_inlet.value = argv[0].a_w.w_symbol->s_name;

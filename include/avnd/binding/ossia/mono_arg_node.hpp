@@ -1,6 +1,6 @@
 #pragma once
 #include <avnd/binding/ossia/node.hpp>
-
+/*
 namespace oscr
 {
 template <typename T>
@@ -30,7 +30,7 @@ struct arg_mono_audio_ports
 };
 
 template <typename T>
-class safe_node_mono_arg_base : public safe_node_base<T>
+class safe_node_mono_arg_base : public safe_node_base<T, arg_mono_audio_ports<T>>
 {
 public:
   explicit safe_node_mono_arg_base(ossia::exec_state_facade st) noexcept
@@ -118,4 +118,4 @@ public:
     this->finish_run();
   }
 };
-}
+}*/

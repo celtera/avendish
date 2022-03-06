@@ -11,9 +11,9 @@ namespace examples
  */
 struct Lowpass
 {
-  static consteval auto name() { return "Lowpass"; }
-  static consteval auto c_name() { return "avnd_lowpass"; }
-  static consteval auto uuid()
+  static constexpr auto name() { return "Lowpass"; }
+  static constexpr auto c_name() { return "avnd_lowpass"; }
+  static constexpr auto uuid()
   {
     return "64475459-0116-4f9d-8d5a-b8f054b00fa5";
   }
@@ -30,14 +30,14 @@ struct Lowpass
      */
     struct
     {
-      static consteval auto name() { return "Input"; }
+      static constexpr auto name() { return "Input"; }
       const double** samples;
       int channels;
     } audio;
 
     struct
     {
-      static consteval auto name() { return "Weight"; }
+      static constexpr auto name() { return "Weight"; }
 
       struct range
       {
@@ -54,7 +54,7 @@ struct Lowpass
   {
     struct
     {
-      static consteval auto name() { return "Output"; }
+      static constexpr auto name() { return "Output"; }
       double** samples;
       int channels;
     } audio;
