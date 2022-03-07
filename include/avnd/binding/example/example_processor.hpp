@@ -143,6 +143,7 @@ class example_processor
       /// Mostly useful for programming-language-ish things, Pd, Max, etc.
       if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
       {
+#if !defined(_MSC_VER)
         auto callbacks_initializer =
             [this] <typename Refl, template<typename...> typename L, typename... Args, std::size_t Idx>
             (std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>) {
@@ -163,6 +164,7 @@ class example_processor
             return [this] (Args...) { return return_type{}; };
         };
         this->callbacks.wrap_callbacks(effect, callbacks_initializer);
+#endif
       }
     }
 

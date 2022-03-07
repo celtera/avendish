@@ -89,6 +89,8 @@ struct callback_storage
             // By unrolling the (known) arguments through a first level of lambda,
             // we get "proper" types as arguments to the lambda function which allows
             // us to make it work with unary operator+ which transforms the lambda into a function pointer
+
+#if !defined(_MSC_VER)
             cb.call.function =
               [] <template<typename...> typename L, typename... Args> (L<Args...>) {
                 // this is what actually goes in cb.call.function:
@@ -99,6 +101,7 @@ struct callback_storage
               }(args{}); // < note that the top-level lambda is immediately invoked here !
 
             cb.call.context = &buf;
+#endif
         };
 
         avnd::view_callback_introspection<outputs_t>::for_all_n2(
