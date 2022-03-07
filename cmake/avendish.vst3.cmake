@@ -13,6 +13,11 @@ if(WIN32)
   file(MAKE_DIRECTORY "${SMTG_PLUGIN_TARGET_PATH}")
 endif()
 
+# https://forums.steinberg.net/t/pluginterfaces-lib-compilation-error-win-10-vs-2022/768976/3
+if(MSVC)
+  set(SMTG_USE_STDATOMIC_H OFF)
+endif()
+
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0)
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0 CACHE INTERNAL "")
 
