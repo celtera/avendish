@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-
 #include <string_view>
 #include <type_traits>
 
@@ -239,12 +238,18 @@ consteval auto get_range()
     return T::range;
   else
   {
-    using value_type = decltype(T::value);
+    using value_type = std::decay_t<decltype(T::value)>;
     struct dummy_range
     {
-      value_type min = 0., max = 1., init = 0.5;
+      value_type min;
+      value_type max;
+      value_type init;
     };
-    return dummy_range{};
+    dummy_range r;
+    r.min = 0.;
+    r.max = 1.;
+    r.init = 0.5;
+    return r;
   }
 }
 
