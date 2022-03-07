@@ -197,6 +197,10 @@ struct audio_channel_manager<T>
   explicit audio_channel_manager(avnd::effect_container<T>& eff)
   {
     auto& processor = eff.effect;
+    this->input_channels.fill(0);
+    this->output_channels.fill(0);
+    this->actual_runtime_inputs = 0;
+    this->actual_runtime_outputs = 0;
     // Initialize the local array with the default values
     int i = 0;
     auto& inputs = avnd::get_inputs(processor);
@@ -210,7 +214,9 @@ struct audio_channel_manager<T>
           }
           else
           {
-            this->input_channels[i] = p.channels;
+            // Variable number of channels, may not be initialized so we init it to 0
+            p.channels = 0;
+            this->input_channels[i] = 0;
           }
           this->actual_runtime_inputs += this->input_channels[i];
           i++;
@@ -228,7 +234,8 @@ struct audio_channel_manager<T>
           }
           else
           {
-            this->output_channels[i] = p.channels;
+            p.channels = 0;
+            this->output_channels[i] = 0;
           }
           this->actual_runtime_outputs += this->output_channels[i];
           i++;
