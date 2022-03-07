@@ -39,7 +39,7 @@ struct message_processor
   t_object x_obj;
 
   // Our actual code
-  T implementation;
+  avnd::effect_container<T> implementation;
 
   // Setup, storage...for the outputs
   [[no_unique_address]] inputs<T> input_setup;
@@ -57,7 +57,7 @@ struct message_processor
     /// Pass arguments
     if constexpr (avnd::can_initialize<T>)
     {
-      init_setup.process(implementation, argc, argv);
+      init_setup.process(implementation.effect, argc, argv);
     }
 
     /// Create ports ///
@@ -69,7 +69,7 @@ struct message_processor
 
     /// Initialize controls
     if constexpr(avnd::has_inputs<T>) {
-      avnd::init_controls(implementation.inputs);
+      avnd::init_controls(avnd::get_inputs<T>(implementation));
     }
   }
 
@@ -78,7 +78,7 @@ struct message_processor
   void process_inlet_control(int inlet, t_atom_long val)
   {
     if constexpr(avnd::has_inputs<T>) {
-      avnd::input_introspection<T>::for_nth(implementation.inputs, inlet, [val] (auto& field) {
+      avnd::input_introspection<T>::for_nth(avnd::get_inputs<T>(implementation), inlet, [val] (auto& field) {
           // TODO dangerous if const char*
           if constexpr (requires { field.value = 0; })
           {
@@ -91,7 +91,7 @@ struct message_processor
   void process_inlet_control(int inlet, t_atom_float val)
   {
     if constexpr(avnd::has_inputs<T>) {
-      avnd::input_introspection<T>::for_nth(implementation.inputs, inlet, [val] (auto& field) {
+      avnd::input_introspection<T>::for_nth(avnd::get_inputs<T>(implementation), inlet, [val] (auto& field) {
           // TODO dangerous if const char*
           if constexpr (requires { field.value = 0; })
           {
@@ -104,7 +104,7 @@ struct message_processor
   void process_inlet_control(int inlet, struct symbol* val)
   {
     if constexpr(avnd::has_inputs<T>) {
-      avnd::input_introspection<T>::for_nth(implementation.inputs, inlet, [val] (auto& field) {
+      avnd::input_introspection<T>::for_nth(avnd::get_inputs<T>(implementation), inlet, [val] (auto& field) {
           // TODO dangerous if const char*
           if constexpr (requires { field.value = "str"; })
           {

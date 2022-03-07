@@ -97,11 +97,11 @@ struct outputs
   {
   }
 
-  void commit(T& implementation)
+  void commit(avnd::effect_container<T>& implementation)
   {
     int k = 0;
-    avnd::for_all_outputs(
-        implementation,
+    avnd::output_introspection<T>::for_all(
+        avnd::get_outputs<T>(implementation),
         [this, &k]<typename C>(C& ctl)
         {
           if constexpr (requires(float v) { v = ctl.value; })
@@ -112,11 +112,11 @@ struct outputs
         });
   }
 
-  void init(T& implementation, t_object& x_obj)
+  void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
     int out_k = 0;
-    avnd::for_all_outputs(
-        implementation,
+    avnd::output_introspection<T>::for_all(
+        avnd::get_outputs<T>(implementation),
         [this, &out_k, &x_obj](auto& ctl)
         {
           auto ptr = outlet_new(&x_obj, symbol_for_port(ctl)->s_name);

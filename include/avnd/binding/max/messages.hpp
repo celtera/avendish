@@ -159,7 +159,7 @@ struct messages
               return;
             if (symname == M::name())
             {
-              ok = process_message(implementation, field, symname, argc, argv);
+              ok = process_message(implementation.effect, field, symname, argc, argv);
             }
           });
       return ok;
