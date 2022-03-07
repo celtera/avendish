@@ -11,7 +11,7 @@ int main()
 
   {
     using test_type = float;
-    test_type buffer[512];
+    test_type buffer[512] = { 0 };
     test_type* inputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
     test_type* outputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
 
@@ -25,7 +25,7 @@ int main()
   }
   {
     using test_type = double;
-    test_type buffer[512];
+    test_type buffer[512] = { 0 };
     test_type* inputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
     test_type* outputs[16]{buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, buffer, };
 
