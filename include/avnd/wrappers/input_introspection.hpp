@@ -13,6 +13,10 @@ struct parameter_input_introspection
     : parameter_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
+struct control_input_introspection
+    : control_introspection<typename inputs_type<T>::type> {};
+
+template <typename T>
 struct linear_timed_parameter_input_introspection
     : linear_timed_parameter_introspection<typename inputs_type<T>::type> {};
 

@@ -26,6 +26,11 @@ template <typename T>
 struct parameter_introspection : predicate_introspection<T, is_parameter_t> {};
 
 template <typename Field>
+using is_control_t = boost::mp11::mp_bool<control<Field>>;
+template <typename T>
+struct control_introspection : predicate_introspection<T, is_control_t> {};
+
+template <typename Field>
 using is_linear_timed_parameter_t = boost::mp11::mp_bool<linear_sample_accurate_parameter<Field>>;
 template <typename T>
 using linear_timed_parameter_introspection = predicate_introspection<T, is_linear_timed_parameter_t>;

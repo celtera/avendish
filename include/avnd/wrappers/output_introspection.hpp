@@ -15,6 +15,10 @@ struct parameter_output_introspection
     : parameter_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
+struct control_output_introspection
+    : control_introspection<typename outputs_type<T>::type> {};
+
+template <typename T>
 struct linear_timed_parameter_output_introspection
     : linear_timed_parameter_introspection<typename outputs_type<T>::type> {};
 

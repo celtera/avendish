@@ -26,7 +26,7 @@
 #include <ossia/dataflow/node_process.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/detail/for_each_in_tuple.hpp>
-
+#include <boost/smart_ptr/atomic_shared_ptr.hpp>
 namespace oscr
 {
 /*
@@ -148,6 +148,46 @@ struct builtin_message_value_ports<T>
   }
 };
 
+template<typename Field>
+using controls_type = std::decay_t<decltype(Field::value)>;
+
+template<typename T>
+using atomic_shared_ptr = boost::atomic_shared_ptr<T>;
+
+template<typename T>
+struct controls_mirror
+{
+  static constexpr int i_size = avnd::control_input_introspection<T>::size;
+  static constexpr int o_size = avnd::control_output_introspection<T>::size;
+  using i_tuple = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+  using o_tuple = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+
+  controls_mirror()
+  {
+    inputs.load(new i_tuple);
+    outputs.load(new o_tuple);
+  }
+
+  [[no_unique_address]]
+  atomic_shared_ptr<i_tuple> inputs;
+  [[no_unique_address]]
+  atomic_shared_ptr<o_tuple> outputs;
+
+  std::bitset<i_size> inputs_bits;
+  std::bitset<o_size> outputs_bits;
+};
+
+template<typename T>
+struct controls_queue
+{
+  static constexpr int i_size = avnd::control_input_introspection<T>::size;
+  static constexpr int o_size = avnd::control_output_introspection<T>::size;
+  using i_tuple = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+  using o_tuple = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+
+  moodycamel::ConcurrentQueue<i_tuple> ins_queue;
+  moodycamel::ConcurrentQueue<o_tuple> outs_queue;
+};
 template <typename T>
 class safe_node_base_base
         : public ossia::nonowning_graph_node
@@ -192,8 +232,17 @@ public:
   [[no_unique_address]]
   avnd::callback_storage<T> callbacks;
 
+  // [[no_unique_address]]
+  // controls_mirror<T> feedback;
+
+  [[no_unique_address]]
+  controls_queue<T> control;
+
+  using control_input_values_type = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+  using control_output_values_type = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
 
 };
+
 
 template <typename T, typename AudioCount>
 class safe_node_base
@@ -354,6 +403,21 @@ public:
 
     this->audio_configuration_changed();
   }
+
+
+  // Handling controls
+  template<typename Val, std::size_t N>
+  void control_updated_from_ui(Val&& new_value)
+  {
+    auto& field = avnd::control_input_introspection<T>::template get<N>(
+                avnd::get_inputs<T>(this->impl)
+    );
+
+    std::swap(field.value, new_value);
+  }
+
+
+
 
   void audio_configuration_changed()
   {
