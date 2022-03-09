@@ -49,7 +49,7 @@ struct Controls
   {
     if (inputs.f == inputs.f.Foo)
     {
-      // outputs.display = inputs.a + inputs.b;
+      outputs.display = inputs.a + inputs.b;
     }
   }
 };
