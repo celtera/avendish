@@ -56,10 +56,13 @@ struct range_t
   T min, max, init;
 };
 using range = range_t<long double>;
+using irange = range_t<int>;
 template <typename T>
 inline constexpr auto default_range = range{0., 1., 0.5};
 template <>
 inline constexpr auto default_range<int> = range{0., 127., 64.};
+template <typename T>
+inline constexpr auto default_irange = irange{0, 127, 64};
 
 template <typename T>
 struct init_range_t
@@ -138,7 +141,7 @@ using spinbox_i32 = avnd::spinbox_t<int, lit, setup>;
 
 /// Knob ///
 
-template <typename T, static_string lit, range setup>
+template <typename T, static_string lit, auto setup>
 struct knob_t
 {
   enum widget
@@ -162,9 +165,9 @@ struct knob_t
   }
 };
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using knob_f32 = avnd::knob_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, irange setup = default_irange<int>>
 using knob_i32 = avnd::knob_t<int, lit, setup>;
 
 /// Toggle ///

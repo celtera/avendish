@@ -117,14 +117,14 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     MAIN_CLASS examples::helpers::Logger
     C_NAME avnd_helpers_logger
     )
-
-  avnd_make_all(
-    TARGET HelpersControls
-    MAIN_FILE examples/Helpers/Controls.hpp
-    MAIN_CLASS examples::helpers::Controls
-    C_NAME avnd_helpers_controls
-    )
 endif()
+
+avnd_make_all(
+  TARGET HelpersControls
+  MAIN_FILE examples/Helpers/Controls.hpp
+  MAIN_CLASS examples::helpers::Controls
+  C_NAME avnd_helpers_controls
+  )
 
 avnd_make_all(
   TARGET HelpersMessages

@@ -29,7 +29,7 @@ struct Controls
   struct
   {
     avnd::hslider_f32<"A"> a;
-    avnd::knob_i32<"B", avnd::range{.min = -1000, .max = 1000, .init = 100}> b;
+    avnd::knob_i32<"B", avnd::irange{.min = -1000, .max = 1000, .init = 100}> b;
     avnd::toggle<"C", avnd::toggle_setup{.init = true}> c;
     avnd::lineedit<"D", "foo"> d;
     avnd::maintained_button<"E"> e;
@@ -49,7 +49,7 @@ struct Controls
   {
     if (inputs.f == inputs.f.Foo)
     {
-      outputs.display = inputs.a + inputs.b;
+      // outputs.display = inputs.a + inputs.b;
     }
   }
 };
