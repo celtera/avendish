@@ -1,5 +1,7 @@
 #pragma once
 #include <avnd/common/struct_reflection.hpp>
+#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/wrappers/output_introspection.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
@@ -82,13 +84,21 @@ struct process_before_run
 {
   Exec_T& self;
 
-  template<avnd::parameter Field>
-  void init_value(Field& ctrl, ossia::value_inlet& port) const noexcept
+  template<avnd::parameter Field, std::size_t Idx>
+  void init_value(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
   {
     if(!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
       from_ossia_value(ctrl, last, ctrl.value);
+
+      // Get the index of the control in [0; N[
+      using type = typename Exec_T::processor_type;
+      using controls = avnd::control_input_introspection<type>;
+      constexpr int control_index = avnd::index_of_element(Idx, typename controls::indices_n{});
+
+      // Mark the control as changed
+      self.control.inputs_set.set(control_index);
     }
   }
 
@@ -96,14 +106,14 @@ struct process_before_run
   requires (!avnd::sample_accurate_parameter<Field>)
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
   {
-    init_value(ctrl, port);
+    init_value(ctrl, port, avnd::num<Idx>{});
   }
 
   template<avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
   {
     // FIXME we need to know about the buffer size !
-    init_value(ctrl, port);
+    init_value(ctrl, port, avnd::num<Idx>{});
 
     for(auto& [val, ts] : port->get_data()) {
       auto& v = ctrl.values[ts].emplace();
@@ -114,7 +124,7 @@ struct process_before_run
   template<avnd::span_sample_accurate_parameter Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
   {
-    init_value(ctrl, port);
+    init_value(ctrl, port, avnd::num<Idx>{});
     for(auto& [val, ts] : port->get_data()) {
       // FIXME
     }
@@ -123,7 +133,7 @@ struct process_before_run
   template<avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
   {
-    init_value(ctrl, port);
+    init_value(ctrl, port, avnd::num<Idx>{});
     for(auto& [val, ts] : port->get_data()) {
       from_ossia_value(ctrl, val, ctrl.values[ts]);
     }

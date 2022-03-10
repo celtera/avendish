@@ -187,6 +187,9 @@ struct controls_queue
 
   moodycamel::ConcurrentQueue<i_tuple> ins_queue;
   moodycamel::ConcurrentQueue<o_tuple> outs_queue;
+
+  std::bitset<i_size> inputs_set;
+  std::bitset<o_size> outputs_set;
 };
 template <typename T>
 class safe_node_base_base
@@ -320,6 +323,17 @@ public:
   template<typename Functor>
   void process_all_ports(Functor f)
   {
+    // Clear the current state of changed controls
+      /*
+      moodycamel::ConcurrentQueue<i_tuple> ins_queue;
+      moodycamel::ConcurrentQueue<o_tuple> outs_queue;
+
+      i_tuple last_inputs;
+      i_tuple last_outputs;
+
+      std::bitset<i_size> inputs_set;
+      std::bitset<o_size> outputs_set;
+      */
     if constexpr (avnd::inputs_type<T>::size > 0)
       process_inputs(f, this->impl.inputs());
     if constexpr (avnd::outputs_type<T>::size > 0)
@@ -409,11 +423,15 @@ public:
   template<typename Val, std::size_t N>
   void control_updated_from_ui(Val&& new_value)
   {
+    // Replace the value in the field
     auto& field = avnd::control_input_introspection<T>::template get<N>(
                 avnd::get_inputs<T>(this->impl)
     );
 
     std::swap(field.value, new_value);
+
+    // Mark the control as changed
+    this->control.inputs_set.set(N);
   }
 
 
@@ -498,10 +516,8 @@ public:
     process_all_ports(process_before_run<safe_node_base>{*this});
 
     // Process messages
-
     if constexpr (avnd::messages_type<T>::size > 0)
       process_messages();
-
     return true;
   }
 
@@ -581,6 +597,19 @@ public:
     });
   }
 
+  auto make_controls_in_tuple()
+  {
+    return avnd::control_input_introspection<T>::filter_tuple(
+                avnd::get_inputs<T>(this->impl),
+                [] (auto& field) { return field.value; });
+  }
+  auto make_controls_out_tuple()
+  {
+    return avnd::control_output_introspection<T>::filter_tuple(
+                avnd::get_outputs<T>(this->impl),
+                [] (auto& field) { return field.value; });
+  }
+
   void finish_run()
   {
      // Copy output events
@@ -591,6 +620,27 @@ public:
 
      // Clean up sample-accurate control input ports
      this->control_buffers.clear_inputs(this->impl);
+
+     // Clear control bitsets for UI
+     if constexpr(avnd::control_input_introspection<T>::size > 0)
+     {
+       if(this->control.inputs_set.any())
+       {
+         // Notify the UI
+         this->control.ins_queue.enqueue(make_controls_in_tuple());
+         this->control.inputs_set.reset();
+       }
+     }
+
+     if constexpr(avnd::control_output_introspection<T>::size > 0)
+     {
+       if(this->control.outputs_set.any())
+       {
+         // Notify the UI
+         this->control.outs_queue.enqueue(make_controls_out_tuple());
+         this->control.outputs_set.reset();
+       }
+     }
   }
 
   std::string label() const noexcept override

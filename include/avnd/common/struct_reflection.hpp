@@ -14,11 +14,14 @@ namespace avnd
 template<typename T, T... Idx>
 consteval int index_of_element(int N, std::integer_sequence<T, Idx...>) noexcept
 {
-  int k = 0;
-  for(int i : {Idx...}) {
-    if(i == N)
-      return k;
-    k++;
+  if constexpr(sizeof...(Idx) > 0)
+  {
+    int k = 0;
+    for(int i : {Idx...}) {
+      if(i == N)
+        return k;
+      k++;
+    }
   }
   return -1;
 }
@@ -195,6 +198,30 @@ struct predicate_introspection
     return boost::pfr::get<index_map[N]>(unfiltered_fields);
   }
 
+  // Gives std::tuple<field1&, field2&, etc...>
+  static constexpr auto tie(type& unfiltered_fields)
+  {
+    return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+      return std::tie(boost::pfr::get<Index>(unfiltered_fields)...);
+    }(indices_n{});
+  }
+
+  // Gives std::tuple<field1, field2, etc...>
+  static constexpr auto make_tuple(type& unfiltered_fields)
+  {
+    return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+      return std::make_tuple(boost::pfr::get<Index>(unfiltered_fields)...);
+    }(indices_n{});
+  }
+
+// Gives std::tuple<f(field1), f(field2), etc...>
+  static constexpr auto filter_tuple(type& unfiltered_fields, auto filter)
+  {
+    return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+      return std::make_tuple(filter(boost::pfr::get<Index>(unfiltered_fields))...);
+    }(indices_n{});
+  }
+
   static constexpr void for_all(type& unfiltered_fields, auto&& func) noexcept
   {
     if constexpr (size > 0)
@@ -361,6 +388,9 @@ struct fields_introspection<avnd::dummy>
   static constexpr auto index_map = std::array<int, 0>{};
   static constexpr auto size = 0;
 
+  static constexpr std::tuple<> tie(auto&& unfiltered_fields) { return {}; }
+  static constexpr std::tuple<> make_tuple(auto&& unfiltered_fields) { return {}; }
+
   static constexpr void for_all(auto&& func) noexcept { }
   static constexpr void for_all_n(auto&& func) noexcept { }
   static constexpr void for_nth(int n, auto&& func) noexcept { }
@@ -385,6 +415,10 @@ struct predicate_introspection<avnd::dummy, P>
   static constexpr void get(avnd::dummy unfiltered_fields) noexcept
   {
   }
+
+  static constexpr std::tuple<> tie(auto&& unfiltered_fields) { return {}; }
+  static constexpr std::tuple<> make_tuple(auto&& unfiltered_fields) { return {}; }
+
   static constexpr void for_all(auto&& func) noexcept { }
   static constexpr void for_all_n(auto&& func) noexcept { }
   static constexpr void for_nth_raw(int n, auto&& func) noexcept { }
