@@ -210,8 +210,8 @@ set(OSCR_EXAMPLES
 )
 foreach(theTarget ${OSCR_EXAMPLES})
   avnd_make_all(
-    TARGET Oscr_${theTarget}
-    MAIN_FILE examples/Oscr/${theTarget}.hpp
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
     MAIN_CLASS examples::${theTarget}
     C_NAME oscr_${theTarget}
   )
@@ -226,8 +226,8 @@ set(OSSIA_EXAMPLES
 )
 foreach(theTarget ${OSSIA_EXAMPLES})
   avnd_make_ossia(
-    TARGET Oscr_${theTarget}
-    MAIN_FILE examples/Oscr/${theTarget}.hpp
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
     MAIN_CLASS examples::${theTarget}
     C_NAME oscr_${theTarget}
   )
