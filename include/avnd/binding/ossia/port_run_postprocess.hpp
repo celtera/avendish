@@ -86,6 +86,14 @@ struct process_after_run
 
 
   template<avnd::parameter Field, std::size_t Idx>
+  requires (!avnd::control<Field>)
+  void write_value(Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts, avnd::num<Idx>) const noexcept
+  {
+    port->write_value(ctrl.value, ts);
+  }
+
+  template<avnd::parameter Field, std::size_t Idx>
+  requires (avnd::control<Field>)
   void write_value(Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts, avnd::num<Idx>) const noexcept
   {
     port->write_value(ctrl.value, ts);

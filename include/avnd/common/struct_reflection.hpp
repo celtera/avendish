@@ -23,7 +23,7 @@ consteval int index_of_element(int N, std::integer_sequence<T, Idx...>) noexcept
       k++;
     }
   }
-  return -1;
+  throw;
 }
 
 template <typename T>

@@ -85,6 +85,18 @@ struct process_before_run
   Exec_T& self;
 
   template<avnd::parameter Field, std::size_t Idx>
+  requires (!avnd::control<Field>)
+  void init_value(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
+  {
+    if(!port.data.get_data().empty())
+    {
+      auto& last = port.data.get_data().back().value;
+      from_ossia_value(ctrl, last, ctrl.value);
+    }
+  }
+
+  template<avnd::parameter Field, std::size_t Idx>
+  requires (avnd::control<Field>)
   void init_value(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
   {
     if(!port.data.get_data().empty())
