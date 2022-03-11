@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
+#include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/helpers/audio.hpp>
 #include <avnd/helpers/controls.hpp>
@@ -36,14 +37,11 @@ struct TextureGeneratorExample
 
   // By know you know the drill: define inputs, outputs...
   struct {
-    struct {
-      // FIXME meta_control(Control::LogFloatSlider, "Bamboozling", 0.0001f, 0.1f, 0.f);
-
-      float value = 0.f;
-    } bamboozle;
+    avnd::hslider_f32<"Bamboozling", avnd::range{0.0001, 0.1, 0.01}> bamboozle;
   } inputs;
 
   struct {
+    // See TextureFilterExample for helper types which abstract the allocation side of things
     struct {
       $(name, "Out");
 
@@ -53,7 +51,7 @@ struct TextureGeneratorExample
   } outputs;
 
   // Some place in RAM to store our pixels
-  boost::container::vector<unsigned char> bytes;
+  avnd::uninitialized_bytes bytes;
 
   TextureGeneratorExample()
   {

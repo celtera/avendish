@@ -36,6 +36,14 @@ struct texture_input_introspection
     : texture_port_introspection<typename inputs_type<T>::type> {};
 
 template <typename T>
+struct cpu_texture_input_introspection
+        : cpu_texture_port_introspection<typename inputs_type<T>::type> {};
+
+template <typename T>
+struct gpu_texture_input_introspection
+        : gpu_texture_port_introspection<typename inputs_type<T>::type> {};
+
+template <typename T>
 struct raw_container_midi_input_introspection
     : raw_container_midi_port_introspection<typename inputs_type<T>::type> {};
 

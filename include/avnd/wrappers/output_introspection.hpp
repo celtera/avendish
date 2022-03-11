@@ -47,6 +47,14 @@ struct texture_output_introspection
     : texture_port_introspection<typename outputs_type<T>::type> {};
 
 template <typename T>
+struct cpu_texture_output_introspection
+    : cpu_texture_port_introspection<typename outputs_type<T>::type> {};
+
+template <typename T>
+struct gpu_texture_output_introspection
+        : gpu_texture_port_introspection<typename outputs_type<T>::type> {};
+
+template <typename T>
 struct audio_bus_output_introspection
     : audio_bus_introspection<typename outputs_type<T>::type> {};
 

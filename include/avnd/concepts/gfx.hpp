@@ -13,12 +13,13 @@ concept cpu_texture = requires(T t) {
                         t.bytes;
                         t.width;
                         t.height;
+                        t.changed;
                         typename T::format;
                       };
 
 template <typename T>
 concept cpu_texture_port
-    = requires(T t) { t.texture; } && cpu_texture<decltype(T{}.texture)>;
+    = requires(T t) { t.texture; } && cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
 
 template <typename T>
 concept gpu_texture = requires(T t) {
@@ -30,7 +31,7 @@ concept gpu_texture = requires(T t) {
 
 template <typename T>
 concept gpu_texture_port
-    = requires(T t) { t.texture; } && gpu_texture<decltype(T{}.texture)>;
+    = requires(T t) { t.texture; } && gpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
 
 template <typename T>
 concept texture_port = cpu_texture_port<T> || gpu_texture_port<T>;
