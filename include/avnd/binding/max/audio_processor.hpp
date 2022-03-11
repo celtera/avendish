@@ -16,6 +16,7 @@
 
 #include <span>
 #include <string>
+#include <cstring>
 
 /**
  * This Pd processor is used when there is dsp processing involved.
