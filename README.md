@@ -54,8 +54,10 @@ Committee if you hear us :)
 - (optional) pybind11.
 - (optional) Max SDK to make Max externals.
 - (optional) PureData headers to make Pd externals.
-- (optional) Qt & [Verdigris](https://github.com/woboq/verdigris)  to make QML UIs. Verdigris is a pure-C++ alternative to moc.
-- (optional) [libossia](https://github.com/ossia/libossia) to make an OSCQuery API.
+- (optional) Steinberg© VST3 SDK to make VST3 plug-ins.
+- (optional) [Clap](https://github.com/free-audio/clap) SDK to make Clap plug-ins.
+- (optional) Qt & [Verdigris](https://github.com/woboq/verdigris) to make QML UIs. Verdigris is a pure-C++ alternative to moc.
+- (optional) [libossia](https://github.com/ossia/libossia) to build ossia processors.
 
 ## Examples
 
@@ -189,7 +191,7 @@ If a mono processor is written, the library will wrap it automatically in the ca
    Ultimately, this should be something configurable by the user: a Python binding should not have to pay the cost of atomic access, but an audio plug-in
    with an UI must be thread-safe.
 
-# Past travel
+# Past travels
 
  - A first tentative in [ossia score](https://github.com/ossia/score/tree/master/src/plugins/score-plugin-fx/Fx) based on std::tuple and automatic deduction of function arguments.
  - [vintage](https://github.com/jcelerier/vintage) explored Boost.PFR for creating audio plug-ins
@@ -198,10 +200,9 @@ If a mono processor is written, the library will wrap it automatically in the ca
 
 # Future directions
 
- - Continue porting the concepts developed in https://github.com/jcelerier/score-simple-api-2/ ; in particular for CPU-based image processing. Extend to e.g. Krita plug-ins.
+ - Support `std::optional<T>` as a way to indicate message-like output.
  - Implement concepts for GPU-based processing.
  - Have a basic UI story.
- - Improve the handling of callbacks.
  - WebAudio backend.
  - WASM component backend: https://radu-matei.com/blog/intro-wasm-components/
  - Port many effects :-)
@@ -223,6 +224,11 @@ If a mono processor is written, the library will wrap it automatically in the ca
    * https://github.com/porres/pd-else
    * https://github.com/d3cod3/ofxVisualProgramming
    * etc...
+
+# Future directions (done!)
+
+ - Continue porting the concepts developed in https://github.com/jcelerier/score-simple-api-2/ ; in particular for CPU-based image processing. Extend to e.g. Krita plug-ins.
+ - Improve the handling of callbacks.
 
 
 # Licensing
