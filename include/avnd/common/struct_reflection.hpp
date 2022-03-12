@@ -4,6 +4,7 @@
 
 #include <avnd/common/coroutines.hpp>
 #include <avnd/common/dummy.hpp>
+#include <avnd/common/errors.hpp>
 #include <avnd/common/index_sequence.hpp>
 #include <boost/mp11.hpp>
 #include <boost/pfr.hpp>

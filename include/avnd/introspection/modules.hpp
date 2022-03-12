@@ -2,10 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/modules.hpp>
-
 #include <avnd/introspection/port.hpp>
+#include <avnd/common/struct_reflection.hpp>
+#include <avnd/wrappers/effect_container.hpp>
+
 
 namespace avnd
 {

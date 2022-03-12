@@ -1,4 +1,7 @@
 #pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/dummy.hpp>
 #include <avnd/common/export.hpp>
@@ -44,7 +47,6 @@
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/modules.hpp>
 #include <avnd/concepts/all.hpp>
-#include <avnd/wrappers/controls_adapter.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <avnd/wrappers/process_execution.hpp>

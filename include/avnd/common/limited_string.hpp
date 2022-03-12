@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <string>
+#include <algorithm>
 
 namespace avnd
 {
@@ -20,13 +21,8 @@ struct limited_string : std::string
 
   void copy_to(void* dest) const noexcept
   {
-    const auto src = data();
-    const int n = size() + 1;
-    const auto dst = reinterpret_cast<char*>(dest);
-    for (int i = 0; i < n; i++)
-    {
-      dst[i] = src[i];
-    }
+    // size()+1 because of null terminator, guaranteed in std::string
+    std::copy_n(data(), size() + 1, reinterpret_cast<char*>(dest));
   }
 };
 

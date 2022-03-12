@@ -47,7 +47,7 @@ struct outputs
     }
     else
     {
-      STATIC_TODO(call_type);
+      AVND_STATIC_TODO(call_type);
     }
   }
 
@@ -74,7 +74,7 @@ struct outputs
     }
     else
     {
-      STATIC_TODO(F<R(Args...)>);
+      AVND_STATIC_TODO(F<R(Args...)>);
     }
   }
 

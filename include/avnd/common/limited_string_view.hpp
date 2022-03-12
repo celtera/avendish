@@ -5,6 +5,8 @@
 #include <avnd/common/widechar.hpp>
 
 #include <string_view>
+#include <algorithm>
+#include <cassert>
 
 namespace avnd
 {
@@ -19,6 +21,7 @@ struct limited_string_view : std::string_view
   {
     static_assert(M < N, "A name is too long");
   }
+
   constexpr limited_string_view(std::string_view str)
       : std::string_view{str.data(), std::min(str.size(), N)}
   {
@@ -26,19 +29,25 @@ struct limited_string_view : std::string_view
 
   void copy_to(void* dest) const noexcept
   {
-    std::copy_n(data(), size(), reinterpret_cast<char*>(dest));
+    copy_to(reinterpret_cast<char*>(dest));
   }
 
-  void copy_to(char* dest) const noexcept { std::copy_n(data(), size(), dest); }
+  void copy_to(char* dest) const noexcept
+  {
+    std::copy_n(data(), size(), dest);
+    dest[size()] = 0;
+  }
 
   void copy_to(char16_t* dest) const noexcept
   {
     utf8_to_utf16(data(), data() + size(), dest);
+    dest[size()] = 0;
   }
 
   void copy_to(wchar_t* dest) const noexcept
   {
     utf8_to_utf16(data(), data() + size(), dest);
+    dest[size()] = 0;
   }
 };
 

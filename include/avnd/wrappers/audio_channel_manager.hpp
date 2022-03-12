@@ -1,4 +1,7 @@
 #pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/introspection/channels.hpp>

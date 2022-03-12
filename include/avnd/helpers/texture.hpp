@@ -1,4 +1,7 @@
 #pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/polyfill.hpp>
 #include <avnd/helpers/static_string.hpp>

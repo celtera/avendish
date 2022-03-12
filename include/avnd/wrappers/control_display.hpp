@@ -1,4 +1,7 @@
 #pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/widechar.hpp>
 

@@ -44,7 +44,7 @@ struct init_arguments
     else if constexpr (requires { implementation.initialize(implementation, iterator); })
       return implementation.initialize(implementation, iterator);
     else
-      STATIC_TODO(T);
+      AVND_STATIC_TODO(T);
   }
 
   static void

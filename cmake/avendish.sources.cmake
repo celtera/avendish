@@ -27,6 +27,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/introspection/modules.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/introspection/output.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/introspection/port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/widgets.hpp"
 
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/audio_channel_manager.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/avnd.hpp"
@@ -34,7 +35,6 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/configure.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/control_display.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_adapter.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_double.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_fp.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_storage.hpp"
@@ -48,6 +48,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/common/concepts_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/coroutines.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/dummy.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/errors.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/export.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/for_nth.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/function_reflection.hpp"

@@ -79,7 +79,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     else if constexpr (avnd::polyphonic_arg_audio_effect<double, T>)
       process_arg<FP, double>(implementation, in, out, n);
     else
-      STATIC_TODO(FP)
+      AVND_STATIC_TODO(FP)
   }
 };
 

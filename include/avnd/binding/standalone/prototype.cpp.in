@@ -20,7 +20,7 @@ int main(int argc, char** argv)
   using type = decltype(avnd::configure<standalone::config, @AVND_MAIN_CLASS@>())::type;
   avnd::effect_container< type > object;
 
-#if AVND_STANDALONE_OSCQUERY
+#if 0
   // Create an oscquery interface to it.
   standalone::oscquery_mapper< type > oscq{object};
 
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
   app.exec();
 #endif
 
-#if AVND_STANDALONE_OSCQUERY
+#if 0
   oscq.stop();
   t.join();
 #endif

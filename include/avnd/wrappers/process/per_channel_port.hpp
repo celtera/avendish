@@ -149,7 +149,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     else if constexpr (avnd::monophonic_port_audio_effect<double, T>)
       process_port<FP, double>(implementation, in, out, n);
     else
-      STATIC_TODO(FP)
+      AVND_STATIC_TODO(FP)
   }
 };
 

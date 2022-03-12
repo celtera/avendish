@@ -1,4 +1,7 @@
 #pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
 #include <avnd/concepts/callback.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
