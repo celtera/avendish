@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/index_sequence.hpp>
-#include <avnd/wrappers/concepts.hpp>
+#include <avnd/concepts/all.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-#include <avnd/wrappers/port_introspection.hpp>
+#include <avnd/introspection/port.hpp>
 #include <boost/pfr.hpp>
 
 namespace avnd

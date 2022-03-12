@@ -6,7 +6,7 @@
 #include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/introspection/input.hpp>
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 #else

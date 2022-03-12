@@ -1,6 +1,6 @@
 #pragma once
 #include <avnd/wrappers/audio_channel_manager.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/callbacks_adapter.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
@@ -8,8 +8,8 @@
 #include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
-#include <avnd/wrappers/midi_introspection.hpp>
+#include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/midi.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <avnd/wrappers/configure.hpp>
 #include <avnd/helpers/log.hpp>

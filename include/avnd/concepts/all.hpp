@@ -5,6 +5,7 @@
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/callback.hpp>
+#include <avnd/concepts/channels.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/message.hpp>

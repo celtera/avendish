@@ -3,8 +3,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/vintage/vintage.hpp>
-#include <avnd/wrappers/concepts.hpp>
-#include <avnd/wrappers/midi_introspection.hpp>
+#include <avnd/concepts/all.hpp>
+#include <avnd/introspection/midi.hpp>
 
 namespace vintage
 {

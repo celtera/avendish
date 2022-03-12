@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/concepts.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
-#include <avnd/wrappers/port_introspection.hpp>
+#include <avnd/concepts/all.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
+#include <avnd/introspection/port.hpp>
 #include <boost/mp11.hpp>
 
 namespace avnd

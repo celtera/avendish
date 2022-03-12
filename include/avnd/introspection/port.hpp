@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/struct_reflection.hpp>
-#include <avnd/wrappers/concepts.hpp>
+#include <avnd/concepts/all.hpp>
 #include <boost/pfr.hpp>
 
 namespace avnd

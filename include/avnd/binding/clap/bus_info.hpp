@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/clap/helpers.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 #include <clap/all.h>
 
 namespace avnd_clap

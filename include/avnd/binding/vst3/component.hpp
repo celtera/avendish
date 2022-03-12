@@ -7,9 +7,9 @@
 #include <avnd/binding/vst3/helpers.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/midi_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/midi.hpp>
+#include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 
 namespace stv3

@@ -10,7 +10,7 @@
 #include <avnd/binding/vintage/programs.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/common/export.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 

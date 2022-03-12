@@ -3,6 +3,7 @@ add_library(Avendish::Avendish ALIAS Avendish)
 
 target_sources(Avendish
   PUBLIC
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/all.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_port.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_processor.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/callback.hpp"
@@ -19,11 +20,17 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/concepts/processor.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/synth.hpp"
 
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/channels.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/input.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/messages.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/midi.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/modules.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/output.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/introspection/port.hpp"
+
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/audio_channel_manager.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/avnd.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/bus_host_process_adapter.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/channels_introspection.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/concepts.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/configure.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/control_display.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls.hpp"
@@ -32,13 +39,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_fp.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/controls_storage.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/effect_container.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/input_introspection.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/messages_introspection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/metadatas.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/midi_introspection.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/modules_introspection.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/output_introspection.hpp"
-    "${AVND_SOURCE_DIR}/include/avnd/wrappers/port_introspection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/prepare.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_adapter.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_execution.hpp"

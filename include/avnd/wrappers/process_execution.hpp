@@ -1,9 +1,9 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/audio_processor.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 
 #include <concepts>
 #include <cstdint>

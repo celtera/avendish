@@ -5,7 +5,7 @@
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/modules.hpp>
 
-#include <avnd/wrappers/port_introspection.hpp>
+#include <avnd/introspection/port.hpp>
 
 namespace avnd
 {

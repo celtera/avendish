@@ -7,7 +7,7 @@
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/introspection/messages.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <cmath>
 #include <pybind11/chrono.h>

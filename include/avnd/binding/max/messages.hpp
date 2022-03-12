@@ -4,7 +4,7 @@
 
 #include <avnd/binding/max/atom_iterator.hpp>
 #include <avnd/binding/max/helpers.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/introspection/messages.hpp>
 
 namespace max
 {

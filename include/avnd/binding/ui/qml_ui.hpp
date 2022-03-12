@@ -6,8 +6,8 @@
 #include <avnd/binding/ui/qml/float_control.hpp>
 #include <avnd/binding/ui/qml/int_control.hpp>
 #include <avnd/binding/ui/qml/toggle_control.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/messages.hpp>
 
 #include <QDebug>
 #include <QGuiApplication>

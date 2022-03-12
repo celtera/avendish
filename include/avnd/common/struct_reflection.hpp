@@ -14,16 +14,20 @@ namespace avnd
 template<typename T, T... Idx>
 consteval int index_of_element(int N, std::integer_sequence<T, Idx...>) noexcept
 {
-  if constexpr(sizeof...(Idx) > 0)
-  {
+  static_assert(sizeof...(Idx) > 0);
+
+  constexpr int ret = [N] {
     int k = 0;
     for(int i : {Idx...}) {
       if(i == N)
         return k;
       k++;
     }
-  }
-  throw;
+    return -1;
+  }();
+
+  static_assert(ret >= 0);
+  return ret;
 }
 
 template <typename T>

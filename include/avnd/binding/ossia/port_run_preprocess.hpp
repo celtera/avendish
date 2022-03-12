@@ -1,7 +1,7 @@
 #pragma once
 #include <avnd/common/struct_reflection.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>

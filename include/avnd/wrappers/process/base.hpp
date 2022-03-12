@@ -5,7 +5,7 @@
 #include <avnd/common/for_nth.hpp>
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/common/span_polyfill.hpp>
-#include <avnd/concepts/channels.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_execution.hpp>
 #include <boost/pfr.hpp>

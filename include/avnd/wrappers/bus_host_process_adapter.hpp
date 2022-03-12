@@ -6,7 +6,7 @@
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/processor.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/introspection/messages.hpp>
 
 /**
  * This file allows to adapt hosts where the audio inputs are bus-based

@@ -4,7 +4,7 @@
 
 #include <avnd/binding/pd/atom_iterator.hpp>
 #include <avnd/binding/pd/helpers.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
+#include <avnd/introspection/messages.hpp>
 
 namespace pd
 {

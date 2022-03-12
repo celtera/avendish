@@ -5,7 +5,7 @@
 #include <avnd/concepts/object.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <cmath>
 #include <avnd/common/export.hpp>
 #include <m_pd.h>

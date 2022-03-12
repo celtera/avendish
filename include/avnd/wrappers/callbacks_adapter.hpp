@@ -1,7 +1,7 @@
 #pragma once
 #include <avnd/concepts/callback.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 
 namespace avnd
 {

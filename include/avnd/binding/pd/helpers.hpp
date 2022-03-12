@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/metadatas.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/output.hpp>
 #include <m_pd.h>
 
 #include <string_view>

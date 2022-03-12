@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #pragma once
-#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <fmt/format.h>
 

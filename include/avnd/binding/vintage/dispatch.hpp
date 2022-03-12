@@ -6,7 +6,7 @@
 #include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/introspection/input.hpp>
 
 #include <array>
 

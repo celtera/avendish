@@ -4,9 +4,9 @@
 
 #include <avnd/binding/vst3/helpers.hpp>
 #include <avnd/binding/vst3/metadata.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 #include <pluginterfaces/vst/ivstcomponent.h>
 #include <pluginterfaces/vst/vstspeaker.h>
 

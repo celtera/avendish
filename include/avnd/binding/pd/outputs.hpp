@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/pd/helpers.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/output.hpp>
 
 namespace pd
 {

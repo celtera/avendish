@@ -1,7 +1,7 @@
 #pragma once
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/processor.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 
 namespace avnd

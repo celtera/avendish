@@ -12,7 +12,7 @@
 #include <avnd/common/limited_string.hpp>
 #include <avnd/common/limited_string_view.hpp>
 #include <avnd/concepts/callback.hpp>
-#include <avnd/concepts/channels.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <avnd/concepts/midi.hpp>
 #include <avnd/concepts/midi_port.hpp>
 #include <avnd/concepts/modules.hpp>
@@ -38,14 +38,14 @@
 #include <avnd/helpers/texture.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
 #include <avnd/wrappers/avnd.hpp>
-#include <avnd/wrappers/channels_introspection.hpp>
+#include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/configure.hpp>
 #include <avnd/wrappers/controls_double.hpp>
-#include <avnd/wrappers/messages_introspection.hpp>
-#include <avnd/wrappers/modules_introspection.hpp>
-#include <avnd/wrappers/concepts.hpp>
+#include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/modules.hpp>
+#include <avnd/concepts/all.hpp>
 #include <avnd/wrappers/controls_adapter.hpp>
-#include <avnd/wrappers/port_introspection.hpp>
+#include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <avnd/wrappers/process_execution.hpp>
 #include <avnd/wrappers/effect_container.hpp>
@@ -54,11 +54,11 @@
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/wrappers/control_display.hpp>
-#include <avnd/wrappers/midi_introspection.hpp>
-#include <avnd/wrappers/input_introspection.hpp>
+#include <avnd/introspection/midi.hpp>
+#include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/controls_fp.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/bus_host_process_adapter.hpp>
-#include <avnd/wrappers/output_introspection.hpp>
+#include <avnd/introspection/output.hpp>
 
