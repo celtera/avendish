@@ -107,7 +107,7 @@ struct process_before_run
       // Get the index of the control in [0; N[
       using type = typename Exec_T::processor_type;
       using controls = avnd::control_input_introspection<type>;
-      constexpr int control_index = avnd::index_of_element(Idx, typename controls::indices_n{});
+      constexpr int control_index = avnd::index_of_element<Idx>(typename controls::indices_n{});
 
       // Mark the control as changed
       self.control.inputs_set.set(control_index);

@@ -12,12 +12,12 @@
 namespace avnd
 {
 
-template<typename T, T... Idx>
-consteval int index_of_element(int N, std::integer_sequence<T, Idx...>) noexcept
+template<int N, typename T, T... Idx>
+consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
 {
   static_assert(sizeof...(Idx) > 0);
 
-  constexpr int ret = [N] {
+  constexpr int ret = [] {
     int k = 0;
     for(int i : {Idx...}) {
       if(i == N)

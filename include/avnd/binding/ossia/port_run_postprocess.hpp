@@ -101,7 +101,7 @@ struct process_after_run
     // Get the index of the control in [0; N[
     using type = typename Exec_T::processor_type;
     using controls = avnd::control_output_introspection<type>;
-    constexpr int control_index = avnd::index_of_element(Idx, typename controls::indices_n{});
+    constexpr int control_index = avnd::index_of_element<Idx>(typename controls::indices_n{});
 
     // Mark the control as changed
     self.control.outputs_set.set(control_index);
@@ -123,7 +123,7 @@ struct process_after_run
     using processor_type = typename Exec_T::processor_type;
     using lin_out = avnd::linear_timed_parameter_output_introspection<processor_type>;
     using indices = typename lin_out::indices_n;
-    constexpr int storage_index = avnd::index_of_element(Idx, indices{});
+    constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
 
     auto& buffer = std::get<storage_index>(buffers);
 
