@@ -78,7 +78,12 @@ auto get_outputs(avnd::effect_container<T>& t)
 template <avnd::outputs_is_type T>
 auto& get_outputs(T& t)
 {
+#if !AVND_UNIQUE_INSTANCE
   AVND_ERROR(T, "Cannot get outputs on T");
+#else
+  static typename T::outputs r;
+  return r;
+#endif
 }
 template <avnd::outputs_is_value T>
 auto& get_outputs(T& t)

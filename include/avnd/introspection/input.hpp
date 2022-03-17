@@ -74,7 +74,12 @@ auto get_inputs(avnd::effect_container<T>& t)
 template <avnd::inputs_is_type T>
 auto& get_inputs(T& t)
 {
+#if !AVND_UNIQUE_INSTANCE
   AVND_ERROR(T, "Cannot get inputs on T");
+#else
+  static typename T::inputs r;
+  return r;
+#endif
 }
 template <avnd::inputs_is_value T>
 auto& get_inputs(T& t)

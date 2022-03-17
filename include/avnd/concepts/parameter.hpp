@@ -30,6 +30,11 @@ concept int_parameter = requires(T t) {
                         };
 
 template <typename T>
+concept enum_parameter =
+  std::is_enum_v<std::decay_t<decltype(T::value)>>
+;
+
+template <typename T>
 concept float_parameter = requires(T t) {
                             {
                               t.value
@@ -70,11 +75,6 @@ concept parameter_with_full_range = requires {
                                       avnd::get_range<C>().init;
                                     };
 
-template <typename T>
-concept enum_parameter =
-  std::is_enum_v<std::decay_t<decltype(T::value)>>
-;
-
 /**
  * A "control" is a parameter + some metadata:
  *
@@ -99,6 +99,28 @@ concept enum_parameter =
 
 template <typename T>
 concept control = parameter<T> && (has_range<T> || has_widget<T>);
+
+template <typename T>
+concept int_control = int_parameter<T> && control<T>;
+template <typename T>
+concept enum_control = enum_parameter<T> && control<T>;
+template <typename T>
+concept float_control = float_parameter<T> && control<T>;
+template <typename T>
+concept bool_control = bool_parameter<T> && control<T>;
+template <typename T>
+concept string_control = string_parameter<T> && control<T>;
+
+template <typename T>
+concept int_value_port = int_parameter<T> && !control<T>;
+template <typename T>
+concept enum_value_port = enum_parameter<T> && !control<T>;
+template <typename T>
+concept float_value_port = float_parameter<T> && !control<T>;
+template <typename T>
+concept bool_value_port = bool_parameter<T> && !control<T>;
+template <typename T>
+concept string_value_port = string_parameter<T> && !control<T>;
 
 /**
  * A value port is a parameter which is not a control.

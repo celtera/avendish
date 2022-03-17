@@ -326,13 +326,20 @@ class example_processor
       }
 
       // Run the actual audio processing
+      run_process(inputs, in_N, outputs, out_N, frames);
+
+      // Finish
+      after_process();
+    }
+
+    template<std::floating_point Fp>
+    void run_process(Fp** inputs, int in_N, Fp** outputs, int out_N, int frames)
+    {
       processor.process(
           effect,
           avnd::span<Fp*>{inputs, std::size_t(in_N)},
           avnd::span<Fp*>{outputs, std::size_t(out_N)},
           frames);
-
-      after_process();
     }
 
     void after_process()

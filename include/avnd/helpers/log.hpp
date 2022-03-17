@@ -29,6 +29,7 @@ concept logger = requires(T t) {
 #if defined(FMT_PRINTF_H_)
 struct basic_logger
 {
+  using logger_type = basic_logger;
   template <typename... T>
   static void log(fmt::format_string<T...> fmt, T&&... args) noexcept
   {
@@ -48,6 +49,7 @@ struct basic_logger
 #else
 struct basic_logger
 {
+  using logger_type = basic_logger;
   template <typename... T>
   static void log(T&&... args) noexcept
   {
@@ -66,6 +68,7 @@ struct basic_logger
 
 struct no_logger
 {
+  using logger_type = no_logger;
   template <typename... T>
   static void log(T&&... args) noexcept
   {
