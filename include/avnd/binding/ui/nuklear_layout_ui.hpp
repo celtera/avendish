@@ -9,31 +9,14 @@
 #include <avnd/wrappers/metadatas.hpp>
 
 #include <avnd/binding/ui/nuklear/nuklear.hpp>
-#include <fmt/printf.h>
-
-
-static inline int nk_tab (struct nk_context *ctx, const char *title, int active)
-{
-  const struct nk_user_font *f = ctx->style.font;
-  float text_width = f->width(f->userdata, f->height, title, nk_strlen(title));
-  float widget_width = text_width + 3 * ctx->style.button.padding.x;
-  nk_layout_row_push(ctx, widget_width);
-  struct nk_style_item c = ctx->style.button.normal;
-  if (active) {ctx->style.button.normal = ctx->style.button.active;}
-  int r = nk_button_label (ctx, title);
-  ctx->style.button.normal = c;
-  return r;
-}
 namespace nkl
 {
-
 constexpr const char* c_str(std::string_view s) { return s.data(); }
-
 template <typename T>
 class layout_ui
 {
 public:  
-    static constexpr const int row_height = 40;
+  static constexpr const int row_height = 40;
   avnd::effect_container<T>& implementation;
   GLFWwindow *win;
   int width = 0, height = 0;
@@ -143,30 +126,26 @@ public:
             k++;
           });
   }
-#define fprintf(...)
+  
   template<typename Item>
   void createItem(const Item& item)
   {
     constexpr int child_count = boost::pfr::tuple_size_v<Item>;
     if constexpr(requires { item.spacing; })
     {
-      fprintf(stderr, ": spacing: %d\n", child_count);
       nk_label(ctx, " ", NK_TEXT_LEFT);
     }
     if constexpr(requires { item.hbox; })
     {
-      fprintf(stderr, ": hbox: %d\n", child_count);
       nk_layout_row_dynamic(ctx, row_height, child_count);
       recurseItem(item);
     }
     else if constexpr(requires { item.vbox; })
     {
-      fprintf(stderr, ": vbox: %d\n", child_count);
       recurseItem(item);
     }
     else if constexpr(requires { item.split; })
-    {
-      fprintf(stderr, ": split: %d\n", child_count);      
+    {  
       if (nk_tree_push(ctx, NK_TREE_TAB, "Split", NK_MINIMIZED)) {
         recurseItem(item);
         nk_tree_pop(ctx);
@@ -174,8 +153,6 @@ public:
     }
     else if constexpr(requires { item.group; })
     {
-      fprintf(stderr, ": group: %d\n", child_count);
-      
       if (nk_tree_push(ctx, NK_TREE_TAB, c_str(Item::name()), NK_MINIMIZED)) {
         recurseItem(item);
         nk_tree_pop(ctx);
@@ -183,12 +160,10 @@ public:
     }
     else if constexpr(requires { item.tabs; })
     {
-      // fprintf(stderr, ": tabs : %d\n", child_count);
       createTabs(item);
     } 
     else
     {
-      fprintf(stderr, ": widget : %d %s\n", child_count, typeid(Item).name());
       // Normal widget
       createWidget(item);
     }
@@ -196,8 +171,9 @@ public:
 
   void createLayout()
   {
-    auto& lay = avnd::get_layout(this->implementation);
-    createItem(lay);
+    using type = typename avnd::layout_type<T>::type;
+    constexpr type layout;
+    createItem(layout);
   } 
   
   void render()
@@ -222,4 +198,3 @@ public:
   }
 };
 }
-
