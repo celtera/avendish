@@ -9,7 +9,12 @@
 #endif
 #endif
 
-#if __has_include(<QQuickView>) && __has_include(<verdigris>)
+#if __has_include(<nuklear.h>)
+#define AVND_STANDALONE_NKL 1
+#include <avnd/binding/ui/nuklear_layout_ui.hpp>
+
+#elif __has_include(<QQuickView>) && __has_include(<verdigris>)
 #define AVND_STANDALONE_QML 1
 #include <avnd/binding/ui/qml_ui.hpp>
+#include <avnd/binding/ui/qml_layout_ui.hpp>
 #endif

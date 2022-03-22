@@ -85,6 +85,13 @@ avnd_make_object(
   C_NAME avnd_callback
 )
 
+avnd_make_all(
+  TARGET HelpersUi
+  MAIN_FILE examples/Helpers/Ui.hpp
+  MAIN_CLASS examples::helpers::Ui
+  C_NAME avnd_helpers_ui
+  )
+
 avnd_make_object(
   TARGET Peak
   MAIN_FILE examples/Helpers/Peak.hpp

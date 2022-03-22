@@ -14,10 +14,39 @@ void throw_exception( std::exception const & e )
 }
 }
 
+using type = decltype(avnd::configure<standalone::config, @AVND_MAIN_CLASS@>())::type;
+
+void run_ui(auto& object)
+{
+#if AVND_STANDALONE_NKL
+  if constexpr(avnd::has_layout<type>)
+  {
+    nkl::layout_ui< type > ui{object};
+    ui.render();
+  }
+#elif AVND_STANDALONE_QML
+  qputenv("QML_DISABLE_DISTANCEFIELD", "1");
+  qputenv("QT_SCALE_FACTOR", "2");
+  qputenv("QT_ASSUME_STDERR_HAS_CONSOLE", "1");
+  qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
+  qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", "Dark");
+  QGuiApplication app(argc, argv);
+  
+  if constexpr(avnd::has_layout<type>)
+  {
+    qml::qml_layout_ui< type > ui{object};
+    qApp->exec();
+  }
+  else
+  {
+    qml::qml_ui< type > ui{object};
+    qApp->exec();
+  }
+#endif
+}
 int main(int argc, char** argv)
 {
   // Create the object
-  using type = decltype(avnd::configure<standalone::config, @AVND_MAIN_CLASS@>())::type;
   avnd::effect_container< type > object;
 
 #if 0
@@ -27,12 +56,8 @@ int main(int argc, char** argv)
   std::thread t{[&] { oscq.run(); }};
 #endif
 
-#if AVND_STANDALONE_QML
-  QGuiApplication app(argc, argv);
 
-  qml::qml_ui< type > ui{object};
-  app.exec();
-#endif
+  run_ui(object);
 
 #if 0
   oscq.stop();

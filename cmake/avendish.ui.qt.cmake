@@ -5,6 +5,7 @@ endif()
 
 target_sources(Avendish PRIVATE
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml_ui.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml_layout_ui.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/enum_control.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/enum_ui.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/qml/toggle_control.hpp"

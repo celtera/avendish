@@ -6,6 +6,7 @@
 #include <boost/pfr.hpp>
 
 #include <utility>
+#include <cassert>
 
 namespace avnd
 {
@@ -56,5 +57,24 @@ void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
   for(auto& v : value) {
     for_each_field_ref(v, func);
   }
+}
+
+constexpr int index_in_struct(const auto& s, auto member)
+{
+  int index = -1;
+  int k = 0;
+  
+  avnd::for_each_field_ref(s, [&] (auto& m) {
+    if constexpr (requires { bool(&m == &(s.*member)); })
+    {
+      if(&m == &(s.*member))
+      {
+        index = k;
+      }
+    }
+    ++k;
+  });
+  assert(index >= 0);
+  return index;
 }
 }

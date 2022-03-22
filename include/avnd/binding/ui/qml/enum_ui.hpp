@@ -12,7 +12,7 @@ ColumnLayout {{
       onCurrentIndexChanged: _uiHandler.enumChanged({0}, currentIndex)
       Layout.alignment: Qt.AlignHCenter
     }}
-    Text {{
+    Label {{
       text: "{3}\n"
       horizontalAlignment: Text.AlignHCenter
       Layout.alignment: Qt.AlignHCenter

@@ -119,7 +119,6 @@ Item {{
   RowLayout {{
 
 )_",
-        T::name(),
         T::name());
 
     // The controls

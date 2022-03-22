@@ -14,7 +14,7 @@ ColumnLayout {{
       onValueChanged: _uiHandler.floatChanged({0}, value)
       Layout.alignment: Qt.AlignHCenter
     }}
-    Text {{
+    Label {{
       text: "{5}\n" + _uiHandler.floatDisplay({0}, control_{0}.value)
       horizontalAlignment: Text.AlignHCenter
       Layout.alignment: Qt.AlignHCenter

@@ -2,9 +2,23 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/helpers/audio.hpp>
+#include <avnd/helpers/controls.hpp>
+#include <avnd/helpers/layout.hpp>
+#include <avnd/helpers/meta.hpp>
+#include <avnd/concepts/processor.hpp>
+#include <cmath>
 #include <cstdio>
 
-namespace examples
+template<typename M, typename L, typename T>
+struct prop { 
+    std::function<T(M& self, L& layout)> get;
+    std::function<void(M& self, L& layout, const T&)> set;
+};
+// template<typename T>
+// using prop = ::prop<Ui, layout, T>;
+
+namespace examples::helpers
 {
 /**
  * Example to test UI.
@@ -18,7 +32,7 @@ struct Ui
     return "e1f0f202-6732-4d2d-8ee9-5957a51ae667";
   }
 
-  struct ins
+  struct inputs_t
   {
     struct
     {
@@ -94,64 +108,39 @@ struct Ui
   void operator()(int N) { }
   
   struct layout {
-      enum { vbox };
-      static constexpr auto name() { return "Main"; }
+      enum { vbox };    
+      avnd_hbox
+        avnd_widget(inputs_t, float_ctl);
+      avnd_close;
       
-      struct {
-        enum { hbox };
-        decltype(&ins::float_ctl) float_widget = &ins::float_ctl;
-        decltype(&ins::int_ctl) int_widget = &ins::int_ctl;
-      } widgets;
+      avnd::hspace<20> a_spacing;      
       
-      struct {
-          enum { spacing };
-          static constexpr auto width() { return 20; }
-          static constexpr auto height() { return 20; }
-      } a_spacing;
-      
-      struct {
-        enum { group };
-        static constexpr auto name() { return "Group"; }
-        struct {
-          enum { hbox };
+      avnd_group("Group")
+        avnd_hbox
           const char* l1 = "label 1";
           const char* l2 = "label 2";
-        } a_hbox;
-      } b_group; 
+        avnd_close;
+      avnd_close;
       
-      struct {
-          enum { spacing };
-          static constexpr auto width() { return 20; }
-          static constexpr auto height() { return 20; }
-      } b_spacing;
+      avnd::hspace<20> b_spacing;
       
-      struct {
-        enum { tabs };
-        static constexpr auto name() { return "Tabs"; }
-        
-        struct {
-          enum { hbox };
-          static constexpr auto name() { return "HBox"; }
+      avnd_tabs
+        avnd_tab("HBox", hbox)
           const char* l1 = "label 3";
           const char* l2 = "label 4";
-        } a_hbox;
-        
-        struct {
-          enum { vbox };
-          static constexpr auto name() { return "VBox"; }
+          avnd_widget(inputs_t, int_ctl);
+        avnd_close;
+          
+        avnd_tab("VBox", vbox) 
           const char* l1 = "label 5";
           const char* l2 = "label 6";
-        } a_vbox;
-      } a_tabs;
-      
-      struct {
-        enum { split };
-        static constexpr auto name() { return "split"; }
-        static constexpr auto width() { return 400; }
-        static constexpr auto height() { return 200; }
+        avnd_close;
+      avnd_close;
+  
+      avnd_split(400, 200)
         const char* l1 = "some long foo";
         const char* l2 = "other bar";
-      } a_split;
-  };
+      avnd_close;
+    avnd_close;
 };
 }
