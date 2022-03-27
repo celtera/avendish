@@ -48,14 +48,18 @@ struct Messages
     logger.log("example3: {}", x);
   }
 
-  avnd_start_messages(Messages) avnd_mem_fun(example) avnd_mem_fun(example2)
-      avnd_mem_fun_t(example3, <int>) avnd_mem_fun_t(example3, <float>)
-          avnd_mem_fun_t(example3, <const char*>) avnd_free_fun(free_example)
-              avnd_free_fun_t(free_template_example, <C>)
-                  avnd_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
+  avnd_start_messages(Messages)
+    avnd_mem_fun(example)
+    avnd_mem_fun(example2)
+    avnd_mem_fun_t(example3, <int>)
+    avnd_mem_fun_t(example3, <float>)
+    avnd_mem_fun_t(example3, <const char*>)
+    avnd_free_fun(free_example)
+    avnd_free_fun_t(free_template_example, <C>)
+    avnd_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
 
-      // General case:
-      avnd::func_ref<"my_message", &Messages::example> m_my_message;
+    // General case:
+    avnd::func_ref<"my_message", &Messages::example> m_my_message;
   avnd_end_messages
 };
 }

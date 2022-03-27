@@ -47,7 +47,8 @@ struct label
 
 struct item_base
 {
-  avnd_meta(layout, layouts::control) double x = 0.0;
+  avnd_meta(layout, layouts::control)
+  double x = 0.0;
   double y = 0.0;
   double scale = 1.0;
 };
@@ -111,7 +112,7 @@ struct Ui
       avnd_meta(name, "Widget") avnd_meta(layout, container) avnd_meta(background, dark)
 
           avnd::item<&ins::int_ctl> w1{{.x = 15, .y = 15}};
-      avnd::item<&ins::float_ctl> w2{{.scale = 2.5, .x = 120, .y = 30}};
+      avnd::item<&ins::float_ctl> w2{{.x = 120, .y = 30, .scale = 2.5}};
 
     } widgets;
   };
@@ -119,7 +120,7 @@ struct Ui
   struct ui_layout {
       using enum avnd::colors;
       using enum avnd::layouts;
-      
+
       avnd_meta(name, "Main")
       avnd_meta(layout, hbox)
       avnd_meta(background, mid)
@@ -127,36 +128,36 @@ struct Ui
         avnd_meta(name, "Widget")
         avnd_meta(layout, hbox)
         avnd_meta(background, dark)
-                
+
         avnd::item<&ins::int_ctl> widget;
       } widgets;
-      
+
       avnd::spacing spacing{.width = 20, .height = 20};
-      
+
       struct {
         avnd_meta(name, "Group")
         avnd_meta(layout, group)
         avnd_meta(background, light)
         struct {
           avnd_meta(layout, hbox)
-          avnd::label l1{.text = "label 1"};      
+          avnd::label l1{.text = "label 1"};
           avnd::spacing spacing{.width = 20, .height = 20};
           avnd::label l2{.text = "label 2"};
         } a_hbox;
-      } b_group; 
-      
+      } b_group;
+
       struct {
         avnd_meta(name, "Tabs")
         avnd_meta(layout, tabs)
         avnd_meta(background, darker)
-        
+
         struct {
           avnd_meta(layout, hbox)
           avnd_meta(name, "HBox")
           avnd::label l1{.text = "label 1"};
           avnd::label l2{.text = "label 2"};
         } a_hbox;
-        
+
         struct {
           avnd_meta(layout, vbox)
           avnd_meta(name, "VBox")
@@ -164,40 +165,40 @@ struct Ui
           avnd::label l2{.text = "label 2"};
         } a_vbox;
       } a_tabs;
-      
+
       struct {
         avnd_meta(layout, split)
         avnd_meta(name, "split")
         avnd_meta(width, 400)
         avnd_meta(height, 200)
         struct {
-            avnd_meta(layout, vbox)      
-            avnd::label l1{.text = "some long foo"};  
+            avnd_meta(layout, vbox)
+            avnd::label l1{.text = "some long foo"};
             avnd::item<&ins::t1> a;
             avnd::item<&ins::t2> b;
         } a_widg;
         struct {
-            avnd_meta(layout, vbox)      
+            avnd_meta(layout, vbox)
             avnd::label l2{.text = "other bar"};
             avnd::item<&ins::e1> c;
-            
+
             struct {
-                avnd_meta(layout, hbox)      
+                avnd_meta(layout, hbox)
                 avnd::item<&ins::b1> a;
                 avnd::item<&ins::b2> b;
             } c2;
         } b_widg;
       } a_split;
-      
+
       struct {
         avnd_meta(name, "Grid")
         avnd_meta(layout, grid)
         avnd_meta(background, lighter)
         avnd_meta(columns, 3)
         avnd_meta(padding, 5)
-        
+
         avnd::item<&ins::float_ctl> widget{.scale = 0.8};
-        
+
         avnd::label l1{.text = "A"};
         avnd::label l2{.text = "B"};
         avnd::label l3{.text = "C"};
