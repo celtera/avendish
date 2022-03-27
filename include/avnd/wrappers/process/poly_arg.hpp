@@ -11,9 +11,11 @@ namespace avnd
  * Handles case where inputs / outputs are e.g. operator()(float** ins, float** outs)
  */
 template <typename T>
-  requires polyphonic_audio_processor<
-               T> && (polyphonic_arg_audio_effect<double, T> || polyphonic_arg_audio_effect<float, T>)
-struct process_adapter<T> : audio_buffer_storage<T>
+requires polyphonic_audio_processor<T> &&(
+    polyphonic_arg_audio_effect<
+        double,
+        T> || polyphonic_arg_audio_effect<float, T>)struct process_adapter<T>
+    : audio_buffer_storage<T>
 {
   template <typename SrcFP, typename DstFP>
   void process_arg(

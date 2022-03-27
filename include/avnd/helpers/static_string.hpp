@@ -19,27 +19,26 @@ struct static_string
   }
 
   char value[N];
-
 };
 
-template<std::size_t N, std::size_t M>
+template <std::size_t N, std::size_t M>
 consteval bool operator==(static_string<N> lhs, static_string<M> rhs) noexcept
 {
   if constexpr (M != N)
     return false;
-  for(int i = 0; i < M; i++)
-    if(lhs.value[i] != rhs.value[i])
+  for (int i = 0; i < M; i++)
+    if (lhs.value[i] != rhs.value[i])
       return false;
   return true;
 }
 
-template<std::size_t N, std::size_t M>
+template <std::size_t N, std::size_t M>
 consteval bool operator!=(static_string<N> lhs, static_string<M> rhs) noexcept
 {
   if constexpr (M != N)
     return true;
-  for(int i = 0; i < M; i++)
-    if(lhs.value[i] != rhs.value[i])
+  for (int i = 0; i < M; i++)
+    if (lhs.value[i] != rhs.value[i])
       return true;
   return false;
 }

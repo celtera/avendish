@@ -12,10 +12,7 @@ struct Presets
 {
   static consteval auto name() { return "Presets example"; }
   static consteval auto c_name() { return "avnd_presets"; }
-  static consteval auto uuid()
-  {
-    return "08176877-ce82-4bee-b885-df42062fb8a2";
-  }
+  static consteval auto uuid() { return "08176877-ce82-4bee-b885-df42062fb8a2"; }
 
   // Here we force the presence of two channels.
   // It's possible to force separate inputs and outputs by

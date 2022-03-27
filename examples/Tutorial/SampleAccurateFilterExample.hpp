@@ -5,8 +5,6 @@
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
-
-#include <avnd/concepts/parameter.hpp>
 #include <cmath>
 
 namespace oscr
@@ -28,18 +26,20 @@ struct SampleAccurateFilterExample
   /**
    * Here we define an input and an output pair.
    */
-  struct {
+  struct
+  {
     avnd::accurate<avnd::val_port<"In", float>> value;
   } inputs;
 
-  struct {
+  struct
+  {
     avnd::accurate<avnd::val_port<"Out", float>> value;
   } outputs;
 
   void operator()()
   {
     // The output is copied at the same timestamp at which each input happened.
-    for(auto& [timestamp, value]: inputs.value.values)
+    for (auto& [timestamp, value] : inputs.value.values)
     {
       outputs.value.values[timestamp] = cos(value * value) * cos(value);
     }

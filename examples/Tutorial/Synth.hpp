@@ -1,17 +1,16 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
+#include <avnd/concepts/midi_port.hpp>
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/midi.hpp>
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
+#include <avnd/helpers/midi.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
-#include <ossia/network/dataspace/value_with_unit.hpp>
-#include <ossia/network/dataspace/time.hpp>
-#include <ossia/network/dataspace/gain.hpp>
 #include <libremidi/message.hpp>
-
-#include <avnd/concepts/midi_port.hpp>
+#include <ossia/network/dataspace/gain.hpp>
+#include <ossia/network/dataspace/time.hpp>
+#include <ossia/network/dataspace/value_with_unit.hpp>
 
 namespace examples
 {
@@ -28,14 +27,16 @@ struct Synth
   $(description, "<DESCRIPTION>");
   $(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
 
-  struct {
+  struct
+  {
     /** MIDI input: simply a list of timestamped messages.
      * Timestamp are in samples, 0 is the first sample.
      */
     avnd::midi_bus<"In"> midi;
   } inputs;
 
-  struct {
+  struct
+  {
     avnd::fixed_audio_bus<"Out", double, 2> audio;
   } outputs;
 
@@ -57,12 +58,13 @@ struct Synth
     // 1. Process the MIDI messages. We'll just play the latest note-on
     // in a not very sample-accurate way..
 
-    for(auto& m : inputs.midi.midi_messages)
+    for (auto& m : inputs.midi.midi_messages)
     {
       libremidi::message msg;
       msg.bytes.assign(m.bytes.begin(), m.bytes.end());
       // Let's ignore channels
-      switch(msg.get_message_type()) {
+      switch (msg.get_message_type())
+      {
         case libremidi::message_type::NOTE_ON:
           in_flight++;
 
@@ -83,11 +85,12 @@ struct Synth
     }
 
     // 2. Quit if we don't have any more note to play
-    if(in_flight <= 0)
+    if (in_flight <= 0)
       return;
 
     // 3. Output some bleeps
-    double increment = ossia::two_pi * last_note.dataspace_value / double(configuration.sample_rate);
+    double increment
+        = ossia::two_pi * last_note.dataspace_value / double(configuration.sample_rate);
     auto& out = outputs.audio.samples;
 
     for (int64_t j = 0; j < frames; j++)

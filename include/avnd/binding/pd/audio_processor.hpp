@@ -2,16 +2,16 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/concepts/object.hpp>
-#include <avnd/wrappers/controls.hpp>
-#include <avnd/wrappers/process_adapter.hpp>
-#include <avnd/introspection/channels.hpp>
-#include <cmath>
-#include <avnd/common/export.hpp>
-#include <m_pd.h>
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/binding/pd/init.hpp>
 #include <avnd/binding/pd/messages.hpp>
+#include <avnd/common/export.hpp>
+#include <avnd/concepts/object.hpp>
+#include <avnd/introspection/channels.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
+#include <cmath>
+#include <m_pd.h>
 
 #include <cstring>
 #include <span>
@@ -45,8 +45,7 @@ struct audio_processor
   static constexpr const int output_channels = avnd::output_channels<T>(1);
 
   static constexpr const int dsp_input_count
-      = input_channels + output_channels
-        + 2; // one for this, one for buffer_size
+      = input_channels + output_channels + 2; // one for this, one for buffer_size
 
   // Head of the Pd object
   t_object x_obj;
@@ -290,8 +289,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   };
 
   // DSP
-  constexpr auto obj_dsp
-      = +[](instance* obj, t_signal** sp) -> void { obj->dsp(sp); };
+  constexpr auto obj_dsp = +[](instance* obj, t_signal** sp) -> void { obj->dsp(sp); };
 
   // Message processing
   constexpr auto obj_process

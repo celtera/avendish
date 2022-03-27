@@ -2,12 +2,12 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/midi.hpp>
 #include <avnd/helpers/controls.hpp>
-
+#include <avnd/helpers/meta.hpp>
+#include <avnd/helpers/midi.hpp>
 #include <cmath>
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -38,7 +38,8 @@ struct Midi
     auto& i = inputs.midi;
     auto& o = outputs.midi;
 
-    for(auto& message : i) {
+    for (auto& message : i)
+    {
       o.push_back(message);
     }
   }

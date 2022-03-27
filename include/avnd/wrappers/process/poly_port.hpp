@@ -8,7 +8,7 @@ namespace avnd
 {
 
 template <typename T>
-  requires single_audio_bus_poly_port_processor<T>
+requires single_audio_bus_poly_port_processor<T>
 struct process_adapter<T> : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_bus_input_introspection<T>;
@@ -110,10 +110,10 @@ struct process_adapter<T> : audio_buffer_storage<T>
  * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.
  */
 template <typename T>
-  requires polyphonic_audio_processor<
-               T> && ((poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
-           && (!single_audio_bus_poly_port_processor<T>)
-struct process_adapter<T> : audio_buffer_storage<T>
+requires polyphonic_audio_processor<T> &&(
+    (poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
+    && (!single_audio_bus_poly_port_processor<T>)struct process_adapter<T>
+    : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_bus_input_introspection<T>;
   using o_info = avnd::audio_bus_output_introspection<T>;
@@ -137,7 +137,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
           else
           {
             auto& b = this->zero_storage_for(sample_type{});
-            if constexpr(Input)
+            if constexpr (Input)
             {
               auto buffer = b.zero_pointers_in.data();
               bus.samples = const_cast<decltype(bus.samples)>(buffer);
@@ -157,17 +157,19 @@ struct process_adapter<T> : audio_buffer_storage<T>
   void copy_outputs(Ports& ports, auto buffers, int n)
   {
     int k = 0;
-    o_info::for_all(ports, [&](auto& bus)
-    {
-        using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
-        const int channels = avnd::get_channels(bus);
-        if (k + channels < buffers.size())
+    o_info::for_all(
+        ports,
+        [&](auto& bus)
         {
-          for(int c = 0; c < channels; c++)
-            std::copy_n(bus.samples[c], n, buffers[k + c]);
-        }
-        k += channels;
-    });
+          using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
+          const int channels = avnd::get_channels(bus);
+          if (k + channels < buffers.size())
+          {
+            for (int c = 0; c < channels; c++)
+              std::copy_n(bus.samples[c], n, buffers[k + c]);
+          }
+          k += channels;
+        });
   }
 
   template <typename SrcFP, typename DstFP>

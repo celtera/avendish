@@ -12,19 +12,20 @@
 namespace avnd
 {
 template <typename T>
-concept logger = requires(T t) {
+concept logger = requires(T t)
+{
 #if defined(__APPLE__)
-                   T{};
+  T{};
 #else
 #if defined(__clang__) && (__clang_major__ >= 12) && (__clang_major__ < 14)
-                   &T::log;
-                   &T::error;
+  &T::log;
+  &T::error;
 #else
-                   t.log("{} {}", 1, "foo");
-                   t.error("{} {}", 1, "foo");
+  t.log("{} {}", 1, "foo");
+  t.error("{} {}", 1, "foo");
 #endif
 #endif
-                 };
+};
 
 #if defined(FMT_PRINTF_H_)
 struct basic_logger
@@ -84,9 +85,10 @@ static_assert(avnd::logger<basic_logger>);
 static_assert(avnd::logger<no_logger>);
 
 template <typename C>
-concept has_logger = requires {
-                       {
-                         typename C::logger_type{}
-                         } -> avnd::logger;
-                     };
+concept has_logger = requires
+{
+  {
+    typename C::logger_type { }
+    } -> avnd::logger;
+};
 }

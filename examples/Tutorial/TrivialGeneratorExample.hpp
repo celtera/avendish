@@ -6,7 +6,6 @@
 #include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
 
-
 namespace examples
 {
 
@@ -23,15 +22,17 @@ struct TrivialGeneratorExample
    * Here we define a single output, which allows writing
    * a single output value every time the process is run.
    */
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       // Give a name to our parameter to show the user
       $(name, "Out");
 
       // This value will be sent to the output of the port at each tick.
       // The name "value" is important.
       int value{};
-    } main; // This variable can be called however you wish.
+    } main;  // This variable can be called however you wish.
   } outputs; // This must be called "outputs".
 
   /**
@@ -41,7 +42,7 @@ struct TrivialGeneratorExample
   void operator()()
   {
     outputs.main.value++;
-    if(outputs.main.value > 100)
+    if (outputs.main.value > 100)
       outputs.main.value = 0;
   }
 };

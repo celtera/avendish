@@ -11,9 +11,10 @@ namespace avnd
  * Mono processors with e.g. float operator()(float in, ...);
  */
 template <typename T>
-  requires(
-      avnd::mono_per_sample_arg_processor<double, T> || avnd::mono_per_sample_arg_processor<float, T>)
-struct process_adapter<T>
+requires(
+    avnd::mono_per_sample_arg_processor<
+        double,
+        T> || avnd::mono_per_sample_arg_processor<float, T>) struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
   {
@@ -21,12 +22,7 @@ struct process_adapter<T>
   }
 
   template <typename FP>
-  FP process_sample(
-      FP in,
-      T& fx,
-      auto& ins,
-      auto& outs,
-      auto&& tick)
+  FP process_sample(FP in, T& fx, auto& ins, auto& outs, auto&& tick)
   {
     if constexpr (requires { fx(in, ins, outs, tick); })
       return fx(in, ins, outs, tick);
@@ -43,11 +39,7 @@ struct process_adapter<T>
   }
 
   template <typename FP>
-  FP process_sample(
-      FP in,
-      T& fx,
-      auto& ins,
-      auto& outs)
+  FP process_sample(FP in, T& fx, auto& ins, auto& outs)
   {
     if constexpr (requires { fx(in, ins, outs); })
       return fx(in, ins, outs);
@@ -105,11 +97,7 @@ struct process_adapter<T>
         if constexpr (requires { sizeof(current_tick(implementation)); })
         {
           out[c][i] = process_sample(
-              input_buf[c],
-              impl,
-              ins,
-              outs,
-              current_tick(implementation));
+              input_buf[c], impl, ins, outs, current_tick(implementation));
         }
         else
         {

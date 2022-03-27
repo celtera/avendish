@@ -17,8 +17,7 @@ struct inputs
 };
 
 template <typename T>
-  requires(avnd::parameter_input_introspection<T>::size > 0)
-struct inputs<T>
+requires(avnd::parameter_input_introspection<T>::size > 0) struct inputs<T>
 {
   using refl = avnd::parameter_input_introspection<T>;
   // TODO free them

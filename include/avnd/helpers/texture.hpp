@@ -37,7 +37,8 @@ struct rgba_texture
   }
 };
 
-struct rgba_color {
+struct rgba_color
+{
   uint8_t r, g, b, a;
 };
 
@@ -55,12 +56,7 @@ struct texture_input
     const int byte_index = pixel_index * 4;
 
     auto* pixel_ptr = texture.bytes + byte_index;
-    return {
-        .r = pixel_ptr[0],
-        .g = pixel_ptr[1],
-        .b = pixel_ptr[2],
-        .a = pixel_ptr[3]
-    };
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
   }
 
   rgba_texture texture;
@@ -88,10 +84,7 @@ struct texture_output
     texture.bytes = storage.data();
   }
 
-  void upload() noexcept
-  {
-    texture.changed = true;
-  }
+  void upload() noexcept { texture.changed = true; }
 
   void set(int x, int y, int r, int g, int b, int a = 255) noexcept
   {
@@ -110,17 +103,17 @@ struct texture_output
 
   void set(int x, int y, rgba_color col) noexcept
   {
-      assert(x >= 0 && x < texture.width);
-      assert(y >= 0 && y < texture.height);
+    assert(x >= 0 && x < texture.width);
+    assert(y >= 0 && y < texture.height);
 
-      const int pixel_index = y * texture.width + x;
-      const int byte_index = pixel_index * 4;
+    const int pixel_index = y * texture.width + x;
+    const int byte_index = pixel_index * 4;
 
-      auto* pixel_ptr = storage.data() + byte_index;
-      pixel_ptr[0] = col.r;
-      pixel_ptr[1] = col.g;
-      pixel_ptr[2] = col.b;
-      pixel_ptr[3] = col.a;
+    auto* pixel_ptr = storage.data() + byte_index;
+    pixel_ptr[0] = col.r;
+    pixel_ptr[1] = col.g;
+    pixel_ptr[2] = col.b;
+    pixel_ptr[3] = col.a;
   }
 
   rgba_texture texture;

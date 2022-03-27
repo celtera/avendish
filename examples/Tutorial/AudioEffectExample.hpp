@@ -38,12 +38,14 @@ struct AudioEffectExample
    * In all the other cases, it is necessary to specify the number of channels for the output
    * as in the Sidechain example.
    */
-  struct {
+  struct
+  {
     avnd::audio_input_bus<"Main Input"> audio;
     avnd::knob_f32<"Gain", avnd::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
   } inputs;
 
-  struct {
+  struct
+  {
     avnd::audio_output_bus<"Main Output"> audio;
   } outputs;
 

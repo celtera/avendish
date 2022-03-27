@@ -2,17 +2,17 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/avnd.hpp>
-#include <avnd/concepts/object.hpp>
-#include <avnd/wrappers/controls.hpp>
-#include <cmath>
-#include <avnd/common/export.hpp>
-#include <m_pd.h>
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/binding/pd/init.hpp>
 #include <avnd/binding/pd/inputs.hpp>
 #include <avnd/binding/pd/messages.hpp>
 #include <avnd/binding/pd/outputs.hpp>
+#include <avnd/common/export.hpp>
+#include <avnd/concepts/object.hpp>
+#include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <cmath>
+#include <m_pd.h>
 
 #include <cstring>
 #include <span>
@@ -70,7 +70,7 @@ struct message_processor
     output_setup.init(implementation, x_obj);
 
     /// Initialize controls
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       avnd::init_controls(implementation.inputs());
     }
@@ -80,7 +80,7 @@ struct message_processor
 
   void process_first_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr (avnd::has_inputs<T>)
     {
       switch (argv[0].a_type)
       {

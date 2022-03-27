@@ -3,10 +3,9 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
-
-#include <ossia/network/dataspace/dataspace_visitors.hpp>
-#include <ossia/dataflow/port.hpp>
 #include <ossia/dataflow/graph_node.hpp>
+#include <ossia/dataflow/port.hpp>
+#include <ossia/network/dataspace/dataspace_visitors.hpp>
 
 namespace oscr
 {
@@ -42,7 +41,7 @@ struct get_ossia_inlet_type<T>
 template <avnd::unreflectable_message T>
 struct get_ossia_inlet_type<T>
 {
-    using type = ossia::value_inlet;
+  using type = ossia::value_inlet;
 };
 
 template <typename T>
@@ -134,27 +133,26 @@ struct outlet_storage
   ossia_outputs_tuple ports;
 };
 
-
 struct setup_value_port
 {
-  template<avnd::parameter_with_full_range T>
+  template <avnd::parameter_with_full_range T>
   ossia::domain range_to_domain()
   {
     constexpr auto dom = avnd::get_range<T>();
     return ossia::make_domain(dom.min, dom.max);
   }
-  template<avnd::string_parameter T>
+  template <avnd::string_parameter T>
   ossia::domain range_to_domain()
   {
     return {};
   }
-  template<avnd::bool_parameter T>
+  template <avnd::bool_parameter T>
   ossia::domain range_to_domain()
   {
     return ossia::domain_base<bool>{};
   }
 
-  template<avnd::enum_parameter T>
+  template <avnd::enum_parameter T>
   ossia::domain range_to_domain()
   {
     constexpr auto dom = T::choices();
@@ -163,15 +161,17 @@ struct setup_value_port
     return d;
   }
 
-  template<typename T>
+  template <typename T>
   ossia::domain range_to_domain()
   {
     constexpr auto dom = avnd::get_range<T>();
-    if constexpr(requires { std::string_view{dom.values[0].first}; }) {
+    if constexpr (requires { std::string_view{dom.values[0].first}; })
+    {
       // Case for combo_pair things
       using val_type = std::decay_t<decltype(T::value)>;
       ossia::domain_base<val_type> v;
-      for(auto& val : dom.values) {
+      for (auto& val : dom.values)
+      {
         v.values.push_back(val.second);
       }
       return v;
@@ -185,7 +185,7 @@ struct setup_value_port
     }
   }
 
-  template<avnd::int_parameter Field>
+  template <avnd::int_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -193,7 +193,7 @@ struct setup_value_port
     port.domain = this->range_to_domain<Field>();
   }
 
-  template<avnd::float_parameter Field>
+  template <avnd::float_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -201,7 +201,7 @@ struct setup_value_port
     port.domain = this->range_to_domain<Field>();
   }
 
-  template<avnd::bool_parameter Field>
+  template <avnd::bool_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -209,7 +209,7 @@ struct setup_value_port
     port.domain = this->range_to_domain<Field>();
   }
 
-  template<avnd::string_parameter Field>
+  template <avnd::string_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -217,7 +217,7 @@ struct setup_value_port
     port.domain = this->range_to_domain<Field>();
   }
 
-  template<avnd::enum_parameter Field>
+  template <avnd::enum_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -225,7 +225,7 @@ struct setup_value_port
     port.domain = this->range_to_domain<Field>();
   }
 
-  template<avnd::xy_parameter Field>
+  template <avnd::xy_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -233,7 +233,7 @@ struct setup_value_port
     port.domain = this->range_to_domain<Field>();
   }
 
-  template<avnd::rgb_parameter Field>
+  template <avnd::rgb_parameter Field>
   void setup(ossia::value_port& port)
   {
     port.is_event = true;
@@ -241,10 +241,10 @@ struct setup_value_port
     port.domain = {};
   }
 
-  template<typename Field>
+  template <typename Field>
   void setup(ossia::value_port& port)
   {
-    if constexpr(requires { bool(Field::event); })
+    if constexpr (requires { bool(Field::event); })
       port.is_event = Field::event;
   }
 };
@@ -255,34 +255,39 @@ struct setup_inlets
   Exec_T& self;
   ossia::inlets& inlets;
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_inlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_inlet& port)
+      const noexcept
   {
     inlets.push_back(std::addressof(port));
 
     setup_value_port{}.setup<Field>(*port);
 
-    if constexpr(avnd::has_unit<Field>) {
+    if constexpr (avnd::has_unit<Field>)
+    {
       constexpr auto unit = avnd::get_unit<Field>();
-      if(!unit.empty())
+      if (!unit.empty())
         port->type = ossia::parse_dataspace(unit);
     }
   }
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_inlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_inlet& port)
+      const noexcept
   {
     inlets.push_back(std::addressof(port));
   }
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_inlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_inlet& port)
+      const noexcept
   {
     inlets.push_back(std::addressof(port));
   }
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_inlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_inlet& port)
+      const noexcept
   {
     inlets.push_back(std::addressof(port));
   }
@@ -293,40 +298,46 @@ struct setup_outlets
 {
   Exec_T& self;
   ossia::outlets& outlets;
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port)
+      const noexcept
   {
     outlets.push_back(std::addressof(port));
 
     setup_value_port{}.setup<Field>(*port);
 
-    if constexpr(avnd::has_unit<Field>) {
+    if constexpr (avnd::has_unit<Field>)
+    {
       constexpr auto unit = avnd::get_unit<Field>();
-      if(!unit.empty())
+      if (!unit.empty())
         port->type = ossia::parse_dataspace(unit);
     }
   }
-  template<std::size_t Idx, avnd::callback Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port) const noexcept
+  template <std::size_t Idx, avnd::callback Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port)
+      const noexcept
   {
     // FIXME likely there are interesting things to do
     outlets.push_back(std::addressof(port));
   }
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_outlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_outlet& port)
+      const noexcept
   {
     outlets.push_back(std::addressof(port));
   }
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_outlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_outlet& port)
+      const noexcept
   {
     outlets.push_back(std::addressof(port));
   }
 
-  template<std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_outlet& port) const noexcept
+  template <std::size_t Idx, typename Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_outlet& port)
+      const noexcept
   {
     outlets.push_back(std::addressof(port));
   }

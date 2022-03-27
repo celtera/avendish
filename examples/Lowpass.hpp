@@ -13,10 +13,7 @@ struct Lowpass
 {
   static constexpr auto name() { return "Lowpass"; }
   static constexpr auto c_name() { return "avnd_lowpass"; }
-  static constexpr auto uuid()
-  {
-    return "64475459-0116-4f9d-8d5a-b8f054b00fa5";
-  }
+  static constexpr auto uuid() { return "64475459-0116-4f9d-8d5a-b8f054b00fa5"; }
 
   struct
   {

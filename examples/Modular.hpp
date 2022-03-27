@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
+
 #include <numeric>
 
 namespace examples
@@ -14,10 +15,7 @@ struct Modular
 {
   static consteval auto name() { return "Modular example"; }
   static consteval auto c_name() { return "avnd_modular"; }
-  static consteval auto uuid()
-  {
-    return "2c82e37a-9caa-4e69-9255-2e131a2e6bab";
-  }
+  static consteval auto uuid() { return "2c82e37a-9caa-4e69-9255-2e131a2e6bab"; }
 
   struct
   {
@@ -93,13 +91,11 @@ struct Modular
   {
     using namespace std;
     outputs.out_l.sample = clamp(
-        fmod(
-            inputs.sidechain_l.sample * inputs.gain.value, inputs.in_l.sample),
+        fmod(inputs.sidechain_l.sample * inputs.gain.value, inputs.in_l.sample),
         -1.f,
         1.f);
     outputs.out_r.sample = clamp(
-        fmod(
-            inputs.sidechain_r.sample * inputs.gain.value, inputs.in_r.sample),
+        fmod(inputs.sidechain_r.sample * inputs.gain.value, inputs.in_r.sample),
         -1.f,
         1.f);
 

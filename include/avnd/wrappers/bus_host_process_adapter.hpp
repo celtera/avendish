@@ -18,14 +18,12 @@ namespace avnd
 {
 // TODO be more fine-grained
 template <typename T>
-concept audio_arg_input
-    = avnd::sample_arg_processor<
-          T> || avnd::channel_arg_processor<T> || avnd::bus_arg_processor<T>;
+concept audio_arg_input = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<
+    T> || avnd::bus_arg_processor<T>;
 
 template <typename T>
-concept audio_arg_output
-    = avnd::sample_arg_processor<
-          T> || avnd::channel_arg_processor<T> || avnd::bus_arg_processor<T>;
+concept audio_arg_output = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<
+    T> || avnd::bus_arg_processor<T>;
 
 template <typename T>
 consteval int total_input_count()
@@ -146,9 +144,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   // Handle message inputs
   if constexpr (avnd::messages_type<T>::size > 0)
   {
-    avnd::messages_introspection<T>::for_all([&] (auto m) {
-      func_inlets(m);
-    });
+    avnd::messages_introspection<T>::for_all([&](auto m) { func_inlets(m); });
   }
 
   if constexpr (avnd::has_inputs<T>)

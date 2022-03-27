@@ -27,57 +27,62 @@ namespace avnd
 
 // Very generic concepts
 template <typename T>
-concept vector_ish = requires(T t) {
-                       t.push_back({});
-                       t.size();
-                       t.reserve(1);
-                       t.resize(1);
-                       t.clear();
-                       t[0];
-                     };
+concept vector_ish = requires(T t)
+{
+  t.push_back({});
+  t.size();
+  t.reserve(1);
+  t.resize(1);
+  t.clear();
+  t[0];
+};
 
 template <typename T, std::size_t N>
-concept c_array_ish = std::extent_v<T, 0> >=
-N;
+concept c_array_ish = std::extent_v<T, 0>
+>= N;
 template <typename T, std::size_t N>
-concept cpp_tuple_ish = requires { std::tuple_size_v<T> >= N; };
+concept cpp_tuple_ish = requires
+{
+  std::tuple_size_v<T> >= N;
+};
 template <typename T, std::size_t N>
-concept cpp_array_ish = !
-vector_ish<T>&& cpp_tuple_ish<T, N>&& requires(T t) {
-                                        std::size(t);
-                                        t[0];
-                                      };
+concept cpp_array_ish = !vector_ish<T> && cpp_tuple_ish<T, N> && requires(T t)
+{
+  std::size(t);
+  t[0];
+};
 
 template <typename T, std::size_t N>
 concept array_ish = c_array_ish<T, N> || cpp_array_ish<T, N>;
 
 template <typename T>
-concept span_ish = requires(T t) {
-                     t.size();
-                     t[0];
-                   };
+concept span_ish = requires(T t)
+{
+  t.size();
+  t[0];
+};
 
 template <typename T>
 concept pointer = std::is_pointer_v<std::decay_t<T>>;
 
 template <typename T>
-concept string_ish = requires(T t, std::string_view v) { v = t; };
+concept string_ish = requires(T t, std::string_view v)
+{
+  v = t;
+};
 
 template <typename T>
 concept int_ish = std::is_same_v < std::decay_t<T>,
 signed int >
     || std::
-        is_same_v<
-            std::remove_reference_t<T>,
-            signed short> || std::is_same_v<std::decay_t<T>, signed long> || std::is_same_v<std::decay_t<T>, signed long long> || std::is_same_v<std::decay_t<T>, unsigned int> || std::is_same_v<std::decay_t<T>, unsigned short> || std::is_same_v<std::decay_t<T>, unsigned long> || std::is_same_v<std::decay_t<T>, unsigned long long>;
+        is_same_v<std::remove_reference_t<T>, signed short> || std::is_same_v<std::decay_t<T>, signed long> || std::is_same_v<std::decay_t<T>, signed long long> || std::is_same_v<std::decay_t<T>, unsigned int> || std::is_same_v<std::decay_t<T>, unsigned short> || std::is_same_v<std::decay_t<T>, unsigned long> || std::is_same_v<std::decay_t<T>, unsigned long long>;
 
 template <typename T>
 concept fp_ish = std::is_floating_point_v<std::decay_t<T>>;
 
 template <typename T>
 concept bool_ish = std::is_same_v < std::decay_t<T>,
-        bool
-> ;
+bool > ;
 
 template <typename T>
 struct is_type_list : std::false_type
@@ -107,14 +112,20 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
  * Used for instance for inputs and outputs introspection.
  * C++2y: we'd like to have the token "inputs" itself be generic
  */
-#define type_or_value_qualification(Name)                                        \
-  template <typename T>                                                          \
-  concept Name##_is_value = requires(T t) { decltype(T::Name){}; };              \
-                                                                                 \
-  template <typename T>                                                          \
-  concept Name##_is_type = requires(T t) { !std::is_void_v<typename T::Name>; }; \
-                                                                                 \
-  template <typename T>                                                          \
+#define type_or_value_qualification(Name) \
+  template <typename T>                   \
+  concept Name##_is_value = requires(T t) \
+  {                                       \
+    decltype(T::Name){};                  \
+  };                                      \
+                                          \
+  template <typename T>                   \
+  concept Name##_is_type = requires(T t)  \
+  {                                       \
+    !std::is_void_v<typename T::Name>;    \
+  };                                      \
+                                          \
+  template <typename T>                   \
   concept has_##Name = Name##_is_type<T> || Name##_is_value<T>;
 
 /**

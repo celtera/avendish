@@ -11,7 +11,7 @@
 
 namespace avnd
 {
-template<typename I>
+template <typename I>
 static constexpr void init_controls(I&& inputs)
 {
   avnd::for_each_field_ref(

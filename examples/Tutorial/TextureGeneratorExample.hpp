@@ -36,13 +36,16 @@ struct TextureGeneratorExample
   $(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663");
 
   // By know you know the drill: define inputs, outputs...
-  struct {
+  struct
+  {
     avnd::hslider_f32<"Bamboozling", avnd::range{0.0001, 0.1, 0.01}> bamboozle;
   } inputs;
 
-  struct {
+  struct
+  {
     // See TextureFilterExample for helper types which abstract the allocation side of things
-    struct {
+    struct
+    {
       $(name, "Out");
 
       // This type is a view on a texture
@@ -57,7 +60,7 @@ struct TextureGeneratorExample
   {
     // Allocate some initial data
     bytes = avnd::rgba_texture::allocate(480, 270);
-    for(unsigned char& c : bytes)
+    for (unsigned char& c : bytes)
     {
       c = std::rand() % 10;
     }

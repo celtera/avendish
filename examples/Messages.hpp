@@ -20,10 +20,7 @@ struct Messages
 {
   static consteval auto name() { return "Messages"; }
   static consteval auto c_name() { return "avnd_messages"; }
-  static consteval auto uuid()
-  {
-    return "c1995e22-22a8-4149-8330-89d8a99850c4";
-  }
+  static consteval auto uuid() { return "c1995e22-22a8-4149-8330-89d8a99850c4"; }
 
   struct
   {

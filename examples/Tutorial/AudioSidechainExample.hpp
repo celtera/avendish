@@ -19,19 +19,21 @@ struct AudioSidechainExample
   $(description, "<DESCRIPTION>");
   $(uuid, "6fcfa5ad-ac5e-4851-a7bc-72f6fbf57dcd");
 
-  struct {
+  struct
+  {
     avnd::audio_input_bus<"Main Input"> audio;
     avnd::audio_input_bus<"Sidechain"> sidechain;
 
     avnd::knob_f32<"Gain", avnd::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
   } inputs;
 
-  struct {
-      // Here we say: use the same number of channels than the input "Main Input" defined above.
-      avnd::mimic_audio_bus<"Output", &decltype(inputs)::audio> audio;
+  struct
+  {
+    // Here we say: use the same number of channels than the input "Main Input" defined above.
+    avnd::mimic_audio_bus<"Output", &decltype(inputs)::audio> audio;
 
-      // Add a side-chain which will always be a mono channel
-      avnd::fixed_audio_bus<"Mono downmix", double, 1> side_out;
+    // Add a side-chain which will always be a mono channel
+    avnd::fixed_audio_bus<"Mono downmix", double, 1> side_out;
   } outputs;
 
   void operator()(std::size_t N)
@@ -51,7 +53,7 @@ struct AudioSidechainExample
       auto& out = p2.samples[i];
 
       // If there's enough channels in the sidechain, use it
-      if(sc.channels > i)
+      if (sc.channels > i)
       {
         auto& sidechain = sc.samples[i];
         for (std::size_t j = 0; j < N; j++)

@@ -11,7 +11,9 @@ namespace avnd
 {
 
 template <typename FP, typename T>
-concept synth_processor = requires(
-    T& t) { std::declval<T::voice>().operator()(t, (FP**)nullptr, (int32_t)0); };
+concept synth_processor = requires(T& t)
+{
+  std::declval<T::voice>().operator()(t, (FP**)nullptr, (int32_t)0);
+};
 
 }

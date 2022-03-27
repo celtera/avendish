@@ -9,30 +9,27 @@
 
 namespace avnd
 {
-template<typename T>
+template <typename T>
 struct inputs_storage
 {
-
 };
 
-template<inputs_is_type T>
+template <inputs_is_type T>
 struct inputs_storage<T>
 {
   typename T::inputs inputs_storage;
 };
 
-template<typename T>
+template <typename T>
 struct outputs_storage
 {
-
 };
 
-template<outputs_is_type T>
+template <outputs_is_type T>
 struct outputs_storage<T>
 {
-    typename T::outputs outputs_storage;
+  typename T::outputs outputs_storage;
 };
-
 
 /**
  * @brief used to adapt monophonic effects to polyphonic hosts
@@ -55,7 +52,7 @@ struct effect_container
   {
     if constexpr (has_inputs<T>)
     {
-      if constexpr(inputs_is_type<T>)
+      if constexpr (inputs_is_type<T>)
         return this->inputs_storage;
       else
         return effect.inputs;
@@ -67,7 +64,7 @@ struct effect_container
   {
     if constexpr (has_inputs<T>)
     {
-      if constexpr(inputs_is_type<T>)
+      if constexpr (inputs_is_type<T>)
         return this->inputs_storage;
       else
         return effect.inputs;
@@ -79,7 +76,7 @@ struct effect_container
   {
     if constexpr (has_outputs<T>)
     {
-      if constexpr(outputs_is_type<T>)
+      if constexpr (outputs_is_type<T>)
         return this->outputs_storage;
       else
         return effect.outputs;
@@ -91,7 +88,7 @@ struct effect_container
   {
     if constexpr (has_outputs<T>)
     {
-      if constexpr(outputs_is_type<T>)
+      if constexpr (outputs_is_type<T>)
         return this->outputs_storage;
       else
         return effect.outputs;
@@ -104,8 +101,8 @@ struct effect_container
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>)
-struct effect_container<T>
+requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>) struct
+    effect_container<T>
 {
   using type = T;
 
@@ -140,8 +137,8 @@ struct effect_container<T>
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>)
-struct effect_container<T>
+requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) struct
+    effect_container<T>
 {
   using type = T;
 
@@ -150,12 +147,13 @@ struct effect_container<T>
   {
     // FIXME do that everywhere
     // FIXME how to save controls when we go down to 0 channels ?
-    if(effect.empty())
+    if (effect.empty())
       effect.resize(input);
-    else if(effect.size() > input)
+    else if (effect.size() > input)
       effect.resize(input);
-    else while(effect.size() < input)
-      effect.push_back(effect[0]);
+    else
+      while (effect.size() < input)
+        effect.push_back(effect[0]);
   }
 
   auto& inputs() noexcept { return dummy_instance; }
@@ -165,7 +163,7 @@ struct effect_container<T>
 
   member_iterator<T> effects()
   {
-    for(auto& eff : effect)
+    for (auto& eff : effect)
       co_yield eff;
   }
 
@@ -180,7 +178,8 @@ struct effect_container<T>
 
   member_iterator<ref> full_state()
   {
-    for (auto& e : effect) {
+    for (auto& e : effect)
+    {
       ref r{e, {}, {}};
       co_yield r;
     }
@@ -188,7 +187,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
+requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
 struct effect_container<T>
 {
   using type = T;
@@ -238,7 +237,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
+requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
@@ -285,7 +284,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
+requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;

@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
+
 #include <numeric>
 
 namespace examples
@@ -14,10 +15,7 @@ struct PerSampleProcessor
 {
   static consteval auto name() { return "Per-sample processor"; }
   static consteval auto c_name() { return "avnd_persample_1"; }
-  static consteval auto uuid()
-  {
-    return "c0ece845-2df7-486d-b096-6d507cbe23d1";
-  }
+  static consteval auto uuid() { return "c0ece845-2df7-486d-b096-6d507cbe23d1"; }
 
   // For per-sample processors, it is better to have inputs as a type:
   // a single space for the inputs will be allocated for the polyphonic voices.

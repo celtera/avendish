@@ -3,8 +3,8 @@
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/helpers/audio.hpp>
 #include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/log.hpp>
+#include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
 
 namespace examples
@@ -24,9 +24,6 @@ struct EmptyExample
   $(uuid, "1c0f91ee-52da-4a49-a70a-4530a24b152b");
 
   /** This function will be called repeatedly at the tick rate of the environment **/
-  void operator()()
-  {
-    avnd::basic_logger{}.log("henlo");
-  }
+  void operator()() { avnd::basic_logger{}.log("henlo"); }
 };
 }

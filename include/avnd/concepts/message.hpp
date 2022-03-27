@@ -12,41 +12,43 @@ namespace avnd
 {
 
 template <typename T>
-concept stateless_message
-    = requires { typename avnd::function_reflection<T::func()>::return_type; };
+concept stateless_message = requires
+{
+  typename avnd::function_reflection<T::func()>::return_type;
+};
 template <typename T>
-concept stateful_message
-    = requires {
-        typename avnd::function_reflection_o<decltype(T::func())>::return_type;
-      };
+concept stateful_message = requires
+{
+  typename avnd::function_reflection_o<decltype(T::func())>::return_type;
+};
 template <typename T>
-concept stdfunc_message
-    = requires {
-        typename avnd::function_reflection_t<decltype(T::func())>::return_type;
+concept stdfunc_message = requires
+{
+  typename avnd::function_reflection_t<decltype(T::func())>::return_type;
 };
 
 template <typename T>
-concept reflectable_message = stateless_message<T> || stateful_message<T> || stdfunc_message<T>;
+concept reflectable_message
+    = stateless_message<T> || stateful_message<T> || stdfunc_message<T>;
 
 template <typename T>
-concept message = reflectable_message<T> && requires(T t) {
-                                              {
-                                                t.name()
-                                                } -> string_ish;
-                                            };
-
-template <typename T>
-concept unreflectable_message =
-  !reflectable_message<T>
-  && requires (T t) {
-    t.name();
-    t.func();
+concept message = reflectable_message<T> && requires(T t)
+{
+  {
+    t.name()
+    } -> string_ish;
 };
-type_or_value_qualification(messages)
-type_or_value_reflection(messages)
 
-template <typename M>
-consteval auto message_function_reflection()
+template <typename T>
+concept unreflectable_message = !reflectable_message<T> && requires(T t)
+{
+  t.name();
+  t.func();
+};
+type_or_value_qualification(messages) type_or_value_reflection(messages)
+
+    template <typename M>
+    consteval auto message_function_reflection()
 {
   if constexpr (requires { avnd::function_reflection<M::func()>::count; })
   {

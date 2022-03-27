@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/messages.hpp>
 #include <avnd/helpers/log.hpp>
+#include <avnd/helpers/messages.hpp>
 #include <avnd/helpers/meta.hpp>
 
 #include <cstdio>
@@ -42,7 +42,8 @@ struct Logger
   void example(float x) { logger.log("example: {}", x); }
 
   struct
-  { avnd::func_ref<"member", &Logger<C>::example> my_message; } messages;
-
+  {
+    avnd::func_ref<"member", &Logger<C>::example> my_message;
+  } messages;
 };
 }

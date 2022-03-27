@@ -5,7 +5,6 @@
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
-
 #include <cmath>
 
 namespace examples
@@ -23,8 +22,10 @@ struct TrivialFilterExample
   /**
    * Here we define a pair of input / outputs.
    */
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       // Give a name to our parameter to show the user
       $(name, "In");
 
@@ -32,8 +33,10 @@ struct TrivialFilterExample
     } main; // Name does not matter
   } inputs; // Inputs have to be inside an "input" member.
 
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       $(name, "Out");
 
       int value{};

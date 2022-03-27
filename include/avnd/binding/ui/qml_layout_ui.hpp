@@ -6,43 +6,23 @@
 #include <avnd/binding/ui/qml/float_control.hpp>
 #include <avnd/binding/ui/qml/int_control.hpp>
 #include <avnd/binding/ui/qml/toggle_control.hpp>
-#include <avnd/introspection/input.hpp>
-#include <avnd/introspection/messages.hpp>
-#include <avnd/introspection/layout.hpp>
 #include <avnd/common/for_nth.hpp>
-
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/layout.hpp>
+#include <avnd/introspection/messages.hpp>
 
 #include <QDebug>
 #include <QGuiApplication>
+#include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQmlProperty>
 #include <QQuickItem>
-#include <QQmlApplicationEngine>
 
 #include <verdigris>
 
 namespace qml
 {
-
-constexpr int index_in_struct(const auto& s, auto member)
-{
-  int index = -1;
-  int k = 0;
-  
-  avnd::for_each_field_ref(s, [&] (auto& m) {
-    if constexpr (requires { bool(&m == &(s.*member)); })
-    {
-      if(&m == &(s.*member))
-      {
-        index = k;
-      }
-    }
-    ++k;
-  });
-  assert(index >= 0);
-  return index;
-}
 
 template <typename T>
 class qml_layout_ui_base
@@ -116,6 +96,7 @@ class qml_layout_ui
   using qml_layout_ui_base<T>::create;
 
   int depth = 0;
+
 public:
   explicit qml_layout_ui(avnd::effect_container<T>& impl)
       : qml_layout_ui_base<T>{impl}
@@ -137,65 +118,69 @@ ApplicationWindow {{
 
     // The layout
     createLayout();
-    
+
     append("\n  }}\n}}\n");
 
     /// Create and instantiate the QML component
     this->engine.loadData(QByteArray::fromStdString(this->componentData), QUrl());
     auto objs = this->engine.rootObjects();
     assert(!objs.empty());
-    
+
     this->item = objs[0]->template findChild<QQuickItem*>(QStringLiteral("mainItem"));
     assert(this->item);
   }
-  
-  template<typename... Args>
-  void append(fmt::format_string<Args...> s, Args&&... args) 
+
+  template <typename... Args>
+  void append(fmt::format_string<Args...> s, Args&&... args)
   {
     fmt::format_to(
-        std::back_inserter(this->componentData),
-          s,
-          std::forward<Args>(args)...);
+        std::back_inserter(this->componentData), s, std::forward<Args>(args)...);
   }
-  
+
   void recurseItem(const auto& item)
   {
-    avnd::for_each_field_ref(item, [this] (auto& child) {
-      this->createItem(child);      
-    });
+    avnd::for_each_field_ref(item, [this](auto& child) { this->createItem(child); });
   }
-  
+
   static inline int tab_bar_k = 0;
   void createWidget(const auto& item)
   {
-    if constexpr(requires { { item } -> std::convertible_to<std::string_view>; })
+    if constexpr (requires {
+                    {
+                      item
+                      } -> std::convertible_to<std::string_view>;
+                  })
     {
-      append(R"_(Label {{ text: "{}";  }}
-)_", item);
+      append(
+          R"_(Label {{ text: "{}";  }}
+)_",
+          item);
     }
-    else if constexpr(requires { (avnd::get_inputs<T>(this->implementation).*item); })
+    else if constexpr (requires { (avnd::get_inputs<T>(this->implementation).*item); })
     {
       auto& ins = avnd::get_inputs<T>(this->implementation);
       auto& control = ins.*item;
-      create(*this, control, index_in_struct(ins, item)); 
+      create(*this, control, avnd::index_in_struct(ins, item));
     }
   }
-  
+
   void createTabBar(const auto& item)
   {
-    avnd::for_each_field_ref(item, [this] <typename Item> (const Item& child) {
-      append(R"_(TabButton {{ text: "{}"; width: implicitWidth }})_", Item::name());
-    });
+    avnd::for_each_field_ref(
+        item,
+        [this]<typename Item>(const Item& child) {
+          append(R"_(TabButton {{ text: "{}"; width: implicitWidth }})_", Item::name());
+        });
   }
 
-  template<typename Item>
+  template <typename Item>
   void createItem(const Item& item)
   {
-    if constexpr(requires { item.spacing; })
+    if constexpr (requires { item.spacing; })
     {
       append("Item {{ width: {}; height: {} }}\n", Item::width(), Item::height());
     }
-    if constexpr(requires { item.hbox; })
+    if constexpr (requires { item.hbox; })
     {
       append("RowLayout {{ width: parent.width;  \n");
       depth++;
@@ -203,7 +188,7 @@ ApplicationWindow {{
       depth--;
       append("}}\n");
     }
-    else if constexpr(requires { item.vbox; })
+    else if constexpr (requires { item.vbox; })
     {
       append("ColumnLayout {{ width: parent.width; \n");
       depth++;
@@ -211,7 +196,7 @@ ApplicationWindow {{
       depth--;
       append("\n}}\n");
     }
-    else if constexpr(requires { item.split; })
+    else if constexpr (requires { item.split; })
     {
       append("SplitView {{ width: {}; height: {} \n", Item::width(), Item::height());
       depth++;
@@ -219,7 +204,7 @@ ApplicationWindow {{
       depth--;
       append("\n}}\n");
     }
-    else if constexpr(requires { item.group; })
+    else if constexpr (requires { item.group; })
     {
       append("GroupBox {{ width: parent.width; title: \"{}\" \n", Item::name());
       depth++;
@@ -227,7 +212,7 @@ ApplicationWindow {{
       depth--;
       append("\n}}\n");
     }
-    else if constexpr(requires { item.tabs; })
+    else if constexpr (requires { item.tabs; })
     {
       const int bar = tab_bar_k++;
       append("TabBar {{ width: parent.width; id: tabbar_{}\n", bar);
@@ -235,12 +220,14 @@ ApplicationWindow {{
       createTabBar(item);
       depth--;
       append("\n}}\n");
-      append("StackLayout {{ width: parent.width; currentIndex: tabbar_{}.currentIndex\n", bar);
+      append(
+          "StackLayout {{ width: parent.width; currentIndex: tabbar_{}.currentIndex\n",
+          bar);
       depth++;
       recurseItem(item);
       depth--;
       append("\n}}\n");
-    } 
+    }
     else
     {
       // Normal widget
@@ -252,7 +239,6 @@ ApplicationWindow {{
   {
     auto& lay = avnd::get_layout(this->implementation);
     createItem(lay);
-    
   }
 
   void floatChanged(int idx, float value) noexcept

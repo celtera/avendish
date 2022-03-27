@@ -26,13 +26,13 @@ struct Peak
   void operator()(int frames)
   {
     outputs.peak = 0.;
-    for(int k = 0; k < frames; k++) {
+    for (int k = 0; k < frames; k++)
+    {
       double sample = std::abs(inputs.audio[k]);
-      if(sample > outputs.peak)
+      if (sample > outputs.peak)
         outputs.peak = sample;
     }
   }
 };
 
 }
-

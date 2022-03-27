@@ -24,7 +24,8 @@ struct SampleAccurateGeneratorExample
    * Timestamps start from zero (at the beginning of a buffer) to N:
    * i ∈ [0; N( in the usual mathematic notation.
    */
-  struct {
+  struct
+  {
     avnd::accurate<avnd::val_port<"Out", int>> value;
   } outputs;
 

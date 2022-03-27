@@ -5,11 +5,9 @@
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/sample_accurate_controls.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <vector>
 #include <cmath>
 
+#include <vector>
 
 namespace examples
 {
@@ -29,7 +27,8 @@ struct Distortion
   /** We define the input ports of our process: in this case,
    *  there's an audio input, a gain slider.
    */
-  struct {
+  struct
+  {
     avnd::audio_input_bus<"Input"> audio;
     avnd::hslider_f32<"Gain", avnd::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
   } inputs;
@@ -37,7 +36,8 @@ struct Distortion
   /** And the output ports: only an audio output on this one.
    * We force stereo output no matter how many inputs there are.
    */
-  struct {
+  struct
+  {
     avnd::fixed_audio_bus<"Output", double, 2> audio;
   } outputs;
 
@@ -86,7 +86,7 @@ struct Distortion
 
       // Sum samples from the input buffer
       const int64_t samples_to_read = N;
-      for(int64_t j = 0; j < samples_to_read; j++)
+      for (int64_t j = 0; j < samples_to_read; j++)
       {
         temp_buffer[j] += in[j];
       }
@@ -106,7 +106,7 @@ struct Distortion
     auto out_l = outputs.audio.channel(0, N);
     auto out_r = outputs.audio.channel(1, N);
 
-    for(int64_t j = 0; j < samples_to_write; j++)
+    for (int64_t j = 0; j < samples_to_write; j++)
     {
       // Tanh
       out_l[j] = std::tanh(temp_buffer[j] * gain.value);

@@ -29,7 +29,7 @@ struct audio_channel_manager;
  * is mono by definition.
  */
 template <typename T>
-  requires avnd::monophonic_audio_processor<T>
+requires avnd::monophonic_audio_processor<T>
 struct audio_channel_manager<T>
 {
   explicit audio_channel_manager(auto& processor) { }
@@ -75,10 +75,10 @@ struct audio_channel_manager<T>
  *  or per-channel
  */
 template <typename T>
-  requires avnd::poly_per_sample_port_processor<float, T>
-  || avnd::poly_per_sample_port_processor<double, T>
-  || avnd::poly_per_channel_port_processor<float, T>
-  || avnd::poly_per_channel_port_processor<double, T>
+requires avnd::poly_per_sample_port_processor<float, T> || avnd::
+    poly_per_sample_port_processor<double, T> || avnd::poly_per_channel_port_processor<
+        float,
+        T> || avnd::poly_per_channel_port_processor<double, T>
 struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
@@ -111,7 +111,7 @@ struct audio_channel_manager<T>
  * Case void operator()(float** in, int n_in, float** out, int n_out);
  */
 template <typename T>
-  requires avnd::bus_arg_processor<T>
+requires avnd::bus_arg_processor<T>
 struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
@@ -187,9 +187,10 @@ struct audio_channel_manager<T>
 };
 
 template <typename T>
-  requires(
-      avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-struct audio_channel_manager<T>
+requires(
+    avnd::poly_array_port_based<
+        float,
+        T> || avnd::poly_array_port_based<double, T>) struct audio_channel_manager<T>
 {
   using in_refl = avnd::audio_bus_input_introspection<T>;
   using out_refl = avnd::audio_bus_output_introspection<T>;
@@ -333,12 +334,12 @@ struct audio_channel_manager<T>
                 auto& mimicked_port = (inputs.*out.mimick_channel);
                 if constexpr (requires { mimicked_port.channels(); })
                 {
-                  out.channels = mimicked_port.channels();                  
+                  out.channels = mimicked_port.channels();
                   set_output_impl(i, out.channels);
                 }
                 else if constexpr (requires { mimicked_port.channels; })
                 {
-                  out.channels = mimicked_port.channels;                  
+                  out.channels = mimicked_port.channels;
                   set_output_impl(i, out.channels);
                 }
               }
@@ -406,7 +407,10 @@ struct audio_channel_manager<T>
     return bool(ok);
   }
 
-  int get_input_channels(auto& processor, int input_id) { return input_channels[input_id]; }
+  int get_input_channels(auto& processor, int input_id)
+  {
+    return input_channels[input_id];
+  }
 
   int get_output_channels(auto& processor, int output_id)
   {
@@ -434,8 +438,9 @@ struct audio_channel_manager<T>
 
 // Case for everything that does not handle audio
 template <typename T>
-  requires(!avnd::float_processor<T> && !avnd::double_processor<T>)
-struct audio_channel_manager<T>
+requires(
+    !avnd::float_processor<
+        T> && !avnd::double_processor<T>) struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
       = avnd::input_channels_introspection<T>::input_channels;

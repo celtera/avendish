@@ -4,9 +4,10 @@
 
 #include <avnd/common/widechar.hpp>
 
-#include <string_view>
 #include <algorithm>
 #include <cassert>
+
+#include <string_view>
 
 namespace avnd
 {
@@ -27,10 +28,7 @@ struct limited_string_view : std::string_view
   {
   }
 
-  void copy_to(void* dest) const noexcept
-  {
-    copy_to(reinterpret_cast<char*>(dest));
-  }
+  void copy_to(void* dest) const noexcept { copy_to(reinterpret_cast<char*>(dest)); }
 
   void copy_to(char* dest) const noexcept
   {

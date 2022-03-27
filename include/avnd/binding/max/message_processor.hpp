@@ -2,15 +2,15 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/avnd.hpp>
-#include <avnd/wrappers/controls.hpp>
-#include <cmath>
-#include <avnd/common/export.hpp>
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/inputs.hpp>
 #include <avnd/binding/max/messages.hpp>
 #include <avnd/binding/max/outputs.hpp>
+#include <avnd/common/export.hpp>
+#include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <cmath>
 
 #include <span>
 #include <string>
@@ -68,7 +68,8 @@ struct message_processor
     output_setup.init(implementation, x_obj);
 
     /// Initialize controls
-    if constexpr(avnd::has_inputs<T>) {
+    if constexpr (avnd::has_inputs<T>)
+    {
       avnd::init_controls(avnd::get_inputs<T>(implementation));
     }
   }
@@ -77,60 +78,76 @@ struct message_processor
 
   void process_inlet_control(int inlet, t_atom_long val)
   {
-    if constexpr(avnd::has_inputs<T>) {
-      avnd::input_introspection<T>::for_nth(avnd::get_inputs<T>(implementation), inlet, [val] (auto& field) {
-          // TODO dangerous if const char*
-          if constexpr (requires { field.value = 0; })
+    if constexpr (avnd::has_inputs<T>)
+    {
+      avnd::input_introspection<T>::for_nth(
+          avnd::get_inputs<T>(implementation),
+          inlet,
+          [val](auto& field)
           {
-            field.value = val;
-          }
-      });
+            // TODO dangerous if const char*
+            if constexpr (requires { field.value = 0; })
+            {
+              field.value = val;
+            }
+          });
     }
   }
 
   void process_inlet_control(int inlet, t_atom_float val)
   {
-    if constexpr(avnd::has_inputs<T>) {
-      avnd::input_introspection<T>::for_nth(avnd::get_inputs<T>(implementation), inlet, [val] (auto& field) {
-          // TODO dangerous if const char*
-          if constexpr (requires { field.value = 0; })
+    if constexpr (avnd::has_inputs<T>)
+    {
+      avnd::input_introspection<T>::for_nth(
+          avnd::get_inputs<T>(implementation),
+          inlet,
+          [val](auto& field)
           {
-            field.value = val;
-          }
-      });
+            // TODO dangerous if const char*
+            if constexpr (requires { field.value = 0; })
+            {
+              field.value = val;
+            }
+          });
     }
   }
 
   void process_inlet_control(int inlet, struct symbol* val)
   {
-    if constexpr(avnd::has_inputs<T>) {
-      avnd::input_introspection<T>::for_nth(avnd::get_inputs<T>(implementation), inlet, [val] (auto& field) {
-          // TODO dangerous if const char*
-          if constexpr (requires { field.value = "str"; })
+    if constexpr (avnd::has_inputs<T>)
+    {
+      avnd::input_introspection<T>::for_nth(
+          avnd::get_inputs<T>(implementation),
+          inlet,
+          [val](auto& field)
           {
-            field.value = val->s_name;
-          }
-      });
+            // TODO dangerous if const char*
+            if constexpr (requires { field.value = "str"; })
+            {
+              field.value = val->s_name;
+            }
+          });
     }
   }
 
   void process_inlet_control(int inlet, t_symbol* s, int argc, t_atom* argv)
   {
-    if constexpr(avnd::has_inputs<T>) {
+    if constexpr (avnd::has_inputs<T>)
+    {
       switch (argv[0].a_type)
       {
         case A_LONG:
           process_inlet_control(inlet, argv[0].a_w.w_long);
           break;
-  
+
         case A_FLOAT:
           process_inlet_control(inlet, argv[0].a_w.w_float);
           break;
-  
+
         case A_SYM:
           process_inlet_control(inlet, argv[0].a_w.w_sym);
           break;
-  
+
         default:
           break;
       }
@@ -139,22 +156,22 @@ struct message_processor
 
   void process()
   {
-     // Do our stuff if it makes sense - some objects may not
-     // even have a "processing" method
-     if_possible(implementation());
+    // Do our stuff if it makes sense - some objects may not
+    // even have a "processing" method
+    if_possible(implementation());
 
-     // Then bang
-     output_setup.commit(implementation);
+    // Then bang
+    output_setup.commit(implementation);
   }
 
-  template<typename V>
+  template <typename V>
   void process(V value)
   {
-     const int inlet = proxy_getinlet(&x_obj);
-     // Process the control
-     process_inlet_control(inlet, value);
+    const int inlet = proxy_getinlet(&x_obj);
+    // Process the control
+    process_inlet_control(inlet, value);
 
-     process();
+    process();
   }
 
   void process(t_symbol* s, int argc, t_atom* argv)
@@ -235,21 +252,16 @@ message_processor_metaclass<T>::message_processor_metaclass()
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void
   { obj->process(s, argc, argv); };
 
-  constexpr auto obj_process_bang
-      = +[](instance* obj) -> void
-  { obj->process(); };
+  constexpr auto obj_process_bang = +[](instance* obj) -> void { obj->process(); };
 
   constexpr auto obj_process_int
-      = +[](instance* obj, t_atom_long value) -> void
-  { obj->process(value); };
+      = +[](instance* obj, t_atom_long value) -> void { obj->process(value); };
 
   constexpr auto obj_process_float
-      = +[](instance* obj, t_atom_float value) -> void
-  { obj->process(value); };
+      = +[](instance* obj, t_atom_float value) -> void { obj->process(value); };
 
   constexpr auto obj_process_sym
-      = +[](instance* obj, t_symbol* value) -> void
-  { obj->process(value); };
+      = +[](instance* obj, t_symbol* value) -> void { obj->process(value); };
 
   /// Class creation ///
   g_class = class_new(
@@ -257,7 +269,9 @@ message_processor_metaclass<T>::message_processor_metaclass()
       (method)obj_new,
       (method)obj_free,
       sizeof(message_processor<T>),
-      0L, A_GIMME, 0);
+      0L,
+      A_GIMME,
+      0);
 
   // Connect our methods
   class_addmethod(g_class, (method)obj_process_int, "int", A_LONG, 0);

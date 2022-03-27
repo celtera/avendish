@@ -11,8 +11,11 @@ namespace avnd
  * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.
  */
 template <typename T>
-requires(avnd::poly_per_channel_port_processor<double, T> || avnd::poly_per_channel_port_processor<float, T>)
-struct process_adapter<T> : audio_buffer_storage<T>
+requires(
+    avnd::poly_per_channel_port_processor<
+        double,
+        T> || avnd::poly_per_channel_port_processor<float, T>) struct process_adapter<T>
+    : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_channel_input_introspection<T>;
   using o_info = avnd::audio_channel_output_introspection<T>;
@@ -33,7 +36,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
           else
           {
             auto& b = this->zero_storage_for(sample_type{});
-            if constexpr(Input)
+            if constexpr (Input)
             {
               bus.channel = b.zeros_in.data();
             }
@@ -51,15 +54,17 @@ struct process_adapter<T> : audio_buffer_storage<T>
   void copy_outputs(Ports& ports, auto buffers, int n)
   {
     int k = 0;
-    o_info::for_all(ports, [&](auto& bus)
-    {
-      if (k + 1 <= buffers.size())
-      {
-        auto buffer = buffers.data() + k;
-        std::copy_n(bus.channel, n, buffer);
-      }
-      k++;
-    });
+    o_info::for_all(
+        ports,
+        [&](auto& bus)
+        {
+          if (k + 1 <= buffers.size())
+          {
+            auto buffer = buffers.data() + k;
+            std::copy_n(bus.channel, n, buffer);
+          }
+          k++;
+        });
   }
   template <typename SrcFP, typename DstFP>
   void process_port(

@@ -4,9 +4,9 @@
 
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
+#include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <avnd/introspection/input.hpp>
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 #else
@@ -46,8 +46,7 @@ struct Controls
 };
 
 template <typename T>
-  requires(avnd::parameter_input_introspection<T>::size > 0)
-struct Controls<T>
+requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
 {
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;

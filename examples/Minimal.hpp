@@ -25,10 +25,7 @@ struct Minimal
 
   // Those are UUIDs in string form. Thankfully, it's possible to reduce those
   // to a binary form at compile time fairly easily (see score/uuid.hpp based on boost.uuid)
-  static consteval auto uuid()
-  {
-    return "52eec529-484a-4509-bbc3-9d3455911327";
-  }
+  static consteval auto uuid() { return "52eec529-484a-4509-bbc3-9d3455911327"; }
 
   struct
   {

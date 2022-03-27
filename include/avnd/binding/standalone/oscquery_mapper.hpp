@@ -3,10 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/concepts/all.hpp>
-#include <avnd/wrappers/effect_container.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/output.hpp>
+#include <avnd/wrappers/effect_container.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <ossia/audio/audio_engine.hpp>
 #include <ossia/detail/config.hpp>
@@ -73,8 +73,9 @@ struct oscquery_mapper
   }
 
   template <avnd::parameter Field>
-    requires(!avnd::enum_parameter<Field>)
-  void setup_control(Field& field, ossia::net::parameter_base& param)
+  requires(!avnd::enum_parameter<Field>) void setup_control(
+      Field& field,
+      ossia::net::parameter_base& param)
   {
     param.set_value_type(type_for_arg<decltype(Field::value)>());
 
@@ -302,9 +303,11 @@ struct oscquery_mapper
     // Check if all arguments passed are convertible to the expected
     // type of the method:
     auto can_apply_args = [&]<typename... Args, std::size_t... I>(
-                              boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
+        boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
+    {
       return (compatible<Args>(argv[I].get_type()) && ...);
-    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }
+    (arg_list_t{}, std::make_index_sequence<arg_counts>());
 
     if (!can_apply_args)
     {
@@ -318,7 +321,8 @@ struct oscquery_mapper
     {
       std::tuple args{convert(argv[I], tag<Args>{})...};
       call_message_impl<f>(deref(std::get<I>(args), tag<Args>{})...);
-    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }
+    (arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   template <auto f>

@@ -9,13 +9,14 @@ namespace vintage
 {
 
 template <typename T>
-concept synth_voice = requires(T t) {
-                        t.frequency;
-                        t.volume;
-                        t.elapsed;
-                        t.release_frame;
-                        t.recycle;
-                      };
+concept synth_voice = requires(T t)
+{
+  t.frequency;
+  t.volume;
+  t.elapsed;
+  t.release_frame;
+  t.recycle;
+};
 
 template <typename T>
 struct PolyphonicSynthesizer : vintage::Effect

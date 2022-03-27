@@ -11,10 +11,7 @@ struct Addition
 {
   static consteval auto name() { return "Addition"; }
   static consteval auto c_name() { return "addition"; }
-  static consteval auto uuid()
-  {
-    return "21bf52fe-487b-426b-8fc8-ea9d7249fd3c";
-  }
+  static consteval auto uuid() { return "21bf52fe-487b-426b-8fc8-ea9d7249fd3c"; }
 
   struct
   {

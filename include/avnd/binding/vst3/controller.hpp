@@ -3,11 +3,11 @@
 #include <avnd/binding/vst3/programs.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/common/widechar.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_fp.hpp>
-#include <avnd/introspection/input.hpp>
-#include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <cmath>
 #include <pluginterfaces/vst/ivstmidicontrollers.h>

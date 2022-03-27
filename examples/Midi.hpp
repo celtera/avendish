@@ -17,10 +17,7 @@ struct Midi
 {
   static consteval auto name() { return "MIDI example"; }
   static consteval auto c_name() { return "avnd_midi"; }
-  static consteval auto uuid()
-  {
-    return "8e2d87fc-dd8f-4e70-9b71-8a977d8aa58b";
-  }
+  static consteval auto uuid() { return "8e2d87fc-dd8f-4e70-9b71-8a977d8aa58b"; }
 
   struct
   {
@@ -126,8 +123,7 @@ struct Midi
 
         for (int j = 0; j < N; j++)
         {
-          out[j]
-              += std::sin(in[j] + phase) * (velocity / 127.) * (g *= 0.99995);
+          out[j] += std::sin(in[j] + phase) * (velocity / 127.) * (g *= 0.99995);
           phase += phase_increment;
         }
         note_phase = phase;

@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/callback.hpp>
 #include <avnd/concepts/callback.hpp>
+#include <avnd/helpers/callback.hpp>
 
 #include <functional>
 #include <iostream>
@@ -20,10 +20,7 @@ struct Callback
 {
   static consteval auto name() { return "Callback"; }
   static consteval auto c_name() { return "avnd_callback"; }
-  static consteval auto uuid()
-  {
-    return "38b72efd-33f7-4272-a15f-36c7d83b9165";
-  }
+  static consteval auto uuid() { return "38b72efd-33f7-4272-a15f-36c7d83b9165"; }
 
   struct
   {

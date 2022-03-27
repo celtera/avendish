@@ -9,7 +9,9 @@
 namespace avnd
 {
 template <typename T>
-struct messages_introspection : fields_introspection<typename messages_type<T>::type> { };
+struct messages_introspection : fields_introspection<typename messages_type<T>::type>
+{
+};
 
 template <typename T>
 auto& get_messages(avnd::effect_container<T>& t)

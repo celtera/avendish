@@ -83,9 +83,11 @@ struct init_arguments
 
     // Call the method
     [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
+        boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
+    {
       return implementation.initialize(convert<Args>(argv[I])...);
-    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }
+    (arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   static void
@@ -157,9 +159,11 @@ struct init_arguments
 
     // Call the method
     [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>) {
+        boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>)
+    {
       return f(implementation, convert<Args>(argv[I])...);
-    }(arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
+    }
+    (arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
 
     return true;
   }
@@ -197,8 +201,9 @@ struct init_arguments
   {
     // Generate an array with the required types for the overload set.
     std::apply(
-        [&]<typename... Args>(const Args&... args)
-        { (call_overloaded_impl(args, implementation, name, argc, argv) || ...); },
+        [&]<typename... Args>(const Args&... args) {
+          (call_overloaded_impl(args, implementation, name, argc, argv) || ...);
+        },
         T::initialize);
   }
 

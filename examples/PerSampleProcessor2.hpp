@@ -14,10 +14,7 @@ struct PerSampleProcessor2
 {
   static consteval auto name() { return "Per-sample processor 2"; }
   static consteval auto c_name() { return "avnd_persample_2"; }
-  static consteval auto uuid()
-  {
-    return "2de7ae80-4b07-410b-9e8b-eb9f49f9b6c5";
-  }
+  static consteval auto uuid() { return "2de7ae80-4b07-410b-9e8b-eb9f49f9b6c5"; }
 
   struct inputs
   {

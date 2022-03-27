@@ -4,8 +4,8 @@
 
 #include <avnd/common/index_sequence.hpp>
 #include <avnd/concepts/all.hpp>
-#include <avnd/wrappers/effect_container.hpp>
 #include <avnd/introspection/port.hpp>
+#include <avnd/wrappers/effect_container.hpp>
 #include <boost/pfr.hpp>
 
 namespace avnd
@@ -13,61 +13,87 @@ namespace avnd
 
 template <typename T>
 struct parameter_input_introspection
-    : parameter_introspection<typename inputs_type<T>::type> {};
+    : parameter_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
-struct control_input_introspection
-    : control_introspection<typename inputs_type<T>::type> {};
+struct control_input_introspection : control_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct linear_timed_parameter_input_introspection
-    : linear_timed_parameter_introspection<typename inputs_type<T>::type> {};
+    : linear_timed_parameter_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct span_timed_parameter_input_introspection
-    : span_timed_parameter_introspection<typename inputs_type<T>::type> {};
+    : span_timed_parameter_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct dynamic_timed_parameter_input_introspection
-    : dynamic_timed_parameter_introspection<typename inputs_type<T>::type> {};
+    : dynamic_timed_parameter_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
-struct midi_input_introspection : midi_port_introspection<typename inputs_type<T>::type> {};
+struct midi_input_introspection : midi_port_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct texture_input_introspection
-    : texture_port_introspection<typename inputs_type<T>::type> {};
+    : texture_port_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct cpu_texture_input_introspection
-        : cpu_texture_port_introspection<typename inputs_type<T>::type> {};
+    : cpu_texture_port_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct gpu_texture_input_introspection
-        : gpu_texture_port_introspection<typename inputs_type<T>::type> {};
+    : gpu_texture_port_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct raw_container_midi_input_introspection
-    : raw_container_midi_port_introspection<typename inputs_type<T>::type> {};
+    : raw_container_midi_port_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct dynamic_container_midi_input_introspection
-    : dynamic_container_midi_port_introspection<typename inputs_type<T>::type> {};
+    : dynamic_container_midi_port_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct audio_bus_input_introspection
-    : audio_bus_introspection<typename inputs_type<T>::type> {};
+    : audio_bus_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct audio_channel_input_introspection
-    : audio_channel_introspection<typename inputs_type<T>::type> {};
+    : audio_channel_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
-struct input_introspection : fields_introspection<typename inputs_type<T>::type> {};
+struct input_introspection : fields_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
-auto get_inputs(avnd::effect_container<T>& t)
-  -> decltype(t.inputs())
+auto get_inputs(avnd::effect_container<T>& t) -> decltype(t.inputs())
 {
   return t.inputs();
 }

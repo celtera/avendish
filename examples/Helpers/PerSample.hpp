@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/concepts/processor.hpp>
 #include <avnd/helpers/audio.hpp>
 #include <avnd/helpers/controls.hpp>
 #include <avnd/helpers/meta.hpp>
-#include <avnd/concepts/processor.hpp>
 #include <cmath>
 
 namespace examples::helpers
@@ -16,10 +16,7 @@ struct PerSampleAsArgs
   $(c_name, "avnd_helpers_per_sample_as_args")
   $(uuid, "92a1a42b-dc63-42f8-8d24-8cb9c046803a")
 
-  float operator()(float input)
-  {
-    return std::tanh(input);
-  }
+  float operator()(float input) { return std::tanh(input); }
 };
 
 struct PerSampleAsPorts

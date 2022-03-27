@@ -14,22 +14,24 @@ namespace avnd
 // Used to store callbacks without allocating.
 // By convention, the first argument to T::function must be T::context.
 template <typename T>
-concept function_view_ish =
-  requires(T t) {
-    { T::function } -> function;
-    { T::context } -> pointer;
+concept function_view_ish = requires(T t)
+{
+  {
+    T::function
+    } -> function;
+  {
+    T::context
+    } -> pointer;
 };
 
 template <typename T>
-concept view_callback =
-    function_view_ish<std::decay_t<decltype(T{}.call)>>;
+concept view_callback = function_view_ish<std::decay_t<decltype(T{}.call)>>;
 
 // Used to store std::function and similar types which handle their
 // allocations on their own
 template <typename T>
-concept dynamic_callback =
-    function_ish<std::decay_t<decltype(T{}.call)>>
- && !view_callback<T>;
+concept dynamic_callback
+    = function_ish<std::decay_t<decltype(T{}.call)>> && !view_callback<T>;
 
 template <typename T>
 concept callback = dynamic_callback<T> || view_callback<T>;

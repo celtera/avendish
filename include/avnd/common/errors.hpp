@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cstdlib>
+
 #include <type_traits>
 
 #define AVND_STATIC_TODO(T) static_assert(std::is_void_v<T>, "TODO !");

@@ -7,12 +7,21 @@
 namespace avnd
 {
 template <typename T>
-concept has_programs = requires(T t) { std::size(T::programs); };
+concept has_programs = requires(T t)
+{
+  std::size(T::programs);
+};
 
 template <typename T>
-concept can_bypass = requires(T t) { t.bypass; };
+concept can_bypass = requires(T t)
+{
+  t.bypass;
+};
 
 template <typename T>
-concept can_prepare = requires(T t) { t.prepare({}); };
+concept can_prepare = requires(T t)
+{
+  t.prepare({});
+};
 
 }

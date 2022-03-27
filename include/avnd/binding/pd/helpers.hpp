@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/metadatas.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/output.hpp>
+#include <avnd/wrappers/metadatas.hpp>
 #include <m_pd.h>
 
 #include <string_view>
@@ -83,12 +83,19 @@ static void process_generic_message(T& implementation, t_symbol* s)
           {
             if constexpr (requires { (float)ctl.value; })
             {
-              post("[dumpall] %s : [%d] = %f", avnd::get_name<object_type>(), k, (float)ctl.value);
+              post(
+                  "[dumpall] %s : [%d] = %f",
+                  avnd::get_name<object_type>(),
+                  k,
+                  (float)ctl.value);
             }
             else if constexpr (requires { ctl.value = std::string{}; })
             {
               post(
-                  "[dumpall] %s : [%d] = %s", avnd::get_name<object_type>(), k, ctl.value.c_str());
+                  "[dumpall] %s : [%d] = %s",
+                  avnd::get_name<object_type>(),
+                  k,
+                  ctl.value.c_str());
             }
           }
           k++;

@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/helpers/log.hpp>
 #include <avnd/helpers/messages.hpp>
 #include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/log.hpp>
 
 #include <cstdio>
 // Note: we use a generic logger abstraction here, so
@@ -20,7 +20,7 @@ inline void free_example()
   fflush(stdout);
 }
 
-template<typename C>
+template <typename C>
 inline void free_template_example()
 {
   using logger = typename C::logger_type;
@@ -29,8 +29,7 @@ inline void free_template_example()
 
 // See Logger.hpp
 template <typename C>
-requires
-    avnd::has_logger<C>
+requires avnd::has_logger<C>
 struct Messages
 {
   $(name, "Message helpers")
@@ -39,15 +38,9 @@ struct Messages
 
   [[no_unique_address]] typename C::logger_type logger;
 
-  void example()
-  {
-    logger.log("example");
-  }
+  void example() { logger.log("example"); }
 
-  void example2(float x)
-  {
-    logger.log("example2: {}", x);
-  }
+  void example2(float x) { logger.log("example2: {}", x); }
 
   template <typename U>
   void example3(U x)
@@ -55,18 +48,14 @@ struct Messages
     logger.log("example3: {}", x);
   }
 
-  avnd_start_messages(Messages)
-    avnd_mem_fun(example)
-    avnd_mem_fun(example2)
-    avnd_mem_fun_t(example3, <int>)
-    avnd_mem_fun_t(example3, <float>)
-    avnd_mem_fun_t(example3, <const char*>)
-    avnd_free_fun(free_example)
-    avnd_free_fun_t(free_template_example, <C>)
-    avnd_lambda(my_lambda, [] (Messages& self) { puts("lambda"); })
+  avnd_start_messages(Messages) avnd_mem_fun(example) avnd_mem_fun(example2)
+      avnd_mem_fun_t(example3, <int>) avnd_mem_fun_t(example3, <float>)
+          avnd_mem_fun_t(example3, <const char*>) avnd_free_fun(free_example)
+              avnd_free_fun_t(free_template_example, <C>)
+                  avnd_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
 
-    // General case:
-    avnd::func_ref<"my_message", &Messages::example> m_my_message;
+      // General case:
+      avnd::func_ref<"my_message", &Messages::example> m_my_message;
   avnd_end_messages
 };
 }

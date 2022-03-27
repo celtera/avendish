@@ -56,7 +56,8 @@ struct messages
         return (implementation.*f)(convert<Args>(argv[I])...);
       else
         return f(convert<Args>(argv[I])...);
-    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }
+    (arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   template <typename M>
@@ -103,7 +104,8 @@ struct messages
         return (implementation.*f)(implementation, convert<Args>(argv[I])...);
       else
         return f(implementation, convert<Args>(argv[I])...);
-    }(arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
+    }
+    (arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
   }
 
   template <typename M>

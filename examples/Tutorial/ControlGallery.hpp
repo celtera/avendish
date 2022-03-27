@@ -9,54 +9,56 @@
 #include <ossia/detail/logger.hpp>
 #include <ossia/network/value/format_value.hpp>
 */
-#include <fmt/format.h>
 #include <avnd/helpers/sample_accurate_controls.hpp>
 #include <boost/pfr.hpp>
-
 #include <cmath>
+#include <fmt/format.h>
 
-
-template<typename T>
+template <typename T>
 struct fmt::formatter<avnd::combo_pair<T>>
 {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
-      return ctx.begin();
-    }
-
-    template<typename FormatContext>
-    auto format(const avnd::combo_pair<T>& number, FormatContext& ctx)
-    {
-      return fmt::format_to(ctx.out(), "combo: {}->{}", number.first, number.second);
-    }
-};
-
-template<typename T>
-struct fmt::formatter<avnd::xy_type<T>>
-{
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
-      return ctx.begin();
-    }
-
-    template<typename FormatContext>
-    auto format(const avnd::xy_type<T>& number, FormatContext& ctx)
-    {
-      return fmt::format_to(ctx.out(), "xy: {}, {}", number.x, number.y);
-    }
-};
-template<>
-struct fmt::formatter<avnd::color_type>
-{
-  template<typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) {
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx)
+  {
     return ctx.begin();
   }
 
-  template<typename FormatContext>
+  template <typename FormatContext>
+  auto format(const avnd::combo_pair<T>& number, FormatContext& ctx)
+  {
+    return fmt::format_to(ctx.out(), "combo: {}->{}", number.first, number.second);
+  }
+};
+
+template <typename T>
+struct fmt::formatter<avnd::xy_type<T>>
+{
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx)
+  {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const avnd::xy_type<T>& number, FormatContext& ctx)
+  {
+    return fmt::format_to(ctx.out(), "xy: {}, {}", number.x, number.y);
+  }
+};
+template <>
+struct fmt::formatter<avnd::color_type>
+{
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx)
+  {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
   auto format(const avnd::color_type& number, FormatContext& ctx)
   {
-    return fmt::format_to(ctx.out(), "rgba: {}, {}, {}, {}", number.r, number.g, number.b, number.a);
+    return fmt::format_to(
+        ctx.out(), "rgba: {}, {}, {}, {}", number.r, number.g, number.b, number.a);
   }
 };
 
@@ -72,7 +74,8 @@ struct ControlGallery
   $(description, "<DESCRIPTION>");
   $(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
-  struct {
+  struct
+  {
     //! Buttons are level-triggers: true as long as the button is pressed
     avnd::accurate<avnd::maintained_button<"Press me ! (Button)">> button;
 
@@ -80,7 +83,8 @@ struct ControlGallery
     avnd::accurate<avnd::impulse_button<"Press me ! (Impulse)">> impulse_button;
 
     //! Common widgets
-    avnd::accurate<avnd::hslider_f32<"Float slider", avnd::range{0., 1., 0.5}>> float_slider;
+    avnd::accurate<avnd::hslider_f32<"Float slider", avnd::range{0., 1., 0.5}>>
+        float_slider;
     avnd::accurate<avnd::knob_f32<"Float knob", avnd::range{0., 1., 0.5}>> float_knob;
     //// // FIXME
     //// struct {
@@ -91,8 +95,10 @@ struct ControlGallery
 
 #if defined(__clang__) || defined(_MSC_VER)
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104720
-    avnd::accurate<avnd::hslider_i32<"Int slider", avnd::range{0., 1000., 10.}>> int_slider;
-    avnd::accurate<avnd::spinbox_i32<"Int spinbox", avnd::range{0, 1000, 10}>> int_spinbox;
+    avnd::accurate<avnd::hslider_i32<"Int slider", avnd::range{0., 1000., 10.}>>
+        int_slider;
+    avnd::accurate<avnd::spinbox_i32<"Int spinbox", avnd::range{0, 1000, 10}>>
+        int_spinbox;
 #endif
 
     //! Will look like a checkbox
@@ -106,11 +112,16 @@ struct ControlGallery
 
     //! First member of the pair is the text, second is the value.
     //! Defining comboboxes and enumerations is a tiny bit more complicated
-    struct : avnd::sample_accurate_values<avnd::combo_pair<float>> {
+    struct : avnd::sample_accurate_values<avnd::combo_pair<float>>
+    {
       $(name, "Combo box");
-      enum widget { combobox };
+      enum widget
+      {
+        combobox
+      };
 
-      struct range {
+      struct range
+      {
         avnd::combo_pair<float> values[3]{{"Foo", -10.f}, {"Bar", 0.f}, {"Baz", 10.f}};
         int init{1}; // Bar
       };
@@ -119,33 +130,42 @@ struct ControlGallery
     } combobox;
 
     //! Here value will be the string
-    struct : avnd::sample_accurate_values<std::string_view> {
-        $(name, "Enum 2");
-        enum widget { enumeration };
+    struct : avnd::sample_accurate_values<std::string_view>
+    {
+      $(name, "Enum 2");
+      enum widget
+      {
+        enumeration
+      };
 
-        struct range {
-          std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
-          int init{1}; // Red
-        };
+      struct range
+      {
+        std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
+        int init{1}; // Red
+      };
 
-        // FIXME: string_view: allow outside bounds
-        std::string_view value;
+      // FIXME: string_view: allow outside bounds
+      std::string_view value;
     } enumeration_a;
 
     //! Here value will be the index of the string... but even better than that
     //! is below:
-    struct : avnd::sample_accurate_values<int> {
-        $(name, "Enum 3");
-        enum widget { enumeration };
+    struct : avnd::sample_accurate_values<int>
+    {
+      $(name, "Enum 3");
+      enum widget
+      {
+        enumeration
+      };
 
-        struct range {
-          std::string_view values[4]{"Roses 2", "Red 2", "Violets 2", "Blue 2"};
-          int init{1}; // Red
-        };
+      struct range
+      {
+        std::string_view values[4]{"Roses 2", "Red 2", "Violets 2", "Blue 2"};
+        int init{1}; // Red
+      };
 
-        int value{};
+      int value{};
     } enumeration_b;
-
 
     /// // FIXME
     /// //! Same as Enum but won't reject strings that are not part of the list.
@@ -184,13 +204,13 @@ struct ControlGallery
   {
     const bool has_impulse = !inputs.impulse_button.values.empty();
     const bool has_button = std::any_of(
-                inputs.button.values.begin(),
-                inputs.button.values.end(),
-                [] (const auto& p) { return p.second == true; });
+        inputs.button.values.begin(),
+        inputs.button.values.end(),
+        [](const auto& p) { return p.second == true; });
 
-    if(!has_impulse && !has_button)
+    if (!has_impulse && !has_button)
       return;
-/*
+    /*
     ossia::logger().debug("");
     boost::pfr::for_each_field(
         inputs,

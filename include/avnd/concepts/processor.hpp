@@ -57,52 +57,55 @@ concept poly_array_port_based
        || poly_sample_array_output_port_count<FP, T> > 0);
 
 template <typename FP, typename T>
-concept effect_is_sane
-    = requires(T t) {
-        (sample_port_based<
-             FP,
-             T> && !(mono_array_port_based<FP, T> || poly_array_port_based<FP, T>))
-            || (mono_array_port_based<
-                    FP,
-                    T> && !(sample_port_based<FP, T> || poly_array_port_based<FP, T>))
-            || (poly_array_port_based<
-                    FP,
-                    T> && !(mono_array_port_based<FP, T> || sample_port_based<FP, T>))
-            || (!sample_port_based<
-                    FP,
-                    T> && !poly_array_port_based<FP, T> && !mono_array_port_based<FP, T>);
-      };
+concept effect_is_sane = requires(T t)
+{
+  (sample_port_based<
+       FP,
+       T> && !(mono_array_port_based<FP, T> || poly_array_port_based<FP, T>))
+      || (mono_array_port_based<
+              FP,
+              T> && !(sample_port_based<FP, T> || poly_array_port_based<FP, T>))
+      || (poly_array_port_based<
+              FP,
+              T> && !(mono_array_port_based<FP, T> || sample_port_based<FP, T>))
+      || (!sample_port_based<
+              FP,
+              T> && !poly_array_port_based<FP, T> && !mono_array_port_based<FP, T>);
+};
 
 /// Definition of what is an audio effect ///
 template <typename FP, typename T>
-concept monophonic_port_audio_effect = mono_sample_array_input_port_count<FP, T> > 0
-                                       || mono_sample_array_output_port_count<FP, T> > 0;
+concept monophonic_port_audio_effect = mono_sample_array_input_port_count<FP, T> >
+0 || mono_sample_array_output_port_count<FP, T> > 0;
 
 template <typename FP, typename T>
-concept polyphonic_port_audio_effect = poly_sample_array_input_port_count<FP, T> > 0
-                                       || poly_sample_array_output_port_count<FP, T> > 0;
+concept polyphonic_port_audio_effect = poly_sample_array_input_port_count<FP, T> >
+0 || poly_sample_array_output_port_count<FP, T> > 0;
 
 template <typename FP, typename T>
-concept monophonic_single_port_audio_effect
-    = mono_sample_array_input_port_count<FP, T> == 1
-      && mono_sample_array_output_port_count<FP, T> == 1;
+concept monophonic_single_port_audio_effect = mono_sample_array_input_port_count<FP, T>
+== 1 && mono_sample_array_output_port_count<FP, T> == 1;
 
 template <typename FP, typename T>
-concept polyphonic_single_port_audio_effect
-    = poly_sample_array_input_port_count<FP, T> == 1
-      && poly_sample_array_output_port_count<FP, T> == 1;
+concept polyphonic_single_port_audio_effect = poly_sample_array_input_port_count<FP, T>
+== 1 && poly_sample_array_output_port_count<FP, T> == 1;
 
 template <typename FP, typename T>
-concept monophonic_arg_audio_effect
-    = requires(T t) { t.operator()((FP*)nullptr, (FP*)nullptr, (int32_t)0); };
+concept monophonic_arg_audio_effect = requires(T t)
+{
+  t.operator()((FP*)nullptr, (FP*)nullptr, (int32_t)0);
+};
 
 template <typename FP, typename T>
-concept polyphonic_arg_audio_effect
-    = requires(T t) { t.operator()((FP**)nullptr, (FP**)nullptr, (int32_t)0); };
+concept polyphonic_arg_audio_effect = requires(T t)
+{
+  t.operator()((FP**)nullptr, (FP**)nullptr, (int32_t)0);
+};
 
 template <auto Func, typename... Args>
-concept same_arguments = std::is_same_v < typename function_reflection<Func>::arguments,
-boost::mp11::mp_list < Args... >> ;
+concept same_arguments = std::is_same_v<
+    typename function_reflection<Func>::arguments,
+    boost::mp11::mp_list<Args...>>;
 
 // clang-format off
 // If a node has exactly one audio in and one audio out it can be considered monophonic
@@ -211,34 +214,29 @@ concept channel_processor
 // - float / double
 // This gives us the following set of concepts
 template <typename FP, typename T>
-concept monophonic_processor
-    = effect_is_sane<FP, T>
-&& (monophonic_arg_audio_effect<FP, T>
-    || monophonic_single_port_audio_effect<FP, T>
-    || mono_per_sample_arg_processor<FP, T>
-    || mono_per_sample_port_processor<FP, T>);
+concept monophonic_processor = effect_is_sane<FP, T> &&(
+    monophonic_arg_audio_effect<
+        FP,
+        T> || monophonic_single_port_audio_effect<FP, T> || mono_per_sample_arg_processor<FP, T> || mono_per_sample_port_processor<FP, T>);
 
 template <typename FP, typename T>
-concept polyphonic_processor
-    = polyphonic_arg_audio_effect<
-          FP,
-          T> || poly_array_port_based<FP, T> || poly_per_sample_port_processor<FP, T>;
+concept polyphonic_processor = polyphonic_arg_audio_effect<
+    FP,
+    T> || poly_array_port_based<FP, T> || poly_per_sample_port_processor<FP, T>;
 
 template <typename T>
 concept polyphonic_double_processor
     = polyphonic_arg_audio_effect<double, T> || poly_array_port_based<double, T>;
 
 template <typename FP, typename T>
-concept typed_processor =
-    sample_port_based<FP, T> || mono_array_port_based<FP, T> || poly_array_port_based<FP, T>
- || mono_per_sample_arg_processor<FP, T> || mono_per_channel_arg_processor<FP, T>
- || monophonic_arg_audio_effect<FP, T> || polyphonic_arg_audio_effect<FP, T>
-;
+concept typed_processor
+    = sample_port_based<FP, T> || mono_array_port_based<FP, T> || poly_array_port_based<FP, T> || mono_per_sample_arg_processor<
+        FP,
+        T> || mono_per_channel_arg_processor<FP, T> || monophonic_arg_audio_effect<FP, T> || polyphonic_arg_audio_effect<FP, T>;
 template <typename T>
 concept float_processor = typed_processor<float, T>;
 template <typename T>
-concept double_processor
-    = typed_processor<double, T>;
+concept double_processor = typed_processor<double, T>;
 
 template <typename T>
 concept monophonic_audio_processor
@@ -249,8 +247,8 @@ concept polyphonic_audio_processor
 
 template <typename T>
 concept sample_arg_processor = mono_per_sample_arg_processor<
-                                   float,
-                                   T> || mono_per_sample_arg_processor<double, T>;
+    float,
+    T> || mono_per_sample_arg_processor<double, T>;
 template <typename T>
 concept channel_arg_processor
     = monophonic_arg_audio_effect<float, T> || monophonic_arg_audio_effect<double, T>;
@@ -260,8 +258,8 @@ concept bus_arg_processor
 
 template <typename T>
 concept sample_port_processor = mono_per_sample_port_processor<
-                                    float,
-                                    T> || mono_per_sample_port_processor<double, T>;
+    float,
+    T> || mono_per_sample_port_processor<double, T>;
 template <typename T>
 concept channel_port_processor
     = monophonic_port_audio_effect<float, T> || monophonic_port_audio_effect<double, T>;

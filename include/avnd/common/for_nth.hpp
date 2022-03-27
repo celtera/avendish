@@ -5,14 +5,14 @@
 #include <avnd/common/coroutines.hpp>
 #include <boost/pfr.hpp>
 
-#include <utility>
 #include <cassert>
+#include <utility>
 
 namespace avnd
 {
 
 template <std::size_t N>
-void for_nth(int k, auto&& f)
+constexpr void for_nth(int k, auto&& f)
 {
   [k]<std::size_t... Index>(std::index_sequence<Index...>, auto&& f)
   {
@@ -22,7 +22,7 @@ void for_nth(int k, auto&& f)
 }
 
 template <class T, class F>
-void for_each_field_ref(T&& value, F&& func)
+constexpr void for_each_field_ref(T&& value, F&& func)
 {
   using namespace boost::pfr;
   using namespace boost::pfr::detail;
@@ -40,21 +40,24 @@ void for_each_field_ref(T&& value, F&& func)
 template <class T, class F>
 void for_each_field_ref(avnd::member_iterator<T>&& value, F&& func)
 {
-  for(auto& v : value) {
+  for (auto& v : value)
+  {
     for_each_field_ref(v, func);
   }
 }
 template <class T, class F>
 void for_each_field_ref(avnd::member_iterator<T>& value, F&& func)
 {
-  for(auto& v : value) {
+  for (auto& v : value)
+  {
     for_each_field_ref(v, func);
   }
 }
 template <class T, class F>
 void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
 {
-  for(auto& v : value) {
+  for (auto& v : value)
+  {
     for_each_field_ref(v, func);
   }
 }
@@ -63,17 +66,20 @@ constexpr int index_in_struct(const auto& s, auto member)
 {
   int index = -1;
   int k = 0;
-  
-  avnd::for_each_field_ref(s, [&] (auto& m) {
-    if constexpr (requires { bool(&m == &(s.*member)); })
-    {
-      if(&m == &(s.*member))
+
+  avnd::for_each_field_ref(
+      s,
+      [&](auto& m)
       {
-        index = k;
-      }
-    }
-    ++k;
-  });
+        if constexpr (requires { bool(&m == &(s.*member)); })
+        {
+          if (&m == &(s.*member))
+          {
+            index = k;
+          }
+        }
+        ++k;
+      });
   assert(index >= 0);
   return index;
 }

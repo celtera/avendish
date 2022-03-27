@@ -7,13 +7,14 @@
 namespace avnd
 {
 
-
 /**
  * Mono processors with e.g. struct { float sample; } audio_in;
  */
 template <typename T>
-  requires(avnd::mono_per_sample_port_processor<double, T> || avnd::mono_per_sample_port_processor<float, T>)
-struct process_adapter<T>
+requires(
+    avnd::mono_per_sample_port_processor<
+        double,
+        T> || avnd::mono_per_sample_port_processor<float, T>) struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
   {
@@ -40,11 +41,7 @@ struct process_adapter<T>
     // Read back the output the input
     FP out;
     boost::pfr::for_each_field(
-        outs,
-        [&out]<typename Field>(Field& field)
-        {
-          if_possible(out = field.sample);
-        });
+        outs, [&out]<typename Field>(Field& field) { if_possible(out = field.sample); });
     return out;
   }
 
@@ -54,11 +51,7 @@ struct process_adapter<T>
     auto& [fx, ins, outs] = ref;
     // Copy the input
     boost::pfr::for_each_field(
-        ins,
-        [in]<typename Field>(Field& field)
-        {
-          if_possible(field.sample = in);
-        });
+        ins, [in]<typename Field>(Field& field) { if_possible(field.sample = in); });
 
     // Execute
     fx(ins, outs);
@@ -66,11 +59,7 @@ struct process_adapter<T>
     // Read back the output the input
     FP out;
     boost::pfr::for_each_field(
-        outs,
-        [&out]<typename Field>(Field& field)
-        {
-          if_possible(out = field.sample);
-        });
+        outs, [&out]<typename Field>(Field& field) { if_possible(out = field.sample); });
     return out;
   }
 
@@ -125,24 +114,16 @@ struct process_adapter<T>
   }
 };
 
-
-
-
 /**
  * Handles case where inputs / outputs are multiple one-sample ports
  */
 template <typename T>
-  requires(
-      poly_per_sample_port_processor<
-          float,
-          T> || poly_per_sample_port_processor<double, T>)
-struct process_adapter<T>
+requires(
+    poly_per_sample_port_processor<
+        float,
+        T> || poly_per_sample_port_processor<double, T>) struct process_adapter<T>
 {
-  void process_sample(
-      T& fx,
-      auto& ins,
-      auto& outs,
-      auto&& tick)
+  void process_sample(T& fx, auto& ins, auto& outs, auto&& tick)
   {
     if constexpr (requires { fx(ins, outs, tick); })
       return fx(ins, outs, tick);
@@ -156,10 +137,7 @@ struct process_adapter<T>
       static_assert(std::is_void_v<T>, "Canno call processor");
   }
 
-  void process_sample(
-      T& fx,
-      auto& ins,
-      auto& outs)
+  void process_sample(T& fx, auto& ins, auto& outs)
   {
     if constexpr (requires { fx(ins, outs); })
       return fx(ins, outs);
@@ -213,18 +191,11 @@ struct process_adapter<T>
       // Process
       if constexpr (requires { sizeof(current_tick(implementation)); })
       {
-        process_sample(
-              fx,
-              ins,
-              outs,
-              current_tick(implementation));
+        process_sample(fx, ins, outs, current_tick(implementation));
       }
       else
       {
-        process_sample(
-              fx,
-              ins,
-              outs);
+        process_sample(fx, ins, outs);
       }
 
       // Copy the outputs
@@ -248,10 +219,5 @@ struct process_adapter<T>
     }
   }
 };
-
-
-
-
-
 
 }

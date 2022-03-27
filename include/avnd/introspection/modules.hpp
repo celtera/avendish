@@ -2,16 +2,17 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/modules.hpp>
 #include <avnd/introspection/port.hpp>
-#include <avnd/common/struct_reflection.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-
 
 namespace avnd
 {
 template <typename T>
-struct modules_introspection : fields_introspection<typename modules_type<T>::type> {};
+struct modules_introspection : fields_introspection<typename modules_type<T>::type>
+{
+};
 
 template <typename T>
 auto& get_modules(avnd::effect_container<T>& t)

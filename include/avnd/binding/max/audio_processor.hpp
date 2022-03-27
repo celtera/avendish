@@ -2,21 +2,20 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/avnd.hpp>
-#include <avnd/wrappers/process_adapter.hpp>
-#include <avnd/wrappers/controls.hpp>
-#include <cmath>
-#include <avnd/common/export.hpp>
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/messages.hpp>
-
+#include <avnd/common/export.hpp>
+#include <avnd/wrappers/avnd.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
+#include <cmath>
 #include <ext.h>
 #include <z_dsp.h>
 
+#include <cstring>
 #include <span>
 #include <string>
-#include <cstring>
 
 /**
  * This Pd processor is used when there is dsp processing involved.
@@ -90,11 +89,7 @@ struct audio_processor
   void destroy() { }
 
   void
-  dsp(t_object* dsp64,
-      short* count,
-      double samplerate,
-      long maxvectorsize,
-      long flags)
+  dsp(t_object* dsp64, short* count, double samplerate, long maxvectorsize, long flags)
   {
     int a_chans
         = (intptr_t)object_method(dsp64, gensym("getnuminputchannels"), &x_obj, 0);
@@ -311,7 +306,9 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
       (method)obj_new,
       (method)obj_free,
       sizeof(audio_processor<T>),
-      0L, A_GIMME, 0);
+      0L,
+      A_GIMME,
+      0);
 
   class_dspinit(g_class);
   class_register(CLASS_BOX, g_class);
@@ -319,8 +316,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   // Connect our methods
   class_addmethod(g_class, (method)obj_dsp, "dsp64", A_CANT, 0);
   class_addmethod(g_class, (method)inputchange, "inputchanged", A_CANT, 0);
-  class_addmethod(
-      g_class, (method)outputcount, "multichanneloutputs", A_CANT, 0);
+  class_addmethod(g_class, (method)outputcount, "multichanneloutputs", A_CANT, 0);
 
   class_addmethod(g_class, (method)obj_process, "anything", A_GIMME, 0);
 }

@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/metadatas.hpp>
 #include <avnd/binding/vst3/metadata.hpp>
 #include <avnd/common/limited_string_view.hpp>
+#include <avnd/wrappers/metadatas.hpp>
 #include <pluginterfaces/base/funknown.h>
 #include <pluginterfaces/base/ipluginbase.h>
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
@@ -90,7 +90,10 @@ public:
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstComponentControllerClass}.copy_to(info->category);
         snprintf(
-            info->name, Steinberg::PClassInfo::kNameSize, "%sController", avnd::get_name<T>().data());
+            info->name,
+            Steinberg::PClassInfo::kNameSize,
+            "%sController",
+            avnd::get_name<T>().data());
         return Steinberg::kResultOk;
       }
       default:

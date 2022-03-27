@@ -4,9 +4,9 @@
 
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
+#include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-#include <avnd/introspection/input.hpp>
 
 #include <array>
 
@@ -14,12 +14,20 @@ namespace vintage
 {
 
 template <typename T>
-concept can_dispatch = requires(T t) { t.dispatch(nullptr, 0, 0, 0, nullptr, 0.f); };
+concept can_dispatch = requires(T t)
+{
+  t.dispatch(nullptr, 0, 0, 0, nullptr, 0.f);
+};
 
 template <typename T>
-concept can_event = requires(T eff) {
-                      eff.midi_input(std::declval<const vintage::MidiEvent&>());
-                    } || requires(T eff) { eff.event_input({}); };
+concept can_event = requires(T eff)
+{
+  eff.midi_input(std::declval<const vintage::MidiEvent&>());
+}
+|| requires(T eff)
+{
+  eff.event_input({});
+};
 
 template <typename Self_T>
 intptr_t default_dispatch(
@@ -72,12 +80,12 @@ intptr_t default_dispatch(
     {
       // Clang 13 still struggles with that...
 #if !defined(_MSC_VER)
-      #if !defined(__clang__) || (__clang_major__ > 13)
+#if !defined(__clang__) || (__clang_major__ > 13)
       if constexpr (requires { static_cast<int32_t>(effect_type::category()); })
         return static_cast<int32_t>(effect_type::category());
       else if constexpr (requires { static_cast<int32_t>(effect_type::category); })
         return static_cast<int32_t>(effect_type::category);
-      #endif
+#endif
 #endif
       return 0;
     }

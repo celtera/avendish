@@ -1,12 +1,15 @@
 #pragma once
 #include <avnd/wrappers/configure.hpp>
-#include <fmt/format.h>
+//#include <fmt/format.h>
 //#include <ossia/detail/logger.hpp>
 namespace oscr
 {
 
 struct logger
 {
+  void log(auto&&...) { }
+  void error(auto&&...) { }
+  /*
   template <typename... T>
   void log(fmt::format_string<T...> fmt, T&&... args)
   {
@@ -18,6 +21,7 @@ struct logger
   {
   //  ossia::logger().error(fmt, std::forward<T>(args)...);
   }
+  */
 };
 
 struct config

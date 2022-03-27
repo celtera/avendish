@@ -2,9 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/meta.hpp>
 #include <avnd/helpers/audio.hpp>
 #include <avnd/helpers/controls.hpp>
+#include <avnd/helpers/meta.hpp>
+
 #include <vector>
 
 namespace examples::helpers
@@ -34,10 +35,7 @@ public:
     avnd::dynamic_audio_bus<"Output", double> audio;
   } outputs;
 
-  void prepare(avnd::setup info)
-  {
-    previous_values.resize(info.input_channels);
-  }
+  void prepare(avnd::setup info) { previous_values.resize(info.input_channels); }
 
   // Do our processing for N samples
   void operator()(avnd::tick t)

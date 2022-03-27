@@ -1,32 +1,30 @@
 #pragma once
 #include <avnd/binding/ossia/configure.hpp>
-#include <avnd/binding/ossia/port_setup.hpp>
-#include <avnd/binding/ossia/port_run_preprocess.hpp>
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
-
+#include <avnd/binding/ossia/port_run_preprocess.hpp>
+#include <avnd/binding/ossia/port_setup.hpp>
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/midi_port.hpp>
+#include <avnd/introspection/channels.hpp>
+#include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/midi.hpp>
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/wrappers/bus_host_process_adapter.hpp>
-#include <avnd/introspection/channels.hpp>
+#include <avnd/wrappers/callbacks_adapter.hpp>
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-#include <avnd/introspection/midi.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/widgets.hpp>
-#include <avnd/introspection/midi.hpp>
-#include <avnd/wrappers/controls_storage.hpp>
-#include <avnd/wrappers/callbacks_adapter.hpp>
-#include <avnd/introspection/messages.hpp>
+#include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <ossia/dataflow/audio_port.hpp>
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/node_process.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/detail/for_each_in_tuple.hpp>
-#include <boost/smart_ptr/atomic_shared_ptr.hpp>
 namespace oscr
 {
 /*
@@ -106,17 +104,16 @@ struct ui_communication
 template <typename T>
 struct builtin_arg_audio_ports
 {
-  void init(ossia::inlets& inlets, ossia::outlets& outlets) {}
+  void init(ossia::inlets& inlets, ossia::outlets& outlets) { }
 };
 
 template <typename T>
-requires
-   avnd::mono_per_sample_arg_processor<double, T>
-|| avnd::monophonic_arg_audio_effect<double, T>
-|| avnd::polyphonic_arg_audio_effect<double, T>
-|| avnd::mono_per_sample_arg_processor<float, T>
-|| avnd::monophonic_arg_audio_effect<float, T>
-|| avnd::polyphonic_arg_audio_effect<float, T>
+requires avnd::mono_per_sample_arg_processor<double, T> || avnd::
+    monophonic_arg_audio_effect<double, T> || avnd::polyphonic_arg_audio_effect<
+        double,
+        T> || avnd::mono_per_sample_arg_processor<float, T> || avnd::
+        monophonic_arg_audio_effect<float, T> || avnd::
+            polyphonic_arg_audio_effect<float, T>
 struct builtin_arg_audio_ports<T>
 {
   ossia::audio_inlet in;
@@ -132,35 +129,37 @@ struct builtin_arg_audio_ports<T>
 template <typename T>
 struct builtin_message_value_ports
 {
-  void init(ossia::inlets& inlets) {}
+  void init(ossia::inlets& inlets) { }
 };
 
 template <typename T>
-requires (avnd::messages_introspection<T>::size > 0)
-struct builtin_message_value_ports<T>
+requires(avnd::messages_introspection<T>::size > 0) struct builtin_message_value_ports<T>
 {
   ossia::value_inlet message_inlets[avnd::messages_introspection<T>::size];
   void init(ossia::inlets& inlets)
   {
-    for(auto& in : message_inlets) {
+    for (auto& in : message_inlets)
+    {
       inlets.push_back(&in);
     }
   }
 };
 
-template<typename Field>
+template <typename Field>
 using controls_type = std::decay_t<decltype(Field::value)>;
 
-template<typename T>
+template <typename T>
 using atomic_shared_ptr = boost::atomic_shared_ptr<T>;
 
-template<typename T>
+template <typename T>
 struct controls_mirror
 {
   static constexpr int i_size = avnd::control_input_introspection<T>::size;
   static constexpr int o_size = avnd::control_output_introspection<T>::size;
-  using i_tuple = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
-  using o_tuple = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+  using i_tuple
+      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+  using o_tuple
+      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
 
   controls_mirror()
   {
@@ -168,22 +167,22 @@ struct controls_mirror
     outputs.load(new o_tuple);
   }
 
-  [[no_unique_address]]
-  atomic_shared_ptr<i_tuple> inputs;
-  [[no_unique_address]]
-  atomic_shared_ptr<o_tuple> outputs;
+  [[no_unique_address]] atomic_shared_ptr<i_tuple> inputs;
+  [[no_unique_address]] atomic_shared_ptr<o_tuple> outputs;
 
   std::bitset<i_size> inputs_bits;
   std::bitset<o_size> outputs_bits;
 };
 
-template<typename T>
+template <typename T>
 struct controls_queue
 {
   static constexpr int i_size = avnd::control_input_introspection<T>::size;
   static constexpr int o_size = avnd::control_output_introspection<T>::size;
-  using i_tuple = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
-  using o_tuple = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+  using i_tuple
+      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+  using o_tuple
+      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
 
   moodycamel::ConcurrentQueue<i_tuple> ins_queue;
   moodycamel::ConcurrentQueue<o_tuple> outs_queue;
@@ -192,64 +191,50 @@ struct controls_queue
   std::bitset<o_size> outputs_set;
 };
 template <typename T>
-class safe_node_base_base
-        : public ossia::nonowning_graph_node
+class safe_node_base_base : public ossia::nonowning_graph_node
 {
 public:
   safe_node_base_base(int buffer_size, double sample_rate)
-    : channels{this->impl}
+      : channels{this->impl}
   {
-
   }
 
   int buffer_size{};
   double sample_rate{};
 
-  [[no_unique_address]]
-  avnd::effect_container<T> impl;
+  [[no_unique_address]] avnd::effect_container<T> impl;
 
-  [[no_unique_address]]
-  builtin_arg_audio_ports<T> audio_ports;
+  [[no_unique_address]] builtin_arg_audio_ports<T> audio_ports;
 
-  [[no_unique_address]]
-  builtin_message_value_ports<T> message_ports;
+  [[no_unique_address]] builtin_message_value_ports<T> message_ports;
 
-  [[no_unique_address]]
-  inlet_storage<T> ossia_inlets;
+  [[no_unique_address]] inlet_storage<T> ossia_inlets;
 
-  [[no_unique_address]]
-  outlet_storage<T> ossia_outlets;
+  [[no_unique_address]] outlet_storage<T> ossia_outlets;
 
-  [[no_unique_address]]
-  avnd::process_adapter<T> processor;
+  [[no_unique_address]] avnd::process_adapter<T> processor;
 
-  [[no_unique_address]]
-  avnd::audio_channel_manager<T> channels;
+  [[no_unique_address]] avnd::audio_channel_manager<T> channels;
 
-  [[no_unique_address]]
-  avnd::midi_storage<T> midi_buffers;
+  [[no_unique_address]] avnd::midi_storage<T> midi_buffers;
 
-  [[no_unique_address]]
-  avnd::control_storage<T> control_buffers;
+  [[no_unique_address]] avnd::control_storage<T> control_buffers;
 
-  [[no_unique_address]]
-  avnd::callback_storage<T> callbacks;
+  [[no_unique_address]] avnd::callback_storage<T> callbacks;
 
   // [[no_unique_address]]
   // controls_mirror<T> feedback;
 
-  [[no_unique_address]]
-  controls_queue<T> control;
+  [[no_unique_address]] controls_queue<T> control;
 
-  using control_input_values_type = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
-  using control_output_values_type = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
-
+  using control_input_values_type
+      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+  using control_output_values_type
+      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
 };
 
-
 template <typename T, typename AudioCount>
-class safe_node_base
-        : public safe_node_base_base<T>
+class safe_node_base : public safe_node_base_base<T>
 {
 public:
   using processor_type = T;
@@ -287,44 +272,50 @@ public:
     this->finish_init();
   }
 
-  template<typename Functor>
+  template <typename Functor>
   void process_inputs(Functor& f, auto&& in)
   {
     using info = avnd::input_introspection<T>;
-    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-        (
-          f(boost::pfr::get<Index>(in), std::get<Index>(this->ossia_inlets.ports), avnd::num<Index>{}), ...
-        );
-    }(typename info::indices_n{});
+    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+    {
+      (f(boost::pfr::get<Index>(in),
+         std::get<Index>(this->ossia_inlets.ports),
+         avnd::num<Index>{}),
+       ...);
+    }
+    (typename info::indices_n{});
   }
-  template<typename Functor, typename M>
+  template <typename Functor, typename M>
   void process_inputs(Functor& f, avnd::member_iterator<M>&& in)
   {
-    for(auto& i : in)
+    for (auto& i : in)
       process_inputs(f, i);
   }
-  template<typename Functor>
+  template <typename Functor>
   void process_outputs(Functor& f, auto&& in)
   {
     using info = avnd::output_introspection<T>;
-    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-        (
-          f(boost::pfr::get<Index>(in), std::get<Index>(this->ossia_outlets.ports), avnd::num<Index>{}), ...
-        );
-    }(typename info::indices_n{});
+    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+    {
+      (f(boost::pfr::get<Index>(in),
+         std::get<Index>(this->ossia_outlets.ports),
+         avnd::num<Index>{}),
+       ...);
+    }
+    (typename info::indices_n{});
   }
-  template<typename Functor, typename M>
+  template <typename Functor, typename M>
   void process_outputs(Functor& f, avnd::member_iterator<M>&& in)
   {
-    for(auto& i : in)
+    for (auto& i : in)
       process_outputs(f, i);
   }
 
-  template<typename Functor>
+  template <typename Functor>
   void process_all_ports(Functor f)
   {
     // Clear the current state of changed controls
-      /*
+    /*
       moodycamel::ConcurrentQueue<i_tuple> ins_queue;
       moodycamel::ConcurrentQueue<o_tuple> outs_queue;
 
@@ -349,14 +340,16 @@ public:
       using in_type = typename avnd::inputs_type<T>::type;
       auto& port_tuple = this->ossia_inlets.ports;
 
-      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-          setup_inlets<safe_node_base_base<T>> init{*this, this->m_inlets};
-          (init(
-            avnd::field_reflection<Index, boost::pfr::tuple_element_t<Index, in_type>>{}
-            , std::get<Index>(port_tuple)
-           ), ...
-          );
-      }(typename in_info::indices_n{});
+      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+      {
+        setup_inlets<safe_node_base_base<T>> init{*this, this->m_inlets};
+        (init(
+             avnd::
+                 field_reflection<Index, boost::pfr::tuple_element_t<Index, in_type>>{},
+             std::get<Index>(port_tuple)),
+         ...);
+      }
+      (typename in_info::indices_n{});
     }
 
     // Setup outputs
@@ -366,18 +359,20 @@ public:
       using out_type = typename avnd::outputs_type<T>::type;
       auto& port_tuple = this->ossia_outlets.ports;
 
-      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-          setup_outlets<safe_node_base_base<T>> init{*this, this->m_outlets};
-          (init(
-            avnd::field_reflection<Index, boost::pfr::tuple_element_t<Index, out_type>>{}
-            , std::get<Index>(port_tuple)
-           ), ...
-          );
-      }(typename out_info::indices_n{});
+      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+      {
+        setup_outlets<safe_node_base_base<T>> init{*this, this->m_outlets};
+        (init(
+             avnd::
+                 field_reflection<Index, boost::pfr::tuple_element_t<Index, out_type>>{},
+             std::get<Index>(port_tuple)),
+         ...);
+      }
+      (typename out_info::indices_n{});
     }
   }
 
-  template<std::size_t Idx, typename R, typename... Args>
+  template <std::size_t Idx, typename R, typename... Args>
   struct do_callback
   {
     safe_node_base& self;
@@ -386,12 +381,12 @@ public:
       // Idx is the index of the port in the complete input array.
       // We need to map it to the callback index.
       ossia::value_outlet& port = std::get<Idx>(self.ossia_outlets.ports);
-      if constexpr(sizeof...(Args) == 0)
+      if constexpr (sizeof...(Args) == 0)
         port.data.write_value(ossia::impulse{}, 0);
-      else if constexpr(sizeof...(Args) == 1)
+      else if constexpr (sizeof...(Args) == 1)
         port.data.write_value(args..., 0);
 
-      if constexpr(!std::is_void_v<R>)
+      if constexpr (!std::is_void_v<R>)
         return R{};
     }
   };
@@ -402,11 +397,16 @@ public:
     avnd::init_controls(this->impl.inputs());
 
     // Initialize the callbacks
-    if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
+    if constexpr (avnd::callback_introspection<outputs_t>::size > 0)
     {
-      auto callbacks_initializer =
-          [this] <typename Refl, template<typename...> typename L, typename... Args, std::size_t Idx>
-          (std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>) {
+      auto callbacks_initializer = [this]<
+          typename Refl,
+          template <typename...>
+          typename L,
+          typename... Args,
+          std::size_t Idx>(
+          std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>)
+      {
         return do_callback<Idx, typename Refl::return_type, Args...>{*this};
       };
       this->callbacks.wrap_callbacks(this->impl, callbacks_initializer);
@@ -418,24 +418,19 @@ public:
     this->audio_configuration_changed();
   }
 
-
   // Handling controls
-  template<typename Val, std::size_t N>
+  template <typename Val, std::size_t N>
   void control_updated_from_ui(Val&& new_value)
   {
     // Replace the value in the field
     auto& field = avnd::control_input_introspection<T>::template get<N>(
-                avnd::get_inputs<T>(this->impl)
-    );
+        avnd::get_inputs<T>(this->impl));
 
     std::swap(field.value, new_value);
 
     // Mark the control as changed
     this->control.inputs_set.set(N);
   }
-
-
-
 
   void audio_configuration_changed()
   {
@@ -462,7 +457,7 @@ public:
     // Setup buffers for storing MIDI messages
 
     {
-     this->midi_buffers.reserve_space(this->impl, this->buffer_size);
+      this->midi_buffers.reserve_space(this->impl, this->buffer_size);
     }
 
     {
@@ -476,32 +471,31 @@ public:
   void set_channels(ossia::audio_port& port, int channels)
   {
     const int cur = port.channels();
-    if(cur != channels)
+    if (cur != channels)
     {
       // qDebug() << "Setting port channels: " << channels;
       port.set_channels(channels);
     }
 
-    for(auto& chan : port)
+    for (auto& chan : port)
     {
-      if(chan.size() < this->buffer_size)
+      if (chan.size() < this->buffer_size)
         chan.resize(this->buffer_size);
     }
   }
-
 
   bool prepare_run(int start, int frames)
   {
     // Check all the audio channels
     bool changed = static_cast<AudioCount&>(*this).scan_audio_input_channels();
 
-    if(frames > this->buffer_size)
+    if (frames > this->buffer_size)
     {
       this->buffer_size = frames;
       changed = true;
     }
 
-    if(changed)
+    if (changed)
     {
       audio_configuration_changed();
     }
@@ -532,7 +526,7 @@ public:
 
       if constexpr (arg_count == 0)
       {
-        for(auto& m : this->impl.effects())
+        for (auto& m : this->impl.effects())
         {
           if constexpr (std::is_member_function_pointer_v<decltype(f)>)
             (m.*f)();
@@ -544,7 +538,7 @@ public:
       {
         if constexpr (std::is_same_v<avnd::first_message_argument<M>, T&>)
         {
-          for(auto& m : this->impl.effects())
+          for (auto& m : this->impl.effects())
           {
             if constexpr (std::is_member_function_pointer_v<decltype(f)>)
               (m.*f)(m);
@@ -582,9 +576,9 @@ public:
   void process_message(avnd::field_reflection<Idx, M>)
   {
     ossia::value_inlet& inl = this->message_ports.message_inlets[Idx];
-    if(inl.data.get_data().empty())
+    if (inl.data.get_data().empty())
       return;
-    for(const auto& val : inl.data.get_data())
+    for (const auto& val : inl.data.get_data())
     {
       invoke_message(val.value, avnd::field_reflection<Idx, M>{});
     }
@@ -592,55 +586,51 @@ public:
 
   void process_messages()
   {
-    avnd::messages_introspection<T>::for_all([&] (auto m) {
-      process_message(m);
-    });
+    avnd::messages_introspection<T>::for_all([&](auto m) { process_message(m); });
   }
 
   auto make_controls_in_tuple()
   {
     return avnd::control_input_introspection<T>::filter_tuple(
-                avnd::get_inputs<T>(this->impl),
-                [] (auto& field) { return field.value; });
+        avnd::get_inputs<T>(this->impl), [](auto& field) { return field.value; });
   }
   auto make_controls_out_tuple()
   {
     return avnd::control_output_introspection<T>::filter_tuple(
-                avnd::get_outputs<T>(this->impl),
-                [] (auto& field) { return field.value; });
+        avnd::get_outputs<T>(this->impl), [](auto& field) { return field.value; });
   }
 
   void finish_run()
   {
-     // Copy output events
-     process_all_ports(process_after_run<safe_node_base>{*this});
+    // Copy output events
+    process_all_ports(process_after_run<safe_node_base>{*this});
 
-     // Clean up MIDI inputs
-     this->midi_buffers.clear_inputs(this->impl);
+    // Clean up MIDI inputs
+    this->midi_buffers.clear_inputs(this->impl);
 
-     // Clean up sample-accurate control input ports
-     this->control_buffers.clear_inputs(this->impl);
+    // Clean up sample-accurate control input ports
+    this->control_buffers.clear_inputs(this->impl);
 
-     // Clear control bitsets for UI
-     if constexpr(avnd::control_input_introspection<T>::size > 0)
-     {
-       if(this->control.inputs_set.any())
-       {
-         // Notify the UI
-         this->control.ins_queue.enqueue(make_controls_in_tuple());
-         this->control.inputs_set.reset();
-       }
-     }
+    // Clear control bitsets for UI
+    if constexpr (avnd::control_input_introspection<T>::size > 0)
+    {
+      if (this->control.inputs_set.any())
+      {
+        // Notify the UI
+        this->control.ins_queue.enqueue(make_controls_in_tuple());
+        this->control.inputs_set.reset();
+      }
+    }
 
-     if constexpr(avnd::control_output_introspection<T>::size > 0)
-     {
-       if(this->control.outputs_set.any())
-       {
-         // Notify the UI
-         this->control.outs_queue.enqueue(make_controls_out_tuple());
-         this->control.outputs_set.reset();
-       }
-     }
+    if constexpr (avnd::control_output_introspection<T>::size > 0)
+    {
+      if (this->control.outputs_set.any())
+      {
+        // Notify the UI
+        this->control.outs_queue.enqueue(make_controls_out_tuple());
+        this->control.outputs_set.reset();
+      }
+    }
   }
 
   std::string label() const noexcept override
@@ -651,19 +641,18 @@ public:
 
 // FIXME these concepts are super messy
 
-template<typename FP, typename T>
-concept real_mono_processor =
-        avnd::mono_per_sample_arg_processor<FP, T>
-     || avnd::mono_per_sample_port_processor<FP, T>
-     || avnd::monophonic_arg_audio_effect<FP, T>
-     || avnd::monophonic_single_port_audio_effect<FP, T>
-     || avnd::mono_per_channel_arg_processor<FP, T>
-     || avnd::mono_per_channel_port_processor<FP, T>;
-template<typename T>
-concept real_good_mono_processor = real_mono_processor<float, T> || real_mono_processor<double, T>;
+template <typename FP, typename T>
+concept real_mono_processor = avnd::mono_per_sample_arg_processor<FP, T> || avnd::
+    mono_per_sample_port_processor<FP, T> || avnd::monophonic_arg_audio_effect<
+        FP,
+        T> || avnd::monophonic_single_port_audio_effect<FP, T> || avnd::
+        mono_per_channel_arg_processor<FP, T> || avnd::
+            mono_per_channel_port_processor<FP, T>;
+template <typename T>
+concept real_good_mono_processor
+    = real_mono_processor<float, T> || real_mono_processor<double, T>;
 
-template<typename T>
+template <typename T>
 class safe_node;
-
 
 }

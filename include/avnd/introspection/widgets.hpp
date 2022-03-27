@@ -8,12 +8,25 @@ namespace avnd
 {
 /// Widget reflection ///
 template <typename C>
-concept has_widget = requires { std::is_enum_v<typename C::widget>; };
+concept has_widget = requires
+{
+  std::is_enum_v<typename C::widget>;
+};
 
 /// Range reflection ///
 template <typename C>
-concept has_range = requires { C::range(); } || requires { sizeof(C::range); }
-                    || requires { sizeof(typename C::range); };
+concept has_range = requires
+{
+  C::range();
+}
+|| requires
+{
+  sizeof(C::range);
+}
+|| requires
+{
+  sizeof(typename C::range);
+};
 
 template <typename T>
 consteval auto get_range()
@@ -49,9 +62,18 @@ consteval auto get_range(const T&)
 
 /// Normalization reflection ////
 template <typename C>
-concept has_normalize
-    = requires { C::normalize(); } || requires { sizeof(C::normalize); }
-      || requires { sizeof(typename C::normalize); };
+concept has_normalize = requires
+{
+  C::normalize();
+}
+|| requires
+{
+  sizeof(C::normalize);
+}
+|| requires
+{
+  sizeof(typename C::normalize);
+};
 
 template <avnd::has_normalize T>
 consteval auto get_normalize()

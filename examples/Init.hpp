@@ -24,10 +24,7 @@ struct Init
 {
   static consteval auto name() { return "Init"; }
   static consteval auto c_name() { return "avnd_init"; }
-  static consteval auto uuid()
-  {
-    return "1d9071aa-c314-45d6-b40b-422106f11773";
-  }
+  static consteval auto uuid() { return "1d9071aa-c314-45d6-b40b-422106f11773"; }
 
   struct
   {
@@ -101,16 +98,11 @@ struct Init
     struct
     {
       $(name, "float_call");
-      $(func,
-          [](Init& self, float v)
-          { std::cerr << "value 2: " << v << std::endl; })
+      $(func, [](Init& self, float v) { std::cerr << "value 2: " << v << std::endl; })
     } bar;
   } messages;
 #endif
 
-  void operator()()
-  {
-    outputs.out.value = inputs.a.value;
-  }
+  void operator()() { outputs.out.value = inputs.a.value; }
 };
 }

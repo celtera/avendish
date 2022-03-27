@@ -9,7 +9,9 @@
 namespace avnd
 {
 template <typename T>
-struct layout_introspection : fields_introspection<typename layout_type<T>::type> { };
+struct layout_introspection : fields_introspection<typename layout_type<T>::type>
+{
+};
 
 template <typename T>
 auto& get_layout(avnd::effect_container<T>& t)

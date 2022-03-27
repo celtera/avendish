@@ -25,32 +25,40 @@ struct ZeroDependencyAudioEffect
   static constexpr auto name() { return "My zero-dependency effect"; }
   static constexpr auto uuid() { return "99fcf199-280c-4e7f-8be3-c34290073bb9"; }
 
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       // Same for the inlet / outlet metadata.
       static constexpr auto name() { return "Input"; }
       const double** samples{};
       int channels{};
     } audio;
 
-    struct {
+    struct
+    {
       static constexpr auto name() { return "Yea"; }
       // Controls are just pre-made types with some metadata
       // relevant for setting them up it up.
-      static constexpr auto control() {
-        struct {
+      static constexpr auto control()
+      {
+        struct
+        {
           const int min = 0;
           const int max = 30;
           const int init = 1;
-        } c; return c;
+        } c;
+        return c;
       }
 
       int value = 10;
     } gain;
   } inputs;
 
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       static constexpr auto name() { return "Output"; }
       double** samples{};
       int channels{};
@@ -75,10 +83,10 @@ struct ZeroDependencyAudioEffect
       for (int j = 0; j < N; j++)
       {
         out[j] = in[j];
-        for(int i = 0; i < factor; i++)
+        for (int i = 0; i < factor; i++)
           out[j] *= in[j] * factor;
         out[j] *= in[j] * (1 + factor);
-        while((1. - out[j]*out[j]) > 1.0)
+        while ((1. - out[j] * out[j]) > 1.0)
           out[j] = 1. - out[j];
         out[j] = out[j] < -0.999 ? -0.999 : out[j] > 0.999 ? 0.999 : out[j];
       }
