@@ -26,11 +26,11 @@ requires
     halp::has_logger<C>
 struct Logger
 {
-  // $ is simply a macro that expands to a consteval function.
+  // avnd_meta is simply a macro that expands to a consteval function.
   // Hopefully C++ would use a similar syntax for reflexion.
-  $(name, "Helpers")
-  $(c_name, "avnd_helpers_logger")
-  $(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
+  avnd_meta(name, "Helpers")
+  avnd_meta(c_name, "avnd_helpers_logger")
+  avnd_meta(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
 
   // We store our logger in the class to make things simpler.
   // no_unique_address makes sure that it stays a zero-memory-cost abstraction

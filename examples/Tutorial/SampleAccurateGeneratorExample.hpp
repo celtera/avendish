@@ -11,12 +11,12 @@ namespace examples
 
 struct SampleAccurateGeneratorExample
 {
-  $(name, "My sample-accurate generator");
-  $(script_name, "sample_acc_gen");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "c519b3c4-326e-4e80-8dec-d465264c5b08");
+  avnd_meta(name, "My sample-accurate generator");
+  avnd_meta(script_name, "sample_acc_gen");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "c519b3c4-326e-4e80-8dec-d465264c5b08");
 
   /**
    * Here we define a single output, which allows writing

@@ -17,12 +17,12 @@ struct Distortion
    * An audio effect plug-in must provide some metadata: name, author, etc.
    * UUIDs are important to uniquely identify plug-ins: you can use uuidgen for instance.
    */
-  $(name, "My pretty distortion");
-  $(script_name, "disto_123");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "b9237d2a-1651-4dcc-920b-80e5e619c6c4");
+  avnd_meta(name, "My pretty distortion");
+  avnd_meta(script_name, "disto_123");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "b9237d2a-1651-4dcc-920b-80e5e619c6c4");
 
   /** We define the input ports of our process: in this case,
    *  there's an audio input, a gain slider.

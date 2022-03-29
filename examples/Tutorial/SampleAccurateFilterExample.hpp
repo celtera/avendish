@@ -16,12 +16,12 @@ namespace examples
 
 struct SampleAccurateFilterExample
 {
-  $(name, "My sample-accurate filter");
-  $(script_name, "sample_acc_filt");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "43818edd-63de-458b-a6a5-08033cefc051");
+  avnd_meta(name, "My sample-accurate filter");
+  avnd_meta(script_name, "sample_acc_filt");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "43818edd-63de-458b-a6a5-08033cefc051");
 
   /**
    * Here we define an input and an output pair.

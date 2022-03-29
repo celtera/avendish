@@ -75,16 +75,16 @@ struct Init
 
 // broken in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258
 #if (defined(__clang__) || defined(_MSC_VER))
-  // $ makes it a bit easier to define messages. Also, lambdas are possible.
+  // avnd_meta makes it a bit easier to define messages. Also, lambdas are possible.
   struct
   {
     struct
     {
-      $(name, "generic_call");
+      avnd_meta(name, "generic_call");
 
       // Messages can also support a range-ish generic argument
       // (this is useful for hosts which support dynamic number of arguments)
-      $(func,
+      avnd_meta(func,
         [](Init& self, INPUT_RANGE auto range)
         {
           for (std::variant value : range)
@@ -97,8 +97,8 @@ struct Init
     // If the object type is passed as first argument, the obvious will happen.
     struct
     {
-      $(name, "float_call");
-      $(func, [](Init& self, float v) { std::cerr << "value 2: " << v << std::endl; })
+      avnd_meta(name, "float_call");
+      avnd_meta(func, [](Init& self, float v) { std::cerr << "value 2: " << v << std::endl; })
     } bar;
   } messages;
 #endif

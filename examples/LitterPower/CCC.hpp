@@ -14,13 +14,13 @@ namespace examples
  */
 struct CCC
 {
-  $(name, "CCC");
-  $(script_name, "CCC");
-  $(category, "Demo");
-  $(author, "Peter Castine");
-  $(description,
+  avnd_meta(name, "CCC");
+  avnd_meta(script_name, "CCC");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "Peter Castine");
+  avnd_meta(description,
     "1/f noise, using the Schuster/Procaccia deterministic (chaotic) algorithm");
-  $(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
+  avnd_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
 
   struct
   {

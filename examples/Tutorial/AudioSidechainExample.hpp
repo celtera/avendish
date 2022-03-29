@@ -12,12 +12,12 @@ namespace examples
  */
 struct AudioSidechainExample
 {
-  $(name, "Sidechain example");
-  $(script_name, "effect_sidechain");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "6fcfa5ad-ac5e-4851-a7bc-72f6fbf57dcd");
+  avnd_meta(name, "Sidechain example");
+  avnd_meta(script_name, "effect_sidechain");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "6fcfa5ad-ac5e-4851-a7bc-72f6fbf57dcd");
 
   struct
   {

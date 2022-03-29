@@ -7,12 +7,12 @@
 //// {
 //// struct RawPortsExample
 //// {
-////   $(name, "Raw ports example");
-////   $(script_name, raw_ports_test_plugin);
-////   $(category, Demo);
-////   $(author, "<AUTHOR>");
-////   $(description, "<DESCRIPTION>");
-////   $(uuid, "be958cc2-0545-4a90-bf45-c73db0845d9c");
+////   avnd_meta(name, "Raw ports example");
+////   avnd_meta(script_name, raw_ports_test_plugin);
+////   avnd_meta(category, Demo);
+////   avnd_meta(author, "<AUTHOR>");
+////   avnd_meta(description, "<DESCRIPTION>");
+////   avnd_meta(uuid, "be958cc2-0545-4a90-bf45-c73db0845d9c");
 ////
 ////   /**
 ////    * This example uses the raw inputs and outputs ports of ossia score.
@@ -21,17 +21,17 @@
 ////    */
 ////   struct {
 ////     struct {
-////       $(name, "Audio In");
+////       avnd_meta(name, "Audio In");
 ////       const ossia::audio_port* port{};
 ////     } audio;
 ////
 ////     struct {
-////       $(name, "Value In");
+////       avnd_meta(name, "Value In");
 ////       const ossia::value_port* port{};
 ////     } value;
 ////
 ////     struct {
-////       $(name, "MIDI In");
+////       avnd_meta(name, "MIDI In");
 ////       const ossia::midi_port* port{};
 ////     } midi;
 ////
@@ -39,17 +39,17 @@
 ////
 ////   struct {
 ////     struct {
-////       $(name, "Audio Out");
+////       avnd_meta(name, "Audio Out");
 ////       ossia::audio_port* port{};
 ////     } audio;
 ////
 ////     struct {
-////       $(name, "Value Out");
+////       avnd_meta(name, "Value Out");
 ////       ossia::value_port* port{};
 ////     } value;
 ////
 ////     struct {
-////       $(name, "MIDI Out");
+////       avnd_meta(name, "MIDI Out");
 ////       ossia::midi_port* port{};
 ////     } midi;
 ////

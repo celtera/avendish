@@ -11,12 +11,12 @@ namespace examples
 
 struct TrivialGeneratorExample
 {
-  $(name, "My trivial generator");
-  $(script_name, "trivial_effect_gen");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "29099d09-cbd1-451b-8394-972b0d5bfaf0");
+  avnd_meta(name, "My trivial generator");
+  avnd_meta(script_name, "trivial_effect_gen");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "29099d09-cbd1-451b-8394-972b0d5bfaf0");
 
   /**
    * Here we define a single output, which allows writing
@@ -27,7 +27,7 @@ struct TrivialGeneratorExample
     struct
     {
       // Give a name to our parameter to show the user
-      $(name, "Out");
+      avnd_meta(name, "Out");
 
       // This value will be sent to the output of the port at each tick.
       // The name "value" is important.

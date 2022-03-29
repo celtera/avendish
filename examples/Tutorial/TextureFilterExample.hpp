@@ -11,12 +11,12 @@ namespace examples
 {
 struct TextureFilterExample
 {
-  $(name, "My example texture filter");
-  $(script_name, "texture_filt");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
+  avnd_meta(name, "My example texture filter");
+  avnd_meta(script_name, "texture_filt");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   struct
   {

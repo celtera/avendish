@@ -32,7 +32,7 @@ struct Ui
     halp::toggle<"T2", halp::toggle_setup{.init = false}> t2;
     halp::maintained_button<"B1"> b1;
     halp::impulse_button<"B2"> b2;
-    avnd__enum("Simple Enum", Peg, Square, Peg, Round, Hole) e1;
+    halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole) e1;
 
   } inputs;
 

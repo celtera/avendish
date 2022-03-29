@@ -19,11 +19,11 @@ namespace examples::helpers
  */
 struct Controls
 {
-  // $ is simply a macro that expands to a consteval function.
+  // avnd_meta is simply a macro that expands to a consteval function.
   // Hopefully C++ would use a similar syntax for reflexion.
-  $(name, "Controls helpers")
-  $(c_name, "avnd_helpers_controls")
-  $(uuid, "9d356a4b-a104-4b2a-a33e-c6828135d5c6")
+  avnd_meta(name, "Controls helpers")
+  avnd_meta(c_name, "avnd_helpers_controls")
+  avnd_meta(uuid, "9d356a4b-a104-4b2a-a33e-c6828135d5c6")
 
   // Helper types for defining common cases of UI controls
   struct
@@ -37,7 +37,7 @@ struct Controls
     // The enum is a bit harder to do since we want to
     // define the enumerators and the matching strings in one go...
     // First argument after the name is the default (init) value.
-    avnd__enum("Enum", Bar, Foo, Bar) f;
+    halp__enum("Enum", Bar, Foo, Bar) f;
   } inputs;
 
   struct

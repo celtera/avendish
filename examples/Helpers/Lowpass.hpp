@@ -17,9 +17,9 @@ namespace examples::helpers
 class Lowpass
 {
 public:
-  $(name, "Lowpass (helpers)")
-  $(c_name, "avnd_helpers_lowpass")
-  $(uuid, "82bdb9b5-9cf8-440e-8675-c0caf4fc59b9")
+  avnd_meta(name, "Lowpass (helpers)")
+  avnd_meta(c_name, "avnd_helpers_lowpass")
+  avnd_meta(uuid, "82bdb9b5-9cf8-440e-8675-c0caf4fc59b9")
 
   using setup = halp::setup;
   using tick = halp::tick;

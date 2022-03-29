@@ -12,12 +12,12 @@ namespace examples
  */
 struct AudioEffectExample
 {
-  $(name, "My example effect");
-  $(script_name, "effect_123");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "c8b57fff-c34c-4772-8f72-fe5267527ece");
+  avnd_meta(name, "My example effect");
+  avnd_meta(script_name, "effect_123");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "c8b57fff-c34c-4772-8f72-fe5267527ece");
 
   /**
    * Here we have a special case, which happens to be the most common case in audio

@@ -20,12 +20,12 @@ namespace examples
  */
 struct Synth
 {
-  $(name, "My example synth");
-  $(script_name, "synth_123");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
+  avnd_meta(name, "My example synth");
+  avnd_meta(script_name, "synth_123");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
 
   struct
   {

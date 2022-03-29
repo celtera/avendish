@@ -528,30 +528,30 @@ using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 }
 
 // Helpers for defining an enumeration without repeating the enumerated members
-#define AVND_NUM_ARGS_(_10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
-#define AVND_NUM_ARGS(...) AVND_NUM_ARGS_(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define AVND_FOREACH(MACRO, ...) \
-  AVND_FOREACH_(AVND_NUM_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
-#define AVND_FOREACH_(N, M, ...) AVND_FOREACH__(N, M, __VA_ARGS__)
-#define AVND_FOREACH__(N, M, ...) AVND_FOREACH_##N(M, __VA_ARGS__)
-#define AVND_FOREACH_1(M, A) M(A)
-#define AVND_FOREACH_2(M, A, ...) M(A) AVND_FOREACH_1(M, __VA_ARGS__)
-#define AVND_FOREACH_3(M, A, ...) M(A) AVND_FOREACH_2(M, __VA_ARGS__)
-#define AVND_FOREACH_4(M, A, ...) M(A) AVND_FOREACH_3(M, __VA_ARGS__)
-#define AVND_FOREACH_5(M, A, ...) M(A) AVND_FOREACH_4(M, __VA_ARGS__)
-#define AVND_FOREACH_6(M, A, ...) M(A) AVND_FOREACH_5(M, __VA_ARGS__)
-#define AVND_FOREACH_7(M, A, ...) M(A) AVND_FOREACH_6(M, __VA_ARGS__)
-#define AVND_FOREACH_8(M, A, ...) M(A) AVND_FOREACH_7(M, __VA_ARGS__)
-#define AVND_STRINGIFY_(X) #X
-#define AVND_STRINGIFY(X) AVND_STRINGIFY_(X)
-#define AVND_STRINGIFY_ALL(...) AVND_FOREACH(AVND_STRINGIFY, __VA_ARGS__)
+#define HALP_NUM_ARGS_(_10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
+#define HALP_NUM_ARGS(...) HALP_NUM_ARGS_(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define HALP_FOREACH(MACRO, ...) \
+  HALP_FOREACH_(HALP_NUM_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
+#define HALP_FOREACH_(N, M, ...) HALP_FOREACH__(N, M, __VA_ARGS__)
+#define HALP_FOREACH__(N, M, ...) HALP_FOREACH_##N(M, __VA_ARGS__)
+#define HALP_FOREACH_1(M, A) M(A)
+#define HALP_FOREACH_2(M, A, ...) M(A) HALP_FOREACH_1(M, __VA_ARGS__)
+#define HALP_FOREACH_3(M, A, ...) M(A) HALP_FOREACH_2(M, __VA_ARGS__)
+#define HALP_FOREACH_4(M, A, ...) M(A) HALP_FOREACH_3(M, __VA_ARGS__)
+#define HALP_FOREACH_5(M, A, ...) M(A) HALP_FOREACH_4(M, __VA_ARGS__)
+#define HALP_FOREACH_6(M, A, ...) M(A) HALP_FOREACH_5(M, __VA_ARGS__)
+#define HALP_FOREACH_7(M, A, ...) M(A) HALP_FOREACH_6(M, __VA_ARGS__)
+#define HALP_FOREACH_8(M, A, ...) M(A) HALP_FOREACH_7(M, __VA_ARGS__)
+#define HALP_STRINGIFY_(X) #X
+#define HALP_STRINGIFY(X) HALP_STRINGIFY_(X)
+#define HALP_STRINGIFY_ALL(...) HALP_FOREACH(HALP_STRINGIFY, __VA_ARGS__)
 
-#define COMMA(X) X,
-#define COMMA_AVND_STRINGIFY(X) COMMA(AVND_STRINGIFY(X))
+#define HALP_COMMA(X) X,
+#define HALP_COMMA_STRINGIFY(X) HALP_COMMA(HALP_STRINGIFY(X))
 
-#define STRING_LITERAL_ARRAY(...) AVND_FOREACH(COMMA_AVND_STRINGIFY, __VA_ARGS__)
+#define HALP_STRING_LITERAL_ARRAY(...) HALP_FOREACH(HALP_COMMA_STRINGIFY, __VA_ARGS__)
 
-#define avnd__enum(Name, default_v, ...)                         \
+#define halp__enum(Name, default_v, ...)                         \
   struct                                                         \
   {                                                              \
     enum enum_type                                               \
@@ -567,10 +567,10 @@ using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
     };                                                           \
                                                                  \
     static clang_buggy_consteval                                 \
-        std::array<std::string_view, AVND_NUM_ARGS(__VA_ARGS__)> \
+        std::array<std::string_view, HALP_NUM_ARGS(__VA_ARGS__)> \
         choices()                                                \
     {                                                            \
-      return {STRING_LITERAL_ARRAY(__VA_ARGS__)};                \
+      return {HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};                \
     }                                                            \
                                                                  \
     static clang_buggy_consteval auto name() { return Name; }    \

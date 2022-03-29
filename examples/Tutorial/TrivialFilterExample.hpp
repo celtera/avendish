@@ -12,12 +12,12 @@ namespace examples
 
 struct TrivialFilterExample
 {
-  $(name, "My trivial filter");
-  $(script_name, "trivial_effect_filter");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "d02006f0-3e71-465b-989c-7c53aaa885e5");
+  avnd_meta(name, "My trivial filter");
+  avnd_meta(script_name, "trivial_effect_filter");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "d02006f0-3e71-465b-989c-7c53aaa885e5");
 
   /**
    * Here we define a pair of input / outputs.
@@ -27,7 +27,7 @@ struct TrivialFilterExample
     struct
     {
       // Give a name to our parameter to show the user
-      $(name, "In");
+      avnd_meta(name, "In");
 
       float value{};
     } main; // Name does not matter
@@ -37,7 +37,7 @@ struct TrivialFilterExample
   {
     struct
     {
-      $(name, "Out");
+      avnd_meta(name, "Out");
 
       int value{};
     } main;

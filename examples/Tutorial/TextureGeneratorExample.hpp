@@ -28,12 +28,12 @@ namespace examples
  */
 struct TextureGeneratorExample
 {
-  $(name, "My example texture generator");
-  $(script_name, "texture_gen");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663");
+  avnd_meta(name, "My example texture generator");
+  avnd_meta(script_name, "texture_gen");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663");
 
   // By know you know the drill: define inputs, outputs...
   struct
@@ -46,7 +46,7 @@ struct TextureGeneratorExample
     // See TextureFilterExample for helper types which abstract the allocation side of things
     struct
     {
-      $(name, "Out");
+      avnd_meta(name, "Out");
 
       // This type is a view on a texture
       halp::rgba_texture texture;

@@ -67,12 +67,12 @@ namespace examples
 
 struct ControlGallery
 {
-  $(name, "Control gallery");
-  $(script_name, "control_gallery");
-  $(category, "Demo");
-  $(author, "<AUTHOR>");
-  $(description, "<DESCRIPTION>");
-  $(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
+  avnd_meta(name, "Control gallery");
+  avnd_meta(script_name, "control_gallery");
+  avnd_meta(category, "Demo");
+  avnd_meta(author, "<AUTHOR>");
+  avnd_meta(description, "<DESCRIPTION>");
+  avnd_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
   struct
   {
@@ -114,7 +114,7 @@ struct ControlGallery
     //! Defining comboboxes and enumerations is a tiny bit more complicated
     struct : halp::sample_accurate_values<halp::combo_pair<float>>
     {
-      $(name, "Combo box");
+      avnd_meta(name, "Combo box");
       enum widget
       {
         combobox
@@ -132,7 +132,7 @@ struct ControlGallery
     //! Here value will be the string
     struct : halp::sample_accurate_values<std::string_view>
     {
-      $(name, "Enum 2");
+      avnd_meta(name, "Enum 2");
       enum widget
       {
         enumeration
@@ -152,7 +152,7 @@ struct ControlGallery
     //! is below:
     struct : halp::sample_accurate_values<int>
     {
-      $(name, "Enum 3");
+      avnd_meta(name, "Enum 3");
       enum widget
       {
         enumeration
@@ -189,7 +189,7 @@ struct ControlGallery
     //!   }
     //!
     //! OSC messages can use either the int index or the string.
-    using enum_t = avnd__enum("Simple Enum", Peg, Square, Peg, Round, Hole);
+    using enum_t = halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole);
     halp::accurate<enum_t> simpler_enumeration;
 
     //! Crosshair XY chooser
@@ -210,17 +210,15 @@ struct ControlGallery
 
     if (!has_impulse && !has_button)
       return;
-    /*
-    ossia::logger().debug("");
+
     boost::pfr::for_each_field(
         inputs,
         [] <typename Control> (const Control& input) {
           {
             auto val = input.values.begin()->second;
-            if constexpr(!std::is_same_v<decltype(val), ossia::impulse>)
-              ossia::logger().critical("changed: {} {}", Control::name(), val);
+            fmt::print("changed: {} {}", Control::name(), val);
           }
-    });*/
+    });
   }
 };
 
