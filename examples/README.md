@@ -6,7 +6,7 @@ This folder contains multiple examples:
 - [Demos](examples/Demos) contains example programs.
 - [Ports](examples/Ports) contains more complete examples ported from other libraries.
 - [Helpers](examples/Helpers) contains various examples mainly used for testing the helpers library.
-- [Helpers](examples/Raw) contains various examples mainly used for testing raw plug-ins.
+- [Raw](examples/Raw) contains various examples mainly used for testing raw plug-ins.
 
 ## Simple examples
 
