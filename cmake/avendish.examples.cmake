@@ -1,49 +1,49 @@
 
 avnd_make_all(
   TARGET Minimal
-  MAIN_FILE examples/Minimal.hpp
+  MAIN_FILE examples/Raw/Minimal.hpp
   MAIN_CLASS examples::Minimal
   C_NAME avnd_minimal
 )
 
 avnd_make_all(
   TARGET Lowpass
-  MAIN_FILE examples/Lowpass.hpp
+  MAIN_FILE examples/Raw/Lowpass.hpp
   MAIN_CLASS examples::Lowpass
   C_NAME avnd_lowpass
 )
 
 avnd_make_all(
   TARGET PerSampleProcessor
-  MAIN_FILE examples/PerSampleProcessor.hpp
+  MAIN_FILE examples/Raw/PerSampleProcessor.hpp
   MAIN_CLASS examples::PerSampleProcessor
   C_NAME avnd_persample_1
 )
 
 avnd_make_all(
   TARGET PerSampleProcessor2
-  MAIN_FILE examples/PerSampleProcessor2.hpp
+  MAIN_FILE examples/Raw/PerSampleProcessor2.hpp
   MAIN_CLASS examples::PerSampleProcessor2
   C_NAME avnd_persample_2
 )
 
 avnd_make_all(
   TARGET Modular
-  MAIN_FILE examples/Modular.hpp
+  MAIN_FILE examples/Raw/Modular.hpp
   MAIN_CLASS examples::Modular
   C_NAME avnd_modular
   )
 
 avnd_make_all(
   TARGET Ui
-  MAIN_FILE examples/Ui.hpp
+  MAIN_FILE examples/Raw/Ui.hpp
   MAIN_CLASS examples::Ui
   C_NAME avnd_ui
   )
 
 avnd_make_all(
   TARGET Presets
-  MAIN_FILE examples/Presets.hpp
+  MAIN_FILE examples/Raw/Presets.hpp
   MAIN_CLASS examples::Presets
   C_NAME avnd_presets
   )
@@ -52,35 +52,35 @@ avnd_make_all(
 # (it's not an audio processor)
 avnd_make_object(
   TARGET Addition
-  MAIN_FILE examples/Addition.hpp
+  MAIN_FILE examples/Raw/Addition.hpp
   MAIN_CLASS examples::Addition
   C_NAME avnd_addition
 )
 
 avnd_make_object(
   TARGET Random
-  MAIN_FILE examples/Random.hpp
+  MAIN_FILE examples/Raw/Random.hpp
   MAIN_CLASS examples::Random
   C_NAME avnd_random
 )
 
 avnd_make_object(
   TARGET Messages
-  MAIN_FILE examples/Messages.hpp
+  MAIN_FILE examples/Raw/Messages.hpp
   MAIN_CLASS examples::Messages
   C_NAME avnd_messages
 )
 
 avnd_make_object(
   TARGET Init
-  MAIN_FILE examples/Init.hpp
+  MAIN_FILE examples/Raw/Init.hpp
   MAIN_CLASS examples::Init
   C_NAME avnd_init
   )
 
 avnd_make_object(
   TARGET Callback
-  MAIN_FILE examples/Callback.hpp
+  MAIN_FILE examples/Raw/Callback.hpp
   MAIN_CLASS examples::Callback
   C_NAME avnd_callback
 )
@@ -94,7 +94,7 @@ avnd_make_object(
 
 avnd_make_object(
   TARGET CCC
-  MAIN_FILE examples/LitterPower/CCC.hpp
+  MAIN_FILE examples/Ports/LitterPower/CCC.hpp
   MAIN_CLASS examples::CCC
   C_NAME avnd_ccc
 )
@@ -104,7 +104,7 @@ avnd_make_object(
 # (Pd has no notion of MIDI port)
 avnd_make_audioplug(
   TARGET Midi
-  MAIN_FILE examples/Midi.hpp
+  MAIN_FILE examples/Raw/Midi.hpp
   MAIN_CLASS examples::Midi
   C_NAME avnd_midi
 )
@@ -191,7 +191,7 @@ avnd_make_all(
 
 avnd_make_all(
   TARGET SampleAccurateControls
-  MAIN_FILE examples/SampleAccurateControls.hpp
+  MAIN_FILE examples/Raw/SampleAccurateControls.hpp
   MAIN_CLASS examples::SampleAccurateControls
   C_NAME avnd_sample_accurate_controls
 )

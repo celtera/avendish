@@ -8,10 +8,10 @@
 #include <avnd/wrappers/widgets.hpp>
 
 #include <examples/Helpers/Controls.hpp>
-#include <examples/Lowpass.hpp>
-#include <examples/Callback.hpp>
-#include <examples/Messages.hpp>
-#include <examples/Init.hpp>
+#include <examples/Raw/Lowpass.hpp>
+#include <examples/Raw/Callback.hpp>
+#include <examples/Raw/Messages.hpp>
+#include <examples/Raw/Init.hpp>
 
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>

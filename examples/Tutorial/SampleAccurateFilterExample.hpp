@@ -7,13 +7,8 @@
 #include <halp/sample_accurate_controls.hpp>
 #include <cmath>
 
-namespace oscr
-{
-}
-
 namespace examples
 {
-
 struct SampleAccurateFilterExample
 {
   avnd_meta(name, "My sample-accurate filter");
