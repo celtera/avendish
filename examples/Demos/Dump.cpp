@@ -12,6 +12,7 @@
 #include <examples/Raw/Callback.hpp>
 #include <examples/Raw/Messages.hpp>
 #include <examples/Raw/Init.hpp>
+#include <examples/Ports/Essentia/stats/Entropy.hpp>
 
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
@@ -341,7 +342,7 @@ void dump()
 
 int main()
 {
-  dump<examples::Lowpass>();
+  dump<essentia_ports::Entropy>();
 }
 #else
 int main()
