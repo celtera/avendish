@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/concepts/processor.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
 #include <cmath>
 
 namespace examples::helpers
@@ -27,12 +27,12 @@ struct PerSampleAsPorts
 
   struct inputs
   {
-    avnd::audio_sample<"In", double> audio;
+    halp::audio_sample<"In", double> audio;
   };
 
   struct outputs
   {
-    avnd::audio_sample<"Out", double> audio;
+    halp::audio_sample<"Out", double> audio;
   };
 
   void operator()(const inputs& ins, outputs& outs)

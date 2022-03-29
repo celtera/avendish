@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/concepts/callback.hpp>
-#include <avnd/helpers/callback.hpp>
+#include <halp/callback.hpp>
 
 #include <functional>
 #include <iostream>
@@ -46,11 +46,11 @@ struct Callback
     struct
     {
       static consteval auto name() { return "bang"; }
-      avnd::basic_callback<void(float)> call;
+      halp::basic_callback<void(float)> call;
     } bang;
 
     // Using std::function or similar should also work without issues:
-    // What matters is that the concept avnd::callback is respected.
+    // What matters is that the concept halp::callback is respected.
     // Basically anything that looks like std::function will work
     struct
     {

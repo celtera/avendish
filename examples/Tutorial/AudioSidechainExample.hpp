@@ -1,9 +1,9 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
 
 namespace examples
 {
@@ -21,19 +21,19 @@ struct AudioSidechainExample
 
   struct
   {
-    avnd::audio_input_bus<"Main Input"> audio;
-    avnd::audio_input_bus<"Sidechain"> sidechain;
+    halp::audio_input_bus<"Main Input"> audio;
+    halp::audio_input_bus<"Sidechain"> sidechain;
 
-    avnd::knob_f32<"Gain", avnd::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
+    halp::knob_f32<"Gain", halp::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
   } inputs;
 
   struct
   {
     // Here we say: use the same number of channels than the input "Main Input" defined above.
-    avnd::mimic_audio_bus<"Output", &decltype(inputs)::audio> audio;
+    halp::mimic_audio_bus<"Output", &decltype(inputs)::audio> audio;
 
     // Add a side-chain which will always be a mono channel
-    avnd::fixed_audio_bus<"Mono downmix", double, 1> side_out;
+    halp::fixed_audio_bus<"Mono downmix", double, 1> side_out;
   } outputs;
 
   void operator()(std::size_t N)

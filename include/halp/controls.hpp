@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/polyfill.hpp>
-#include <avnd/helpers/static_string.hpp>
+#include <halp/polyfill.hpp>
+#include <halp/static_string.hpp>
 
 #include <array>
 #include <cstddef>
@@ -12,7 +12,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace avnd
+namespace halp
 {
 template <static_string lit, typename T>
 struct val_port
@@ -118,14 +118,14 @@ struct vslider_t : slider_t<T, lit, setup>
 };
 
 template <static_string lit, range setup = default_range<float>>
-using hslider_f32 = avnd::hslider_t<float, lit, setup>;
+using hslider_f32 = halp::hslider_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
-using hslider_i32 = avnd::hslider_t<int, lit, setup>;
+using hslider_i32 = halp::hslider_t<int, lit, setup>;
 
 template <static_string lit, range setup = default_range<float>>
-using vslider_f32 = avnd::vslider_t<float, lit, setup>;
+using vslider_f32 = halp::vslider_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
-using vslider_i32 = avnd::vslider_t<int, lit, setup>;
+using vslider_i32 = halp::vslider_t<int, lit, setup>;
 
 /// Spinbox ///
 
@@ -139,9 +139,9 @@ struct spinbox_t : slider_t<T, lit, setup>
 };
 
 template <static_string lit, range setup = default_range<float>>
-using spinbox_f32 = avnd::spinbox_t<float, lit, setup>;
+using spinbox_f32 = halp::spinbox_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
-using spinbox_i32 = avnd::spinbox_t<int, lit, setup>;
+using spinbox_i32 = halp::spinbox_t<int, lit, setup>;
 
 /// Knob ///
 
@@ -170,13 +170,13 @@ struct knob_t
 };
 
 template <static_string lit, auto setup = default_range<float>>
-using knob_f32 = avnd::knob_t<float, lit, setup>;
+using knob_f32 = halp::knob_t<float, lit, setup>;
 template <static_string lit, irange setup = default_irange<int>>
-using knob_i32 = avnd::knob_t<int, lit, setup>;
+using knob_i32 = halp::knob_t<int, lit, setup>;
 
 
 template <static_string lit, double min, double max, double init>
-using knob = avnd::knob_t<float, lit, avnd::range{min, max, init}>;
+using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
 
 /// Toggle ///
 
@@ -440,7 +440,7 @@ struct xy_pad_t
 };
 
 template <static_string lit, range setup = default_range<float>>
-using xy_pad_f32 = avnd::xy_pad_t<float, lit, setup>;
+using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
 /// RGBA color ///
 struct color_type
@@ -516,14 +516,14 @@ struct vbargraph_t : slider_t<T, lit, setup>
 };
 
 template <static_string lit, range setup = default_range<float>>
-using hbargraph_f32 = avnd::hbargraph_t<float, lit, setup>;
+using hbargraph_f32 = halp::hbargraph_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
-using hbargraph_i32 = avnd::hbargraph_t<int, lit, setup>;
+using hbargraph_i32 = halp::hbargraph_t<int, lit, setup>;
 
 template <static_string lit, range setup = default_range<float>>
-using vbargraph_f32 = avnd::vbargraph_t<float, lit, setup>;
+using vbargraph_f32 = halp::vbargraph_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
-using vbargraph_i32 = avnd::vbargraph_t<int, lit, setup>;
+using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 
 }
 

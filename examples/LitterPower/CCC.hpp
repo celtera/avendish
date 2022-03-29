@@ -1,10 +1,10 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/sample_accurate_controls.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
+#include <halp/sample_accurate_controls.hpp>
 
 namespace examples
 {
@@ -28,13 +28,13 @@ struct CCC
      * Here we use a bang input like the original Max external ;
      * notice that an impulse value as-is wouldn't make a lot of sense.
       **/
-    avnd::accurate<avnd::val_port<"Bang", avnd::impulse>> bang;
+    halp::accurate<halp::val_port<"Bang", halp::impulse>> bang;
   } inputs;
 
   struct
   {
     /** One float is output per bang **/
-    avnd::accurate<avnd::val_port<"Out", float>> out;
+    halp::accurate<halp::val_port<"Out", float>> out;
   } outputs;
 
   /** We need to keep some state around **/

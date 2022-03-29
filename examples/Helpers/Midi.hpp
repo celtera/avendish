@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/midi.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
+#include <halp/midi.hpp>
 #include <cmath>
 
 #include <array>
@@ -25,12 +25,12 @@ struct Midi
 
   struct
   {
-    avnd::midi_bus<"MIDI"> midi;
+    halp::midi_bus<"MIDI"> midi;
   } inputs;
 
   struct
   {
-    avnd::midi_bus<"MIDI"> midi;
+    halp::midi_bus<"MIDI"> midi;
   } outputs;
 
   void operator()()

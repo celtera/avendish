@@ -1,6 +1,6 @@
 #pragma once
 #include <avnd/common/struct_reflection.hpp>
-#include <avnd/helpers/midi.hpp>
+// #include <avnd/helpers/midi.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/controls.hpp>

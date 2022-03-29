@@ -2,11 +2,11 @@
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/midi_port.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/midi.hpp>
-#include <avnd/helpers/sample_accurate_controls.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
+#include <halp/midi.hpp>
+#include <halp/sample_accurate_controls.hpp>
 #include <libremidi/message.hpp>
 #include <ossia/network/dataspace/gain.hpp>
 #include <ossia/network/dataspace/time.hpp>
@@ -32,12 +32,12 @@ struct Synth
     /** MIDI input: simply a list of timestamped messages.
      * Timestamp are in samples, 0 is the first sample.
      */
-    avnd::midi_bus<"In"> midi;
+    halp::midi_bus<"In"> midi;
   } inputs;
 
   struct
   {
-    avnd::fixed_audio_bus<"Out", double, 2> audio;
+    halp::fixed_audio_bus<"Out", double, 2> audio;
   } outputs;
 
   struct conf

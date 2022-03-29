@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/reactive_value.hpp>
+#include <halp/reactive_value.hpp>
 
 namespace examples
 {
@@ -25,7 +25,7 @@ struct Addition
   {
     struct
     {
-      avnd::reactive_value<float> value;
+      halp::reactive_value<float> value;
     } out;
   } outputs;
 

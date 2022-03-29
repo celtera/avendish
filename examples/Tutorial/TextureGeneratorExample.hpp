@@ -2,11 +2,11 @@
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/sample_accurate_controls.hpp>
-#include <avnd/helpers/texture.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
+#include <halp/sample_accurate_controls.hpp>
+#include <halp/texture.hpp>
 
 namespace examples
 {
@@ -38,7 +38,7 @@ struct TextureGeneratorExample
   // By know you know the drill: define inputs, outputs...
   struct
   {
-    avnd::hslider_f32<"Bamboozling", avnd::range{0.0001, 0.1, 0.01}> bamboozle;
+    halp::hslider_f32<"Bamboozling", halp::range{0.0001, 0.1, 0.01}> bamboozle;
   } inputs;
 
   struct
@@ -49,17 +49,17 @@ struct TextureGeneratorExample
       $(name, "Out");
 
       // This type is a view on a texture
-      avnd::rgba_texture texture;
+      halp::rgba_texture texture;
     } image;
   } outputs;
 
   // Some place in RAM to store our pixels
-  avnd::uninitialized_bytes bytes;
+  halp::uninitialized_bytes bytes;
 
   TextureGeneratorExample()
   {
     // Allocate some initial data
-    bytes = avnd::rgba_texture::allocate(480, 270);
+    bytes = halp::rgba_texture::allocate(480, 270);
     for (unsigned char& c : bytes)
     {
       c = std::rand() % 10;

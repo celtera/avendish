@@ -2,12 +2,12 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/static_string.hpp>
+#include <halp/static_string.hpp>
 #include <boost/container/small_vector.hpp>
 
 #include <string_view>
 
-namespace avnd
+namespace halp
 {
 
 struct midi_msg

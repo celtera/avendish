@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/log.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/controls.hpp>
+#include <halp/log.hpp>
+#include <halp/meta.hpp>
 
 #include <cstdio>
 
@@ -28,11 +28,11 @@ struct Controls
   // Helper types for defining common cases of UI controls
   struct
   {
-    avnd::hslider_f32<"A"> a;
-    avnd::knob_i32<"B", avnd::irange{.min = -1000, .max = 1000, .init = 100}> b;
-    avnd::toggle<"C", avnd::toggle_setup{.init = true}> c;
-    avnd::lineedit<"D", "foo"> d;
-    avnd::maintained_button<"E"> e;
+    halp::hslider_f32<"A"> a;
+    halp::knob_i32<"B", halp::irange{.min = -1000, .max = 1000, .init = 100}> b;
+    halp::toggle<"C", halp::toggle_setup{.init = true}> c;
+    halp::lineedit<"D", "foo"> d;
+    halp::maintained_button<"E"> e;
 
     // The enum is a bit harder to do since we want to
     // define the enumerators and the matching strings in one go...
@@ -42,7 +42,7 @@ struct Controls
 
   struct
   {
-    avnd::vbargraph_f32<"A"> display;
+    halp::vbargraph_f32<"A"> display;
   } outputs;
 
   void operator()()

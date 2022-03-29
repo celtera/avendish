@@ -2,14 +2,14 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/polyfill.hpp>
-#include <avnd/helpers/static_string.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/polyfill.hpp>
+#include <halp/static_string.hpp>
+#include <halp/meta.hpp>
 
 #include <string_view>
 #include <functional>
 
-namespace avnd
+namespace halp
 {
 
 

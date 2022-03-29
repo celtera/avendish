@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
 
 #include <vector>
 
@@ -21,24 +21,24 @@ public:
   $(c_name, "avnd_helpers_lowpass")
   $(uuid, "82bdb9b5-9cf8-440e-8675-c0caf4fc59b9")
 
-  using setup = avnd::setup;
-  using tick = avnd::tick;
+  using setup = halp::setup;
+  using tick = halp::tick;
 
   struct
   {
-    avnd::dynamic_audio_bus<"Input", double> audio;
-    avnd::hslider_f32<"Weight", avnd::range{.min = 0., .max = 1., .init = 0.5}> weight;
+    halp::dynamic_audio_bus<"Input", double> audio;
+    halp::hslider_f32<"Weight", halp::range{.min = 0., .max = 1., .init = 0.5}> weight;
   } inputs;
 
   struct
   {
-    avnd::dynamic_audio_bus<"Output", double> audio;
+    halp::dynamic_audio_bus<"Output", double> audio;
   } outputs;
 
-  void prepare(avnd::setup info) { previous_values.resize(info.input_channels); }
+  void prepare(halp::setup info) { previous_values.resize(info.input_channels); }
 
   // Do our processing for N samples
-  void operator()(avnd::tick t)
+  void operator()(halp::tick t)
   {
     // Process the input buffer
     for (int i = 0; i < inputs.audio.channels; i++)

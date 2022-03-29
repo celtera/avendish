@@ -1,10 +1,10 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/sample_accurate_controls.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
+#include <halp/sample_accurate_controls.hpp>
 
 namespace examples
 {
@@ -26,7 +26,7 @@ struct SampleAccurateGeneratorExample
    */
   struct
   {
-    avnd::accurate<avnd::val_port<"Out", int>> value;
+    halp::accurate<halp::val_port<"Out", int>> value;
   } outputs;
 
   /**

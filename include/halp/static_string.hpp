@@ -4,7 +4,7 @@
 
 #include <cstddef>
 
-namespace avnd
+namespace halp
 {
 
 template <std::size_t N>

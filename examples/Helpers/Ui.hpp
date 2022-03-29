@@ -3,10 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/concepts/processor.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/layout.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/layout.hpp>
+#include <halp/meta.hpp>
 #include <cmath>
 
 #include <cstdio>
@@ -24,22 +24,22 @@ struct Ui
 
   struct ins
   {
-    avnd::dynamic_audio_bus<"In", double> audio;
-    avnd::hslider_i32<"Int"> int_ctl;
-    avnd::knob_f32<"Float", avnd::range{.min = -1000., .max = 1000., .init = 100.}> float_ctl;
+    halp::dynamic_audio_bus<"In", double> audio;
+    halp::hslider_i32<"Int"> int_ctl;
+    halp::knob_f32<"Float", halp::range{.min = -1000., .max = 1000., .init = 100.}> float_ctl;
 
-    avnd::toggle<"T1", avnd::toggle_setup{.init = true}> t1;
-    avnd::toggle<"T2", avnd::toggle_setup{.init = false}> t2;
-    avnd::maintained_button<"B1"> b1;
-    avnd::impulse_button<"B2"> b2;
+    halp::toggle<"T1", halp::toggle_setup{.init = true}> t1;
+    halp::toggle<"T2", halp::toggle_setup{.init = false}> t2;
+    halp::maintained_button<"B1"> b1;
+    halp::impulse_button<"B2"> b2;
     avnd__enum("Simple Enum", Peg, Square, Peg, Round, Hole) e1;
 
   } inputs;
 
   struct outs
   {
-    avnd::dynamic_audio_bus<"Out", double> audio;
-    avnd::hbargraph_f32<"Meter", avnd::range{.min = -1., .max = 1., .init = 0.}> measure;
+    halp::dynamic_audio_bus<"Out", double> audio;
+    halp::hbargraph_f32<"Meter", halp::range{.min = -1., .max = 1., .init = 0.}> measure;
   } outputs;
 
   double phase = 0;
@@ -51,94 +51,94 @@ struct Ui
 
   struct ui_layout {
       // If your compiler is recent enough:
-      // using enum avnd::colors;
-      // using enum avnd::layouts;
+      // using enum halp::colors;
+      // using enum halp::layouts;
 
       avnd_meta(name, "Main")
-      avnd_meta(layout, avnd::layouts::hbox)
-      avnd_meta(background, avnd::colors::mid)
+      avnd_meta(layout, halp::layouts::hbox)
+      avnd_meta(background, halp::colors::mid)
 
       struct {
         avnd_meta(name, "Widget")
-        avnd_meta(layout, avnd::layouts::vbox)
-        avnd_meta(background, avnd::colors::dark)
+        avnd_meta(layout, halp::layouts::vbox)
+        avnd_meta(background, halp::colors::dark)
 
-        avnd::item<&ins::int_ctl> widget;
-        avnd::item<&outs::measure> widget2;
+        halp::item<&ins::int_ctl> widget;
+        halp::item<&outs::measure> widget2;
       } widgets;
 
-      avnd::spacing spc{.width = 20, .height = 20};
+      halp::spacing spc{.width = 20, .height = 20};
 
       struct {
         avnd_meta(name, "Group")
-        avnd_meta(layout, avnd::layouts::group)
-        avnd_meta(background, avnd::colors::light)
+        avnd_meta(layout, halp::layouts::group)
+        avnd_meta(background, halp::colors::light)
         struct {
-          avnd_meta(layout, avnd::layouts::hbox)
-          avnd::label l1{.text = "label 1"};
-          avnd::spacing spacing{.width = 20, .height = 20};
-          avnd::label l2{.text = "label 2"};
+          avnd_meta(layout, halp::layouts::hbox)
+          halp::label l1{.text = "label 1"};
+          halp::spacing spacing{.width = 20, .height = 20};
+          halp::label l2{.text = "label 2"};
         } a_hbox;
       } b_group;
 
       struct {
         avnd_meta(name, "Tabs")
-        avnd_meta(layout, avnd::layouts::tabs)
-        avnd_meta(background, avnd::colors::darker)
+        avnd_meta(layout, halp::layouts::tabs)
+        avnd_meta(background, halp::colors::darker)
 
         struct {
-          avnd_meta(layout, avnd::layouts::hbox)
+          avnd_meta(layout, halp::layouts::hbox)
           avnd_meta(name, "HBox")
-          avnd::label l1{.text = "label 1"};
-          avnd::label l2{.text = "label 2"};
+          halp::label l1{.text = "label 1"};
+          halp::label l2{.text = "label 2"};
         } a_hbox;
 
         struct {
-          avnd_meta(layout, avnd::layouts::vbox)
+          avnd_meta(layout, halp::layouts::vbox)
           avnd_meta(name, "VBox")
-          avnd::label l1{.text = "label 1"};
-          avnd::label l2{.text = "label 2"};
+          halp::label l1{.text = "label 1"};
+          halp::label l2{.text = "label 2"};
         } a_vbox;
       } a_tabs;
 
       struct {
-        avnd_meta(layout, avnd::layouts::split)
+        avnd_meta(layout, halp::layouts::split)
         avnd_meta(name, "split")
         avnd_meta(width, 400)
         avnd_meta(height, 200)
         struct {
-            avnd_meta(layout, avnd::layouts::vbox)
-            avnd::label l1{.text = "some long foo"};
-            avnd::item<&ins::t1> a;
-            avnd::item<&ins::t2> b;
+            avnd_meta(layout, halp::layouts::vbox)
+            halp::label l1{.text = "some long foo"};
+            halp::item<&ins::t1> a;
+            halp::item<&ins::t2> b;
         } a_widg;
         struct {
-            avnd_meta(layout, avnd::layouts::vbox)
-            avnd::label l2{.text = "other bar"};
-            avnd::item<&ins::e1> c;
+            avnd_meta(layout, halp::layouts::vbox)
+            halp::label l2{.text = "other bar"};
+            halp::item<&ins::e1> c;
 
             struct {
-                avnd_meta(layout, avnd::layouts::hbox)
-                avnd::item<&ins::b1> a;
-                avnd::item<&ins::b2> b;
+                avnd_meta(layout, halp::layouts::hbox)
+                halp::item<&ins::b1> a;
+                halp::item<&ins::b2> b;
             } c2;
         } b_widg;
       } a_split;
 
       struct {
         avnd_meta(name, "Grid")
-        avnd_meta(layout, avnd::layouts::grid)
-        avnd_meta(background, avnd::colors::lighter)
+        avnd_meta(layout, halp::layouts::grid)
+        avnd_meta(background, halp::colors::lighter)
         avnd_meta(columns, 3)
         avnd_meta(padding, 5)
 
-        avnd::item<&ins::float_ctl> widget{{.scale = 0.8}};
+        halp::item<&ins::float_ctl> widget{{.scale = 0.8}};
 
-        avnd::label l1{.text = "A"};
-        avnd::label l2{.text = "B"};
-        avnd::label l3{.text = "C"};
-        avnd::label l4{.text = "D"};
-        avnd::label l5{.text = "E"};
+        halp::label l1{.text = "A"};
+        halp::label l2{.text = "B"};
+        halp::label l3{.text = "C"};
+        halp::label l4{.text = "D"};
+        halp::label l5{.text = "E"};
       } a_grid;
   };
 };

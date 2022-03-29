@@ -1,7 +1,7 @@
 #pragma once
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
 #include <cmath>
 
 namespace examples::helpers
@@ -15,12 +15,12 @@ struct Peak
 
   struct
   {
-    avnd::audio_channel<"In", double> audio;
+    halp::audio_channel<"In", double> audio;
   } inputs;
 
   struct
   {
-    avnd::val_port<"Peak", double> peak;
+    halp::val_port<"Peak", double> peak;
   } outputs;
 
   void operator()(int frames)

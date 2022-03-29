@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/log.hpp>
-#include <avnd/helpers/messages.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/log.hpp>
+#include <halp/messages.hpp>
+#include <halp/meta.hpp>
 
 #include <cstdio>
 
@@ -23,7 +23,7 @@ requires
     // Out effect is saying: "I want to be passed configured with a type
     // holding a "logger_type" typedef
     // which will be something matching the logger concept.
-    avnd::has_logger<C>
+    halp::has_logger<C>
 struct Logger
 {
   // $ is simply a macro that expands to a consteval function.
@@ -43,7 +43,7 @@ struct Logger
 
   struct
   {
-    avnd::func_ref<"member", &Logger<C>::example> my_message;
+    halp::func_ref<"member", &Logger<C>::example> my_message;
   } messages;
 };
 }

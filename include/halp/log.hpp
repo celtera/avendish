@@ -11,6 +11,7 @@
 
 namespace avnd
 {
+
 template <typename T>
 concept logger = requires(T t)
 {
@@ -27,6 +28,10 @@ concept logger = requires(T t)
 #endif
 };
 
+}
+
+namespace halp
+{
 #if defined(FMT_PRINTF_H_)
 struct basic_logger
 {
@@ -81,8 +86,8 @@ struct no_logger
   }
 };
 
-static_assert(avnd::logger<basic_logger>);
-static_assert(avnd::logger<no_logger>);
+static_assert(avnd::logger<halp::basic_logger>);
+static_assert(avnd::logger<halp::no_logger>);
 
 template <typename C>
 concept has_logger = requires

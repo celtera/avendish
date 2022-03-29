@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/log.hpp>
-#include <avnd/helpers/messages.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/log.hpp>
+#include <halp/messages.hpp>
+#include <halp/meta.hpp>
 
 #include <cstdio>
 // Note: we use a generic logger abstraction here, so
@@ -29,7 +29,7 @@ inline void free_template_example()
 
 // See Logger.hpp
 template <typename C>
-requires avnd::has_logger<C>
+requires halp::has_logger<C>
 struct Messages
 {
   $(name, "Message helpers")
@@ -48,18 +48,18 @@ struct Messages
     logger.log("example3: {}", x);
   }
 
-  avnd_start_messages(Messages)
-    avnd_mem_fun(example)
-    avnd_mem_fun(example2)
-    avnd_mem_fun_t(example3, <int>)
-    avnd_mem_fun_t(example3, <float>)
-    avnd_mem_fun_t(example3, <const char*>)
-    avnd_free_fun(free_example)
-    avnd_free_fun_t(free_template_example, <C>)
-    avnd_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
+  halp_start_messages(Messages)
+    halp_mem_fun(example)
+    halp_mem_fun(example2)
+    halp_mem_fun_t(example3, <int>)
+    halp_mem_fun_t(example3, <float>)
+    halp_mem_fun_t(example3, <const char*>)
+    halp_free_fun(free_example)
+    halp_free_fun_t(free_template_example, <C>)
+    halp_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
 
     // General case:
-    avnd::func_ref<"my_message", &Messages::example> m_my_message;
-  avnd_end_messages
+    halp::func_ref<"my_message", &Messages::example> m_my_message;
+  halp_end_messages
 };
 }

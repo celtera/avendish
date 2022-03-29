@@ -1,21 +1,21 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
-#include <avnd/helpers/sample_accurate_controls.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
+#include <halp/sample_accurate_controls.hpp>
 /*
 #include <ossia/detail/logger.hpp>
 #include <ossia/network/value/format_value.hpp>
 */
-#include <avnd/helpers/sample_accurate_controls.hpp>
+#include <halp/sample_accurate_controls.hpp>
 #include <boost/pfr.hpp>
 #include <cmath>
 #include <fmt/format.h>
 
 template <typename T>
-struct fmt::formatter<avnd::combo_pair<T>>
+struct fmt::formatter<halp::combo_pair<T>>
 {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx)
@@ -24,14 +24,14 @@ struct fmt::formatter<avnd::combo_pair<T>>
   }
 
   template <typename FormatContext>
-  auto format(const avnd::combo_pair<T>& number, FormatContext& ctx)
+  auto format(const halp::combo_pair<T>& number, FormatContext& ctx)
   {
     return fmt::format_to(ctx.out(), "combo: {}->{}", number.first, number.second);
   }
 };
 
 template <typename T>
-struct fmt::formatter<avnd::xy_type<T>>
+struct fmt::formatter<halp::xy_type<T>>
 {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx)
@@ -40,13 +40,13 @@ struct fmt::formatter<avnd::xy_type<T>>
   }
 
   template <typename FormatContext>
-  auto format(const avnd::xy_type<T>& number, FormatContext& ctx)
+  auto format(const halp::xy_type<T>& number, FormatContext& ctx)
   {
     return fmt::format_to(ctx.out(), "xy: {}, {}", number.x, number.y);
   }
 };
 template <>
-struct fmt::formatter<avnd::color_type>
+struct fmt::formatter<halp::color_type>
 {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx)
@@ -55,7 +55,7 @@ struct fmt::formatter<avnd::color_type>
   }
 
   template <typename FormatContext>
-  auto format(const avnd::color_type& number, FormatContext& ctx)
+  auto format(const halp::color_type& number, FormatContext& ctx)
   {
     return fmt::format_to(
         ctx.out(), "rgba: {}, {}, {}, {}", number.r, number.g, number.b, number.a);
@@ -77,15 +77,15 @@ struct ControlGallery
   struct
   {
     //! Buttons are level-triggers: true as long as the button is pressed
-    avnd::accurate<avnd::maintained_button<"Press me ! (Button)">> button;
+    halp::accurate<halp::maintained_button<"Press me ! (Button)">> button;
 
     //! In contrast, impulses are edge-triggers: there is only a value at the moment of the click.
-    avnd::accurate<avnd::impulse_button<"Press me ! (Impulse)">> impulse_button;
+    halp::accurate<halp::impulse_button<"Press me ! (Impulse)">> impulse_button;
 
     //! Common widgets
-    avnd::accurate<avnd::hslider_f32<"Float slider", avnd::range{0., 1., 0.5}>>
+    halp::accurate<halp::hslider_f32<"Float slider", halp::range{0., 1., 0.5}>>
         float_slider;
-    avnd::accurate<avnd::knob_f32<"Float knob", avnd::range{0., 1., 0.5}>> float_knob;
+    halp::accurate<halp::knob_f32<"Float knob", halp::range{0., 1., 0.5}>> float_knob;
     //// // FIXME
     //// struct {
     ////   // FIXME meta_control(Control::LogFloatSlider, "Float slider (log)", 0., 1., 0.5);
@@ -95,24 +95,24 @@ struct ControlGallery
 
 #if defined(__clang__) || defined(_MSC_VER)
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104720
-    avnd::accurate<avnd::hslider_i32<"Int slider", avnd::range{0., 1000., 10.}>>
+    halp::accurate<halp::hslider_i32<"Int slider", halp::range{0., 1000., 10.}>>
         int_slider;
-    avnd::accurate<avnd::spinbox_i32<"Int spinbox", avnd::range{0, 1000, 10}>>
+    halp::accurate<halp::spinbox_i32<"Int spinbox", halp::range{0, 1000, 10}>>
         int_spinbox;
 #endif
 
     //! Will look like a checkbox
-    avnd::accurate<avnd::toggle<"Toggle", avnd::toggle_setup{.init = true}>> toggle;
+    halp::accurate<halp::toggle<"Toggle", halp::toggle_setup{.init = true}>> toggle;
 
     //! Same, but allows to choose what is displayed.
-    // FIXME avnd::accurate<avnd::chooser_toggle<"Toggle", {"Falsey", "Truey"}, false>> chooser_toggle;
+    // FIXME halp::accurate<halp::chooser_toggle<"Toggle", {"Falsey", "Truey"}, false>> chooser_toggle;
 
     //! Allows to edit some text.
-    avnd::accurate<avnd::lineedit<"Line edit", "Henlo">> lineedit;
+    halp::accurate<halp::lineedit<"Line edit", "Henlo">> lineedit;
 
     //! First member of the pair is the text, second is the value.
     //! Defining comboboxes and enumerations is a tiny bit more complicated
-    struct : avnd::sample_accurate_values<avnd::combo_pair<float>>
+    struct : halp::sample_accurate_values<halp::combo_pair<float>>
     {
       $(name, "Combo box");
       enum widget
@@ -122,7 +122,7 @@ struct ControlGallery
 
       struct range
       {
-        avnd::combo_pair<float> values[3]{{"Foo", -10.f}, {"Bar", 0.f}, {"Baz", 10.f}};
+        halp::combo_pair<float> values[3]{{"Foo", -10.f}, {"Bar", 0.f}, {"Baz", 10.f}};
         int init{1}; // Bar
       };
 
@@ -130,7 +130,7 @@ struct ControlGallery
     } combobox;
 
     //! Here value will be the string
-    struct : avnd::sample_accurate_values<std::string_view>
+    struct : halp::sample_accurate_values<std::string_view>
     {
       $(name, "Enum 2");
       enum widget
@@ -150,7 +150,7 @@ struct ControlGallery
 
     //! Here value will be the index of the string... but even better than that
     //! is below:
-    struct : avnd::sample_accurate_values<int>
+    struct : halp::sample_accurate_values<int>
     {
       $(name, "Enum 3");
       enum widget
@@ -190,13 +190,13 @@ struct ControlGallery
     //!
     //! OSC messages can use either the int index or the string.
     using enum_t = avnd__enum("Simple Enum", Peg, Square, Peg, Round, Hole);
-    avnd::accurate<enum_t> simpler_enumeration;
+    halp::accurate<enum_t> simpler_enumeration;
 
     //! Crosshair XY chooser
-    avnd::accurate<avnd::xy_pad_f32<"XY", avnd::range{-5.f, 5.f, 0.f}>> position;
+    halp::accurate<halp::xy_pad_f32<"XY", halp::range{-5.f, 5.f, 0.f}>> position;
 
     //! Color chooser. Colors are in 8-bit RGBA by default.
-    avnd::accurate<avnd::color_chooser<"Color">> color;
+    halp::accurate<halp::color_chooser<"Color">> color;
 
   } inputs;
 

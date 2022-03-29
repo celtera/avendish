@@ -2,12 +2,12 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/polyfill.hpp>
-#include <avnd/helpers/static_string.hpp>
+#include <halp/controls.hpp>
+#include <halp/polyfill.hpp>
+#include <halp/static_string.hpp>
 #include <boost/container/vector.hpp>
 
-namespace avnd
+namespace halp
 {
 using uninitialized_bytes = boost::container::vector<unsigned char>;
 struct rgba_texture

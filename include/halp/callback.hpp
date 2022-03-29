@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-namespace avnd
+namespace halp
 {
 
 template <typename>

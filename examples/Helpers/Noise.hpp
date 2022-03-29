@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/meta.hpp>
 #include <cmath>
 
 namespace examples::helpers
@@ -20,7 +20,7 @@ struct WhiteNoise
 
   struct outputs
   {
-    avnd::audio_sample<"Out", double> audio;
+    halp::audio_sample<"Out", double> audio;
   };
 
   void operator()(const inputs& ins, outputs& outs)

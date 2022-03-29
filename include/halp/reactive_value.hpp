@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/callback.hpp>
-namespace avnd
+#include <halp/callback.hpp>
+namespace halp
 {
 
 template <typename T>

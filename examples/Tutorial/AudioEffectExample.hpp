@@ -1,9 +1,9 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
 
 namespace examples
 {
@@ -40,13 +40,13 @@ struct AudioEffectExample
    */
   struct
   {
-    avnd::audio_input_bus<"Main Input"> audio;
-    avnd::knob_f32<"Gain", avnd::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
+    halp::audio_input_bus<"Main Input"> audio;
+    halp::knob_f32<"Gain", halp::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
   } inputs;
 
   struct
   {
-    avnd::audio_output_bus<"Main Output"> audio;
+    halp::audio_output_bus<"Main Output"> audio;
   } outputs;
 
   /** Most basic effect: multiply N samples of inputs by a gain into equivalent outputs **/

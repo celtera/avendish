@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/audio.hpp>
-#include <avnd/helpers/controls.hpp>
-#include <avnd/helpers/meta.hpp>
+#include <halp/audio.hpp>
+#include <halp/controls.hpp>
+#include <halp/meta.hpp>
 #include <cmath>
 
 namespace examples::helpers
@@ -40,13 +40,13 @@ struct PerBusAsPortsFixed
 
   struct
   {
-    avnd::fixed_audio_bus<"In", double, 2> audio;
-    avnd::fixed_audio_bus<"Sidechain", double, 2> sidechain;
+    halp::fixed_audio_bus<"In", double, 2> audio;
+    halp::fixed_audio_bus<"Sidechain", double, 2> sidechain;
   } inputs;
 
   struct
   {
-    avnd::fixed_audio_bus<"Out", double, 2> audio;
+    halp::fixed_audio_bus<"Out", double, 2> audio;
   } outputs;
 
   void operator()(int frames)
@@ -74,12 +74,12 @@ struct PerBusAsPortsDynamic
 
   struct
   {
-    avnd::dynamic_audio_bus<"In", double> audio;
+    halp::dynamic_audio_bus<"In", double> audio;
   } inputs;
 
   struct
   {
-    avnd::dynamic_audio_bus<"Out", double> audio;
+    halp::dynamic_audio_bus<"Out", double> audio;
   } outputs;
 
   void operator()(int frames)

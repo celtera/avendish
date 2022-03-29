@@ -1,5 +1,5 @@
 #pragma once
-#include <avnd/helpers/log.hpp>
+#include <halp/log.hpp>
 #include <avnd/wrappers/configure.hpp>
 #include <m_pd.h>
 

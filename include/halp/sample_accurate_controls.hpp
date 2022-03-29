@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/controls.hpp>
+#include <halp/controls.hpp>
 
 #include <map>
 
-namespace avnd
+namespace halp
 {
 
 template <typename T>

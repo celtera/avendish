@@ -1,6 +1,6 @@
 #pragma once
 #include <avnd/common/export.hpp>
-#include <avnd/helpers/log.hpp>
+#include <halp/log.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/midi.hpp>
@@ -23,9 +23,9 @@ namespace exhs
 {
 struct config
 {
-  using logger_type = avnd::basic_logger;
+  using logger_type = halp::basic_logger;
 };
-static constexpr auto logger = avnd::basic_logger{};
+static constexpr auto logger = halp::basic_logger{};
 }
 
 namespace exhs

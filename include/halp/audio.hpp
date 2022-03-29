@@ -4,12 +4,12 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/span_polyfill.hpp>
-#include <avnd/helpers/static_string.hpp>
+#include <halp/static_string.hpp>
 
 #include <cstdint>
 
 #include <string_view>
-namespace avnd
+namespace halp
 {
 template <static_string lit, typename FP>
 struct audio_sample
@@ -84,7 +84,7 @@ struct setup
 };
 }
 
-namespace avnd
+namespace halp
 {
 template <static_string lit, typename FP>
 struct audio_bus
@@ -107,7 +107,7 @@ template <static_string lit>
 using audio_output_bus = audio_bus<lit, double>;
 }
 
-namespace avnd
+namespace halp
 {
 
 template <typename T>
