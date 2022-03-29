@@ -187,7 +187,7 @@ public:
 
   void createLayout()
   {
-    using type = typename avnd::layout_type<T>::type;
+    using type = typename avnd::ui_type<T>::type;
     constexpr type layout;
     createItem(layout);
   }

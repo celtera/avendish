@@ -11,11 +11,12 @@
 namespace avnd
 {
 
-type_or_value_qualification(ui_layout) type_or_value_reflection(ui_layout)
+type_or_value_qualification(ui)
+type_or_value_reflection(ui)
 
-    template <typename T>
-    concept hbox_layout = (T::layout() == decltype(T::layout())::hbox)
-                          || (T::layout == decltype(T::layout)::hbox);
+template <typename T>
+concept hbox_layout = (T::layout() == decltype(T::layout())::hbox)
+                      || (T::layout == decltype(T::layout)::hbox);
 template <typename T>
 concept vbox_layout = (T::layout() == decltype(T::layout())::vbox)
                       || (T::layout == decltype(T::layout)::vbox);

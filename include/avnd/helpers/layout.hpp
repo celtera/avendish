@@ -4,12 +4,76 @@
 
 #include <avnd/helpers/polyfill.hpp>
 #include <avnd/helpers/static_string.hpp>
+#include <avnd/helpers/meta.hpp>
 
 #include <string_view>
+#include <functional>
 
 namespace avnd
 {
 
+
+enum class layouts
+{
+  container,
+  hbox,
+  vbox,
+  grid,
+  split,
+  tabs,
+  group,
+  spacing,
+  control,
+  widget
+};
+enum class colors
+{
+  darker,
+  dark,
+  mid,
+  light,
+  lighter
+};
+
+struct spacing
+{
+  avnd_meta(layout, layouts::spacing)
+  int width{}, height{};
+};
+struct label
+{
+  avnd_meta(layout, layouts::widget)
+  std::string_view text;
+};
+
+struct item_base
+{
+  avnd_meta(layout, layouts::control)
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+};
+
+// When clang supports P2082R1, we could just use a deduction guide instead...
+template <auto F>
+struct item : item_base
+{
+  decltype(F) control = F;
+};
+
+template <typename M, typename L, typename T>
+struct prop
+{
+  std::function<T(M& self, L& layout)> get;
+  std::function<void(M& self, L& layout, const T&)> set;
+};
+
+// template<typename T>
+// using prop = ::prop<Ui, layout, T>;
+
+
+
+/* first tentative, not very good but still there for posterity...
 template <int w>
 struct hspace
 {
@@ -40,32 +104,32 @@ struct space
   static constexpr auto width() { return w; }
   static constexpr auto height() { return h; }
 };
-/*
-struct hbox {
-    enum { hbox };
-};
-struct vbox {
-    enum { vbox };    
-};
-
-template <static_string lit>
-struct group {
-    enum { group };    
-    static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-};
-struct tabs {
-    enum { tabs };    
-};
-template<int w, int h>
-struct split {
-    enum { split };    
-    static constexpr auto width() { return w; }
-    static constexpr auto height() { return h; }
-};
-template<static_string lit, typename Layout>
-struct tab : Layout {
-    static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-};*/
+//
+// struct hbox {
+//     enum { hbox };
+// };
+// struct vbox {
+//     enum { vbox };
+// };
+//
+// template <static_string lit>
+// struct group {
+//     enum { group };
+//     static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+// };
+// struct tabs {
+//     enum { tabs };
+// };
+// template<int w, int h>
+// struct split {
+//     enum { split };
+//     static constexpr auto width() { return w; }
+//     static constexpr auto height() { return h; }
+// };
+// template<static_string lit, typename Layout>
+// struct tab : Layout {
+//     static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+// };
 
 #define avnd_cat2(a, b) a##b
 #define avnd_cat(a, b) avnd_cat2(a, b)
@@ -124,4 +188,6 @@ struct tab : Layout {
   avnd_cat(widget_, __LINE__)
 
 #define avnd_widget(Inputs, Ctl) decltype(&Inputs::Ctl) Ctl = &Inputs::Ctl;
+
+*/
 }

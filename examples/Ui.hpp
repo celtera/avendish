@@ -90,7 +90,7 @@ struct Ui
 
   void operator()(int N) { }
 
-  struct ui_layout
+  struct ui
   {
     static constexpr auto name() { return "Main"; }
     static constexpr auto layout()
@@ -293,7 +293,7 @@ struct Ui
         }
         static constexpr auto scale() { return 0.8; }
 
-        decltype(&ins::float_ctl) widget = &ins::float_ctl;
+        decltype(&ins::float_ctl) control = &ins::float_ctl;
       } float_widget;
 
       const char* l1 = "A";
@@ -313,20 +313,20 @@ struct Ui
         static constexpr auto background() { enum { dark } d{}; return d; }
         decltype(&ins::int_ctl) int_widget = &ins::int_ctl;
       } widgets;
-      
+
       struct {
           enum { spacing };
           static constexpr auto width() { return 20; }
           static constexpr auto height() { return 20; }
       } a_spacing;
-      
+
       struct {
         enum { group };
         static constexpr auto background() { enum { light } d{}; return d; }
         static constexpr auto name() { return "Group"; }
         struct {
           enum { hbox };
-          const char* l1 = "label 1";      
+          const char* l1 = "label 1";
           struct {
               enum { spacing };
               static constexpr auto width() { return 20; }
@@ -334,21 +334,21 @@ struct Ui
           } b_spacing;
           const char* l2 = "label 2";
         } a_hbox;
-      } b_group; 
-      
-      
+      } b_group;
+
+
       struct {
         enum { tabs };
         static constexpr auto name() { return "Tabs"; }
         static constexpr auto background() { enum { darker } d{}; return d; }
-        
+
         struct {
           enum { hbox };
           static constexpr auto name() { return "HBox"; }
           const char* l1 = "label 3";
           const char* l2 = "label 4";
         } a_hbox;
-        
+
         struct {
           enum { vbox };
           static constexpr auto name() { return "VBox"; }
@@ -356,7 +356,7 @@ struct Ui
           const char* l2 = "label 6";
         } a_vbox;
       } a_tabs;
-      
+
       struct {
         enum { split };
         static constexpr auto name() { return "split"; }
@@ -365,15 +365,15 @@ struct Ui
         const char* l1 = "some long foo";
         const char* l2 = "other bar";
       } a_split;
-      
+
       struct {
         enum { grid };
         static constexpr auto name() { return "Grid"; }
         static constexpr auto background() { enum { lighter } d{}; return d; }
         static constexpr auto columns() { return 3; }
         static constexpr auto padding() { return 5; }
-        
-        struct { 
+
+        struct {
           enum { control };
           decltype(&ins::float_ctl) widget = &ins::float_ctl;
           static constexpr auto scale() { return 0.8; }

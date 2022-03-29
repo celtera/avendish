@@ -9,30 +9,30 @@
 namespace avnd
 {
 template <typename T>
-struct layout_introspection : fields_introspection<typename layout_type<T>::type>
+struct ui_introspection : fields_introspection<typename ui_type<T>::type>
 {
 };
 
 template <typename T>
-auto& get_layout(avnd::effect_container<T>& t)
+auto& get_ui(avnd::effect_container<T>& t)
 {
-  using type = typename avnd::layout_type<T>::type;
-  static const constexpr type layout;
-  return layout;
+  using type = typename avnd::ui_type<T>::type;
+  static const constexpr type ui;
+  return ui;
 }
 
-template <avnd::layout_is_type T>
-auto& get_layout(T& t)
+template <avnd::ui_is_type T>
+auto& get_ui(T& t)
 {
-  using type = typename avnd::layout_type<T>::type;
-  static const constexpr type layout;
-  return layout;
+  using type = typename avnd::ui_type<T>::type;
+  static const constexpr type ui;
+  return ui;
 }
 
-template <avnd::layout_is_value T>
-auto& get_layout(T& t)
+template <avnd::ui_is_value T>
+auto& get_ui(T& t)
 {
-  return t.layout;
+  return t.ui;
 }
 
 }

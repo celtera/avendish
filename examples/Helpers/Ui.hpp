@@ -11,64 +11,6 @@
 
 #include <cstdio>
 
-namespace avnd
-{
-
-enum class layouts
-{
-  container,
-  hbox,
-  vbox,
-  grid,
-  split,
-  tabs,
-  group,
-  spacing,
-  control,
-  widget
-};
-enum class colors
-{
-  darker,
-  dark,
-  mid,
-  light,
-  lighter
-};
-
-struct spacing
-{
-  avnd_meta(layout, layouts::spacing) int width{}, height{};
-};
-struct label
-{
-  avnd_meta(layout, layouts::widget) std::string_view text;
-};
-
-struct item_base
-{
-  avnd_meta(layout, layouts::control)
-  double x = 0.0;
-  double y = 0.0;
-  double scale = 1.0;
-};
-
-// When clang supports P2082R1, we could just use a deduction guide instead...
-template <auto F>
-struct item : item_base
-{
-  decltype(F) control = F;
-};
-}
-template <typename M, typename L, typename T>
-struct prop
-{
-  std::function<T(M& self, L& layout)> get;
-  std::function<void(M& self, L& layout, const T&)> set;
-};
-// template<typename T>
-// using prop = ::prop<Ui, layout, T>;
-
 namespace examples::helpers
 {
 /**
@@ -78,14 +20,13 @@ struct Ui
 {
   static consteval auto name() { return "UI example"; }
   static consteval auto c_name() { return "avnd_ui"; }
-  static consteval auto uuid() { return "e1f0f202-6732-4d2d-8ee9-5957a51ae667"; }
+  static consteval auto uuid() { return "794ab8b2-94cf-4be4-8c8c-b7c6aee3e6da"; }
 
   struct ins
   {
     avnd::dynamic_audio_bus<"In", double> audio;
     avnd::hslider_i32<"Int"> int_ctl;
-    avnd::knob_f32<"Float", avnd::range{.min = -1000, .max = 1000, .init = 100}>
-        float_ctl;
+    avnd::knob_f32<"Float", avnd::range{.min = -1000., .max = 1000., .init = 100.}> float_ctl;
 
     avnd::toggle<"T1", avnd::toggle_setup{.init = true}> t1;
     avnd::toggle<"T2", avnd::toggle_setup{.init = false}> t2;
@@ -98,48 +39,42 @@ struct Ui
   struct outs
   {
     avnd::dynamic_audio_bus<"Out", double> audio;
+    avnd::hbargraph_f32<"Meter", avnd::range{.min = -1., .max = 1., .init = 0.}> measure;
   } outputs;
 
-  void operator()(int N) { }
-
-  struct ui_layout
+  double phase = 0;
+  void operator()(int N)
   {
-    using enum avnd::colors;
-    using enum avnd::layouts;
+      outputs.measure = std::sin(phase);
+      phase += N * 0.001;
+  }
 
-    avnd_meta(name, "Main") avnd_meta(layout, hbox) avnd_meta(background, mid) struct
-    {
-      avnd_meta(name, "Widget") avnd_meta(layout, container) avnd_meta(background, dark)
-
-          avnd::item<&ins::int_ctl> w1{{.x = 15, .y = 15}};
-      avnd::item<&ins::float_ctl> w2{{.x = 120, .y = 30, .scale = 2.5}};
-
-    } widgets;
-  };
-  /*
   struct ui_layout {
-      using enum avnd::colors;
-      using enum avnd::layouts;
+      // If your compiler is recent enough:
+      // using enum avnd::colors;
+      // using enum avnd::layouts;
 
       avnd_meta(name, "Main")
-      avnd_meta(layout, hbox)
-      avnd_meta(background, mid)
+      avnd_meta(layout, avnd::layouts::hbox)
+      avnd_meta(background, avnd::colors::mid)
+
       struct {
         avnd_meta(name, "Widget")
-        avnd_meta(layout, hbox)
-        avnd_meta(background, dark)
+        avnd_meta(layout, avnd::layouts::vbox)
+        avnd_meta(background, avnd::colors::dark)
 
         avnd::item<&ins::int_ctl> widget;
+        avnd::item<&outs::measure> widget2;
       } widgets;
 
-      avnd::spacing spacing{.width = 20, .height = 20};
+      avnd::spacing spc{.width = 20, .height = 20};
 
       struct {
         avnd_meta(name, "Group")
-        avnd_meta(layout, group)
-        avnd_meta(background, light)
+        avnd_meta(layout, avnd::layouts::group)
+        avnd_meta(background, avnd::colors::light)
         struct {
-          avnd_meta(layout, hbox)
+          avnd_meta(layout, avnd::layouts::hbox)
           avnd::label l1{.text = "label 1"};
           avnd::spacing spacing{.width = 20, .height = 20};
           avnd::label l2{.text = "label 2"};
@@ -148,18 +83,18 @@ struct Ui
 
       struct {
         avnd_meta(name, "Tabs")
-        avnd_meta(layout, tabs)
-        avnd_meta(background, darker)
+        avnd_meta(layout, avnd::layouts::tabs)
+        avnd_meta(background, avnd::colors::darker)
 
         struct {
-          avnd_meta(layout, hbox)
+          avnd_meta(layout, avnd::layouts::hbox)
           avnd_meta(name, "HBox")
           avnd::label l1{.text = "label 1"};
           avnd::label l2{.text = "label 2"};
         } a_hbox;
 
         struct {
-          avnd_meta(layout, vbox)
+          avnd_meta(layout, avnd::layouts::vbox)
           avnd_meta(name, "VBox")
           avnd::label l1{.text = "label 1"};
           avnd::label l2{.text = "label 2"};
@@ -167,23 +102,23 @@ struct Ui
       } a_tabs;
 
       struct {
-        avnd_meta(layout, split)
+        avnd_meta(layout, avnd::layouts::split)
         avnd_meta(name, "split")
         avnd_meta(width, 400)
         avnd_meta(height, 200)
         struct {
-            avnd_meta(layout, vbox)
+            avnd_meta(layout, avnd::layouts::vbox)
             avnd::label l1{.text = "some long foo"};
             avnd::item<&ins::t1> a;
             avnd::item<&ins::t2> b;
         } a_widg;
         struct {
-            avnd_meta(layout, vbox)
+            avnd_meta(layout, avnd::layouts::vbox)
             avnd::label l2{.text = "other bar"};
             avnd::item<&ins::e1> c;
 
             struct {
-                avnd_meta(layout, hbox)
+                avnd_meta(layout, avnd::layouts::hbox)
                 avnd::item<&ins::b1> a;
                 avnd::item<&ins::b2> b;
             } c2;
@@ -192,12 +127,12 @@ struct Ui
 
       struct {
         avnd_meta(name, "Grid")
-        avnd_meta(layout, grid)
-        avnd_meta(background, lighter)
+        avnd_meta(layout, avnd::layouts::grid)
+        avnd_meta(background, avnd::colors::lighter)
         avnd_meta(columns, 3)
         avnd_meta(padding, 5)
 
-        avnd::item<&ins::float_ctl> widget{.scale = 0.8};
+        avnd::item<&ins::float_ctl> widget{{.scale = 0.8}};
 
         avnd::label l1{.text = "A"};
         avnd::label l2{.text = "B"};
@@ -206,6 +141,5 @@ struct Ui
         avnd::label l5{.text = "E"};
       } a_grid;
   };
-  */
 };
 }

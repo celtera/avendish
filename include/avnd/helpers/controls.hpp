@@ -174,6 +174,10 @@ using knob_f32 = avnd::knob_t<float, lit, setup>;
 template <static_string lit, irange setup = default_irange<int>>
 using knob_i32 = avnd::knob_t<int, lit, setup>;
 
+
+template <static_string lit, double min, double max, double init>
+using knob = avnd::knob_t<float, lit, avnd::range{min, max, init}>;
+
 /// Toggle ///
 
 struct toggle_setup

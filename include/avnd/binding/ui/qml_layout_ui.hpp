@@ -112,7 +112,7 @@ import QtQuick.Controls 2.15
 ApplicationWindow {{
   visible: true
   Item {{ objectName: "mainItem"; anchors.fill: parent
-  
+
 
 )_");
 
@@ -237,7 +237,7 @@ ApplicationWindow {{
 
   void createLayout()
   {
-    auto& lay = avnd::get_layout(this->implementation);
+    auto& lay = avnd::get_ui(this->implementation);
     createItem(lay);
   }
 
