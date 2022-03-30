@@ -11,7 +11,7 @@ namespace stv3
 {
 struct config
 {
-  using logger_type = avnd::no_logger;
+  using logger_type = halp::no_logger;
 };
 
 }
