@@ -20,6 +20,7 @@ struct accurate
     : T
     , sample_accurate_values<std::decay_t<decltype(T::value)>>
 {
+
 };
 
 }

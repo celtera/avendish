@@ -11,6 +11,7 @@
 #include <avnd/concepts/object.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <cmath>
 #include <m_pd.h>
 
@@ -37,6 +38,8 @@ struct message_processor_metaclass
 template <typename T>
 struct message_processor
 {
+  using processor_type = T;
+
   // Head of the Pd object
   t_object x_obj;
 
@@ -51,6 +54,10 @@ struct message_processor
   [[no_unique_address]] init_arguments<T> init_setup;
 
   [[no_unique_address]] messages<T> messages_setup;
+
+  [[no_unique_address]] avnd::control_storage<T> control_buffers;
+
+  static constexpr const int buffer_size = 1; // Used for control storage
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
@@ -69,6 +76,9 @@ struct message_processor
     // Create outlets
     output_setup.init(implementation, x_obj);
 
+    // Reserve space for controls
+    this->control_buffers.reserve_space(implementation, 16);
+
     /// Initialize controls
     if constexpr (avnd::has_inputs<T>)
     {
@@ -84,34 +94,64 @@ struct message_processor
     {
       if constexpr (avnd::parameter_input_introspection<T>::size > 0)
       {
-        switch (argv[0].a_type)
+        auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
+        if(argc > 0)
         {
-          case A_FLOAT:
+          switch (argv[0].a_type)
           {
-            // This is the float that is supposed to go inside the first inlet if any ?
-            auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
-            if constexpr (requires { first_inlet.value = 0.f; })
+            case A_FLOAT:
             {
-              first_inlet.value = argv[0].a_w.w_float;
+              // This is the float that is supposed to go inside the first inlet if any ?
+              if constexpr (requires { first_inlet.value = 0.f; })
+              {
+                first_inlet.value = argv[0].a_w.w_float;
+              }
+              break;
             }
-            break;
-          }
 
-          case A_SYMBOL:
+            case A_SYMBOL:
+            {
+              if constexpr (requires { first_inlet.value = "string"; })
+              {
+                first_inlet.value = argv[0].a_w.w_symbol->s_name;
+              }
+              break;
+            }
+
+            default:
+              break;
+          }
+        }
+        else
+        {
+          // Bang
+          if constexpr (requires { first_inlet.values[0] = {}; })
           {
-            auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
-            if constexpr (requires { first_inlet.value = "string"; })
-            {
-              first_inlet.value = argv[0].a_w.w_symbol->s_name;
-            }
-            break;
+            first_inlet.values[0] = {};
           }
-
-          default:
-            break;
         }
       }
     }
+  }
+
+  void default_process(t_symbol* s, int argc, t_atom* argv)
+  {
+    // Potentially clear the outlets if needed
+    this->control_buffers.clear_outputs(this->implementation);
+
+    // First apply the data to the first inlet (other inlets are handled by Pd).
+    process_first_inlet_control(s, argc, argv);
+
+    // Do our stuff if it makes sense - some objects may not
+    // even have a "processing" method
+    if_possible(implementation.effect())
+    else if_possible(implementation.effect(1));
+
+    // Then bang
+    output_setup.commit(*this);
+
+    // Then clean the inlets if needed
+    this->control_buffers.clear_inputs(this->implementation);
   }
 
   void process(t_symbol* s, int argc, t_atom* argv)
@@ -124,36 +164,14 @@ struct message_processor
     switch (argc)
     {
       case 0: // bang
-      {
         if (strcmp(s->s_name, s_bang.s_name) == 0)
-        {
-          // Do our stuff if it makes sense - some objects may not
-          // even have a "processing" method
-          if_possible(implementation.effect());
-
-          // Then bang
-          output_setup.commit(implementation);
-        }
+          default_process(s, argc, argv);
         else
-        {
           process_generic_message(implementation, s);
-        }
         break;
-      }
       default:
-      {
-        // First apply the data to the first inlet (other inlets are handled by Pd).
-        process_first_inlet_control(s, argc, argv);
-
-        // Do our stuff if it makes sense - some objects may not
-        // even have a "processing" method
-        if_possible(implementation.effect());
-
-        // Then bang
-        output_setup.commit(implementation);
-
+        default_process(s, argc, argv);
         break;
-      }
     }
   }
 };

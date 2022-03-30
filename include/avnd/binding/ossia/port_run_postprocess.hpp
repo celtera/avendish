@@ -101,7 +101,7 @@ struct process_after_run
       int64_t ts,
       avnd::num<Idx>) const noexcept
   {
-    port->write_value(ctrl.value, ts);
+    port->write_value(val, ts);
   }
 
   template <avnd::parameter Field, std::size_t Idx>
@@ -112,7 +112,7 @@ struct process_after_run
       int64_t ts,
       avnd::num<Idx>) const noexcept
   {
-    port->write_value(ctrl.value, ts);
+    port->write_value(val, ts);
 
     // Get the index of the control in [0; N[
     using type = typename Exec_T::processor_type;
