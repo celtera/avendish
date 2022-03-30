@@ -68,7 +68,7 @@ namespace examples
 struct ControlGallery
 {
   avnd_meta(name, "Control gallery");
-  avnd_meta(script_name, "control_gallery");
+  avnd_meta(c_name, "control_gallery");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

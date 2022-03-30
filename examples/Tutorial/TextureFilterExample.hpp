@@ -12,7 +12,7 @@ namespace examples
 struct TextureFilterExample
 {
   avnd_meta(name, "My example texture filter");
-  avnd_meta(script_name, "texture_filt");
+  avnd_meta(c_name, "texture_filt");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

@@ -15,7 +15,7 @@ namespace examples
 struct CCC
 {
   avnd_meta(name, "CCC");
-  avnd_meta(script_name, "CCC");
+  avnd_meta(c_name, "CCC");
   avnd_meta(category, "Demo");
   avnd_meta(author, "Peter Castine");
   avnd_meta(description,

@@ -29,7 +29,7 @@ namespace examples
 struct TextureGeneratorExample
 {
   avnd_meta(name, "My example texture generator");
-  avnd_meta(script_name, "texture_gen");
+  avnd_meta(c_name, "texture_gen");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

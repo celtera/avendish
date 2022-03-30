@@ -6,7 +6,10 @@
 
 namespace examples::helpers
 {
-
+/**
+ * A simple example of audio analysis.
+ * Takes an input channel, writes the peak absolute value.
+ */
 struct Peak
 {
   avnd_meta(name, "Peak value")

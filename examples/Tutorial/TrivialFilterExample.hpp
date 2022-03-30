@@ -13,7 +13,7 @@ namespace examples
 struct TrivialFilterExample
 {
   avnd_meta(name, "My trivial filter");
-  avnd_meta(script_name, "trivial_effect_filter");
+  avnd_meta(c_name, "trivial_effect_filter");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

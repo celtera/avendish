@@ -13,7 +13,7 @@ namespace examples
 struct AudioSidechainExample
 {
   avnd_meta(name, "Sidechain example");
-  avnd_meta(script_name, "effect_sidechain");
+  avnd_meta(c_name, "effect_sidechain");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

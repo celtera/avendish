@@ -24,7 +24,7 @@ template <typename C>
 inline void free_template_example()
 {
   using logger = typename C::logger_type;
-  logger{}.log("free_example");
+  logger{}.debug("free_example");
 }
 
 // See Logger.hpp
@@ -38,14 +38,14 @@ struct Messages
 
   [[no_unique_address]] typename C::logger_type logger;
 
-  void example() { logger.log("example"); }
+  void example() { logger.info("example"); }
 
-  void example2(float x) { logger.log("example2: {}", x); }
+  void example2(float x) { logger.error("example2: {}", x); }
 
   template <typename U>
   void example3(U x)
   {
-    logger.log("example3: {}", x);
+    logger.warn("example3: {}", x);
   }
 
   halp_start_messages(Messages)

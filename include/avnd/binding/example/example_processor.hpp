@@ -1,6 +1,5 @@
 #pragma once
 #include <avnd/common/export.hpp>
-#include <halp/log.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/midi.hpp>
@@ -19,12 +18,18 @@
 
 #include <string_view>
 
+#include <halp/log.hpp>
+#include <halp/fft.hpp>
 namespace exhs
 {
 struct config
 {
   using logger_type = halp::basic_logger;
+
+  template<typename T>
+  using fft_type = halp::fft<T>;
 };
+
 static constexpr auto logger = halp::basic_logger{};
 }
 

@@ -12,7 +12,7 @@ namespace examples
 struct SampleAccurateFilterExample
 {
   avnd_meta(name, "My sample-accurate filter");
-  avnd_meta(script_name, "sample_acc_filt");
+  avnd_meta(c_name, "sample_acc_filt");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

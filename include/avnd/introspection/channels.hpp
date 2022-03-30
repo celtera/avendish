@@ -238,8 +238,8 @@ requires(sample_input_port_count<float, T> != 0)
     || (sample_output_port_count<double, T> != 0) struct bus_introspection<T>
 {
   // TODO group them as busses instead ?
-  static constexpr const auto input_busses = 1;
-  static constexpr const auto output_busses = 1;
+  static constexpr const auto input_busses = sample_input_port_count<float, T> + sample_input_port_count<double, T>;
+  static constexpr const auto output_busses = sample_output_port_count<float, T> + sample_output_port_count<double, T>;
 };
 
 template <typename T>
@@ -249,8 +249,8 @@ requires(mono_sample_array_input_port_count<float, T> != 0)
     || (mono_sample_array_output_port_count<double, T> != 0) struct bus_introspection<T>
 {
   // TODO group them as busses instead ?
-  static constexpr const auto input_busses = 1;
-  static constexpr const auto output_busses = 1;
+  static constexpr const auto input_busses = mono_sample_array_input_port_count<float, T> + mono_sample_array_input_port_count<double, T>;
+  static constexpr const auto output_busses = mono_sample_array_output_port_count<float, T> + mono_sample_array_output_port_count<double, T>;
 };
 
 template <typename T>

@@ -21,7 +21,7 @@ namespace examples
 struct Synth
 {
   avnd_meta(name, "My example synth");
-  avnd_meta(script_name, "synth_123");
+  avnd_meta(c_name, "synth_123");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

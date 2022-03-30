@@ -39,7 +39,6 @@ namespace essentia_ports
 template <typename T> void normalizeSum(std::span<T>& array) {
   if (array.empty()) return;
 
-  //T sumElements = std::accumulate(array.begin(), array.end(), (T) 0.0);
   T sumElements = (T) 0.;
   for (size_t i=0; i<array.size(); ++i) {
     if (array[i] < 0) return;
@@ -69,7 +68,7 @@ struct Entropy
                              "  [1] H. Misra, S. Ikbal, H. Bourlard and H. Hermansky, \"Spectral entropy\n"
                              "  based feature for robust ASR,\" in IEEE International Conference on\n"
                              "  Acoustics, Speech, and Signal Processing (ICASSP'04)."))
-  avnd_meta(uuid, "57d3476d-9dbb-45ac-b76e-a2a51b48b8af")
+  avnd_meta(uuid, "f728cdd1-702f-4aa3-8e17-bb5149358bf7")
 
   struct {
     array_port<"array", "the input array (cannot contain negative values, and must be non-empty)"> array;
@@ -81,24 +80,24 @@ struct Entropy
 
   void operator()(std::size_t frames)
   {
-      std::span<Real> array{inputs.array.channel, frames};
-      Real& entropy = outputs.entropy;
+    std::span<Real> array{inputs.array.channel, frames};
+    Real& entropy = outputs.entropy;
 
-      if (array.size() == 0) {
-          throw std::runtime_error("Entropy: array does not contain any values");
-      }
+    if (array.size() == 0) {
+        throw std::runtime_error("Entropy: array does not contain any values");
+    }
 
-      if (std::ranges::any_of(array, [](Real value) { return value < 0; })) {
-          throw std::runtime_error("Entropy: array must not contain negative values");
-      }
+    if (std::ranges::any_of(array, [](Real value) { return value < 0; })) {
+        throw std::runtime_error("Entropy: array must not contain negative values");
+    }
 
-      normalizeSum(array);
-      entropy = 0.0;
+    normalizeSum(array);
+    entropy = 0.0;
 
-      for (size_t i=0; i<array.size(); ++i) {
-          if (array[i]==0)array[i] = 1;
-          entropy -= std::log2(array[i]) * array[i];
-      }
+    for (size_t i=0; i<array.size(); ++i) {
+        if (array[i]==0)array[i] = 1;
+        entropy -= std::log2(array[i]) * array[i];
+    }
   }
 };
 

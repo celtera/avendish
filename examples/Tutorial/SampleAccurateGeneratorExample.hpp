@@ -12,7 +12,7 @@ namespace examples
 struct SampleAccurateGeneratorExample
 {
   avnd_meta(name, "My sample-accurate generator");
-  avnd_meta(script_name, "sample_acc_gen");
+  avnd_meta(c_name, "sample_acc_gen");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

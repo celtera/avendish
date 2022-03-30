@@ -16,7 +16,6 @@ namespace examples::helpers
  * This examples shows how things can look with a small helper
  * library to abstract common use cases.
  */
-
 template <typename C>
 requires
     // Here we pass template arguments as a primitive form of dependency injection.
@@ -39,7 +38,7 @@ struct Logger
 
   // Helpers for referring to local functions.
   // Ideally metaclasses would make that obsolete.
-  void example(float x) { logger.log("example: {}", x); }
+  void example(float x) { logger.info("example: {}", x); }
 
   struct
   {

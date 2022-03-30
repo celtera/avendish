@@ -11,10 +11,11 @@
 #include <string_view>
 namespace halp
 {
-template <static_string lit, typename FP>
+template <static_string Name, typename FP, static_string Desc = "">
 struct audio_sample
 {
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 
   FP sample;
 
@@ -27,10 +28,10 @@ struct audio_sample
   }
 };
 
-template <static_string lit, typename FP>
+template <static_string Name, typename FP, static_string Desc = "">
 struct audio_channel
 {
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static consteval auto name() { return std::string_view{Name.value}; }
 
   FP* channel;
 
@@ -39,10 +40,11 @@ struct audio_channel
   FP operator[](std::size_t i) const noexcept { return channel[i]; }
 };
 
-template <static_string lit, typename FP, int WantedChannels>
+template <static_string lit, typename FP, int WantedChannels, static_string Desc = "">
 struct fixed_audio_bus
 {
   static consteval auto name() { return std::string_view{lit.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
   static constexpr int channels() { return WantedChannels; }
 
   FP** samples{};
@@ -54,10 +56,11 @@ struct fixed_audio_bus
   }
 };
 
-template <static_string lit, typename FP>
+template <static_string Name, typename FP, static_string Desc = "">
 struct dynamic_audio_bus
 {
-  static consteval auto name() { return std::string_view{lit.value}; }
+  static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 
   FP** samples{};
   int channels{};
@@ -86,10 +89,11 @@ struct setup
 
 namespace halp
 {
-template <static_string lit, typename FP>
+template <static_string lit, typename FP, static_string Desc = "">
 struct audio_bus
 {
   static consteval auto name() { return std::string_view{lit.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 
   FP** samples{};
   int channels{};

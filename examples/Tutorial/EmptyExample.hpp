@@ -17,13 +17,13 @@ struct EmptyExample
 {
   /** Here are the metadata of the plug-ins, to display to the user **/
   avnd_meta(name, "Hello world");
-  avnd_meta(script_name, "empty_example");
+  avnd_meta(c_name, "empty_example");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");
   avnd_meta(uuid, "1c0f91ee-52da-4a49-a70a-4530a24b152b");
 
   /** This function will be called repeatedly at the tick rate of the environment **/
-  void operator()() { halp::basic_logger{}.log("henlo"); }
+  void operator()() { halp::basic_logger{}.info("henlo"); }
 };
 }

@@ -18,7 +18,7 @@ struct Distortion
    * UUIDs are important to uniquely identify plug-ins: you can use uuidgen for instance.
    */
   avnd_meta(name, "My pretty distortion");
-  avnd_meta(script_name, "disto_123");
+  avnd_meta(c_name, "disto_123");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

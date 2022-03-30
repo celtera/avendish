@@ -13,7 +13,7 @@ namespace examples
 struct AudioEffectExample
 {
   avnd_meta(name, "My example effect");
-  avnd_meta(script_name, "effect_123");
+  avnd_meta(c_name, "effect_123");
   avnd_meta(category, "Demo");
   avnd_meta(author, "<AUTHOR>");
   avnd_meta(description, "<DESCRIPTION>");

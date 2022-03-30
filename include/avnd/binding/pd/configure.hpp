@@ -16,22 +16,32 @@ namespace pd
 struct logger
 {
   template <typename... T>
-  void log(fmt::format_string<T...> fmt, T&&... args)
+  static void log(fmt::format_string<T...> fmt, T&&... args)
   {
     post("%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
   }
 
   template <typename... T>
-  void error(fmt::format_string<T...> fmt, T&&... args)
+  static void error(fmt::format_string<T...> fmt, T&&... args)
   {
     error("%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
   }
+  template <typename... T>
+  static void trace(fmt::format_string<T...> fmt, T&&... args) noexcept { log(fmt, std::forward<T>(args)...); }
+  template <typename... T>
+  static void debug(fmt::format_string<T...> fmt, T&&... args) noexcept { log(fmt, std::forward<T>(args)...); }
+  template <typename... T>
+  static void info(fmt::format_string<T...> fmt, T&&... args) noexcept { log(fmt, std::forward<T>(args)...); }
+  template <typename... T>
+  static void warn(fmt::format_string<T...> fmt, T&&... args) noexcept { error(fmt, std::forward<T>(args)...); }
+  template <typename... T>
+  static void critical(fmt::format_string<T...> fmt, T&&... args) noexcept { error(fmt, std::forward<T>(args)...); }
 };
 #else
 struct logger
 {
   template <typename... T>
-  void log(T&&... args)
+  static void log(T&&... args)
   {
     std::ostringstream str;
     ((str << args), ...);
@@ -39,12 +49,24 @@ struct logger
   }
 
   template <typename... T>
-  void error(T&&... args)
+  static void error(T&&... args)
   {
     std::ostringstream str;
     ((str << args), ...);
     error("%s", str.str().c_str());
   }
+
+  template <typename... T>
+  static void trace(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  template <typename... T>
+  static void debug(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  template <typename... T>
+  static void info(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  template <typename... T>
+  static void warn(T&&... args) noexcept { error(std::forward<T>(args)...); }
+  template <typename... T>
+  static void critical(T&&... args) noexcept { error(std::forward<T>(args)...); }
+
 };
 #endif
 

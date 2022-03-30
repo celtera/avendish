@@ -13,6 +13,7 @@
 #include <examples/Raw/Messages.hpp>
 #include <examples/Raw/Init.hpp>
 #include <examples/Ports/Essentia/stats/Entropy.hpp>
+#include <examples/Ports/VB/vb.fourses_tilde.hpp>
 
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
@@ -282,15 +283,27 @@ void print_messages()
             }
             else
             {
-              if constexpr (std::is_member_function_pointer_v<decltype(type::func())>)
-                fmt::print("   - Type: member-function-pointer\n");
-              else
-                fmt::print("   - Type: standalone function\n");
+              if constexpr(avnd::stateless_message<type>)
+              {
+                if constexpr (std::is_member_function_pointer_v<decltype(type::func())>)
+                  fmt::print("   - Type: member-function-pointer\n");
+                else
+                  fmt::print("   - Type: standalone function\n");
+              }
+              else if constexpr (avnd::stateful_message<type>)
+              {
+                fmt::print("   - Type: func() returns a function object\n");
+              }
+              else if constexpr (avnd::stdfunc_message<type>)
+              {
+                fmt::print("   - Type: std::function\n");
+              }
+              else if constexpr (avnd::function_object_message<type>)
+              {
+                fmt::print("   - Type: the message is a function object\n");
+              }
 
-              if constexpr(requires { avnd::function_reflection<type::func()>{}; })
-                print_message(avnd::function_reflection<type::func()>{});
-              else if constexpr(requires { avnd::function_reflection_t<decltype(type::func())>{}; })
-                print_message(avnd::function_reflection_t<decltype(type::func())>{});
+              print_message(avnd::message_function_reflection<type>());
             }
 
             fmt::print("\n");
@@ -342,7 +355,7 @@ void dump()
 
 int main()
 {
-  dump<essentia_ports::Entropy>();
+  dump<vb_ports::fourses_tilde<halp::basic_logger>>();
 }
 #else
 int main()
