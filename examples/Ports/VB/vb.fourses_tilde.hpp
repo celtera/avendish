@@ -15,6 +15,7 @@
 #include <halp/log.hpp>
 #include <halp/meta.hpp>
 
+#include <avnd/concepts/message.hpp>
 #include <cmath>
 
 namespace vb_ports
@@ -36,12 +37,12 @@ template <typename C>
 requires halp::has_logger<C>
 struct fourses_tilde
 {
-  avnd_meta(name, "vb.fourses~");
-  avnd_meta(c_name, "vb.fourses_tilde");
-  avnd_meta(category, "Ports");
-  avnd_meta(author, "Volker Böhm");
-  avnd_meta(description, "vb.fourses~ by volker böhm");
-  avnd_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
+  halp_meta(name, "vb.fourses~");
+  halp_meta(c_name, "avnd_vb_fourses_tilde");
+  halp_meta(category, "Ports");
+  halp_meta(author, "Volker Böhm");
+  halp_meta(description, "vb.fourses~ by volker böhm");
+  halp_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
 
   // For this object all the inputs are messages
   struct inputs { };
@@ -57,30 +58,31 @@ struct fourses_tilde
 
   // Messages which will change the configuration of the object
   struct messages {
-    struct {
-        avnd_meta(name, "smooth")
+    struct X {
+        halp_meta(name, "smooth")
         void operator()(fourses_tilde& x, double input) {
             input = std::clamp(input, 0., 1.);
             x.smoother = 0.01 - std::pow(input,0.2)*0.01;
         }
     } smooth;
 
+    /*
     struct {
-        avnd_meta(name, "hilim")
+        halp_meta(name, "hilim")
         void operator()(fourses_tilde& x, double input) {
             x.fourses[0].val = input;
         }
     } hilim;
 
     struct {
-        avnd_meta(name, "lolim")
+        halp_meta(name, "lolim")
         void operator()(fourses_tilde& x, double input) {
             x.fourses[5].val = input;
         }
     } lolim;
 
     struct {
-      avnd_meta(name, "upfreq")
+      halp_meta(name, "upfreq")
       void operator()(fourses_tilde& x, double freq1, double freq2, double freq3, double freq4) {
           x.fourses[1].inc = fabs(freq1) * 4 * x.r_sr;
           x.fourses[2].inc = fabs(freq2) * 4 * x.r_sr;
@@ -90,7 +92,7 @@ struct fourses_tilde
     } upfreq;
 
     struct {
-        avnd_meta(name, "downfreq")
+        halp_meta(name, "downfreq")
         void operator()(fourses_tilde& x, double freq1, double freq2, double freq3, double freq4) {
             x.fourses[1].inc = fabs(freq1) * -4 * x.r_sr;
             x.fourses[2].inc = fabs(freq2) * -4 * x.r_sr;
@@ -98,9 +100,8 @@ struct fourses_tilde
             x.fourses[4].inc = fabs(freq4) * -4 * x.r_sr;
         }
     } downfreq;
-
     struct {
-        avnd_meta(name, "info")
+        halp_meta(name, "info")
         void operator()(fourses_tilde& x) {
             // only fourses 1 to 4 are used
             x.logger.info("----- fourses.info -------");
@@ -113,6 +114,7 @@ struct fourses_tilde
             x.logger.info("------ end -------");
         }
     } info;
+    */
   };
 
   void prepare(halp::setup info)

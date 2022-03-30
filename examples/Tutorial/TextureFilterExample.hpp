@@ -11,12 +11,12 @@ namespace examples
 {
 struct TextureFilterExample
 {
-  avnd_meta(name, "My example texture filter");
-  avnd_meta(c_name, "texture_filt");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
+  halp_meta(name, "My example texture filter");
+  halp_meta(c_name, "texture_filt");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   struct
   {

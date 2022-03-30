@@ -6,7 +6,7 @@
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 
-namespace examples
+namespace litterpower_ports
 {
 /**
  * As an example, here is a port of the CCC chaotic engine part of
@@ -14,13 +14,13 @@ namespace examples
  */
 struct CCC
 {
-  avnd_meta(name, "CCC");
-  avnd_meta(c_name, "CCC");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "Peter Castine");
-  avnd_meta(description,
+  halp_meta(name, "CCC");
+  halp_meta(c_name, "avnd_lp_ccc");
+  halp_meta(category, "Demo");
+  halp_meta(author, "Peter Castine");
+  halp_meta(description,
     "1/f noise, using the Schuster/Procaccia deterministic (chaotic) algorithm");
-  avnd_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
+  halp_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
 
   struct
   {

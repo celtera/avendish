@@ -19,11 +19,11 @@ namespace examples::helpers
  */
 struct Controls
 {
-  // avnd_meta is simply a macro that expands to a consteval function.
+  // halp_meta is simply a macro that expands to a consteval function.
   // Hopefully C++ would use a similar syntax for reflexion.
-  avnd_meta(name, "Controls helpers")
-  avnd_meta(c_name, "avnd_helpers_controls")
-  avnd_meta(uuid, "9d356a4b-a104-4b2a-a33e-c6828135d5c6")
+  halp_meta(name, "Controls helpers")
+  halp_meta(c_name, "avnd_helpers_controls")
+  halp_meta(uuid, "9d356a4b-a104-4b2a-a33e-c6828135d5c6")
 
   // Helper types for defining common cases of UI controls
   struct

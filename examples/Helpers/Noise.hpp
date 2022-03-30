@@ -10,9 +10,9 @@ namespace examples::helpers
 {
 struct WhiteNoise
 {
-  avnd_meta(name, "White noise")
-  avnd_meta(c_name, "avnd_white_noise")
-  avnd_meta(uuid, "5e98f775-b242-4cca-9a3e-1e74662a2c7d")
+  halp_meta(name, "White noise")
+  halp_meta(c_name, "avnd_white_noise")
+  halp_meta(uuid, "5e98f775-b242-4cca-9a3e-1e74662a2c7d")
 
   struct inputs
   {

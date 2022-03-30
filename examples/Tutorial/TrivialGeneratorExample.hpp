@@ -11,12 +11,12 @@ namespace examples
 
 struct TrivialGeneratorExample
 {
-  avnd_meta(name, "My trivial generator");
-  avnd_meta(c_name, "trivial_effect_gen");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "29099d09-cbd1-451b-8394-972b0d5bfaf0");
+  halp_meta(name, "My trivial generator");
+  halp_meta(c_name, "trivial_effect_gen");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "29099d09-cbd1-451b-8394-972b0d5bfaf0");
 
   /**
    * Here we define a single output, which allows writing
@@ -27,7 +27,7 @@ struct TrivialGeneratorExample
     struct
     {
       // Give a name to our parameter to show the user
-      avnd_meta(name, "Out");
+      halp_meta(name, "Out");
 
       // This value will be sent to the output of the port at each tick.
       // The name "value" is important.

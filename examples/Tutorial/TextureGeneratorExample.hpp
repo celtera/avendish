@@ -28,12 +28,12 @@ namespace examples
  */
 struct TextureGeneratorExample
 {
-  avnd_meta(name, "My example texture generator");
-  avnd_meta(c_name, "texture_gen");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663");
+  halp_meta(name, "My example texture generator");
+  halp_meta(c_name, "texture_gen");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663");
 
   // By know you know the drill: define inputs, outputs...
   struct
@@ -46,7 +46,7 @@ struct TextureGeneratorExample
     // See TextureFilterExample for helper types which abstract the allocation side of things
     struct
     {
-      avnd_meta(name, "Out");
+      halp_meta(name, "Out");
 
       // This type is a view on a texture
       halp::rgba_texture texture;

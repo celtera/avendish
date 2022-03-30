@@ -12,11 +12,11 @@ namespace examples::helpers
 // First example with classic array-based processing
 struct PerBusAsArgs
 {
-  avnd_meta(name, "Per-bus processing (args, helpers)")
-  avnd_meta(c_name, "avnd_helpers_per_bus_as_args")
-  avnd_meta(uuid, "23a4de57-800b-453a-99b6-481db19d834f")
-  avnd_meta(input_channels, 2)
-  avnd_meta(output_channels, 2)
+  halp_meta(name, "Per-bus processing (args, helpers)")
+  halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(uuid, "23a4de57-800b-453a-99b6-481db19d834f")
+  halp_meta(input_channels, 2)
+  halp_meta(output_channels, 2)
 
   void operator()(double** inputs, double** outputs, int frames)
   {
@@ -34,9 +34,9 @@ struct PerBusAsArgs
 // Here we specify each bus's port count.
 struct PerBusAsPortsFixed
 {
-  avnd_meta(name, "Per-bus processing (fixed ports, helpers)")
-  avnd_meta(c_name, "avnd_helpers_per_bus_as_args")
-  avnd_meta(uuid, "0dd7b1df-7c84-49e9-8427-0532a87bccbe")
+  halp_meta(name, "Per-bus processing (fixed ports, helpers)")
+  halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(uuid, "0dd7b1df-7c84-49e9-8427-0532a87bccbe")
 
   struct
   {
@@ -68,9 +68,9 @@ struct PerBusAsPortsFixed
 // (or they will be taken from the global channels / input_channels / ... metadatas
 struct PerBusAsPortsDynamic
 {
-  avnd_meta(name, "Per-bus processing (dynamic ports, helpers)")
-  avnd_meta(c_name, "avnd_helpers_per_bus_as_args")
-  avnd_meta(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
+  halp_meta(name, "Per-bus processing (dynamic ports, helpers)")
+  halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
 
   struct
   {

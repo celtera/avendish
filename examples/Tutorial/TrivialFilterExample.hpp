@@ -12,12 +12,12 @@ namespace examples
 
 struct TrivialFilterExample
 {
-  avnd_meta(name, "My trivial filter");
-  avnd_meta(c_name, "trivial_effect_filter");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "d02006f0-3e71-465b-989c-7c53aaa885e5");
+  halp_meta(name, "My trivial filter");
+  halp_meta(c_name, "trivial_effect_filter");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "d02006f0-3e71-465b-989c-7c53aaa885e5");
 
   /**
    * Here we define a pair of input / outputs.
@@ -27,7 +27,7 @@ struct TrivialFilterExample
     struct
     {
       // Give a name to our parameter to show the user
-      avnd_meta(name, "In");
+      halp_meta(name, "In");
 
       float value{};
     } main; // Name does not matter
@@ -37,7 +37,7 @@ struct TrivialFilterExample
   {
     struct
     {
-      avnd_meta(name, "Out");
+      halp_meta(name, "Out");
 
       int value{};
     } main;

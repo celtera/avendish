@@ -522,14 +522,19 @@ public:
     {
       using refl = avnd::message_reflection<M>;
       constexpr auto arg_count = refl::count;
-      constexpr auto f = M::func();
+      constexpr auto f = avnd::message_get_func<M>();
 
       if constexpr (arg_count == 0)
       {
         for (auto& m : this->impl.effects())
         {
           if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-            (m.*f)();
+          {
+            if constexpr(requires { (M{}.*f)(); })
+              (M{}.*f)();
+            else
+              (m.*f)();
+          }
           else
             f();
         }
@@ -541,7 +546,12 @@ public:
           for (auto& m : this->impl.effects())
           {
             if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-              (m.*f)(m);
+            {
+              if constexpr(requires { (M{}.*f)(m); })
+                (M{}.*f)(m);
+              else if constexpr(requires { (m.*f)(m); })
+                (m.*f)(m);
+            }
             else
               f(m);
           }

@@ -120,12 +120,4 @@ auto& get_outputs(T& t)
   return t.outputs;
 }
 
-template <typename T>
-static constexpr void for_all_outputs(T& obj, auto&& func) noexcept
-{
-  if constexpr (output_introspection<T>::size > 0)
-  {
-    boost::pfr::for_each_field(get_outputs(obj), func);
-  }
-}
 }

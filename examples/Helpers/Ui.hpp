@@ -54,14 +54,14 @@ struct Ui
       // using enum halp::colors;
       // using enum halp::layouts;
 
-      avnd_meta(name, "Main")
-      avnd_meta(layout, halp::layouts::hbox)
-      avnd_meta(background, halp::colors::mid)
+      halp_meta(name, "Main")
+      halp_meta(layout, halp::layouts::hbox)
+      halp_meta(background, halp::colors::mid)
 
       struct {
-        avnd_meta(name, "Widget")
-        avnd_meta(layout, halp::layouts::vbox)
-        avnd_meta(background, halp::colors::dark)
+        halp_meta(name, "Widget")
+        halp_meta(layout, halp::layouts::vbox)
+        halp_meta(background, halp::colors::dark)
 
         halp::item<&ins::int_ctl> widget;
         halp::item<&outs::measure> widget2;
@@ -70,11 +70,11 @@ struct Ui
       halp::spacing spc{.width = 20, .height = 20};
 
       struct {
-        avnd_meta(name, "Group")
-        avnd_meta(layout, halp::layouts::group)
-        avnd_meta(background, halp::colors::light)
+        halp_meta(name, "Group")
+        halp_meta(layout, halp::layouts::group)
+        halp_meta(background, halp::colors::light)
         struct {
-          avnd_meta(layout, halp::layouts::hbox)
+          halp_meta(layout, halp::layouts::hbox)
           halp::label l1{.text = "label 1"};
           halp::spacing spacing{.width = 20, .height = 20};
           halp::label l2{.text = "label 2"};
@@ -82,43 +82,43 @@ struct Ui
       } b_group;
 
       struct {
-        avnd_meta(name, "Tabs")
-        avnd_meta(layout, halp::layouts::tabs)
-        avnd_meta(background, halp::colors::darker)
+        halp_meta(name, "Tabs")
+        halp_meta(layout, halp::layouts::tabs)
+        halp_meta(background, halp::colors::darker)
 
         struct {
-          avnd_meta(layout, halp::layouts::hbox)
-          avnd_meta(name, "HBox")
+          halp_meta(layout, halp::layouts::hbox)
+          halp_meta(name, "HBox")
           halp::label l1{.text = "label 1"};
           halp::label l2{.text = "label 2"};
         } a_hbox;
 
         struct {
-          avnd_meta(layout, halp::layouts::vbox)
-          avnd_meta(name, "VBox")
+          halp_meta(layout, halp::layouts::vbox)
+          halp_meta(name, "VBox")
           halp::label l1{.text = "label 1"};
           halp::label l2{.text = "label 2"};
         } a_vbox;
       } a_tabs;
 
       struct {
-        avnd_meta(layout, halp::layouts::split)
-        avnd_meta(name, "split")
-        avnd_meta(width, 400)
-        avnd_meta(height, 200)
+        halp_meta(layout, halp::layouts::split)
+        halp_meta(name, "split")
+        halp_meta(width, 400)
+        halp_meta(height, 200)
         struct {
-            avnd_meta(layout, halp::layouts::vbox)
+            halp_meta(layout, halp::layouts::vbox)
             halp::label l1{.text = "some long foo"};
             halp::item<&ins::t1> a;
             halp::item<&ins::t2> b;
         } a_widg;
         struct {
-            avnd_meta(layout, halp::layouts::vbox)
+            halp_meta(layout, halp::layouts::vbox)
             halp::label l2{.text = "other bar"};
             halp::item<&ins::e1> c;
 
             struct {
-                avnd_meta(layout, halp::layouts::hbox)
+                halp_meta(layout, halp::layouts::hbox)
                 halp::item<&ins::b1> a;
                 halp::item<&ins::b2> b;
             } c2;
@@ -126,11 +126,11 @@ struct Ui
       } a_split;
 
       struct {
-        avnd_meta(name, "Grid")
-        avnd_meta(layout, halp::layouts::grid)
-        avnd_meta(background, halp::colors::lighter)
-        avnd_meta(columns, 3)
-        avnd_meta(padding, 5)
+        halp_meta(name, "Grid")
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(background, halp::colors::lighter)
+        halp_meta(columns, 3)
+        halp_meta(padding, 5)
 
         halp::item<&ins::float_ctl> widget{{.scale = 0.8}};
 

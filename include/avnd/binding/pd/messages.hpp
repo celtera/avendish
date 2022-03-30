@@ -17,7 +17,7 @@ struct messages
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
-    constexpr auto f = M::func();
+    constexpr auto f = avnd::message_get_func<M>();
     constexpr auto arg_counts = refl::count;
 
     if (arg_counts != argc)
@@ -51,9 +51,14 @@ struct messages
     [&]<typename... Args, std::size_t... I>(
         boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
     {
-      constexpr auto f = M::func();
+      constexpr auto f = avnd::message_get_func<M>();
       if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-        return (implementation.*f)(convert<Args>(argv[I])...);
+      {
+        if constexpr(requires { (M{}.*f)(convert<Args>(argv[I])...); })
+          return (M{}.*f)(convert<Args>(argv[I])...);
+        else if constexpr(requires { implementation.*f; })
+          return (implementation.*f)(convert<Args>(argv[I])...);
+      }
       else
         return f(convert<Args>(argv[I])...);
     }
@@ -65,7 +70,7 @@ struct messages
   call_instance(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
-    constexpr auto f = M::func();
+    constexpr auto f = avnd::message_get_func<M>();
     constexpr auto arg_counts = refl::count;
 
     if (arg_counts != (argc + 1))
@@ -99,11 +104,18 @@ struct messages
     [&]<typename... Args, std::size_t... I>(
         boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>)
     {
-      constexpr auto f = M::func();
+      constexpr auto f = avnd::message_get_func<M>();
       if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-        return (implementation.*f)(implementation, convert<Args>(argv[I])...);
+      {
+        if constexpr(requires { (M{}.*f)(implementation, convert<Args>(argv[I])...); })
+          return (M{}.*f)(implementation, convert<Args>(argv[I])...);
+        else if constexpr(requires { implementation.*f; })
+          return (implementation.*f)(implementation, convert<Args>(argv[I])...);
+      }
       else
+      {
         return f(implementation, convert<Args>(argv[I])...);
+      }
     }
     (arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
   }

@@ -20,12 +20,12 @@ namespace examples
  */
 struct Synth
 {
-  avnd_meta(name, "My example synth");
-  avnd_meta(c_name, "synth_123");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
+  halp_meta(name, "My example synth");
+  halp_meta(c_name, "synth_123");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
 
   struct
   {

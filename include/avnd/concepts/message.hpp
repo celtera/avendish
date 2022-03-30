@@ -97,6 +97,31 @@ consteval auto message_function_reflection()
 }
 
 template <typename M>
+consteval auto message_get_func()
+{
+  if constexpr (stateless_message<M>)
+  {
+    return M::func();
+  }
+  else if constexpr (stateful_message<M>)
+  {
+    return M::func();
+  }
+  else if constexpr (stdfunc_message<M>)
+  {
+    return M::func();
+  }
+  else if constexpr (function_object_message<M>)
+  {
+    return &M::operator();
+  }
+  else
+  {
+    return;
+  }
+}
+
+template <typename M>
 using message_reflection = decltype(message_function_reflection<M>());
 
 template <typename M>

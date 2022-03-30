@@ -13,7 +13,7 @@ namespace examples
  */
 struct ZeroDependencyAudioEffect
 {
-  /** The avnd_meta macro used the other examples is simply some sugar for
+  /** The halp_meta macro used the other examples is simply some sugar for
    * defining a static function returning a value.
    *
    * The absolute minimal set of metadatas on an effect is:

@@ -11,12 +11,12 @@ namespace examples
 
 struct SampleAccurateGeneratorExample
 {
-  avnd_meta(name, "My sample-accurate generator");
-  avnd_meta(c_name, "sample_acc_gen");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "c519b3c4-326e-4e80-8dec-d465264c5b08");
+  halp_meta(name, "My sample-accurate generator");
+  halp_meta(c_name, "sample_acc_gen");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "c519b3c4-326e-4e80-8dec-d465264c5b08");
 
   /**
    * Here we define a single output, which allows writing

@@ -32,9 +32,9 @@ template <typename C>
 requires halp::has_logger<C>
 struct Messages
 {
-  avnd_meta(name, "Message helpers")
-  avnd_meta(c_name, "avnd_helpers_messages")
-  avnd_meta(uuid, "0029b546-cddb-49b1-9c99-c659b16e58eb")
+  halp_meta(name, "Message helpers")
+  halp_meta(c_name, "avnd_helpers_messages")
+  halp_meta(uuid, "0029b546-cddb-49b1-9c99-c659b16e58eb")
 
   [[no_unique_address]] typename C::logger_type logger;
 

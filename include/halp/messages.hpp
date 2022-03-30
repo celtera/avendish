@@ -50,8 +50,8 @@ struct func_ref
 #define halp_lambda(Name, Fun) \
   struct                       \
   {                            \
-    $(name, #Name)             \
-    $(func, Fun)               \
+    halp_meta(name, #Name)     \
+    halp_meta(func, Fun)       \
   } m_##Name;
 #else
 #define halp_lambda(Name, Fun)

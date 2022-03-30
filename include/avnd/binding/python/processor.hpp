@@ -66,15 +66,19 @@ struct processor
   template <auto Idx, typename M>
   void setup_message(avnd::field_reflection<Idx, M>)
   {
-    if constexpr (std::is_member_function_pointer_v<decltype(M::func())>)
+    constexpr auto func = avnd::message_get_func<M>();
+    if constexpr (std::is_member_function_pointer_v<decltype(func)>)
     {
-      constexpr auto mem_fun = M::func();
-      class_def.def(c_str(avnd::get_name<M>()), mem_fun);
+      using class_type = typename avnd::function_reflection<func>::class_type;
+      if constexpr(std::is_same_v<class_type, M>)
+        class_def.def(c_str(avnd::get_name<M>()), [] { " o hst "; });
+      else
+        class_def.def(c_str(avnd::get_name<M>()), func);
     }
     else if constexpr (requires { avnd::function_reflection<M::func()>::count; })
     {
       // TODO other cases: see pd
-      class_def.def_static(c_str(avnd::get_name<M>()), M::func());
+      class_def.def_static(c_str(avnd::get_name<M>()), func);
     }
   }
 

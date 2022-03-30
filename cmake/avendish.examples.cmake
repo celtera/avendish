@@ -92,12 +92,6 @@ avnd_make_object(
   C_NAME avnd_peak
 )
 
-avnd_make_object(
-  TARGET CCC
-  MAIN_FILE examples/Ports/LitterPower/CCC.hpp
-  MAIN_CLASS examples::CCC
-  C_NAME avnd_ccc
-)
 
 
 # This one does not really make sense as a Pd or Max object
@@ -239,6 +233,26 @@ foreach(theTarget ${OSSIA_EXAMPLES})
     C_NAME oscr_${theTarget}
   )
 endforeach()
+
+# Ports
+avnd_make_all(
+  TARGET Essentia_Entropy
+  MAIN_FILE examples/Ports/Essentia/stats/Entropy.hpp
+  MAIN_CLASS essentia_ports::Entropy
+  C_NAME avnd_essentia_entropy
+)
+avnd_make_object(
+  TARGET CCC
+  MAIN_FILE examples/Ports/LitterPower/CCC.hpp
+  MAIN_CLASS litterpower_ports::CCC
+  C_NAME avnd_lp_ccc
+)
+avnd_make_object(
+  TARGET VB_fourses_tilde
+  MAIN_FILE examples/Ports/VB/vb.fourses_tilde.hpp
+  MAIN_CLASS vb_ports::fourses_tilde
+  C_NAME avnd_vb_fourses_tilde
+)
 
 
 # Demo: dump all the known metadata.

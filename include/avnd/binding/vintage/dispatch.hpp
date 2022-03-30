@@ -276,7 +276,9 @@ intptr_t default_dispatch(
     }
     case EffectOpcodes::GetVendorVersion: // 49
     {
-      if constexpr (requires { effect_type::version; })
+      if constexpr (requires { (int)effect_type::version(); })
+        return effect_type::version();
+      else if constexpr (requires { (int)effect_type::version; })
         return effect_type::version;
       return 0;
     }

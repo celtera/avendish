@@ -80,8 +80,10 @@ struct SimpleAudioEffect : vintage::Effect
     else
       Effect::uniqueID = 0xBADBAD;
 
-    if constexpr (requires { T::version(); })
+    if constexpr (requires { (int)T::version(); })
       Effect::version = T::version();
+    else if constexpr (requires { (std::string_view)T::version(); })
+      Effect::version = std::stoi(T::version());
     else
       Effect::version = 1;
 

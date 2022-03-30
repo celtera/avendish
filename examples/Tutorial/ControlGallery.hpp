@@ -67,12 +67,12 @@ namespace examples
 
 struct ControlGallery
 {
-  avnd_meta(name, "Control gallery");
-  avnd_meta(c_name, "control_gallery");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
+  halp_meta(name, "Control gallery");
+  halp_meta(c_name, "control_gallery");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
   struct
   {
@@ -114,7 +114,7 @@ struct ControlGallery
     //! Defining comboboxes and enumerations is a tiny bit more complicated
     struct : halp::sample_accurate_values<halp::combo_pair<float>>
     {
-      avnd_meta(name, "Combo box");
+      halp_meta(name, "Combo box");
       enum widget
       {
         combobox
@@ -132,7 +132,7 @@ struct ControlGallery
     //! Here value will be the string
     struct : halp::sample_accurate_values<std::string_view>
     {
-      avnd_meta(name, "Enum 2");
+      halp_meta(name, "Enum 2");
       enum widget
       {
         enumeration
@@ -152,7 +152,7 @@ struct ControlGallery
     //! is below:
     struct : halp::sample_accurate_values<int>
     {
-      avnd_meta(name, "Enum 3");
+      halp_meta(name, "Enum 3");
       enum widget
       {
         enumeration

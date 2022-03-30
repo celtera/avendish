@@ -82,31 +82,34 @@ struct message_processor
   {
     if constexpr (avnd::has_inputs<T>)
     {
-      switch (argv[0].a_type)
+      if constexpr (avnd::parameter_input_introspection<T>::size > 0)
       {
-        case A_FLOAT:
+        switch (argv[0].a_type)
         {
-          // This is the float that is supposed to go inside the first inlet if any ?
-          auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
-          if constexpr (requires { first_inlet.value = 0.f; })
+          case A_FLOAT:
           {
-            first_inlet.value = argv[0].a_w.w_float;
+            // This is the float that is supposed to go inside the first inlet if any ?
+            auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
+            if constexpr (requires { first_inlet.value = 0.f; })
+            {
+              first_inlet.value = argv[0].a_w.w_float;
+            }
+            break;
           }
-          break;
-        }
 
-        case A_SYMBOL:
-        {
-          auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
-          if constexpr (requires { first_inlet.value = "string"; })
+          case A_SYMBOL:
           {
-            first_inlet.value = argv[0].a_w.w_symbol->s_name;
+            auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
+            if constexpr (requires { first_inlet.value = "string"; })
+            {
+              first_inlet.value = argv[0].a_w.w_symbol->s_name;
+            }
+            break;
           }
-          break;
-        }
 
-        default:
-          break;
+          default:
+            break;
+        }
       }
     }
   }
@@ -126,7 +129,7 @@ struct message_processor
         {
           // Do our stuff if it makes sense - some objects may not
           // even have a "processing" method
-          if_possible(implementation());
+          if_possible(implementation.effect());
 
           // Then bang
           output_setup.commit(implementation);
@@ -144,7 +147,7 @@ struct message_processor
 
         // Do our stuff if it makes sense - some objects may not
         // even have a "processing" method
-        if_possible(implementation());
+        if_possible(implementation.effect());
 
         // Then bang
         output_setup.commit(implementation);

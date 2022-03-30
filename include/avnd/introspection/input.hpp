@@ -112,14 +112,4 @@ auto& get_inputs(T& t)
 {
   return t.inputs;
 }
-
-// TODO generalize
-template <typename T>
-static constexpr void for_all_inputs(T& obj, auto&& func) noexcept
-{
-  if constexpr (input_introspection<T>::size > 0)
-  {
-    boost::pfr::for_each_field(get_inputs(obj), func);
-  }
-}
 }

@@ -22,9 +22,9 @@ namespace examples::helpers
 template <halp::has_fft_1d<double> C>
 struct PeakBand
 {
-  avnd_meta(name, "Peak band")
-  avnd_meta(c_name, "avnd_peak_band")
-  avnd_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
+  halp_meta(name, "Peak band")
+  halp_meta(c_name, "avnd_peak_band")
+  halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
 
   struct
   {

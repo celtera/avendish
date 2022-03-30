@@ -12,9 +12,9 @@ namespace examples::helpers
  */
 struct Peak
 {
-  avnd_meta(name, "Peak value")
-  avnd_meta(c_name, "avnd_peak")
-  avnd_meta(uuid, "57d3476d-9dbb-45ac-b76e-a2a51b48b8af")
+  halp_meta(name, "Peak value")
+  halp_meta(c_name, "avnd_peak")
+  halp_meta(uuid, "57d3476d-9dbb-45ac-b76e-a2a51b48b8af")
 
   struct
   {

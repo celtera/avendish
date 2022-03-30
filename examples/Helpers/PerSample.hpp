@@ -12,18 +12,18 @@ namespace examples::helpers
 {
 struct PerSampleAsArgs
 {
-  avnd_meta(name, "Per-sample processing (args, helpers)")
-  avnd_meta(c_name, "avnd_helpers_per_sample_as_args")
-  avnd_meta(uuid, "92a1a42b-dc63-42f8-8d24-8cb9c046803a")
+  halp_meta(name, "Per-sample processing (args, helpers)")
+  halp_meta(c_name, "avnd_helpers_per_sample_as_args")
+  halp_meta(uuid, "92a1a42b-dc63-42f8-8d24-8cb9c046803a")
 
   float operator()(float input) { return std::tanh(input); }
 };
 
 struct PerSampleAsPorts
 {
-  avnd_meta(name, "Per-sample processing (ports, helpers)")
-  avnd_meta(c_name, "avnd_helpers_per_sample_as_ports")
-  avnd_meta(uuid, "31146933-c26b-4c21-a3f1-e991f70b520c")
+  halp_meta(name, "Per-sample processing (ports, helpers)")
+  halp_meta(c_name, "avnd_helpers_per_sample_as_ports")
+  halp_meta(uuid, "31146933-c26b-4c21-a3f1-e991f70b520c")
 
   struct inputs
   {

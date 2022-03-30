@@ -50,8 +50,8 @@ requires(
         });
   }
 
-  template <typename Ports>
-  void copy_outputs(Ports& ports, auto buffers, int n)
+  template <typename Ports, typename SrcFP>
+  void copy_outputs(Ports& ports, avnd::span<SrcFP*> buffers, int n)
   {
     int k = 0;
     o_info::for_all(
@@ -60,8 +60,7 @@ requires(
         {
           if (k + 1 <= buffers.size())
           {
-            auto buffer = buffers.data() + k;
-            std::copy_n(bus.channel, n, buffer);
+            std::copy_n(bus.channel, n, buffers[k]);
           }
           k++;
         });
@@ -100,7 +99,7 @@ requires(
         }
 
         initialize_busses<i_info, true>(
-            implementation.inputs(), avnd::span<DstFP*>(i_conv, input_channels));
+            ins, avnd::span<DstFP*>(i_conv, input_channels));
       }
 
       // Same process for the outputs
@@ -116,25 +115,24 @@ requires(
         }
 
         initialize_busses<o_info, false>(
-            implementation.outputs(), avnd::span<DstFP*>(o_conv, output_channels));
+            outs, avnd::span<DstFP*>(o_conv, output_channels));
       }
       // Invoke the effect
       invoke_effect(implementation, n);
 
       // Copy & convert back output channels
-      copy_outputs(implementation.outputs(), out, n);
+      copy_outputs(outs, out, n);
     }
     else
     {
+      // Simple case: effects writes directly on the buffers of the correct type
       initialize_busses<i_info, true>(implementation.inputs(), in);
       initialize_busses<o_info, false>(implementation.outputs(), out);
 
       invoke_effect(implementation, n);
 
-      i_info::for_all(
-          implementation.inputs(), [&](auto& bus) { bus.channel = nullptr; });
-      o_info::for_all(
-          implementation.outputs(), [&](auto& bus) { bus.channel = nullptr; });
+      i_info::for_all(ins, [&](auto& bus) { bus.channel = nullptr; });
+      o_info::for_all(outs, [&](auto& bus) { bus.channel = nullptr; });
     }
   }
 

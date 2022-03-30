@@ -48,34 +48,36 @@ static void process_generic_message(T& implementation, t_symbol* s)
   if ("dumpall"sv == s->s_name)
   {
     int k = 0;
-    avnd::for_all_inputs(
-        implementation,
+    avnd::input_introspection<object_type>::for_all(
+        avnd::get_inputs<object_type>(implementation),
         [&k]<typename C>(C& ctl)
         {
+          constexpr auto obj_name = avnd::get_name<object_type>().data();
           if constexpr (requires { C::name(); })
           {
+            constexpr auto ctl_name = avnd::get_name<C>().data();
             if constexpr (requires { (float)ctl.value; })
             {
               post(
                   "[dumpall] %s : %s = %f",
-                  avnd::get_name<object_type>(),
-                  C::name(),
+                  obj_name,
+                  ctl_name,
                   (float)ctl.value);
             }
             else if constexpr (requires { ctl.value.c_str(); })
             {
               post(
                   "[dumpall] %s : %s = %s",
-                  avnd::get_name<object_type>(),
-                  C::name(),
+                  obj_name,
+                  ctl_name,
                   ctl.value.c_str());
             }
             else if constexpr (requires { (const char*)ctl.value.data(); })
             {
               post(
                   "[dumpall] %s : %s = %s",
-                  avnd::get_name<object_type>(),
-                  C::name(),
+                  obj_name,
+                  ctl_name,
                   ctl.value.data());
             }
           }
@@ -85,7 +87,7 @@ static void process_generic_message(T& implementation, t_symbol* s)
             {
               post(
                   "[dumpall] %s : [%d] = %f",
-                  avnd::get_name<object_type>(),
+                  obj_name,
                   k,
                   (float)ctl.value);
             }
@@ -93,7 +95,7 @@ static void process_generic_message(T& implementation, t_symbol* s)
             {
               post(
                   "[dumpall] %s : [%d] = %s",
-                  avnd::get_name<object_type>(),
+                  obj_name,
                   k,
                   ctl.value.c_str());
             }

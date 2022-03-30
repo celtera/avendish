@@ -46,6 +46,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = false;
   static constexpr const bool is_volatile = false;
@@ -59,6 +60,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = true;
   static constexpr const bool is_volatile = false;
@@ -72,6 +74,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = false;
   static constexpr const bool is_volatile = true;
@@ -85,6 +88,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = false;
   static constexpr const bool is_volatile = false;
@@ -98,6 +102,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = false;
   static constexpr const bool is_volatile = false;
@@ -111,6 +116,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = true;
   static constexpr const bool is_volatile = false;
@@ -124,6 +130,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = true;
   static constexpr const bool is_volatile = false;
@@ -137,6 +144,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = false;
   static constexpr const bool is_volatile = true;
@@ -150,6 +158,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = false;
   static constexpr const bool is_volatile = true;
@@ -167,6 +176,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = true;
   static constexpr const bool is_volatile = true;
@@ -184,6 +194,7 @@ struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
   using return_type = R;
+  using class_type = T;
   static constexpr const auto count = sizeof...(Args);
   static constexpr const bool is_const = true;
   static constexpr const bool is_volatile = true;

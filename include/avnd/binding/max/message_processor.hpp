@@ -158,7 +158,7 @@ struct message_processor
   {
     // Do our stuff if it makes sense - some objects may not
     // even have a "processing" method
-    if_possible(implementation());
+    if_possible(implementation.effect());
 
     // Then bang
     output_setup.commit(implementation);

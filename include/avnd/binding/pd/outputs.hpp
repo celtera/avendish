@@ -104,7 +104,7 @@ struct outputs
         avnd::get_outputs<T>(implementation),
         [this, &k]<typename C>(C& ctl)
         {
-          if constexpr (requires(float v) { v = ctl.value; })
+          if constexpr (requires { outlet_float(outlets[k], ctl.value); })
           {
             outlet_float(outlets[k], ctl.value);
           }
@@ -115,8 +115,8 @@ struct outputs
   void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
     int out_k = 0;
-    avnd::for_all_outputs(
-        implementation,
+    avnd::output_introspection<T>::for_all(
+        avnd::get_outputs<T>(implementation),
         [this, &out_k, &x_obj](auto& ctl)
         {
           outlets[out_k] = outlet_new(&x_obj, symbol_for_port(ctl));

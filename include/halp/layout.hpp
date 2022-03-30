@@ -37,18 +37,18 @@ enum class colors
 
 struct spacing
 {
-  avnd_meta(layout, layouts::spacing)
+  halp_meta(layout, layouts::spacing)
   int width{}, height{};
 };
 struct label
 {
-  avnd_meta(layout, layouts::widget)
+  halp_meta(layout, layouts::widget)
   std::string_view text;
 };
 
 struct item_base
 {
-  avnd_meta(layout, layouts::control)
+  halp_meta(layout, layouts::control)
   double x = 0.0;
   double y = 0.0;
   double scale = 1.0;

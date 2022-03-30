@@ -12,12 +12,12 @@ namespace examples
  */
 struct AudioSidechainExample
 {
-  avnd_meta(name, "Sidechain example");
-  avnd_meta(c_name, "effect_sidechain");
-  avnd_meta(category, "Demo");
-  avnd_meta(author, "<AUTHOR>");
-  avnd_meta(description, "<DESCRIPTION>");
-  avnd_meta(uuid, "6fcfa5ad-ac5e-4851-a7bc-72f6fbf57dcd");
+  halp_meta(name, "Sidechain example");
+  halp_meta(c_name, "effect_sidechain");
+  halp_meta(category, "Demo");
+  halp_meta(author, "<AUTHOR>");
+  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(uuid, "6fcfa5ad-ac5e-4851-a7bc-72f6fbf57dcd");
 
   struct
   {
