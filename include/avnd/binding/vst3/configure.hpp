@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/helpers/log.hpp>
+#include <halp/log.hpp>
 #include <avnd/wrappers/configure.hpp>
 
 #include <utility>
