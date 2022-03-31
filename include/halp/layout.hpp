@@ -24,7 +24,8 @@ enum class layouts
   group,
   spacing,
   control,
-  widget
+  widget,
+  custom
 };
 enum class colors
 {
@@ -60,6 +61,40 @@ struct item : item_base
 {
   decltype(F) control = F;
 };
+
+struct image_item_base
+{
+    halp_meta(layout, layouts::control)
+    double x = 0.0;
+    double y = 0.0;
+    double scale = 1.0;
+    std::string_view image;
+};
+
+template <auto F>
+struct image_item : image_item_base
+{
+  decltype(F) control = F;
+};
+
+template <typename T>
+struct custom_item_base
+{
+  halp_meta(layout, layouts::custom)
+  using item_type = T;
+
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+};
+
+
+template <typename T, auto F>
+struct custom_item : custom_item_base<T>
+{
+  decltype(F) control = F;
+};
+
 
 template <typename M, typename L, typename T>
 struct prop

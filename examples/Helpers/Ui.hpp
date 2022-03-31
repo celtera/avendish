@@ -49,7 +49,7 @@ struct Ui
       phase += N * 0.001;
   }
 
-  struct ui_layout {
+  struct ui {
       // If your compiler is recent enough:
       // using enum halp::colors;
       // using enum halp::layouts;
