@@ -69,11 +69,19 @@ struct processor
     constexpr auto func = avnd::message_get_func<M>();
     if constexpr (std::is_member_function_pointer_v<decltype(func)>)
     {
-      using class_type = typename avnd::function_reflection<func>::class_type;
+      using refl = avnd::function_reflection<func>;
+      using class_type = typename refl::class_type;
       if constexpr(std::is_same_v<class_type, M>)
-        class_def.def(c_str(avnd::get_name<M>()), [] { " o hst "; });
+      {
+        auto synth_fun = [] <typename... Args> (boost::mp11::mp_list<Args...>) {
+          return [] (Args... args) { M{}(args...); };
+        };
+        class_def.def(c_str(avnd::get_name<M>()), synth_fun(typename refl::arguments{}));
+      }
       else
+      {
         class_def.def(c_str(avnd::get_name<M>()), func);
+      }
     }
     else if constexpr (requires { avnd::function_reflection<M::func()>::count; })
     {

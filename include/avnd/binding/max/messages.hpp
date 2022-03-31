@@ -49,8 +49,8 @@ struct messages
       constexpr auto f = avnd::message_get_func<M>();
       if constexpr (std::is_member_function_pointer_v<decltype(f)>)
       {
-        if constexpr(requires { (M{}.*f)(convert<Args>(argv[I])...); })
-          return (M{}.*f)(convert<Args>(argv[I])...);
+        if constexpr(requires { M{}(convert<Args>(argv[I])...); })
+          return M{}(convert<Args>(argv[I])...);
         else
           return (implementation.*f)(convert<Args>(argv[I])...);
       }
@@ -97,8 +97,8 @@ struct messages
     {
       if constexpr (std::is_member_function_pointer_v<decltype(f)>)
       {
-        if constexpr(requires { (M{}.*f)(implementation, convert<Args>(argv[I])...); })
-          return (M{}.*f)(implementation, convert<Args>(argv[I])...);
+        if constexpr(requires { M{}(implementation, convert<Args>(argv[I])...); })
+          return M{}(implementation, convert<Args>(argv[I])...);
         else if constexpr(requires { implementation.*f; })
           return (implementation.*f)(implementation, convert<Args>(argv[I])...);
       }

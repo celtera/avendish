@@ -530,8 +530,8 @@ public:
         {
           if constexpr (std::is_member_function_pointer_v<decltype(f)>)
           {
-            if constexpr(requires { (M{}.*f)(); })
-              (M{}.*f)();
+            if constexpr(requires { M{}(); })
+              M{}();
             else
               (m.*f)();
           }
@@ -547,8 +547,8 @@ public:
           {
             if constexpr (std::is_member_function_pointer_v<decltype(f)>)
             {
-              if constexpr(requires { (M{}.*f)(m); })
-                (M{}.*f)(m);
+              if constexpr(requires { M{}(m); })
+                M{}(m);
               else if constexpr(requires { (m.*f)(m); })
                 (m.*f)(m);
             }

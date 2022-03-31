@@ -66,7 +66,6 @@ struct fourses_tilde
         }
     } smooth;
 
-    /*
     struct {
         halp_meta(name, "hilim")
         void operator()(fourses_tilde& x, double input) {
@@ -114,7 +113,6 @@ struct fourses_tilde
             x.logger.info("------ end -------");
         }
     } info;
-    */
   };
 
   void prepare(halp::setup info)
