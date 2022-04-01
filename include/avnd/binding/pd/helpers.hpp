@@ -55,13 +55,12 @@ static void process_generic_message(T& implementation, t_symbol* s)
           constexpr auto obj_name = avnd::get_name<object_type>().data();
           if constexpr (requires { C::name(); })
           {
-            constexpr auto ctl_name = avnd::get_name<C>().data();
             if constexpr (requires { (float)ctl.value; })
             {
               post(
                   "[dumpall] %s : %s = %f",
                   obj_name,
-                  ctl_name,
+                  avnd::get_name<C>().data(),
                   (float)ctl.value);
             }
             else if constexpr (requires { ctl.value.c_str(); })
@@ -69,7 +68,7 @@ static void process_generic_message(T& implementation, t_symbol* s)
               post(
                   "[dumpall] %s : %s = %s",
                   obj_name,
-                  ctl_name,
+                  avnd::get_name<C>().data(),
                   ctl.value.c_str());
             }
             else if constexpr (requires { (const char*)ctl.value.data(); })
@@ -77,7 +76,7 @@ static void process_generic_message(T& implementation, t_symbol* s)
               post(
                   "[dumpall] %s : %s = %s",
                   obj_name,
-                  ctl_name,
+                  avnd::get_name<C>().data(),
                   ctl.value.data());
             }
           }

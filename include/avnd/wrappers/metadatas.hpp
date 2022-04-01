@@ -129,6 +129,32 @@ template <typename T>
     return "";
 }
 
+template <typename T>
+/* constexpr */ auto get_int_version()
+{
+  if constexpr (requires { (int)T::version(); })
+  {
+    return T::version();
+  }
+  else if constexpr (requires { (int)std::declval<T>().version; })
+  {
+    return T::version;
+  }
+  else
+  {
+    auto str = avnd::get_version<T>();
+    if(str.empty())
+      return 0;
+
+    const char* nptr = str.data();
+    char* endptr[1]{};
+    int ret = std::strtol(nptr, endptr, 0);
+    if (*endptr == nptr)
+      return 0;
+
+    return ret;
+  }
+}
 template <typename T, char Sep>
 constexpr std::array<char, 256> get_keywords()
 {

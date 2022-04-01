@@ -91,7 +91,7 @@ struct Entropy
       return error{"Entropy: array does not contain any values"};
     }
 
-    if (std::ranges::any_of(array, [](Real value) { return value < 0; })) {
+    if (std::any_of(array.begin(), array.end(), [](Real value) { return value < 0; })) {
       return error{"Entropy: array must not contain negative values"};
     }
 

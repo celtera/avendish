@@ -222,7 +222,7 @@ struct outputs
       auto& outs = avnd::get_outputs<T>(self.implementation);
       [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        (value_writer{self}(
+        (value_writer<Self>{self}(
            boost::pfr::get<Index>(outs),
            outlets[Index],
            avnd::num<Index>{}),
