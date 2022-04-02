@@ -21,7 +21,10 @@
 
 namespace python
 {
-inline consteval const char* c_str(std::string v) noexcept = delete;
+inline const char* c_str(const std::string& v) noexcept
+{
+  return v.c_str();
+}
 inline consteval const char* c_str(std::string_view v) noexcept
 {
   return v.data();
@@ -33,6 +36,24 @@ inline consteval const char* c_str(const char* v) noexcept
 
 namespace py = pybind11;
 
+template<auto Idx, typename C>
+constexpr auto input_name(avnd::field_reflection<Idx, C>)
+{
+  if constexpr (avnd::has_name<C>)
+    return avnd::get_name<C>();
+  else
+    return "input_" + std::to_string(Idx);
+}
+
+template<auto Idx, typename C>
+constexpr auto output_name(avnd::field_reflection<Idx, C>)
+{
+  if constexpr (avnd::has_name<C>)
+      return avnd::get_name<C>();
+  else
+  return "output_" + std::to_string(Idx);
+}
+
 template <typename T>
 struct processor
 {
@@ -40,24 +61,21 @@ struct processor
   py::class_<T> class_def;
 
   template <auto Idx, typename C>
-  void setup_input(avnd::field_reflection<Idx, C>)
+  void setup_input(avnd::field_reflection<Idx, C> refl)
   {
-    if constexpr (requires { avnd::get_name<C>(); })
-    {
-      class_def.def_property(
-          c_str(avnd::get_name<C>()),
-          [](const T& t) { return boost::pfr::get<Idx>(t.inputs).value; },
-          [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.inputs).value = x; });
-    }
+    class_def.def_property(
+        c_str(input_name(refl)),
+        [](const T& t) { return boost::pfr::get<Idx>(t.inputs).value; },
+        [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.inputs).value = x; });
   }
 
   template <auto Idx, typename C>
-  void setup_output(avnd::field_reflection<Idx, C>)
+  void setup_output(avnd::field_reflection<Idx, C> refl)
   {
     if constexpr (requires { avnd::get_name<C>(); })
     {
       class_def.def_property(
-          c_str(avnd::get_name<C>()),
+          c_str(output_name(refl)),
           [](const T& t) { return boost::pfr::get<Idx>(t.outputs).value; },
           [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.outputs).value = x; });
     }
@@ -92,9 +110,9 @@ struct processor
   }
 
   explicit processor(pybind11::module_& m)
-      : class_def(m, "processor")
+      : class_def(m, c_str(avnd::get_c_identifier<T>()))
   {
-    m.doc() = c_str(avnd::get_name<T>());
+    m.doc() = c_str(avnd::get_description<T>());
 
     class_def.def(py::init<>());
     if constexpr (requires { T{}(); })

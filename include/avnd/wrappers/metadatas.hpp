@@ -69,6 +69,34 @@ std::string array_to_string(auto& authors)
   return ret;
 }
 
+static constexpr bool valid_char_for_c_identifier(char c)
+{
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (c == '_');
+}
+
+template <avnd::has_c_name T>
+constexpr auto get_c_identifier()
+{
+  return avnd::get_c_name<T>();
+}
+
+template <avnd::has_name T>
+requires (!avnd::has_c_name<T>)
+auto get_c_identifier()
+{
+  std::string name{avnd::get_name<T>()};
+  for (char& c : name)
+  {
+    if (!valid_char_for_c_identifier(c))
+      c = '_';
+  }
+  return name;
+}
+
+template <typename T>
+requires (!avnd::has_c_name<T> && !avnd::has_name<T>)
+auto get_c_identifier() = delete;
+
 template <typename T>
 /* constexpr */ auto get_author()
 {

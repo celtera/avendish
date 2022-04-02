@@ -1,0 +1,4 @@
+- variant
+- std::range
+- pd: iterating 
+- type safety
