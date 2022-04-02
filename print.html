@@ -171,6 +171,7 @@ to declare all the properties of a media processor, whether it processes audio, 
 <li>An ontology for media objects.</li>
 <li>An automated binding of a part of the C++ object semantics to other languages and run-time environments.</li>
 <li>An example implementation of this until C++ gets proper reflection and code generation features.</li>
+<li>Very, very, very, very uncompromising on its goals.</li>
 <li>Lots of fun C++20 code !</li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h1>
@@ -835,7 +836,88 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 <blockquote>
 <p>Likewise, it is forbidden to mix float and double inputs for audio ports (as it simply does not make sense: no host in existence is able to provide audio in two different formats at the same time).</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="polyphonic-processors"><a class="header" href="#polyphonic-processors">Polyphonic processors</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="monophonic-processors"><a class="header" href="#monophonic-processors">Monophonic processors</a></h1>
+<p>There are three special cases: </p>
+<ol>
+<li>Processors with one sample input and one sample output.</li>
+<li>Processors with one channel input and one channel output.</li>
+<li>Processors with one dynamic bus input, one dynamic bus output, and no fixed channels being specified.</li>
+</ol>
+<p>In these three cases, the processor is recognized as polyphony-friendly. That means that in cases 1 and 2, the processor will be instantiated potentially multiple times automatically, if used in e.g. a stereo DAW.</p>
+<p>In case 3, the channels of inputs and outputs will be set to the same count, which comes from the host.</p>
+<h2 id="polyphonic-processors-should-use-types-for-their-io"><a class="header" href="#polyphonic-processors-should-use-types-for-their-io">Polyphonic processors should use types for their I/O</a></h2>
+<p>Let's consider the following processor:</p>
+<pre><code class="language-cpp">struct MyProcessor
+{
+  static consteval auto name() { return &quot;Distortion&quot;; }
+  struct {
+    struct { float value; } gain;
+  } inputs;
+
+  double operator()(double input) 
+  {
+    accumulator = std::fmod(accumulator+1.f, 10.f);
+    return std::tanh(inputs.gain.value * input + accumulator); 
+  }
+  
+private:
+  double accumulator{};
+};
+</code></pre>
+<p>We have three different values involved: </p>
+<ul>
+<li><code>input</code> is the audio sample that is to be processed.</li>
+<li><code>inputs.gain.value</code> is an external control which increases or decreases the distortion.</li>
+<li><code>accumulator</code> is an internal variable used by the processing algorithm.</li>
+</ul>
+<p>Now consider this in the context of polyphony: the only thing that we can do is instantiate <code>MyProcessor</code> three times.</p>
+<ul>
+<li>We cannot call <code>operator()</code> of a single instance on multiple channels, as the internal state must stay independent of the channels.</li>
+<li>But now the inputs are duplicated for all instances. If we want to implement a filter bank with thousands of duplicated processors in parallel, this would be a huge waste of memory if they all depend on the same <code>gain</code> value.</li>
+</ul>
+<p>Thus, it is recommended in this case to use the following form: </p>
+<pre><code class="language-cpp">struct MyProcessor
+{
+  static consteval auto name() { return &quot;Distortion&quot;; }
+  struct inputs {
+      struct { float value; } gain;
+  };
+  struct outputs { };
+
+  double operator()(double input, const inputs&amp; ins, outputs&amp; outs) 
+  {
+    accumulator = std::fmod(accumulator+1.f, 10.f);
+    return std::tanh(ins.gain.value * input + accumulator); 
+  }
+
+private:
+  double accumulator{};
+};
+</code></pre>
+<p>Here, Avendish will instantiate a single <code>inputs</code> array, which will be shared across all polyphony voices, which will likely use less memory and be more performant in case of large amount of parameters &amp; voices.</p>
+<p>Here is what I would term the &quot;canonic&quot; of this version, with additionally our helpers to reduce typing:</p>
+<pre><code class="language-cpp">struct MyProcessor
+{
+  static consteval auto name() { return &quot;Distortion&quot;; }
+  struct inputs {
+    halp::audio_sample&lt;&quot;In&quot;, double&gt; audio;
+    halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0, .max = 100, .init = 1}&gt; a;
+  };
+  struct outputs { 
+    halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
+  };
+
+  void operator()(const inputs&amp; ins, outputs&amp; outs) 
+  {
+    accumulator = std::fmod(accumulator + 0.01f, 10.f);
+    outs.audio = std::tanh(ins.gain * ins.audio + accumulator); 
+  }
+
+private:
+  double accumulator{};
+};
+</code></pre>
+<p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasse one would also be able to generate the more efficient form directly.</p>
 <div style="break-before: page; page-break-before: always;"></div><ul>
 <li>variant</li>
 <li>std::range</li>
