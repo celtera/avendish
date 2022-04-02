@@ -23,9 +23,10 @@
 #define NK_IMPLEMENTATION
 #define NK_GLFW_GL4_IMPLEMENTATION
 #define NK_KEYSTATE_BASED_INPUT
+#include <nuklear.h>
+
 #include "nuklear_glfw_gl4.h"
 
-#include <nuklear.h>
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
