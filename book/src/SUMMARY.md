@@ -16,11 +16,11 @@
     - [Widget](./writing_processors/ports.metadatas.widget.md)
     - [Helpers](./writing_processors/ports.metadatas.helpers.md)
 - [Audio](./writing_processors/audio.md)
-  - [Polyphonic processors](./writing_processors/audio.polyphonic.md)
+  - [Monophonic processors](./writing_processors/audio.polyphonic.md)
 - [Messages](./writing_processors/messages.md)
 - [Callbacks](./writing_processors/callbacks.md)
-
-- [Processing semantics](./writing_processors/processing.md)
+- [MIDI](./writing_processors/midi.md)
+- [Image](./writing_processors/midi.md)
 
 # Advanced features
 
@@ -31,5 +31,6 @@
 
 # Reference
 
+- [Processing semantics](./writing_processors/processing.md)
 - [Bindings](./advanced/bindings.md)
 - [Controls](./reference/controls.md)

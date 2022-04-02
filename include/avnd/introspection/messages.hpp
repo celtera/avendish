@@ -13,19 +13,25 @@ struct messages_introspection : fields_introspection<typename messages_type<T>::
 {
 };
 
-template <typename T>
+template <avnd::messages_is_type T>
 auto& get_messages(avnd::effect_container<T>& t)
 {
   using type = typename avnd::messages_type<T>::type;
-  static const constexpr type messages;
+  static type messages;
   return messages;
+}
+
+template <avnd::messages_is_value T>
+auto& get_messages(avnd::effect_container<T>& t)
+{
+  return t.effect.messages;
 }
 
 template <avnd::messages_is_type T>
 auto& get_messages(T& t)
 {
   using type = typename avnd::messages_type<T>::type;
-  static const constexpr type messages;
+  static type messages;
   return messages;
 }
 

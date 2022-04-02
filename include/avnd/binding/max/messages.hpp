@@ -148,6 +148,16 @@ struct messages
       {
         M::func()(make_atom_iterator(argc, argv));
       }
+      else if constexpr (requires (M m) {
+                      m(implementation, make_atom_iterator(argc, argv));
+                    })
+      {
+        M{}(implementation, make_atom_iterator(argc, argv));
+      }
+      else if constexpr (requires (M m) { m(make_atom_iterator(argc, argv)); })
+      {
+        M{}(make_atom_iterator(argc, argv));
+      }
       else
       {
         static_assert(std::is_void_v<M>, "func() does not return a viable function");
@@ -163,7 +173,7 @@ struct messages
     {
       bool ok = false;
       std::string_view symname = s->s_name;
-      boost::pfr::for_each_field(
+      avnd::messages_introspection<T>::for_all(
           avnd::get_messages(implementation),
           [&]<typename M>(M& field)
           {

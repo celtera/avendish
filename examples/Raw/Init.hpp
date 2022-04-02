@@ -84,22 +84,33 @@ struct Init
 
       // Messages can also support a range-ish generic argument
       // (this is useful for hosts which support dynamic number of arguments)
-      halp_meta(func,
-        [](Init& self, INPUT_RANGE auto range)
+      void operator()(Init& self, INPUT_RANGE auto range)
+      {
+        for (std::variant value : range)
         {
-          for (std::variant value : range)
-          {
-            std::visit([](auto& e) { std::cout << e << std::endl; }, value);
-          }
-        })
-    } foo;
+          std::visit([](auto& e) { std::cout << e << std::endl; }, value);
+        }
+      }
+    } generic_call;
+
+    struct
+    {
+      halp_meta(name, "float_call");
+      void operator()(float v)
+      {
+        std::cerr << "custom_call: " << v << std::endl;
+      }
+    } custom_call;
 
     // If the object type is passed as first argument, the obvious will happen.
     struct
     {
-      halp_meta(name, "float_call");
-      halp_meta(func, [](Init& self, float v) { std::cerr << "value 2: " << v << std::endl; })
-    } bar;
+      halp_meta(name, "float_call_self");
+      void operator()(Init& self, float v)
+      {
+        std::cerr << "value 2: " << v << ":" << self.inputs.a.value << std::endl;
+      }
+    } custom_call3;
   } messages;
 #endif
 

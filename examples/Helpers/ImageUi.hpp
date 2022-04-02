@@ -102,22 +102,6 @@ struct custom_anim
       ctx.update();
     }
 
-    bool mouse_press(double x, double y)
-    {
-      mouse_move(x, y);
-      return true;
-    }
-
-    void mouse_move(double x, double y)
-    {
-      const double res = std::clamp(x / width(), 0., 1.);
-    }
-
-    void mouse_release(double x, double y)
-    {
-      mouse_move(x, y);
-    }
-
     double rot{};
 };
 /**
