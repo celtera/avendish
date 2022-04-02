@@ -16,10 +16,11 @@ struct MyProcessor {
   };
 };
 ```    
+Note that the `messages` are stored in a structure named `messages`. It could also be the name of the value, but this would likely use at least a few bytes per instance which would be wasted as messages are not supposed to have states themselves.
 
 Messages are of course only meaningful in environments which support them. 
-One argument messages are equivalent to arguments.
-If there is more than one arguments, not all host systems may be able to handle them ; for instance, it does not make much sense for VST plug-ins. On the other hand, programming language bindings or systems such as Max and PureData have no problem with them.
+One argument messages are equivalent to parameters.
+If there is more than one argument, not all host systems may be able to handle them ; for instance, it does not make much sense for VST3 plug-ins. On the other hand, programming language bindings or systems such as Max and PureData have no problem with them.
 
 ## Passing existing functions
 
@@ -115,4 +116,4 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 }
 ```
 
-Here, `atom_iterator` is what gets passed to `my_variadic_message`. It allows to deport the iteration of the loop over the arguments into the calling code, but handles the matching from type to union member in a generic way, which removes an entire class of errors.
+Here, `atom_iterator` is what gets passed to `my_variadic_message`. It allows to deport the iteration of the loop over the arguments into the calling code, but handles the matching from type to union member in a generic way and transforms them into safer `std::variant` instances on-the-fly, which removes an entire class of possible errors while not costing much : in my experiments for instance, the compiler is able to elide entirely any form of dynamic memory allocation which would normally be required there.

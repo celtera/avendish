@@ -27,7 +27,7 @@
 - [Custom UI](./advanced/ui.md)
 - [Logging](./advanced/logging.md)
 - [FFT](./advanced/fft.md)
-
+- [Sample-accurate processing](./advanced/sample_accurate.md)
 
 # Reference
 
