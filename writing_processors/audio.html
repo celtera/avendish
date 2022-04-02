@@ -134,7 +134,107 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="writing-audio-processors"><a class="header" href="#writing-audio-processors">Writing audio processors</a></h1>
+<p>The processors we wrote until now only processed &quot;control&quot; values.</p>
+<p>As a convention, those are values that change infrequently, relative to the audio rate: every few milliseconds, as opposed to every few dozen microseconds for individual audio samples.</p>
+<h2 id="argument-based-processors"><a class="header" href="#argument-based-processors">Argument-based processors</a></h2>
+<p>Let's see how one can write a simple audio filter in Avendish: </p>
+<pre><code class="language-cpp">struct MyProcessor
+{
+  static consteval auto name() { return &quot;Distortion&quot;; }
+
+  float operator()(float input) 
+  {
+    return std::tanh(input); 
+  }
+};
+</code></pre>
+<p>That's it. That's the processor :-)</p>
+<p>Maybe you are used to writing processors that operate with buffers of samples. Fear not, here is another valid Avendish audio processor, which should reassure most readers:</p>
+<pre><code class="language-cpp">struct MyProcessor
+{
+  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto input_channels() { return 2; }
+  static consteval auto output_channels() { return 2; }
+
+  void operator()(double** inputs, double** outputs, int frames)
+  {
+    for (int c = 0; c &lt; input_channels(); ++c)
+    {
+      for (int k = 0; k &lt; frames; k++)
+      {
+        outputs[c][k] = std::tanh(inputs[c][k]);
+      }
+    }
+  }
+};
+</code></pre>
+<p>The middle-ground of a processor that processes a single channel is also possible (and so is the possibility to use floats or doubles for the definition of the processor):</p>
+<pre><code class="language-cpp">struct MyProcessor
+{
+  static consteval auto name() { return &quot;Distortion&quot;; }
+
+  void operator()(float* inputs, float* outputs, int frames)
+  {
+    for (int k = 0; k &lt; frames; k++)
+    {
+      outputs[k] = std::tanh(inputs[k]);
+    }
+  }
+};
+</code></pre>
+<p>Those are all ways that enable quickly writing very simple effects (although a lot of ground is already covered).
+For more advanced systems, with side-chains and such, it is preferable to use proper ports instead.</p>
+<h2 id="port-based-processors"><a class="header" href="#port-based-processors">Port-based processors</a></h2>
+<p>Here are three examples of valid audio ports:</p>
+<ul>
+<li>Sample-wise</li>
+</ul>
+<pre><code class="language-cpp">struct {
+  static consteval auto name() { return &quot;In&quot;; }
+  float sample{};
+};
+</code></pre>
+<ul>
+<li>Channel-wise</li>
+</ul>
+<pre><code class="language-cpp">struct {
+  static consteval auto name() { return &quot;Out&quot;; }
+  float* channel{};
+};
+</code></pre>
+<ul>
+<li>Bus-wise, with a fixed channel count. Here, bindings will ensure that there are always as many channels allocated.</li>
+</ul>
+<pre><code class="language-cpp">struct {
+  static consteval auto name() { return &quot;Ins&quot;; }
+  static constexpr int channels() { return 2; }
+  float** samples{}; // At some point this should be renamed bus...
+};
+</code></pre>
+<ul>
+<li>Bus-wise, with a modifiable channel count. Here, bindings will put exactly as many channels as the end-user of the software requested ; this count will be contained in <code>channels</code>. </li>
+</ul>
+<pre><code class="language-cpp">struct {
+  static consteval auto name() { return &quot;Outs&quot;; }
+  int channels = 0;
+  double** samples{}; // At some point this should be renamed bus...
+};
+</code></pre>
+<h2 id="helpers"><a class="header" href="#helpers">Helpers</a></h2>
+<p><code>halp</code> provides helper types for these common cases: </p>
+<pre><code class="language-cpp">halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
+halp::audio_channel&lt;&quot;B&quot;, double&gt; audio;
+halp::fixed_audio_bus&lt;&quot;C&quot;, double, 2&gt; audio;
+halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
+</code></pre>
+<blockquote>
+<p>Important: it is not possible to mix different types of audio ports in a single processor: audio sample and audio bus operate necessarily on different time-scales that are impossible to combine in a single function. Technically, it would be possible to combine audio channels and audio buses, but for the sake of simplicity this is currently forbidden.</p>
+</blockquote>
+<blockquote>
+<p>Likewise, it is forbidden to mix float and double inputs for audio ports (as it simply does not make sense: no host in existence is able to provide audio in two different formats at the same time).</p>
+</blockquote>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
