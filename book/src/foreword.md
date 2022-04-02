@@ -36,4 +36,5 @@ Non-C++ alternatives exist: [FAUST](https://faust.grame.fr/) and [SOUL](https://
 1. An ontology for media objects.
 2. An automated binding of a part of the C++ object semantics to other languages and run-time environments.
 3. An example implementation of this until C++ gets proper reflection and code generation features.
-4. Lots of fun C++20 code !
+4. Very, very, very, very uncompromising on its goals.
+5. Lots of fun C++20 code !
