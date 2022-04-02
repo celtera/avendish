@@ -69,7 +69,7 @@ private:
 
 Here, Avendish will instantiate a single `inputs` array, which will be shared across all polyphony voices, which will likely use less memory and be more performant in case of large amount of parameters & voices.
 
-Here is what I would term the "canonic" of this version, with additionally our helpers to reduce typing:
+Here is what I would term the "canonic" of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:
 
 ```cpp
 struct MyProcessor
@@ -77,7 +77,7 @@ struct MyProcessor
   static consteval auto name() { return "Distortion"; }
   struct inputs {
     halp::audio_sample<"In", double> audio;
-    halp::hslider_f32<"Gain", halp::range{.min = 0, .max = 100, .init = 1}> a;
+    halp::hslider_f32<"Gain", halp::range{.min = 0, .max = 100, .init = 1}> gain;
   };
   struct outputs { 
     halp::audio_sample<"A", double> audio;
