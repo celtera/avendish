@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="sidebar-visible no-js ayu">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -31,7 +31,7 @@
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -57,7 +57,7 @@
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
             html.classList.remove('no-js')
-            html.classList.remove('light')
+            html.classList.remove('ayu')
             html.classList.add(theme);
             html.classList.add('js');
         </script>
@@ -94,11 +94,11 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu (default)</button></li>
                         </ul>
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
@@ -485,10 +485,13 @@ class bad_3 {
 </code></pre>
 <p>are all invalid parameters.</p>
 <p>This can be ensured easily by <a href="https://gcc.godbolt.org/z/c9Ko4ssM8">asking the compiler</a>: </p>
-<pre><code>static_assert(!parameter&lt;bad_1&gt;);
+<pre><code class="language-cpp">static_assert(!parameter&lt;bad_1&gt;);
 static_assert(!parameter&lt;bad_2&gt;);
 static_assert(!parameter&lt;bad_3&gt;);
 </code></pre>
+<blockquote>
+<p><code>static_assert</code> is a C++ feature which allows to check a predicate at compile-time. If the predicate is false, the compiler will report an error.</p>
+</blockquote>
 <p>Avendish will simply not recognize them and they won't be accessible anywhere.</p>
 <p>Here are examples of valid parameters:</p>
 <pre><code class="language-cpp">struct good_1 {
@@ -514,8 +517,8 @@ class good_3 {
     assignable&lt;double&gt; value;
 }; 
 </code></pre>
-<p>This can be ensured easily by <a href="https://gcc.godbolt.org/z/P7aET4q3z">asking the compiler</a>: </p>
-<pre><code>static_assert(parameter&lt;good_1&gt;);
+<p>This can be ensured again by <a href="https://gcc.godbolt.org/z/P7aET4q3z">asking the compiler</a>: </p>
+<pre><code class="language-cpp">static_assert(parameter&lt;good_1&gt;);
 static_assert(parameter&lt;good_2&gt;);
 static_assert(parameter&lt;good_3&gt;);
 </code></pre>
@@ -548,7 +551,7 @@ struct MyProcessor
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<p>If one really did not like templates, the following macro could be defined to make custom ports: </p>
+<p>If one really does not like templates, the following macro could be defined instead to make custom ports: </p>
 <pre><code class="language-cpp">#define my_value_port(Name, Type)                  \
   struct {                                         \
     static consteval auto name() { return #Name; } \
@@ -600,7 +603,7 @@ my_value_port(b, std::string)
   float value{};
 } foobar;
 </code></pre>
-<p>More generally, in most cases, Avendish will try to make sense of the things whether they are types, variables or functions. This is not implemented entirely consistently yet, but it is a goal of the library in order to enable various coding styles and as much freedom of expression as possible for the media processor developer.</p>
+<p>More generally, in most cases, Avendish will try to make sense of the things the author declares, whether they are types, variables or functions. This is not implemented entirely consistently yet, but it is a goal of the library in order to enable various coding styles and as much freedom of expression as possible for the media processor developer.</p>
 <h2 id="keeping-metadata-static"><a class="header" href="#keeping-metadata-static">Keeping metadata static</a></h2>
 <p>Note that we should still be careful in our struct definitions to not declare normal member variables for common metadata, which would take valuable memory and mess with our cache lines. This reduces performance for no good reason: imagine instantiating 10000 &quot;processor&quot; objects, you do not want each processor to carry the overhead of storing the range as a member variable, such as this: </p>
 <pre><code class="language-cpp">struct {
@@ -731,7 +734,7 @@ struct MyProcessor
 <p>Note that even with our helper types, the following holds:</p>
 <pre><code>static_assert(sizeof(MyProcessor) == 3 * sizeof(float));
 </code></pre>
-<p>That is, an instance of our object weighs in memory exactly the size of its inputs and outputs, nothing else. In addition, the binding libraries try extremely hard to not allocate any memory dynamically, which leads to very concise objects.</p>
+<p>That is, an instance of our object weighs in memory exactly the size of its inputs and outputs, nothing else. In addition, the binding libraries try extremely hard to not allocate any memory dynamically, which leads to very concise memory representations of our media objects.</p>
 <div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="polyphonic-processors"><a class="header" href="#polyphonic-processors">Polyphonic processors</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><ul>
 <li>variant</li>
