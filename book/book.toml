@@ -4,3 +4,7 @@ language = "en"
 multilingual = false
 src = "src"
 title = "Avendish documentation"
+
+[output.html]
+default-theme = "Ayu"
+preferred-dark-theme = "Ayu"

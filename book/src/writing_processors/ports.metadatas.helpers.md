@@ -37,4 +37,4 @@ Note that even with our helper types, the following holds:
 static_assert(sizeof(MyProcessor) == 3 * sizeof(float));
 ```
 
-That is, an instance of our object weighs in memory exactly the size of its inputs and outputs, nothing else. In addition, the binding libraries try extremely hard to not allocate any memory dynamically, which leads to very concise objects.
+That is, an instance of our object weighs in memory exactly the size of its inputs and outputs, nothing else. In addition, the binding libraries try extremely hard to not allocate any memory dynamically, which leads to very concise memory representations of our media objects.

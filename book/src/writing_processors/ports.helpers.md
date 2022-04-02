@@ -30,7 +30,7 @@ struct MyProcessor
 };
 ```
 
-If one really did not like templates, the following macro could be defined to make custom ports: 
+If one really does not like templates, the following macro could be defined instead to make custom ports: 
 
 ```cpp
 #define my_value_port(Name, Type)                  \

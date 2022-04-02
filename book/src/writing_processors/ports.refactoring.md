@@ -48,11 +48,13 @@ class bad_3 {
 are all invalid parameters.
 
 This can be ensured easily by [asking the compiler](https://gcc.godbolt.org/z/c9Ko4ssM8): 
-```
+```cpp
 static_assert(!parameter<bad_1>);
 static_assert(!parameter<bad_2>);
 static_assert(!parameter<bad_3>);
 ```
+
+> `static_assert` is a C++ feature which allows to check a predicate at compile-time. If the predicate is false, the compiler will report an error.
 
 Avendish will simply not recognize them and they won't be accessible anywhere.
 
@@ -83,8 +85,8 @@ class good_3 {
 }; 
 ```
 
-This can be ensured easily by [asking the compiler](https://gcc.godbolt.org/z/P7aET4q3z): 
-```
+This can be ensured again by [asking the compiler](https://gcc.godbolt.org/z/P7aET4q3z): 
+```cpp
 static_assert(parameter<good_1>);
 static_assert(parameter<good_2>);
 static_assert(parameter<good_3>);

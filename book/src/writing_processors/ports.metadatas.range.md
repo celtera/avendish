@@ -32,7 +32,7 @@ struct {
 } foobar;
 ```
 
-More generally, in most cases, Avendish will try to make sense of the things whether they are types, variables or functions. This is not implemented entirely consistently yet, but it is a goal of the library in order to enable various coding styles and as much freedom of expression as possible for the media processor developer.
+More generally, in most cases, Avendish will try to make sense of the things the author declares, whether they are types, variables or functions. This is not implemented entirely consistently yet, but it is a goal of the library in order to enable various coding styles and as much freedom of expression as possible for the media processor developer.
 
 ## Keeping metadata static
 Note that we should still be careful in our struct definitions to not declare normal member variables for common metadata, which would take valuable memory and mess with our cache lines. This reduces performance for no good reason: imagine instantiating 10000 "processor" objects, you do not want each processor to carry the overhead of storing the range as a member variable, such as this: 
