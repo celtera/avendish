@@ -292,11 +292,11 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
   } outputs;
   
   void operator()(int N) {
-    auto&amp; in = inputs.audio.samples;
-    auto&amp; out = outputs.audio.samples;
+    auto&amp; in = inputs.audio;
+    auto&amp; out = outputs.audio;
     const float gain = inputs.gain;
 
-    for (int i = 0; i &lt; p1.channels; i++) 
+    for (int i = 0; i &lt; in.channels; i++) 
       for (int j = 0; j &lt; N; j++) 
         out[i][j] = gain * in[i][j];
   }
