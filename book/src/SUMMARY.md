@@ -21,9 +21,11 @@
   - [Playback state](./writing_processors/audio.arguments.md)
 - [Messages](./writing_processors/messages.md)
 - [Callbacks](./writing_processors/callbacks.md)
+- [Initialization](./writing_processors/init.md)
 - [MIDI](./writing_processors/midi.md)
   - [Example](./writing_processors/midi.example.md)
-- [Image](./writing_processors/midi.md)
+- [Image](./writing_processors/images.md)
+  - [Example](./writing_processors/images.example.md)
 
 # Advanced features
 

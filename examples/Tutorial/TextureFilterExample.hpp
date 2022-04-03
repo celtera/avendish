@@ -1,11 +1,10 @@
-#pragma oce
-#include <avnd/concepts/audio_port.hpp>
-#include <avnd/concepts/parameter.hpp>
+#pragma once
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 #include <halp/texture.hpp>
+#include <cmath>
 
 namespace examples
 {
@@ -14,8 +13,8 @@ struct TextureFilterExample
   halp_meta(name, "My example texture filter");
   halp_meta(c_name, "texture_filt");
   halp_meta(category, "Demo");
-  halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "Example texture filter");
   halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   struct
