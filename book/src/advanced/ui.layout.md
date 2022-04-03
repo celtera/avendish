@@ -61,6 +61,82 @@ This defines, conceptually, the following layout:
 |-----------------------------|
 ```
 
+## Layouts
+
+### HBox, VBox
+
+These will layout things either horizontally or vertically.
+
+### Split
+
+Each children will be separated by a split line (thus generally one would use it to separate layouts).
+
+### Grid
+
+This will layout children items in a grid.
+
+Either of `row` and `column` properties can be defined, but not both:
+```
+static constexpr auto rows() { return 3; }
+static constexpr auto columns() { return 3; }
+```
+
+If `columns` is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if `rows` is defined.
+
+That is, given: 
+```cpp
+struct {
+  static constexpr auto layout() { enum { grid } d{}; return d; }
+  static constexpr auto columns() { return 3; }
+  const char* text1 = "A";
+  const char* text2 = "B";
+  const char* text3 = "C";
+  const char* text4 = "D";
+  const char* text5 = "E";
+} a_grid;
+```
+
+The layout will be:
+```ascii
+|---------|
+| A  B  C | 
+| D  E    |
+|---------|
+```
+
+Instead, if `rows()` is defined to 3:
+
+```ascii
+|------|
+| A  D | 
+| B  E | 
+| C    |
+|------|
+```
+
+### Tabs
+
+Tabs will display children items in tabs.
+Each children item should have a `name()` property which will be shown in the tab bar.
+
+```cpp
+struct {
+  static constexpr auto layout() { enum { tabs } d{}; return d; }
+  struct {
+    static constexpr auto layout() { enum { hbox } d{}; return d; }
+    static constexpr auto name() { return "First tab"; }
+    const char* text1 = "A";
+    const char* text2 = "B";
+  } a_hbox;
+  struct {
+    static constexpr auto layout() { enum { hbox } d{}; return d; }
+    static constexpr auto name() { return "Second tab"; }
+    const char* text3 = "C";
+    const char* text4 = "D";
+  } a_vbox;
+} a_tabs;
+```
+
 # Properties
 
 ## Background color
@@ -130,8 +206,9 @@ auto int_widget = &ins::foo;
 
 # Helpers
 
-Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API:
+Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API and reduce repetitions:
 
+## Widget helpers
 ```cpp
 halp::label l1{
     .text = "some long foo"
@@ -144,3 +221,27 @@ halp::item<&ins::foo> widget{
   , .y = 50
 };
 ```
+
+## Properties helpers
+
+```cpp
+struct ui {
+ // If your compiler is recent enough you can do this, 
+ // otherwise layout and background enums have to be qualified:
+ using enum halp::colors;
+ using enum halp::layouts;
+ 
+ halp_meta(name, "Main")
+ halp_meta(layout, hbox)
+ halp_meta(background, mid)
+
+ struct {
+   halp_meta(name, "Widget")
+   halp_meta(layout, vbox)
+   halp_meta(background, dark)
+   halp::item<&ins::int_ctl> widget;
+   halp::item<&outs::measure> widget2;
+ } widgets;
+};
+```
+
