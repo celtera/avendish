@@ -29,7 +29,7 @@ To ease porting of most effects, which are also in C++. Step by step, we will be
 
 Also because this is the language I know best =p
 
-Non-C++ alternatives exist: [FAUST](https://faust.grame.fr/) and [SOUL](https://soul.dev/) are the two most known and are great inspirations for Avendish ; they focus however mainly on audio processing. Avendish can be used to make purely message-based processors for e.g. Max/MSP and PureData, Python objects, etc. or video processing objects (currently implemented only for [ossia score](https://ossia.io), but could easily be ported to e.g. Jitter for Max, GEM for PureData, etc.).
+Non-C++ alternatives exist: [Faust](https://faust.grame.fr/) and [SOUL](https://soul.dev/) are the two most known and are great inspirations for Avendish ; they focus however mainly on audio processing. Avendish can be used to make purely message-based processors for e.g. Max/MSP and PureData, Python objects, etc. or video processing objects (currently implemented only for [ossia score](https://ossia.io), but could easily be ported to e.g. Jitter for Max, GEM for PureData, etc.).
 
 # What is really Avendish
 
