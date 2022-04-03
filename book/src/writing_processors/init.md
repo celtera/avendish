@@ -18,4 +18,7 @@ void initialize(float a, std::string_view b)
 
 Max and Pd will report an error if the object is not initialized correctly, e.g. like this: 
 
-    [my_processor 1.0 foo]
+    [my_processor 1.0 foo]  // OK
+    [my_processor foo 1.0]  // Not OK
+    [my_processor] // Not OK
+    [my_processor 0 0 0 1 2 3] // Not OK
