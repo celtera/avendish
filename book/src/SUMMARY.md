@@ -17,6 +17,8 @@
     - [Helpers](./writing_processors/ports.metadatas.helpers.md)
 - [Audio](./writing_processors/audio.md)
   - [Monophonic processors](./writing_processors/audio.polyphonic.md)
+  - [Setup](./writing_processors/audio.setup.md)
+  - [Playback state](./writing_processors/audio.arguments.md)
 - [Messages](./writing_processors/messages.md)
 - [Callbacks](./writing_processors/callbacks.md)
 - [MIDI](./writing_processors/midi.md)

@@ -105,6 +105,51 @@ struct {
 };
 ```
 
+## Process function for ports
+
+For ports-based processor, the process function takes the number of frames as argument. Here is a complete, bare example of a gain processor. 
+
+```cpp
+struct Gain {
+  static constexpr auto name() { return "Gain"; }
+  struct {
+    struct {
+      static constexpr auto name() { return "Input"; }
+      const double** samples;
+      int channels;
+    } audio;
+
+    struct {
+      static constexpr auto name() { return "Gain"; }
+      struct range {
+        const float min = 0.;
+        const float max = 1.;
+        const float init = 0.5;
+      };
+
+      float value;
+    } gain;
+  } inputs;
+
+  struct {
+    struct {
+      static constexpr auto name() { return "Output"; }
+      double** samples;
+      int channels;
+    } audio;
+  } outputs;
+  
+  void operator()(int N) {
+    auto& in = inputs.audio.samples;
+    auto& out = outputs.audio.samples;
+
+    for (int i = 0; i < p1.channels; i++) 
+      for (int j = 0; j < N; j++) 
+        out[i][j] = inputs.gain.value * in[i][j];
+  }
+};
+```
+
 ## Helpers
 
 `halp` provides helper types for these common cases: 
@@ -119,3 +164,57 @@ halp::dynamic_audio_bus<"D", double> audio;
 > Important: it is not possible to mix different types of audio ports in a single processor: audio sample and audio bus operate necessarily on different time-scales that are impossible to combine in a single function. Technically, it would be possible to combine audio channels and audio buses, but for the sake of simplicity this is currently forbidden.
 
 > Likewise, it is forbidden to mix float and double inputs for audio ports (as it simply does not make sense: no host in existence is able to provide audio in two different formats at the same time).
+
+## Gain processor, helpers version
+
+The exact same example as above, just shorter to write :)
+```cpp
+struct Gain {
+  static constexpr auto name() { return "Gain"; }
+  struct {
+    halp::dynamic_audio_bus<"Input", double> audio;
+    halp::hslider_f32<"Gain", avnd::range{0., 1., 0.5}> gain;
+  } inputs;
+
+  struct {
+    halp::dynamic_audio_bus<"Output", double> audio;
+  } outputs;
+  
+  void operator()(int N) {
+    auto& in = inputs.audio.samples;
+    auto& out = outputs.audio.samples;
+    const float gain = inputs.gain;
+
+    for (int i = 0; i < p1.channels; i++) 
+      for (int j = 0; j < N; j++) 
+        out[i][j] = gain * in[i][j];
+  }
+};
+```
+
+
+## Further work
+We currently have the following matrix of possible forms of audio ports: 
+
+|          | 1 channel         | N channels         |
+|----------|-------------------|--------------------|
+| 1 frame  | `float sample;`   | `???`              |
+| N frames | `float* channel;` | `float** samples;` |
+
+For the N channels / 1 frame case, one could imagine for instance: 
+
+```cpp
+struct {
+  float bus[2]; // Fixed channels case
+}
+```
+
+or 
+
+```cpp
+struct {
+  float* bus; // Dynamic channels case
+}
+```
+
+to indicate a per-sample, multi-channel bus, but this has not been implemented yet.
