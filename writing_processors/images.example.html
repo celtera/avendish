@@ -134,7 +134,87 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="example"><a class="header" href="#example">Example</a></h1>
+                        <h1 id="image-processor-example"><a class="header" href="#image-processor-example">Image processor example</a></h1>
+<p>This example is a very simple image filter. It takes an input image and downscales &amp; degrades it.</p>
+<pre><code class="language-cpp">#pragma once
+#include &lt;halp/audio.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/meta.hpp&gt;
+#include &lt;halp/sample_accurate_controls.hpp&gt;
+#include &lt;halp/texture.hpp&gt;
+#include &lt;cmath&gt;
+
+namespace examples
+{
+struct TextureFilterExample
+{
+  halp_meta(name, &quot;My example texture filter&quot;);
+  halp_meta(c_name, &quot;texture_filt&quot;);
+  halp_meta(category, &quot;Demo&quot;);
+  halp_meta(author, &quot;Jean-Michaël Celerier&quot;);
+  halp_meta(description, &quot;Example texture filter&quot;);
+  halp_meta(uuid, &quot;3183d03e-9228-4d50-98e0-e7601dd16a2e&quot;);
+
+  struct
+  {
+    halp::texture_input&lt;&quot;In&quot;&gt; image;
+  } inputs;
+
+  struct
+  {
+    halp::texture_output&lt;&quot;Out&quot;&gt; image;
+  } outputs;
+
+  // Some initialization can be done in the constructor.
+  TextureFilterExample() noexcept
+  {
+    // Allocate some initial data
+    outputs.image.create(1, 1);
+  }
+
+  void operator()()
+  {
+    auto&amp; in_tex = inputs.image.texture;
+    auto&amp; out_tex = outputs.image.texture;
+
+    // Since GPU readbacks are asynchronous: reading textures may take some time and
+    // thus the data may not be available from the beginning.
+    if (in_tex.bytes == nullptr)
+      return;
+
+    // Texture hasn't changed since last time, no need to recompute anything
+    if (!in_tex.changed)
+      return;
+    in_tex.changed = false;
+
+    // We (dirtily) downscale by a factor of 16
+    if (out_tex.width != in_tex.width || out_tex.height != in_tex.height)
+      outputs.image.create(in_tex.width / 16, in_tex.height / 16);
+
+    for (int y = 0; y &lt; in_tex.height / 16; y++)
+    {
+      for (int x = 0; x &lt; in_tex.width / 16; x++)
+      {
+        // Get a pixel
+        auto [r, g, b, a] = inputs.image.get(x * 16, y * 16);
+
+        // (Dirtily) Take the luminance and compute its contrast
+        double contrasted = std::pow((r + g + b) / (3. * 255.), 4.);
+
+        // (Dirtily) Posterize
+        uint8_t col = uint8_t(contrasted * 8) * (255 / 8.);
+
+        // Update the output texture
+        outputs.image.set(x, y, col, col, col, 255);
+      }
+    }
+
+    // Call this when the texture changed
+    outputs.image.upload();
+  }
+};
+}
+</code></pre>
 
                     </main>
 
