@@ -1699,6 +1699,61 @@ custom
 |  |        |                 |
 |-----------------------------|
 </code></pre>
+<h2 id="layouts"><a class="header" href="#layouts">Layouts</a></h2>
+<h3 id="hbox-vbox"><a class="header" href="#hbox-vbox">HBox, VBox</a></h3>
+<p>These will layout things either horizontally or vertically.</p>
+<h3 id="split"><a class="header" href="#split">Split</a></h3>
+<p>Each children will be separated by a split line (thus generally one would use it to separate layouts).</p>
+<h3 id="grid"><a class="header" href="#grid">Grid</a></h3>
+<p>This will layout children items in a grid.</p>
+<p>Either of <code>row</code> and <code>column</code> properties can be defined, but not both:</p>
+<pre><code>static constexpr auto rows() { return 3; }
+static constexpr auto columns() { return 3; }
+</code></pre>
+<p>If <code>columns</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows</code> is defined.</p>
+<p>That is, given: </p>
+<pre><code class="language-cpp">struct {
+  static constexpr auto layout() { enum { grid } d{}; return d; }
+  static constexpr auto columns() { return 3; }
+  const char* text1 = &quot;A&quot;;
+  const char* text2 = &quot;B&quot;;
+  const char* text3 = &quot;C&quot;;
+  const char* text4 = &quot;D&quot;;
+  const char* text5 = &quot;E&quot;;
+} a_grid;
+</code></pre>
+<p>The layout will be:</p>
+<pre><code class="language-ascii">|---------|
+| A  B  C | 
+| D  E    |
+|---------|
+</code></pre>
+<p>Instead, if <code>rows()</code> is defined to 3:</p>
+<pre><code class="language-ascii">|------|
+| A  D | 
+| B  E | 
+| C    |
+|------|
+</code></pre>
+<h3 id="tabs"><a class="header" href="#tabs">Tabs</a></h3>
+<p>Tabs will display children items in tabs.
+Each children item should have a <code>name()</code> property which will be shown in the tab bar.</p>
+<pre><code class="language-cpp">struct {
+  static constexpr auto layout() { enum { tabs } d{}; return d; }
+  struct {
+    static constexpr auto layout() { enum { hbox } d{}; return d; }
+    static constexpr auto name() { return &quot;First tab&quot;; }
+    const char* text1 = &quot;A&quot;;
+    const char* text2 = &quot;B&quot;;
+  } a_hbox;
+  struct {
+    static constexpr auto layout() { enum { hbox } d{}; return d; }
+    static constexpr auto name() { return &quot;Second tab&quot;; }
+    const char* text3 = &quot;C&quot;;
+    const char* text4 = &quot;D&quot;;
+  } a_vbox;
+} a_tabs;
+</code></pre>
 <h1 id="properties"><a class="header" href="#properties">Properties</a></h1>
 <h2 id="background-color"><a class="header" href="#background-color">Background color</a></h2>
 <p>Background colors can be chosen from a standardized set: for now, those are fairly abstract to allow things to work in a variety of environments.</p>
@@ -1744,7 +1799,8 @@ static constexpr auto height() { return 50; }
 <pre><code class="language-cpp">auto int_widget = &amp;ins::foo;
 </code></pre>
 <h1 id="helpers-3"><a class="header" href="#helpers-3">Helpers</a></h1>
-<p>Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API:</p>
+<p>Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API and reduce repetitions:</p>
+<h2 id="widget-helpers-1"><a class="header" href="#widget-helpers-1">Widget helpers</a></h2>
 <pre><code class="language-cpp">halp::label l1{
     .text = &quot;some long foo&quot;
   , .x = 100
@@ -1754,6 +1810,26 @@ static constexpr auto height() { return 50; }
 halp::item&lt;&amp;ins::foo&gt; widget{
     .x = 75
   , .y = 50
+};
+</code></pre>
+<h2 id="properties-helpers"><a class="header" href="#properties-helpers">Properties helpers</a></h2>
+<pre><code class="language-cpp">struct ui {
+ // If your compiler is recent enough you can do this, 
+ // otherwise layout and background enums have to be qualified:
+ using enum halp::colors;
+ using enum halp::layouts;
+ 
+ halp_meta(name, &quot;Main&quot;)
+ halp_meta(layout, hbox)
+ halp_meta(background, mid)
+
+ struct {
+   halp_meta(name, &quot;Widget&quot;)
+   halp_meta(layout, vbox)
+   halp_meta(background, dark)
+   halp::item&lt;&amp;ins::int_ctl&gt; widget;
+   halp::item&lt;&amp;outs::measure&gt; widget2;
+ } widgets;
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-items"><a class="header" href="#custom-items">Custom items</a></h1>
