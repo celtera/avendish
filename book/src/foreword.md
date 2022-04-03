@@ -41,6 +41,7 @@ Non-C++ alternatives exist: [Faust](https://faust.grame.fr/) and [SOUL](https://
 # GIMME CODE
 
 Here's an example of a complete audio processor which uses an **optional** library of helper types:
+if one wants, the exact same thing can be written without any macro or pre-existing type ; it is just a tad more verbose.
 
 ```cpp
 struct MyProcessor {

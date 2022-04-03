@@ -39,6 +39,7 @@
 - [Presets](./advanced/presets.md)
 - [Sample-accurate processing](./advanced/sample_accurate.md)
   - [Example](./advanced/sample_accurate.example.md)
+- [CMake configuration](./advanced/cmake.md)
 
 # Reference
 

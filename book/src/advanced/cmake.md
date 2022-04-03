@@ -1,0 +1,1 @@
+# Configuration with CMake
