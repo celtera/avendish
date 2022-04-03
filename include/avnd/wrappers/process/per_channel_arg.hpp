@@ -24,12 +24,11 @@ requires(
   template <typename FP>
   void process_channel(FP* in, FP* out, T& fx, auto& ins, auto& outs, auto&& tick)
   {
-    if_possible(fx(in, out, tick)) else if_possible(fx(in, out, ins, tick)) else if_possible(fx(in, out, outs, tick)) else if_possible(
-        fx(in,
-           out,
-           ins,
-           outs,
-           tick)) else static_assert(std::is_void_v<FP>, "Cannot call processor");
+    if_possible(fx(in, out, tick))
+    else if_possible(fx(in, out, ins, tick))
+    else if_possible(fx(in, out, outs, tick))
+    else if_possible(fx(in, out, ins, outs, tick))
+    else static_assert(std::is_void_v<FP>, "Cannot call processor");
   }
 
   template <std::floating_point FP>

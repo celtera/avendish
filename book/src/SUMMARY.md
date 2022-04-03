@@ -22,6 +22,7 @@
 - [Messages](./writing_processors/messages.md)
 - [Callbacks](./writing_processors/callbacks.md)
 - [MIDI](./writing_processors/midi.md)
+  - [Example](./writing_processors/midi.example.md)
 - [Image](./writing_processors/midi.md)
 
 # Advanced features

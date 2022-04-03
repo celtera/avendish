@@ -1,7 +1,4 @@
 #pragma once
-#include <avnd/concepts/audio_port.hpp>
-#include <avnd/concepts/midi_port.hpp>
-#include <avnd/concepts/parameter.hpp>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
@@ -23,8 +20,8 @@ struct Synth
   halp_meta(name, "My example synth");
   halp_meta(c_name, "synth_123");
   halp_meta(category, "Demo");
-  halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "A demo synth");
   halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
 
   struct
@@ -60,20 +57,18 @@ struct Synth
 
     for (auto& m : inputs.midi.midi_messages)
     {
-      libremidi::message msg;
-      msg.bytes.assign(m.bytes.begin(), m.bytes.end());
       // Let's ignore channels
-      switch (msg.get_message_type())
+      switch ((libremidi::message_type) (m.bytes[0] & 0xF0))
       {
         case libremidi::message_type::NOTE_ON:
           in_flight++;
 
           // Let's leverage the ossia unit conversion framework (adapted from Jamoma):
           // bytes is interpreted as a midi pitch and then converted to frequency.
-          last_note = ossia::midi_pitch{msg.bytes[1]};
+          last_note = ossia::midi_pitch{m.bytes[1]};
 
           // Store the velocity in linear gain
-          last_volume = ossia::midigain{msg.bytes[2]};
+          last_volume = ossia::midigain{m.bytes[2]};
           break;
 
         case libremidi::message_type::NOTE_OFF:
