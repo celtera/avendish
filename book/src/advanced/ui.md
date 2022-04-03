@@ -15,4 +15,4 @@ Avendish allows three levels of UI definition:
 
 3. Creating entirely custom items with a Canvas-based API. It is also possible to load images, make custom animations and handle mouse events.
 
-![Basic UI](images/ui-image.png)
+![Basic UI](images/ui-image.gif)
