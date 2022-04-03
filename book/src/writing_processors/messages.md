@@ -9,7 +9,7 @@ struct MyProcessor {
   struct messages {
     struct {
       static consteval auto name() { return "dump"; }
-      void operator()(MyProcessor& p, double arg1, const std::string& arg2) {
+      void operator()(MyProcessor& p, double arg1, std::string_view arg2) {
         std::cout << arg1 << ";" << arg2 << "\n";
       }
     } my_message;
