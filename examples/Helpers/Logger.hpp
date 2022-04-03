@@ -6,8 +6,6 @@
 #include <halp/messages.hpp>
 #include <halp/meta.hpp>
 
-#include <cstdio>
-
 // Sadly this example makes GCC segfault:
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102990
 namespace examples::helpers
@@ -38,7 +36,14 @@ struct Logger
 
   // Helpers for referring to local functions.
   // Ideally metaclasses would make that obsolete.
-  void example(float x) { logger.info("example: {}", x); }
+  void example(float x) {
+    logger.trace("example: {}", x);
+    logger.info("example: {}", x);
+    logger.debug("example: {}", x);
+    logger.warn("example: {}", x);
+    logger.error("example: {}", x);
+    logger.critical("example: {}", x);
+  }
 
   struct
   {

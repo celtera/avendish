@@ -26,6 +26,7 @@
   - [Example](./writing_processors/midi.example.md)
 - [Image](./writing_processors/images.md)
   - [Example](./writing_processors/images.example.md)
+- [Metadatas](./writing_processors/metadatas.md)
 
 # Advanced features
 
@@ -37,6 +38,7 @@
   - [FFT](./advanced/fft.md)
 - [Presets](./advanced/presets.md)
 - [Sample-accurate processing](./advanced/sample_accurate.md)
+  - [Example](./advanced/sample_accurate.example.md)
 
 # Reference
 

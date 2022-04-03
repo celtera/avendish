@@ -28,12 +28,13 @@ struct MyProcessor {
   void operator()(float* in, float* out, tick tick) { ... }
   void operator()(float** in, float** out, tick tick) { ... }
 
-// And also the variants that take input and output types as arguments
-
+  // And also the versions that take input and output types as arguments
   void operator()(const inputs& in, outputs& out, tick tick) { ... }
   float operator()(float in, const inputs& in, outputs& out, tick tick) { ... }
   void operator()(float* in, float* out, const inputs& in, outputs& out, tick tick) { ... }
   void operator()(float** in, float** out, const inputs& in, outputs& out, tick tick) { ... }
+
+  // And also the double-taking versions, not duplicated here :-)
 };
 ```
 

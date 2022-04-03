@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/controls.hpp>
+#include <boost/container/flat_map.hpp>
 
 #include <map>
 
@@ -12,7 +13,7 @@ namespace halp
 template <typename T>
 struct sample_accurate_values
 {
-  std::map<int, T> values;
+  boost::container::small_flat_map<int, T, 16> values;
 };
 
 template <typename T>
