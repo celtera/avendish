@@ -112,6 +112,7 @@ struct message_processor
         break;
     }
   }
+
   void process_first_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
     if constexpr (avnd::has_inputs<T>)
