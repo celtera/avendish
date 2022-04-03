@@ -1,6 +1,6 @@
-# Making media objects with Avendish
+# Making media objects with [Avendish](https://github.com/celtera/avendish)
 
-This book is two things: a tutorial for the usage of Avendish, intertwined with 
+This book is two things: a tutorial for the usage of [Avendish](https://github.com/celtera/avendish), intertwined with 
 an explanation of the concepts and implementation.
 
 Avendish aims to enable media objects / processors authors to write the processor in the most natural way possible, and then to map this to host softwares or languages with so-called zero-cost abstraction.
