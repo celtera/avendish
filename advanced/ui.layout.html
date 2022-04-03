@@ -192,11 +192,11 @@ custom
 <p>Each children will be separated by a split line (thus generally one would use it to separate layouts).</p>
 <h3 id="grid"><a class="header" href="#grid">Grid</a></h3>
 <p>This will layout children items in a grid.</p>
-<p>Either of <code>row</code> and <code>column</code> properties can be defined, but not both:</p>
+<p>Either of <code>rows()</code> and <code>columns()</code> properties can be defined, but not both:</p>
 <pre><code>static constexpr auto rows() { return 3; }
 static constexpr auto columns() { return 3; }
 </code></pre>
-<p>If <code>columns</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows</code> is defined.</p>
+<p>If <code>columns()</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows()</code> is defined.</p>
 <p>That is, given: </p>
 <pre><code class="language-cpp">struct {
   static constexpr auto layout() { enum { grid } d{}; return d; }
@@ -240,8 +240,8 @@ Each children item should have a <code>name()</code> property which will be show
   } a_vbox;
 } a_tabs;
 </code></pre>
-<h1 id="properties"><a class="header" href="#properties">Properties</a></h1>
-<h2 id="background-color"><a class="header" href="#background-color">Background color</a></h2>
+<h2 id="properties"><a class="header" href="#properties">Properties</a></h2>
+<h3 id="background-color"><a class="header" href="#background-color">Background color</a></h3>
 <p>Background colors can be chosen from a standardized set: for now, those are fairly abstract to allow things to work in a variety of environments.</p>
 <pre><code>darker,
 dark,
@@ -252,18 +252,18 @@ lighter
 <p>Setting the color is done by adding this to a layout:</p>
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
 </code></pre>
-<h2 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h2>
+<h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
 <p>In &quot;group&quot; or &quot;container&quot; layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
 <pre><code class="language-cpp">static constexpr auto x() { return 20; }
 static constexpr auto y() { return 20; }
 </code></pre>
-<h2 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h2>
+<h3 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h3>
 <p>Containers can be given an explicit (device independent) pixel size with </p>
 <pre><code class="language-cpp">static constexpr auto width() { return 100; }
 static constexpr auto height() { return 50; }
 </code></pre>
 <p>Otherwise, things will be made to fit in a best-effort way.</p>
-<h1 id="items"><a class="header" href="#items">Items</a></h1>
+<h2 id="items"><a class="header" href="#items">Items</a></h2>
 <h2 id="text-labels"><a class="header" href="#text-labels">Text labels</a></h2>
 <p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient. </p>
 <h2 id="controls"><a class="header" href="#controls">Controls</a></h2>

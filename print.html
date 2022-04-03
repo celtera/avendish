@@ -599,6 +599,14 @@ struct MyProcessor
   // halp_meta(A, B) expands to static consteval auto A() { return B; }
   halp_meta(name, &quot;Addition&quot;)
 
+  // In a perfect world one would just define attributes on the struct instead...
+  //
+  //   [[name: &quot;Addition&quot;]] 
+  //   struct MyProcessor { ... };
+  //
+  // or more realistically, `static constexpr auto name = &quot;foo&quot;;` 
+  // which would be an acceptable compromise.
+
   struct
   {
     // val_port is a simple type which contains 
@@ -1706,11 +1714,11 @@ custom
 <p>Each children will be separated by a split line (thus generally one would use it to separate layouts).</p>
 <h3 id="grid"><a class="header" href="#grid">Grid</a></h3>
 <p>This will layout children items in a grid.</p>
-<p>Either of <code>row</code> and <code>column</code> properties can be defined, but not both:</p>
+<p>Either of <code>rows()</code> and <code>columns()</code> properties can be defined, but not both:</p>
 <pre><code>static constexpr auto rows() { return 3; }
 static constexpr auto columns() { return 3; }
 </code></pre>
-<p>If <code>columns</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows</code> is defined.</p>
+<p>If <code>columns()</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows()</code> is defined.</p>
 <p>That is, given: </p>
 <pre><code class="language-cpp">struct {
   static constexpr auto layout() { enum { grid } d{}; return d; }
@@ -1754,8 +1762,8 @@ Each children item should have a <code>name()</code> property which will be show
   } a_vbox;
 } a_tabs;
 </code></pre>
-<h1 id="properties"><a class="header" href="#properties">Properties</a></h1>
-<h2 id="background-color"><a class="header" href="#background-color">Background color</a></h2>
+<h2 id="properties"><a class="header" href="#properties">Properties</a></h2>
+<h3 id="background-color"><a class="header" href="#background-color">Background color</a></h3>
 <p>Background colors can be chosen from a standardized set: for now, those are fairly abstract to allow things to work in a variety of environments.</p>
 <pre><code>darker,
 dark,
@@ -1766,18 +1774,18 @@ lighter
 <p>Setting the color is done by adding this to a layout:</p>
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
 </code></pre>
-<h2 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h2>
+<h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
 <p>In &quot;group&quot; or &quot;container&quot; layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
 <pre><code class="language-cpp">static constexpr auto x() { return 20; }
 static constexpr auto y() { return 20; }
 </code></pre>
-<h2 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h2>
+<h3 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h3>
 <p>Containers can be given an explicit (device independent) pixel size with </p>
 <pre><code class="language-cpp">static constexpr auto width() { return 100; }
 static constexpr auto height() { return 50; }
 </code></pre>
 <p>Otherwise, things will be made to fit in a best-effort way.</p>
-<h1 id="items"><a class="header" href="#items">Items</a></h1>
+<h2 id="items"><a class="header" href="#items">Items</a></h2>
 <h2 id="text-labels"><a class="header" href="#text-labels">Text labels</a></h2>
 <p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient. </p>
 <h2 id="controls"><a class="header" href="#controls">Controls</a></h2>
@@ -1833,6 +1841,226 @@ halp::item&lt;&amp;ins::foo&gt; widget{
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-items"><a class="header" href="#custom-items">Custom items</a></h1>
+<p>One can also define and use custom items. This is however very experimental and only support in the ossia bindings so far :-)</p>
+<h2 id="non-interactive-items"><a class="header" href="#non-interactive-items">Non-interactive items</a></h2>
+<p>Here is a non-interactive item:</p>
+<pre><code class="language-cpp">struct custom_anim
+{
+  // Static item metadatas: mandatory
+  static constexpr double width() { return 200.; }
+  static constexpr double height() { return 200.; }
+  static constexpr double layout() { enum { custom } d{}; return d; }
+
+  // In practice with the helpers, we use a type with the mandatory parts
+  // already defined and just focus on our item's specificities ; this is 
+  // enabled by this typedef.
+  using item_type = custom_anim;
+
+  // Item properties: those are mandatory
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+
+  // Our paint method. avnd::painter is a concept which maps to the most usual 
+  // canvas-like APIs. It is not necessary to indicate it - it just will give better
+  // error messages in case of mistake, and code completion (yes) in IDEs such as QtCreator
+  void paint(avnd::painter auto ctx)
+  {
+    constexpr double cx = 30., cy = 30.;
+    constexpr double side = 40.;
+  
+    ctx.set_stroke_color({.r = 92, .g = 53, .b = 102, .a = 255});
+    ctx.set_fill_color({173, 127, 168, 255});
+
+    ctx.translate(100, 100);
+    ctx.rotate(rot += 0.1);
+  
+    for(int i = 0; i &lt; 10; i++)
+    {
+      ctx.translate(10, 10);
+      ctx.rotate(5.+ 0.1 * rot);
+      ctx.scale(0.8, 0.8);
+      ctx.begin_path();
+  
+      ctx.draw_rect(-side / 2., -side / 2., side, side);
+      ctx.fill();
+      ctx.stroke();
+    }
+  
+    ctx.update();
+  }
+
+  double rot{};
+};
+</code></pre>
+<p>This produces the small squares animation here: </p>
+<p><img src="advanced/images/ui-image.gif" alt="Basic UI" /></p>
+<h2 id="interactive-items-for-controlling-single-ports"><a class="header" href="#interactive-items-for-controlling-single-ports">Interactive items for controlling single ports</a></h2>
+<p>This is <em>even more</em> experimental :)</p>
+<p>Here is what I believe to be the first entirely UI-library-independent UI slider defined in C++.</p>
+<pre><code class="language-cpp">// This type allows to define a sequence of operations which will modify a value, 
+// in order to allow handling undo-redo properly. 
+// The std::function members are filled by the bindings.
+template&lt;typename T&gt;
+struct transaction
+{
+  std::function&lt;void()&gt; start;
+  std::function&lt;void(const T&amp;)&gt; update;
+  std::function&lt;void()&gt; commit;
+  std::function&lt;void()&gt; rollback;
+};
+
+// look ma, no inheritance
+struct custom_slider
+{
+  // Same as above
+  static constexpr double width() { return 100.; }
+  static constexpr double height() { return 20.; }
+
+  // Needed for changing the ui. It's the type above - it's already defined as-is 
+  // in the helpers library.
+  halp::transaction&lt;double&gt; transaction;
+
+  // Called when the value changes from the host software.
+  void set_value(const auto&amp; control, double value)
+  {
+    this-&gt;value = avnd::map_control_to_01(control, value);
+  }
+
+  // When transaction.update() is called, this converts the value in the slider 
+  // into one fit for the control definition passed as argument.
+  static auto value_to_control(auto&amp; control, double value)
+  {
+    return avnd::map_control_from_01(control, value);
+  }
+
+  // Paint method: same as above
+  void paint(avnd::painter auto ctx)
+  {
+    ctx.set_stroke_color({200, 200, 200, 255});
+    ctx.set_stroke_width(2.);
+    ctx.set_fill_color({120, 120, 120, 255});
+    ctx.begin_path();
+    ctx.draw_rect(0., 0., width(), height());
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.begin_path();
+    ctx.set_fill_color({90, 90, 90, 255});
+    ctx.draw_rect(2., 2., (width() - 4) * value, (height() - 4));
+    ctx.fill();
+  }
+
+  // Return true to handle the event. x, y, are the positions of the item in local coordinates.
+  bool mouse_press(double x, double y)
+  {
+    transaction.start();
+    mouse_move(x, y);
+    return true;
+  }
+
+  // Obvious :-)
+  void mouse_move(double x, double y)
+  {
+    const double res = std::clamp(x / width(), 0., 1.);
+    transaction.update(res);
+  }
+
+  // Same
+  void mouse_release(double x, double y)
+  {
+    mouse_move(x, y);
+    transaction.commit();
+  }
+  
+  double value{};
+};
+
+// This wraps a custom widget in all the data which is mandatory to have so that we do not have to repeat it.
+// This is also already provided in the helper library ; using it looks like: 
+// 
+// halp::custom_item&lt;custom_slider, &amp;inputs::my_control&gt;
+template&lt;typename T, auto F&gt;
+struct custom_item
+{
+  static constexpr double layout() { enum { custom } d{}; return d; }
+  using item_type = T;
+
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+  decltype(F) control = F;
+};
+</code></pre>
+<h2 id="painter-api"><a class="header" href="#painter-api">Painter API</a></h2>
+<p>Here is the complete supported API so far:</p>
+<pre><code class="language-cpp">#pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
+
+namespace avnd
+{
+template&lt;typename T&gt;
+concept painter = requires (T t) {
+  // Paths:
+  t.begin_path();
+  t.close_path();
+  t.stroke();
+  t.fill();
+
+  //        x , y
+  t.move_to(0., 0.);
+  t.line_to(0., 0.);
+
+  //       x , y , w , h , startAngle, arcLength
+  t.arc_to(0., 1., 2., 3., 11.       , 12.);
+
+  //         c1x, c1y, c2x, c2y, endx, endy
+  t.cubic_to(0. ,  1., 2. , 3. , 11. , 12.);
+  //        x1, y1, x2, y2
+  t.quad_to(0., 1., 2., 3.);
+
+  // Transformations:
+  //          x , y
+  t.translate(0., 0.);
+  t.scale(0., 0.);
+  t.rotate(0.);
+  t.reset_transform();
+
+  // Colors:
+  //                  R    G    B    A
+  t.set_stroke_color({255, 255, 255, 127});
+  t.set_stroke_width(2.);
+  t.set_fill_color({255, 255, 255, 127});
+
+  // Text:
+  t.set_font(&quot;Comic Sans&quot;);
+  t.set_font_size(10.0); // In points
+
+  //          x , y , text
+  t.draw_text(0., 0., &quot;Hello World&quot;);
+
+  // Drawing
+  //          x1, y1, x2 , y2
+  t.draw_line(0., 0., 10., 10.);
+
+  //          x , y , w  , h
+  t.draw_rect(0., 0., 10., 10.);
+
+  //                  x , y , w  , h  , r
+  t.draw_rounded_rect(0., 0., 10., 10., 5.);
+
+  //            x , y , filename
+  t.draw_pixmap(0., 0., &quot;pixmap&quot;);
+
+  //             x , y , w  , h
+  t.draw_ellipse(0., 0., 10., 10.);
+
+  //            cx, cy, radius
+  t.draw_circle(0., 0., 20.);
+};
+}
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div>
                     </main>
 
