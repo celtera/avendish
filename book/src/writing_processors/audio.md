@@ -105,6 +105,8 @@ struct {
 };
 ```
 
+> An astute reader may wonder why one could not fix a channel count by doing `const int channels = 2;` instead of `int channels() { return 2; };`. Sadly, this would make our types non-assignable, which makes things harder. It would also use bytes for each instance of the processor. A viable middle-ground could be `static constexpr int channels = 2;` but C++ does not allow static variables in unnamed types, thus this does not leave a lot of choice.
+
 ## Process function for ports
 
 For ports-based processor, the process function takes the number of frames as argument. Here is a complete, bare example of a gain processor. 

@@ -33,7 +33,7 @@ This is how an environment such as *ossia score* renders it:
 
 Note that even with our helper types, the following holds:
 
-```
+```cpp
 static_assert(sizeof(MyProcessor) == 3 * sizeof(float));
 ```
 
