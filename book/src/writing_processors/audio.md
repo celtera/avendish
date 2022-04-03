@@ -183,17 +183,16 @@ struct Gain {
   } outputs;
   
   void operator()(int N) {
-    auto& in = inputs.audio.samples;
-    auto& out = outputs.audio.samples;
+    auto& in = inputs.audio;
+    auto& out = outputs.audio;
     const float gain = inputs.gain;
 
-    for (int i = 0; i < p1.channels; i++) 
+    for (int i = 0; i < in.channels; i++) 
       for (int j = 0; j < N; j++) 
         out[i][j] = gain * in[i][j];
   }
 };
 ```
-
 
 ## Further work
 We currently have the following matrix of possible forms of audio ports: 
