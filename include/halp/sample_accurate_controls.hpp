@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/controls.hpp>
+#include <boost/container/small_vector.hpp>
 #include <boost/container/flat_map.hpp>
 
 #include <map>
