@@ -30,13 +30,16 @@
 # Advanced features
 
 - [Custom UI](./advanced/ui.md)
-- [Presets](./advanced/ui.md)
-- [Logging](./advanced/logging.md)
-- [FFT](./advanced/fft.md)
+  - [Declarative layouts](./advanced/ui.layout.md)
+  - [Custom items](./advanced/ui.painting.md)
+- [Feature injection](./advanced/injection.md)
+  - [Logging](./advanced/logging.md)
+  - [FFT](./advanced/fft.md)
+- [Presets](./advanced/presets.md)
 - [Sample-accurate processing](./advanced/sample_accurate.md)
 
 # Reference
 
-- [Processing semantics](./writing_processors/processing.md)
-- [Bindings](./advanced/bindings.md)
+- [Processing semantics](./reference/processing.md)
+- [Bindings](./reference/bindings.md)
 - [Controls](./reference/controls.md)
