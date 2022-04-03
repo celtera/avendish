@@ -134,7 +134,115 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="layout-based-uis"><a class="header" href="#layout-based-uis">Layout-based UIs</a></h1>
+<p>To define a custom UI, one has to add a <code>struct ui</code> in the processor definition.</p>
+<pre><code class="language-cpp">struct MyProcessor {
+  struct ui {
+   
+  };
+};
+</code></pre>
+<p>By default, this will do nothing: we have to fill it. <code>ui</code> will be the top-level widget.
+Child widgets can be added simply by defining struct members.
+Containers are defined by adding a <code>layout()</code> function which returns an enum value, which may 
+currently be any of the following names:</p>
+<pre><code>hbox,
+vbox,
+container,
+group,
+split,
+tabs,
+grid,
+spacing,
+control,
+custom
+</code></pre>
+<p>For instance:</p>
+<pre><code class="language-cpp">struct ui
+{
+  static constexpr auto layout() { enum { hbox } d{}; return d; }
+  struct {
+    static constexpr auto layout() { enum { vbox } d{}; return d; }
+    const char* text = &quot;text&quot;;
+    decltype(&amp;ins::int_ctl) int_widget = &amp;ins::int_ctl;
+  } widgets;
+
+  struct {
+    static constexpr auto layout() { enum { spacing } d{}; return d; }
+    static constexpr auto width() { return 20; }
+    static constexpr auto height() { return 20; }
+  } a_spacing;
+
+  const char* text = &quot;text2&quot;;
+};
+</code></pre>
+<p>This defines, conceptually, the following layout:</p>
+<pre><code class="language-ascii">|-----------------------------|
+|  |  text  |                 |
+|  |        |                 |
+|  | =widg= |  &lt;20px&gt;  text2  |
+|  |        |                 |
+|  |        |                 |
+|-----------------------------|
+</code></pre>
+<h1 id="properties"><a class="header" href="#properties">Properties</a></h1>
+<h2 id="background-color"><a class="header" href="#background-color">Background color</a></h2>
+<p>Background colors can be chosen from a standardized set: for now, those are fairly abstract to allow things to work in a variety of environments.</p>
+<pre><code>darker,
+dark,
+mid,
+light,
+lighter
+</code></pre>
+<p>Setting the color is done by adding this to a layout:</p>
+<pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
+</code></pre>
+<h2 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h2>
+<p>In &quot;group&quot; or &quot;container&quot; layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
+<pre><code class="language-cpp">static constexpr auto x() { return 20; }
+static constexpr auto y() { return 20; }
+</code></pre>
+<h2 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h2>
+<p>Containers can be given an explicit (device independent) pixel size with </p>
+<pre><code class="language-cpp">static constexpr auto width() { return 100; }
+static constexpr auto height() { return 50; }
+</code></pre>
+<p>Otherwise, things will be made to fit in a best-effort way.</p>
+<h1 id="items"><a class="header" href="#items">Items</a></h1>
+<h2 id="text-labels"><a class="header" href="#text-labels">Text labels</a></h2>
+<p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient. </p>
+<h2 id="controls"><a class="header" href="#controls">Controls</a></h2>
+<p>One can add a control (either input or output) simply by adding a member pointer to it: </p>
+<pre><code class="language-cpp">struct MyProcessor {
+  struct ins {
+    halp::hslider_f32&lt;&quot;Foo&quot;&gt; foo;
+  } inputs;
+
+  struct ui
+  {
+    static constexpr auto layout() { enum { hbox } d{}; return d; }
+    const char* text = &quot;text&quot;;
+    decltype(&amp;ins::foo) int_widget = &amp;ins::foo;
+  };
+};
+</code></pre>
+<p>The syntax without helpers currently needs some repeating as C++ does not yet allow <code>auto</code> as member fields, otherwise it'd just be:</p>
+<pre><code class="language-cpp">auto int_widget = &amp;ins::foo;
+</code></pre>
+<h1 id="helpers"><a class="header" href="#helpers">Helpers</a></h1>
+<p>Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API:</p>
+<pre><code class="language-cpp">halp::label l1{
+    .text = &quot;some long foo&quot;
+  , .x = 100
+  , .y = 25
+};
+
+halp::item&lt;&amp;ins::foo&gt; widget{
+    .x = 75
+  , .y = 50
+};
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
