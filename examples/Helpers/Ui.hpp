@@ -104,7 +104,7 @@ struct Ui
       struct {
         halp_meta(layout, halp::layouts::split)
         halp_meta(name, "split")
-        halp_meta(width, 400)
+        halp_meta(width, 300)
         halp_meta(height, 200)
         struct {
             halp_meta(layout, halp::layouts::vbox)
@@ -132,7 +132,7 @@ struct Ui
         halp_meta(columns, 3)
         halp_meta(padding, 5)
 
-        halp::item<&ins::float_ctl> widget{{.scale = 0.8}};
+        halp::item<&ins::float_ctl> widget{};
 
         halp::label l1{.text = "A"};
         halp::label l2{.text = "B"};

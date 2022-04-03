@@ -11,6 +11,14 @@ struct MyProcessor
   // halp_meta(A, B) expands to static consteval auto A() { return B; }
   halp_meta(name, "Addition")
 
+  // In a perfect world one would just define attributes on the struct instead...
+  //
+  //   [[name: "Addition"]] 
+  //   struct MyProcessor { ... };
+  //
+  // or more realistically, `static constexpr auto name = "foo";` 
+  // which would be an acceptable compromise.
+
   struct
   {
     // val_port is a simple type which contains 

@@ -75,13 +75,13 @@ Each children will be separated by a split line (thus generally one would use it
 
 This will layout children items in a grid.
 
-Either of `row` and `column` properties can be defined, but not both:
+Either of `rows()` and `columns()` properties can be defined, but not both:
 ```
 static constexpr auto rows() { return 3; }
 static constexpr auto columns() { return 3; }
 ```
 
-If `columns` is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if `rows` is defined.
+If `columns()` is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if `rows()` is defined.
 
 That is, given: 
 ```cpp
@@ -137,9 +137,9 @@ struct {
 } a_tabs;
 ```
 
-# Properties
+## Properties
 
-## Background color
+### Background color
 Background colors can be chosen from a standardized set: for now, those are fairly abstract to allow things to work in a variety of environments.
 
 ```
@@ -156,7 +156,7 @@ Setting the color is done by adding this to a layout:
 static constexpr auto background() { enum { dark } d{}; return d; }
 ```
 
-## Explicit positioning
+### Explicit positioning
 
 In "group" or "container" layouts, widgets will not be positioned automatically. `x` and `y` methods can be used for that.
 
@@ -165,7 +165,7 @@ static constexpr auto x() { return 20; }
 static constexpr auto y() { return 20; }
 ```
 
-## Explicit sizing
+### Explicit sizing
 
 Containers can be given an explicit (device independent) pixel size with 
 
@@ -176,7 +176,7 @@ static constexpr auto height() { return 50; }
 
 Otherwise, things will be made to fit in a best-effort way.
 
-# Items
+## Items
 
 ## Text labels
 The simplest item is the text label: simply adding a `const char*` member is sufficient. 

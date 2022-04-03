@@ -69,20 +69,19 @@ struct custom_slider
 
     halp::transaction<double> transaction;
     double value{};
-    double rot{};
 };
 
 struct custom_anim
 {
     using item_type = custom_anim;
-    static constexpr double cx = 30., cy = 30.;
-    static constexpr double side = 40.;
-
     static constexpr double width() { return 200.; }
     static constexpr double height() { return 200.; }
 
     void paint(avnd::painter auto ctx)
     {
+      constexpr double cx = 30., cy = 30.;
+      constexpr double side = 40.;
+
       ctx.translate(100, 100);
       ctx.rotate(rot += 0.1);
       for(int i = 0; i < 10; i++)
@@ -92,7 +91,7 @@ struct custom_anim
       ctx.scale(0.8, 0.8);
       ctx.begin_path();
 
-      ctx.set_stroke_color({92, 53, 102, 255});
+      ctx.set_stroke_color({.r = 92, .g = 53, .b = 102, .a = 255});
       ctx.set_fill_color({173, 127, 168, 255});
       ctx.draw_rect(-side / 2., -side / 2., side, side);
       ctx.fill();
