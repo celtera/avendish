@@ -1264,7 +1264,22 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
   halp::basic_callback&lt;void(float)&gt; call;
 } overload;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="midi-io"><a class="header" href="#midi-io">MIDI I/O</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="initialization"><a class="header" href="#initialization">Initialization</a></h1>
+<p>Some media systems provide a way for objects to be passed initialization arguments.</p>
+<p>Avendish supports this with a special &quot;initialize&quot; method. Ultimately, I'd like to be able to simply use C++ constructors for this, but haven't managed to yet.</p>
+<p>Here's an example: </p>
+<pre><code class="language-cpp">struct MyProcessor {
+void initialize(float a, std::string_view b)
+{
+  std::cout &lt;&lt; a &lt;&lt; &quot; ; &quot; &lt;&lt; b &lt;&lt; std::endl;
+}
+...
+};
+</code></pre>
+<p>Max and Pd will report an error if the object is not initialized correctly, e.g. like this: </p>
+<pre><code>[my_processor 1.0 foo]
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="midi-io"><a class="header" href="#midi-io">MIDI I/O</a></h1>
 <p>Some media systems may have a concept of MIDI input / output. Note that currently this is only implemented for DAW-ish bindings: ossia, VST3, CLAP... Max and Pd do not support it yet (but if there is a standard for passing MIDI messages between objects there I'd love to hear about it !).</p>
 <p>There are a few ways to specify MIDI ports.</p>
 <p>Here is how one specifies unsafe MIDI ports:</p>
