@@ -33,6 +33,8 @@
 - [Custom UI](./advanced/ui.md)
   - [Declarative layouts](./advanced/ui.layout.md)
   - [Custom items](./advanced/ui.painting.md)
+  - [Message bus](./advanced/ui.messages.md)
+    - [Example](./advanced/ui.messages.example.md)
 - [Feature injection](./advanced/injection.md)
   - [Logging](./advanced/logging.md)
   - [FFT](./advanced/fft.md)
