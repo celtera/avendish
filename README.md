@@ -12,6 +12,8 @@ A zero-cost, compile-time, reflection-based, pure C++ solution to the quadratic 
  * N algorithms.
  * M x N binding code required.
 
+Read the [documentation](https://celtera.github.io/avendish) to get started !
+
 The [original blog post](https://ossia.io/posts/reflection/) contains the motivation and some implementation details.
 
 ## Features
@@ -21,14 +23,22 @@ which showcases how with what little reflection modern C++ provides, it is possi
 
  - Automatically generate Python bindings for a C++ class (by leveraging [pybind11](https://github.com/pybind/pybind11)).
  - Automatically generate OSC / OSCQuery bindings for a C++ class (through [libossia](https://github.com/ossia/libossia)).
- - Automatically generate small user interfaces for C++ classes like e.g. Unity3D does (an example is provided with Qt).
- - Automatically generate audio plug-ins in a legacy API as an example.
+ - Automatically generate small user interfaces for C++ classes like e.g. Unity3D does (an example is provided with Qt and Nuklear).
+ - Automatically generate audio plug-ins in a legacy API as an example, as well as in VST3 and Clap formats.
  - Automatically generate Max/MSP and PureData objects.
+
+And some more advanced features:
+
+ - Graphics API-agnostic canvas-like UI widgets for custom user interfaces, and [advanced layouts](https://ossia.io/posts/minimum-viable/) (splits, tabs, grids...). 
+ - Automatic serialization / deserialization of messages for thread-safe messages busses between UI and audio thread (or even over the network).
+ - Sample-accurate controls if the host supports that.
+ - Handles audio, image or even purely async message-based processors: it's not only for making audio plug-ins :-).
+ - Automatic polyphony when it is meaningful with optimized storage for the inputs.
 
 Unlike many other reflection solutions in C++, this library has two properties:
 
  - It is entirely non-intrusive. The effects do not even need to include a single header. All the types are introspected from the content of the provided classes ; this library embraces protocols / traits / typeclass-based design mainly thanks to C++ concepts.
-   - This is in order to enable at a later point easy targetting of bare-metal platforms.
+   - This is in order to enable at a later point easy targeting of bare-metal platforms.
    - This also ensure that implementations are not dependent of any "reflection" library, only of whatever facilities C++ compilers provide. This is done to provide a perfect separation of concern and make sure that the algorithms will still be easily useable in 20 years, like e.g. when done in Faust.
    - No macro are required to declare the types, etc. No specific function call is necessary. Just write the raw algorithm with its inputs and outputs, optionally add some metadata to make things nicer for the end-user in environments that support them (e.g. value ranges, etc) and you're done.
 
@@ -198,12 +208,15 @@ If a mono processor is written, the library will wrap it automatically in the ca
  - This was applied back on the [API](https://github.com/jcelerier/score-simple-api-2/) for [ossia](https://ossia.io) plug-ins.
  - And here we are :-)
 
-# Future directions
+# Future directions (todo!)
 
  - Support `std::optional<T>` as a way to indicate message-like output.
  - Implement concepts for GPU-based processing.
- - Have a basic UI story.
  - WebAudio backend.
+ - TouchDesigner backend.
+ - Krita backend.
+ - frei0r backend.
+ - VCVRack backend.
  - WASM component backend: https://radu-matei.com/blog/intro-wasm-components/
  - Port many effects :-)
    * https://github.com/pcastine-lp/LitterPower
@@ -225,11 +238,11 @@ If a mono processor is written, the library will wrap it automatically in the ca
    * https://github.com/d3cod3/ofxVisualProgramming
    * etc...
 
-# Future directions (done!)
+## Future directions (done!)
 
  - Continue porting the concepts developed in https://github.com/jcelerier/score-simple-api-2/ ; in particular for CPU-based image processing. Extend to e.g. Krita plug-ins.
  - Improve the handling of callbacks.
-
+ - Have a basic UI story.
 
 # Licensing
 
