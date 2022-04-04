@@ -14,7 +14,6 @@
 
 #include <cstdio>
 
-
 namespace examples::helpers
 {
 struct custom_slider
@@ -79,7 +78,6 @@ struct custom_anim
 
     void paint(avnd::painter auto ctx)
     {
-      constexpr double cx = 30., cy = 30.;
       constexpr double side = 40.;
 
       ctx.translate(100, 100);
@@ -103,9 +101,11 @@ struct custom_anim
 
     double rot{};
 };
+
 /**
  * Example to test UI.
  */
+
 struct AdvancedUi
 {
   static consteval auto name() { return "ImageUI example"; }

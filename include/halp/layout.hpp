@@ -95,6 +95,15 @@ struct custom_item : custom_item_base<T>
   decltype(F) control = F;
 };
 
+template <typename T>
+struct custom_actions_item : T
+{
+  halp_meta(layout, halp::layouts::custom)
+
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+};
 
 template <typename M, typename L, typename T>
 struct prop

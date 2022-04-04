@@ -92,8 +92,5 @@ static_assert(avnd::logger<halp::basic_logger>);
 static_assert(avnd::logger<halp::no_logger>);
 
 template <typename C>
-concept has_logger = requires
-{
-  { typename C::logger_type { } } -> avnd::logger;
-};
+concept has_logger = avnd::logger<typename C::logger_type>;
 }
