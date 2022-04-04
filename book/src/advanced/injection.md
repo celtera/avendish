@@ -15,7 +15,7 @@ template<typename Conf>
 requires (halp::has_fft_1d<Conf, double> && halp::has_logger<Conf>)
 struct MyProcessor {
   using logger = typename Conf::logger_type;
-  using fft_type = typename C::template fft_type<double>;
+  using fft_type = typename Conf::template fft_type<double>;
 };
 ```
 
