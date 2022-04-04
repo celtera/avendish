@@ -2338,7 +2338,7 @@ struct MessageBusUi
 requires (halp::has_fft_1d&lt;Conf, double&gt; &amp;&amp; halp::has_logger&lt;Conf&gt;)
 struct MyProcessor {
   using logger = typename Conf::logger_type;
-  using fft_type = typename C::template fft_type&lt;double&gt;;
+  using fft_type = typename Conf::template fft_type&lt;double&gt;;
 };
 </code></pre>
 <p>This means that for instance, a processor can log to the Pd or Max console through <code>post(...)</code>, to stdout on Python, etc. and that they are relieved of the need to go look for an FFT algorithm.</p>
