@@ -35,7 +35,7 @@ auto setStr(TChar (&field)[M], std::u16string_view text)
 template <std::size_t M>
 auto setStr(TChar (&field)[M], std::string_view text)
 {
-  avnd::utf8_to_utf16(text.begin(), text.end(), field);
+  avnd::utf8_to_utf16(text.data(), text.data() + text.size(), field);
 }
 
 inline Steinberg::tresult isProjectState(Steinberg::IBStream* state)

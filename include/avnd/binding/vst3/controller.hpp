@@ -86,11 +86,16 @@ public:
           setStr(info.shortTitle, C::name());
           if constexpr (requires { C::units(); })
             setStr(info.shortTitle, C::units());
-          if constexpr (requires { avnd::get_range<C>().init; })
-            info.defaultNormalizedValue
-                = avnd::map_control_to_01<C>(avnd::get_range<C>().init);
-          if constexpr (requires { avnd::get_range<C>().step; })
-            info.stepCount = avnd::get_range<C>().step;
+          if constexpr (requires { avnd::get_range<C>(); })
+          {
+            constexpr auto range = avnd::get_range<C>();
+            if constexpr (requires { range.init; })
+              info.defaultNormalizedValue
+                  = avnd::map_control_to_01<C>(range.init);
+
+            if constexpr (requires { range.step; })
+              info.stepCount = avnd::get_range<C>().step;
+           }
         });
 
     info.unitId = 1;
