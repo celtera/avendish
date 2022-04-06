@@ -207,7 +207,7 @@ requires(
     this->actual_runtime_outputs = 0;
     // Initialize the local array with the default values
     int i = 0;
-    auto& inputs = avnd::get_inputs(processor);
+    auto& inputs = avnd::get_inputs(eff);
     in_refl::for_all(
         inputs,
         [this, &i]<avnd::audio_port P>(P& p)

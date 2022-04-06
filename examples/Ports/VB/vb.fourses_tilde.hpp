@@ -17,6 +17,7 @@
 
 #include <avnd/concepts/message.hpp>
 #include <cmath>
+#include <algorithm>
 
 namespace vb_ports
 {

@@ -158,13 +158,13 @@ template <typename T>
 }
 
 template <typename T>
-/* constexpr */ auto get_int_version()
+/* constexpr */ int get_int_version()
 {
-  if constexpr (requires { (int)T::version(); })
+  if constexpr (requires { { T::version() } -> std::integral; })
   {
     return T::version();
   }
-  else if constexpr (requires { (int)std::declval<T>().version; })
+  else if constexpr (requires { { std::declval<T>().version } -> std::integral; })
   {
     return T::version;
   }

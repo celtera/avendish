@@ -23,7 +23,7 @@ concept fft_1d = requires(T t)
   t.reset(128);
 
   // Processes the 1D fft on a real buffer yields complex numbers
-  { t.execute((typename T::real_type*){}, std::size_t(0)) } -> std::convertible_to<typename T::complex_type*>;
+  { t.execute(std::add_pointer_t<typename T::real_type>{}, std::size_t(0)) } -> std::convertible_to<typename T::complex_type*>;
 
   // Which may need a normalization step
   { t.normalization(128) } -> std::floating_point;
@@ -41,7 +41,7 @@ concept rfft_1d = requires(T t)
   t.reset(128);
 
   // Processes the 1D fft on a complex buffer yields real numbers
-  { t.execute((typename T::complex_type*){}, std::size_t(0)) } -> std::convertible_to<typename T::real_type*>;
+  { t.execute(std::add_pointer_t<typename T::complex_type>{}, std::size_t(0)) } -> std::convertible_to<typename T::real_type*>;
 
   // Which may need a normalization step
   { t.normalization(128) } -> std::floating_point;

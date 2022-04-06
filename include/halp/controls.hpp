@@ -175,8 +175,8 @@ template <static_string lit, irange setup = default_irange<int>>
 using knob_i32 = halp::knob_t<int, lit, setup>;
 
 
-template <static_string lit, double min, double max, double init>
-using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
+// template <static_string lit, long double min, long double max, long double init>
+// using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
 
 /// Toggle ///
 
