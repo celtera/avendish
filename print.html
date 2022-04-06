@@ -1813,64 +1813,11 @@ struct {
 #include &lt;avnd/concepts/parameter.hpp&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
+#include &lt;halp/controls_fmt.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
-#include &lt;halp/sample_accurate_controls.hpp&gt;
-/*
-#include &lt;ossia/detail/logger.hpp&gt;
-#include &lt;ossia/network/value/format_value.hpp&gt;
-*/
 #include &lt;halp/sample_accurate_controls.hpp&gt;
 #include &lt;boost/pfr.hpp&gt;
 #include &lt;cmath&gt;
-#include &lt;fmt/format.h&gt;
-
-template &lt;typename T&gt;
-struct fmt::formatter&lt;halp::combo_pair&lt;T&gt;&gt;
-{
-  template &lt;typename ParseContext&gt;
-  constexpr auto parse(ParseContext&amp; ctx)
-  {
-    return ctx.begin();
-  }
-
-  template &lt;typename FormatContext&gt;
-  auto format(const halp::combo_pair&lt;T&gt;&amp; number, FormatContext&amp; ctx)
-  {
-    return fmt::format_to(ctx.out(), &quot;combo: {}-&gt;{}&quot;, number.first, number.second);
-  }
-};
-
-template &lt;typename T&gt;
-struct fmt::formatter&lt;halp::xy_type&lt;T&gt;&gt;
-{
-  template &lt;typename ParseContext&gt;
-  constexpr auto parse(ParseContext&amp; ctx)
-  {
-    return ctx.begin();
-  }
-
-  template &lt;typename FormatContext&gt;
-  auto format(const halp::xy_type&lt;T&gt;&amp; number, FormatContext&amp; ctx)
-  {
-    return fmt::format_to(ctx.out(), &quot;xy: {}, {}&quot;, number.x, number.y);
-  }
-};
-template &lt;&gt;
-struct fmt::formatter&lt;halp::color_type&gt;
-{
-  template &lt;typename ParseContext&gt;
-  constexpr auto parse(ParseContext&amp; ctx)
-  {
-    return ctx.begin();
-  }
-
-  template &lt;typename FormatContext&gt;
-  auto format(const halp::color_type&amp; number, FormatContext&amp; ctx)
-  {
-    return fmt::format_to(
-        ctx.out(), &quot;rgba: {}, {}, {}, {}&quot;, number.r, number.g, number.b, number.a);
-  }
-};
 
 namespace examples
 {
