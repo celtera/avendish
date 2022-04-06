@@ -52,8 +52,7 @@ jobs:
         shell: bash
         run: |
           cd build-debug
-
-          cmake --build . --target test
+          cmake --build . --target RUN_TESTS
 
       - name: Build release
         shell: bash
@@ -78,5 +77,4 @@ jobs:
         shell: bash
         run: |
           cd build-release
-
-          cmake --build . --target test
+          cmake --build . --target RUN_TESTS
