@@ -99,7 +99,8 @@ struct oscquery_mapper
   {
     param.set_value_type(ossia::val_type::STRING);
 
-    static constexpr const auto choices = Field::choices();
+    static constexpr const auto choices = avnd::get_enum_choices<Field>();
+    static constexpr const auto choices_count = choices.size();
     ossia::domain_base<std::string> dom{{choices.begin(), choices.end()}};
     // Set-up the metadata
     param.set_value(dom.values[(int)avnd::get_range<Field>().init]);
@@ -113,7 +114,7 @@ struct oscquery_mapper
         {
           if (const int* iindex = val.target<int>())
           {
-            if (*iindex >= 0 && *iindex < Field::choices().size())
+            if (*iindex >= 0 && *iindex < choices_count)
             {
               field.value = static_cast<decltype(field.value)>(*iindex);
             }
@@ -121,7 +122,7 @@ struct oscquery_mapper
           else if (const float* findex = val.target<float>())
           {
             int index = *findex;
-            if (index >= 0 && index < Field::choices().size())
+            if (index >= 0 && index < choices_count)
             {
               field.value = static_cast<decltype(field.value)>(index);
             }

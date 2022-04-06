@@ -4,6 +4,7 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/widechar.hpp>
+#include <avnd/introspection/widgets.hpp>
 
 #include <cstring>
 
@@ -53,9 +54,10 @@ bool display_control(const T& value, char* cstr, std::size_t len)
     }
     else if constexpr (std::is_enum_v<val_type>)
     {
+      static constexpr auto choices = avnd::get_enum_choices<C>();
       const int enum_index = static_cast<int>(value);
-      if (enum_index >= 0 && enum_index < C::choices().size())
-        *fmt::format_to_n(cstr, len, "{}", C::choices()[enum_index]).out = '\0';
+      if (enum_index >= 0 && enum_index < choices.size())
+        *fmt::format_to_n(cstr, len, "{}", choices[enum_index]).out = '\0';
       else
         *fmt::format_to_n(cstr, len, "{}", enum_index).out = '\0';
       return true;
@@ -93,9 +95,10 @@ bool display_control(const T& value, char* cstr, std::size_t len)
     }
     else if constexpr (std::is_enum_v<val_type>)
     {
+      static constexpr auto choices = avnd::get_enum_choices<C>();
       const int enum_index = static_cast<int>(value);
-      if (enum_index >= 0 && enum_index < C::choices().size())
-        snprintf(cstr, 16, "%s", C::choices()[enum_index].data());
+      if (enum_index >= 0 && enum_index < choices.size())
+        snprintf(cstr, 16, "%s", choices[enum_index].data());
       else
         snprintf(cstr, 16, "%d", enum_index);
       return true;

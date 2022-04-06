@@ -389,7 +389,7 @@ struct SimpleAudioEffect : clap_plugin
           if constexpr (avnd::enum_parameter<C>)
           {
             info->min_value = 0;
-            info->max_value = C::choices().size() - 1;
+            info->max_value = avnd::get_enum_choices_count<C>() - 1;
             info->flags |= CLAP_PARAM_IS_STEPPED;
           }
           else

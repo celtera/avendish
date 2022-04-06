@@ -155,7 +155,7 @@ struct setup_value_port
   template <avnd::enum_parameter T>
   ossia::domain range_to_domain()
   {
-    constexpr auto dom = T::choices();
+    constexpr auto dom = avnd::get_enum_choices<T>();
     ossia::domain_base<std::string> d;
     d.values.assign(std::begin(dom), std::end(dom));
     return d;

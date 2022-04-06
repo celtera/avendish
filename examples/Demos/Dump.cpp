@@ -231,7 +231,7 @@ void print_parameters()
             }
             else if constexpr(avnd::enum_parameter<type>)
             {
-              fmt::print("   - Choices: {}\n", type::choices());
+              fmt::print("   - Choices: {}\n", avnd::get_enum_choices<type>());
             }
             else
             {

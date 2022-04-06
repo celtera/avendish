@@ -61,7 +61,7 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  return double(std::round(v * (T::choices().size() - 1)));
+  return double(std::round(v * (avnd::get_enum_choices_count<T>() - 1)));
 }
 
 template <typename T>
@@ -125,8 +125,8 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
-  static_assert(T::choices().size() > 0);
-  return ((value + 0.5) / T::choices().size());
+  static_assert(avnd::get_enum_choices_count<T>() > 0);
+  return ((value + 0.5) / avnd::get_enum_choices_count<T>());
 }
 
 template <typename T>

@@ -30,6 +30,8 @@
 
 # Advanced features
 
+- [Port data types](./advanced/port_types.md)
+  - [Example](./advanced/port_types.example.md)
 - [Custom UI](./advanced/ui.md)
   - [Declarative layouts](./advanced/ui.layout.md)
   - [Custom items](./advanced/ui.painting.md)
@@ -41,6 +43,7 @@
 - [Presets](./advanced/presets.md)
 - [Sample-accurate processing](./advanced/sample_accurate.md)
   - [Example](./advanced/sample_accurate.example.md)
+- [Channel mimicking](./advanced/channel_mimicking.md)
 - [CMake configuration](./advanced/cmake.md)
 
 # Reference

@@ -11,10 +11,8 @@
 namespace avnd
 {
 template <typename Field>
-concept enum_ish_parameter = avnd::enum_parameter<Field> || requires
-{
-  Field::choices();
-} ||(avnd::has_range<Field>&& requires { avnd::get_range<Field>().values[0]; });
+concept enum_ish_parameter = avnd::enum_parameter<Field> ||
+        (avnd::has_range<Field>&& requires { avnd::get_range<Field>().values[0]; });
 }
 
 namespace oscr

@@ -40,7 +40,7 @@ template <avnd::enum_parameter T>
 static constexpr auto map_control_from_double(std::floating_point auto v)
 {
   constexpr auto min_val = 0;
-  constexpr auto max_val = T::choices().size() - 1;
+  constexpr auto max_val = avnd::get_enum_choices_count<T>() - 1;
   int res = std::round(v);
   res = res < min_val ? min_val : res;
   res = res > max_val ? max_val : res;
@@ -82,7 +82,7 @@ static constexpr auto map_control_to_double(const auto& value)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_to_double(const auto& value)
 {
-  static_assert(T::choices().size() > 0);
+  static_assert(avnd::get_enum_choices_count<T>() > 0);
   return (double)static_cast<int>(value);
 }
 

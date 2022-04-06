@@ -551,43 +551,31 @@ using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 
 #define HALP_STRING_LITERAL_ARRAY(...) HALP_FOREACH(HALP_COMMA_STRINGIFY, __VA_ARGS__)
 
-#define halp__enum(Name, default_v, ...)                         \
-  struct                                                         \
-  {                                                              \
-    enum enum_type                                               \
-    {                                                            \
-      __VA_ARGS__                                                \
-    } value;                                                     \
-                                                                 \
-    enum widget                                                  \
-    {                                                            \
-      enumeration,                                               \
-      list,                                                      \
-      combobox                                                   \
-    };                                                           \
-                                                                 \
-    static clang_buggy_consteval                                 \
-        std::array<std::string_view, HALP_NUM_ARGS(__VA_ARGS__)> \
-        choices()                                                \
-    {                                                            \
-      return {HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};                \
-    }                                                            \
-                                                                 \
-    static clang_buggy_consteval auto name() { return Name; }    \
-    static clang_buggy_consteval auto range()                    \
-    {                                                            \
-      struct                                                     \
-      {                                                          \
-        enum_type init = default_v;                              \
-      } ctl;                                                     \
-      return ctl;                                                \
-    }                                                            \
-                                                                 \
-    operator enum_type&() noexcept { return value; }             \
-    operator enum_type() const noexcept { return value; }        \
-    auto& operator=(enum_type t) noexcept                        \
-    {                                                            \
-      value = t;                                                 \
-      return *this;                                              \
-    }                                                            \
+#define halp__enum(Name, default_v, ...)                                   \
+  struct                                                                   \
+  {                                                                        \
+    static clang_buggy_consteval auto name() { return Name; }              \
+    enum enum_type { __VA_ARGS__  } value;                                 \
+                                                                           \
+    enum widget                                                            \
+    {                                                                      \
+      enumeration,                                                         \
+      list,                                                                \
+      combobox                                                             \
+    };                                                                     \
+                                                                           \
+    struct range                                                           \
+    {                                                                      \
+      std::string_view values[HALP_NUM_ARGS(__VA_ARGS__)]                  \
+         {HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};                         \
+      enum_type init = default_v;                                          \
+    };                                                                     \
+                                                                           \
+    operator enum_type&() noexcept { return value; }                       \
+    operator enum_type() const noexcept { return value; }                  \
+    auto& operator=(enum_type t) noexcept                                  \
+    {                                                                      \
+      value = t;                                                           \
+      return *this;                                                        \
+    }                                                                      \
   }

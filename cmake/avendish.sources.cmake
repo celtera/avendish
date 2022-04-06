@@ -155,8 +155,8 @@ function(avnd_target_setup AVND_FX_TARGET)
 
   if(UNIX AND NOT APPLE)
     target_link_libraries(${AVND_FX_TARGET} PRIVATE
-      -static-libgcc
-      -static-libstdc++
+   #   -static-libgcc
+   #   -static-libstdc++
       -Wl,--gc-sections
     )
   endif()

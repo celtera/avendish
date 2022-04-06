@@ -35,8 +35,8 @@ struct enum_control
 
     // Concat enumerator texts
     std::string enumerators;
-    enumerators.reserve(16 * C::choices().size());
-    for (std::string_view e : C::choices())
+    enumerators.reserve(16 * avnd::get_enum_choices_count<C>());
+    for (std::string_view e : avnd::get_enum_choices<C>())
     {
       enumerators += '"';
       enumerators += e;
