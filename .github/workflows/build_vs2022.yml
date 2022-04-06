@@ -77,4 +77,4 @@ jobs:
         shell: bash
         run: |
           cd build-release
-          cmake --build . --target RUN_TESTS
+          cmake --build . --config Release --target RUN_TESTS
