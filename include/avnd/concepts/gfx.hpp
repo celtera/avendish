@@ -26,23 +26,31 @@ concept cpu_texture_port = requires(T t)
 &&cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
 
 template <typename T>
-concept gpu_texture = requires(T t)
-{
-  t.handle;
-  t.width;
-  t.height;
-  t.format;
+concept sampler_port = requires(T t)
+{ T::sampler(); };
+
+template <typename T>
+concept image_port = requires(T t)
+{ T::image(); };
+
+template <typename T>
+concept attachment_port = requires {
+  T::attachment();
 };
 
 template <typename T>
-concept gpu_texture_port = requires(T t)
-{
-  t.texture;
-}
-&&gpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
+concept texture_port =
+   cpu_texture_port<T>
+|| sampler_port<T>
+|| attachment_port<T>
+|| image_port<T>
+;
+
 
 template <typename T>
-concept texture_port = cpu_texture_port<T> || gpu_texture_port<T>;
+concept uniform_port = requires {
+  T::uniform();
+};
 }
 
 /*

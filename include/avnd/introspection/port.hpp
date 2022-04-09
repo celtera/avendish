@@ -73,9 +73,24 @@ template <typename T>
 using cpu_texture_port_introspection = predicate_introspection<T, is_cpu_texture_port_t>;
 
 template <typename Field>
-using is_gpu_texture_port_t = boost::mp11::mp_bool<gpu_texture_port<Field>>;
+using is_gpu_sampler_port_t = boost::mp11::mp_bool<sampler_port<Field>>;
 template <typename T>
-using gpu_texture_port_introspection = predicate_introspection<T, is_gpu_texture_port_t>;
+using gpu_sampler_port_introspection = predicate_introspection<T, is_gpu_sampler_port_t>;
+
+template <typename Field>
+using is_gpu_image_port_t = boost::mp11::mp_bool<image_port<Field>>;
+template <typename T>
+using gpu_image_port_introspection = predicate_introspection<T, is_gpu_image_port_t>;
+
+template <typename Field>
+using is_gpu_attachment_port_t = boost::mp11::mp_bool<attachment_port<Field>>;
+template <typename T>
+using gpu_attachment_port_introspection = predicate_introspection<T, is_gpu_attachment_port_t>;
+
+template <typename Field>
+using is_gpu_uniform_port_t = boost::mp11::mp_bool<uniform_port<Field>>;
+template <typename T>
+using gpu_uniform_port_introspection = predicate_introspection<T, is_gpu_uniform_port_t>;
 
 template <typename Field>
 using is_audio_port_t = boost::mp11::mp_bool<audio_port<Field>>;

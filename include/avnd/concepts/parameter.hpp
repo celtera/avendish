@@ -58,19 +58,23 @@ concept string_parameter = requires(T t)
 };
 
 template <typename T>
-concept xy_parameter = requires(T t)
+concept xy_value = requires(T t)
 {
-  t.value.x;
-  t.value.y;
+  t.x;
+  t.y;
 };
+template <typename T>
+concept xy_parameter = xy_value<decltype(T::value)>;
 
 template <typename T>
-concept rgb_parameter = requires(T t)
+concept rgb_value = requires(T t)
 {
-  t.value.r;
-  t.value.g;
-  t.value.b;
+  t.r;
+  t.g;
+  t.b;
 };
+template <typename T>
+concept rgb_parameter = rgb_value<decltype(T::value)>;
 
 template <typename C>
 concept parameter_with_full_range = requires

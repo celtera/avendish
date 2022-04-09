@@ -9,6 +9,8 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 
+#include <ranges>
+
 namespace oscr
 {
 
@@ -40,6 +42,54 @@ ossia::value to_ossia_value(T v)
     static_assert(std::is_void_v<T>, "unsupported case");
     return ossia::value{};
   }
+}
+
+template <typename T, std::size_t N>
+ossia::value to_ossia_value(const T (&v)[N])
+{
+  if constexpr(std::is_floating_point_v<T>)
+  {
+    if constexpr (N == 2)
+    {
+      auto [x, y] = v;
+      return ossia::vec2f{x, y};
+    }
+    else if constexpr (N == 3)
+    {
+      auto [x, y, z] = v;
+      return ossia::vec3f{x, y, z};
+    }
+    else if constexpr (N == 4)
+    {
+      auto [x, y, z, w] = v;
+      return ossia::vec4f{x, y, z, w};
+    }
+    else
+    {
+      return std::vector<ossia::value>(std::begin(v), std::end(v));
+    }
+  }
+  else
+  {
+    return std::vector<ossia::value>(std::begin(v), std::end(v));
+  }
+}
+
+template <typename T, std::size_t N>
+ossia::value to_ossia_value(const std::array<T, N>& v)
+{
+  const auto& [elem] = v;
+  return to_ossia_value(elem);
+}
+
+template <std::ranges::input_range T>
+ossia::value to_ossia_value(const T& v)
+{
+  // C++23: ranges::to (thanks cor3ntin!)
+  std::vector<ossia::value> vec;
+  for(auto& e : v)
+    vec.push_back(to_ossia_value(std::move(e)));
+  return vec;
 }
 
 ossia::value to_ossia_value(std::integral auto v)

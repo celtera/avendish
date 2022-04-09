@@ -71,8 +71,14 @@ struct cpu_texture_output_introspection
 };
 
 template <typename T>
-struct gpu_texture_output_introspection
-    : gpu_texture_port_introspection<typename outputs_type<T>::type>
+struct gpu_attachment_introspection
+    : gpu_attachment_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct gpu_image_output_introspection
+        : gpu_image_port_introspection<typename outputs_type<T>::type>
 {
 };
 
