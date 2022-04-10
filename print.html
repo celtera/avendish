@@ -3088,6 +3088,8 @@ in order to define API-independent GPU-based objects.</p>
 in order to preserve independence of the written nodes from the underlyling API: stating that one needs to allocate and upload a buffer prior to executing 
 a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code 
 should be defined in terms of its absolute minimal requirements in order to enable it to work on the widest range of systems possible.</p>
+<p>Just like we have done so far, we provide &quot;helper types&quot; which are entirely optional but can reduce wrist strain :-)
+Bindings have zero dependency on any of the helper types and namespaces (<code>halp</code>, <code>gpp</code>) shown here -- everything depends on the shape of things.</p>
 <h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
 <ul>
 <li>We assume a specific shader language (Vulkan-compatible GLSL 4.5), any ideas to improve this are welcome.</li>
