@@ -23,18 +23,19 @@ which showcases how with what little reflection modern C++ provides, it is possi
 
  - Automatically generate Python bindings for a C++ class (by leveraging [pybind11](https://github.com/pybind/pybind11)).
  - Automatically generate OSC / OSCQuery bindings for a C++ class (through [libossia](https://github.com/ossia/libossia)).
- - Automatically generate small user interfaces for C++ classes like e.g. Unity3D does (an example is provided with Qt and Nuklear).
+ - Automatically generate [user interfaces](https://celtera.github.io/avendish/advanced/ui.html) for C++ classes like e.g. Unity3D does (an example is provided with Qt and Nuklear).
  - Automatically generate audio plug-ins in a legacy API as an example, as well as in VST3 and Clap formats.
  - Automatically generate Max/MSP and PureData objects.
+ - Automatically generate [GPU draw and compute pipelines](https://celtera.github.io/avendish/gpu/draw.html) (for now only supported in the [ossia/score](https://github.com/ossia/score) bindings with the Qt RHI) to create GPU-based media processors with the same syntax.
 
 And some more advanced features:
 
- - Graphics API-agnostic canvas-like UI widgets for custom user interfaces, and [advanced layouts](https://ossia.io/posts/minimum-viable/) (splits, tabs, grids...). 
- - Automatic serialization / deserialization of messages for thread-safe messages busses between UI and audio thread (or even over the network).
- - Sample-accurate controls if the host supports that.
- - Handles audio, image or even purely async message-based processors: it's not only for making audio plug-ins :-).
- - Automatic polyphony when it is meaningful with optimized storage for the inputs.
-
+ - Graphics API-agnostic [canvas-like UI widgets](https://celtera.github.io/avendish/advanced/ui.painting.html) for custom user interfaces, and [advanced layouts](https://celtera.github.io/avendish/advanced/ui.layout.html) (splits, tabs, grids...). 
+ - Automatic serialization / deserialization of messages for thread-safe [messages busses between UI and audio thread](https://celtera.github.io/avendish/advanced/ui.messages.html) (or even over the network).
+ - [Sample-accurate controls](https://celtera.github.io/avendish/advanced/sample_accurate.html) if the host supports that.
+ - Handles [audio](https://celtera.github.io/avendish/writing_processors/audio.html), [image](https://celtera.github.io/avendish/writing_processors/images.html) or even purely async [message-based](https://celtera.github.io/avendish/writing_processors/messages.html) processors: it's not only for making audio plug-ins :-).
+ - [Automatic polyphony](https://celtera.github.io/avendish/writing_processors/audio.polyphonic.html) when it is meaningful with optimized storage for the inputs.
+ - Support for injecting features at compile time such as [FFT](https://celtera.github.io/avendish/advanced/fft.html) implementations.
 Unlike many other reflection solutions in C++, this library has two properties:
 
  - It is entirely non-intrusive. The effects do not even need to include a single header. All the types are introspected from the content of the provided classes ; this library embraces protocols / traits / typeclass-based design mainly thanks to C++ concepts.
@@ -211,38 +212,20 @@ If a mono processor is written, the library will wrap it automatically in the ca
 # Future directions (todo!)
 
  - Support `std::optional<T>` as a way to indicate message-like output.
- - Implement concepts for GPU-based processing.
  - WebAudio backend.
  - TouchDesigner backend.
  - Krita backend.
  - frei0r backend.
  - VCVRack backend.
  - WASM component backend: https://radu-matei.com/blog/intro-wasm-components/
- - Port many effects :-)
-   * https://github.com/pcastine-lp/LitterPower
-   * https://github.com/MTG/essentia/tree/master/src/algorithms
-   * https://github.com/cycfi/q/tree/master/q_lib/include/q
-   * https://github.com/VCVRack/Fundamental/tree/v1/src
-   * https://github.com/BespokeSynth/BespokeSynth/tree/main/Source
-   * https://github.com/LMMS/lmms/tree/master/plugins
-   * https://github.com/leomccormack/Spatial_Audio_Framework
-   * https://github.com/micknoise/Maximilian
-   * https://github.com/jamoma
-   * https://github.com/v7b1/vb-objects
-   * https://github.com/thestk/stk
-   * https://github.com/TonicAudio/ofxTonic
-   * https://github.com/mhamilt/AudioEffectsSuite
-   * https://github.com/mohabouje/eDSP
-   * https://github.com/LabSound/LabSound
-   * https://github.com/porres/pd-else
-   * https://github.com/d3cod3/ofxVisualProgramming
-   * etc...
+ - Port many effects, see the issues :-) 
 
 ## Future directions (done!)
 
  - Continue porting the concepts developed in https://github.com/jcelerier/score-simple-api-2/ ; in particular for CPU-based image processing. Extend to e.g. Krita plug-ins.
  - Improve the handling of callbacks.
  - Have a basic UI story.
+ - Implement concepts for GPU-based processing.
 
 # Licensing
 
