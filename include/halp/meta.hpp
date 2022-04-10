@@ -4,3 +4,6 @@
 
 #define halp_meta(name, value) \
   static consteval auto name() { return value; }
+
+#define halp_flag(flag) enum { flag }
+#define halp_flags(...) enum { __VA_ARGS__ }

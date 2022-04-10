@@ -105,9 +105,9 @@ Here, we have duplication:
 
 - Between the outputs of the vertex and the input of the fragment - some drivers and APIs are lenient regarding errors here, others are not.
 - In the C++ side, which must have some way to tell the GPU:
-* The first attribute  will be a vec2
-* The second attribute will be a vec4
-* The texture is bound at position 1
-* etc etc.
+  * The first attribute  will be a vec2
+  * The second attribute will be a vec4
+  * The texture is bound at position 1
+  * etc etc.
 
 The idea is that we can use the same principles than saw before to define our layout through a C++ struct, and get our library to automatically generate the relevant inputs and outputs.

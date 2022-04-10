@@ -216,7 +216,7 @@ struct readback_texture
 
 
 // Define what the update() can do
-using update_action = std::variant<
+using update_action = bv2::variant<
   static_allocation, static_upload,
   dynamic_vertex_allocation, dynamic_vertex_upload, buffer_release,
   dynamic_index_allocation, dynamic_index_upload,
@@ -225,7 +225,7 @@ using update_action = std::variant<
   texture_allocation, texture_upload, texture_release,
   get_ubo_handle
 >;
-using update_handle = bv2::variant<std::monostate, buffer_handle, texture_handle, sampler_handle>;
+using update_handle = bv2::variant<bv2::monostate, buffer_handle, texture_handle, sampler_handle>;
 using co_update = gpp::generator<update_action, update_handle>;
 
 
@@ -248,7 +248,7 @@ using dispatch_action = bv2::variant<
 , buffer_awaiter, texture_awaiter
 >;
 using dispatch_handle = bv2::variant<
-  std::monostate
+  bv2::monostate
 , buffer_awaiter, texture_awaiter
 , buffer_view, texture_view
 >;

@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <gpp/meta.hpp>
+#include <halp/static_string.hpp>
 
 namespace gpp
 {

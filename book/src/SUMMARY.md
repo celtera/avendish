@@ -47,6 +47,9 @@
 
 # Writing GPU processors
 - [Draw nodes](./gpu/draw.md)
+  - [Defining a layout](./gpu/draw.layout.md)
+  - [API calls](./gpu/draw.calls.md)
+  - [Minimal pipeline](./gpu/draw.minimal.md)
 - [Compute nodes](./gpu/compute.md)
 
 <!--
