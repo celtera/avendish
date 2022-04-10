@@ -3412,7 +3412,6 @@ void f(C&amp; command) {
 </code></pre>
 <p>This allows complete independence from the graphics API, as a node only specifies exactly the allocation / update / draw calls it needs to do in the most generic possible way ; for instance, a node that only allocates and uploads a texture should be easily bindable to any graphics API on earth.</p>
 <p>An in-progress set of common commands is provided.</p>
-<p>Note also that this gives some amount of named-parameter-ness which is also a good way to reduce bugs :-)</p>
 <h2 id="coroutines"><a class="header" href="#coroutines">Coroutines</a></h2>
 <p>To allow this to work, <code>gpp::co_update</code> is a coroutine type.
 Here too, the binding code does not depend on the concrete type of the coroutine ; only that it matches a concept.</p>
@@ -3435,9 +3434,13 @@ using update_handle = std::variant&lt;std::monostate, buffer_handle, texture_han
 using co_update = gpp::generator&lt;update_action, update_handle&gt;;
 </code></pre>
 <p>Where <code>gpp::generator</code> is a type similar to <code>std::generator</code> which is not available yet in C++20 but will be in C++23.</p>
-<p>This has interesting benefits: for instance, it allows to restrict what kind of call can be done in which function.
+<h2 id="benefits-of-the-approach"><a class="header" href="#benefits-of-the-approach">Benefits of the approach</a></h2>
+<p>This has interesting benefits besides the separation of concern which is achieved: </p>
+<ol>
+<li>It allows to restrict what kind of call can be done in which function.
 For instance, the Qt RHI forbids uploading data during a draw operation: the coroutine type for <code>draw</code> does not contain 
-the update commands, which allows to enforce this at compile-time. Yay C++ :-)</p>
+the update commands, which allows to enforce this at compile-time. Yay C++ :-)</li>
+</ol>
 <p>A node which only ever uploads textures could optimize a little bit by defining instead: </p>
 <pre><code class="language-cpp">using update_action = std::variant&lt;texture_allocation, texture_upload, texture_release&gt;;
 using update_handle = std::variant&lt;std::monostate, texture_handle&gt;;
@@ -3447,6 +3450,14 @@ using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 <blockquote>
 <p>Of course, we would love this to be performed automatically as part of compiler optimizations... it seems that the science is not there yet though !</p>
 </blockquote>
+<ol start="2">
+<li>
+<p>This gives some amount of named-parameter-ness for GPU API calls which is also a good way to reduce bugs :-)</p>
+</li>
+<li>
+<p>As no &quot;library&quot; functions are called, the possibility to have ODR issues due to multiple function definitions is less likely, and can trivially be solved by wrapping the entirety of the user-provided code and command definitions in a custom namespace as the namespaces do not matter at all.</p>
+</li>
+</ol>
 <h1 id="how-does-it-work-"><a class="header" href="#how-does-it-work-">How does it work ??</a></h1>
 <p>It's very simple: the code which invokes <code>update()</code> more-or-less looks like this:</p>
 <pre><code class="language-cpp">void invoke_update()
