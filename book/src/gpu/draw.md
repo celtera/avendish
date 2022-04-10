@@ -18,7 +18,7 @@ should be defined in terms of its absolute minimal requirements in order to enab
 
 ## Limitations
 - We assume a specific shader language (Vulkan-compatible GLSL 4.5), any ideas to improve this are welcome.
-- The only binding so far is being developed done in [ossia score](https://ossia.io) on top of the Qt RHI which inspired this quite a bit.
+- The only binding so far is being developed in [ossia score](https://ossia.io) on top of the Qt RHI which inspired this quite a bit.
 
 ## Defining a primitive pipeline ontology
 
