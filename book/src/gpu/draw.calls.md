@@ -102,8 +102,6 @@ This allows complete independence from the graphics API, as a node only specifie
 
 An in-progress set of common commands is provided.
 
-Note also that this gives some amount of named-parameter-ness which is also a good way to reduce bugs :-)
-
 ## Coroutines
 
 To allow this to work, `gpp::co_update` is a coroutine type.
@@ -132,7 +130,11 @@ using co_update = gpp::generator<update_action, update_handle>;
 
 Where `gpp::generator` is a type similar to `std::generator` which is not available yet in C++20 but will be in C++23.
 
-This has interesting benefits: for instance, it allows to restrict what kind of call can be done in which function.
+## Benefits of the approach
+
+This has interesting benefits besides the separation of concern which is achieved: 
+
+1. It allows to restrict what kind of call can be done in which function.
 For instance, the Qt RHI forbids uploading data during a draw operation: the coroutine type for `draw` does not contain 
 the update commands, which allows to enforce this at compile-time. Yay C++ :-)
 
@@ -146,6 +148,10 @@ using my_co_update = gpp::generator<update_action, update_handle>;
 ```
 
 > Of course, we would love this to be performed automatically as part of compiler optimizations... it seems that the science is not there yet though !
+
+2. This gives some amount of named-parameter-ness for GPU API calls which is also a good way to reduce bugs :-)
+
+3. As no "library" functions are called, the possibility to have ODR issues due to multiple function definitions is less likely, and can trivially be solved by wrapping the entirety of the user-provided code and command definitions in a custom namespace as the namespaces do not matter at all.
 
 # How does it work ??
 
