@@ -5,7 +5,7 @@ In general, programming for the GPU involves some level of calling into a graphi
 Like every non-declarative code, this has the sad side-effect of tying you to said library ; it's pretty hard to migrate to, say, Qt's RHI to pure OpenGL or BGFX.
 Here, we propose a method that aims to keep the algorithms reusable by having them state their needs without making any API calls.
 
-The API comes with three optional methods that can be reimplemented to control behaviour for now: 
+The API comes with three optional methods that can be implemented in your processor to control behaviour for now: 
 
 ```cpp
 // Allocates ressources and sends data from the CPU to the GPU.
