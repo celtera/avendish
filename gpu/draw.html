@@ -135,7 +135,8 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="gpu-based-draw-nodes"><a class="header" href="#gpu-based-draw-nodes">GPU-based draw nodes</a></h1>
-<p>The techniques shown so far can be extended to the general ontology of &quot;modern GPU pipeline&quot;.</p>
+<p>The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of &quot;modern GPU pipeline&quot;, 
+in order to define API-independent GPU-based objects.</p>
 <p>Here are some useful readings to get an idea of the problem space: </p>
 <ul>
 <li><a href="https://alain.xyz/blog/comparison-of-modern-graphics-apis">https://alain.xyz/blog/comparison-of-modern-graphics-apis</a></li>
@@ -144,6 +145,15 @@
 <li><a href="https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/">https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/</a></li>
 <li><a href="https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/">https://www.o3de.org/docs/atom-guide/dev-guide/rhi/</a></li>
 </ul>
+<p>What we are trying to do is define a declarative RHI (see Qt RHI, NVRHI, Unreal RHI, etc.): we do not want to call any API function 
+in order to preserve independence of the written nodes from the underlyling API: stating that one needs to allocate and upload a buffer prior to executing 
+a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code 
+should be defined in terms of its absolute minimal requirements in order to enable it to work on the widest range of systems possible.</p>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<ul>
+<li>We assume a specific shader language (Vulkan-compatible GLSL 4.5), any ideas to improve this are welcome.</li>
+<li>The only binding so far is being developed done in <a href="https://ossia.io">ossia score</a> on top of the Qt RHI which inspired this quite a bit.</li>
+</ul>
 <h2 id="defining-a-primitive-pipeline-ontology"><a class="header" href="#defining-a-primitive-pipeline-ontology">Defining a primitive pipeline ontology</a></h2>
 <p>A GPU pipeline carries much more information than the average audio object, as GPUs are pretty configurable and specialized systems, with various possible qualifications on their inputs and outputs that are unfamiliar to the programmer accustomed to working with a CPU.</p>
 <p>The core of a GPU pipeline is the program that will run on it: a shader. Shaders are in themselves very similar to data-flow objects: they define inputs (often the mesh data, textures, and parameters to control the rendering) and outputs (often the color). </p>
@@ -151,10 +161,10 @@
 <p>The pipeline has a layout: it is the definition of its inputs and outputs. For instance, such a layout may be:</p>
 <ul>
 <li>
-<p>A vec2 attribute input at location 0 representing each vertex's position.</p>
+<p>A <code>vec2</code> attribute input at location 0 representing each vertex's position.</p>
 </li>
 <li>
-<p>A vec4 attribute input at location 1 representing each vertex's color.</p>
+<p>A <code>vec4</code> attribute input at location 1 representing each vertex's color.</p>
 </li>
 <li>
 <p>A texture at binding 0.</p>
