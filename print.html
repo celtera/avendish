@@ -3936,7 +3936,7 @@ void main()
 
     // finish summing on the cpu
     auto&amp; final = outputs.color_out.value;
-    std::ranges::fill(final, 0.f);
+    std::fill(std::begin(final), std::end(final), 0.f);
 
     for(int i = 0; i &lt; w * h; i++) {
       for(int j = 0; j &lt; 4; j++)
