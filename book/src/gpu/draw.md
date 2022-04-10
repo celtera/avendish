@@ -26,7 +26,7 @@ To reduce code duplication across projects which define visual plug-ins for medi
 - An [FFGL plug-in](https://github.com/resolume/ffgl/blob/master/source/plugins/AddSubtract/AddSubtract.cpp)
 - A [Movit plug-in](https://git.sesse.net/?p=movit;a=blob;f=dither_effect.cpp;h=3fa6aebc3fa8f674674ca37e37ac6932be78c6fe;hb=HEAD)
 - [TouchDesigner TOPs](https://github.com/MeridianPoint/TouchDesignerOpenGLTOP/blob/master/OpenGLTOP/OpenGLTOP.cpp)
-- Max [jit.gl and OB3D objects](https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_jit_ob3ddetails.html)
+- Max [jit.gl and OB3D objects](https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_jit_ob3dqs.html)
 - etc...
 
 which are all about the same thing: processing a fixed set of input and output data on the GPU and exposing this as a data flow node 
