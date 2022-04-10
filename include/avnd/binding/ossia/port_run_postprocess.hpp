@@ -9,8 +9,6 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 
-#include <ranges>
-
 namespace oscr
 {
 
@@ -82,7 +80,8 @@ ossia::value to_ossia_value(const std::array<T, N>& v)
   return to_ossia_value(elem);
 }
 
-template <std::ranges::input_range T>
+template <typename T>
+requires requires { T{}.begin() != T{}.end(); }
 ossia::value to_ossia_value(const T& v)
 {
   // C++23: ranges::to (thanks cor3ntin!)

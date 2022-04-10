@@ -4,11 +4,10 @@
 
 #include <gpp/generators.hpp>
 
-// We could use std::variant but boost::variant2 is quite a bit more efficient in
-// this case as we only have simple types.
-#include <boost/variant2.hpp>
+// FIXME: mpark::variant gives the best results
+#include <variant>
 
-namespace bv2 = boost::variant2;
+namespace bv2 = std;
 namespace gpp
 {
 struct buffer_handle_t;

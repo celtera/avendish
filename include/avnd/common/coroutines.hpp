@@ -10,7 +10,7 @@
 namespace std
 {
 using suspend_always = std::experimental::suspend_always;
-template <typename T>
+template <typename T = void>
 using coroutine_handle = std::experimental::coroutine_handle<T>;
 }
 #else
