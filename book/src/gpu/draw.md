@@ -1,6 +1,7 @@
 # GPU-based draw nodes
 
-The techniques shown so far can be extended to the general ontology of "modern GPU pipeline".
+The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of "modern GPU pipeline", 
+in order to define API-independent GPU-based objects.
 
 Here are some useful readings to get an idea of the problem space: 
 
@@ -9,6 +10,15 @@ Here are some useful readings to get an idea of the problem space:
 - [https://docs.unrealengine.com/4.27/en-US/API/Runtime/RHI/](https://docs.unrealengine.com/4.27/en-US/API/Runtime/RHI/)
 - [https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/)
 - [https://www.o3de.org/docs/atom-guide/dev-guide/rhi/](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/)
+
+What we are trying to do is define a declarative RHI (see Qt RHI, NVRHI, Unreal RHI, etc.): we do not want to call any API function 
+in order to preserve independence of the written nodes from the underlyling API: stating that one needs to allocate and upload a buffer prior to executing 
+a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code 
+should be defined in terms of its absolute minimal requirements in order to enable it to work on the widest range of systems possible.
+
+## Limitations
+- We assume a specific shader language (Vulkan-compatible GLSL 4.5), any ideas to improve this are welcome.
+- The only binding so far is being developed done in [ossia score](https://ossia.io) on top of the Qt RHI which inspired this quite a bit.
 
 ## Defining a primitive pipeline ontology
 
@@ -20,8 +30,8 @@ The pipeline may have multiple stages: most commonly and in an extremely broad a
 
 The pipeline has a layout: it is the definition of its inputs and outputs. For instance, such a layout may be:
 
-- A vec2 attribute input at location 0 representing each vertex's position.
-- A vec4 attribute input at location 1 representing each vertex's color.
+- A `vec2` attribute input at location 0 representing each vertex's position.
+- A `vec4` attribute input at location 1 representing each vertex's color.
 
 - A texture at binding 0.
 - A buffer at binding 1 containing parameters for drawing the texture. For instance:
