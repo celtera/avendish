@@ -16,6 +16,9 @@ in order to preserve independence of the written nodes from the underlyling API:
 a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code 
 should be defined in terms of its absolute minimal requirements in order to enable it to work on the widest range of systems possible.
 
+Just like we have done so far, we provide "helper types" which are entirely optional but can reduce wrist strain :-)
+Bindings have zero dependency on any of the helper types and namespaces (`halp`, `gpp`) shown here -- everything depends on the shape of things.
+
 ## Limitations
 - We assume a specific shader language (Vulkan-compatible GLSL 4.5), any ideas to improve this are welcome.
 - The only binding so far is being developed in [ossia score](https://ossia.io) on top of the Qt RHI which inspired this quite a bit.
