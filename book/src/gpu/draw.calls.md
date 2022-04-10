@@ -102,6 +102,8 @@ This allows complete independence from the graphics API, as a node only specifie
 
 An in-progress set of common commands is provided.
 
+Note also that this gives some amount of named-parameter-ness which is also a good way to reduce bugs :-)
+
 ## Coroutines
 
 To allow this to work, `gpp::co_update` is a coroutine type.

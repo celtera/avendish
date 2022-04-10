@@ -50,6 +50,7 @@
   - [Defining a layout](./gpu/draw.layout.md)
   - [API calls](./gpu/draw.calls.md)
   - [Minimal pipeline](./gpu/draw.minimal.md)
+  - [Complete example](./gpu/draw.example.md)
 - [Compute nodes](./gpu/compute.md)
 
 <!--
