@@ -74,6 +74,11 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/halp/static_string.hpp"
     "${AVND_SOURCE_DIR}/include/halp/texture.hpp"
 
+    "${AVND_SOURCE_DIR}/include/gpp/commands.hpp"
+    "${AVND_SOURCE_DIR}/include/gpp/generators.hpp"
+    "${AVND_SOURCE_DIR}/include/gpp/meta.hpp"
+    "${AVND_SOURCE_DIR}/include/gpp/layout.hpp"
+
     "${AVND_SOURCE_DIR}/src/dummy.cpp"
 )
 

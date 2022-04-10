@@ -13,6 +13,8 @@ The library is borne from:
 
 - Allowing to express the quintessence of a given media processor.
     * There should be no compromise at any point: the user of the library must be able to declare all the properties, inputs, outputs of a media processor, whether it processes audio, video, MIDI, asynchronous messages, etc...
+    * UIs must be possible.
+    * GPU-based processors must be possible.
     * The way this is expressed should be the simplest possible way in C++, in the sense that the code should be as natural as possible: just declaring variables should be sufficient. The lack of proper reflection in C++ still limits this in a way, but we will see that it is already possible to get quite far !
     * For a given processor, multiple potential expressions are possible. We aim to capture most possible expressions: for instance, it may be more natural for a given audio processor to implement it in a sample-wise way (each audio sample processed one-by-one), and for another to be implemented through buffer-wise processing.
   

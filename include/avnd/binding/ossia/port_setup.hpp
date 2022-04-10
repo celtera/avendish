@@ -72,7 +72,7 @@ struct get_ossia_outlet_type<T>
 template <avnd::attachment_port T>
 struct get_ossia_outlet_type<T>
 {
-    using type = ossia::texture_outlet;
+  using type = ossia::texture_outlet;
 };
 template <avnd::callback T>
 struct get_ossia_outlet_type<T>

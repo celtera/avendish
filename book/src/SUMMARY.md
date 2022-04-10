@@ -7,7 +7,7 @@
 - [Compiling](./getting_started/compiling.md)
 - [Running](./getting_started/running.md)
 
-# Writing processors
+# Writing CPU processors
 - [Adding ports](./writing_processors/ports.md)
   - [Simplifying ports](./writing_processors/ports.refactoring.md)
   - [Helpers for ports](./writing_processors/ports.helpers.md)
@@ -29,7 +29,6 @@
 - [Metadatas](./writing_processors/metadatas.md)
 
 # Advanced features
-
 - [Port data types](./advanced/port_types.md)
   - [Example](./advanced/port_types.example.md)
 - [Custom UI](./advanced/ui.md)
@@ -46,8 +45,15 @@
 - [Channel mimicking](./advanced/channel_mimicking.md)
 - [CMake configuration](./advanced/cmake.md)
 
+# Writing GPU processors
+- [Draw nodes](./gpu/draw.md)
+- [Compute nodes](./gpu/compute.md)
+
+<!--
 # Reference
 
 - [Processing semantics](./reference/processing.md)
 - [Bindings](./reference/bindings.md)
 - [Controls](./reference/controls.md)
+
+-->
