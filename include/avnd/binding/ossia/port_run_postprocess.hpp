@@ -81,7 +81,7 @@ ossia::value to_ossia_value(const std::array<T, N>& v)
 }
 
 template <typename T>
-requires requires { T{}.begin() != T{}.end(); }
+requires (requires { T{}.begin() != T{}.end(); } && !avnd::string_ish<T>)
 ossia::value to_ossia_value(const T& v)
 {
   // C++23: ranges::to (thanks cor3ntin!)
