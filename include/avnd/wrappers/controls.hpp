@@ -18,10 +18,11 @@ static constexpr void init_controls(I&& inputs)
       std::forward<I>(inputs),
       []<typename T>(T& ctl)
       {
-        if constexpr (requires { T::range().init; })
+        if constexpr (avnd::has_range<T>)
         {
           constexpr auto c = avnd::get_range<T>();
-          ctl.value = c.init;
+          if_possible(ctl.value = c.init) // Default case
+          else if_possible(ctl.value = c.values[c.init]) // For string enums
         }
       });
 }
@@ -38,7 +39,7 @@ static constexpr void apply_control(T& ctl, std::floating_point auto v)
   ctl.value = v;
 
   // Clamp
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     if (ctl.value < c.min)
@@ -63,7 +64,7 @@ static void apply_control(auto& ctl, std::string&& v)
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
@@ -76,7 +77,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 template <avnd::int_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
@@ -117,7 +118,7 @@ static constexpr auto map_control_to_01(const auto& value)
 {
   // Apply the value
   double v{};
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
 
@@ -135,7 +136,7 @@ static constexpr auto map_control_to_01(const auto& value)
 {
   // Apply the value
   double v{};
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);

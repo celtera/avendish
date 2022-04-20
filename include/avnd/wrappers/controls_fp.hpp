@@ -17,7 +17,7 @@ namespace avnd
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
@@ -31,7 +31,7 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 template <avnd::int_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
@@ -75,7 +75,7 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   // Apply the value
   double v{};
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
 
@@ -93,7 +93,7 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   // Apply the value
   double v{};
-  if constexpr (requires { avnd::get_range<T>().min; })
+  if constexpr (avnd::has_range<T>)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);

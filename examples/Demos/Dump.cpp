@@ -220,7 +220,7 @@ void print_parameters()
             fmt::print("   - Name: '{}'\n", avnd::get_name<type>());
             fmt::print("   - Control type: {}\n", parameter_value_type(wrap));
 
-            if constexpr(avnd::parameter_with_full_range<type>) {
+            if constexpr(avnd::parameter_with_minmax_range<type>) {
               constexpr auto ctl = avnd::get_range<type>();
               if constexpr(requires { ctl.min; })
                 fmt::print("   - Min: {}\n", ctl.min);

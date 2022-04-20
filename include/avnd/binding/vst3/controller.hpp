@@ -86,7 +86,7 @@ public:
           setStr(info.shortTitle, C::name());
           if constexpr (requires { C::units(); })
             setStr(info.shortTitle, C::units());
-          if constexpr (requires { avnd::get_range<C>(); })
+          if constexpr (avnd::has_range<C>)
           {
             constexpr auto range = avnd::get_range<C>();
             if constexpr (requires { range.init; })
