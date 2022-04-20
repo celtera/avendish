@@ -40,16 +40,12 @@ struct ZeroDependencyAudioEffect
       static constexpr auto name() { return "Yea"; }
       // Controls are just pre-made types with some metadata
       // relevant for setting them up it up.
-      static constexpr auto control()
+      struct range
       {
-        struct
-        {
-          const int min = 0;
-          const int max = 30;
-          const int init = 1;
-        } c;
-        return c;
-      }
+        const int min = 0;
+        const int max = 30;
+        const int init = 1;
+      };
 
       int value = 10;
     } gain;

@@ -16,7 +16,27 @@ struct PerSampleAsArgs
   halp_meta(c_name, "avnd_helpers_per_sample_as_args")
   halp_meta(uuid, "92a1a42b-dc63-42f8-8d24-8cb9c046803a")
 
-  float operator()(float input) { return std::tanh(input); }
+  float operator()(float input) { return std::tanh(10. * input); }
+};
+
+struct PerSampleAsArgs2
+{
+  halp_meta(name, "Per-sample processing (args, helpers)")
+  halp_meta(c_name, "avnd_helpers_per_sample_as_args2")
+  halp_meta(uuid, "cfedd0f1-4c75-4b59-98ff-f38f83a6bb80")
+
+  struct inputs
+  {
+    halp::hslider_f32<"Gain", halp::range{.min = 0., .max = 10., .init = 5}> gain;
+  };
+
+  struct outputs
+  {
+  };
+
+  float operator()(float input, const inputs& ins, const outputs& out) {
+    return std::tanh(ins.gain * input);
+  }
 };
 
 struct PerSampleAsPorts
@@ -28,6 +48,7 @@ struct PerSampleAsPorts
   struct inputs
   {
     halp::audio_sample<"In", double> audio;
+    halp::hslider_f32<"Gain", halp::range{.min = 0., .max = 10., .init = 5}> gain;
   };
 
   struct outputs
@@ -37,7 +58,7 @@ struct PerSampleAsPorts
 
   void operator()(const inputs& ins, outputs& outs)
   {
-    outs.audio = std::tanh(ins.audio);
+    outs.audio = std::tanh(ins.gain * ins.audio);
   }
 };
 

@@ -13,6 +13,7 @@ endif()
 find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)
 find_package(fmt QUIET)
+add_definitions(-DFMT_HEADER_ONLY=1)
 
 include(avendish.disableexceptions)
 include(avendish.sources)
