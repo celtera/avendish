@@ -50,7 +50,7 @@ struct callback_storage : callback_storage_views<T>
     if constexpr (dynamic_callback_introspection<outputs_t>::size > 0)
     {
       auto setup_dyn = [callback_handler]<auto Idx, auto IdxGlob, typename C>(
-          C & cb, avnd::num<Idx>, avnd::num<IdxGlob>)
+          C & cb, avnd::predicate_index<Idx>, avnd::field_index<IdxGlob>)
       {
         using call_type = decltype(C::call);
         using func_type = decltype(cb.call);
@@ -71,7 +71,7 @@ struct callback_storage : callback_storage_views<T>
     if constexpr (view_callback_introspection<outputs_t>::size > 0)
     {
       auto setup_view = [ this, callback_handler ]<auto Idx, auto IdxGlob, typename C>(
-          C & cb, avnd::num<Idx>, avnd::num<IdxGlob>)
+          C & cb, avnd::predicate_index<Idx>, avnd::field_index<IdxGlob>)
       {
         using call_type = decltype(C::call);
 

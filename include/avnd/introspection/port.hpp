@@ -143,4 +143,9 @@ using is_view_callback_t = boost::mp11::mp_bool<view_callback<Field>>;
 template <typename T>
 using view_callback_introspection = predicate_introspection<T, is_view_callback_t>;
 
+template <typename Field>
+using is_soundfile_t = boost::mp11::mp_bool<soundfile_port<Field>>;
+template <typename T>
+using soundfile_introspection = predicate_introspection<T, is_soundfile_t>;
+
 }

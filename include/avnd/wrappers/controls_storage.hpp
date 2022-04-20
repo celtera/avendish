@@ -134,7 +134,7 @@ struct control_storage
   {
     if constexpr (lin_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage
         auto& buf = std::get<Idx>(this->linear_inputs);
@@ -149,7 +149,7 @@ struct control_storage
     }
     if constexpr (lin_out::size > 0)
     {
-      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = std::get<Idx>(this->linear_outputs);
         buf.resize(buffer_size);
@@ -160,7 +160,7 @@ struct control_storage
 
     if constexpr (span_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage, a std::vector<timed_value>
         auto& buf = std::get<Idx>(this->span_inputs);
@@ -175,7 +175,7 @@ struct control_storage
     }
     if constexpr (span_out::size > 0)
     {
-      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = std::get<Idx>(this->span_outputs);
         buf.reserve(buffer_size);
@@ -198,7 +198,7 @@ struct control_storage
   {
     if constexpr (lin_in::size > 0)
     {
-      auto clear_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto clear_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = std::get<Idx>(this->linear_inputs);
         for (auto& b : buf)
@@ -209,7 +209,7 @@ struct control_storage
 
     if constexpr (span_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = std::get<Idx>(this->span_inputs);
         buf.resize(0);
@@ -225,7 +225,7 @@ struct control_storage
   {
     if constexpr (lin_out::size > 0)
     {
-      auto clear_raw_out = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto clear_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = std::get<Idx>(this->linear_outputs);
         for (auto& b : buf)
@@ -236,7 +236,7 @@ struct control_storage
 
     if constexpr (span_out::size > 0)
     {
-      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = std::get<Idx>(this->span_outputs);
         buf.resize(0);

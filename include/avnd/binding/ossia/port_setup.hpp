@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/common/struct_reflection.hpp>
+#include <avnd/concepts/soundfile.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
@@ -32,6 +33,11 @@ template <avnd::texture_port T>
 struct get_ossia_inlet_type<T>
 {
   using type = ossia::texture_inlet;
+};
+template <avnd::soundfile_port T>
+struct get_ossia_inlet_type<T>
+{
+    using type = ossia::value_inlet;
 };
 template <avnd::message T>
 struct get_ossia_inlet_type<T>
@@ -220,6 +226,14 @@ struct setup_value_port
     port.is_event = true;
     port.type = ossia::val_type::STRING;
     port.domain = this->range_to_domain<Field>();
+  }
+
+  template <avnd::soundfile_port Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::STRING;
+    port.domain = ossia::domain{};
   }
 
   template <avnd::enum_parameter Field>

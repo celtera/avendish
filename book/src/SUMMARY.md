@@ -31,6 +31,7 @@
 # Advanced features
 - [Port data types](./advanced/port_types.md)
   - [Example](./advanced/port_types.example.md)
+  - [Sound files](./advanced/port_types.soundfile.md)
 - [Custom UI](./advanced/ui.md)
   - [Declarative layouts](./advanced/ui.layout.md)
   - [Custom items](./advanced/ui.painting.md)
@@ -53,6 +54,8 @@
   - [Complete example](./gpu/draw.example.md)
 - [Compute nodes](./gpu/compute.md)
 
+# Development
+- [Type predicates](./development/predicates.md)
 <!--
 # Reference
 

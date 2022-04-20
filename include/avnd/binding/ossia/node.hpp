@@ -3,6 +3,7 @@
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
 #include <avnd/binding/ossia/port_setup.hpp>
+#include <avnd/binding/ossia/soundfiles.hpp>
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/midi_port.hpp>
@@ -222,6 +223,8 @@ public:
 
   [[no_unique_address]] avnd::callback_storage<T> callbacks;
 
+  [[no_unique_address]] oscr::soundfile_storage<T> soundfiles;
+
   // [[no_unique_address]]
   // controls_mirror<T> feedback;
 
@@ -258,6 +261,7 @@ public:
 
     this->audio_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
+    this->soundfiles.init(this->impl);
 
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
@@ -646,6 +650,23 @@ public:
   std::string label() const noexcept override
   {
     return std::string{avnd::get_name<T>()};
+  }
+
+
+  void soundfile_release_request(std::string& str, int idx)
+  {
+    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
+  }
+
+  void soundfile_load_request(std::string& str, int idx)
+  {
+    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
+  }
+
+  template<std::size_t N, std::size_t NField>
+  void soundfile_loaded(ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  {
+    this->soundfiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
 };
 

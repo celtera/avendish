@@ -100,6 +100,12 @@ struct audio_channel_input_introspection
 };
 
 template <typename T>
+struct soundfile_input_introspection
+    : soundfile_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct input_introspection : fields_introspection<typename inputs_type<T>::type>
 {
 };
