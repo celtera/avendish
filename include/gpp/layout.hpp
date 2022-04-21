@@ -78,7 +78,7 @@ template <typename T>
 consteval int std140_size()
 {
   int sz = 0;
-  constexpr int field_count = boost::pfr::tuple_size_v<T>;
+  constexpr int field_count = pfr::tuple_size_v<T>;
   auto func = [&](auto field)
   {
     switch (sizeof(field.value))
@@ -109,7 +109,7 @@ consteval int std140_size()
     [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
       constexpr T t{};
-      (func(boost::pfr::get<Index, T>(t)), ...);
+      (func(pfr::get<Index, T>(t)), ...);
     }
     (std::make_index_sequence<field_count>{});
   }
@@ -157,7 +157,7 @@ consteval int std140_offset_impl()
     [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
       constexpr T t{};
-      (func(boost::pfr::get<Index>(t)), ...);
+      (func(avnd::pfr::get<Index>(t)), ...);
     }
     (std::make_index_sequence<Count>{});
   }
@@ -176,7 +176,7 @@ consteval int std140_offset()
 template <typename T>
 consteval int std140_size()
 {
-  return std140_offset_impl<T, boost::pfr::tuple_size_v<T>>();
+  return std140_offset_impl<T, avnd::pfr::tuple_size_v<T>>();
 }
 
 }

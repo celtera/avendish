@@ -49,6 +49,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_execution.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/widgets.hpp"
 
+    "${AVND_SOURCE_DIR}/include/avnd/common/aggregates.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/concepts_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/coroutines.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/dummy.hpp"

@@ -126,7 +126,7 @@ struct SimpleAudioEffect : vintage::Effect
     if constexpr (midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
-      auto& in_port = boost::pfr::get<i_info::index_map[0]>(effect.inputs());
+      auto& in_port = avnd::pfr::get<i_info::index_map[0]>(effect.inputs());
 
       midi.reserve_space(this->effect, buffer_size);
     }
@@ -181,7 +181,7 @@ struct SimpleAudioEffect : vintage::Effect
     if constexpr (midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
-      auto& in_port = boost::pfr::get<i_info::index_map[0]>(effect.inputs());
+      auto& in_port = avnd::pfr::get<i_info::index_map[0]>(effect.inputs());
 
       // In case we need to allocate more storage:
       const int n = evs->numEvents;

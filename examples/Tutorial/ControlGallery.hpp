@@ -158,7 +158,7 @@ struct ControlGallery
     if (!has_impulse && !has_button)
       return;
 
-    boost::pfr::for_each_field(
+    avnd::pfr::for_each_field(
         inputs,
         [] <typename Control> (const Control& input) {
           {

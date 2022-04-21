@@ -6,7 +6,7 @@
 #include <avnd/concepts/all.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-#include <boost/pfr.hpp>
+#include <avnd/common/aggregates.hpp>
 
 namespace avnd
 {

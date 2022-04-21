@@ -12,7 +12,7 @@ namespace pd
 template <typename T>
 void value_to_pd(t_outlet* outlet, T v)
 {
-  constexpr int sz = boost::pfr::tuple_size_v<T>;
+  constexpr int sz = avnd::pfr::tuple_size_v<T>;
   if constexpr (sz == 0)
   {
     outlet_bang(outlet);
@@ -91,7 +91,7 @@ struct value_writer
       using indices = typename lin_out::indices_n;
       constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
 
-      auto& buffer = std::get<storage_index>(buffers);
+      auto& buffer = get<storage_index>(buffers);
 
       for (int i = 0, N = self.buffer_size; i < N; i++)
       {
@@ -223,7 +223,7 @@ struct outputs
       [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
         (value_writer<Self>{self}(
-           boost::pfr::get<Index>(outs),
+           avnd::pfr::get<Index>(outs),
            outlets[Index],
            avnd::num<Index>{}),
          ...);

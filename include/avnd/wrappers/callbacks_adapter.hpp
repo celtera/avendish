@@ -81,7 +81,7 @@ struct callback_storage : callback_storage_views<T>
         using ret = typename func_reflect::return_type;
         using args = typename func_reflect::arguments;
 
-        auto& buf = std::get<Idx>(this->functions_storage);
+        auto& buf = get<Idx>(this->functions_storage);
         using stored_type
             = std::tuple_element_t<Idx, std::decay_t<decltype(this->functions_storage)>>;
         buf = callback_handler(C::name(), args{}, func_reflect{}, avnd::num<IdxGlob>{});
@@ -104,7 +104,7 @@ struct callback_storage : callback_storage_views<T>
           // this is what actually goes in cb.call.function:
           return +[](Args... args)
           {
-            void* self = std::get<0>(std::tie(args...));
+            void* self = get<0>(std::tie(args...));
             (*reinterpret_cast<stored_type*>(self))(args...);
           };
         }

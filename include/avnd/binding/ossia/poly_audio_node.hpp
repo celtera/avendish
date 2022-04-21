@@ -46,7 +46,7 @@ public:
     const int current_output_channels = this->channels.actual_runtime_outputs;
 
     // Scan the input channels
-    bool ok = std::apply(
+    bool ok = tuplet::apply(
         [&](auto&&... ports)
         {
           audio_inlet_scan match{*this};
@@ -60,7 +60,7 @@ public:
         this->ossia_inlets.ports);
 
     // Ensure that we have enough output space
-    std::apply(
+    tuplet::apply(
         [&](auto&&... ports)
         {
           audio_outlet_scan match{*this};
@@ -107,7 +107,7 @@ public:
 
   void initialize_audio_arrays(const double** ins, double** outs)
   {
-    std::apply(
+    tuplet::apply(
         [&](auto&&... ports)
         {
           initialize_audio match{ins, outs, 0};
@@ -121,7 +121,7 @@ public:
         },
         this->ossia_inlets.ports);
 
-    std::apply(
+    tuplet::apply(
         [&](auto&&... ports)
         {
           initialize_audio match{ins, outs, 0};

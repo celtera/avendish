@@ -82,7 +82,7 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
       auto& sink = this->parameters;
       (sink[Index].store(
            avnd::map_control_to_01(
-               boost::pfr::get<inputs_info_t::index_map[Index]>(source)),
+               avnd::pfr::get<inputs_info_t::index_map[Index]>(source)),
            std::memory_order_relaxed),
        ...);
     }

@@ -155,7 +155,7 @@ struct audio_processor
         // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
         // but most pd externals seem to just do a chain of if() so this is equivalent
         float res = argv[0].a_w.w_float;
-        boost::pfr::for_each_field(
+        avnd::pfr::for_each_field(
             implementation.inputs(),
             [s, res]<typename C>(C& ctl)
             {
@@ -174,7 +174,7 @@ struct audio_processor
       {
         // TODO ?
         std::string res = argv[0].a_w.w_sym->s_name;
-        boost::pfr::for_each_field(
+        avnd::pfr::for_each_field(
             implementation.inputs(),
             [s, &res](auto& ctl)
             {

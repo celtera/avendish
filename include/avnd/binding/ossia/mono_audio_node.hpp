@@ -12,16 +12,30 @@ public:
   ossia::audio_inlet& audio_inlet()
   {
     if constexpr (requires { this->audio_ports.in; })
+    {
       return this->audio_ports.in;
+    }
     else
-      return std::get<ossia::audio_inlet>(this->ossia_inlets.ports);
+    {
+      using audio_ins = avnd::audio_port_introspection<typename avnd::inputs_type<T>::type>;
+      static_assert(audio_ins::size == 1);
+      constexpr int index_of_audio_input = audio_ins::template unmap<0>();
+      return tuplet::get<index_of_audio_input>(this->ossia_inlets.ports);
+    }
   }
   ossia::audio_outlet& audio_outlet()
   {
     if constexpr (requires { this->audio_ports.out; })
+    {
       return this->audio_ports.out;
+    }
     else
-      return std::get<ossia::audio_outlet>(this->ossia_outlets.ports);
+    {
+      using audio_outs = avnd::audio_port_introspection<typename avnd::outputs_type<T>::type>;
+      static_assert(audio_outs::size == 1);
+      constexpr int index_of_audio_output = audio_outs::template unmap<0>();
+      return tuplet::get<index_of_audio_output>(this->ossia_outlets.ports);
+    }
   }
 
   bool scan_audio_input_channels()

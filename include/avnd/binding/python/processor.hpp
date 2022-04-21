@@ -65,8 +65,8 @@ struct processor
   {
     class_def.def_property(
         c_str(input_name(refl)),
-        [](const T& t) { return boost::pfr::get<Idx>(t.inputs).value; },
-        [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.inputs).value = x; });
+        [](const T& t) { return avnd::pfr::get<Idx>(t.inputs).value; },
+        [](T& t, decltype(C::value) x) { avnd::pfr::get<Idx>(t.inputs).value = x; });
   }
 
   template <auto Idx, typename C>
@@ -76,8 +76,8 @@ struct processor
     {
       class_def.def_property(
           c_str(output_name(refl)),
-          [](const T& t) { return boost::pfr::get<Idx>(t.outputs).value; },
-          [](T& t, decltype(C::value) x) { boost::pfr::get<Idx>(t.outputs).value = x; });
+          [](const T& t) { return avnd::pfr::get<Idx>(t.outputs).value; },
+          [](T& t, decltype(C::value) x) { avnd::pfr::get<Idx>(t.outputs).value = x; });
     }
   }
 
@@ -148,8 +148,8 @@ struct processor
         /* not easily doable...
         class_def.def_property(
           c_str(C::name())
-          , [] (T& t) { return boost::pfr::get<Idx>(t.outputs).call; }
-          , [] (T& t, call_type cb) { boost::pfr::get<Idx>(t.outputs).call = std::move(cb); }
+          , [] (T& t) { return avnd::pfr::get<Idx>(t.outputs).call; }
+          , [] (T& t, call_type cb) { avnd::pfr::get<Idx>(t.outputs).call = std::move(cb); }
         );
         */
       }
@@ -157,9 +157,9 @@ struct processor
       {
         class_def.def_property(
             c_str(avnd::get_name<C>()),
-            [](T& t) { return boost::pfr::get<Idx>(t.outputs).call; },
+            [](T& t) { return avnd::pfr::get<Idx>(t.outputs).call; },
             [](T& t, call_type cb)
-            { boost::pfr::get<Idx>(t.outputs).call = std::move(cb); });
+            { avnd::pfr::get<Idx>(t.outputs).call = std::move(cb); });
       }
     }
   }

@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/coroutines.hpp>
-#include <boost/pfr.hpp>
+#include <avnd/common/aggregates.hpp>
 
 #include <cassert>
 #include <utility>
@@ -24,8 +24,9 @@ constexpr void for_nth(int k, auto&& f)
 template <class T, class F>
 constexpr void for_each_field_ref(T&& value, F&& func)
 {
-  using namespace boost::pfr;
-  using namespace boost::pfr::detail;
+#if AVND_USE_BOOST_PFR
+  using namespace pfr;
+  using namespace pfr::detail;
   constexpr std::size_t fields_count_val = fields_count<std::remove_reference_t<T>>();
 
   auto t = tie_as_tuple(value, size_t_<fields_count_val>{});
@@ -35,6 +36,10 @@ constexpr void for_each_field_ref(T&& value, F&& func)
     (func(sequence_tuple::get<I>(t)), ...);
   }
   (make_index_sequence<fields_count_val>{});
+#else
+  auto&& [...elts] = value;
+  (func(elts), ...);
+#endif
 }
 
 template <class T, class F>

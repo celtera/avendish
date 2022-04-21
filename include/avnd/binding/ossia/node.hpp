@@ -282,8 +282,8 @@ public:
     using info = avnd::input_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
-      (f(boost::pfr::get<Index>(in),
-         std::get<Index>(this->ossia_inlets.ports),
+      (f(avnd::pfr::get<Index>(in),
+         get<Index>(this->ossia_inlets.ports),
          avnd::num<Index>{}),
        ...);
     }
@@ -301,8 +301,8 @@ public:
     using info = avnd::output_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
-      (f(boost::pfr::get<Index>(in),
-         std::get<Index>(this->ossia_outlets.ports),
+      (f(avnd::pfr::get<Index>(in),
+         get<Index>(this->ossia_outlets.ports),
          avnd::num<Index>{}),
        ...);
     }
@@ -349,8 +349,8 @@ public:
         setup_inlets<safe_node_base_base<T>> init{*this, this->m_inlets};
         (init(
              avnd::
-                 field_reflection<Index, boost::pfr::tuple_element_t<Index, in_type>>{},
-             std::get<Index>(port_tuple)),
+                 field_reflection<Index, avnd::pfr::tuple_element_t<Index, in_type>>{},
+             tuplet::get<Index>(port_tuple)),
          ...);
       }
       (typename in_info::indices_n{});
@@ -368,8 +368,8 @@ public:
         setup_outlets<safe_node_base_base<T>> init{*this, this->m_outlets};
         (init(
              avnd::
-                 field_reflection<Index, boost::pfr::tuple_element_t<Index, out_type>>{},
-             std::get<Index>(port_tuple)),
+                 field_reflection<Index, avnd::pfr::tuple_element_t<Index, out_type>>{},
+             tuplet::get<Index>(port_tuple)),
          ...);
       }
       (typename out_info::indices_n{});
@@ -384,7 +384,7 @@ public:
     {
       // Idx is the index of the port in the complete input array.
       // We need to map it to the callback index.
-      ossia::value_outlet& port = std::get<Idx>(self.ossia_outlets.ports);
+      ossia::value_outlet& port = get<Idx>(self.ossia_outlets.ports);
       if constexpr (sizeof...(Args) == 0)
         port.data.write_value(ossia::impulse{}, 0);
       else if constexpr (sizeof...(Args) == 1)

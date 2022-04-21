@@ -15,7 +15,7 @@ namespace oscr
 template <typename T>
 ossia::value to_ossia_value(T v)
 {
-  constexpr int sz = boost::pfr::tuple_size_v<T>;
+  constexpr int sz = avnd::pfr::tuple_size_v<T>;
   if constexpr (sz == 0)
   {
     return ossia::impulse{};
@@ -191,7 +191,7 @@ struct process_after_run
     using indices = typename lin_out::indices_n;
     constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
 
-    auto& buffer = std::get<storage_index>(buffers);
+    auto& buffer = get<storage_index>(buffers);
 
     for (int i = 0, N = self.buffer_size; i < N; i++)
     {

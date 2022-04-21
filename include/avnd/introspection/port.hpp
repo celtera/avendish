@@ -4,7 +4,7 @@
 
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/all.hpp>
-#include <boost/pfr.hpp>
+#include <avnd/common/aggregates.hpp>
 
 namespace avnd
 {

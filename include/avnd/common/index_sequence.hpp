@@ -13,6 +13,7 @@ namespace avnd
 template <std::size_t N>
 struct num
 {
+  static constexpr const std::size_t value = N;
 };
 
 template <typename T>

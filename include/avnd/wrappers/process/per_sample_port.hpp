@@ -27,7 +27,7 @@ requires(
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
-    boost::pfr::for_each_field(
+    pfr::for_each_field(
         ins,
         [in]<typename Field>(Field& field)
         {
@@ -40,7 +40,7 @@ requires(
 
     // Read back the output the input
     FP out;
-    boost::pfr::for_each_field(
+    pfr::for_each_field(
         outs, [&out]<typename Field>(Field& field) { if_possible(out = field.sample); });
     return out;
   }
@@ -50,7 +50,7 @@ requires(
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
-    boost::pfr::for_each_field(
+    pfr::for_each_field(
         ins, [in]<typename Field>(Field& field) { if_possible(field.sample = in); });
 
     // Execute
@@ -58,7 +58,7 @@ requires(
 
     // Read back the output the input
     FP out;
-    boost::pfr::for_each_field(
+    pfr::for_each_field(
         outs, [&out]<typename Field>(Field& field) { if_possible(out = field.sample); });
     return out;
   }
@@ -202,7 +202,7 @@ requires(
       {
         int k = 0;
         // Here we know that we have a single effect. We copy the sample data directly inside.
-        boost::pfr::for_each_field(
+        pfr::for_each_field(
             outs,
             [&k, out, i]<typename Field>(Field& field)
             {

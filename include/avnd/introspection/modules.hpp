@@ -35,7 +35,7 @@ static constexpr void for_all_modules(T& obj, auto&& func) noexcept
 {
   if constexpr (modules_introspection<T>::size > 0)
   {
-    boost::pfr::for_each_field(get_modules(obj), func);
+    pfr::for_each_field(get_modules(obj), func);
   }
 }
 }

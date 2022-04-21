@@ -8,7 +8,7 @@
 #include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_execution.hpp>
-#include <boost/pfr.hpp>
+#include <avnd/common/aggregates.hpp>
 
 #include <concepts>
 #include <cstdint>

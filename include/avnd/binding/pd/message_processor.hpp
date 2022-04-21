@@ -119,7 +119,7 @@ struct message_processor
     {
       if constexpr (avnd::parameter_input_introspection<T>::size > 0)
       {
-        auto& first_inlet = boost::pfr::get<0>(avnd::get_inputs<T>(implementation));
+        auto& first_inlet = avnd::pfr::get<0>(avnd::get_inputs<T>(implementation));
         if(argc > 0)
         {
           set_inlet(first_inlet, argv[0]);

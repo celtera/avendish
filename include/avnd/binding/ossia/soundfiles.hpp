@@ -66,7 +66,7 @@ struct soundfile_storage
       auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage, a std::vector<timed_value>
-        auto& buf = std::get<Idx>(this->pointers);
+        auto& buf = get<Idx>(this->pointers);
 
         // Preallocate some space for 2 channels
         buf.reserve(2);
@@ -85,10 +85,10 @@ struct soundfile_storage
   void load(avnd::effect_container<T>& t, ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
   {
     // Store the handle to keep the memory from being freed
-    ossia::audio_handle& g = std::get<N>(this->handles);
+    ossia::audio_handle& g = get<N>(this->handles);
     std::exchange(g, hdl);
 
-    auto& buf = std::get<N>(this->pointers);
+    auto& buf = get<N>(this->pointers);
     using pointer_type = typename std::decay_t<decltype(buf)>::value_type;
     int chans = g->data.size();
     int64_t frames = chans > 0 ? g->data[0].size() : 0;
@@ -107,7 +107,7 @@ struct soundfile_storage
     }
 
     // Update the port
-    auto& port = boost::pfr::get<N>(t.inputs());
+    auto& port = avnd::pfr::get<N>(t.inputs());
     port.soundfile.data = buf.data();
     port.soundfile.frames = frames;
     port.soundfile.channels = chans;

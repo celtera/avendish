@@ -55,7 +55,7 @@ struct soundfile_storage
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
       {
         // Get the matching buffer in our storage, a std::vector<timed_value>
-        auto& buf = std::get<Idx>(this->soundfiles);
+        auto& buf = get<Idx>(this->soundfiles);
 
         // Preallocate some space for 2 channels
         buf.reserve(2);

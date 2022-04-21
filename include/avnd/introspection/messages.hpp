@@ -46,7 +46,7 @@ static constexpr void for_all_messages(T& obj, auto&& func) noexcept
 {
   if constexpr (messages_introspection<T>::size > 0)
   {
-    boost::pfr::for_each_field(get_messages(obj), func);
+    pfr::for_each_field(get_messages(obj), func);
   }
 }
 }

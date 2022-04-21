@@ -137,7 +137,7 @@ struct control_storage
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage
-        auto& buf = std::get<Idx>(this->linear_inputs);
+        auto& buf = get<Idx>(this->linear_inputs);
 
         // Allocate enough space for the new buffer size
         buf.resize(buffer_size);
@@ -151,7 +151,7 @@ struct control_storage
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = std::get<Idx>(this->linear_outputs);
+        auto& buf = get<Idx>(this->linear_outputs);
         buf.resize(buffer_size);
         port.values = buf.data();
       };
@@ -163,7 +163,7 @@ struct control_storage
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage, a std::vector<timed_value>
-        auto& buf = std::get<Idx>(this->span_inputs);
+        auto& buf = get<Idx>(this->span_inputs);
 
         // Allocate enough space for the new buffer size
         buf.reserve(buffer_size);
@@ -177,7 +177,7 @@ struct control_storage
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = std::get<Idx>(this->span_outputs);
+        auto& buf = get<Idx>(this->span_outputs);
         buf.reserve(buffer_size);
         port.values = {buf.data(), std::size_t(0)};
       };
@@ -200,7 +200,7 @@ struct control_storage
     {
       auto clear_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = std::get<Idx>(this->linear_inputs);
+        auto& buf = get<Idx>(this->linear_inputs);
         for (auto& b : buf)
           b = {};
       };
@@ -211,7 +211,7 @@ struct control_storage
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = std::get<Idx>(this->span_inputs);
+        auto& buf = get<Idx>(this->span_inputs);
         buf.resize(0);
       };
       span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
@@ -227,7 +227,7 @@ struct control_storage
     {
       auto clear_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = std::get<Idx>(this->linear_outputs);
+        auto& buf = get<Idx>(this->linear_outputs);
         for (auto& b : buf)
           b = {};
       };
@@ -238,7 +238,7 @@ struct control_storage
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = std::get<Idx>(this->span_outputs);
+        auto& buf = get<Idx>(this->span_outputs);
         buf.resize(0);
       };
       span_out::for_all_n(avnd::get_outputs(t), init_raw_out);

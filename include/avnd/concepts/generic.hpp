@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
 #include <avnd/common/dummy.hpp>
-#include <boost/pfr.hpp>
+#include <avnd/common/aggregates.hpp>
 
 #include <type_traits>
 
@@ -158,23 +158,23 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   struct Name##_type                                                        \
   {                                                                         \
     using type = dummy;                                                     \
-    using tuple = std::tuple<>;                                             \
-    static constexpr const auto size = std::tuple_size_v<tuple>;            \
+    using tuple = tpl::tuple<>;                                             \
+    static constexpr const auto size = 0;                                   \
   };                                                                        \
                                                                             \
   template <Name##_is_type T>                                               \
   struct Name##_type<T>                                                     \
   {                                                                         \
     using type = typename T::Name;                                          \
-    using tuple = decltype(boost::pfr::structure_to_tuple(type{}));         \
-    static constexpr const auto size = std::tuple_size_v<tuple>;            \
+    using tuple = decltype(pfr::structure_to_typelist(type{}));             \
+    static constexpr const auto size = pfr::tuple_size_v<type>;             \
   };                                                                        \
                                                                             \
   template <Name##_is_value T>                                              \
   struct Name##_type<T>                                                     \
   {                                                                         \
     using type = std::remove_reference_t<decltype(std::declval<T>().Name)>; \
-    using tuple = decltype(boost::pfr::structure_to_tuple(type{}));         \
-    static constexpr const auto size = std::tuple_size_v<tuple>;            \
+    using tuple = decltype(pfr::structure_to_typelist(type{}));             \
+    static constexpr const auto size = pfr::tuple_size_v<type>;             \
   };
 }

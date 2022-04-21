@@ -113,7 +113,7 @@ public:
   template <typename Item>
   void createTabs(const Item& item)
   {
-    constexpr int child_count = boost::pfr::tuple_size_v<Item>;
+    constexpr int child_count = avnd::pfr::tuple_size_v<Item>;
     static int tab_state = 0;
     nk_layout_row_begin(ctx, NK_STATIC, row_height, child_count);
 
@@ -144,7 +144,7 @@ public:
   template <typename Item>
   void createItem(const Item& item)
   {
-    constexpr int child_count = boost::pfr::tuple_size_v<Item>;
+    constexpr int child_count = avnd::pfr::tuple_size_v<Item>;
     if constexpr (requires { item.spacing; })
     {
       nk_label(ctx, " ", NK_TEXT_LEFT);

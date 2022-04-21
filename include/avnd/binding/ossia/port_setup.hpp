@@ -100,47 +100,27 @@ struct inlet_storage
   // };
   using inputs_type = typename avnd::inputs_type<T>::type;
 
-  // tuple<a, b, c>
+  // typelist<a, b, c>
   using inputs_tuple = typename avnd::inputs_type<T>::tuple;
 
   // tuple<ossia::audio_inlet, ossia::audio_outlet, ossia::value_inlet>
   using ossia_inputs_tuple
-      = boost::mp11::mp_transform<get_ossia_inlet_type_t, inputs_tuple>;
+      = boost::mp11::mp_rename<
+          boost::mp11::mp_transform<get_ossia_inlet_type_t, inputs_tuple>,
+        tuplet::tuple>;
   ossia_inputs_tuple ports;
-  /*
-  // mp_list<mp_size<0>, mp_size<1>, mp_size<2>>;
-  using inputs_indices = boost::mp11::mp_iota_c<boost::mp11::mp_size<inputs_tuple>::value>;
-
-
-  // Is the port at index N, a control input
-  template<class N>
-  using check_control_input = is_control_input<boost::mp11::mp_at_c<inputs_tuple, N::value>>;
-
-  // mp_list<mp_size<2>>
-  using control_input_indices = boost::mp11::mp_copy_if<inputs_indices, check_control_input>;
-
-  // control_input_index<0>::value == 2
-  template<std::size_t ControlN>
-  using control_input_index = boost::mp11::mp_at_c<control_input_indices, ControlN>;
-
-  // tuple<c>
-  using control_input_tuple = boost::mp11::mp_copy_if<inputs_tuple, is_control_input>;
-
-  // tuple<float>
-  using control_input_values_type = typename oscr::get_control_type_list<control_input_tuple>::type;
-
-  */
 };
 
 template <typename T>
 struct outlet_storage
 {
   using outputs_type = typename avnd::outputs_type<T>::type;
-
   using outputs_tuple = typename avnd::outputs_type<T>::tuple;
 
   using ossia_outputs_tuple
-      = boost::mp11::mp_transform<get_ossia_outlet_type_t, outputs_tuple>;
+      = boost::mp11::mp_rename<
+          boost::mp11::mp_transform<get_ossia_outlet_type_t, outputs_tuple>,
+        tuplet::tuple>;
   ossia_outputs_tuple ports;
 };
 

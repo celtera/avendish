@@ -22,7 +22,7 @@ namespace oscr
 template <typename T>
 void from_ossia_value(const ossia::value& src, T& dst)
 {
-  constexpr int sz = boost::pfr::tuple_size_v<T>;
+  constexpr int sz = avnd::pfr::tuple_size_v<T>;
   if constexpr (sz == 0)
   {
     // Impulse case, nothing to do
