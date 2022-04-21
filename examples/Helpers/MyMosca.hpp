@@ -142,7 +142,7 @@ struct MyMosca
 
     struct ins
     {
-        halp::dynamic_audio_bus<"Input", double> audio;
+        //halp::dynamic_audio_bus<"Input", double> audio;
 
         halp::hslider_f32<"A", halp::range{.min = -10, .max = 10, .init = 0}> a;
         halp::hslider_f32<"B", halp::range{.min = -10, .max = 10, .init = 0}> b;
@@ -153,7 +153,7 @@ struct MyMosca
 
     struct outs
     {
-        halp::dynamic_audio_bus<"Output", double> audio;
+        //halp::dynamic_audio_bus<"Output", double> audio;
     } outputs;
 
     struct ui {
@@ -186,26 +186,5 @@ struct MyMosca
         } panel;
 
     };
-
-    void operator()(halp::tick t, halp::xy_type<float> value)
-    {
-      // Process the input buffer
-      for (int i = 0; i < inputs.audio.channels; i++)
-      {
-        auto* in = inputs.audio[i];
-        auto* out = outputs.audio[i];
-
-        float& prev = this->previous_values[i];
-
-        for (int j = 0; j < t.frames; j++)
-        {
-          out[j] = value.x * in[j];
-          prev = out[j];
-        }
-      }
-    }
-private:
-  // Here we have some state which depends on the host configuration (number of channels, etc).
-  std::vector<float> previous_values{};
 };
 }
