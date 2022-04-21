@@ -180,12 +180,13 @@ struct predicate_introspection
   static constexpr auto index_map = integer_sequence_to_array(indices_n{});
   static constexpr auto size = indices_n::size();
 
+  // TODO consteval when clang < 14 is dropped
   template<std::size_t Idx>
-  static consteval int map() noexcept {
+  static constexpr int map() noexcept {
     return index_map[Idx];
   }
   template<std::size_t Idx>
-  static consteval int unmap() noexcept {
+  static constexpr int unmap() noexcept {
     return avnd::index_of_element<Idx>(indices_n{});
   }
 

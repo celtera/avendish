@@ -7,6 +7,7 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/network/dataspace/dataspace_visitors.hpp>
+#include <tuplet/tuple.hpp>
 
 namespace oscr
 {
