@@ -8,7 +8,7 @@
 namespace fmt
 {
 template <typename T>
-struct fmt::formatter<halp::combo_pair<T>>
+struct formatter<halp::combo_pair<T>>
 {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx)
@@ -24,7 +24,7 @@ struct fmt::formatter<halp::combo_pair<T>>
 };
 
 template <typename T>
-struct fmt::formatter<halp::xy_type<T>>
+struct formatter<halp::xy_type<T>>
 {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx)
@@ -39,7 +39,7 @@ struct fmt::formatter<halp::xy_type<T>>
   }
 };
 template <>
-struct fmt::formatter<halp::color_type>
+struct formatter<halp::color_type>
 {
   template <typename ParseContext>
   constexpr auto parse(ParseContext& ctx)
