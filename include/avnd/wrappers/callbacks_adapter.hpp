@@ -73,6 +73,7 @@ struct callback_storage : callback_storage_views<T>
       auto setup_view = [ this, callback_handler ]<auto Idx, auto IdxGlob, typename C>(
           C & cb, avnd::predicate_index<Idx>, avnd::field_index<IdxGlob>)
       {
+        using namespace tpl;
         using call_type = decltype(C::call);
 
         // Generate a dummy function if we don't have anything to bind it to.
@@ -81,7 +82,7 @@ struct callback_storage : callback_storage_views<T>
         using ret = typename func_reflect::return_type;
         using args = typename func_reflect::arguments;
 
-        auto& buf = get<Idx>(this->functions_storage);
+        auto& buf = tpl::get<Idx>(this->functions_storage);
         using stored_type
             = std::tuple_element_t<Idx, std::decay_t<decltype(this->functions_storage)>>;
         buf = callback_handler(C::name(), args{}, func_reflect{}, avnd::num<IdxGlob>{});
@@ -104,7 +105,7 @@ struct callback_storage : callback_storage_views<T>
           // this is what actually goes in cb.call.function:
           return +[](Args... args)
           {
-            void* self = get<0>(std::tie(args...));
+            void* self = tpl::get<0>(std::tie(args...));
             (*reinterpret_cast<stored_type*>(self))(args...);
           };
         }

@@ -77,7 +77,7 @@ struct midi_storage
       {
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.
-        auto& buf = get<Idx>(this->inputs_storage);
+        auto& buf = tpl::get<Idx>(this->inputs_storage);
         buf.resize(buffer_size);
 
         port.midi_messages = buf.data();
@@ -92,7 +92,7 @@ struct midi_storage
       {
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.
-        auto& buf = get<Idx>(this->outputs_storage);
+        auto& buf = tpl::get<Idx>(this->outputs_storage);
         buf.resize(buffer_size);
 
         port.midi_messages = buf.data();

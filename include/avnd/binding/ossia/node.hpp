@@ -282,8 +282,9 @@ public:
     using info = avnd::input_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
+      using namespace tpl;
       (f(avnd::pfr::get<Index>(in),
-         get<Index>(this->ossia_inlets.ports),
+         tuplet::get<Index>(this->ossia_inlets.ports),
          avnd::num<Index>{}),
        ...);
     }
@@ -302,7 +303,7 @@ public:
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
       (f(avnd::pfr::get<Index>(in),
-         get<Index>(this->ossia_outlets.ports),
+         tuplet::get<Index>(this->ossia_outlets.ports),
          avnd::num<Index>{}),
        ...);
     }
@@ -384,7 +385,7 @@ public:
     {
       // Idx is the index of the port in the complete input array.
       // We need to map it to the callback index.
-      ossia::value_outlet& port = get<Idx>(self.ossia_outlets.ports);
+      ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
       if constexpr (sizeof...(Args) == 0)
         port.data.write_value(ossia::impulse{}, 0);
       else if constexpr (sizeof...(Args) == 1)
