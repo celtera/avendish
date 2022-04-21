@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/common/struct_reflection.hpp>
+#include <avnd/concepts/soundfile.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
@@ -32,6 +33,11 @@ template <avnd::texture_port T>
 struct get_ossia_inlet_type<T>
 {
   using type = ossia::texture_inlet;
+};
+template <avnd::soundfile_port T>
+struct get_ossia_inlet_type<T>
+{
+    using type = ossia::value_inlet;
 };
 template <avnd::message T>
 struct get_ossia_inlet_type<T>
@@ -140,7 +146,7 @@ struct outlet_storage
 
 struct setup_value_port
 {
-  template <avnd::parameter_with_full_range T>
+  template <avnd::parameter_with_minmax_range T>
   ossia::domain range_to_domain()
   {
     constexpr auto dom = avnd::get_range<T>();
@@ -169,24 +175,31 @@ struct setup_value_port
   template <typename T>
   ossia::domain range_to_domain()
   {
-    constexpr auto dom = avnd::get_range<T>();
-    if constexpr (requires { std::string_view{dom.values[0].first}; })
+    if constexpr(avnd::has_range<T>)
     {
-      // Case for combo_pair things
-      using val_type = std::decay_t<decltype(T::value)>;
-      ossia::domain_base<val_type> v;
-      for (auto& val : dom.values)
+      constexpr auto dom = avnd::get_range<T>();
+      if constexpr (requires { std::string_view{dom.values[0].first}; })
       {
-        v.values.push_back(val.second);
+        // Case for combo_pair things
+        using val_type = std::decay_t<decltype(T::value)>;
+        ossia::domain_base<val_type> v;
+        for (auto& val : dom.values)
+        {
+          v.values.push_back(val.second);
+        }
+        return v;
       }
-      return v;
+      else
+      {
+        // Just strings
+        ossia::domain_base<std::string> d;
+        d.values.assign(std::begin(dom.values), std::end(dom.values));
+        return d;
+      }
     }
     else
     {
-      // Just strings
-      ossia::domain_base<std::string> d;
-      d.values.assign(std::begin(dom.values), std::end(dom.values));
-      return d;
+      return {};
     }
   }
 
@@ -220,6 +233,14 @@ struct setup_value_port
     port.is_event = true;
     port.type = ossia::val_type::STRING;
     port.domain = this->range_to_domain<Field>();
+  }
+
+  template <avnd::soundfile_port Field>
+  void setup(ossia::value_port& port)
+  {
+    port.is_event = true;
+    port.type = ossia::val_type::STRING;
+    port.domain = ossia::domain{};
   }
 
   template <avnd::enum_parameter Field>

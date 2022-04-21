@@ -77,7 +77,7 @@ template <typename T>
 concept rgb_parameter = rgb_value<decltype(T::value)>;
 
 template <typename C>
-concept parameter_with_full_range = requires
+concept parameter_with_minmax_range = requires
 {
   avnd::get_range<C>().min;
   avnd::get_range<C>().max;

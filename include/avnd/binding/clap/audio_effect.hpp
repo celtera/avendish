@@ -382,26 +382,26 @@ struct SimpleAudioEffect : clap_plugin
         info->id,
         [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field)
         {
-          if constexpr (requires { avnd::get_range<C>().init; })
+          if constexpr (avnd::has_range<C>)
+          {
+            constexpr auto range = avnd::get_range<C>();
             info->default_value
-                = avnd::map_control_to_double<C>(avnd::get_range<C>().init);
+                = avnd::map_control_to_double<C>(range.init);
 
-          if constexpr (avnd::enum_parameter<C>)
-          {
-            info->min_value = 0;
-            info->max_value = avnd::get_enum_choices_count<C>() - 1;
-            info->flags |= CLAP_PARAM_IS_STEPPED;
-          }
-          else
-          {
-            if constexpr (requires { avnd::get_range<C>().min; })
-              info->min_value = avnd::map_control_to_double<C>(avnd::get_range<C>().min);
-            if constexpr (requires { avnd::get_range<C>().max; })
-              info->max_value = avnd::map_control_to_double<C>(avnd::get_range<C>().max);
-            if constexpr (requires { avnd::get_range<C>().step; })
+            if constexpr (avnd::enum_parameter<C>)
+            {
+              info->min_value = 0;
+              info->max_value = avnd::get_enum_choices_count<C>() - 1;
               info->flags |= CLAP_PARAM_IS_STEPPED;
+            }
+            else
+            {
+              info->min_value = avnd::map_control_to_double<C>(range.min);
+              info->max_value = avnd::map_control_to_double<C>(range.max);
+              if constexpr (requires { range.step; })
+                info->flags |= CLAP_PARAM_IS_STEPPED;
+            }
           }
-
           copy_string(info->name, C::name());
           copy_string(info->module, "");
           // TODO module

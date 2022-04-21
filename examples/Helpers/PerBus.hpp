@@ -25,7 +25,7 @@ struct PerBusAsArgs
     {
       for (int k = 0; k < frames; k++)
       {
-        outputs[c][k] = tanh(inputs[c][k]);
+        outputs[c][k] = tanh(10. * inputs[c][k]);
       }
     }
   }
@@ -57,7 +57,7 @@ struct PerBusAsPortsFixed
     {
       for (int k = 0; k < frames; k++)
       {
-        outputs.audio[c][k] = tanh(10 * (inputs.audio[c][k] + inputs.sidechain[c][k]));
+        outputs.audio[c][k] = tanh(10. * (inputs.audio[c][k] + inputs.sidechain[c][k]));
       }
     }
   }
@@ -91,7 +91,7 @@ struct PerBusAsPortsDynamic
     {
       for (int k = 0; k < frames; k++)
       {
-        outputs.audio[c][k] = tanh(inputs.audio[c][k]);
+        outputs.audio[c][k] = tanh(10. * inputs.audio[c][k]);
       }
     }
   }

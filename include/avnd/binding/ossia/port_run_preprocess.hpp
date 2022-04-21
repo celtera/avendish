@@ -2,6 +2,7 @@
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
+#include <avnd/concepts/soundfile.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
@@ -174,6 +175,21 @@ struct process_before_run
   template <typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::texture_inlet& port, avnd::num<Idx>) const noexcept
   {
+  }
+
+  template <avnd::soundfile_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
+  {
+    auto& dat = port.data.get_data();
+    if(dat.empty())
+      return;
+
+    auto& back = dat.back();
+    auto str = back.value.template target<std::string>();
+    if(!str)
+      return;
+
+    self.soundfile_load_request(*str, Idx);
   }
 
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>

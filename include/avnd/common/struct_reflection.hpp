@@ -11,6 +11,13 @@
 
 namespace avnd
 {
+namespace pfr = ::boost::pfr;
+
+template <std::size_t N>
+struct field_index { };
+
+template <std::size_t N>
+struct predicate_index { };
 
 template <int N, typename T, T... Idx>
 consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
@@ -34,9 +41,9 @@ consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
 }
 
 template <typename T>
-using as_tuple_ref = decltype(::boost::pfr::detail::tie_as_tuple(std::declval<T&>()));
+using as_tuple_ref = decltype(pfr::detail::tie_as_tuple(std::declval<T&>()));
 template <typename T>
-using as_tuple = decltype(::boost::pfr::structure_to_tuple(std::declval<T&>()));
+using as_tuple = decltype(pfr::structure_to_tuple(std::declval<T&>()));
 
 // Yields a tuple with the compile-time function applied to each member of the struct
 template <template <typename...> typename F, typename T>
@@ -64,8 +71,8 @@ constexpr std::size_t fields_count_unsafe() noexcept
   using type = std::remove_cv_t<T>;
 
   constexpr std::size_t middle = sizeof(type) / 2 + 1;
-  return ::boost::pfr::detail::detect_fields_count<T, 0, middle>(
-      ::boost::pfr::detail::multi_element_range{}, 1L);
+  return pfr::detail::detect_fields_count<T, 0, middle>(
+      pfr::detail::multi_element_range{}, 1L);
 }
 
 /**
@@ -77,10 +84,7 @@ struct fields_introspection
   using type = T;
 
   static constexpr auto size = fields_count_unsafe<type>();
-  using fields = as_tuple<type>;
-  using indices = typed_index_sequence_t<std::make_index_sequence<size>>;
-  using indices_n = numbered_index_sequence_t<indices>;
-  static constexpr auto index_map = integer_sequence_to_array(indices_n{});
+  using indices_n = std::make_integer_sequence<int, size>;
 
   static constexpr void for_all(auto&& func) noexcept
   {
@@ -89,7 +93,7 @@ struct fields_introspection
       // C++20 : template lambda
       [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        (func(field_reflection<Index, std::tuple_element_t<Index, fields>>{}), ...);
+        (func(field_reflection<Index, pfr::tuple_element_t<Index, type>>{}), ...);
       }
       (indices_n{});
     }
@@ -106,7 +110,7 @@ struct fields_introspection
       [ n, &func ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(field_reflection<Index, std::tuple_element_t<Index, fields>>{}), true)),
+        ((void)(Index == n && (func(field_reflection<Index, pfr::tuple_element_t<Index, type>>{}), true)),
          ...);
       }
       (indices_n{});
@@ -119,8 +123,8 @@ struct fields_introspection
     {
       [&func, &fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(fields);
-        (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+        auto&& ppl = pfr::detail::tie_as_tuple(fields);
+        (func(pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
       }
       (indices_n{});
     }
@@ -136,9 +140,9 @@ struct fields_introspection
     {
       [ n, &func, &fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(fields);
+        auto&& ppl = pfr::detail::tie_as_tuple(fields);
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
+        ((void)(Index == n && (func(pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
          ...);
       }
       (indices_n{});
@@ -151,7 +155,7 @@ struct fields_introspection
  */
 
 template <typename T, template <typename...> typename P, typename IntT>
-struct matches_predicate : P<boost::pfr::tuple_element_t<IntT::value, T>>
+struct matches_predicate : P<pfr::tuple_element_t<IntT::value, T>>
 {
 };
 
@@ -160,7 +164,7 @@ struct predicate_introspection
 {
   using type = T;
   using indices
-      = typed_index_sequence_t<std::make_index_sequence<boost::pfr::tuple_size_v<type>>>;
+      = typed_index_sequence_t<std::make_index_sequence<pfr::tuple_size_v<type>>>;
 
   template <typename IntT>
   struct matches_predicate_i : matches_predicate<T, P, IntT>
@@ -173,13 +177,22 @@ struct predicate_introspection
   static constexpr auto index_map = integer_sequence_to_array(indices_n{});
   static constexpr auto size = indices_n::size();
 
+  template<std::size_t Idx>
+  static consteval int map() noexcept {
+    return index_map[Idx];
+  }
+  template<std::size_t Idx>
+  static consteval int unmap() noexcept {
+    return avnd::index_of_element<Idx>(indices_n{});
+  }
+
   static constexpr void for_all(auto&& func) noexcept
   {
     if constexpr (size > 0)
     {
       [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        (func(field_reflection<Index, boost::pfr::tuple_element_t<Index, T>>{}), ...);
+        (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), ...);
       }
       (indices_n{});
     }
@@ -193,7 +206,7 @@ struct predicate_introspection
       [ n, &func ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(field_reflection<Index, boost::pfr::tuple_element_t<Index, T>>{}), true)),
+        ((void)(Index == n && (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), true)),
          ...);
       }
       (indices_n{});
@@ -209,7 +222,7 @@ struct predicate_introspection
         func ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
         // TODO compare with || logical-or fold ?
-        ((void)(Index == k && (func(field_reflection<Index, boost::pfr::tuple_element_t<Index, T>>{}), true)),
+        ((void)(Index == k && (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), true)),
          ...);
       }
       (indices_n{});
@@ -219,12 +232,12 @@ struct predicate_introspection
   // Goes from 0, 1, 2 indices to indices in the complete
   // struct with members that may not match this predicate
   template <std::size_t N>
-  using nth_element = std::decay_t<decltype(boost::pfr::get<index_map[N]>(type{}))>;
+  using nth_element = std::decay_t<decltype(pfr::get<index_map[N]>(type{}))>;
 
   template <std::size_t N>
   static constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
   {
-    return boost::pfr::get<index_map[N]>(unfiltered_fields);
+    return pfr::get<index_map[N]>(unfiltered_fields);
   }
 
   // Gives std::tuple<field1&, field2&, etc...>
@@ -232,7 +245,7 @@ struct predicate_introspection
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
-      return std::tie(boost::pfr::get<Index>(unfiltered_fields)...);
+      return std::tie(pfr::get<Index>(unfiltered_fields)...);
     }
     (indices_n{});
   }
@@ -242,7 +255,7 @@ struct predicate_introspection
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
-      return std::make_tuple(boost::pfr::get<Index>(unfiltered_fields)...);
+      return std::make_tuple(pfr::get<Index>(unfiltered_fields)...);
     }
     (indices_n{});
   }
@@ -252,7 +265,7 @@ struct predicate_introspection
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
-      return std::make_tuple(filter(boost::pfr::get<Index>(unfiltered_fields))...);
+      return std::make_tuple(filter(pfr::get<Index>(unfiltered_fields))...);
     }
     (indices_n{});
   }
@@ -264,8 +277,8 @@ struct predicate_introspection
       [&func, &
        unfiltered_fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(unfiltered_fields);
-        (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+        auto&& ppl = pfr::detail::tie_as_tuple(unfiltered_fields);
+        (func(pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
       }
       (indices_n{});
     }
@@ -282,8 +295,8 @@ struct predicate_introspection
       {
         for (auto& m : unfiltered_fields)
         {
-          auto&& ppl = boost::pfr::detail::tie_as_tuple(m);
-          (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+          auto&& ppl = pfr::detail::tie_as_tuple(m);
+          (func(pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
         }
       }
       (indices_n{});
@@ -301,8 +314,8 @@ struct predicate_introspection
       {
         for (auto& m : unfiltered_fields)
         {
-          auto&& ppl = boost::pfr::detail::tie_as_tuple(m);
-          (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+          auto&& ppl = pfr::detail::tie_as_tuple(m);
+          (func(pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
         }
       }
       (indices_n{});
@@ -318,10 +331,10 @@ struct predicate_introspection
           std::integer_sequence<K, Index...>,
           std::integer_sequence<size_t, LocalIndex...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(unfiltered_fields);
+        auto&& ppl = pfr::detail::tie_as_tuple(unfiltered_fields);
         (func(
-             boost::pfr::detail::sequence_tuple::get<Index>(ppl),
-             avnd::num<LocalIndex>{}),
+             pfr::detail::sequence_tuple::get<Index>(ppl),
+             avnd::predicate_index<LocalIndex>{}),
          ...);
       }
       (indices_n{}, std::make_index_sequence<size>{});
@@ -337,11 +350,11 @@ struct predicate_introspection
           std::integer_sequence<K, Index...>,
           std::integer_sequence<size_t, LocalIndex...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(unfiltered_fields);
+        auto&& ppl = pfr::detail::tie_as_tuple(unfiltered_fields);
         (func(
-             boost::pfr::detail::sequence_tuple::get<Index>(ppl),
-             avnd::num<LocalIndex>{},
-             avnd::num<Index>{}),
+             pfr::detail::sequence_tuple::get<Index>(ppl),
+             avnd::predicate_index<LocalIndex>{},
+             avnd::field_index<Index>{}),
          ...);
       }
       (indices_n{}, std::make_index_sequence<size>{});
@@ -355,18 +368,20 @@ struct predicate_introspection
     if constexpr (size > 0)
     {
       [&func, &
-       unfiltered_fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
+       unfiltered_fields ]<typename K, K... Index, size_t... LocalIndex>(
+                    std::integer_sequence<K, Index...>,
+                    std::integer_sequence<size_t, LocalIndex...>)
       {
         for (auto& m : unfiltered_fields)
         {
-          auto&& ppl = boost::pfr::detail::tie_as_tuple(m);
+          auto&& ppl = pfr::detail::tie_as_tuple(m);
           (func(
-               boost::pfr::detail::sequence_tuple::get<Index>(ppl),
-               avnd::num<index_map[Index]>{}),
+               pfr::detail::sequence_tuple::get<Index>(ppl),
+               avnd::predicate_index<LocalIndex>{}),
            ...);
         }
       }
-      (indices_n{});
+      (indices_n{}, std::make_index_sequence<size>{});
     }
   }
 
@@ -378,8 +393,8 @@ struct predicate_introspection
       return [&func, &unfiltered_fields ]<typename K, K... Index>(
           std::integer_sequence<K, Index...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(unfiltered_fields);
-        return (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)) && ...);
+        auto&& ppl = pfr::detail::tie_as_tuple(unfiltered_fields);
+        return (func(pfr::detail::sequence_tuple::get<Index>(ppl)) && ...);
       }
       (indices_n{});
     }
@@ -410,8 +425,8 @@ struct predicate_introspection
     {
       [ n, &func, &fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(fields);
-        ((void)(Index == n && (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
+        auto&& ppl = pfr::detail::tie_as_tuple(fields);
+        ((void)(Index == n && (func(pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
          ...);
       }
       (indices_n{});
@@ -425,8 +440,8 @@ struct predicate_introspection
       [ k = index_map[n], &func, &
         fields ]<typename K, K... Index>(std::integer_sequence<K, Index...>)
       {
-        auto&& ppl = boost::pfr::detail::tie_as_tuple(fields);
-        ((void)(Index == k && (func(boost::pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
+        auto&& ppl = pfr::detail::tie_as_tuple(fields);
+        ((void)(Index == k && (func(pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
          ...);
       }
       (indices_n{});

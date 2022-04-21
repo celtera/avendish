@@ -8,6 +8,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/concepts/audio_processor.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/callback.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/channels.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/fft.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/generic.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/gfx.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/layout.hpp"
@@ -20,6 +21,7 @@ target_sources(Avendish
     "${AVND_SOURCE_DIR}/include/avnd/concepts/parameter.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/port.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/processor.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/concepts/soundfile.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/concepts/synth.hpp"
 
     "${AVND_SOURCE_DIR}/include/avnd/introspection/channels.hpp"

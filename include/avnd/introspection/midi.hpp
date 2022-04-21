@@ -73,7 +73,7 @@ struct midi_storage
   {
     if constexpr (raw_midi_in_info::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.
@@ -88,7 +88,7 @@ struct midi_storage
 
     if constexpr (raw_midi_out_info::size > 0)
     {
-      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
+      auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Here we use storage pre-allocated in midi_..._storage
         // We allocate some memory locally and save a pointer in the structure.

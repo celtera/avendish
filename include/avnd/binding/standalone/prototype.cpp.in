@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-
 #include <@AVND_MAIN_FILE@>
+
 #include <avnd/wrappers/effect_container.hpp>
 #include <avnd/binding/standalone/standalone.hpp>
 #include <avnd/binding/standalone/configure.hpp>

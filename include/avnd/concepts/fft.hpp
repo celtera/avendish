@@ -46,4 +46,6 @@ concept rfft_1d = requires(T t)
   // Which may need a normalization step
   { t.normalization(128) } -> std::floating_point;
 };
+
+// TODO spectra input port
 }

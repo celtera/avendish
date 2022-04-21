@@ -80,7 +80,7 @@ struct oscquery_mapper
     param.set_value_type(type_for_arg<decltype(Field::value)>());
 
     // Set-up the metadata
-    if constexpr (avnd::parameter_with_full_range<Field>)
+    if constexpr (avnd::parameter_with_minmax_range<Field>)
     {
       constexpr auto ctl = avnd::get_range<Field>();
       param.set_domain(ossia::make_domain(ctl.min, ctl.max));
@@ -514,7 +514,7 @@ struct oscquery_mapper
         = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
     {
       param->set_value_type(type_for_arg<decltype(Field::value)>());
-      if constexpr (requires { avnd::get_range<Field>(); })
+      if constexpr (avnd::has_range<Field>)
       {
         constexpr auto ctl = avnd::get_range<Field>();
         param->set_domain(ossia::make_domain(ctl.min, ctl.max));

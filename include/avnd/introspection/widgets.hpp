@@ -17,20 +17,12 @@ concept has_widget = requires
 
 /// Range reflection ///
 template <typename C>
-concept has_range = requires
-{
-  C::range();
-}
-|| requires
-{
-  sizeof(C::range);
-}
-|| requires
-{
-  sizeof(typename C::range);
-};
+concept has_range =
+  requires { C::range(); }
+  || requires { sizeof(C::range); }
+  || requires { sizeof(typename C::range); };
 
-template <typename T>
+template <avnd::has_range T>
 consteval auto get_range()
 {
   if constexpr (requires { sizeof(typename T::range); })
@@ -40,20 +32,7 @@ consteval auto get_range()
   else if constexpr (requires { sizeof(decltype(T::range)); })
     return T::range;
   else
-  {
-    using value_type = std::decay_t<decltype(T::value)>;
-    struct dummy_range
-    {
-      value_type min;
-      value_type max;
-      value_type init;
-    };
-    dummy_range r;
-    r.min = 0.;
-    r.max = 1.;
-    r.init = 0.5;
-    return r;
-  }
+    return T::there_is_no_range_here;
 }
 
 template <typename T>
