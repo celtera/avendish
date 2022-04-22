@@ -31,6 +31,9 @@ struct MyMosca
     static consteval auto uuid() { return "f253d48c-b090-497c-a561-ec442efdcc92"; }
     //static consteval auto category() { return "Test"; }
 
+    using setup = halp::setup;
+    using tick = halp::tick;
+
     struct custom_mosca
     {
         static constexpr double width() { return 300.; } // X
@@ -140,36 +143,113 @@ struct MyMosca
         halp::xy_type<float> value{};
     };
 
+    struct custom_button
+    {
+        static constexpr double width() { return 100.; }
+        static constexpr double height() { return 100.; }
+
+        void paint(avnd::painter auto ctx)
+        {
+          ctx.set_stroke_color({200, 200, 200, 255});
+          ctx.set_stroke_width(2.);
+          ctx.set_fill_color({100, 100, 100, 255});
+          ctx.begin_path();
+          ctx.draw_rounded_rect(0., 0., width(), height(), 5);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.set_fill_color({0, 0, 0, 255});
+          ctx.begin_path();
+          ctx.draw_text(20., 20., fmt::format("{}", press_count));
+          ctx.fill();
+        }
+
+        bool mouse_press(double x, double y)
+        {
+          on_pressed();
+          return true;
+        }
+
+        void mouse_move(double x, double y)
+        {
+        }
+
+        void mouse_release(double x, double y)
+        {
+        }
+
+        int press_count{0};
+
+        std::function<void()> on_pressed = [] { };
+    };
+
     struct ins
     {
-        //halp::dynamic_audio_bus<"Input", double> audio;
+        halp::dynamic_audio_bus<"Input", double> audio;
 
-        halp::hslider_f32<"A", halp::range{.min = -10, .max = 10, .init = 0}> a;
-        halp::hslider_f32<"B", halp::range{.min = -10, .max = 10, .init = 0}> b;
-        halp::spinbox_i32<"Int spinbox", halp::range{0, 1000, 10}> c;
-        halp::hslider_f32<"A", halp::range{.min = -10, .max = 10, .init = 0}> d;
-        halp::hslider_f32<"B", halp::range{.min = -10, .max = 10, .init = 0}> e;
+        halp::knob_f32<"Volume", halp::range{.min = 0., .max = 5., .init = 1.}> volume;
+        halp::hslider_f32<"Level", halp::range{.min = -10, .max = 10, .init = 0}> level;
+        halp::hslider_f32<"Doppler amount", halp::range{.min = -10, .max = 10, .init = 0}> dopler;
+        halp::hslider_f32<"Concentration", halp::range{.min = -10, .max = 10, .init = 0}> concentration;
+        halp::hslider_f32<"Dst. amount", halp::range{.min = -10, .max = 10, .init = 0}> dstAmount;
     } inputs;
 
     struct outs
     {
-        //halp::dynamic_audio_bus<"Output", double> audio;
+        halp::dynamic_audio_bus<"Output", double> audio;
     } outputs;
+
+    struct ui_to_processor
+    {
+        int test;
+    };
+
+    struct processor_to_ui
+    {
+        int test_back;
+    };
 
     struct ui {
         halp_meta(name, "Main")
         halp_meta(layout, halp::layouts::hbox)
         halp_meta(background, "background.svg")
-        halp_meta(width, 600)
+        halp_meta(width, 900)
         halp_meta(height, 300)
         halp_meta(font, "Inconsolata")
+
+        struct bus {
+            void init(ui& ui)
+            {
+                ui.test.button.on_pressed = [&]{
+                    fprintf(stderr, "Sending message from UI thread !\n");
+                    this->send_message(ui_to_processor{.test = 1});
+                };
+            }
+
+            static void process_message(ui& self, processor_to_ui msg)
+            {
+                fprintf(stderr, "Got message in ui thread !\n");
+                self.test.button.press_count++;
+            }
+
+            std::function<void(ui_to_processor)> send_message;
+
+        };
+
+        struct {
+            halp_meta(layout, halp::layouts::container)
+            halp::custom_actions_item<custom_button> button{
+                .x = 10
+                , .y = 10
+            };
+        } test;
 
         struct {
             halp_meta(name, "Mosca")
             halp_meta(layout, halp::layouts::vbox)
             halp_meta(background, halp::colors::mid)
 
-            halp::custom_item<custom_mosca, &ins::a> widget{{.x = 500, .y = 920}};
+            halp::custom_item<custom_mosca, &ins::level> widget{{.x = 500, .y = 920}};
         } mosca;
 
         struct {
@@ -178,13 +258,44 @@ struct MyMosca
             halp_meta(width, 300)
             halp_meta(height, 300)
 
-            halp::item<&ins::a> w1;
-            halp::item<&ins::b> w2;
-            halp::item<&ins::c> w3;
-            halp::item<&ins::d> w4;
-            halp::item<&ins::e> w5;
+            halp::item<&ins::volume> w0;
+            halp::item<&ins::level> w1;
+            halp::item<&ins::dopler> w2;
+            halp::item<&ins::concentration> w3;
+            halp::item<&ins::dstAmount> w4;
         } panel;
-
     };
+
+    void prepare(halp::setup info) { previous_values.resize(info.input_channels); }
+
+    std::function<void(processor_to_ui)> send_message;
+
+    void process_message(const ui_to_processor& msg)
+    {
+        fprintf(stderr, "Got message in processing thread !\n");
+        send_message(processor_to_ui{.test_back = 1});
+    }
+
+    void operator()(halp::tick t)
+    {
+      // Process the input buffer
+      for (int i = 0; i < inputs.audio.channels; i++)
+      {
+        auto* in = inputs.audio[i];
+        auto* out = outputs.audio[i];
+
+        float& prev = this->previous_values[i];
+
+        for (int j = 0; j < t.frames; j++)
+        {
+          out[j] = inputs.volume * in[j];
+          prev = out[j];
+        }
+      }
+    }
+
+  private:
+    // Here we have some state which depends on the host configuration (number of channels, etc).
+    std::vector<float> previous_values{};
 };
 }
