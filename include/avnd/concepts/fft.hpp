@@ -47,5 +47,23 @@ concept rfft_1d = requires(T t)
   { t.normalization(128) } -> std::floating_point;
 };
 
-// TODO spectra input port
+
+// FIXME support float
+template <typename T>
+concept spectrum_split_channel_port =
+  std::is_same_v<std::decay_t<decltype(std::declval<T&>().spectrum.amplitude)>, double*> &&
+  std::is_same_v<std::decay_t<decltype(std::declval<T&>().spectrum.phase)>, double*>
+;
+
+template <typename T>
+concept spectrum_complex_channel_port = complex_number<decltype(std::declval<T&>().spectrum[0])>;
+
+template <typename T>
+concept spectrum_split_bus_port =
+  std::is_same_v<std::decay_t<decltype(std::declval<T&>().spectrum.amplitude[0])>, double*> &&
+  std::is_same_v<std::decay_t<decltype(std::declval<T&>().spectrum.phase[0])>, double*>
+;
+
+template <typename T>
+concept spectrum_complex_bus_port = complex_number<decltype(std::declval<T&>().spectrum[0][0])>;
 }

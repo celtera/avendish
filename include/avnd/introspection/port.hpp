@@ -128,6 +128,7 @@ using audio_channel_introspection = predicate_introspection<T, is_audio_channel_
 // template <typename T>
 // using message_introspection = predicate_introspection<T, is_message_t>;
 
+// Callbacks
 template <typename Field>
 using is_callback_t = boost::mp11::mp_bool<callback<Field>>;
 template <typename T>
@@ -143,9 +144,31 @@ using is_view_callback_t = boost::mp11::mp_bool<view_callback<Field>>;
 template <typename T>
 using view_callback_introspection = predicate_introspection<T, is_view_callback_t>;
 
+// Soundfile
 template <typename Field>
 using is_soundfile_t = boost::mp11::mp_bool<soundfile_port<Field>>;
 template <typename T>
 using soundfile_introspection = predicate_introspection<T, is_soundfile_t>;
+
+// FFT
+template <typename Field>
+using is_spectrum_split_channel_port_t = boost::mp11::mp_bool<spectrum_split_channel_port<Field>>;
+template <typename T>
+using spectrum_split_channel_port_introspection = predicate_introspection<T, is_spectrum_split_channel_port_t>;
+
+template <typename Field>
+using is_spectrum_complex_channel_port_t = boost::mp11::mp_bool<spectrum_complex_channel_port<Field>>;
+template <typename T>
+using spectrum_complex_channel_port_introspection = predicate_introspection<T, is_spectrum_complex_channel_port_t>;
+
+template <typename Field>
+using is_spectrum_split_bus_port_t = boost::mp11::mp_bool<spectrum_split_bus_port<Field>>;
+template <typename T>
+using spectrum_split_bus_port_introspection = predicate_introspection<T, is_spectrum_split_bus_port_t>;
+
+template <typename Field>
+using is_spectrum_complex_bus_port_t = boost::mp11::mp_bool<spectrum_complex_bus_port<Field>>;
+template <typename T>
+using spectrum_complex_bus_port_introspection = predicate_introspection<T, is_spectrum_complex_bus_port_t>;
 
 }

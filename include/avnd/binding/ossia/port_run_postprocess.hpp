@@ -123,22 +123,22 @@ struct process_after_run
 {
   Exec_T& self;
   template <typename Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::value_inlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
   template <typename Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
   template <typename Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::midi_inlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
   template <typename Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::texture_inlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::texture_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
@@ -148,7 +148,7 @@ struct process_after_run
       ossia::value_outlet& port,
       auto& val,
       int64_t ts,
-      avnd::num<Idx>) const noexcept
+      avnd::field_index<Idx>) const noexcept
   {
     port->write_value(val, ts);
   }
@@ -159,15 +159,14 @@ struct process_after_run
       ossia::value_outlet& port,
       auto& val,
       int64_t ts,
-      avnd::num<Idx>) const noexcept
+      avnd::field_index<Idx> idx) const noexcept
   {
     port->write_value(val, ts);
 
     // Get the index of the control in [0; N[
     using type = typename Exec_T::processor_type;
     using controls = avnd::control_output_introspection<type>;
-    constexpr int control_index
-        = avnd::index_of_element<Idx>(typename controls::indices_n{});
+    constexpr int control_index = controls::field_index_to_index(idx);
 
     // Mark the control as changed
     self.control.outputs_set.set(control_index);
@@ -175,21 +174,20 @@ struct process_after_run
 
   template <avnd::parameter Field, std::size_t Idx>
   requires(!avnd::sample_accurate_parameter<Field>) void
-  operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>) const noexcept
+  operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
-    write_value(ctrl, port, ctrl.value, 0, avnd::num<Idx>{});
+    write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
   }
 
   template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx> idx) const noexcept
   {
     auto& buffers = self.control_buffers.linear_inputs;
     // Idx is the index of the port in the complete input array.
     // We need to map it to the linear input index.
     using processor_type = typename Exec_T::processor_type;
     using lin_out = avnd::linear_timed_parameter_output_introspection<processor_type>;
-    using indices = typename lin_out::indices_n;
-    constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
+    constexpr int storage_index = lin_out::field_index_to_index(idx);
 
     auto& buffer = get<storage_index>(buffers);
 
@@ -197,34 +195,34 @@ struct process_after_run
     {
       if (buffer[i])
       {
-        write_value(ctrl, port, *buffer[i], i, avnd::num<Idx>{});
+        write_value(ctrl, port, *buffer[i], i, avnd::field_index<Idx>{});
         buffer[i] = {};
       }
     }
   }
 
   template <avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     for (auto& [timestamp, val] : ctrl.values)
     {
-      write_value(ctrl, port, val, timestamp, avnd::num<Idx>{});
+      write_value(ctrl, port, val, timestamp, avnd::field_index<Idx>{});
     }
     ctrl.values.clear();
   }
 
   // does not make sense as output, only as input
   template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>)
+  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>)
       const noexcept = delete;
 
   template <typename Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::audio_outlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::audio_outlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
   template <avnd::raw_container_midi_port Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::midi_outlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     const int N = ctrl.midi_messages.size;
     port.data.messages.clear();
@@ -240,7 +238,7 @@ struct process_after_run
   }
 
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::midi_outlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     port.data.messages.clear();
     port.data.messages.reserve(ctrl.midi_messages.size());
@@ -255,12 +253,12 @@ struct process_after_run
 
   template <typename Field, std::size_t Idx>
   void
-  operator()(Field& ctrl, ossia::texture_outlet& port, avnd::num<Idx>) const noexcept
+  operator()(Field& ctrl, ossia::texture_outlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
   template <avnd::callback Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::num<Idx>) const noexcept
+  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 };

@@ -3,6 +3,7 @@
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
 #include <avnd/binding/ossia/port_setup.hpp>
+#include <avnd/binding/ossia/ffts.hpp>
 #include <avnd/binding/ossia/soundfiles.hpp>
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/gfx.hpp>
@@ -94,13 +95,6 @@ static void safety_checks(const ossia::token_request& tk, ossia::exec_state_faca
 */
 
 // void process(double** in, double** out, int N)
-
-struct ui_communication
-{
-  // Sends and receives info from the processor, e.g. audio signal, controls
-
-  // Sets the controls from the UI
-};
 
 template <typename T>
 struct builtin_arg_audio_ports
@@ -205,13 +199,13 @@ public:
 
   [[no_unique_address]] avnd::effect_container<T> impl;
 
-  [[no_unique_address]] builtin_arg_audio_ports<T> audio_ports;
+  [[no_unique_address]] oscr::builtin_arg_audio_ports<T> audio_ports;
 
-  [[no_unique_address]] builtin_message_value_ports<T> message_ports;
+  [[no_unique_address]] oscr::builtin_message_value_ports<T> message_ports;
 
-  [[no_unique_address]] inlet_storage<T> ossia_inlets;
+  [[no_unique_address]] oscr::inlet_storage<T> ossia_inlets;
 
-  [[no_unique_address]] outlet_storage<T> ossia_outlets;
+  [[no_unique_address]] oscr::outlet_storage<T> ossia_outlets;
 
   [[no_unique_address]] avnd::process_adapter<T> processor;
 
@@ -225,8 +219,7 @@ public:
 
   [[no_unique_address]] oscr::soundfile_storage<T> soundfiles;
 
-  // [[no_unique_address]]
-  // controls_mirror<T> feedback;
+  [[no_unique_address]] oscr::spectrum_storage<T> spectrums;
 
   [[no_unique_address]] controls_queue<T> control;
 
@@ -262,6 +255,7 @@ public:
     this->audio_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
     this->soundfiles.init(this->impl);
+    this->spectrums.init(this->impl, buffer_size);
 
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
@@ -285,7 +279,7 @@ public:
       using namespace tpl;
       (f(avnd::pfr::get<Index>(in),
          tuplet::get<Index>(this->ossia_inlets.ports),
-         avnd::num<Index>{}),
+         avnd::field_index<Index>{}),
        ...);
     }
     (typename info::indices_n{});
@@ -304,7 +298,7 @@ public:
     {
       (f(avnd::pfr::get<Index>(in),
          tuplet::get<Index>(this->ossia_outlets.ports),
-         avnd::num<Index>{}),
+         avnd::field_index<Index>{}),
        ...);
     }
     (typename info::indices_n{});

@@ -12,10 +12,14 @@
 namespace avnd
 {
 template <std::size_t N>
-struct field_index { };
+struct field_index {
+  consteval operator std::size_t() const noexcept { return N; }
+};
 
 template <std::size_t N>
-struct predicate_index { };
+struct predicate_index {
+  consteval operator std::size_t() const noexcept { return N; }
+};
 
 template <int N, typename T, T... Idx>
 consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
@@ -188,6 +192,15 @@ struct predicate_introspection
   template<std::size_t Idx>
   static constexpr int unmap() noexcept {
     return avnd::index_of_element<Idx>(indices_n{});
+  }
+
+  template<std::size_t Idx>
+  static constexpr auto index_to_field_index(avnd::predicate_index<Idx>) noexcept {
+      return avnd::field_index<index_map[Idx]>{};
+  }
+  template<std::size_t Idx>
+  static constexpr auto field_index_to_index(avnd::field_index<Idx>) noexcept {
+      return avnd::predicate_index<avnd::index_of_element<Idx>(indices_n{})>{};
   }
 
   static constexpr void for_all(auto&& func) noexcept

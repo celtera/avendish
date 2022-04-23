@@ -106,6 +106,30 @@ struct soundfile_input_introspection
 };
 
 template <typename T>
+struct spectrum_split_channel_input_introspection
+        : spectrum_split_channel_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct spectrum_complex_channel_input_introspection
+        : spectrum_complex_channel_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct spectrum_split_bus_input_introspection
+        : spectrum_split_bus_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct spectrum_complex_bus_input_introspection
+        : spectrum_complex_bus_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct input_introspection : fields_introspection<typename inputs_type<T>::type>
 {
 };

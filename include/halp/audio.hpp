@@ -40,6 +40,8 @@ struct audio_channel
   FP operator[](std::size_t i) const noexcept { return channel[i]; }
 };
 
+
+
 template <static_string lit, typename FP, int WantedChannels, static_string Desc = "">
 struct fixed_audio_bus
 {
@@ -71,6 +73,68 @@ struct dynamic_audio_bus
   {
     return {samples[i], frames};
   }
+};
+
+
+template <static_string Name, typename FP, static_string Desc = "">
+struct audio_spectrum_channel
+{
+  static consteval auto name() { return std::string_view{Name.value}; }
+
+  FP* channel{};
+
+  struct {
+    FP* amplitude{};
+    FP* phase{};
+  } spectrum;
+
+  operator FP*() const noexcept { return channel; }
+  FP& operator[](std::size_t i) noexcept { return channel[i]; }
+  FP operator[](std::size_t i) const noexcept { return channel[i]; }
+};
+
+template <static_string lit, typename FP, int WantedChannels, static_string Desc = "">
+struct fixed_audio_spectrum_bus
+{
+    static consteval auto name() { return std::string_view{lit.value}; }
+    static consteval auto description() { return std::string_view{Desc.value}; }
+    static constexpr int channels() { return WantedChannels; }
+
+    FP** samples{};
+
+    struct {
+      FP** amplitude{};
+      FP** phase{};
+    } spectrum;
+
+    operator FP**() const noexcept { return samples; }
+    FP* operator[](std::size_t i) const noexcept { return samples[i]; }
+    avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+    {
+        return {samples[i], frames};
+    }
+};
+
+template <static_string Name, typename FP, static_string Desc = "">
+struct dynamic_audio_spectrum_bus
+{
+    static consteval auto name() { return std::string_view{Name.value}; }
+    static consteval auto description() { return std::string_view{Desc.value}; }
+
+    FP** samples{};
+    struct {
+      FP** amplitude{};
+      FP** phase{};
+    } spectrum;
+
+    int channels{};
+
+    operator FP**() const noexcept { return samples; }
+    FP* operator[](std::size_t i) const noexcept { return samples[i]; }
+    avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+    {
+        return {samples[i], frames};
+    }
 };
 
 struct tick
