@@ -42,6 +42,26 @@ consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
   return ret;
 }
 
+template <typename T, T... Idx>
+constexpr int index_of_element(T N, std::integer_sequence<T, Idx...>) noexcept
+{
+    static_assert(sizeof...(Idx) > 0);
+
+    int ret = [N]
+    {
+        int k = 0;
+        for (int i : {Idx...})
+        {
+            if (i == N)
+                return k;
+            k++;
+        }
+        return -1;
+    }();
+
+    return ret;
+}
+
 // Select a subset of fields and apply an operation on them
 
 template <
@@ -201,6 +221,13 @@ struct predicate_introspection
   template<std::size_t Idx>
   static constexpr auto field_index_to_index(avnd::field_index<Idx>) noexcept {
       return avnd::predicate_index<avnd::index_of_element<Idx>(indices_n{})>{};
+  }
+
+  static constexpr auto index_to_field_index(int pred_idx) noexcept {
+      return index_map[pred_idx];
+  }
+  static constexpr auto field_index_to_index(int field_idx) noexcept {
+      return avnd::index_of_element(field_idx, indices_n{});
   }
 
   static constexpr void for_all(auto&& func) noexcept

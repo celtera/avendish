@@ -185,7 +185,7 @@ struct toggle_setup
   bool init;
 };
 
-template <static_string lit, toggle_setup setup>
+template <static_string lit, toggle_setup setup = toggle_setup{false}>
 struct toggle_t
 {
   enum widget
@@ -208,7 +208,7 @@ struct toggle_t
 };
 
 // Necessary because we have that "toggle" enum member..
-template <static_string lit, toggle_setup setup>
+template <static_string lit, toggle_setup setup = toggle_setup{false}>
 using toggle = toggle_t<lit, setup>;
 
 /// Button ///
@@ -557,8 +557,8 @@ struct soundfile_port
 }
 
 // Helpers for defining an enumeration without repeating the enumerated members
-#define HALP_NUM_ARGS_(_10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
-#define HALP_NUM_ARGS(...) HALP_NUM_ARGS_(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define HALP_NUM_ARGS_(_12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
+#define HALP_NUM_ARGS(...) HALP_NUM_ARGS_(__VA_ARGS__, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #define HALP_FOREACH(MACRO, ...) \
   HALP_FOREACH_(HALP_NUM_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
 #define HALP_FOREACH_(N, M, ...) HALP_FOREACH__(N, M, __VA_ARGS__)
@@ -571,6 +571,10 @@ struct soundfile_port
 #define HALP_FOREACH_6(M, A, ...) M(A) HALP_FOREACH_5(M, __VA_ARGS__)
 #define HALP_FOREACH_7(M, A, ...) M(A) HALP_FOREACH_6(M, __VA_ARGS__)
 #define HALP_FOREACH_8(M, A, ...) M(A) HALP_FOREACH_7(M, __VA_ARGS__)
+#define HALP_FOREACH_9(M, A, ...) M(A) HALP_FOREACH_8(M, __VA_ARGS__)
+#define HALP_FOREACH_10(M, A, ...) M(A) HALP_FOREACH_9(M, __VA_ARGS__)
+#define HALP_FOREACH_11(M, A, ...) M(A) HALP_FOREACH_10(M, __VA_ARGS__)
+#define HALP_FOREACH_12(M, A, ...) M(A) HALP_FOREACH_11(M, __VA_ARGS__)
 #define HALP_STRINGIFY_(X) #X
 #define HALP_STRINGIFY(X) HALP_STRINGIFY_(X)
 #define HALP_STRINGIFY_ALL(...) HALP_FOREACH(HALP_STRINGIFY, __VA_ARGS__)

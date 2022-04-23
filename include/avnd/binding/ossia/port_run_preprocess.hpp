@@ -10,7 +10,8 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/audio/fft.hpp>
-
+#include <fmt/printf.h>
+#include <ossia/network/value/format_value.hpp>
 namespace avnd
 {
 template <typename Field>
@@ -105,12 +106,30 @@ inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
 {
   from_ossia_value(src, dst);
 }
-inline void from_ossia_value(
-    avnd::enum_ish_parameter auto& field,
-    const ossia::value& src,
-    auto& dst)
+
+template<avnd::enum_ish_parameter Field, typename Val>
+struct enum_to_ossia_visitor
 {
-  // FIXME
+  Val operator()(const int& v) const noexcept {
+    return static_cast<Val>(v);
+  }
+  Val operator()(const std::string& v) const noexcept {
+    constexpr auto range = avnd::get_range<Field>();
+    for(int i = 0; i < std::size(range.values); i++)
+      if(v == range.values[i])
+        return (*this)((int)i);
+    return (*this)(0);
+  }
+  Val operator()(const auto& v) const noexcept { return Val{}; }
+  Val operator()() const noexcept { return Val{}; }
+};
+template<avnd::enum_ish_parameter Field, typename Val>
+inline void from_ossia_value(
+    Field& field,
+    const ossia::value& src,
+    Val& dst)
+{
+  dst = src.apply(enum_to_ossia_visitor<Field, Val>{});
 }
 
 template <typename Exec_T>

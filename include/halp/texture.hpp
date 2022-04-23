@@ -37,6 +37,33 @@ struct rgba_texture
   }
 };
 
+struct rgb_texture
+{
+  enum format
+  {
+    RGB
+  };
+  unsigned char* bytes;
+  int width;
+  int height;
+  bool changed;
+
+  /* FIXME the allocation should not be managed by the plug-in */
+  static auto allocate(int width, int height)
+  {
+    using namespace boost::container;
+    return uninitialized_bytes(width * height * 3, default_init);
+  }
+
+  void update(unsigned char* data, int w, int h) noexcept
+  {
+    bytes = data;
+    width = w;
+    height = h;
+    changed = true;
+  }
+};
+
 struct rgba_color
 {
   uint8_t r, g, b, a;
@@ -62,6 +89,31 @@ struct texture_input
   rgba_texture texture;
 };
 
+struct rgb_color
+{
+  uint8_t r, g, b;
+};
+
+template <static_string lit>
+struct rgb_texture_input
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  rgb_color get(int x, int y) noexcept
+  {
+    assert(x >= 0 && x < texture.width);
+    assert(y >= 0 && y < texture.height);
+
+    const int pixel_index = y * texture.width + x;
+    const int byte_index = pixel_index * 3;
+
+    auto* pixel_ptr = texture.bytes + byte_index;
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2]};
+  }
+
+  rgb_texture texture;
+};
+
 template <static_string lit>
 struct texture_output
 {
@@ -77,7 +129,7 @@ struct texture_output
 
   void create(int width, int height)
   {
-    storage = rgba_texture::allocate(width, height);
+    storage.resize(width * height * 4, boost::container::default_init);
     texture.width = width;
     texture.height = height;
     texture.changed = false;
