@@ -180,14 +180,14 @@ A central point of the system is that everything can be defined through bare C++
 // This line is used to allow our program to use `printf`:
 #include &lt;cstdio&gt;
 
-// This line declares a struct named HelloWorld. A struct can contain functions, variables, etc.
+// This line declares a struct named MyProcessor. A struct can contain functions, variables, etc.
 // It could also be a class - in C++, there is no strong semantic difference between either.
 struct MyProcessor
 {
   // This line declares a function that will return a visible name to show to our 
   // users.
-  // - static is used so that an instance of HelloWorld is not needed: 
-  //   we can just refer to the function as HelloWorld::name();
+  // - static is used so that an instance of MyProcessor is not needed: 
+  //   we can just refer to the function as MyProcessor::name();
   // - consteval is used to enforce that the function can be called at compile-time, 
   //   which may enable optimizations in the backends that will generate plug-ins.
   // - auto because it does not matter much here, we know that this is a string :-)
@@ -195,7 +195,7 @@ struct MyProcessor
 
   // This line declares a special function that will allow our processor to be executed as follows: 
   // 
-  // HelloWorld the_processor;
+  // MyProcessor the_processor;
   // the_processor();
   //
   // ^ the second line will call the &quot;operator()&quot; function.
