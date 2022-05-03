@@ -11,7 +11,7 @@
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <cmath>
-
+#include <variant>
 #include <cstdio>
 
 namespace examples::helpers

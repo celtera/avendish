@@ -175,7 +175,7 @@ struct Gain {
   static constexpr auto name() { return "Gain"; }
   struct {
     halp::dynamic_audio_bus<"Input", double> audio;
-    halp::hslider_f32<"Gain", avnd::range{0., 1., 0.5}> gain;
+    halp::hslider_f32<"Gain", halp::range{0., 1., 0.5}> gain;
   } inputs;
 
   struct {
