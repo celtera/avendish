@@ -69,7 +69,7 @@ struct ControlGallery
 
       struct range
       {
-        halp::combo_pair<float> values[3]{{"Foo", -10.f}, {"Bar", 0.f}, {"Baz", 10.f}};
+        halp::combo_pair<float> values[3]{{"Foo", -10.f}, {"Bar", 5.f}, {"Baz", 10.f}};
         int init{1}; // Bar
       };
 

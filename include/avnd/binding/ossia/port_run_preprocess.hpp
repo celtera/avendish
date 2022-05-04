@@ -111,18 +111,48 @@ template<avnd::enum_ish_parameter Field, typename Val>
 struct enum_to_ossia_visitor
 {
   Val operator()(const int& v) const noexcept {
-    return static_cast<Val>(v);
+    constexpr auto range = avnd::get_range<Field>();
+    static_assert(std::size(range.values) > 0);
+    if constexpr(requires (Val v) { v = range.values[0].second; })
+    {
+      if(v >= 0 && v < std::size(range.values))
+        return range.values[v].second;
+
+      return range.values[0].second;
+    }
+    else if constexpr(requires (Val v) { v = range.values[0]; })
+    {
+      if(v >= 0 && v < std::size(range.values))
+        return range.values[v];
+
+      return range.values[0];
+    }
+    else
+    {
+      return static_cast<Val>(v);
+    }
   }
   Val operator()(const std::string& v) const noexcept {
     constexpr auto range = avnd::get_range<Field>();
     for(int i = 0; i < std::size(range.values); i++)
-      if(v == range.values[i])
-        return (*this)((int)i);
+    {
+      if constexpr(requires { v == range.values[i].first; })
+      {
+        if(v == range.values[i].first)
+          return (*this)((int)i);
+      }
+      else
+      {
+        if(v == range.values[i])
+          return (*this)((int)i);
+      }
+    }
     return (*this)(0);
   }
   Val operator()(const auto& v) const noexcept { return Val{}; }
   Val operator()() const noexcept { return Val{}; }
 };
+
 template<avnd::enum_ish_parameter Field, typename Val>
 inline void from_ossia_value(
     Field& field,
