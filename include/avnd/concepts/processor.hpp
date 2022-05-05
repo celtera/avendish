@@ -6,6 +6,7 @@
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/port.hpp>
 
+// clang-format off
 namespace avnd
 {
 // FIXME refactor the terminology:
@@ -107,7 +108,6 @@ concept same_arguments = std::is_same_v<
     typename function_reflection<Func>::arguments,
     boost::mp11::mp_list<Args...>>;
 
-// clang-format off
 // If a node has exactly one audio in and one audio out it can be considered monophonic
 // (and thus be instanced).
 // Otherwise, it'll be treated as polyphonic with a single instance.
@@ -205,7 +205,6 @@ concept channel_processor
 || mono_per_channel_arg_processor<float, T>
 || mono_per_channel_port_processor<float, T>;
 
-// clang-format on
 
 ///////////////////
 
@@ -267,4 +266,18 @@ template <typename T>
 concept bus_port_processor
     = polyphonic_port_audio_effect<float, T> || polyphonic_port_audio_effect<double, T>;
 
+template<typename T>
+concept audio_argument_processor =
+     sample_arg_processor<T>
+  || channel_arg_processor<T>
+  || bus_arg_processor<T>
+;
+template<typename T>
+concept audio_port_processor =
+     sample_port_processor<T>
+  || channel_port_processor<T>
+  || bus_port_processor<T>
+;
 }
+
+// clang-format on

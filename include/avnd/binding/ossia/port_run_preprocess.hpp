@@ -162,10 +162,20 @@ inline void from_ossia_value(
   dst = src.apply(enum_to_ossia_visitor<Field, Val>{});
 }
 
-template <typename Exec_T>
+template<typename Field>
+inline void update_value(auto& obj, Field& field, const ossia::value& src, auto& dst)
+{
+  from_ossia_value(field, src, dst);
+  if constexpr(requires { &Field::update; }) {
+    field.update(obj);
+  }
+}
+
+template <typename Exec_T, typename Obj_T>
 struct process_before_run
 {
   Exec_T& self;
+  Obj_T& impl;
 
   template <avnd::parameter Field, std::size_t Idx>
   requires(!avnd::control<Field>) void init_value(
@@ -176,7 +186,7 @@ struct process_before_run
     if (!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
-      from_ossia_value(ctrl, last, ctrl.value);
+      update_value(impl, ctrl, last, ctrl.value);
     }
   }
 
@@ -189,7 +199,7 @@ struct process_before_run
     if (!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
-      from_ossia_value(ctrl, last, ctrl.value);
+      update_value(impl, ctrl, last, ctrl.value);
 
       // Get the index of the control in [0; N[
       using type = typename Exec_T::processor_type;
@@ -217,7 +227,7 @@ struct process_before_run
     for (auto& [val, ts] : port->get_data())
     {
       auto& v = ctrl.values[ts].emplace();
-      from_ossia_value(ctrl, val, v);
+      update_value(impl, ctrl, val, v);
     }
   }
 
@@ -237,7 +247,7 @@ struct process_before_run
     init_value(ctrl, port, avnd::field_index<Idx>{});
     for (auto& [val, ts] : port->get_data())
     {
-      from_ossia_value(ctrl, val, ctrl.values[ts]);
+      update_value(impl, ctrl, val, ctrl.values[ts]);
     }
   }
 

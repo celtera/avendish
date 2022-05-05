@@ -40,6 +40,7 @@ struct effect_container
     , outputs_storage<T>
 {
   using type = T;
+  enum { single_instance };
 
   T effect;
 
@@ -97,6 +98,19 @@ struct effect_container
       return dummy_instance;
   }
 
+  struct ref
+  {
+    T& effect;
+    decltype(std::declval<effect_container>().inputs())& inputs;
+    decltype(std::declval<effect_container>().outputs())& outputs;
+  };
+
+  member_iterator<ref> full_state()
+  {
+    ref r{effect, this->inputs(), this->outputs()};
+    co_yield r;
+  }
+
   member_iterator<T> effects() { co_yield effect; }
 };
 
@@ -105,6 +119,7 @@ requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>) st
     effect_container<T>
 {
   using type = T;
+    enum { single_instance };
 
   T effect;
 
@@ -141,6 +156,7 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
     effect_container<T>
 {
   using type = T;
+  enum { multi_instance };
 
   std::vector<T> effect;
   void init_channels(int input, int output)
@@ -191,6 +207,7 @@ requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
 struct effect_container<T>
 {
   using type = T;
+  enum { multi_instance };
 
   typename T::inputs inputs_storage;
 
@@ -241,6 +258,7 @@ requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
+  enum { multi_instance };
 
   typename T::inputs inputs_storage;
 
@@ -288,6 +306,7 @@ requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
+  enum { multi_instance };
 
   std::vector<T> effect;
 

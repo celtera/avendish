@@ -102,13 +102,7 @@ struct builtin_arg_audio_ports
   void init(ossia::inlets& inlets, ossia::outlets& outlets) { }
 };
 
-template <typename T>
-requires avnd::mono_per_sample_arg_processor<double, T> || avnd::
-    monophonic_arg_audio_effect<double, T> || avnd::polyphonic_arg_audio_effect<
-        double,
-        T> || avnd::mono_per_sample_arg_processor<float, T> || avnd::
-        monophonic_arg_audio_effect<float, T> || avnd::
-            polyphonic_arg_audio_effect<float, T>
+template <avnd::audio_argument_processor T>
 struct builtin_arg_audio_ports<T>
 {
   ossia::audio_inlet in;
@@ -271,7 +265,7 @@ public:
   }
 
   template <typename Functor>
-  void process_inputs(Functor& f, auto&& in)
+  void process_inputs_impl(Functor& f, auto& in)
   {
     using info = avnd::input_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
@@ -284,50 +278,32 @@ public:
     }
     (typename info::indices_n{});
   }
-  template <typename Functor, typename M>
-  void process_inputs(Functor& f, avnd::member_iterator<M>&& in)
-  {
-    for (auto& i : in)
-      process_inputs(f, i);
-  }
+
   template <typename Functor>
-  void process_outputs(Functor& f, auto&& in)
+  void process_outputs_impl(Functor& f, auto& out)
   {
     using info = avnd::output_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
     {
-      (f(avnd::pfr::get<Index>(in),
+      (f(avnd::pfr::get<Index>(out),
          tuplet::get<Index>(this->ossia_outlets.ports),
          avnd::field_index<Index>{}),
        ...);
     }
     (typename info::indices_n{});
   }
-  template <typename Functor, typename M>
-  void process_outputs(Functor& f, avnd::member_iterator<M>&& in)
-  {
-    for (auto& i : in)
-      process_outputs(f, i);
-  }
 
   template <typename Functor>
-  void process_all_ports(Functor f)
+  void process_all_ports()
   {
-    // Clear the current state of changed controls
-    /*
-      moodycamel::ConcurrentQueue<i_tuple> ins_queue;
-      moodycamel::ConcurrentQueue<o_tuple> outs_queue;
-
-      i_tuple last_inputs;
-      i_tuple last_outputs;
-
-      std::bitset<i_size> inputs_set;
-      std::bitset<o_size> outputs_set;
-      */
-    if constexpr (avnd::inputs_type<T>::size > 0)
-      process_inputs(f, this->impl.inputs());
-    if constexpr (avnd::outputs_type<T>::size > 0)
-      process_outputs(f, this->impl.outputs());
+    for (auto& [impl, i, o] : this->impl.full_state())
+    {
+      Functor f{*this, impl};
+      if constexpr (avnd::inputs_type<T>::size > 0)
+        process_inputs_impl(f, i);
+      if constexpr (avnd::outputs_type<T>::size > 0)
+        process_outputs_impl(f, o);
+    }
   }
 
   void initialize_all_ports()
@@ -421,11 +397,29 @@ public:
   template <typename Val, std::size_t N>
   void control_updated_from_ui(Val&& new_value)
   {
-    // Replace the value in the field
-    auto& field = avnd::control_input_introspection<T>::template get<N>(
-        avnd::get_inputs<T>(this->impl));
+    if constexpr(requires { this->impl.multi_instance; })
+    {
+      for (auto& [impl, i, o] : this->impl.full_state())
+      {
+        // Replace the value in the field
+        auto& field = avnd::control_input_introspection<T>::template get<N>(i);
 
-    std::swap(field.value, new_value);
+         // OPTIMIZEME we're loosing a few allocations here that should be gc'd
+        field.value = new_value;
+
+        if_possible(field.update(this->impl.effect));
+      }
+    }
+    else
+    {
+      // Replace the value in the field
+      auto& field = avnd::control_input_introspection<T>::template get<N>(
+          this->impl.inputs());
+
+      std::swap(field.value, new_value);
+
+      if_possible(field.update(this->impl.effect));
+    }
 
     // Mark the control as changed
     this->control.inputs_set.set(N);
@@ -506,7 +500,7 @@ public:
     this->control_buffers.clear_outputs(this->impl);
 
     // Process inputs of all sorts
-    process_all_ports(process_before_run<safe_node_base>{*this});
+    this->process_all_ports<process_before_run<safe_node_base, T>>();
 
     // Process messages
     if constexpr (avnd::messages_type<T>::size > 0)
@@ -612,7 +606,7 @@ public:
   void finish_run()
   {
     // Copy output events
-    process_all_ports(process_after_run<safe_node_base>{*this});
+    this->process_all_ports<process_after_run<safe_node_base, T>>();
 
     // Clean up MIDI inputs
     this->midi_buffers.clear_inputs(this->impl);

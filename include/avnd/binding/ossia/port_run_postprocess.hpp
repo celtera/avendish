@@ -118,10 +118,12 @@ inline ossia::value to_ossia_value(bool v)
   return v;
 }
 
-template <typename Exec_T>
+template <typename Exec_T, typename Obj_T>
 struct process_after_run
 {
   Exec_T& self;
+  Obj_T& impl;
+
   template <typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
   {
