@@ -14,6 +14,8 @@ namespace avnd
 type_or_value_qualification(ui)
 type_or_value_reflection(ui)
 
+type_or_value_qualification(layout)
+type_or_value_reflection(layout)
 template <typename T>
 concept hbox_layout = (T::layout() == decltype(T::layout())::hbox)
                       || (T::layout == decltype(T::layout)::hbox);
