@@ -159,7 +159,7 @@ struct audio_processor
           float res = argv[0].a_w.w_float;
           avnd::pfr::for_each_field(
               state.inputs,
-              [s, res]<typename C>(C& ctl)
+              [s, res, &state]<typename C>(C& ctl)
               {
                 if constexpr (requires { ctl.value = float{}; })
                 {
@@ -179,7 +179,7 @@ struct audio_processor
           std::string res = argv[0].a_w.w_sym->s_name;
           avnd::pfr::for_each_field(
               state.inputs,
-              [s, &res](auto& ctl)
+              [s, &res, &state](auto& ctl)
               {
                 if constexpr (requires { ctl.value = std::string{}; })
                 {
