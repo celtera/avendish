@@ -40,7 +40,10 @@ struct effect_container
     , outputs_storage<T>
 {
   using type = T;
-  enum { single_instance };
+  enum
+  {
+    single_instance
+  };
 
   T effect;
 
@@ -119,7 +122,10 @@ requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>) st
     effect_container<T>
 {
   using type = T;
-    enum { single_instance };
+  enum
+  {
+    single_instance
+  };
 
   T effect;
 
@@ -156,7 +162,10 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
     effect_container<T>
 {
   using type = T;
-  enum { multi_instance };
+  enum
+  {
+    multi_instance
+  };
 
   std::vector<T> effect;
   void init_channels(int input, int output)
@@ -203,11 +212,13 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
 };
 
 template <avnd::monophonic_audio_processor T>
-requires (avnd::inputs_is_type<T> && !avnd::has_outputs<T>)
-struct effect_container<T>
+requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>) struct effect_container<T>
 {
   using type = T;
-  enum { multi_instance };
+  enum
+  {
+    multi_instance
+  };
 
   typename T::inputs inputs_storage;
 
@@ -225,8 +236,7 @@ struct effect_container<T>
     T& effect;
     typename T::inputs& inputs;
 
-    [[no_unique_address]]
-    avnd::dummy outputs;
+    [[no_unique_address]] avnd::dummy outputs;
   };
 
   member_iterator<ref> full_state()
@@ -249,51 +259,54 @@ template <avnd::monophonic_audio_processor T>
 requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
 struct effect_container<T>
 {
-    using type = T;
-    enum { multi_instance };
+  using type = T;
+  enum
+  {
+    multi_instance
+  };
 
-    typename T::inputs inputs_storage;
+  typename T::inputs inputs_storage;
 
-    struct state
+  struct state
+  {
+    T effect;
+    typename T::outputs outputs_storage;
+  };
+
+  std::vector<state> effect;
+
+  void init_channels(int input, int output) { effect.resize(std::max(input, output)); }
+
+  auto& inputs() noexcept { return inputs_storage; }
+  auto& inputs() const noexcept { return inputs_storage; }
+
+  struct ref
+  {
+    T& effect;
+    typename T::inputs& inputs;
+    typename T::outputs& outputs;
+  };
+
+  member_iterator<ref> full_state()
+  {
+    for (state& e : effect)
     {
-        T effect;
-        typename T::outputs outputs_storage;
-    };
-
-    std::vector<state> effect;
-
-    void init_channels(int input, int output) { effect.resize(std::max(input, output)); }
-
-    auto& inputs() noexcept { return inputs_storage; }
-    auto& inputs() const noexcept { return inputs_storage; }
-
-    struct ref
-    {
-        T& effect;
-        typename T::inputs& inputs;
-        typename T::outputs& outputs;
-    };
-
-    member_iterator<ref> full_state()
-    {
-        for (state& e : effect)
-        {
-            ref r{e.effect, this->inputs_storage, e.outputs_storage};
-            co_yield r;
-        }
+      ref r{e.effect, this->inputs_storage, e.outputs_storage};
+      co_yield r;
     }
+  }
 
-    member_iterator<T> effects()
-    {
-        for (auto& e : effect)
-            co_yield e.effect;
-    }
+  member_iterator<T> effects()
+  {
+    for (auto& e : effect)
+      co_yield e.effect;
+  }
 
-    member_iterator<typename T::outputs> outputs()
-    {
-        for (auto& e : effect)
-            co_yield e.outputs_storage;
-    }
+  member_iterator<typename T::outputs> outputs()
+  {
+    for (auto& e : effect)
+      co_yield e.outputs_storage;
+  }
 };
 
 template <avnd::monophonic_audio_processor T>
@@ -301,7 +314,10 @@ requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
-  enum { multi_instance };
+  enum
+  {
+    multi_instance
+  };
 
   typename T::inputs inputs_storage;
 
@@ -349,7 +365,10 @@ requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
-  enum { multi_instance };
+  enum
+  {
+    multi_instance
+  };
 
   std::vector<T> effect;
 
@@ -401,60 +420,61 @@ struct effect_container<T>
   }
 };
 template <avnd::monophonic_audio_processor T>
-requires (avnd::inputs_is_value<T> && !avnd::has_outputs<T>)
-struct effect_container<T>
+requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>) struct effect_container<T>
 {
-    using type = T;
-    enum { multi_instance };
+  using type = T;
+  enum
+  {
+    multi_instance
+  };
 
-    std::vector<T> effect;
+  std::vector<T> effect;
 
-    void init_channels(int input, int output)
+  void init_channels(int input, int output)
+  {
+    // TODO maybe a runtime check
+    int orig = effect.size();
+    int sz = std::max(input, output);
+    effect.resize(sz);
+    if (orig > 0)
     {
-        // TODO maybe a runtime check
-        int orig = effect.size();
-        int sz = std::max(input, output);
-        effect.resize(sz);
-        if (orig > 0)
-        {
-            for (int i = orig; i < sz; i++)
-            {
-                effect[i].inputs = effect[0].inputs;
-            }
-        }
+      for (int i = orig; i < sz; i++)
+      {
+        effect[i].inputs = effect[0].inputs;
+      }
     }
+  }
 
-    struct ref
-    {
-        T& effect;
-        decltype(T::inputs)& inputs;
+  struct ref
+  {
+    T& effect;
+    decltype(T::inputs)& inputs;
 
-        [[no_unique_address]]
-        avnd::dummy outputs;
-    };
-    member_iterator<ref> full_state()
+    [[no_unique_address]] avnd::dummy outputs;
+  };
+  member_iterator<ref> full_state()
+  {
+    for (T& e : effect)
     {
-        for (T& e : effect)
-        {
-            ref r{e.effect, e.effect.inputs, avnd::dummy_instance};
-            co_yield r;
-        }
+      ref r{e.effect, e.effect.inputs, avnd::dummy_instance};
+      co_yield r;
     }
+  }
 
-    member_iterator<T> effects()
-    {
-        for (auto& e : effect)
-            co_yield e;
-    }
+  member_iterator<T> effects()
+  {
+    for (auto& e : effect)
+      co_yield e;
+  }
 
-    member_iterator<decltype(T::inputs)> inputs()
-    {
-        for (auto& e : effect)
-            co_yield e.inputs;
-    }
+  member_iterator<decltype(T::inputs)> inputs()
+  {
+    for (auto& e : effect)
+      co_yield e.inputs;
+  }
 
-    auto& outputs() noexcept { return dummy_instance; }
-    auto& outputs() const noexcept { return dummy_instance; }
+  auto& outputs() noexcept { return dummy_instance; }
+  auto& outputs() const noexcept { return dummy_instance; }
 };
 
 template <typename T>
