@@ -48,9 +48,7 @@ public:
     }
 
     int port_input_channels = audio_inlet()->channels();
-    int port_output_channels = audio_outlet()->channels();
-    if (port_input_channels != current_input_channels
-        || port_output_channels != current_input_channels)
+    if (port_input_channels != current_input_channels)
     {
       this->channels.set_input_channels(this->impl, 0, port_input_channels);
       this->channels.set_output_channels(this->impl, 0, port_input_channels);
@@ -60,6 +58,7 @@ public:
       this->set_channels(*audio_outlet(), port_input_channels);
       return true;
     }
+    this->set_channels(*audio_outlet(), port_input_channels);
     return false;
   }
 

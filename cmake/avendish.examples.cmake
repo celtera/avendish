@@ -234,25 +234,53 @@ foreach(theTarget ${OSSIA_EXAMPLES})
   )
 endforeach()
 
-# Ports
+###### Ports
+
+## Essentia
 avnd_make_all(
   TARGET Essentia_Entropy
   MAIN_FILE examples/Ports/Essentia/stats/Entropy.hpp
   MAIN_CLASS essentia_ports::Entropy
   C_NAME avnd_essentia_entropy
 )
+
+## LitterPower
 avnd_make_object(
   TARGET CCC
   MAIN_FILE examples/Ports/LitterPower/CCC.hpp
   MAIN_CLASS litterpower_ports::CCC
   C_NAME avnd_lp_ccc
 )
+
+## vb-objects
 avnd_make_object(
   TARGET VB_fourses_tilde
   MAIN_FILE examples/Ports/VB/vb.fourses_tilde.hpp
   MAIN_CLASS vb_ports::fourses_tilde
   C_NAME avnd_vb_fourses_tilde
 )
+
+## WaveDigitalFilters
+find_path (CHOWDSP_WDF_INCLUDE chowdsp_wdf/chowdsp_wdf.h)
+if(CHOWDSP_WDF_INCLUDE)
+  add_library(wdft_PassiveLPF STATIC src/dummy.cpp)
+  target_include_directories(wdft_PassiveLPF PUBLIC ${CHOWDSP_WDF_INCLUDE})
+  avnd_make_all(
+    TARGET wdft_PassiveLPF
+    MAIN_FILE examples/Ports/WaveDigitalFilters/PassiveLPF.hpp
+    MAIN_CLASS chowdsp_ports::PassiveLPF
+    C_NAME wdft_PassiveLPF
+  )
+
+  add_library(wdft_VoltageDivider STATIC src/dummy.cpp)
+  target_include_directories(wdft_VoltageDivider PUBLIC ${CHOWDSP_WDF_INCLUDE})
+  avnd_make_all(
+    TARGET wdft_VoltageDivider
+    MAIN_FILE examples/Ports/WaveDigitalFilters/VoltageDivider.hpp
+    MAIN_CLASS chowdsp_ports::VoltageDivider
+    C_NAME wdft_VoltageDivider
+  )
+endif()
 
 
 # Demo: dump all the known metadata.

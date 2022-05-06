@@ -7,6 +7,7 @@
 #include <avnd/introspection/widgets.hpp>
 
 #include <cstring>
+#include <span>
 
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
@@ -22,7 +23,12 @@ namespace avnd
 template <typename C, typename T>
 bool display_control(const T& value, char* cstr, std::size_t len)
 {
-  if constexpr (requires { C::display(cstr, value); })
+  if constexpr (requires { C::display(std::span<char>(cstr, len), value); })
+  {
+    C::display(cstr, value);
+    return true;
+  }
+  else if constexpr (requires { C::display(cstr, value); })
   {
     C::display(cstr, value);
     return true;

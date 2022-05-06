@@ -61,7 +61,6 @@ class safe_node final
       avnd::prepare(impl, setup);
     }
 };
-*/
 
 template <typename T>
 static void do_prepare(T& impl, ossia::exec_state_facade st, int new_ins, int new_outs)
@@ -75,7 +74,6 @@ static void do_prepare(T& impl, ossia::exec_state_facade st, int new_ins, int ne
   avnd::prepare(impl, setup);
 }
 
-/*
 static void safety_checks(const ossia::token_request& tk, ossia::exec_state_facade st)
 {
   auto [start, frames] = st.timings(tk);
@@ -390,6 +388,7 @@ public:
     // Initialize the other ports
     this->initialize_all_ports();
 
+    static_cast<AudioCount&>(*this).scan_audio_input_channels();
     this->audio_configuration_changed();
   }
 
@@ -397,17 +396,17 @@ public:
   template <typename Val, std::size_t N>
   void control_updated_from_ui(Val&& new_value)
   {
-    if constexpr(requires { this->impl.multi_instance; })
+    if constexpr(requires { avnd::effect_container<T>::multi_instance; })
     {
-      for (auto& [impl, i, o] : this->impl.full_state())
+      for (const auto& state : this->impl.full_state())
       {
         // Replace the value in the field
-        auto& field = avnd::control_input_introspection<T>::template get<N>(i);
+        auto& field = avnd::control_input_introspection<T>::template get<N>(state.inputs);
 
          // OPTIMIZEME we're loosing a few allocations here that should be gc'd
         field.value = new_value;
 
-        if_possible(field.update(this->impl.effect));
+        if_possible(field.update(state.effect));
       }
     }
     else
