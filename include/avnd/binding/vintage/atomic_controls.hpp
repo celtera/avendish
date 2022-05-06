@@ -7,6 +7,7 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/metadatas.hpp>
 #if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 #else
@@ -91,6 +92,18 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
     std::atomic_thread_fence(std::memory_order_release);
   }
 
+  template<std::size_t Index>
+  void write_control(auto& impl, auto& sink)
+  {
+    using type = typename inputs_info_t::template nth_element<Index>;
+
+    auto& source = this->parameters;
+    auto& port = inputs_info_t::template get<Index>(sink);
+
+    port.value = avnd::map_control_from_01<type>(source[Index].load(std::memory_order_relaxed));
+    if_possible(port.update(impl));
+  }
+
   void write(avnd::effect_container<T>& implementation)
   {
     std::atomic_thread_fence(std::memory_order_acquire);
@@ -98,12 +111,10 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
     [ this, &implementation ]<std::size_t... Index>(
         std::integer_sequence<std::size_t, Index...>)
     {
-      auto& source = this->parameters;
-      auto& sink = implementation.inputs();
-      ((inputs_info_t::template get<Index>(sink).value
-        = avnd::map_control_from_01<typename inputs_info_t::template nth_element<Index>>(
-            source[Index].load(std::memory_order_relaxed))),
-       ...);
+      for(auto& state : implementation.full_state())
+      {
+        (this->write_control<Index>(state.effect, state.inputs), ...);
+      }
     }
     (std::make_index_sequence<parameter_count>());
   }
@@ -153,13 +164,13 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
         index,
         [ptr]<typename P>(const P& param)
         {
-          if constexpr (requires { P::label(); })
+          if constexpr (avnd::has_label<P>)
           {
-            vintage::label{P::label()}.copy_to(ptr);
+            vintage::label{avnd::get_label<P>()}.copy_to(ptr);
           }
-          else if constexpr (requires { P::name(); })
+          else if constexpr (avnd::has_name<P>)
           {
-            vintage::label{P::name()}.copy_to(ptr);
+            vintage::label{avnd::get_name<P>()}.copy_to(ptr);
           }
         });
   }

@@ -165,51 +165,55 @@ struct audio_processor
 
   void process_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
-    switch (argv[0].a_type)
+    for(auto& state : implementation.full_state())
     {
-      case A_FLOAT:
+      switch (argv[0].a_type)
       {
-        // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
-        // but most pd externals seem to just do a chain of if() so this is equivalent
-        float res = argv[0].a_w.w_float;
-        avnd::for_each_field_ref(
-            implementation.inputs(),
-            [this, s, res]<typename C>(C& ctl)
-            {
-              if constexpr (requires { ctl.value = float{}; })
+        case A_FLOAT:
+        {
+          // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
+          // but most pd externals seem to just do a chain of if() so this is equivalent
+          float res = argv[0].a_w.w_float;
+          avnd::for_each_field_ref(
+              state.inputs,
+              [this, s, res, &state]<typename C>(C& ctl)
               {
-                if (avnd::get_name<C>() == s->s_name)
+                if constexpr (requires { ctl.value = float{}; })
                 {
-                  avnd::apply_control(ctl, res);
+                  if (avnd::get_name<C>() == s->s_name)
+                  {
+                    avnd::apply_control(ctl, res);
+                    if_possible(ctl.update(state.effect));
+                  }
                 }
-              }
-            });
-        break;
-      }
+              });
+          break;
+        }
 
-      case A_SYMBOL:
-      {
-        // TODO ?
-        std::string res = argv[0].a_w.w_symbol->s_name;
-        // thread_local for perf ?
-        avnd::for_each_field_ref(
-            implementation.inputs(),
-            [this, s, &res](auto& ctl)
-            {
-              if constexpr (requires { ctl.value = std::string{}; })
+        case A_SYMBOL:
+        {
+          // TODO ?
+          std::string res = argv[0].a_w.w_symbol->s_name;
+          // thread_local for perf ?
+          avnd::for_each_field_ref(
+              state.inputs,
+              [this, s, &res, &state](auto& ctl)
               {
-                if (std::string_view{ctl.name()} == s->s_name)
+                if constexpr (requires { ctl.value = std::string{}; })
                 {
-                  avnd::apply_control(ctl, std::move(res));
-                  ctl.value = std::move(res);
+                  if (std::string_view{ctl.name()} == s->s_name)
+                  {
+                    avnd::apply_control(ctl, std::move(res));
+                    if_possible(ctl.update(state.effect));
+                  }
                 }
-              }
-            });
-        break;
-      }
+              });
+          break;
+        }
 
-      default:
-        break;
+        default:
+          break;
+      }
     }
   }
 

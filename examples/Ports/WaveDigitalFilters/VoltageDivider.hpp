@@ -3,6 +3,8 @@
 #include <chowdsp_wdf/chowdsp_wdf.h>
 
 #include <halp/meta.hpp>
+#include <halp/static_string.hpp>
+#include <string_view>
 
 namespace chowdsp_ports
 {

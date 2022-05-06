@@ -53,7 +53,7 @@ static void process_generic_message(T& implementation, t_symbol* s)
         [&k]<typename C>(C& ctl)
         {
           constexpr auto obj_name = avnd::get_name<object_type>().data();
-          if constexpr (requires { C::name(); })
+          if constexpr (avnd::has_name<C>)
           {
             if constexpr (requires { (float)ctl.value; })
             {

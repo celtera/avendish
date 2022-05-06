@@ -30,7 +30,7 @@ public:
 
         float value{};
 
-        void display(std::span<char> buffer)
+        static void display(std::span<char> buffer, float value)
         {
           if (value <= 1000.0f)
             fmt::format_to(buffer.begin(), "{:.2f} Hz", value);
