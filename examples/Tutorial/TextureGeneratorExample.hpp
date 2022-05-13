@@ -54,7 +54,7 @@ struct TextureGeneratorExample
   } outputs;
 
   // Some place in RAM to store our pixels
-  halp::uninitialized_bytes bytes;
+  halp::rgba_texture::uninitialized_bytes bytes;
 
   TextureGeneratorExample()
   {

@@ -5,69 +5,11 @@
 #include <halp/controls.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
+#include <halp/texture_formats.hpp>
 #include <boost/container/vector.hpp>
 
 namespace halp
 {
-using uninitialized_bytes = boost::container::vector<unsigned char>;
-struct rgba_texture
-{
-  enum format
-  {
-    RGBA
-  };
-  unsigned char* bytes;
-  int width;
-  int height;
-  bool changed;
-
-  /* FIXME the allocation should not be managed by the plug-in */
-  static auto allocate(int width, int height)
-  {
-    using namespace boost::container;
-    return uninitialized_bytes(width * height * 4, default_init);
-  }
-
-  void update(unsigned char* data, int w, int h) noexcept
-  {
-    bytes = data;
-    width = w;
-    height = h;
-    changed = true;
-  }
-};
-
-struct rgb_texture
-{
-  enum format
-  {
-    RGB
-  };
-  unsigned char* bytes;
-  int width;
-  int height;
-  bool changed;
-
-  /* FIXME the allocation should not be managed by the plug-in */
-  static auto allocate(int width, int height)
-  {
-    using namespace boost::container;
-    return uninitialized_bytes(width * height * 3, default_init);
-  }
-
-  void update(unsigned char* data, int w, int h) noexcept
-  {
-    bytes = data;
-    width = w;
-    height = h;
-    changed = true;
-  }
-};
-
-struct rgba_color
-{
-  uint8_t r, g, b, a;
-};
 
 template <static_string lit>
 struct texture_input
@@ -87,11 +29,6 @@ struct texture_input
   }
 
   rgba_texture texture;
-};
-
-struct rgb_color
-{
-  uint8_t r, g, b;
 };
 
 template <static_string lit>
@@ -114,7 +51,7 @@ struct rgb_texture_input
   rgb_texture texture;
 };
 
-template <static_string lit>
+template <static_string lit, typename TextureType = rgba_texture>
 struct texture_output
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
@@ -140,37 +77,17 @@ struct texture_output
 
   void set(int x, int y, int r, int g, int b, int a = 255) noexcept
   {
-    assert(x >= 0 && x < texture.width);
-    assert(y >= 0 && y < texture.height);
-
-    const int pixel_index = y * texture.width + x;
-    const int byte_index = pixel_index * 4;
-
-    auto* pixel_ptr = storage.data() + byte_index;
-    pixel_ptr[0] = r;
-    pixel_ptr[1] = g;
-    pixel_ptr[2] = b;
-    pixel_ptr[3] = a;
+    texture.set(x, y, r, g, b, a);
   }
 
   void set(int x, int y, rgba_color col) noexcept
   {
-    assert(x >= 0 && x < texture.width);
-    assert(y >= 0 && y < texture.height);
-
-    const int pixel_index = y * texture.width + x;
-    const int byte_index = pixel_index * 4;
-
-    auto* pixel_ptr = storage.data() + byte_index;
-    pixel_ptr[0] = col.r;
-    pixel_ptr[1] = col.g;
-    pixel_ptr[2] = col.b;
-    pixel_ptr[3] = col.a;
+    texture.set(x, y, col);
   }
 
-  rgba_texture texture;
+  TextureType texture;
 
-  uninitialized_bytes storage;
+  typename TextureType::uninitialized_bytes storage;
 };
 
 }
