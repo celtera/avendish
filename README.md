@@ -16,6 +16,18 @@ Read the [documentation](https://celtera.github.io/avendish) to get started !
 
 The [original blog post](https://ossia.io/posts/reflection/) contains the motivation and some implementation details.
 
+If you use this work in an academic setting, please cite the paper: 
+
+```bib
+@inproceedings{celerier2022rage,
+  title={{Rage Against The Glue: Beyond Run-Time Media Frameworks with Modern C++}},
+  author={Celerier, Jean-Micha\"el},
+  booktitle={Proceedings of the International Computer Music Conference (ICMC)},
+  year={2022},
+  address={Limerick, Ireland}
+}
+```
+
 ## Features
 
 This library is a proof-of-concept (based on the Boost.PFR library and a couple of tricks),
