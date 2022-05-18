@@ -1,9 +1,8 @@
 find_package(ossia QUIET)
+find_package(GLEW QUIET)
+find_package(glfw3 QUIET)
+find_package(OpenGL QUIET)
 if(NOT TARGET Qt5::Quick)
-  find_package(GLEW QUIET)
-  find_package(glfw3 QUIET)
-  find_package(OpenGL QUIET)
-  
   if(NOT ((TARGET GLEW::GLEW) AND (TARGET glfw) AND (TARGET OpenGL::GL)))
     function(avnd_make_standalone)
     endfunction()
@@ -93,6 +92,16 @@ function(avnd_make_standalone)
     )
   endif()
 
+  if(TARGET GLEW::GLEW)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        GLEW::GLEW
+        glfw
+        OpenGL::GL
+    )
+  endif()
+
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
   target_sources(Avendish PRIVATE
@@ -143,13 +152,13 @@ function(avnd_make_standalone)
     )
   endif()
 
-    target_link_libraries(
-      ${AVND_FX_TARGET}
-      PUBLIC
-        GLEW::GLEW
-        glfw
-        OpenGL::GL
-    )
+  target_link_libraries(
+    ${AVND_FX_TARGET}
+    PUBLIC
+      GLEW::GLEW
+      glfw
+      OpenGL::GL
+  )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 

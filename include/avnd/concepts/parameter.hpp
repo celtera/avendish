@@ -33,6 +33,10 @@ concept int_parameter = requires(T t)
 template <typename T>
 concept enum_parameter = std::is_enum_v<std::decay_t<decltype(T::value)>>;
 
+template <typename Field>
+concept enum_ish_parameter = avnd::enum_parameter<Field> ||
+        (avnd::has_range<Field>&& requires { avnd::get_range<Field>().values[0]; });
+
 template <typename T>
 concept float_parameter = requires(T t)
 {

@@ -134,7 +134,7 @@ public:
     /// for each control make sure that it is initialized to its init value if any is specified
     if constexpr (avnd::has_inputs<T>)
     {
-      avnd::init_controls(effect.inputs());
+      avnd::init_controls(effect);
     }
 
     // FIXME also initialize ports, channels, etc...
@@ -147,13 +147,14 @@ public:
     {
 #if !defined(_MSC_VER)
       auto callbacks_initializer = [this]<
-          typename Refl,
-          template <typename...>
-          typename L,
+          typename Field,
+          template <typename...> typename L,
+          typename Ret,
           typename... Args,
           std::size_t Idx>(
-          std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>)
+          Field& field, L<Ret,Args...>, avnd::num<Idx>)
       {
+        std::string_view message = avnd::get_name<Field>();
         // This method will be called for every callback.
         // It must return a function that takes Args... in arguments, and
         // returns a value of type R
@@ -164,11 +165,10 @@ public:
 
         /* CUSTOMIZATION POINT */
 
-        using return_type = typename Refl::return_type;
-        if constexpr (std::is_void_v<return_type>)
+        if constexpr (std::is_void_v<Ret>)
           return [this](Args...) { return; };
         else
-          return [this](Args...) { return return_type{}; };
+          return [this](Args...) { return Ret{}; };
       };
       this->callbacks.wrap_callbacks(effect, callbacks_initializer);
 #endif

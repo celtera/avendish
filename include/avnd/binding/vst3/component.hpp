@@ -101,7 +101,7 @@ struct Component final
     /// Read the initial state of the controls
 
     // First the default value
-    avnd::init_controls(effect.inputs());
+    avnd::init_controls(effect);
   }
 
   virtual ~Component() { }

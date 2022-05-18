@@ -175,7 +175,7 @@ struct SimpleAudioEffect : clap_plugin
     /// Read the initial state of the controls
     if constexpr (avnd::has_inputs<T>)
     {
-      avnd::init_controls(effect.inputs());
+      avnd::init_controls(effect);
     }
   }
 
@@ -385,8 +385,8 @@ struct SimpleAudioEffect : clap_plugin
           if constexpr (avnd::has_range<C>)
           {
             constexpr auto range = avnd::get_range<C>();
-            info->default_value
-                = avnd::map_control_to_double<C>(range.init);
+            if constexpr(requires { range.init; })
+              info->default_value = avnd::map_control_to_double<C>(range.init);
 
             if constexpr (avnd::enum_parameter<C>)
             {
@@ -396,8 +396,10 @@ struct SimpleAudioEffect : clap_plugin
             }
             else
             {
-              info->min_value = avnd::map_control_to_double<C>(range.min);
-              info->max_value = avnd::map_control_to_double<C>(range.max);
+              if constexpr(requires { range.min; range.max; }) {
+                info->min_value = avnd::map_control_to_double<C>(range.min);
+                info->max_value = avnd::map_control_to_double<C>(range.max);
+              }
               if constexpr (requires { range.step; })
                 info->flags |= CLAP_PARAM_IS_STEPPED;
             }

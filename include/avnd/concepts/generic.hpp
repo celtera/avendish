@@ -34,12 +34,41 @@ concept vector_ish = requires(T t)
   t.reserve(1);
   t.resize(1);
   t.clear();
-  t[0];
+  t.data();
+  t[1];
+};
+
+template <typename T>
+concept map_ish = requires(T t)
+{
+  sizeof(typename T::key_type);
+  sizeof(typename T::mapped_type);
+  t.size();
+  t.clear();
+};
+
+template<typename T, typename V>
+concept vector_v_ish = requires (T t) {
+  t.push_back(V{});
+  t.size();
+  t.resize(1);
+  t.reserve(1);
+  t.clear();
+  t.data();
+  { t[1] } -> std::convertible_to<V>;
+  t[1] = std::declval<V>();
+};
+
+
+template<typename T>
+concept variant_ish = requires(T t)
+{
+  t.index();
+  t.valueless_by_exception();
 };
 
 template <typename T, std::size_t N>
-concept c_array_ish = std::extent_v<T, 0>
->= N;
+concept c_array_ish = std::extent_v<T, 0> >= N;
 template <typename T, std::size_t N>
 concept cpp_tuple_ish = requires
 {

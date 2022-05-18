@@ -87,7 +87,7 @@ struct audio_processor
     /// Initialize controls
     if constexpr (avnd::has_inputs<T>)
     {
-      avnd::init_controls(implementation.inputs());
+      avnd::init_controls(implementation);
     }
 
     /// Initialize polyphony

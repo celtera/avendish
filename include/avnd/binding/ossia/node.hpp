@@ -345,10 +345,11 @@ public:
     }
   }
 
-  template <std::size_t Idx, typename R, typename... Args>
+  template <std::size_t Idx, typename Field, typename R, typename... Args>
   struct do_callback
   {
     safe_node_base& self;
+    Field& field;
     R operator()(Args... args)
     {
       // Idx is the index of the port in the complete input array.
@@ -357,7 +358,7 @@ public:
       if constexpr (sizeof...(Args) == 0)
         port.data.write_value(ossia::impulse{}, 0);
       else if constexpr (sizeof...(Args) == 1)
-        port.data.write_value(args..., 0);
+        port.data.write_value(to_ossia_value(field, args...), 0);
 
       if constexpr (!std::is_void_v<R>)
         return R{};
@@ -367,20 +368,20 @@ public:
   void finish_init()
   {
     // Initialize the controls with their default values
-    avnd::init_controls(this->impl.inputs());
+    avnd::init_controls(this->impl);
 
     // Initialize the callbacks
     if constexpr (avnd::callback_introspection<outputs_t>::size > 0)
     {
       auto callbacks_initializer = [this]<
-          typename Refl,
-          template <typename...>
-          typename L,
+          typename Field,
+          template <typename...> typename L,
+          typename Ret,
           typename... Args,
           std::size_t Idx>(
-          std::string_view message, L<Args...>, Refl refl, avnd::num<Idx>)
+          Field& field, L<Ret, Args...>, avnd::num<Idx>)
       {
-        return do_callback<Idx, typename Refl::return_type, Args...>{*this};
+        return do_callback<Idx, Field, Ret, Args...>{*this, field};
       };
       this->callbacks.wrap_callbacks(this->impl, callbacks_initializer);
     }
@@ -550,6 +551,37 @@ public:
         }
         else
         {
+            constexpr M field;
+
+            using arg_type = std::decay_t<avnd::first_message_argument<M>>;
+            arg_type arg;
+            from_ossia_value(field, val, arg);
+
+            for (auto& m : this->impl.effects())
+            {
+              if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+              {
+                if constexpr(requires { M{}(arg); })
+                  M{}(arg);
+                else if constexpr(requires { (m.*f)(arg); })
+                  (m.*f)(arg);
+              }
+              else
+                f(arg);
+            }
+            /*
+          for (auto& m : this->impl.effects())
+          {
+            if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+            {
+              if constexpr(requires { M{}(m); })
+                M{}(m);
+              else if constexpr(requires { (m.*f)(m); })
+                (m.*f)(m);
+            }
+            else
+              f(m);
+          }*/
           //   FIXME ! oscquery_mapper.hpp already has all this code
           // using first_arg = boost::mp11::mp_first<typename refl::arguments>;
           // const auto& v = ossia::convert<std::decay_t<first_arg>>(val);

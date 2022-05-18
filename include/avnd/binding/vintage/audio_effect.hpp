@@ -99,7 +99,7 @@ struct SimpleAudioEffect : vintage::Effect
     if constexpr (avnd::has_inputs<T>)
     {
       // First the default value
-      avnd::init_controls(effect.inputs());
+      avnd::init_controls(effect);
 
       // Then the preset
       controls.read(effect.inputs());

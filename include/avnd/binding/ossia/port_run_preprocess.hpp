@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/binding/ossia/from_value.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -14,153 +15,10 @@
 #include <ossia/network/value/format_value.hpp>
 namespace avnd
 {
-template <typename Field>
-concept enum_ish_parameter = avnd::enum_parameter<Field> ||
-        (avnd::has_range<Field>&& requires { avnd::get_range<Field>().values[0]; });
 }
 
 namespace oscr
 {
-
-// For interleaving / deinterleaving fft:
-// https://stackoverflow.com/a/55112294/1495627
-static constexpr int source_index(int i, int length)
-{
-  const int mid = length - length / 2;
-  if (i<mid)
-    return i * 2;
-  else
-    return (i-mid) * 2 + 1;
-}
-
-template<typename T>
-constexpr void deinterleave(T* arr, int length)
-{
-  if(length <= 1)
-    return;
-
-  for(int i = 1; i < length; i++)
-  {
-    int j = source_index(i, length);
-
-    while (j < i) {
-      j = source_index(j, length);
-    }
-
-    std::swap(arr[i], arr[j]);
-  }
-}
-
-
-template <typename T>
-void from_ossia_value(const ossia::value& src, T& dst)
-{
-  constexpr int sz = avnd::pfr::tuple_size_v<T>;
-  if constexpr (sz == 0)
-  {
-    // Impulse case, nothing to do
-  }
-  else if constexpr (sz == 2)
-  {
-    auto [x, y] = ossia::convert<ossia::vec2f>(src);
-    dst = {x, y};
-  }
-  else if constexpr (sz == 3)
-  {
-    auto [x, y, z] = ossia::convert<ossia::vec3f>(src);
-    dst = {x, y, z};
-  }
-  else if constexpr (sz == 4)
-  {
-    auto [x, y, z, w] = ossia::convert<ossia::vec4f>(src);
-    dst = {x, y, z, w};
-  }
-  else
-  {
-    static_assert(std::is_void_v<T>, "unsupported case");
-  }
-}
-
-template <std::integral T>
-void from_ossia_value(const ossia::value& src, T& dst)
-{
-  dst = ossia::convert<int>(src);
-}
-template <std::floating_point T>
-void from_ossia_value(const ossia::value& src, T& dst)
-{
-  dst = ossia::convert<float>(src);
-}
-template <avnd::string_ish T>
-void from_ossia_value(const ossia::value& src, T& dst)
-{
-  dst = ossia::convert<std::string>(src);
-}
-
-inline void from_ossia_value(const ossia::value& src, bool& dst)
-{
-  dst = ossia::convert<bool>(src);
-}
-
-inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
-{
-  from_ossia_value(src, dst);
-}
-
-template<avnd::enum_ish_parameter Field, typename Val>
-struct enum_to_ossia_visitor
-{
-  Val operator()(const int& v) const noexcept {
-    constexpr auto range = avnd::get_range<Field>();
-    static_assert(std::size(range.values) > 0);
-    if constexpr(requires (Val v) { v = range.values[0].second; })
-    {
-      if(v >= 0 && v < std::size(range.values))
-        return range.values[v].second;
-
-      return range.values[0].second;
-    }
-    else if constexpr(requires (Val v) { v = range.values[0]; })
-    {
-      if(v >= 0 && v < std::size(range.values))
-        return range.values[v];
-
-      return range.values[0];
-    }
-    else
-    {
-      return static_cast<Val>(v);
-    }
-  }
-  Val operator()(const std::string& v) const noexcept {
-    constexpr auto range = avnd::get_range<Field>();
-    for(int i = 0; i < std::size(range.values); i++)
-    {
-      if constexpr(requires { v == range.values[i].first; })
-      {
-        if(v == range.values[i].first)
-          return (*this)((int)i);
-      }
-      else
-      {
-        if(v == range.values[i])
-          return (*this)((int)i);
-      }
-    }
-    return (*this)(0);
-  }
-  Val operator()(const auto& v) const noexcept { return Val{}; }
-  Val operator()() const noexcept { return Val{}; }
-};
-
-template<avnd::enum_ish_parameter Field, typename Val>
-inline void from_ossia_value(
-    Field& field,
-    const ossia::value& src,
-    Val& dst)
-{
-  dst = src.apply(enum_to_ossia_visitor<Field, Val>{});
-}
 
 template<typename Field>
 inline void update_value(auto& obj, Field& field, const ossia::value& src, auto& dst)

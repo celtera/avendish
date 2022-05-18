@@ -11,20 +11,23 @@
 
 namespace avnd
 {
-template <typename I>
-static constexpr void init_controls(I&& inputs)
+template <typename F>
+static constexpr void init_controls(avnd::effect_container<F>& effect)
 {
-  avnd::for_each_field_ref(
-      std::forward<I>(inputs),
-      []<typename T>(T& ctl)
-      {
-        if constexpr (avnd::has_range<T>)
-        {
-          constexpr auto c = avnd::get_range<T>();
-          if_possible(ctl.value = c.init) // Default case
-          else if_possible(ctl.value = c.values[c.init]) // For string enums
-        }
+  for(auto& state : effect.full_state()) {
+      avnd::for_each_field_ref(
+          state.inputs,
+          [&]<typename T>(T& ctl) {
+            if constexpr (avnd::has_range<T>)
+            {
+              constexpr auto c = avnd::get_range<T>();
+              if_possible(ctl.value = c.init) // Default case
+              else if_possible(ctl.value = c.values[c.init]) // For string enums
+
+              if_possible(ctl.update(state.effect));
+            }
       });
+  }
 }
 
 /**

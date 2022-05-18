@@ -19,9 +19,20 @@ struct callback_storage_views
 {
 };
 
+
+
+template <typename... Args>
+struct view_callback_function_type;
+template <typename R, typename... Args>
+struct view_callback_function_type<R(void*, Args...)> {
+  using type = R(Args...);
+};
+
 template <avnd::view_callback Field>
 using view_callback_message_type
-    = std::remove_pointer_t<std::decay_t<decltype(Field{}.call.function)>>;
+    = typename view_callback_function_type<
+        std::remove_pointer_t<std::decay_t<decltype(Field{}.call.function)>>
+      >::type;
 
 template <typename T>
 requires(
@@ -32,7 +43,9 @@ requires(
       view_callback_message_type,
       view_callback_introspection,
       typename avnd::outputs_type<T>::type>;
-  using vectors = boost::mp11::mp_transform<std::function, tuple>;
+  using vectors = boost::mp11::mp_transform<
+    std::function, tuple
+  >;
 
   [[no_unique_address]] vectors functions_storage;
 };
@@ -58,10 +71,13 @@ struct callback_storage : callback_storage_views<T>
         using ret = typename func_reflect::return_type;
         using args = typename func_reflect::arguments;
 
+        using namespace boost::mp11;
+        using typelist = mp_push_front<args, ret>;
+
         // Here, "cb.call" is something like std::function,
         // thus we can store the callback directly.
         cb.call
-            = callback_handler(C::name(), args{}, func_reflect{}, avnd::num<IdxGlob>{});
+            = callback_handler(cb, typelist{}, avnd::num<IdxGlob>{});
       };
 
       avnd::dynamic_callback_introspection<outputs_t>::for_all_n2(
@@ -82,10 +98,14 @@ struct callback_storage : callback_storage_views<T>
         using ret = typename func_reflect::return_type;
         using args = typename func_reflect::arguments;
 
+        using namespace boost::mp11;
+        // We neeed to remove the first void* argument to the callback:
+        using typelist = mp_push_front<mp_pop_front<args>, ret>;
+
         auto& buf = tpl::get<Idx>(this->functions_storage);
         using stored_type
             = std::tuple_element_t<Idx, std::decay_t<decltype(this->functions_storage)>>;
-        buf = callback_handler(C::name(), args{}, func_reflect{}, avnd::num<IdxGlob>{});
+        buf = callback_handler(cb, typelist{}, avnd::num<IdxGlob>{});
 
         // This version does not allocate, it's a plain old C callback.
         // Thus we store it outside...
@@ -100,12 +120,11 @@ struct callback_storage : callback_storage_views<T>
 
 #if !defined(_MSC_VER)
         cb.call.function =
-            []<template <typename...> typename L, typename... Args>(L<Args...>)
+            []<template <typename...> typename L, typename... Args>(L<void*, Args...>)
         {
           // this is what actually goes in cb.call.function:
-          return +[](Args... args)
+          return +[](void* self, Args... args)
           {
-            void* self = tpl::get<0>(std::tie(args...));
             (*reinterpret_cast<stored_type*>(self))(args...);
           };
         }

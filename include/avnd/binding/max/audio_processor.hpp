@@ -80,7 +80,7 @@ struct audio_processor
     x_obj.z_misc |= Z_MC_INLETS;
 
     /// Initialize controls
-    avnd::init_controls(implementation.inputs());
+    avnd::init_controls(implementation);
 
     /// Initialize polyphony
     implementation.init_channels(input_channels, output_channels);
