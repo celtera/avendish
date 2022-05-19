@@ -351,6 +351,13 @@ void from_ossia_value(const ossia::value& src, T& dst)
 {
   dst = ossia::convert<std::string>(src);
 }
+inline void from_ossia_value(const ossia::value& src, const char*& dst)
+{
+  if(auto p = src.target<std::string>())
+    dst = p->data();
+  else
+    dst = "";
+}
 template <avnd::vector_ish T>
 requires (!avnd::string_ish<T>)
 void from_ossia_value(const ossia::value& src, T& dst)
