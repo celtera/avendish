@@ -525,8 +525,9 @@ using vbargraph_f32 = halp::vbargraph_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
 using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 
+template<typename T>
 struct soundfile_view {
-  const float** data{};
+  const T** data{};
   int64_t frames{};
   int32_t channels{};
 
@@ -534,24 +535,24 @@ struct soundfile_view {
   std::string_view filename;
 };
 
-template <halp::static_string lit>
+template <halp::static_string lit, typename T = float>
 struct soundfile_port
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  operator soundfile_view&() noexcept { return soundfile; }
-  operator const soundfile_view&() const noexcept { return soundfile; }
+  operator soundfile_view<T>&() noexcept { return soundfile; }
+  operator const soundfile_view<T>&() const noexcept { return soundfile; }
   operator bool() const noexcept { return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0; }
 
-  std::span<const float> channel(int channel) const noexcept { return std::span(soundfile.data[channel], soundfile.frames); }
+  std::span<const T> channel(int channel) const noexcept { return std::span(soundfile.data[channel], soundfile.frames); }
   int channels() const noexcept { return soundfile.channels; }
   int64_t frames() const noexcept { return soundfile.frames; }
 
-  const float* operator[](int channel) const noexcept {
+  const T* operator[](int channel) const noexcept {
     return soundfile.data[channel];
   }
 
-  soundfile_view soundfile;
+  soundfile_view<T> soundfile;
 };
 
 }
