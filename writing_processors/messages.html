@@ -186,7 +186,7 @@ struct MyProcessor {
 </code></pre>
 <p>In every case, if one wants access to the processor object, it has to be the first argument of the function (except the non-static-member-function case where it is not necessary as the function already has access to the <code>this</code> pointer by definition).</p>
 <h2 id="type-checking"><a class="header" href="#type-checking">Type-checking</a></h2>
-<p>Messages are type-checked: in the example above, for instance, PureData will return an error for the message <code>[dump foo bar&gt;</code>. For the message <code>[dump 0.1 bar&gt;</code> things will however work out just fine :-)</p>
+<p>Messages are type-checked: in the first example above, for instance, PureData will return an error for the message <code>[dump foo bar&gt;</code>. For the message <code>[dump 0.1 bar&gt;</code> things will however work out just fine :-)</p>
 <h2 id="arbitrary-inputs"><a class="header" href="#arbitrary-inputs">Arbitrary inputs</a></h2>
 <p>It may be necessary to have messages that accept an arbitrary number of inputs.
 Here is how: </p>

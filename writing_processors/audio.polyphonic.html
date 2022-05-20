@@ -202,7 +202,7 @@ private:
     halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0, .max = 100, .init = 1}&gt; gain;
   };
   struct outputs { 
-    halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
+    halp::audio_sample&lt;&quot;Out&quot;, double&gt; audio;
   };
 
   void operator()(const inputs&amp; ins, outputs&amp; outs) 
@@ -215,7 +215,7 @@ private:
   double accumulator{};
 };
 </code></pre>
-<p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasse one would also be able to generate the more efficient form directly.</p>
+<p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasses one would also be able to generate the more efficient form directly.</p>
 
                     </main>
 

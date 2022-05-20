@@ -1065,7 +1065,7 @@ private:
     halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0, .max = 100, .init = 1}&gt; gain;
   };
   struct outputs { 
-    halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
+    halp::audio_sample&lt;&quot;Out&quot;, double&gt; audio;
   };
 
   void operator()(const inputs&amp; ins, outputs&amp; outs) 
@@ -1078,7 +1078,7 @@ private:
   double accumulator{};
 };
 </code></pre>
-<p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasse one would also be able to generate the more efficient form directly.</p>
+<p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasses one would also be able to generate the more efficient form directly.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="audio-setup"><a class="header" href="#audio-setup">Audio setup</a></h1>
 <p>It is fairly common for audio systems to need to have some buffers allocated or perform pre-computations depending on the sample rate and buffer size of the system.</p>
 <p>This can be done by adding the following method in the processor:</p>
@@ -1238,7 +1238,7 @@ struct MyProcessor {
 </code></pre>
 <p>In every case, if one wants access to the processor object, it has to be the first argument of the function (except the non-static-member-function case where it is not necessary as the function already has access to the <code>this</code> pointer by definition).</p>
 <h2 id="type-checking"><a class="header" href="#type-checking">Type-checking</a></h2>
-<p>Messages are type-checked: in the example above, for instance, PureData will return an error for the message <code>[dump foo bar&gt;</code>. For the message <code>[dump 0.1 bar&gt;</code> things will however work out just fine :-)</p>
+<p>Messages are type-checked: in the first example above, for instance, PureData will return an error for the message <code>[dump foo bar&gt;</code>. For the message <code>[dump 0.1 bar&gt;</code> things will however work out just fine :-)</p>
 <h2 id="arbitrary-inputs"><a class="header" href="#arbitrary-inputs">Arbitrary inputs</a></h2>
 <p>It may be necessary to have messages that accept an arbitrary number of inputs.
 Here is how: </p>
