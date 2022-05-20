@@ -61,7 +61,7 @@ struct MyProcessor {
 In every case, if one wants access to the processor object, it has to be the first argument of the function (except the non-static-member-function case where it is not necessary as the function already has access to the `this` pointer by definition).
 
 ## Type-checking
-Messages are type-checked: in the example above, for instance, PureData will return an error for the message `[dump foo bar>`. For the message `[dump 0.1 bar>` things will however work out just fine :-)
+Messages are type-checked: in the first example above, for instance, PureData will return an error for the message `[dump foo bar>`. For the message `[dump 0.1 bar>` things will however work out just fine :-)
 
 ## Arbitrary inputs
 It may be necessary to have messages that accept an arbitrary number of inputs.
