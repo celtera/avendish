@@ -80,7 +80,7 @@ struct MyProcessor
     halp::hslider_f32<"Gain", halp::range{.min = 0, .max = 100, .init = 1}> gain;
   };
   struct outputs { 
-    halp::audio_sample<"A", double> audio;
+    halp::audio_sample<"Out", double> audio;
   };
 
   void operator()(const inputs& ins, outputs& outs) 
@@ -94,4 +94,4 @@ private:
 };
 ```
 
-Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasse one would also be able to generate the more efficient form directly.
+Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasses one would also be able to generate the more efficient form directly.
