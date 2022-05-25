@@ -37,7 +37,7 @@ struct Controls
     // The enum is a bit harder to do since we want to
     // define the enumerators and the matching strings in one go...
     // First argument after the name is the default (init) value.
-    halp__enum("Enum", Bar, Foo, Bar) f;
+    struct { halp__enum("Enum", Bar, Foo, Bar) } f;
   } inputs;
 
   struct

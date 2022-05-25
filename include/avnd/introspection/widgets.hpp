@@ -65,6 +65,14 @@ static constexpr std::array<std::string_view, N> to_string_view_array(const std:
   }(std::make_index_sequence<N>{});
 }
 
+template <typename T, std::size_t N>
+static constexpr std::array<std::string_view, N> to_string_view_array(const std::pair<std::string_view,T> (&a)[N])
+{
+  return [&] <std::size_t... I> (std::index_sequence<I...>) -> std::array<std::string_view, N> {
+      return { {a[I].first...} };
+  }(std::make_index_sequence<N>{});
+}
+
 template <std::size_t N>
 static constexpr std::array<std::string_view, N> to_string_view_array(const std::array<std::string_view, N>& a)
 {
