@@ -274,8 +274,11 @@ struct ControlGallery
     //!   }
     //!
     //! OSC messages can use either the int index or the string.
-    using enum_t = halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole);
+    struct enum_t { halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole) };
     halp::accurate&lt;enum_t&gt; simpler_enumeration;
+
+    struct combobox_t { halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange) };
+    halp::accurate&lt;combobox_t&gt; simpler_enumeration_in_a_combobox;
 
     //! Crosshair XY chooser
     halp::accurate&lt;halp::xy_pad_f32&lt;&quot;XY&quot;, halp::range{-5.f, 5.f, 0.f}&gt;&gt; position;
