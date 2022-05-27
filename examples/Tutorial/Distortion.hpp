@@ -32,21 +32,6 @@ struct Distortion
     halp::audio_input_bus<"Input"> audio;
     halp::hslider_f32<"Gain", halp::range{.min = 0.f, .max = 100.f, .init = 10.f}> gain;
 
-    struct
-    {
-      halp_meta(name, "Combo box");
-      enum widget
-      { combobox };
-
-      struct range
-      {
-        halp::combo_pair<float> values[3]{{"Foo", -10.f}, {"Bar", 5.f}, {"Baz", 10.f}};
-        int init{1}; // Bar
-      };
-
-      float value{};
-    } combobox;
-
   } inputs;
 
   /** And the output ports: only an audio output on this one.

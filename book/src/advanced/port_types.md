@@ -45,7 +45,7 @@ struct {
 } my_port;
 ```
 
-> Note that depending on the widget you use, UIs may create a `toggle`, 
+> Note that depending on the widget you use, UIs may create a `toggle`,
 > a maintained `button` or a momentary `bang`.
 
 ### String
@@ -87,16 +87,16 @@ Here, using a range definition of the form:
 
 ```cpp
 struct range {
-    <string -> value map> values[N] = { 
-      { key_1, value_1}, { key_2, value_2 }, ... 
-    };
+  <string -> value map> values[N] = {
+    { key_1, value_1}, { key_2, value_2 }, ...
+  };
 
-    <integer> init = /* initial index */;
+  <integer> init = /* initial index */;
 };
 ```
 
 allows to initialize a combobox in the UI, with a predetermined set of values.
-The value type is the actual one which will be used for the port - Avendish will translate 
+The value type is the actual one which will be used for the port - Avendish will translate
 as needed.
 
 ### Enumerating with only string
@@ -117,8 +117,8 @@ struct {
 };
 ```
 
-Here, we can use `std::string_view`: the assigned value will always be 
-one from the range::values array ; these strings live in static memory 
+Here, we can use `std::string_view`: the assigned value will always be
+one from the range::values array ; these strings live in static memory
 so there is no need to duplicate them in an `std::string`.
 
 It is also possible to use an `int` for the port value:
@@ -159,8 +159,8 @@ struct {
 }
 ```
 
-> The enum must be contiguous, representable in an int32 and start at 0: 
-> `enum { A = 3, B, C };` will not work. 
+> The enum must be contiguous, representable in an int32 and start at 0:
+> `enum { A = 3, B, C };` will not work.
 > `enum { A, B, C, AA = 10 };` will not work.
 > `enum { A, B, C, ... 4 billion values later ..., XXXX };` will not work.
 > `enum { A, B, C };` will work.

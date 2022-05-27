@@ -2,6 +2,7 @@
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/binding/ossia/value.hpp>
+#include <ossia/network/value/value_conversion.hpp>
 
 namespace oscr
 {
@@ -387,7 +388,7 @@ inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
 }
 
 template<avnd::enum_ish_parameter Field, typename Val>
-struct enum_to_ossia_visitor
+struct enum_from_ossia_visitor
 {
   Val operator()(const int& v) const noexcept {
     constexpr auto range = avnd::get_range<Field>();
@@ -438,7 +439,16 @@ inline void from_ossia_value(
     const ossia::value& src,
     Val& dst)
 {
-  dst = src.apply(enum_to_ossia_visitor<Field, Val>{});
+  if constexpr(avnd::enum_parameter<Field>)
+  {
+    dst = src.apply(enum_from_ossia_visitor<Field, Val>{});
+  }
+  else
+  {
+    // In score we already get the correct value corresponding to the
+    // choosen element in the combobox so we just have to unpack it:
+    from_ossia_value(src, dst);
+  }
 }
 
 }

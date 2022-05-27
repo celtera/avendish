@@ -5,28 +5,33 @@
 #include <avnd/common/for_nth.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/widgets.hpp>
+#include <avnd/wrappers/ranges.hpp>
 #include <cmath>
 
 #include <string>
 
 namespace avnd
 {
+/**
+ * @brief Used to set the initial value for controls when
+ * the plug-in is first loaded.
+ */
 template <typename F>
 static constexpr void init_controls(avnd::effect_container<F>& effect)
 {
   for(auto& state : effect.full_state()) {
-      avnd::for_each_field_ref(
-          state.inputs,
-          [&]<typename T>(T& ctl) {
-            if constexpr (avnd::has_range<T>)
-            {
-              constexpr auto c = avnd::get_range<T>();
-              if_possible(ctl.value = c.init) // Default case
-              else if_possible(ctl.value = c.values[c.init]) // For string enums
+    avnd::for_each_field_ref(
+      state.inputs,
+      [&]<typename T>(T& ctl) {
+        if constexpr (avnd::has_range<T>)
+        {
+          constexpr auto c = avnd::get_range<T>();
+          if_possible(ctl.value = c.init) // Default case
+          else if_possible(ctl.value = c.values[c.init]) // For string enums
 
-              if_possible(ctl.update(state.effect));
-            }
-      });
+          if_possible(ctl.update(state.effect));
+        }
+    });
   }
 }
 
@@ -50,6 +55,10 @@ static constexpr void apply_control(T& ctl, std::floating_point auto v)
     else if (ctl.value > c.max)
       ctl.value = c.max;
   }
+  else if constexpr (avnd::parameter_with_values_range<T>)
+  {
+    ctl.value = range_value<T>(closest_value_index<T>(ctl.value));
+  }
 }
 /*
 static void apply_control(auto& ctl, std::string&& v)
@@ -67,23 +76,44 @@ static void apply_control(auto& ctl, std::string&& v)
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
-  if constexpr (avnd::has_range<T>)
+  if constexpr (avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
+  }
+  else if constexpr (avnd::parameter_with_values_range<T>)
+  {
+    // Here we just map from / to the index of the value
+
+    // [0;1] -> [0;N[
+    const auto mapped = map_index_from_01<avnd::get_enum_choices_count<T>()>(v);
+
+    // [0;N[ -> actual value
+    return range_value<T>(mapped);
   }
   else
   {
     return v;
   }
 }
+
 template <avnd::int_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
-  if constexpr (avnd::has_range<T>)
+  if constexpr (avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
+  }
+  else if constexpr (avnd::parameter_with_values_range<T>)
+  {
+    // Here we just map from / to the index of the value
+
+    // [0;1] -> [0;N[
+    const auto mapped = map_index_from_01<avnd::get_enum_choices_count<T>()>(v);
+
+    // [0;N[ -> actual value
+    return range_value<T>(mapped);
   }
   else
   {
@@ -106,8 +136,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_from_01(std::floating_point auto v)
 {
-  int res = std::round(v * (avnd::get_enum_choices_count<T>() - 1));
-  return static_cast<decltype(T::value)>(res);
+  return static_cast<decltype(T::value)>(map_index_from_01<avnd::get_enum_choices_count<T>()>(v));
 }
 
 template <typename T>
@@ -121,11 +150,16 @@ static constexpr auto map_control_to_01(const auto& value)
 {
   // Apply the value
   double v{};
-  if constexpr (avnd::has_range<T>)
+  if constexpr (avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
+  }
+  else if constexpr (avnd::parameter_with_values_range<T>)
+  {
+    const int idx = closest_value_index<T>(value);
+    v = map_index_to_01<avnd::get_enum_choices_count<T>()>(idx);
   }
   else
   {
@@ -139,13 +173,18 @@ static constexpr auto map_control_to_01(const auto& value)
 {
   // Apply the value
   double v{};
-  if constexpr (avnd::has_range<T>)
+  if constexpr (avnd::parameter_with_minmax_range<T>)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);
     constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
+  }
+  else if constexpr (avnd::parameter_with_values_range<T>)
+  {
+    const int idx = closest_value_index<T>(value);
+    v = map_index_to_01<avnd::get_enum_choices_count<T>()>(idx);
   }
   else
   {
@@ -171,8 +210,7 @@ static constexpr auto map_control_to_01(const auto& value)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_to_01(const auto& value)
 {
-  static_assert(avnd::get_enum_choices_count<T>() > 0);
-  return ((static_cast<int>(value) + 0.5) / avnd::get_enum_choices_count<T>());
+  return map_index_to_01<avnd::get_enum_choices_count<T>()>(static_cast<int>(value));
 }
 
 template <typename T>

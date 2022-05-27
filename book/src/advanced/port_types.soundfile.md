@@ -25,7 +25,7 @@ A helper type is provided:
 
 ```cpp
 struct {
-  halp::soundfile<"My soundfile"> snd;
+  halp::soundfile_port<"My soundfile"> snd;
 } inputs;
 
 void operator()(int frames) {
@@ -43,4 +43,23 @@ void operator()(int frames) {
     for(int j = 0; j < frames; j++)
       inputs.snd[i][j];
 }
+```
+
+It allows choosing the sample format in which the samples are loaded:
+
+```cpp
+halp::soundfile_port<"My soundfile", float> snd_float;
+halp::soundfile_port<"My soundfile", double> snd_double;
+```
+
+## Callback
+Like other ports, it is possible to get an update callback, by implementing an `update` method ;
+the simplest way is to make an empty struct which inherits from `halp::soundfile`
+
+```cpp
+struct : halp::soundfile_port<"My soundfile"> {
+  void update(MyObject& obj) {
+    // This code is called whenever the soundfile has been changed by the user
+  }
+};
 ```

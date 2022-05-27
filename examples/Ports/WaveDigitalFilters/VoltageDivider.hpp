@@ -9,7 +9,7 @@
 namespace chowdsp_ports
 {
 using namespace chowdsp::wdft;
-
+class VoltageDivider;
 // Example of defining a small helper class to define a control for a resistor
 template<halp::static_string Name, halp::static_string Description, auto RMember>
 struct ResistorControl {

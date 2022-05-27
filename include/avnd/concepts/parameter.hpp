@@ -88,6 +88,13 @@ concept parameter_with_minmax_range = requires
   avnd::get_range<C>().init;
 };
 
+template <typename C>
+concept parameter_with_values_range = requires
+{
+  avnd::get_range<C>().values[0];
+  { avnd::get_range<C>().init } -> std::integral;
+};
+
 /**
  * A "control" is a parameter + some metadata:
  *
