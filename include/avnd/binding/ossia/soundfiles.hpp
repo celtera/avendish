@@ -119,11 +119,16 @@ struct soundfile_storage
        buf[i] = g->data[i].data();
 
       // Update the port
-      auto& port = avnd::pfr::get<NField>(t.inputs());
-      port.soundfile.data = buf.data();
-      port.soundfile.frames = frames;
-      port.soundfile.channels = chans;
-      port.soundfile.filename = g->path;
+      for(auto& state : t.full_state())
+      {
+        auto& port = avnd::pfr::get<NField>(state.inputs);
+        port.soundfile.data = buf.data();
+        port.soundfile.frames = frames;
+        port.soundfile.channels = chans;
+        port.soundfile.filename = g->path;
+
+        if_possible(port.update(state.effect));
+      }
     }
     else
     {
@@ -142,11 +147,16 @@ struct soundfile_storage
       }
 
       // Update the port
-      auto& port = avnd::pfr::get<NField>(t.inputs());
-      port.soundfile.data = buf.data();
-      port.soundfile.frames = frames;
-      port.soundfile.channels = chans;
-      port.soundfile.filename = g.path;
+      for(auto& state : t.full_state())
+      {
+        auto& port = avnd::pfr::get<NField>(state.inputs);
+        port.soundfile.data = buf.data();
+        port.soundfile.frames = frames;
+        port.soundfile.channels = chans;
+        port.soundfile.filename = g.path;
+
+        if_possible(port.update(state.effect));
+      }
     }
   }
 };
