@@ -116,18 +116,10 @@ consteval auto get_enum_choices()
 
 /// Normalization reflection ////
 template <typename C>
-concept has_normalize = requires
-{
-  C::normalize();
-}
-|| requires
-{
-  sizeof(C::normalize);
-}
-|| requires
-{
-  sizeof(typename C::normalize);
-};
+concept has_normalize =
+  requires { C::normalize(); }
+  || requires { sizeof(C::normalize); }
+  || requires { sizeof(typename C::normalize); };
 
 template <avnd::has_normalize T>
 consteval auto get_normalize()

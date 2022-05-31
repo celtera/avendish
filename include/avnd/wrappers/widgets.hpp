@@ -31,7 +31,8 @@ enum class widget_type
   choices,
   xy,
   color,
-  bargraph
+  bargraph,
+  range
 };
 
 enum class slider_orientation
@@ -52,6 +53,13 @@ struct slider_reflection
 {
   using value_type = T;
   static constexpr widget_type widget = widget_type::slider;
+  slider_orientation orientation{slider_orientation::horizontal};
+};
+template <typename T>
+struct range_slider_reflection
+{
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::range;
   slider_orientation orientation{slider_orientation::horizontal};
 };
 template <typename T>
@@ -113,6 +121,40 @@ consteval auto get_widget()
     else if constexpr (std::is_floating_point_v<value_type>)
     {
       return slider_reflection<float>{slider_orientation::horizontal};
+    }
+  }
+  else if constexpr (requires { T::widget::hrange_slider; })
+  {
+    using element_value_type = std::decay_t<decltype(value_type{}.start)>;
+    if constexpr (std::is_integral_v<element_value_type>)
+    {
+      return range_slider_reflection<int>{slider_orientation::horizontal};
+    }
+    else if constexpr (std::is_floating_point_v<element_value_type>)
+    {
+      return range_slider_reflection<float>{slider_orientation::horizontal};
+    }
+  }
+  else if constexpr (requires { T::widget::vrange_slider; })
+  {
+    if constexpr (std::is_integral_v<value_type>)
+    {
+      return range_slider_reflection<int>{slider_orientation::vertical};
+    }
+    else if constexpr (std::is_floating_point_v<value_type>)
+    {
+      return range_slider_reflection<float>{slider_orientation::vertical};
+    }
+  }
+  else if constexpr (requires { T::widget::range_slider; })
+  {
+    if constexpr (std::is_integral_v<value_type>)
+    {
+      return range_slider_reflection<int>{slider_orientation::horizontal};
+    }
+    else if constexpr (std::is_floating_point_v<value_type>)
+    {
+      return range_slider_reflection<float>{slider_orientation::horizontal};
     }
   }
   else if constexpr (requires { T::widget::spinbox; })

@@ -443,6 +443,49 @@ struct xy_pad_t
 template <static_string lit, range setup = default_range<float>>
 using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
+
+/// 1D range ///
+template <typename T>
+struct range_slider_value
+{
+  T start, end;
+};
+
+struct range_slider_range
+{
+  double min{0.}, max{1.};
+  range_slider_value<double> init{0.25, 0.75};
+};
+
+template <typename T, static_string lit, range_slider_range setup>
+struct range_slider_t
+{
+  using value_type = range_slider_value<T>;
+  enum widget
+  {
+    hrange_slider
+  };
+  static clang_buggy_consteval auto range()
+  {
+    return setup;
+  }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  value_type value{setup.init.start, setup.init.end};
+
+  operator value_type&() noexcept { return value; }
+  operator value_type() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
+
+template <static_string lit, range_slider_range setup = range_slider_range{}>
+using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
+
+
 /// RGBA color ///
 struct color_type
 {
