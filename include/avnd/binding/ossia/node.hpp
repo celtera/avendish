@@ -247,7 +247,6 @@ public:
     this->audio_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
     this->soundfiles.init(this->impl);
-    this->spectrums.init(this->impl, buffer_size);
 
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
@@ -390,7 +389,6 @@ public:
     this->initialize_all_ports();
 
     static_cast<AudioCount&>(*this).scan_audio_input_channels();
-    this->audio_configuration_changed();
   }
 
   // Handling controls
@@ -447,14 +445,12 @@ public:
     // Initialize the channels for the effect duplicator
     this->impl.init_channels(setup_info.input_channels, setup_info.output_channels);
 
-    // Setup buffers for storing MIDI messages
+    // Setup buffers for storing MIDI messages, FFTs, etc.
 
     {
       this->midi_buffers.reserve_space(this->impl, this->buffer_size);
-    }
-
-    {
       this->control_buffers.reserve_space(this->impl, this->buffer_size);
+      this->spectrums.reserve_space(this->impl, this->buffer_size);
     }
 
     // Effect-specific preparation

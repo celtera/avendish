@@ -157,6 +157,62 @@ struct process_before_run
     }
   }
 
+  template <avnd::spectrum_split_bus_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx> idx) const noexcept
+  {
+    if(port.data.channels() >= 1)
+    {
+      using sc_in = avnd::spectrum_split_bus_input_introspection<typename Exec_T::processor_type>;
+      constexpr auto fft_idx = sc_in::field_index_to_index(idx);
+      auto& ffts = get<fft_idx>(self.spectrums.split_bus.ffts);
+
+      for(std::size_t c = 0; c < port.data.channels(); c++)
+      {
+        auto& samples = port.data.channel(c);
+        auto& fft = ffts.ffts[c];
+        const int N = samples.size();
+        if(N > 0)
+        {
+          auto fftIn = fft.input();
+          for (int i = 0; i < N; i++)
+            fftIn[i] = samples[i];
+
+          auto fftOut = reinterpret_cast<ossia::fft_real*>(fft.execute());
+          deinterleave(fftOut, N);
+
+          ctrl.spectrum.amplitude[c] = fftOut;
+          ctrl.spectrum.phase[c] = fftOut + N / 2;
+        }
+      }
+    }
+  }
+
+  template <avnd::spectrum_complex_bus_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx> idx) const noexcept
+  {
+    if(port.data.channels() >= 1)
+    {
+      using sc_in = avnd::spectrum_split_bus_input_introspection<typename Exec_T::processor_type>;
+      constexpr auto fft_idx = sc_in::field_index_to_index(idx);
+      auto& ffts = get<fft_idx>(self.spectrums.complex_bus.ffts);
+
+      for(std::size_t c = 0; c < port.data.channels(); c++)
+      {
+        auto& samples = port.data.channel(c);
+        auto& fft = ffts.ffts[c];
+        const int N = samples.size();
+        if(N > 0)
+        {
+          auto fftIn = fft.input();
+          for (int i = 0; i < N; i++)
+            fftIn[i] = samples[i];
+
+          ctrl.spectrum[c] = reinterpret_cast<decltype(ctrl.spectrum[c])>(fft.execute());
+        }
+      }
+    }
+  }
+
   template <typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
   {

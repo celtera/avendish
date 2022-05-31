@@ -4,7 +4,9 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/span_polyfill.hpp>
+
 #include <halp/static_string.hpp>
+#include <halp/inline.hpp>
 
 #include <cstdint>
 
@@ -19,9 +21,9 @@ struct audio_sample
 
   FP sample;
 
-  operator FP&() noexcept { return sample; }
-  operator FP() const noexcept { return sample; }
-  auto& operator=(FP t) noexcept
+  HALP_INLINE_FLATTEN operator FP&() noexcept { return sample; }
+  HALP_INLINE_FLATTEN operator FP() const noexcept { return sample; }
+  HALP_INLINE_FLATTEN auto& operator=(FP t) noexcept
   {
     sample = t;
     return *this;
@@ -35,9 +37,9 @@ struct audio_channel
 
   FP* channel;
 
-  operator FP*() const noexcept { return channel; }
-  FP& operator[](std::size_t i) noexcept { return channel[i]; }
-  FP operator[](std::size_t i) const noexcept { return channel[i]; }
+  HALP_INLINE_FLATTEN operator FP*() const noexcept { return channel; }
+  HALP_INLINE_FLATTEN FP& operator[](std::size_t i) noexcept { return channel[i]; }
+  HALP_INLINE_FLATTEN FP operator[](std::size_t i) const noexcept { return channel[i]; }
 };
 
 
@@ -50,9 +52,9 @@ struct fixed_audio_bus
   static constexpr int channels() { return WantedChannels; }
 
   FP** samples{};
-  operator FP**() const noexcept { return samples; }
-  FP* operator[](std::size_t i) const noexcept { return samples[i]; }
-  avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+  HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+  HALP_INLINE_FLATTEN FP* operator[](std::size_t i) const noexcept { return samples[i]; }
+  HALP_INLINE_FLATTEN avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
   {
     return {samples[i], frames};
   }
@@ -67,9 +69,9 @@ struct dynamic_audio_bus
   FP** samples{};
   int channels{};
 
-  operator FP**() const noexcept { return samples; }
-  FP* operator[](std::size_t i) const noexcept { return samples[i]; }
-  avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+  HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+  HALP_INLINE_FLATTEN FP* operator[](std::size_t i) const noexcept { return samples[i]; }
+  HALP_INLINE_FLATTEN avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
   {
     return {samples[i], frames};
   }
@@ -88,9 +90,9 @@ struct audio_spectrum_channel
     FP* phase{};
   } spectrum;
 
-  operator FP*() const noexcept { return channel; }
-  FP& operator[](std::size_t i) noexcept { return channel[i]; }
-  FP operator[](std::size_t i) const noexcept { return channel[i]; }
+  HALP_INLINE_FLATTEN operator FP*() const noexcept { return channel; }
+  HALP_INLINE_FLATTEN FP& operator[](std::size_t i) noexcept { return channel[i]; }
+  HALP_INLINE_FLATTEN FP operator[](std::size_t i) const noexcept { return channel[i]; }
 };
 
 template <static_string lit, typename FP, int WantedChannels, static_string Desc = "">
@@ -107,9 +109,9 @@ struct fixed_audio_spectrum_bus
       FP** phase{};
     } spectrum;
 
-    operator FP**() const noexcept { return samples; }
-    FP* operator[](std::size_t i) const noexcept { return samples[i]; }
-    avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+    HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+    HALP_INLINE_FLATTEN FP* operator[](std::size_t i) const noexcept { return samples[i]; }
+    HALP_INLINE_FLATTEN avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
     {
         return {samples[i], frames};
     }
@@ -118,23 +120,23 @@ struct fixed_audio_spectrum_bus
 template <static_string Name, typename FP, static_string Desc = "">
 struct dynamic_audio_spectrum_bus
 {
-    static consteval auto name() { return std::string_view{Name.value}; }
-    static consteval auto description() { return std::string_view{Desc.value}; }
+  static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 
-    FP** samples{};
-    struct {
-      FP** amplitude{};
-      FP** phase{};
-    } spectrum;
+  FP** samples{};
+  struct {
+    FP** amplitude{};
+    FP** phase{};
+  } spectrum;
 
-    int channels{};
+  int channels{};
 
-    operator FP**() const noexcept { return samples; }
-    FP* operator[](std::size_t i) const noexcept { return samples[i]; }
-    avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
-    {
-        return {samples[i], frames};
-    }
+  HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+  HALP_INLINE_FLATTEN FP* operator[](std::size_t i) const noexcept { return samples[i]; }
+  HALP_INLINE_FLATTEN avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+  {
+      return {samples[i], frames};
+  }
 };
 
 struct tick
@@ -162,8 +164,8 @@ struct audio_bus
   FP** samples{};
   int channels{};
 
-  operator avnd::span<FP*>() const noexcept { return {samples, channels}; }
-  avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
+  HALP_INLINE_FLATTEN operator avnd::span<FP*>() const noexcept { return {samples, channels}; }
+  HALP_INLINE_FLATTEN avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
   {
     return {samples[i], frames};
   }

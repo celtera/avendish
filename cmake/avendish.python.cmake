@@ -1,13 +1,16 @@
 find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
-if(NOT pybind11_FOUND)
+if(NOT TARGET pybind11::module)
   function(avnd_make_python)
   endfunction()
 
   return()
 endif()
-
 function(avnd_make_python)
+  if(NOT TARGET pybind11::module)
+    return()
+  endif()
+
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)

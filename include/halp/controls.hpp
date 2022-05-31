@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/polyfill.hpp>
+#include <halp/inline.hpp>
 #include <halp/static_string.hpp>
 
 #include <array>
@@ -540,15 +541,15 @@ struct soundfile_port
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  operator soundfile_view<T>&() noexcept { return soundfile; }
-  operator const soundfile_view<T>&() const noexcept { return soundfile; }
-  operator bool() const noexcept { return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0; }
+  HALP_INLINE_FLATTEN operator soundfile_view<T>&() noexcept { return soundfile; }
+  HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept { return soundfile; }
+  HALP_INLINE_FLATTEN operator bool() const noexcept { return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0; }
 
-  std::span<const T> channel(int channel) const noexcept { return std::span(soundfile.data[channel], soundfile.frames); }
-  int channels() const noexcept { return soundfile.channels; }
-  int64_t frames() const noexcept { return soundfile.frames; }
+  HALP_INLINE_FLATTEN std::span<const T> channel(int channel) const noexcept { return std::span(soundfile.data[channel], soundfile.frames); }
+  HALP_INLINE_FLATTEN int channels() const noexcept { return soundfile.channels; }
+  HALP_INLINE_FLATTEN int64_t frames() const noexcept { return soundfile.frames; }
 
-  const T* operator[](int channel) const noexcept {
+  HALP_INLINE_FLATTEN const T* operator[](int channel) const noexcept {
     return soundfile.data[channel];
   }
 

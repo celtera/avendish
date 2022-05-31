@@ -38,6 +38,37 @@ struct Controls
     // define the enumerators and the matching strings in one go...
     // First argument after the name is the default (init) value.
     struct { halp__enum("Enum", Bar, Foo, Bar) } f;
+
+    struct
+    {
+      halp_meta(name, "Combo_A");
+      enum widget
+      { combobox };
+
+      struct range
+      {
+        halp::combo_pair<float> values[3]{{"Foo", 0.1f}, {"Bar", 0.5f}, {"Baz", 0.8f}};
+        int init{1}; // Bar
+      };
+
+      float value{};
+    } combobox_a;
+/*
+    struct
+    {
+        halp_meta(name, "Combo_B");
+        enum widget
+        { combobox };
+
+        struct range
+        {
+          float values[3]{0.1f, 0.5f, 0.8f};
+          int init{1};
+        };
+
+        float value{};
+    } combobox_b;
+*/
   } inputs;
 
   struct
