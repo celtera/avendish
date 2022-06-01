@@ -27,7 +27,7 @@ struct Sine
 
   struct inputs
   {
-    struct : halp::hslider_f32<"Log m=0.85", frequency_range()> {
+    struct : halp::knob_f32<"Log m=0.85", frequency_range()> {
       using mapper = halp::log_mapper<std::ratio<85, 100>>;
     } f1;
     struct : halp::hslider_f32<"Log m=0.15", frequency_range()> {
