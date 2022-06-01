@@ -62,8 +62,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
       static consteval auto name() { return "Audio Out"; }
       double sample;
     } fake_out;
-    func_inlets(fake_in);
-    func_outlets(fake_out);
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
   else if constexpr (avnd::mono_per_sample_arg_processor<float, T>)
   {
@@ -77,8 +77,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
       static consteval auto name() { return "Audio Out"; }
       float sample;
     } fake_out;
-    func_inlets(fake_in);
-    func_outlets(fake_out);
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
   else if constexpr (avnd::monophonic_arg_audio_effect<double, T>)
   {
@@ -92,8 +92,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
       static consteval auto name() { return "Audio Out"; }
       double* samples;
     } fake_out;
-    func_inlets(fake_in);
-    func_outlets(fake_out);
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
   else if constexpr (avnd::monophonic_arg_audio_effect<float, T>)
   {
@@ -107,8 +107,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
       static consteval auto name() { return "Audio Out"; }
       float* samples;
     } fake_out;
-    func_inlets(fake_in);
-    func_outlets(fake_out);
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
   else if constexpr (avnd::polyphonic_arg_audio_effect<double, T>)
   {
@@ -122,8 +122,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
       static consteval auto name() { return "Audio Out"; }
       double** samples;
     } fake_out;
-    func_inlets(fake_in);
-    func_outlets(fake_out);
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
   else if constexpr (avnd::polyphonic_arg_audio_effect<float, T>)
   {
@@ -137,8 +137,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
       static consteval auto name() { return "Audio Out"; }
       float** samples;
     } fake_out;
-    func_inlets(fake_in);
-    func_outlets(fake_out);
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
 
   // Handle message inputs
@@ -151,13 +151,13 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   {
     using inputs_t = typename avnd::inputs_type<T>::type;
     inputs_t ins;
-    avnd::for_each_field_ref(ins, func_inlets);
+    avnd::for_each_field_ref_n(ins, func_inlets);
   }
   if constexpr (avnd::has_outputs<T>)
   {
     using outputs_t = typename avnd::outputs_type<T>::type;
     outputs_t outs;
-    avnd::for_each_field_ref(outs, func_outlets);
+    avnd::for_each_field_ref_n(outs, func_outlets);
   }
 }
 }

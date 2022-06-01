@@ -86,9 +86,11 @@ struct Init
       // (this is useful for hosts which support dynamic number of arguments)
       void operator()(Init& self, INPUT_RANGE auto range)
       {
-        for (std::variant value : range)
+        // value is a std::variant-like type
+        for (auto& value : range)
         {
-          std::visit([](auto& e) { std::cout << e << std::endl; }, value);
+          // Use ADL here
+          visit([](auto& e) { std::cout << e << std::endl; }, value);
         }
       }
     } generic_call;

@@ -114,27 +114,50 @@ consteval auto get_enum_choices()
   }
 }
 
-/// Normalization reflection ////
-template <typename C>
-concept has_normalize =
-  requires { C::normalize(); }
-  || requires { sizeof(C::normalize); }
-  || requires { sizeof(typename C::normalize); };
-
-template <avnd::has_normalize T>
-consteval auto get_normalize()
+/// Mapper reflection ////
+/**
+ * Used to define how UI sliders behave.
+ */
+template<typename T>
+concept mapper = requires (T t)
 {
-  if constexpr (requires { sizeof(typename T::normalize); })
-    return typename T::normalize{};
-  else if constexpr (requires { T::normalize(); })
-    return T::normalize();
-  else if constexpr (requires { sizeof(decltype(T::normalize)); })
-    return T::normalize;
+  // From linear to eased domain
+  { t.map(0.) } -> std::convertible_to<double>;
+  // From eased domain to linear domain
+  { t.unmap(0.) } -> std::convertible_to<double>;
+};
+
+template <typename C>
+concept has_mapper =
+  requires { C::mapper(); }
+  || requires { sizeof(C::mapper); }
+  || requires { sizeof(typename C::mapper); };
+
+// Used to define how UI sliders behave.
+template <avnd::has_mapper T>
+consteval auto get_mapper()
+{
+  if constexpr (requires { sizeof(typename T::mapper); })
+  {
+    static_assert(mapper<typename T::mapper>);
+    return typename T::mapper{};
+  }
+  else if constexpr (requires { T::mapper(); })
+  {
+    static_assert(mapper<std::decay_t<decltype(T::mapper())>>);
+    return T::mapper();
+  }
+  else if constexpr (requires { sizeof(decltype(T::mapper)); })
+  {
+    static_assert(mapper<std::decay_t<decltype(T::mapper)>>);
+    return T::mapper;
+  }
 }
 
 template <typename T>
-consteval auto get_normalize(const T&)
+consteval auto get_mapper(const T&)
 {
-  return get_normalize<T>();
+  return get_mapper<T>();
 }
+
 }

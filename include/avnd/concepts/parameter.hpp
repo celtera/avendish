@@ -226,4 +226,7 @@ concept span_sample_accurate_parameter = sample_accurate_parameter<
 template <typename T>
 concept dynamic_sample_accurate_parameter = sample_accurate_parameter<
     T> && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
+
+
+
 }

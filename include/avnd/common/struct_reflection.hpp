@@ -5,63 +5,13 @@
 #include <avnd/common/coroutines.hpp>
 #include <avnd/common/dummy.hpp>
 #include <avnd/common/errors.hpp>
+#include <avnd/common/index.hpp>
 #include <avnd/common/index_sequence.hpp>
 #include <avnd/common/aggregates.hpp>
 #include <boost/mp11.hpp>
 
 namespace avnd
 {
-template <std::size_t N>
-struct field_index {
-  consteval operator std::size_t() const noexcept { return N; }
-};
-
-template <std::size_t N>
-struct predicate_index {
-  consteval operator std::size_t() const noexcept { return N; }
-};
-
-template <int N, typename T, T... Idx>
-consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
-{
-  static_assert(sizeof...(Idx) > 0);
-
-  constexpr int ret = []
-  {
-    int k = 0;
-    for (int i : {Idx...})
-    {
-      if (i == N)
-        return k;
-      k++;
-    }
-    return -1;
-  }();
-
-  static_assert(ret >= 0);
-  return ret;
-}
-
-template <typename T, T... Idx>
-constexpr int index_of_element(T N, std::integer_sequence<T, Idx...>) noexcept
-{
-    static_assert(sizeof...(Idx) > 0);
-
-    int ret = [N]
-    {
-        int k = 0;
-        for (int i : {Idx...})
-        {
-            if (i == N)
-                return k;
-            k++;
-        }
-        return -1;
-    }();
-
-    return ret;
-}
-
 // Select a subset of fields and apply an operation on them
 
 template <
@@ -71,14 +21,6 @@ template <
     typename Filter,
     typename T>
 using filter_and_apply = typename Filter<T>::template filter_and_apply<F>;
-
-template <std::size_t Idx, typename Field>
-struct field_reflection
-{
-  using type = Field;
-  static const constexpr auto index = Idx;
-};
-
 
 /**
  * Utilities to introspect all fields in a struct
@@ -194,11 +136,12 @@ struct predicate_introspection
   using indices_n
       = numbered_index_sequence_t<boost::mp11::mp_copy_if<indices, matches_predicate_i>>;
 
+  using fields = boost::mp11::mp_copy_if<as_typelist<type>, P>;
+
   template<template <typename...> typename F>
   using filter_and_apply =
     boost::mp11::mp_rename<
-       boost::mp11::mp_transform<F,
-         boost::mp11::mp_copy_if<as_typelist<type>, P>>,
+       boost::mp11::mp_transform<F, fields>,
        tpl::tuple>;
 
   static constexpr auto index_map = integer_sequence_to_array(indices_n{});
@@ -229,6 +172,18 @@ struct predicate_introspection
   static constexpr auto field_index_to_index(int field_idx) noexcept {
       return avnd::index_of_element(field_idx, indices_n{});
   }
+
+
+  static constexpr auto field_reflections() noexcept
+  {
+    return []<typename K, K... Index>(std::integer_sequence<K, Index...>)
+    {
+      return avnd::typelist<field_reflection<Index, pfr::tuple_element_t<Index, T>>...>{};
+    }
+    (indices_n{});
+  }
+  using field_reflections_type = std::decay_t<decltype(field_reflections())>;
+
 
   static constexpr void for_all(auto&& func) noexcept
   {
@@ -488,7 +443,8 @@ template <>
 struct fields_introspection<avnd::dummy>
 {
   using type = avnd::dummy;
-  using fields = std::tuple<>;
+  using fields = avnd::typelist<>;
+  using field_reflections_type = avnd::typelist<>;
   static constexpr auto index_map = std::array<int, 0>{};
   static constexpr auto size = 0;
 
@@ -508,7 +464,8 @@ template <template <typename...> typename P>
 struct predicate_introspection<avnd::dummy, P>
 {
   using type = avnd::dummy;
-  using fields = std::tuple<>;
+  using fields = avnd::typelist<>;
+  using field_reflections_type = avnd::typelist<>;
   static constexpr auto index_map = std::array<int, 0>{};
   static constexpr auto size = 0;
 

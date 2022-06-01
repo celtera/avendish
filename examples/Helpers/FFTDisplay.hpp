@@ -49,21 +49,31 @@ struct FFTDisplay
   static consteval auto c_name() { return "avnd_fft_displayu"; }
   static consteval auto uuid() { return "9eeadb52-209a-46ff-b4c6-d6c31d25aad6"; }
 
+  // I/O
   struct {
     halp::dynamic_audio_spectrum_bus<"In", double> audio;
     static_assert(avnd::spectrum_split_bus_port<decltype(audio)>);
   } inputs;
   struct { } outputs;
 
-  int k = 0;
+  // Messaging
+  struct processor_to_ui {
+    std::vector<std::vector<float>> spectrums;
+  };
+
+  std::function<void(processor_to_ui)> send_message;
+
+  // Algorithm
   void operator()(int N)
   {
-      if(k++ % 100 != 0)
-          return;
-    processor_to_ui p;
     const auto channels = inputs.audio.channels;
+
+    // TODO pool allocations and reserve them in prepare()
+    processor_to_ui p;
     p.spectrums.resize(channels);
-    for(int i = 0; i < channels; i++) {
+
+    for(int i = 0; i < channels; i++)
+    {
       auto& chan = p.spectrums[i];
       chan.resize(N/2);
       auto& ampl = inputs.audio.spectrum.amplitude[i];
@@ -76,12 +86,7 @@ struct FFTDisplay
     send_message(std::move(p));
   }
 
-  struct processor_to_ui {
-    std::vector<std::vector<float>> spectrums;
-  };
-
-  std::function<void(processor_to_ui)> send_message;
-
+  // UI
   struct ui {
     halp_meta(layout, halp::layouts::container)
     halp_meta(width, 200)

@@ -35,6 +35,13 @@ struct control_introspection : predicate_introspection<T, is_control_t>
 };
 
 template <typename Field>
+using is_mapped_control_t = boost::mp11::mp_bool<control<Field> && has_mapper<Field>>;
+template <typename T>
+struct mapped_control_introspection : predicate_introspection<T, is_mapped_control_t>
+{
+};
+
+template <typename Field>
 using is_linear_timed_parameter_t
     = boost::mp11::mp_bool<linear_sample_accurate_parameter<Field>>;
 template <typename T>

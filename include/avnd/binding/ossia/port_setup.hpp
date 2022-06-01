@@ -13,82 +13,76 @@ namespace oscr
 {
 
 // Compile-time map of avnd concept to ossia port
-template <typename T>
+template <typename N, typename T>
 struct get_ossia_inlet_type;
-template <avnd::audio_port T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::audio_port T>
+struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::audio_inlet;
 };
-template <avnd::parameter T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::parameter T>
+struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
-template <avnd::midi_port T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::midi_port T>
+struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::midi_inlet;
 };
-template <avnd::texture_port T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::texture_port T>
+struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::texture_inlet;
 };
-template <avnd::soundfile_port T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::soundfile_port T>
+struct get_ossia_inlet_type<N, T>
 {
     using type = ossia::value_inlet;
 };
-template <avnd::message T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::message T>
+struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
-template <avnd::unreflectable_message T>
-struct get_ossia_inlet_type<T>
+template <typename N, avnd::unreflectable_message<N> T>
+struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
 
-template <typename T>
-using get_ossia_inlet_type_t = typename get_ossia_inlet_type<T>::type;
-
-template <typename T>
+template <typename N, typename T>
 struct get_ossia_outlet_type;
-template <avnd::audio_port T>
-struct get_ossia_outlet_type<T>
+template <typename N, avnd::audio_port T>
+struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::audio_outlet;
 };
-template <avnd::parameter T>
-struct get_ossia_outlet_type<T>
+template <typename N, avnd::parameter T>
+struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::value_outlet;
 };
-template <avnd::midi_port T>
-struct get_ossia_outlet_type<T>
+template <typename N, avnd::midi_port T>
+struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::midi_outlet;
 };
-template <avnd::texture_port T>
-struct get_ossia_outlet_type<T>
+template <typename N, avnd::texture_port T>
+struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::texture_outlet;
 };
-template <avnd::attachment_port T>
-struct get_ossia_outlet_type<T>
+template <typename N, avnd::attachment_port T>
+struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::texture_outlet;
 };
-template <avnd::callback T>
-struct get_ossia_outlet_type<T>
+template <typename N, avnd::callback T>
+struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::value_outlet;
 };
-
-template <typename T>
-using get_ossia_outlet_type_t = typename get_ossia_outlet_type<T>::type;
 
 template <typename T>
 struct inlet_storage
@@ -104,10 +98,13 @@ struct inlet_storage
   // typelist<a, b, c>
   using inputs_tuple = typename avnd::inputs_type<T>::tuple;
 
+  template<typename Port>
+  using inputs_getter = typename get_ossia_inlet_type<T, Port>::type;
+
   // tuple<ossia::audio_inlet, ossia::audio_outlet, ossia::value_inlet>
   using ossia_inputs_tuple
       = boost::mp11::mp_rename<
-          boost::mp11::mp_transform<get_ossia_inlet_type_t, inputs_tuple>,
+          boost::mp11::mp_transform<inputs_getter, inputs_tuple>,
         tuplet::tuple>;
   ossia_inputs_tuple ports;
 };
@@ -118,9 +115,12 @@ struct outlet_storage
   using outputs_type = typename avnd::outputs_type<T>::type;
   using outputs_tuple = typename avnd::outputs_type<T>::tuple;
 
+  template<typename Port>
+  using outputs_getter = typename get_ossia_outlet_type<T, Port>::type;
+
   using ossia_outputs_tuple
       = boost::mp11::mp_rename<
-          boost::mp11::mp_transform<get_ossia_outlet_type_t, outputs_tuple>,
+          boost::mp11::mp_transform<outputs_getter, outputs_tuple>,
         tuplet::tuple>;
   ossia_outputs_tuple ports;
 };

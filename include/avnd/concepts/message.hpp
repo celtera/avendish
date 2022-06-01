@@ -7,6 +7,7 @@
 #include <avnd/concepts/generic.hpp>
 
 #include <string_view>
+#include <vector>
 
 namespace avnd
 {
@@ -48,6 +49,12 @@ concept function_object_message = requires
   typename avnd::function_reflection<&T::operator()>::return_type;
 };
 
+template <typename Node, typename T>
+concept variadic_function_object_message =
+   requires (T t)         { t(std::vector<int>{}); }
+|| requires (Node n, T t) { t(n, std::vector<int>{}); }
+;
+
 template <typename T>
 concept reflectable_message
     = stateless_message<T> || stateful_message<T> || stdfunc_message<T> || function_object_message<T>;
@@ -60,13 +67,11 @@ concept message = reflectable_message<T> && requires(T t)
     } -> string_ish;
 };
 
-template <typename T>
+template <typename T, typename N>
 concept unreflectable_message =
-    !reflectable_message<T> && requires(T t)
-{
-  t.name();
-  t.func();
-};
+   (!reflectable_message<T>)
+&& requires(T t) { t.name(); }
+&& (requires(T t) { t.func(); } || variadic_function_object_message<N, T>);
 
 type_or_value_qualification(messages)
 type_or_value_reflection(messages)
