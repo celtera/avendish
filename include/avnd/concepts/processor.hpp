@@ -213,15 +213,18 @@ concept channel_processor
 // - float / double
 // This gives us the following set of concepts
 template <typename FP, typename T>
-concept monophonic_processor = effect_is_sane<FP, T> &&(
-    monophonic_arg_audio_effect<
-        FP,
-        T> || monophonic_single_port_audio_effect<FP, T> || mono_per_sample_arg_processor<FP, T> || mono_per_sample_port_processor<FP, T>);
+concept monophonic_processor = effect_is_sane<FP, T> && (
+    mono_per_channel_arg_processor<FP, T>
+ || monophonic_single_port_audio_effect<FP, T>
+ || mono_per_sample_arg_processor<FP, T>
+ || mono_per_sample_port_processor<FP, T>
+);
 
 template <typename FP, typename T>
-concept polyphonic_processor = polyphonic_arg_audio_effect<
-    FP,
-    T> || poly_array_port_based<FP, T> || poly_per_sample_port_processor<FP, T>;
+concept polyphonic_processor =
+   polyphonic_arg_audio_effect<FP, T>
+|| poly_array_port_based<FP, T>
+|| poly_per_sample_port_processor<FP, T>;
 
 template <typename T>
 concept polyphonic_double_processor
@@ -229,9 +232,12 @@ concept polyphonic_double_processor
 
 template <typename FP, typename T>
 concept typed_processor
-    = sample_port_based<FP, T> || mono_array_port_based<FP, T> || poly_array_port_based<FP, T> || mono_per_sample_arg_processor<
-        FP,
-        T> || mono_per_channel_arg_processor<FP, T> || monophonic_arg_audio_effect<FP, T> || polyphonic_arg_audio_effect<FP, T>;
+    = sample_port_based<FP, T>
+|| mono_array_port_based<FP, T>
+|| poly_array_port_based<FP, T>
+|| mono_per_sample_arg_processor<FP, T>
+|| mono_per_channel_arg_processor<FP, T>
+|| polyphonic_arg_audio_effect<FP, T>;
 template <typename T>
 concept float_processor = typed_processor<float, T>;
 template <typename T>
@@ -250,7 +256,7 @@ concept sample_arg_processor = mono_per_sample_arg_processor<
     T> || mono_per_sample_arg_processor<double, T>;
 template <typename T>
 concept channel_arg_processor
-    = monophonic_arg_audio_effect<float, T> || monophonic_arg_audio_effect<double, T>;
+    = mono_per_channel_arg_processor<float, T> || mono_per_channel_arg_processor<double, T>;
 template <typename T>
 concept bus_arg_processor
     = polyphonic_arg_audio_effect<float, T> || polyphonic_arg_audio_effect<double, T>;

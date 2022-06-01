@@ -689,12 +689,12 @@ public:
 // FIXME these concepts are super messy
 
 template <typename FP, typename T>
-concept real_mono_processor = avnd::mono_per_sample_arg_processor<FP, T> || avnd::
-    mono_per_sample_port_processor<FP, T> || avnd::monophonic_arg_audio_effect<
-        FP,
-        T> || avnd::monophonic_single_port_audio_effect<FP, T> || avnd::
-        mono_per_channel_arg_processor<FP, T> || avnd::
-            mono_per_channel_port_processor<FP, T>;
+concept real_mono_processor =
+   avnd::mono_per_sample_arg_processor<FP, T>
+|| avnd::mono_per_sample_port_processor<FP, T>
+|| avnd::monophonic_single_port_audio_effect<FP, T>
+|| avnd::mono_per_channel_arg_processor<FP, T>
+|| avnd::mono_per_channel_port_processor<FP, T>;
 template <typename T>
 concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;

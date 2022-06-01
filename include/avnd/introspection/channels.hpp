@@ -215,7 +215,7 @@ struct bus_introspection<T>
 
 // void operator()(float* in, float* out);
 template <typename T>
-requires monophonic_arg_audio_effect<float, T> || monophonic_arg_audio_effect<double, T>
+requires mono_per_channel_arg_processor<float, T> || mono_per_channel_arg_processor<double, T>
 struct bus_introspection<T>
 {
   static constexpr const auto input_busses = 1;

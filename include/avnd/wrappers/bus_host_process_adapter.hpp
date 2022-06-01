@@ -80,32 +80,32 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::monophonic_arg_audio_effect<double, T>)
+  else if constexpr (avnd::mono_per_channel_arg_processor<double, T>)
   {
     struct
     {
       static consteval auto name() { return "Audio In"; }
-      double* samples;
+      double* channel;
     } fake_in;
     struct
     {
       static consteval auto name() { return "Audio Out"; }
-      double* samples;
+      double* channel;
     } fake_out;
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::monophonic_arg_audio_effect<float, T>)
+  else if constexpr (avnd::mono_per_channel_arg_processor<float, T>)
   {
     struct
     {
       static consteval auto name() { return "Audio In"; }
-      float* samples;
+      float* channel;
     } fake_in;
     struct
     {
       static consteval auto name() { return "Audio Out"; }
-      float* samples;
+      float* channel;
     } fake_out;
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
