@@ -14,6 +14,7 @@
   - [Port metadatas](./writing_processors/ports.metadatas.md)
     - [Range](./writing_processors/ports.metadatas.range.md)
     - [Widget](./writing_processors/ports.metadatas.widget.md)
+    - [Mapping](./writing_processors/ports.metadatas.mapping.md)
     - [Helpers](./writing_processors/ports.metadatas.helpers.md)
   - [Update callback](./writing_processors/ports.update.md)
 - [Audio](./writing_processors/audio.md)
