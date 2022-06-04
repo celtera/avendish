@@ -18,9 +18,10 @@ struct basic_callback<R(Args...)>
 
   operator bool() const noexcept { return function; }
 
-  R operator()(Args&&... args) const noexcept
+  template<typename... T>
+  R operator()(T&&... args) const noexcept
   {
-    return function(context, static_cast<Args&&>(args)...);
+    return function(context, static_cast<T&&>(args)...);
   }
 };
 

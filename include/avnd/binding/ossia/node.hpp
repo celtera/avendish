@@ -162,21 +162,39 @@ struct controls_mirror
 };
 
 template <typename T>
-struct controls_queue
-{
-  static constexpr int i_size = avnd::control_input_introspection<T>::size;
-  static constexpr int o_size = avnd::control_output_introspection<T>::size;
-  using i_tuple
-      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
-  using o_tuple
-      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+struct controls_input_queue { };
+template <typename T>
+struct controls_output_queue { };
+template <typename T>
+requires (avnd::control_input_introspection<T>::size > 0)
+struct controls_input_queue<T> {
+    static constexpr int i_size = avnd::control_input_introspection<T>::size;
+    using i_tuple
+        = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
 
-  moodycamel::ConcurrentQueue<i_tuple> ins_queue;
-  moodycamel::ConcurrentQueue<o_tuple> outs_queue;
-
-  std::bitset<i_size> inputs_set;
-  std::bitset<o_size> outputs_set;
+    moodycamel::ConcurrentQueue<i_tuple> ins_queue;
+    std::bitset<i_size> inputs_set;
 };
+
+template <typename T>
+requires (avnd::control_output_introspection<T>::size > 0)
+struct controls_output_queue<T> {
+    static constexpr int o_size = avnd::control_output_introspection<T>::size;
+    using o_tuple
+        = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+
+    moodycamel::ConcurrentQueue<o_tuple> outs_queue;
+
+    std::bitset<o_size> outputs_set;
+};
+
+template <typename T>
+struct controls_queue :
+   controls_input_queue<T>
+ , controls_output_queue<T>
+{
+};
+
 template <typename T>
 class safe_node_base_base : public ossia::nonowning_graph_node
 {
@@ -235,8 +253,11 @@ public:
   static constexpr int total_input_ports = avnd::total_input_count<T>();
   static constexpr int total_output_ports = avnd::total_output_count<T>();
 
-  safe_node_base(int buffer_size, double sample_rate)
+  uint64_t instance{};
+
+  safe_node_base(int buffer_size, double sample_rate, uint64_t uid)
       : safe_node_base_base<T>{buffer_size, sample_rate}
+      , instance{uid}
   {
     this->buffer_size = buffer_size;
     this->sample_rate = sample_rate;
@@ -433,7 +454,9 @@ public:
         .input_channels = this->channels.actual_runtime_inputs,
         .output_channels = this->channels.actual_runtime_outputs,
         .frames_per_buffer = this->buffer_size,
-        .rate = this->sample_rate};
+        .rate = this->sample_rate,
+        .instance = this->instance
+    };
 
     // This allocates the buffers that may be used for conversion
     // if e.g. we have an API that works with doubles,
@@ -563,7 +586,9 @@ public:
                   (m.*f)(arg);
               }
               else
+              {
                 f(arg);
+              }
             }
             /*
           for (auto& m : this->impl.effects())
@@ -592,6 +617,25 @@ public:
       }
       else
       {
+        if constexpr (arg_count == 2)
+        {
+          constexpr M field;
+          using arg_type = std::decay_t<avnd::second_message_argument<M>>;
+          arg_type arg;
+          from_ossia_value(field, val, arg);
+          for (auto& m : this->impl.effects())
+          {
+            if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+            {
+              if constexpr(requires { M{}(m, arg); })
+                M{}(m, arg);
+              else if constexpr(requires { (m.*f)(m, arg); })
+                (m.*f)(m, arg);
+            }
+            else
+              f(m, arg);
+          }
+        }
         // TODO use vecf, list, etc...
         // FIXME
       }
