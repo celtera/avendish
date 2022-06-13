@@ -141,7 +141,7 @@ ossia::value to_ossia_value_rec(T&& v)
 
 
 template <typename T>
-ossia::value to_ossia_value(T&& v)
+ossia::value to_ossia_value(const T& v)
 {
   using type = std::decay_t<T>;
   constexpr int sz = avnd::pfr::tuple_size_v<type>;
@@ -215,11 +215,11 @@ ossia::value to_ossia_value(const std::array<T, N>& v)
   return to_ossia_value(elem);
 }
 
-ossia::value to_ossia_value(std::integral auto v)
+ossia::value to_ossia_value(const std::integral auto& v)
 {
   return v;
 }
-ossia::value to_ossia_value(std::floating_point auto v)
+ossia::value to_ossia_value(const std::floating_point auto& v)
 {
   return v;
 }
@@ -243,17 +243,17 @@ ossia::value to_ossia_value(const avnd::string_ish auto& v)
 {
   return std::string{v};
 }
-ossia::value to_ossia_value(avnd::enum_ish auto v)
+ossia::value to_ossia_value(const avnd::enum_ish auto& v)
 {
   return static_cast<int>(v);
 }
 template <typename T>
-requires std::is_enum_v<T> ossia::value to_ossia_value(T v)
+requires std::is_enum_v<T> ossia::value to_ossia_value(const T& v)
 {
   return static_cast<int>(v);
 }
 
-inline ossia::value to_ossia_value(bool v)
+inline ossia::value to_ossia_value(const bool& v)
 {
   return v;
 }
