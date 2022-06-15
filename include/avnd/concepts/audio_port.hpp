@@ -81,6 +81,12 @@ template <typename T>
 concept dynamic_poly_audio_port = poly_audio_port<T> && !fixed_poly_audio_port<T>;
 
 template <typename T>
+concept variable_poly_audio_port = dynamic_poly_audio_port<T>
+&& requires (T t) {
+  t.request_channels = [] (int channels) { };
+};
+
+template <typename T>
 concept audio_port = mono_audio_port<T> || poly_audio_port<T>;
 
 int get_channels(fixed_poly_audio_port auto& port)

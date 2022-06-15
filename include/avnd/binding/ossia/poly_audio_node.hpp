@@ -82,14 +82,15 @@ public:
   {
     const double** ins{};
     double** outs{};
+    std::size_t in_n{}, out_n{};
     int k = 0;
 
     void operator()(const ossia::audio_inlet& in) noexcept
     {
       for (const ossia::audio_channel& c : in.data)
       {
-        ins[k] = c.data();
-        k++;
+        if(k < in_n)
+          ins[k++] = c.data();
       }
     }
 
@@ -97,20 +98,20 @@ public:
     {
       for (ossia::audio_channel& c : out.data)
       {
-        outs[k] = c.data();
-        k++;
+        if(k < out_n)
+          outs[k++] = c.data();
       }
     }
 
     void operator()(const auto& other) noexcept { }
   };
 
-  void initialize_audio_arrays(const double** ins, double** outs)
+  void initialize_audio_arrays(const double** ins, double** outs, std::size_t kin, std::size_t kout)
   {
     tuplet::apply(
         [&](auto&&... ports)
         {
-          initialize_audio match{ins, outs, 0};
+          initialize_audio match{ins, outs, kin, kout, 0};
 
           if constexpr (requires { this->audio_ports.in; })
           {
@@ -124,7 +125,7 @@ public:
     tuplet::apply(
         [&](auto&&... ports)
         {
-          initialize_audio match{ins, outs, 0};
+          initialize_audio match{ins, outs, kin, kout, 0};
 
           if constexpr (requires { this->audio_ports.out; })
           {
@@ -156,19 +157,21 @@ public:
     std::fill_n(audio_ins, 1 + current_input_channels, nullptr);
     std::fill_n(audio_outs, 1 + current_output_channels, nullptr);
 
-    this->initialize_audio_arrays(audio_ins, audio_outs);
+    this->initialize_audio_arrays(audio_ins, audio_outs, current_input_channels, current_output_channels);
 
+    std::size_t init_audio_ins = 0;
+    std::size_t init_audio_outs = 0;
     for (int i = 0; i < current_input_channels; i++)
-      assert(audio_ins[i]);
+      init_audio_ins += bool(audio_ins[i]) ? 1 : 0;
     for (int i = 0; i < current_output_channels; i++)
-      assert(audio_outs[i]);
+      init_audio_outs += bool(audio_outs[i]) ? 1 : 0;
 
     // Run
     this->processor.process(
         this->impl,
         avnd::span<double*>{
-            const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
-        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
+            const_cast<double**>(audio_ins), init_audio_ins},
+        avnd::span<double*>{audio_outs, init_audio_outs},
         frames);
 
     this->finish_run();

@@ -363,6 +363,9 @@ public:
       }
       (typename out_info::indices_n{});
     }
+
+    // Small setup step for the variable channel counts
+    this->process_all_ports<setup_variable_audio_ports<safe_node_base, T>>();
   }
 
   template <std::size_t Idx, typename Field, typename R, typename... Args>

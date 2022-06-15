@@ -216,6 +216,10 @@ requires(
           {
             this->input_channels[i] = p.channels();
           }
+          else if constexpr (avnd::variable_poly_audio_port<P>)
+          {
+            this->input_channels[i] = p.channels;
+          }
           else
           {
             // Variable number of channels, may not be initialized so we init it to 0
@@ -235,6 +239,10 @@ requires(
           if constexpr (avnd::fixed_poly_audio_port<P>)
           {
             this->output_channels[i] = p.channels();
+          }
+          else if constexpr (avnd::variable_poly_audio_port<P>)
+          {
+            this->output_channels[i] = p.channels;
           }
           else
           {
@@ -272,7 +280,14 @@ requires(
         input_id,
         [channels, &ok]<avnd::audio_port P>(P& bus) -> void
         {
-          if constexpr (requires { bus.channels = channels; })
+          if constexpr (avnd::variable_poly_audio_port<P>)
+          {
+            if (bus.channels == channels)
+              ok = bus.channels;
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr (requires { bus.channels = channels; })
           {
             bus.channels = channels;
             ok = bus.channels;
@@ -302,6 +317,24 @@ requires(
     return bool(ok);
   }
 
+  void mimick_output(auto& inputs, auto& out, int i)
+  {
+    if constexpr (requires { out.mimick_channel; })
+    {
+      auto& mimicked_port = (inputs.*out.mimick_channel);
+      if constexpr (requires { mimicked_port.channels(); })
+      {
+        out.channels = mimicked_port.channels();
+        set_output_impl(i, out.channels);
+      }
+      else if constexpr (requires { mimicked_port.channels; })
+      {
+        out.channels = mimicked_port.channels;
+        set_output_impl(i, out.channels);
+      }
+    }
+  }
+
   void update_outputs_from_input(
       avnd::effect_container<T>& processor,
       int changed_input_id,
@@ -313,39 +346,44 @@ requires(
       auto& outputs = avnd::get_outputs(processor);
       auto& first = out_refl::template get<0>(outputs);
       using first_type = std::decay_t<decltype(first)>;
-      if constexpr (avnd::dynamic_poly_audio_port<first_type>)
+      if constexpr (avnd::dynamic_poly_audio_port<first_type> && !avnd::variable_poly_audio_port<first_type>)
       {
         first.channels = new_input_channel_count;
         set_output_impl(0, new_input_channel_count);
         this->output_channels[0] = new_input_channel_count;
-      }
 
-      if (out_refl::size > 1)
+        if (out_refl::size > 1)
+        {
+          // Then check all audio ports which may have channel mappings corresponding to the input channel.
+          auto& inputs = avnd::get_inputs(processor);
+          int i = 0;
+          out_refl::for_all(
+              outputs,
+              [this, &inputs, &i]<typename P>(P& out)
+              {
+                // Skip the first which is already processed
+                if(i == 0) {
+                  i++;
+                  return;
+                }
+                mimick_output(inputs, out, i);
+                i++;
+              });
+        }
+      }
+      else
       {
-        // Then check all audio ports which may have channel mappings corresponding to the input channel.
         auto& inputs = avnd::get_inputs(processor);
         int i = 0;
         out_refl::for_all(
             outputs,
             [this, &inputs, &i](auto& out)
             {
-              if constexpr (requires { out.mimick_channel; })
-              {
-                auto& mimicked_port = (inputs.*out.mimick_channel);
-                if constexpr (requires { mimicked_port.channels(); })
-                {
-                  out.channels = mimicked_port.channels();
-                  set_output_impl(i, out.channels);
-                }
-                else if constexpr (requires { mimicked_port.channels; })
-                {
-                  out.channels = mimicked_port.channels;
-                  set_output_impl(i, out.channels);
-                }
-              }
+              mimick_output(inputs, out, i);
               i++;
             });
       }
+
     }
     else
     {
@@ -381,10 +419,12 @@ requires(
             else
               ok = std::nullopt;
           }
-          else if constexpr (requires { bus.channels = channels; })
+          else if constexpr (avnd::variable_poly_audio_port<P>)
           {
-            bus.channels = channels;
-            ok = bus.channels;
+            if (bus.channels == channels)
+              ok = bus.channels;
+            else
+              ok = std::nullopt;
           }
           else if constexpr (requires { P::channels(); })
           {
@@ -392,6 +432,11 @@ requires(
               ok = P::channels();
             else
               ok = std::nullopt;
+          }
+          else if constexpr (requires { bus.channels = channels; })
+          {
+            bus.channels = channels;
+            ok = bus.channels;
           }
           else
           {

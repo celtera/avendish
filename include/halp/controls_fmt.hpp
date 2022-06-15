@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/controls.hpp>
+#if __has_include(<fmt/format.h>)
 #include <fmt/format.h>
 
 namespace fmt
@@ -38,6 +39,7 @@ struct formatter<halp::xy_type<T>>
     return fmt::format_to(ctx.out(), "xy: {}, {}", number.x, number.y);
   }
 };
+
 template <>
 struct formatter<halp::color_type>
 {
@@ -54,4 +56,22 @@ struct formatter<halp::color_type>
         ctx.out(), "rgba: {}, {}, {}, {}", number.r, number.g, number.b, number.a);
   }
 };
+
+template <typename T>
+struct formatter<halp::range_slider_value<T>>
+{
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx)
+  {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const halp::range_slider_value<T>& number, FormatContext& ctx)
+  {
+    return fmt::format_to(ctx.out(), "range: {} -> {}", number.start, number.end);
+  }
+};
+
 }
+#endif

@@ -350,4 +350,36 @@ struct setup_outlets
   }
 };
 
+
+template <typename Exec_T, typename Obj_T>
+struct setup_variable_audio_ports
+{
+  Exec_T& self;
+  Obj_T& impl;
+
+  template <avnd::variable_poly_audio_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    ctrl.request_channels = [&ctrl,&s=self](int x)
+    {
+      ctrl.channels = x;
+      s.channels.set_input_channels(s.impl, 0, x);
+    };
+  }
+
+  template <avnd::variable_poly_audio_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::audio_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    ctrl.request_channels = [&ctrl,&s=self](int x)
+    {
+      ctrl.channels = x;
+      s.channels.set_output_channels(s.impl, 0, x);
+    };
+  }
+
+  void operator()(auto&&...) const noexcept
+  {
+  }
+};
+
 }

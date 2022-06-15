@@ -71,6 +71,7 @@ void prepare(T& implementation, process_setup setup)
     if_possible(t.channels = setup.output_channels);
     if_possible(t.frames = setup.frames_per_buffer);
     if_possible(t.rate = setup.rate);
+    if_possible(t.instance = setup.instance);
 
     implementation.prepare(t);
   }

@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/controls.hpp>
+#include <halp/controls_fmt.hpp>
 #include <halp/log.hpp>
 #include <halp/meta.hpp>
 
@@ -38,7 +39,8 @@ struct Controls
     // define the enumerators and the matching strings in one go...
     // First argument after the name is the default (init) value.
     struct { halp__enum("Enum", Bar, Foo, Bar) } f;
-    halp::range_slider_f32<"Range"> g;
+
+    // halp::range_slider_f32<"Range"> g;
 
     struct
     {

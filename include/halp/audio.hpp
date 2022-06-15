@@ -139,6 +139,12 @@ struct dynamic_audio_spectrum_bus
   }
 };
 
+template <halp::static_string Name, typename FP, halp::static_string Desc = "">
+struct variable_audio_bus : halp::dynamic_audio_bus<Name, FP, Desc>
+{
+  std::function<void(int)> request_channels;
+};
+
 struct tick
 {
   int frames{};
