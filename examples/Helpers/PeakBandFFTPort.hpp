@@ -14,9 +14,9 @@ namespace examples::helpers
  */
 struct PeakBandFFTPort
 {
-  halp_meta(name, "Peak band")
-  halp_meta(c_name, "avnd_peak_band")
-  halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
+  halp_meta(name, "Peak band (FFT port)")
+  halp_meta(c_name, "avnd_peak_band_fft_port")
+  halp_meta(uuid, "143f5cb8-d0b1-44de-a1a4-ccd5315192fa")
 
   // TODO implement user-controllable buffering to allow various fft sizes...
   int buffer_size = 1024;

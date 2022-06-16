@@ -7,7 +7,9 @@
 #include <iostream>
 #include <variant>
 
-#if __has_include(<ranges>) && defined(__cpp_lib_ranges)
+// We need proper std::generator instead of our cheap avnd::generator
+// But it's not until C++23
+#if __has_include(<ranges>) && defined(__cpp_lib_ranges) && defined(__cpp_lib_generator)
 #include <ranges>
 #define INPUT_RANGE std::ranges::input_range
 #else
