@@ -9,6 +9,7 @@
 #include <halp/inline.hpp>
 
 #include <cstdint>
+#include <functional>
 
 #include <string_view>
 namespace halp
