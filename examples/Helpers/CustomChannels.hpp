@@ -20,7 +20,7 @@ class CustomChannels
 public:
   halp_meta(name, "Multichannel (helpers)")
   halp_meta(c_name, "avnd_helpers_multichannel")
-  halp_meta(uuid, "82bdb9b5-9cf8-440e-8675-c0caf4fc59b9")
+  halp_meta(uuid, "814d70ef-c675-41de-b4db-997323feb7cf")
 
   using setup = halp::setup;
   using tick = halp::tick;

@@ -21,6 +21,7 @@
   - [Monophonic processors](./writing_processors/audio.polyphonic.md)
   - [Setup](./writing_processors/audio.setup.md)
   - [Playback state](./writing_processors/audio.arguments.md)
+  - [FFT](./writing_processors/audio.fft.md)
 - [Messages](./writing_processors/messages.md)
 - [Callbacks](./writing_processors/callbacks.md)
 - [Initialization](./writing_processors/init.md)

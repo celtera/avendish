@@ -18,6 +18,13 @@ using spectrum_fft_type
     = ossia::fft;
 
 template <typename Field>
+struct spectrum_split_channel_fft_type
+{
+  using fft_storage_type = std::decay_t<decltype(Field{}.spectrum.amplitude[0])>;
+  ossia::fft fft;
+};
+
+template <typename Field>
 struct spectrum_split_bus_fft_type
 {
   using fft_storage_type = std::decay_t<decltype(Field{}.spectrum.amplitude[0])>;
@@ -66,7 +73,7 @@ struct spectrum_split_channel_input_storage<T>
   using sc_in = avnd::spectrum_split_channel_input_introspection<T>;
 
   using fft_tuple = avnd::filter_and_apply<
-    spectrum_split_bus_fft_type,
+    spectrum_fft_type,
     avnd::spectrum_split_channel_input_introspection,
     T>;
 

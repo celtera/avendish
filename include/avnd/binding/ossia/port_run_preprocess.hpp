@@ -11,14 +11,54 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/audio/fft.hpp>
+#include <ossia/detail/math.hpp>
 #include <fmt/printf.h>
 #include <ossia/network/value/format_value.hpp>
-namespace avnd
-{
-}
 
 namespace oscr
 {
+struct hanning_window
+{
+  template<typename T>
+  void operator()(const T* in, T* out, int size)
+  {
+    const T norm = 0.5 / size;
+    const auto factor = ossia::two_pi / (size - 1);
+    for (int i = 0; i < size; ++i) {
+      out[i] = in[i] * norm * (1. - std::cos(factor * i));
+    }
+  }
+};
+
+struct hamming_window
+{
+  template<typename T>
+  void operator()(const T* in, T* out, int size)
+  {
+    constexpr T a0 = 25. / 46.;
+    constexpr T a1 = 21. / 46.;
+
+    const T norm = 1. / size;
+    const auto factor = ossia::two_pi / (size - 1);
+    for (int i = 0; i < size; ++i) {
+      out[i] = in[i] * norm * (a0 - a1 * std::cos(factor * i));
+    }
+  }
+};
+
+struct apply_window
+{
+  template<typename Field, typename T>
+  void operator()(Field& f, const T* in, T* out, int frames) noexcept
+  {
+    if constexpr(requires { Field::window::hanning; }) {
+      hanning_window{}(in, out, frames);
+    }
+    else if constexpr(requires { Field::window::hamming; }) {
+      hamming_window{}(in, out, frames);
+    }
+  }
+};
 
 template<typename Field>
 inline void update_value(auto& obj, Field& field, const ossia::value& src, auto& dst)
@@ -122,9 +162,7 @@ struct process_before_run
       const int N = samples.size();
       if(N > 0)
       {
-        auto fftIn = fft.input();
-        for (int i = 0; i < N; i++)
-          fftIn[i] = samples[i];
+        apply_window{}(ctrl, samples.data(), fft.input(), N);
 
         auto fftOut = reinterpret_cast<ossia::fft_real*>(fft.execute());
         deinterleave(fftOut, N);
@@ -148,9 +186,7 @@ struct process_before_run
       const int N = samples.size();
       if(N > 0)
       {
-        auto fftIn = fft.input();
-        for (int i = 0; i < N; i++)
-          fftIn[i] = samples[i];
+        apply_window{}(ctrl, samples.data(), fft.input(), N);
 
         ctrl.spectrum = reinterpret_cast<decltype(ctrl.spectrum)>(fft.execute());
       }
@@ -173,9 +209,7 @@ struct process_before_run
         const int N = samples.size();
         if(N > 0)
         {
-          auto fftIn = fft.input();
-          for (int i = 0; i < N; i++)
-            fftIn[i] = samples[i];
+          apply_window{}(ctrl, samples.data(), fft.input(), N);
 
           auto fftOut = reinterpret_cast<ossia::fft_real*>(fft.execute());
           deinterleave(fftOut, N);
@@ -203,9 +237,7 @@ struct process_before_run
         const int N = samples.size();
         if(N > 0)
         {
-          auto fftIn = fft.input();
-          for (int i = 0; i < N; i++)
-            fftIn[i] = samples[i];
+          apply_window{}(ctrl, samples.data(), fft.input(), N);
 
           ctrl.spectrum[c] = reinterpret_cast<decltype(ctrl.spectrum[c])>(fft.execute());
         }

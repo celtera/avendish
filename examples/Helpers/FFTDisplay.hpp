@@ -20,7 +20,7 @@ namespace examples::helpers
 struct spectrum_display
 {
   static constexpr double width() { return 500.; }
-  static constexpr double height() { return 100.; }
+  static constexpr double height() { return 200.; }
 
   void paint(avnd::painter auto ctx)
   {
@@ -29,15 +29,17 @@ struct spectrum_display
     for(std::size_t c = 0; c < spectrums.size(); c++)
     {
       auto& spectrum = spectrums[c];
-      double h = height() / spectrums.size();
+      const double h = height() / spectrums.size();
+      const double barw = width() / spectrum.size();
 
       for(std::size_t i = 0; i < spectrum.size(); i++)
       {
-        double barw = width() / spectrum.size();
-        ctx.draw_rect(i * barw, c * h + (h - spectrum[i] * h), barw, spectrum[i] * h);
+        double barh = std::pow(spectrum[i], 1./4.);
+        ctx.draw_rect(i * barw, c * h + (h - barh * h), barw, barh * h);
       }
     }
     ctx.fill();
+    ctx.update();
   }
 
   std::vector<std::vector<float>> spectrums;
@@ -46,7 +48,7 @@ struct spectrum_display
 struct FFTDisplay
 {
   static consteval auto name() { return "FFT Display example"; }
-  static consteval auto c_name() { return "avnd_fft_displayu"; }
+  static consteval auto c_name() { return "avnd_fft_display"; }
   static consteval auto uuid() { return "9eeadb52-209a-46ff-b4c6-d6c31d25aad6"; }
 
   // I/O

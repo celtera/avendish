@@ -16,6 +16,7 @@ void prepare(/* some_type */ info) {
 * `frames`: will be filled with the maximum frame (buffer) size.
 * `input_channels` / `output_channels`: for processors with unspecified numbers of channels, it will be notified here.
 * Alternatively, just specifying `channels` works too if inputs and outputs are expected to be the same.
+* `instance`: allows to give processor instances an unique identifier which, if the host supports it, will be serialized / deserialized across restarts of the host and thus stay constant.
 
 Those variables must be assignable, and are all optional (remember the foreword: Avendish is **UNCOMPROMISING**).
 
@@ -49,6 +50,16 @@ struct setup_c {
 };
 void prepare(setup_c info) {
     ...
+}
+```
+
+## Helper library
+
+`halp` provides the `halp::setup` which covers the most usual use cases: 
+
+```cpp
+void prepare(halp::setup info) {
+  info.rate; // etc...
 }
 ```
 
