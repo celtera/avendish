@@ -168,7 +168,7 @@ struct spectrum_complex_channel_input_storage<T>
           // Reserve space for the current buffer size
           fft.reset(buffer_size);
 
-          port.spectrum = nullptr;
+          port.spectrum.bin = nullptr;
         };
         sc_in::for_all_n(avnd::get_inputs(t), init_raw_in);
       }
@@ -202,7 +202,7 @@ struct spectrum_complex_bus_input_storage<T>
         spectrum_complex_bus_fft_type<M>& ffts = get<Idx>(this->ffts);
         ffts.ffts.resize(port.channels);
         ffts.pointers.resize(port.channels);
-        port.spectrum = ffts.pointers.data();
+        port.spectrum.bin = ffts.pointers.data();
 
         // Reserve space for the current buffer size
         for(auto& fft : ffts.ffts)

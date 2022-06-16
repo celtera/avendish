@@ -57,6 +57,12 @@ struct apply_window
     else if constexpr(requires { Field::window::hamming; }) {
       hamming_window{}(in, out, frames);
     }
+    else {
+      const T mult = 1. / frames;
+      for (int i = 0; i < frames; ++i) {
+        out[i] = mult * in[i];
+      }
+    }
   }
 };
 
@@ -188,7 +194,7 @@ struct process_before_run
       {
         apply_window{}(ctrl, samples.data(), fft.input(), N);
 
-        ctrl.spectrum = reinterpret_cast<decltype(ctrl.spectrum)>(fft.execute());
+        ctrl.spectrum.bin = reinterpret_cast<decltype(ctrl.spectrum.bin)>(fft.execute());
       }
     }
   }
@@ -239,7 +245,7 @@ struct process_before_run
         {
           apply_window{}(ctrl, samples.data(), fft.input(), N);
 
-          ctrl.spectrum[c] = reinterpret_cast<decltype(ctrl.spectrum[c])>(fft.execute());
+          ctrl.spectrum.bin[c] = reinterpret_cast<decltype(ctrl.spectrum.bin[c])>(fft.execute());
         }
       }
     }

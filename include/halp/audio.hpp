@@ -139,7 +139,7 @@ struct dynamic_audio_spectrum_bus
   HALP_INLINE_FLATTEN FP* operator[](std::size_t i) const noexcept { return samples[i]; }
   HALP_INLINE_FLATTEN avnd::span<FP> channel(std::size_t i, std::size_t frames) const noexcept
   {
-      return {samples[i], frames};
+    return {samples[i], frames};
   }
 };
 

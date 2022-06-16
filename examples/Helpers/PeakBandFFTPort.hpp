@@ -23,17 +23,19 @@ struct PeakBandFFTPort
 
   struct
   {
-    // Here the host will fill audio.spectrum with a non-windowed FFT.
+    // Here the host will fill audio.spectrum with a windowed FFT.
     // Option A (an helper type is provided)
     halp::audio_spectrum_channel<"In", double> audio;
 
-    // Option B with the raw spectrum:
+    // Option B with the raw spectrum ; no window is defined.
     struct {
       halp_meta(name, "In 2");
 
       double* channel{};
       // complex numbers... using value_type = double[2] is also ok
-      std::complex<double>* spectrum{};
+      struct {
+        std::complex<double>* bin;
+      } spectrum{};
     } audio_2;
   } inputs;
 
@@ -76,7 +78,7 @@ struct PeakBandFFTPort
       // Compute the band with the highest amplitude
       for (int k = 0; k < frames / 2; k++)
       {
-        const double mag_squared = std::norm(inputs.audio_2.spectrum[k]);
+        const double mag_squared = std::norm(inputs.audio_2.spectrum.bin[k]);
 
         if (mag_squared > outputs.peak_2)
         {

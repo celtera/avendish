@@ -42,8 +42,8 @@ struct {
 to get a deinterleaved view of the amplitude & phase: 
 
 ```cpp
-spectrum.amplitude[0][4]; // The amplitude of the band at index 4 for channel 0
-spectrum.phase[1][2]; // The phase of the band at index 2 for channel 1
+spectrum.amplitude[0][4]; // The amplitude of the bin at index 4 for channel 0
+spectrum.phase[1][2]; // The phase of the bin at index 2 for channel 1
 ```
 
 It is also possible to use complex numbers instead:
@@ -52,14 +52,16 @@ It is also possible to use complex numbers instead:
 struct {
   double** samples{};
 
-  std::complex<double>** spectrum;
+  struct {
+    std::complex<double>** bins;
+  } spectrum;
 
   int channels{};
 } my_audio_input;
 ```
 
 ```cpp
-spectrum[0][4]; // The complex value of the band at index 4 for channel 0
+spectrum.bins[0][4]; // The complex value of the bin at index 4 for channel 0
 ```
 
 Using complex numbers allows to use the C++ standard math library functions for complex numbers: `std::norm`, `std::proj`...

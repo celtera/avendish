@@ -56,7 +56,7 @@ concept spectrum_split_channel_port =
 ;
 
 template <typename T>
-concept spectrum_complex_channel_port = complex_number<decltype(std::declval<T&>().spectrum[0])>;
+concept spectrum_complex_channel_port = complex_number<decltype(std::declval<T&>().spectrum.bin[0])>;
 
 template <typename T>
 concept spectrum_split_bus_port =
@@ -65,5 +65,5 @@ concept spectrum_split_bus_port =
 ;
 
 template <typename T>
-concept spectrum_complex_bus_port = complex_number<decltype(std::declval<T&>().spectrum[0][0])>;
+concept spectrum_complex_bus_port = complex_number<decltype(std::declval<T&>().spectrum.bin[0][0])>;
 }
