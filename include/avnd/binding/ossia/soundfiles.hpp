@@ -164,12 +164,14 @@ struct soundfile_storage
 
 
 
+#define LIBREMIDI_HEADER_ONLY 1
 #include <libremidi/libremidi.hpp>
+#include <libremidi/reader.hpp>
 namespace oscr
 {
 struct midifile_data
 {
-  std::vector<libremidi::midi_track> tracks;
+  libremidi::reader reader;
   std::string filename;
 };
 
@@ -199,8 +201,6 @@ template <typename T>
 struct midifile_storage
         : midifile_input_storage<T>
 {
-  using sf_in = avnd::midifile_input_introspection<T>;
-
   void init(avnd::effect_container<T>& t)
   {
   }
@@ -217,24 +217,69 @@ struct midifile_storage
     {
       avnd::midifile_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-      auto& tracks = hdl->tracks;
+      auto& tracks = hdl->reader.tracks;
       port.midifile.tracks.clear();
       port.midifile.tracks.resize(tracks.size());
 
+      int64_t max_length = 0;
       for(std::size_t i = 0; i < tracks.size(); i++)
       {
         auto& in = tracks[i];
         auto& out = port.midifile.tracks[i];
-        out.resize(in.size());
+        using message_type = std::decay_t<decltype(out[0])>;
+        using bytes_type = std::remove_reference_t<decltype(message_type::bytes)>;
+        constexpr bool is_c_array = std::is_bounded_array_v<bytes_type>;
 
-        for(std::size_t k = 0; k < in.size(); ++k)
+        if constexpr(is_c_array)
+          out.reserve(in.size());
+        else
+          out.resize(in.size());
+
+        int64_t abs_tick = 0;
+        auto set_tick = [&abs_tick] (auto& in, auto& out) mutable {
+          // Compute the tick
+          auto delta_tick = in.tick;
+          abs_tick += delta_tick;
+          if constexpr(requires { out.tick_delta; })
+            out.tick_delta = delta_tick;
+          if constexpr(requires { out.tick_absolute; })
+            out.tick_absolute = abs_tick;
+        };
+
+        for (std::size_t k = 0; k < in.size(); ++k)
         {
-          auto& in_m = in[k].m.bytes;
-          out[k].bytes.assign(std::begin(in_m), std::end(in_m));
-          out[k].tick = in[k].tick;
+          // Copy the MIDI bytes
+          auto& in_b = in[k].m.bytes;
+          if constexpr(is_c_array)
+          {
+            static_assert(std::extent<bytes_type, 0>::value == 3, "MIDI arrays must have at least 3 bytes");
+            if(in_b.size() != 3)
+              continue;
+
+            message_type m{.bytes{in_b[0], in_b[1], in_b[2]}};
+            set_tick(in[k], m);
+            out.push_back(std::move(m));
+          }
+          else
+          {
+            out[k].bytes.assign(std::begin(in_b), std::end(in_b));
+
+            set_tick(in[k], out[k]);
+          }
         }
+
+        if(abs_tick > max_length)
+          max_length = abs_tick;
       }
+
       port.midifile.filename = hdl->filename;
+
+      if constexpr(requires { port.midifile.ticks_per_beat; })
+        port.midifile.ticks_per_beat = hdl->reader.ticksPerBeat;
+      if constexpr(requires { port.midifile.starting_tempo; })
+        port.midifile.starting_tempo = hdl->reader.startingTempo;
+      if constexpr(requires { port.midifile.length; })
+        port.midifile.length = max_length;
 
       if_possible(port.update(state.effect));
     }
@@ -255,7 +300,7 @@ namespace oscr
 struct raw_file_data
 {
   QFile file;
-  char* mapped{};
+  QByteArray data;
   std::string filename;
 };
 
@@ -285,8 +330,6 @@ template <typename T>
 struct raw_file_storage
   : raw_file_input_storage<T>
 {
-  using sf_in = avnd::raw_file_input_introspection<T>;
-
   void init(avnd::effect_container<T>& t)
   {
   }
@@ -303,7 +346,7 @@ struct raw_file_storage
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-      port.file.bytes = {hdl->mapped, hdl->file.size()};
+      port.file.bytes = {hdl->data.constData(), hdl->file.size()};
       port.file.filename = hdl->filename;
 
       if_possible(port.update(state.effect));

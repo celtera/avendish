@@ -40,12 +40,7 @@ struct MidiFileOctaver
   struct
   {
     // This port will read a midi file
-    struct : halp::midifile_port<"MIDI file"> {
-      void update(MidiFileOctaver& self) {
-        // O(number of events in the midi file) so we only do it once there
-        self.length = this->midifile.get_length();
-      }
-    } midi;
+    halp::midifile_port<"MIDI file", halp::simple_midi_track_event> midi;
 
     // This port will read any kind of file
     struct : halp::file_port<"SCL file">
@@ -148,8 +143,6 @@ struct MidiFileOctaver
   std::optional<Tunings::KeyboardMapping> mapping;
   Tunings::Tuning tuning;
 
-  int64_t length = 0;
-
   void prepare(halp::setup s)
   {
     update_tuning();
@@ -157,6 +150,7 @@ struct MidiFileOctaver
 
   void operator()(int N)
   {
+    const auto length = this->inputs.midi.midifile.length;
     if(length == 0)
       return;
 
@@ -168,24 +162,28 @@ struct MidiFileOctaver
 
     auto& track = i[0];
 
-    int64_t cur = 0;
-    const int64_t target_tick = inputs.position.value * this->length;
+    const int64_t target_tick = inputs.position.value * length;
 
-    for(auto it = track.begin(); it != track.end(); ++it)
+    auto it = std::lower_bound(
+        track.begin(), track.end(),
+        halp::simple_midi_track_event{.bytes = {}, .tick_absolute = target_tick},
+        [] (const halp::simple_midi_track_event& lhs, const halp::simple_midi_track_event& rhs) {
+          return lhs.tick_absolute < rhs.tick_absolute;
+    });
+    while(it != track.end())
     {
       auto& ev = *it;
-      cur += ev.tick;
-      if(cur >= target_tick)
+      libremidi::message msg;
+      msg.bytes = {ev.bytes[0], ev.bytes[1], ev.bytes[2]};
+      if(msg.get_message_type() != libremidi::message_type::NOTE_ON)
       {
-        libremidi::message msg;
-        msg.bytes = {ev.bytes.begin(), ev.bytes.end()};
-        if(msg.get_message_type() != libremidi::message_type::NOTE_ON)
-          continue;
-
-        int note = msg.bytes[1];
-        outputs.freq.value = (tuning.frequencyForMidiNote(note) + inputs.adjust) * inputs.rescale;
-        break;
+        ++it;
+        continue;
       }
+
+      int note = msg.bytes[1];
+      outputs.freq.value = (tuning.frequencyForMidiNote(note) + inputs.adjust) * inputs.rescale;
+      break;
     }
   }
 };

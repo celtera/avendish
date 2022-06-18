@@ -35,6 +35,8 @@
 - [Port data types](./advanced/port_types.md)
   - [Example](./advanced/port_types.example.md)
   - [Sound files](./advanced/port_types.soundfile.md)
+  - [MIDI files](./advanced/port_types.midifile.md)
+  - [Raw files](./advanced/port_types.rawfile.md)
 - [Custom UI](./advanced/ui.md)
   - [Declarative layouts](./advanced/ui.layout.md)
   - [Custom items](./advanced/ui.painting.md)
