@@ -38,7 +38,17 @@ struct get_ossia_inlet_type<N, T>
 template <typename N, avnd::soundfile_port T>
 struct get_ossia_inlet_type<N, T>
 {
-    using type = ossia::value_inlet;
+  using type = ossia::value_inlet;
+};
+template <typename N, avnd::midifile_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::value_inlet;
+};
+template <typename N, avnd::raw_file_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::value_inlet;
 };
 template <typename N, avnd::message T>
 struct get_ossia_inlet_type<N, T>

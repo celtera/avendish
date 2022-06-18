@@ -16,3 +16,4 @@
 #include <avnd/concepts/port.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/concepts/soundfile.hpp>
+#include <avnd/concepts/midifile.hpp>

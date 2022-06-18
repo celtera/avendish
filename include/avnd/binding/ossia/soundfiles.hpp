@@ -160,5 +160,155 @@ struct soundfile_storage
     }
   }
 };
-
 }
+
+
+
+#include <libremidi/libremidi.hpp>
+namespace oscr
+{
+struct midifile_data
+{
+  std::vector<libremidi::midi_track> tracks;
+  std::string filename;
+};
+
+template <typename Field>
+struct midifile_handle_type;
+
+template <avnd::midifile_port Field>
+struct midifile_handle_type<Field> : std::shared_ptr<midifile_data> { };
+
+template <typename T>
+struct midifile_input_storage;
+
+template <typename T>
+requires(avnd::midifile_input_introspection<T>::size > 0)
+struct midifile_input_storage<T>
+{
+  using hdl_tuple = avnd::filter_and_apply<
+    midifile_handle_type,
+    avnd::midifile_input_introspection,
+    T>;
+
+  // std::tuple< std::shared_ptr<midifile_data> >
+  [[no_unique_address]] hdl_tuple handles;
+};
+
+template <typename T>
+struct midifile_storage
+        : midifile_input_storage<T>
+{
+  using sf_in = avnd::midifile_input_introspection<T>;
+
+  void init(avnd::effect_container<T>& t)
+  {
+  }
+
+  template<std::size_t N, std::size_t NField>
+  void load(avnd::effect_container<T>& t, const std::shared_ptr<midifile_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  {
+    std::shared_ptr<midifile_data>& g = get<N>(this->handles);
+
+    // Store the handle to keep the memory from being freed
+    std::exchange(g, hdl);
+
+    for(auto& state : t.full_state())
+    {
+      avnd::midifile_port auto& port = avnd::pfr::get<NField>(state.inputs);
+
+      auto& tracks = hdl->tracks;
+      port.midifile.tracks.clear();
+      port.midifile.tracks.resize(tracks.size());
+
+      for(std::size_t i = 0; i < tracks.size(); i++)
+      {
+        auto& in = tracks[i];
+        auto& out = port.midifile.tracks[i];
+        out.resize(in.size());
+
+        for(std::size_t k = 0; k < in.size(); ++k)
+        {
+          auto& in_m = in[k].m.bytes;
+          out[k].bytes.assign(std::begin(in_m), std::end(in_m));
+          out[k].tick = in[k].tick;
+        }
+      }
+      port.midifile.filename = hdl->filename;
+
+      if_possible(port.update(state.effect));
+    }
+  }
+};
+}
+
+
+
+
+
+
+#if __has_include(<QFile>)
+#define OSCR_HAS_MMAP_FILE_STORAGE 1
+#include <QFile>
+namespace oscr
+{
+struct raw_file_data
+{
+  QFile file;
+  char* mapped{};
+  std::string filename;
+};
+
+template <typename Field>
+struct raw_file_handle_type;
+
+template <avnd::raw_file_port Field>
+struct raw_file_handle_type<Field> : std::shared_ptr<raw_file_data> { };
+
+template <typename T>
+struct raw_file_input_storage;
+
+template <typename T>
+requires(avnd::raw_file_input_introspection<T>::size > 0)
+struct raw_file_input_storage<T>
+{
+  using hdl_tuple = avnd::filter_and_apply<
+    raw_file_handle_type,
+    avnd::raw_file_input_introspection,
+    T>;
+
+  // std::tuple< std::shared_ptr<raw_file_data> >
+  [[no_unique_address]] hdl_tuple handles;
+};
+
+template <typename T>
+struct raw_file_storage
+  : raw_file_input_storage<T>
+{
+  using sf_in = avnd::raw_file_input_introspection<T>;
+
+  void init(avnd::effect_container<T>& t)
+  {
+  }
+
+  template<std::size_t N, std::size_t NField>
+  void load(avnd::effect_container<T>& t, const std::shared_ptr<raw_file_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  {
+    std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
+
+    // Store the handle to keep the memory from being freed
+    std::exchange(g, hdl);
+
+    for(auto& state : t.full_state())
+    {
+      avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
+
+      port.file.bytes = {hdl->mapped, hdl->file.size()};
+      port.file.filename = hdl->filename;
+
+      if_possible(port.update(state.effect));
+    }
+  }
+};
+}
+#endif

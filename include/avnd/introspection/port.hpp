@@ -157,6 +157,18 @@ using is_soundfile_t = boost::mp11::mp_bool<soundfile_port<Field>>;
 template <typename T>
 using soundfile_introspection = predicate_introspection<T, is_soundfile_t>;
 
+// Midifile
+template <typename Field>
+using is_midifile_t = boost::mp11::mp_bool<midifile_port<Field>>;
+template <typename T>
+using midifile_introspection = predicate_introspection<T, is_midifile_t>;
+
+// Raw file
+template <typename Field>
+using is_raw_file_t = boost::mp11::mp_bool<raw_file_port<Field>>;
+template <typename T>
+using raw_file_introspection = predicate_introspection<T, is_raw_file_t>;
+
 // FFT
 template <typename Field>
 using is_spectrum_split_channel_port_t = boost::mp11::mp_bool<spectrum_split_channel_port<Field>>;

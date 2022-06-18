@@ -282,6 +282,35 @@ struct process_before_run
     self.soundfile_load_request(*str, Idx);
   }
 
+  template <avnd::midifile_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    auto& dat = port.data.get_data();
+    if(dat.empty())
+      return;
+
+    auto& back = dat.back();
+    auto str = back.value.template target<std::string>();
+    if(!str)
+      return;
+
+    self.midifile_load_request(*str, Idx);
+  }
+  template <avnd::raw_file_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    auto& dat = port.data.get_data();
+    if(dat.empty())
+      return;
+
+    auto& back = dat.back();
+    auto str = back.value.template target<std::string>();
+    if(!str)
+      return;
+
+    self.raw_file_load_request(*str, Idx);
+  }
+
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
   {

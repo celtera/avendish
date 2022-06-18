@@ -10,15 +10,14 @@ namespace avnd
 {
 
 template <typename T>
-concept soundfile = file<T>
+concept midifile = file<T>
 && requires(T t)
 {
-  t.data;
-  t.frames;
-  t.channels;
+  t.tracks[0][0].bytes;
+  t.tracks[0][0].tick;
 };
 
 template <typename T>
-concept soundfile_port = soundfile<std::decay_t<decltype(std::declval<T>().soundfile)>>;
+concept midifile_port = midifile<std::decay_t<decltype(std::declval<T>().midifile)>>;
 
 }

@@ -111,6 +111,18 @@ struct soundfile_input_introspection
 };
 
 template <typename T>
+struct midifile_input_introspection
+    : midifile_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct raw_file_input_introspection
+    : raw_file_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct spectrum_split_channel_input_introspection
         : spectrum_split_channel_port_introspection<typename inputs_type<T>::type>
 {

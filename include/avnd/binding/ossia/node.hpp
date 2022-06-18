@@ -229,6 +229,12 @@ public:
 
   [[no_unique_address]] oscr::soundfile_storage<T> soundfiles;
 
+  [[no_unique_address]] oscr::midifile_storage<T> midifiles;
+
+#if defined(OSCR_HAS_MMAP_FILE_STORAGE)
+  [[no_unique_address]] oscr::raw_file_storage<T> rawfiles;
+#endif
+
   [[no_unique_address]] oscr::spectrum_storage<T> spectrums;
 
   [[no_unique_address]] controls_queue<T> control;
@@ -725,12 +731,32 @@ public:
   {
     fprintf(stderr, "%s:%d\n", str.c_str(), idx);
   }
+  void midifile_load_request(std::string& str, int idx)
+  {
+    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
+  }
+  void raw_file_load_request(std::string& str, int idx)
+  {
+    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
+  }
 
   template<std::size_t N, std::size_t NField>
   void soundfile_loaded(ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
   {
     this->soundfiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
+  template<std::size_t N, std::size_t NField>
+  void midifile_loaded(const std::shared_ptr<oscr::midifile_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  {
+    this->midifiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
+  }
+#if OSCR_HAS_MMAP_FILE_STORAGE
+  template<std::size_t N, std::size_t NField>
+  void file_loaded(const std::shared_ptr<oscr::raw_file_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  {
+    this->rawfiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
+  }
+#endif
 };
 
 // FIXME these concepts are super messy

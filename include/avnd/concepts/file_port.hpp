@@ -4,21 +4,27 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/concepts/generic.hpp>
-#include <avnd/concepts/file_port.hpp>
 
 namespace avnd
 {
 
 template <typename T>
-concept soundfile = file<T>
-&& requires(T t)
+concept file = requires(T t)
 {
-  t.data;
-  t.frames;
-  t.channels;
+  t.filename;
 };
 
 template <typename T>
-concept soundfile_port = soundfile<std::decay_t<decltype(std::declval<T>().soundfile)>>;
+concept raw_file = file<T>
+&& requires(T t)
+{
+  t.bytes;
+};
+
+template <typename T>
+concept raw_file_port = requires (T t)
+{
+  { t.file } -> raw_file;
+};
 
 }
