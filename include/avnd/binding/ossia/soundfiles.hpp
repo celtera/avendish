@@ -164,7 +164,6 @@ struct soundfile_storage
 
 
 
-#define LIBREMIDI_HEADER_ONLY 1
 #include <libremidi/libremidi.hpp>
 #include <libremidi/reader.hpp>
 namespace oscr
@@ -182,7 +181,10 @@ template <avnd::midifile_port Field>
 struct midifile_handle_type<Field> : std::shared_ptr<midifile_data> { };
 
 template <typename T>
-struct midifile_input_storage;
+struct midifile_input_storage
+{
+
+};
 
 template <typename T>
 requires(avnd::midifile_input_introspection<T>::size > 0)
@@ -311,7 +313,10 @@ template <avnd::raw_file_port Field>
 struct raw_file_handle_type<Field> : std::shared_ptr<raw_file_data> { };
 
 template <typename T>
-struct raw_file_input_storage;
+struct raw_file_input_storage
+{
+
+};
 
 template <typename T>
 requires(avnd::raw_file_input_introspection<T>::size > 0)
