@@ -163,7 +163,7 @@ requires polyphonic_audio_processor<T> &&(
         {
           using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
           const int channels = avnd::get_channels(bus);
-          if (k + channels < buffers.size())
+          if (k + channels <= buffers.size())
           {
             for (int c = 0; c < channels; c++)
               std::copy_n(bus.samples[c], n, buffers[k + c]);
