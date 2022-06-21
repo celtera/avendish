@@ -78,5 +78,5 @@ struct : halp::midifile_port<"My midifile"> {
   void update(MyObject& obj) {
     // This code is called whenever the midifile has been changed by the user
   }
-};
+} port_name;
 ```

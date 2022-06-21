@@ -61,5 +61,5 @@ struct : halp::soundfile_port<"My soundfile"> {
   void update(MyObject& obj) {
     // This code is called whenever the soundfile has been changed by the user
   }
-};
+} port_name;
 ```

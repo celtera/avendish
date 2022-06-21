@@ -51,5 +51,5 @@ struct : halp::file_port<"My file", mmap_file_view> {
   void update(MyObject& obj) {
     // This code is called whenever the file has been changed by the user
   }
-};
+} port_name;
 ```
