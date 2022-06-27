@@ -229,4 +229,10 @@ concept dynamic_sample_accurate_parameter = sample_accurate_parameter<
 
 
 
+template <typename T>
+concept optional_ish = requires(T t)
+{
+  t.reset();
+};
+
 }

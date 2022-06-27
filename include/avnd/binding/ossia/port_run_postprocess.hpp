@@ -21,6 +21,7 @@ struct process_after_run
   template <typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
   {
+    if_possible(ctrl.value.reset());
   }
 
   template <typename Field, std::size_t Idx>

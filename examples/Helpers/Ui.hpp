@@ -18,9 +18,9 @@ namespace examples::helpers
  */
 struct Ui
 {
-  static consteval auto name() { return "UI example"; }
-  static consteval auto c_name() { return "avnd_ui"; }
-  static consteval auto uuid() { return "794ab8b2-94cf-4be4-8c8c-b7c6aee3e6da"; }
+  static consteval auto name() { return "UI example (helpers)"; }
+  static consteval auto c_name() { return "avnd_ui_helpers"; }
+  static consteval auto uuid() { return "68d2f22d-6fbc-44da-807a-e77484e56e5a"; }
 
   struct ins
   {

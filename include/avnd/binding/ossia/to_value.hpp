@@ -88,6 +88,14 @@ struct to_ossia_value_impl
     val = f;
   }
 
+  template <template<typename> typename T, typename V>
+  requires avnd::optional_ish< T<V> >
+  void operator()(const T<V>& f)
+  {
+    if(f)
+      val = ossia::impulse{};
+  }
+
   template <template<typename...> typename T, typename... Args>
   requires avnd::variant_ish<T<Args...>>
   void operator()(const T<Args...>& f)
@@ -224,6 +232,10 @@ ossia::value to_ossia_value(const std::floating_point auto& v)
   return v;
 }
 ossia::value to_ossia_value(const avnd::variant_ish auto& v)
+{
+  return to_ossia_value_rec(v);
+}
+ossia::value to_ossia_value(const avnd::optional_ish auto& v)
 {
   return to_ossia_value_rec(v);
 }

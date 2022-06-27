@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <span>
 #include <string_view>
@@ -222,8 +223,7 @@ struct maintained_button_t
   enum widget
   {
     button,
-    pushbutton,
-    bang
+    pushbutton
   };
   static clang_buggy_consteval auto range()
   {
@@ -247,36 +247,27 @@ struct maintained_button_t
 template <static_string lit>
 using maintained_button = maintained_button_t<lit>;
 
+struct impulse_type { };
 template <static_string lit>
 struct impulse_button_t
 {
   enum widget
   {
     bang,
-    button,
-    pushbutton
+    impulse
   };
   static clang_buggy_consteval auto range()
   {
-    struct
-    {
-    } dummy;
-    return dummy;
+    return impulse_type{};
   }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  bool value = false;
-  operator bool&() noexcept { return value; }
-  operator bool() const noexcept { return value; }
-  auto& operator=(bool t) noexcept
-  {
-    value = t;
-    return *this;
-  }
+  std::optional<impulse_type> value;
+  operator bool() const noexcept { return bool(value); }
 };
 
 template <static_string lit>
-using impulse_button = maintained_button_t<lit>;
+using impulse_button = impulse_button_t<lit>;
 
 /// LineEdit ///
 struct lineedit_setup

@@ -131,6 +131,14 @@ struct from_ossia_value_impl
       auto& [obj] = dst;
       (*this)(src, obj);
     }
+
+    template<typename F>
+    requires (avnd::optional_ish<F>)
+    void operator()(const ossia::value& src, F& dst)
+    {
+      dst = F{std::in_place};
+    }
+
     template<typename F>
     requires (std::is_integral_v<F>)
     void operator()(const ossia::value& src, F& f)
@@ -370,6 +378,23 @@ void from_ossia_value(const ossia::value& src, T& dst)
 {
   from_ossia_value_impl{}(src, dst);
 }
+
+template <avnd::optional_ish T>
+void from_ossia_value(const ossia::value& src, T& dst)
+{
+  using value_type = typename T::value_type;
+  if constexpr(std::is_empty_v<value_type>)
+  {
+    dst = T{std::in_place};
+  }
+  else
+  {
+    value_type val;
+    from_ossia_value(src, val);
+    dst.emplace(std::move(val));
+  }
+}
+
 template <oscr::type_wrapper T>
 void from_ossia_value(const ossia::value& src, T& dst)
 {
@@ -379,7 +404,13 @@ void from_ossia_value(const ossia::value& src, T& dst)
 
 inline void from_ossia_value(const ossia::value& src, bool& dst)
 {
-  dst = ossia::convert<bool>(src);
+  switch(src.get_type()) {
+    case ossia::val_type::BOOL:
+      dst = *src.target<bool>();
+      break;
+    default:
+      break;
+  }
 }
 
 inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)

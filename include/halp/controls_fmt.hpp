@@ -57,6 +57,22 @@ struct formatter<halp::color_type>
   }
 };
 
+template<>
+struct formatter<halp::impulse_type>
+{
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx)
+  {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const halp::impulse_type& number, FormatContext& ctx)
+  {
+    return fmt::format_to(ctx.out(), "impulse");
+  }
+};
+
 template <typename T>
 struct formatter<halp::range_slider_value<T>>
 {
