@@ -140,10 +140,10 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 }
 
 template <typename T>
-static constexpr auto map_control_from_01(std::floating_point auto v)
-{
-  static_assert(std::is_void_v<T>, "Error: unhandled control type");
-}
+static constexpr auto map_control_from_01(std::floating_point auto v) = delete;
+// {
+//   static_assert(std::is_void_v<T>, "Error: unhandled control type");
+// }
 
 template <avnd::float_parameter T>
 static constexpr auto map_control_to_01(const auto& value)
@@ -214,12 +214,13 @@ static constexpr auto map_control_to_01(const auto& value)
 }
 
 template <typename T>
-static constexpr auto map_control_to_01(const auto& value)
-{
-  static_assert(std::is_void_v<T>, "Error: unhandled control type");
-}
+static constexpr auto map_control_to_01(const auto& value) = delete;
+// {
+//   static_assert(std::is_void_v<T>, "Error: unhandled control type");
+// }
 
 template <avnd::parameter T>
+requires requires (T t) { map_control_to_01(t.value); }
 static constexpr auto map_control_to_01(const T& ctl)
 {
   return map_control_to_01<T>(ctl.value);

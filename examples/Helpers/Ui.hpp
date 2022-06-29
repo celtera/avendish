@@ -5,6 +5,7 @@
 #include <avnd/concepts/processor.hpp>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/controls_fmt.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <cmath>

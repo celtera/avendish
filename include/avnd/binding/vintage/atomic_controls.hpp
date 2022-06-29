@@ -81,11 +81,15 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
     [ this, &source ]<std::size_t... Index>(std::integer_sequence<std::size_t, Index...>)
     {
       auto& sink = this->parameters;
-      (sink[Index].store(
-           avnd::map_control_to_01(
-               avnd::pfr::get<inputs_info_t::index_map[Index]>(source)),
-           std::memory_order_relaxed),
-       ...);
+
+      auto do_store = [&] <std::size_t N> {
+        constexpr auto idx = inputs_info_t::index_map[N];
+        if constexpr(requires { avnd::map_control_to_01(avnd::pfr::get<idx>(source)); })
+          sink[N].store(
+              avnd::map_control_to_01(avnd::pfr::get<idx>(source)),
+              std::memory_order_relaxed);
+      };
+      (do_store.template operator()<Index>(), ...);
     }
     (std::make_index_sequence<parameter_count>());
 
@@ -100,7 +104,8 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
     auto& source = this->parameters;
     auto& port = inputs_info_t::template get<Index>(sink);
 
-    port.value = avnd::map_control_from_01<type>(source[Index].load(std::memory_order_relaxed));
+    if constexpr(requires { avnd::map_control_from_01<type>(0.f); })
+      port.value = avnd::map_control_from_01<type>(source[Index].load(std::memory_order_relaxed));
     if_possible(port.update(impl));
   }
 
