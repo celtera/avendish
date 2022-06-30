@@ -114,7 +114,9 @@ public:
           this->inputs_mirror,
           tag,
           [&]<typename C>(C& field)
-          { res = avnd::map_control_from_01_to_fp<C>(valueNormalized); });
+          {
+            if_possible(res = avnd::map_control_from_01_to_fp<C>(valueNormalized));
+          });
     }
     return res;
   }
@@ -129,7 +131,9 @@ public:
           this->inputs_mirror,
           tag,
           [&]<typename C>(C& field)
-          { res = avnd::map_control_from_fp_to_01<C>(plainValue); });
+          {
+            if_possible(res = avnd::map_control_from_fp_to_01<C>(plainValue));
+          });
     }
     return res;
   }
@@ -143,7 +147,9 @@ public:
       inputs_info_t::for_nth_raw(
           this->inputs_mirror,
           tag,
-          [&]<typename C>(C& field) { res = avnd::map_control_to_01(field); });
+          [&]<typename C>(C& field) {
+            if_possible(res = avnd::map_control_to_01(field));
+          });
     }
     return res;
   }
@@ -159,7 +165,7 @@ public:
           this->inputs_mirror,
           tag,
           [&]<typename C>(C& field)
-          { field.value = avnd::map_control_from_01<C>(value); });
+          { if_possible(field.value = avnd::map_control_from_01<C>(value)); });
     }
 
     return Steinberg::kResultTrue;
@@ -185,7 +191,7 @@ public:
             double param = 0.f;
             if (streamer.readDouble(param) == false)
               return false;
-            field.value = avnd::map_control_from_01<C>(param);
+            if_possible(field.value = avnd::map_control_from_01<C>(param));
             return true;
           });
 
@@ -229,8 +235,11 @@ public:
     bool ok = false;
     inputs_info_t::for_nth_raw(
         tag, [&]<auto Idx, typename C>(avnd::field_reflection<Idx, C> tag) {
-          ok = avnd::display_control<C>(
-              avnd::map_control_from_01<C>(valueNormalized), string, 128);
+          if constexpr(requires { avnd::map_control_from_01<C>(valueNormalized); })
+          {
+            ok = avnd::display_control<C>(
+                avnd::map_control_from_01<C>(valueNormalized), string, 128);
+          }
         });
 
     return ok ? Steinberg::kResultTrue : Steinberg::kResultFalse;

@@ -342,7 +342,9 @@ struct Component final
       avnd::parameter_input_introspection<T>::for_nth_raw(
           effect.inputs(),
           id,
-          [&]<typename C>(C& ctl) { ctl.value = avnd::map_control_from_01<C>(value); });
+          [&]<typename C>(C& ctl) {
+            if_possible(ctl.value = avnd::map_control_from_01<C>(value));
+          });
     };
   }
 
@@ -554,7 +556,7 @@ struct Component final
             double param = 0.f;
             if (streamer.readDouble(param) == false)
               return false;
-            field.value = avnd::map_control_from_01<C>(param);
+            if_possible(field.value = avnd::map_control_from_01<C>(param));
             return true;
           });
 
@@ -577,7 +579,8 @@ struct Component final
           this->effect.inputs(),
           [&]<typename C>(C& field) -> bool
           {
-            double param = avnd::map_control_to_01<C>(field.value);
+            double param{};
+            if_possible(param = avnd::map_control_to_01<C>(field.value));
             return streamer.writeDouble(param);
           });
 

@@ -4,6 +4,7 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/widechar.hpp>
+#include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/widgets.hpp>
 
 #include <cstring>
@@ -71,6 +72,14 @@ bool display_control(const T& value, char* cstr, std::size_t len)
         *fmt::format_to_n(cstr, len, "{}", choices[enum_index]).out = '\0';
       else
         *fmt::format_to_n(cstr, len, "{}", enum_index).out = '\0';
+      return true;
+    }
+    else if constexpr (avnd::optional_ish<T>)
+    {
+      if(value)
+        *fmt::format_to_n(cstr, len, "{}", *value).out = '\0';
+      else
+        *fmt::format_to_n(cstr, len, "(nullopt)").out = '\0';
       return true;
     }
     else

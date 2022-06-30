@@ -90,24 +90,5 @@ struct formatter<halp::range_slider_value<T>>
   }
 };
 
-template <typename T>
-struct formatter<std::optional<T>>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext& ctx)
-  {
-    return ctx.begin();
-  }
-
-  template <typename FormatContext>
-  auto format(const std::optional<T>& number, FormatContext& ctx)
-  {
-    if(number)
-      return fmt::format_to(ctx.out(), "optional: {}", *number);
-    else
-      return fmt::format_to(ctx.out(), "optional (absent)");
-  }
-};
-
 }
 #endif
