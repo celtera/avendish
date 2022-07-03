@@ -51,7 +51,7 @@ struct messages
       {
         if constexpr(requires (M m) { m(convert<Args>(argv[I])...); })
           return M{}(convert<Args>(argv[I])...);
-        else if constexpr(requires { implementation.*f; })
+        else if constexpr(requires { (implementation.*f)(convert<Args>(argv[I])...); })
           return (implementation.*f)(convert<Args>(argv[I])...);
       }
       else
@@ -99,7 +99,7 @@ struct messages
       {
         if constexpr(requires (M m) { m(implementation, convert<Args>(argv[I])...); })
           return M{}(implementation, convert<Args>(argv[I])...);
-        else if constexpr(requires { implementation.*f; })
+        else if constexpr(requires { (implementation.*f)(implementation, convert<Args>(argv[I])...); })
           return (implementation.*f)(implementation, convert<Args>(argv[I])...);
       }
       else

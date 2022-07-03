@@ -3,6 +3,7 @@
 #include <m_pd.h>
 
 #include <variant>
+#include <string_view>
 
 namespace pd
 {

@@ -52,11 +52,11 @@ struct messages
         boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
     {
       constexpr auto f = avnd::message_get_func<M>();
-      if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+      if constexpr (std::is_member_function_pointer_v<std::decay_t<decltype(f)>>)
       {
         if constexpr(requires (M m) { m(convert<Args>(argv[I])...); })
           return M{}(convert<Args>(argv[I])...);
-        else if constexpr(requires { implementation.*f; })
+        else if constexpr(requires { (implementation.*f)(convert<Args>(argv[I])...); })
           return (implementation.*f)(convert<Args>(argv[I])...);
       }
       else
@@ -109,7 +109,7 @@ struct messages
       {
         if constexpr(requires (M m) { m(implementation, convert<Args>(argv[I])...); })
           return M{}(implementation, convert<Args>(argv[I])...);
-        else if constexpr(requires { implementation.*f; })
+        else if constexpr(requires { (implementation.*f)(implementation, convert<Args>(argv[I])...); })
           return (implementation.*f)(implementation, convert<Args>(argv[I])...);
       }
       else
