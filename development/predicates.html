@@ -205,11 +205,12 @@ This example is assumed for all the cases below.</p>
 <p><code>predicate_introspection&lt;Foo, is_int&gt;</code> will work within this referential: indices will refer to 
 these types. That is, the element 0 will be <code>int16_t</code> and element 1 will be <code>int32_t</code>. 
 Multiple methods are provided to go from and to indices in the complete struct, to indices in the filtered version: </p>
-<table><thead><tr><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody>
+<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td>member</td><td>x</td><td>y</td><td>z</td><td>txt</td></tr>
 <tr><td>field index</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
 <tr><td>filtered index</td><td>0</td><td>-</td><td>1</td><td>-</td></tr>
 </tbody></table>
+</div>
 <h3 id="doing-something-for-each-member-of-a-struct-without-an-instance-1"><a class="header" href="#doing-something-for-each-member-of-a-struct-without-an-instance-1">Doing something for each member of a struct without an instance</a></h3>
 <pre><code class="language-cpp">predicate_instrospection&lt;T, P&gt;::for_all(
     [] &lt;std::size_t Index, typename T&gt; (avnd::field_reflection&lt;Index, T&gt;) {

@@ -304,10 +304,11 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 </code></pre>
 <h2 id="further-work"><a class="header" href="#further-work">Further work</a></h2>
 <p>We currently have the following matrix of possible forms of audio ports: </p>
-<table><thead><tr><th></th><th>1 channel</th><th>N channels</th></tr></thead><tbody>
+<div class="table-wrapper"><table><thead><tr><th></th><th>1 channel</th><th>N channels</th></tr></thead><tbody>
 <tr><td>1 frame</td><td><code>float sample;</code></td><td><code>???</code></td></tr>
 <tr><td>N frames</td><td><code>float* channel;</code></td><td><code>float** samples;</code></td></tr>
 </tbody></table>
+</div>
 <p>For the N channels / 1 frame case, one could imagine for instance: </p>
 <pre><code class="language-cpp">struct {
   float bus[2]; // Fixed channels case
