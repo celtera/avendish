@@ -1,7 +1,4 @@
 find_package(ossia QUIET)
-find_package(GLEW QUIET)
-find_package(glfw3 QUIET)
-find_package(OpenGL QUIET)
 if(NOT TARGET Qt5::Quick)
   if(NOT ((TARGET GLEW::GLEW) AND (TARGET glfw) AND (TARGET OpenGL::GL)))
     function(avnd_make_standalone)

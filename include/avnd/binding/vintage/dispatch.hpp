@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/ui/sdl/sdl.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/introspection/input.hpp>
@@ -75,6 +76,41 @@ intptr_t default_dispatch(
     {
       object.start();
       return 1;
+    }
+    case EffectOpcodes::EditOpen: // 14
+    {
+      if(!object.window)
+      {
+        object.window = new avnd::sdl_ui{ptr};
+      }
+      return 1;
+    }
+    case EffectOpcodes::EditClose: // 15
+    {
+      if(object.window)
+      {
+        delete object.window;
+        object.window = nullptr;
+      }
+      return 1;
+    }
+    case EffectOpcodes::EditIdle: // 19
+    {
+      if(object.window)
+        object.window->run_one();
+      return 1;
+    }
+    case EffectOpcodes::EditGetRect: // 13
+    {
+        auto r = object.window->get_size();
+        object.rect.right = r.w;
+        object.rect.bottom = r.h;
+
+        auto rect_ptr = &object.rect;
+
+        // VST wants a Rect*
+        memcpy(ptr, &rect_ptr, sizeof(void*));
+        return 1;
     }
     case EffectOpcodes::GetPlugCategory: // 35
     {

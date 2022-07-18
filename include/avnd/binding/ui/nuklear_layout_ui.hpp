@@ -191,26 +191,30 @@ public:
     constexpr type layout;
     createItem(layout);
   }
+  
+  void render_one()
+  {
+    glfwPollEvents();
+    nk_glfw3_new_frame();
+   
+    glfwGetWindowSize(win, &width, &height);
+   
+    if (nk_begin(ctx, "Demo", nk_rect(0, 0, width, height), 0))
+      createLayout();
+    nk_end(ctx);
+   
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(bg.r, bg.g, bg.b, bg.a);
+    nk_glfw3_render(NK_ANTI_ALIASING_ON);
+    glfwSwapBuffers(win);
+   
+  }
 
   void render()
   {
     while (!glfwWindowShouldClose(win))
-    {
-      glfwPollEvents();
-      nk_glfw3_new_frame();
-
-      glfwGetWindowSize(win, &width, &height);
-
-      if (nk_begin(ctx, "Demo", nk_rect(0, 0, width, height), 0))
-        createLayout();
-      nk_end(ctx);
-
-      glViewport(0, 0, width, height);
-      glClear(GL_COLOR_BUFFER_BIT);
-      glClearColor(bg.r, bg.g, bg.b, bg.a);
-      nk_glfw3_render(NK_ANTI_ALIASING_ON);
-      glfwSwapBuffers(win);
-    }
+      render_one();
   }
 };
 }

@@ -51,6 +51,7 @@ function(avnd_make_vintage)
     PRIVATE
       Avendish::Avendish_vintage
       DisableExceptions
+      SDL2::SDL2
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")

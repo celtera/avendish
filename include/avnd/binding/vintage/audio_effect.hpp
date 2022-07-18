@@ -44,8 +44,12 @@ struct SimpleAudioEffect : vintage::Effect
 
   [[no_unique_address]] midi_processor<T> midi;
 
+  avnd::sdl_ui* window{};
+  vintage::Rect rect{0, 0, 640, 480};
+
   float sample_rate{44100.};
   int buffer_size{512};
+
   vintage::ProcessPrecision precision = avnd::double_processor<T>
                                             ? vintage::ProcessPrecision::Double
                                             : vintage::ProcessPrecision::Single;
@@ -63,6 +67,7 @@ struct SimpleAudioEffect : vintage::Effect
 
     Effect::numParams = Controls<T>::parameter_count;
 
+    Effect::flags |= EffectFlags::HasEditor;
     Effect::flags |= EffectFlags::CanReplacing;
     if constexpr (avnd::double_processor<T>)
       Effect::flags |= EffectFlags::CanDoubleReplacing;

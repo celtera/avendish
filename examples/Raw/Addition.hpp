@@ -12,22 +12,13 @@ struct Addition
 
   struct
   {
-    struct
-    {
-      float value;
-    } a;
-    struct
-    {
-      float value;
-    } b;
+    struct { float value; } a;
+    struct { float value; } b;
   } inputs;
 
   struct
   {
-    struct
-    {
-      float value;
-    } out;
+    struct { float value; } out;
   } outputs;
 
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }
