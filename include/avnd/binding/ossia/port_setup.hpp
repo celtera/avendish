@@ -263,6 +263,11 @@ struct setup_value_port
   {
     if constexpr (requires { bool(Field::event); })
       port.is_event = Field::event;
+    if constexpr (requires { Field::value; })
+    {
+      if constexpr (avnd::optional_ish<decltype(Field::value)>)
+        port.is_event = true;
+    }
   }
 };
 

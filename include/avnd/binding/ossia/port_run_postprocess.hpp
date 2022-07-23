@@ -48,7 +48,8 @@ struct process_after_run
       int64_t ts,
       avnd::field_index<Idx>) const noexcept
   {
-    port->write_value(to_ossia_value(ctrl, val), ts);
+    if(auto v = to_ossia_value(ctrl, val); v.valid())
+      port->write_value(std::move(v), ts);
   }
 
   template <avnd::parameter Field, std::size_t Idx>
@@ -60,15 +61,18 @@ struct process_after_run
       int64_t ts,
       avnd::field_index<Idx> idx) const noexcept
   {
-    port->write_value(to_ossia_value(ctrl, val), ts);
+    if(auto v = to_ossia_value(ctrl, val); v.valid())
+    {
+      port->write_value(std::move(v), ts);
 
-    // Get the index of the control in [0; N[
-    using type = typename Exec_T::processor_type;
-    using controls = avnd::control_output_introspection<type>;
-    constexpr int control_index = controls::field_index_to_index(idx);
+      // Get the index of the control in [0; N[
+      using type = typename Exec_T::processor_type;
+      using controls = avnd::control_output_introspection<type>;
+      constexpr int control_index = controls::field_index_to_index(idx);
 
-    // Mark the control as changed
-    self.control.outputs_set.set(control_index);
+      // Mark the control as changed
+      self.control.outputs_set.set(control_index);
+    }
   }
 
   template <avnd::parameter Field, std::size_t Idx>

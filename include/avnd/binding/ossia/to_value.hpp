@@ -93,7 +93,9 @@ struct to_ossia_value_impl
   void operator()(const T<V>& f)
   {
     if(f)
-      val = ossia::impulse{};
+    {
+      (*this)(*f);
+    }
   }
 
   template <template<typename...> typename T, typename... Args>

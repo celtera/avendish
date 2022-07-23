@@ -46,8 +46,11 @@ struct Ui
   double phase = 0;
   void operator()(int N)
   {
+    if(inputs.t1 || inputs.t2 || inputs.b1 || inputs.b2)
+    {
       outputs.measure = std::sin(phase);
       phase += N * 0.001;
+    }
   }
 
   struct ui {

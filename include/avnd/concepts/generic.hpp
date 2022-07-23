@@ -34,7 +34,7 @@ concept vector_ish = requires(T t)
   t.reserve(1);
   t.resize(1);
   t.clear();
-  t.data();
+  // t.data(); // did you know? std::vector<bool> does not have it
   t[1];
 };
 
