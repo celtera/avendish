@@ -223,7 +223,6 @@ If a mono processor is written, the library will wrap it automatically in the ca
 
 # Future directions (todo!)
 
- - Support `std::optional<T>` as a way to indicate message-like output.
  - WebAudio backend.
  - TouchDesigner backend.
  - Krita backend.
@@ -234,6 +233,7 @@ If a mono processor is written, the library will wrap it automatically in the ca
 
 ## Future directions (done!)
 
+ - Support `std::optional<T>` as a way to indicate message-like input / output.
  - Continue porting the concepts developed in https://github.com/jcelerier/score-simple-api-2/ ; in particular for CPU-based image processing. Extend to e.g. Krita plug-ins.
  - Improve the handling of callbacks.
  - Have a basic UI story.
