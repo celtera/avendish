@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/ui/nuklear_layout_ui.hpp>
 #include <avnd/binding/ui/sdl/sdl.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
@@ -77,11 +78,12 @@ intptr_t default_dispatch(
       object.start();
       return 1;
     }
+      using window_type = nkl::layout_ui_xlib<effect_type>;
     case EffectOpcodes::EditOpen: // 14
     {
       if(!object.window)
       {
-        object.window = new avnd::sdl_ui{ptr};
+        object.window = new window_type{container, ptr};
       }
       return 1;
     }
@@ -89,7 +91,7 @@ intptr_t default_dispatch(
     {
       if(object.window)
       {
-        delete object.window;
+        delete (window_type*)object.window;
         object.window = nullptr;
       }
       return 1;
@@ -97,20 +99,28 @@ intptr_t default_dispatch(
     case EffectOpcodes::EditIdle: // 19
     {
       if(object.window)
-        object.window->run_one();
+        ((window_type*)object.window)->run_one();
       return 1;
     }
     case EffectOpcodes::EditGetRect: // 13
     {
-        auto r = object.window->get_size();
+      if(object.window)
+      {
+        auto r = ((window_type*)object.window)->get_size();
         object.rect.right = r.w;
         object.rect.bottom = r.h;
+      }
+      else
+      {
+        object.rect.right = 640;
+        object.rect.bottom = 480;
+      }
 
-        auto rect_ptr = &object.rect;
+      auto rect_ptr = &object.rect;
 
-        // VST wants a Rect*
-        memcpy(ptr, &rect_ptr, sizeof(void*));
-        return 1;
+      // VST wants a Rect*
+      memcpy(ptr, &rect_ptr, sizeof(void*));
+      return 1;
     }
     case EffectOpcodes::GetPlugCategory: // 35
     {

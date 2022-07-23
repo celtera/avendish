@@ -52,6 +52,7 @@ function(avnd_make_vintage)
       Avendish::Avendish_vintage
       DisableExceptions
       SDL2::SDL2
+      nuklear_impl
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")

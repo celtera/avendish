@@ -131,6 +131,7 @@ function(avnd_target_setup AVND_FX_TARGET)
           -fno-plt
           -ffunction-sections
           -fdata-sections
+          -ftemplate-backtrace-limit=0
     )
 
     if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 13.0)

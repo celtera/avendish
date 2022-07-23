@@ -23,6 +23,7 @@ include(avendish.disableexceptions)
 include(avendish.sources)
 
 include(avendish.ui.qt)
+include(avendish.ui.nuklear)
 include(avendish.max)
 include(avendish.pd)
 include(avendish.python)

@@ -22,7 +22,7 @@ struct sdl_widget
   bool contains(int parent_x, int parent_y)
   {
     return parent_x >= x && parent_y >= y
-        && parent_x < x + w && parent_y < y + h;
+           && parent_x < x + w && parent_y < y + h;
   }
 
   sdl_widget() = default;

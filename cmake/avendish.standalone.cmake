@@ -70,6 +70,7 @@ function(avnd_make_standalone)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish
+      nuklear_impl
   )
 
   if(TARGET ossia::ossia)
@@ -86,16 +87,6 @@ function(avnd_make_standalone)
       ${AVND_FX_TARGET}
       PUBLIC
         Qt5::Quick
-    )
-  endif()
-
-  if(TARGET GLEW::GLEW)
-    target_link_libraries(
-      ${AVND_FX_TARGET}
-      PUBLIC
-        GLEW::GLEW
-        glfw
-        OpenGL::GL
     )
   endif()
 
@@ -152,9 +143,7 @@ function(avnd_make_standalone)
   target_link_libraries(
     ${AVND_FX_TARGET}
     PUBLIC
-      GLEW::GLEW
-      glfw
-      OpenGL::GL
+      nuklear_impl
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
@@ -167,6 +156,7 @@ function(avnd_make_standalone)
     "${AVND_SOURCE_DIR}/include/avnd/binding/ui/nuklear_layout_ui.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/ui/nuklear/nuklear.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/ui/nuklear/nuklear_glfw_gl4.h"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/ui/nuklear/nuklear_xlib.h"
   )
 endfunction()
 endif()

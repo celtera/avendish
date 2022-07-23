@@ -44,7 +44,7 @@ struct SimpleAudioEffect : vintage::Effect
 
   [[no_unique_address]] midi_processor<T> midi;
 
-  avnd::sdl_ui* window{};
+  void* window{};
   vintage::Rect rect{0, 0, 640, 480};
 
   float sample_rate{44100.};
