@@ -173,6 +173,99 @@ halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole) my_port;
 
 declares a port named "Simple Enum". The default value will be "Peg", the 4 enumerators are Square, Peg, Round, Hole.
 
+## Containers
+
+Containers are supported (in environments where this is meaningful -- for now, ossia only !) provided that they provide an API that matches:
+
+### `std::vector`
+
+```cpp
+template <typename T>
+concept vector_ish = requires(T t)
+{
+  t.push_back({});
+  t.size();
+  t.reserve(1);
+  t.resize(1);
+  t.clear();
+  t[1];
+};
+```
+
+For instance, `boost::static_vector`, `boost::small_vector` or `absl::InlinedVector` all satisfy this and can be used as a value type.
+
+```cpp
+struct {
+  std::vector<float> value;
+} my_port;
+```
+
+### `std::set`
+
+For instance, `std::set`, `std::unordered_set` or `boost::container::flat_set` can be used as a value type.
+
+```cpp
+struct {
+  boost::container::flat_set<float> value;
+} my_port;
+```
+
+### `std::map`
+
+For instance, `std::map`, `std::unordered_map` or `boost::container::flat_map` can be used as a value type.
+
+```cpp
+struct {
+  boost::container::flat_map<float> value;
+} my_port;
+```
+
+### C arrays
+
+C arrays aren't supported due to limitations in the reflection capabilities of C++: 
+
+```cpp
+struct {
+  int value[2]; // Won't work
+} my_port;
+```
+
+or
+
+```cpp
+struct {
+  struct { int v[2]; } value; // Won't work
+} my_port;
+```
+
+Use `std::array` instead.
+
+## Variants
+
+Types which look like `std::variant` (for instance `boost::variant2::variant` or `mpark::variant`) are supported.
+
+```cpp
+struct {
+  std::variant<int, bool, std::string> value;
+} my_port;
+```
+
+## Optionals
+
+Types which look like `std::optional` (for instance `boost::optional` or `tl::optional`) are supported.
+
+```cpp
+struct {
+  std::optional<int> value;
+} my_port;
+```
+
+This is used to give message semantics to the port: optionals are reset before execution of the current 
+tick, both for inputs and outputs. If an input is set, it means that a message was received for this tick.
+If the processor sets the output, a message will be sent outwards.
+
+This is mostly equivalent to messages and callbacks, but with a value-based instead of function-based API
+(and thus a small additional storage cost).
 
 ## Advanced types
 
@@ -194,4 +287,33 @@ Here a special shape of struct is recognized:
 struct {
   struct { float r, g, b, a; } value;
 } my_port;
+```
+
+### Generalized aggregate types
+
+Aggregates are *somewhat* supported: that is, one can define 
+
+```cpp
+struct Foo {
+  int a, b;
+  struct {
+    std::vector<float> c; 
+    std::string d;
+  };
+  std::array<bool, 4>;
+};
+```
+
+and use this as a value type in a port.
+This is so far only supported in ossia, and will not preserve names, but be translated as:
+
+```cpp
+(list) [
+  (int)a
+, (int)b
+, (list) [ 
+    (list)[ c0, c1, c2, ... ]
+  , (string)"d"
+  ]
+]
 ```

@@ -39,10 +39,23 @@ concept vector_ish = requires(T t)
 };
 
 template <typename T>
-concept map_ish = requires(T t)
-{
+concept set_ish = requires (T t) {
+  sizeof(typename T::key_type);
+  sizeof(typename T::value_type);
+  t.insert(typename T::key_type{});
+  t.find(typename T::key_type{});
+  t.size();
+  t.clear();
+} && !requires (T t) { sizeof(typename T::mapped_type); };
+
+template <typename T>
+concept map_ish = requires (T t) {
   sizeof(typename T::key_type);
   sizeof(typename T::mapped_type);
+  sizeof(typename T::value_type);
+  t.insert(typename T::value_type{});
+  t.find(typename T::key_type{});
+  t[typename T::key_type{}];
   t.size();
   t.clear();
 };
@@ -67,6 +80,15 @@ concept variant_ish = requires(T t)
   t.valueless_by_exception();
 };
 
+template<typename T>
+concept optional_ish = requires(T t)
+{
+  bool(t);
+  t.value();
+  t.reset();
+  *t;
+};
+
 template <typename T, std::size_t N>
 concept c_array_ish = std::extent_v<T, 0> >= N;
 template <typename T, std::size_t N>
@@ -83,6 +105,19 @@ concept cpp_array_ish = !vector_ish<T> && cpp_tuple_ish<T, N> && requires(T t)
 
 template <typename T, std::size_t N>
 concept array_ish = c_array_ish<T, N> || cpp_array_ish<T, N>;
+
+template <typename T>
+concept bitset_ish = requires (T t) {
+  t.size();
+
+  t.test(123);
+
+  t.set();
+  t.set(123);
+
+  t.reset();
+  t.reset(123);
+};
 
 template <typename T>
 concept span_ish = requires(T t)

@@ -398,11 +398,12 @@ struct from_ossia_value_impl
   template<std::size_t N, typename T>
   bool from_array(const ossia::value& src, T& f)
   {
+    using value_type = std::remove_const_t<std::remove_reference_t<std::decay_t<decltype(f[0])>>>;
     switch(src.get_type())
     {
       case ossia::val_type::VEC2F:
       {
-        if constexpr(std::is_constructible_v<typename T::value_type, float>)
+        if constexpr(std::is_constructible_v<value_type, float>)
         {
           ossia::vec2f v = *src.target<ossia::vec2f>();
           for(int i = 0, n = std::min(std::size_t(2), N); i < n; i++)
@@ -417,7 +418,7 @@ struct from_ossia_value_impl
       }
       case ossia::val_type::VEC3F:
       {
-        if constexpr(std::is_constructible_v<typename T::value_type, float>)
+        if constexpr(std::is_constructible_v<value_type, float>)
         {
           ossia::vec3f v = *src.target<ossia::vec3f>();
           for(int i = 0, n = std::min(std::size_t(3), N); i < n; i++)
@@ -432,7 +433,7 @@ struct from_ossia_value_impl
       }
       case ossia::val_type::VEC4F:
       {
-        if constexpr(std::is_constructible_v<typename T::value_type, float>)
+        if constexpr(std::is_constructible_v<value_type, float>)
         {
           ossia::vec4f v = *src.target<ossia::vec4f>();
           for(int i = 0, n = std::min(std::size_t(4), N); i < n; i++)
@@ -471,10 +472,145 @@ struct from_ossia_value_impl
     return from_array<N>(src, f);
   }
 
-
-  bool operator()(const ossia::value& src, avnd::map_ish auto& f)
+  template <template<typename, std::size_t, typename...> typename T, typename Val, std::size_t N>
+  requires avnd::array_ish<T<Val, N>, N> && (!avnd::string_ish<T<Val, N>>) && (!avnd::vector_ish<T<Val, N>>)
+  bool operator()(const ossia::value& src, T<Val, N>& f)
   {
-    return false;
+    return from_array<N>(src, f);
+  }
+
+  template <template<std::size_t, typename...> typename T, std::size_t N>
+  requires avnd::array_ish<T<N>, N> && (!avnd::string_ish<T<N>>) && (!avnd::vector_ish<T<N>>) && (!avnd::bitset_ish<T<N>>)
+  bool operator()(const ossia::value& src, T<N>& f)
+  {
+    return from_array<N>(src, f);
+  }
+
+  bool operator()(const ossia::value& src, avnd::bitset_ish auto& f)
+  {
+    auto vec = src.target<std::vector<ossia::value>>();
+    if(!vec)
+      return false;
+
+    if constexpr(requires { f.resize(123); }) {
+      f.resize(vec->size());
+    }
+
+    f.reset();
+    for(int i = 0; i < std::min(f.size(), vec->size()); i++) {
+      f.set(i, ossia::convert<bool>((*vec)[i]));
+    }
+    return true;
+  }
+
+  template<avnd::set_ish T>
+  bool operator()(const ossia::value& src, T& f)
+  {
+    switch(src.get_type())
+    {
+      case ossia::val_type::VEC2F:
+      {
+        if constexpr(std::is_constructible_v<typename T::value_type, float>)
+        {
+          ossia::vec2f v = *src.target<ossia::vec2f>();
+          f.clear();
+          f.insert(v.begin(), v.end());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+      case ossia::val_type::VEC3F:
+      {
+        if constexpr(std::is_constructible_v<typename T::value_type, float>)
+        {
+          ossia::vec3f v = *src.target<ossia::vec3f>();
+          f.clear();
+          f.insert(v.begin(), v.end());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+      case ossia::val_type::VEC4F:
+      {
+        if constexpr(std::is_constructible_v<typename T::value_type, float>)
+        {
+          ossia::vec4f v = *src.target<ossia::vec4f>();
+          f.clear();
+          f.insert(v.begin(), v.end());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+      case ossia::val_type::LIST:
+      {
+        const std::vector<ossia::value>& vl = *src.target<std::vector<ossia::value>>();
+
+        f.clear();
+        if_possible(f.reserve(vl.size()));
+
+        for(int i = 0, n = vl.size(); i < n; i++)
+        {
+          typename T::value_type val;
+
+          (*this)(vl[i], val);
+
+          f.insert(std::move(val));
+        }
+        return true;
+        break;
+      }
+      default:
+        return false;
+        break;
+    }
+  }
+
+  template<avnd::map_ish T>
+  bool operator()(const ossia::value& src, T& f)
+  {
+    if(auto ptr = src.target<std::vector<ossia::value>>())
+    {
+      const std::vector<ossia::value>& v = *ptr;
+
+      f.clear();
+      if_possible(f.reserve(v.size()));
+
+      for(auto& subv : v)
+      {
+        if(auto sub = subv.target<std::vector<ossia::value>>())
+        {
+          const std::vector<ossia::value>& vv = *sub;
+          if(vv.size() == 2)
+          {
+            typename T::key_type map_k;
+            from_ossia_value_impl{}(vv[0], map_k);
+
+            typename T::mapped_type map_v;
+            from_ossia_value_impl{}(vv[1], map_v);
+
+            f.emplace(std::move(map_k), std::move(map_v));
+          }
+        }
+      }
+
+      return true;
+    }
+    else
+    {
+      return false;
+    }
   }
   /*
     template<typename T>
@@ -585,7 +721,40 @@ bool from_ossia_value(const ossia::value& src, T& dst)
 {
   return from_ossia_value_impl{}(src, dst);
 }
+
+template <template<typename, std::size_t, typename...> typename T, typename Val, std::size_t N>
+requires avnd::array_ish<T<Val, N>, N> && (!avnd::string_ish<T<Val, N>>)
+bool from_ossia_value(const ossia::value& src, T<Val, N>& dst)
+{
+  return from_ossia_value_impl{}(src, dst);
+}
+
+template <template<std::size_t, typename...> typename T, std::size_t N>
+requires avnd::array_ish<T<N>, N> && (!avnd::string_ish<T<N>>)
+    bool from_ossia_value(const ossia::value& src, T<N>& dst)
+{
+  return from_ossia_value_impl{}(src, dst);
+}
+
 template <avnd::variant_ish T>
+bool from_ossia_value(const ossia::value& src, T& dst)
+{
+  return from_ossia_value_impl{}(src, dst);
+}
+
+template <avnd::set_ish T>
+bool from_ossia_value(const ossia::value& src, T& dst)
+{
+  return from_ossia_value_impl{}(src, dst);
+}
+
+template <avnd::map_ish T>
+bool from_ossia_value(const ossia::value& src, T& dst)
+{
+  return from_ossia_value_impl{}(src, dst);
+}
+
+template <avnd::bitset_ish T>
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   return from_ossia_value_impl{}(src, dst);
