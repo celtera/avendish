@@ -261,6 +261,66 @@ struct {
 <pre><code class="language-cpp">halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole) my_port;
 </code></pre>
 <p>declares a port named &quot;Simple Enum&quot;. The default value will be &quot;Peg&quot;, the 4 enumerators are Square, Peg, Round, Hole.</p>
+<h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
+<p>Containers are supported (in environments where this is meaningful -- for now, ossia only !) provided that they provide an API that matches:</p>
+<h3 id="stdvector"><a class="header" href="#stdvector"><code>std::vector</code></a></h3>
+<pre><code class="language-cpp">template &lt;typename T&gt;
+concept vector_ish = requires(T t)
+{
+  t.push_back({});
+  t.size();
+  t.reserve(1);
+  t.resize(1);
+  t.clear();
+  t[1];
+};
+</code></pre>
+<p>For instance, <code>boost::static_vector</code>, <code>boost::small_vector</code> or <code>absl::InlinedVector</code> all satisfy this and can be used as a value type.</p>
+<pre><code class="language-cpp">struct {
+  std::vector&lt;float&gt; value;
+} my_port;
+</code></pre>
+<h3 id="stdset"><a class="header" href="#stdset"><code>std::set</code></a></h3>
+<p>For instance, <code>std::set</code>, <code>std::unordered_set</code> or <code>boost::container::flat_set</code> can be used as a value type.</p>
+<pre><code class="language-cpp">struct {
+  boost::container::flat_set&lt;float&gt; value;
+} my_port;
+</code></pre>
+<h3 id="stdmap"><a class="header" href="#stdmap"><code>std::map</code></a></h3>
+<p>For instance, <code>std::map</code>, <code>std::unordered_map</code> or <code>boost::container::flat_map</code> can be used as a value type.</p>
+<pre><code class="language-cpp">struct {
+  boost::container::flat_map&lt;float&gt; value;
+} my_port;
+</code></pre>
+<h3 id="c-arrays"><a class="header" href="#c-arrays">C arrays</a></h3>
+<p>C arrays aren't supported due to limitations in the reflection capabilities of C++: </p>
+<pre><code class="language-cpp">struct {
+  int value[2]; // Won't work
+} my_port;
+</code></pre>
+<p>or</p>
+<pre><code class="language-cpp">struct {
+  struct { int v[2]; } value; // Won't work
+} my_port;
+</code></pre>
+<p>Use <code>std::array</code> instead.</p>
+<h2 id="variants"><a class="header" href="#variants">Variants</a></h2>
+<p>Types which look like <code>std::variant</code> (for instance <code>boost::variant2::variant</code> or <code>mpark::variant</code>) are supported.</p>
+<pre><code class="language-cpp">struct {
+  std::variant&lt;int, bool, std::string&gt; value;
+} my_port;
+</code></pre>
+<h2 id="optionals"><a class="header" href="#optionals">Optionals</a></h2>
+<p>Types which look like <code>std::optional</code> (for instance <code>boost::optional</code> or <code>tl::optional</code>) are supported.</p>
+<pre><code class="language-cpp">struct {
+  std::optional&lt;int&gt; value;
+} my_port;
+</code></pre>
+<p>This is used to give message semantics to the port: optionals are reset before execution of the current 
+tick, both for inputs and outputs. If an input is set, it means that a message was received for this tick.
+If the processor sets the output, a message will be sent outwards.</p>
+<p>This is mostly equivalent to messages and callbacks, but with a value-based instead of function-based API
+(and thus a small additional storage cost).</p>
 <h2 id="advanced-types"><a class="header" href="#advanced-types">Advanced types</a></h2>
 <h3 id="2d-position-xy"><a class="header" href="#2d-position-xy">2D position: xy</a></h3>
 <p>Here a special shape of struct is recognized:</p>
@@ -273,6 +333,28 @@ struct {
 <pre><code class="language-cpp">struct {
   struct { float r, g, b, a; } value;
 } my_port;
+</code></pre>
+<h3 id="generalized-aggregate-types"><a class="header" href="#generalized-aggregate-types">Generalized aggregate types</a></h3>
+<p>Aggregates are <em>somewhat</em> supported: that is, one can define </p>
+<pre><code class="language-cpp">struct Foo {
+  int a, b;
+  struct {
+    std::vector&lt;float&gt; c; 
+    std::string d;
+  };
+  std::array&lt;bool, 4&gt;;
+};
+</code></pre>
+<p>and use this as a value type in a port.
+This is so far only supported in ossia, and will not preserve names, but be translated as:</p>
+<pre><code class="language-cpp">(list) [
+  (int)a
+, (int)b
+, (list) [ 
+    (list)[ c0, c1, c2, ... ]
+  , (string)&quot;d&quot;
+  ]
+]
 </code></pre>
 
                     </main>
