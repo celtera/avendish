@@ -73,12 +73,65 @@ struct custom_slider
 struct custom_anim
 {
     using item_type = custom_anim;
-    static constexpr double width() { return 200.; }
-    static constexpr double height() { return 200.; }
+    static constexpr double width() { return 1000.; }
+    static constexpr double height() { return 1000.; }
 
     void paint(avnd::painter auto ctx)
     {
       constexpr double side = 40.;
+
+
+        //White Square --> ok
+//        ctx.set_fill_color({255, 255, 255, 255});
+//        ctx.draw_rect(50, 50, 50, 50);
+//        ctx.fill();
+
+        //White Circle --> ok
+//        ctx.set_fill_color({255, 255, 255, 255});
+//        ctx.draw_circle(50, 100, 50);
+//        ctx.fill();
+
+        //Text --> ok
+//        ctx.set_fill_color({255, 255, 255, 255});
+//        ctx.set_font("Ubuntu");
+//        ctx.set_font_size(15);
+//        ctx.draw_text(50,100, "Hello World !");
+//        ctx.fill();
+
+        //Image --> ok
+//        ctx.begin_path();
+//        ctx.draw_pixmap(50,50,"//home/scrime/Images/StageScrime/external-content.duckduckgo.com.jpeg");
+
+        //Triangle --> ok
+//        ctx.set_fill_color({0, 0, 204, 255});
+//        ctx.draw_triangle(250, 500, 750, 500, 500, 250);
+//        ctx.fill();
+
+        //Gradient --> ok
+//        ctx.set_fill_color({255, 255, 255, 255});
+//        ctx.set_linear_gradient(250, 250, 250, 750, {0, 255, 234, 255}, {239, 0, 255, 255});
+//        //ctx.set_radial_gradient(500, 500, 250, {0, 255, 234, 255}, {239, 0, 255, 255});
+//        //ctx.set_conical_gradient(500, 500, 90, {0, 255, 234, 255}, {239, 0, 255, 255});
+//        ctx.draw_rect(250, 250, 500, 500);
+//        ctx.fill();
+
+        //Polygon --> ok
+//        double tab[8] = {250, 500, 750, 500, 500, 250, 0, 0};
+//        ctx.set_fill_color({0, 0, 204, 255});
+//        ctx.draw_polygon(tab, 4);
+//        ctx.fill();
+
+        //Star --> ok
+//        ctx.set_fill_color({200, 0, 0, 255});
+//        ctx.set_linear_gradient(0, 0, 1000, 1000, {0, 255, 234, 255}, {239, 0, 255, 255});
+//        ctx.draw_star(500, 500, 100, 400, 25);
+//        ctx.fill();
+
+        //Clock --> test
+        ctx.draw_analog_clock(width(), height(), {127, 0, 127, 255}, {0, 127, 127, 190}, {0, 0, 0, 255});
+
+        return;
+
 
       ctx.translate(100, 100);
       ctx.rotate(rot += 0.1);
@@ -115,6 +168,7 @@ struct AdvancedUi
   struct ins
   {
     halp::knob_f32<"Float", halp::range{.min = -1000., .max = 1000., .init = 100.}> float_ctl;
+    //halp::knob_f32<"Test", halp::range{.min = 0., .max = 1., .init = 0.5}> tests;
   } inputs;
 
   struct { } outputs;
@@ -129,7 +183,7 @@ struct AdvancedUi
       halp_meta(height, 200)
       halp_meta(font, "Inconsolata")
 
-      halp::custom_item<custom_slider, &ins::float_ctl> widget{{.x = 190, .y = 170}};
+      halp::custom_item<custom_slider, &ins::float_ctl> widget{{.x = 500, .y = 920}};
       halp::custom_item_base<custom_anim> anim{.x = 90, .y = -50};
   };
 };

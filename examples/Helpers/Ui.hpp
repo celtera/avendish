@@ -59,7 +59,7 @@ struct Ui
       // using enum halp::layouts;
 
       halp_meta(name, "Main")
-      halp_meta(layout, halp::layouts::hbox)
+      halp_meta(layout, halp::layouts::vbox)
       halp_meta(background, halp::colors::mid)
 
       struct {
