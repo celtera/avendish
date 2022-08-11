@@ -138,11 +138,11 @@
 <p>FFT operates on complex numbers ; you can expect a <code>real()</code> and <code>complex()</code> members.
 Here is a simple example, which looks for the band with the most amplitude.</p>
 <pre><code class="language-cpp">#pragma once
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
-#include &lt;halp/meta.hpp&gt;
 #include &lt;halp/fft.hpp&gt;
-#include &lt;cmath&gt;
+#include &lt;halp/meta.hpp&gt;
 
 namespace examples::helpers
 {
@@ -197,10 +197,10 @@ struct PeakBand
     auto cplx = fft.execute(inputs.audio.channel, frames);
 
     // Compute the band with the highest amplitude
-    for (int k = 0; k &lt; frames / 2; k++)
+    for(int k = 0; k &lt; frames / 2; k++)
     {
       const double mag_squared = std::norm(cplx[k]);
-      if (mag_squared &gt; outputs.peak)
+      if(mag_squared &gt; outputs.peak)
       {
         outputs.peak = mag_squared;
         outputs.band = k;

@@ -205,11 +205,11 @@ halp::audio_spectrum_channel&lt;&quot;C&quot;, double&gt; a_channel_port;
 <p>See <a href="../advanced/fft.html">the section about feature injection</a> to see how a plug-in can be injected with an FFT object which allows to control precisely how the FFT is done.</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-cpp">#pragma once
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
-#include &lt;halp/meta.hpp&gt;
 #include &lt;halp/fft.hpp&gt;
-#include &lt;cmath&gt;
+#include &lt;halp/meta.hpp&gt;
 
 namespace examples::helpers
 {
@@ -234,12 +234,14 @@ struct PeakBandFFTPort
     halp::audio_spectrum_channel&lt;&quot;In&quot;, double&gt; audio;
 
     // Option B with the raw spectrum ; no window is defined.
-    struct {
+    struct
+    {
       halp_meta(name, &quot;In 2&quot;);
 
       double* channel{};
       // complex numbers... using value_type = double[2] is also ok
-      struct {
+      struct
+      {
         std::complex&lt;double&gt;* bin;
       } spectrum{};
     } audio_2;
@@ -261,13 +263,13 @@ struct PeakBandFFTPort
       outputs.peak = 0.;
 
       // Compute the band with the highest amplitude
-      for (int k = 0; k &lt; frames / 2; k++)
+      for(int k = 0; k &lt; frames / 2; k++)
       {
         const double ampl = inputs.audio.spectrum.amplitude[k];
         const double phas = inputs.audio.spectrum.phase[k];
         const double mag_squared = ampl * ampl + phas * phas;
 
-        if (mag_squared &gt; outputs.peak)
+        if(mag_squared &gt; outputs.peak)
         {
           outputs.peak = mag_squared;
           outputs.band = k;
@@ -282,11 +284,11 @@ struct PeakBandFFTPort
       outputs.peak_2 = 0.;
 
       // Compute the band with the highest amplitude
-      for (int k = 0; k &lt; frames / 2; k++)
+      for(int k = 0; k &lt; frames / 2; k++)
       {
         const double mag_squared = std::norm(inputs.audio_2.spectrum.bin[k]);
 
-        if (mag_squared &gt; outputs.peak_2)
+        if(mag_squared &gt; outputs.peak_2)
         {
           outputs.peak_2 = mag_squared;
           outputs.band_2 = k;

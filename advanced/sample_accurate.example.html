@@ -138,11 +138,11 @@
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
 #include &lt;avnd/concepts/parameter.hpp&gt;
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
 #include &lt;halp/sample_accurate_controls.hpp&gt;
-#include &lt;cmath&gt;
 
 namespace examples
 {
@@ -171,7 +171,7 @@ struct SampleAccurateFilterExample
   void operator()()
   {
     // The output is copied at the same timestamp at which each input happened.
-    for (auto&amp; [timestamp, value] : inputs.value.values)
+    for(auto&amp; [timestamp, value] : inputs.value.values)
     {
       outputs.value.values[timestamp] = cos(value * value) * cos(value);
     }

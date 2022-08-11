@@ -139,11 +139,10 @@
 <p>In this case, one can omit all the functions and most of the pipeline layout, 
 and only define for instance an UBO, samplers and a fragment shader.</p>
 <pre><code class="language-cpp">#pragma once
-#include &lt;gpp/meta.hpp&gt;
-#include &lt;gpp/ports.hpp&gt;
 #include &lt;gpp/commands.hpp&gt;
 #include &lt;gpp/layout.hpp&gt;
-
+#include &lt;gpp/meta.hpp&gt;
+#include &lt;gpp/ports.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 
 namespace examples
@@ -153,17 +152,25 @@ struct GpuSolidColorExample
   halp_meta(name, &quot;Solid color&quot;);
   halp_meta(uuid, &quot;c9a5fd8e-b66e-41ff-8feb-bca2cdab4990&quot;);
 
-  struct layout {
-    enum { graphics };
+  struct layout
+  {
+    enum
+    {
+      graphics
+    };
 
     // Here we only need a fragment output
-    struct fragment_output {
-      gpp_attribute(0, fragColor, float[4]) fragColor;
+    struct fragment_output
+    {
+      gpp_attribute(0, fragColor, float[4])
+      fragColor;
     } fragment_output;
 
     // We define one UBO with a vec4: our solid color
-    struct bindings {
-      struct custom_ubo {
+    struct bindings
+    {
+      struct custom_ubo
+      {
         halp_meta(name, &quot;custom&quot;);
         halp_meta(binding, 0);
         halp_flags(std140, ubo);
@@ -173,21 +180,23 @@ struct GpuSolidColorExample
     };
   };
 
-  struct {
+  struct
+  {
     // Make this uniform visible as a port
     gpp::uniform_control_port&lt;
-        halp::color_chooser&lt;&quot;Color&quot;&gt;
-      , &amp;layout::bindings::custom_ubo::col
-    &gt; color;
+        halp::color_chooser&lt;&quot;Color&quot;&gt;, &amp;layout::bindings::custom_ubo::col&gt;
+        color;
   } inputs;
 
-  struct {
+  struct
+  {
     // Make an output port from the fragment output
     gpp::color_attachment_port&lt;&quot;Color output&quot;, &amp;layout::fragment_output&gt; out;
   } outputs;
 
   // Trivial fragment shader
-  std::string_view fragment() {
+  std::string_view fragment()
+  {
     return R&quot;_(
 void main() {
   fragColor = color;

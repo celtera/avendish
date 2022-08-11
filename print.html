@@ -824,31 +824,32 @@ how the UI controls shall behave:</p>
 <pre><code class="language-cpp">#pragma once
 
 #include &lt;cmath&gt;
+
 #include &lt;ratio&gt;
 
 namespace halp
 {
 
 // FIXME: when clang supports double arguments we can use them here instead
-template&lt;typename Ratio&gt;
+template &lt;typename Ratio&gt;
 struct log_mapper
 {
   // Formula from http://benholmes.co.uk/posts/2017/11/logarithmic-potentiometer-laws
   static constexpr double mid = double(Ratio::num) / double(Ratio::den);
-  static constexpr double b = (1. / mid - 1. ) * (1. / mid - 1.);
+  static constexpr double b = (1. / mid - 1.) * (1. / mid - 1.);
   static constexpr double a = 1. / (b - 1.);
   static double map(double v) noexcept { return a * (std::pow(b, v) - 1.); }
   static double unmap(double v) noexcept { return std::log(v / a + 1.) / std::log(b); }
 };
 
-template&lt;int Power&gt;
+template &lt;int Power&gt;
 struct pow_mapper
 {
   static double map(double v) noexcept { return std::pow(v, (double)Power); }
   static double unmap(double v) noexcept { return std::pow(v, 1. / Power); }
 };
 
-template&lt;typename T&gt;
+template &lt;typename T&gt;
 struct inverse_mapper
 {
   static double map(double v) noexcept { return T::unmap(v); }
@@ -1403,11 +1404,11 @@ halp::audio_spectrum_channel&lt;&quot;C&quot;, double&gt; a_channel_port;
 <p>See <a href="writing_processors/../advanced/fft.html">the section about feature injection</a> to see how a plug-in can be injected with an FFT object which allows to control precisely how the FFT is done.</p>
 <h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
 <pre><code class="language-cpp">#pragma once
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
-#include &lt;halp/meta.hpp&gt;
 #include &lt;halp/fft.hpp&gt;
-#include &lt;cmath&gt;
+#include &lt;halp/meta.hpp&gt;
 
 namespace examples::helpers
 {
@@ -1432,12 +1433,14 @@ struct PeakBandFFTPort
     halp::audio_spectrum_channel&lt;&quot;In&quot;, double&gt; audio;
 
     // Option B with the raw spectrum ; no window is defined.
-    struct {
+    struct
+    {
       halp_meta(name, &quot;In 2&quot;);
 
       double* channel{};
       // complex numbers... using value_type = double[2] is also ok
-      struct {
+      struct
+      {
         std::complex&lt;double&gt;* bin;
       } spectrum{};
     } audio_2;
@@ -1459,13 +1462,13 @@ struct PeakBandFFTPort
       outputs.peak = 0.;
 
       // Compute the band with the highest amplitude
-      for (int k = 0; k &lt; frames / 2; k++)
+      for(int k = 0; k &lt; frames / 2; k++)
       {
         const double ampl = inputs.audio.spectrum.amplitude[k];
         const double phas = inputs.audio.spectrum.phase[k];
         const double mag_squared = ampl * ampl + phas * phas;
 
-        if (mag_squared &gt; outputs.peak)
+        if(mag_squared &gt; outputs.peak)
         {
           outputs.peak = mag_squared;
           outputs.band = k;
@@ -1480,11 +1483,11 @@ struct PeakBandFFTPort
       outputs.peak_2 = 0.;
 
       // Compute the band with the highest amplitude
-      for (int k = 0; k &lt; frames / 2; k++)
+      for(int k = 0; k &lt; frames / 2; k++)
       {
         const double mag_squared = std::norm(inputs.audio_2.spectrum.bin[k]);
 
-        if (mag_squared &gt; outputs.peak_2)
+        if(mag_squared &gt; outputs.peak_2)
         {
           outputs.peak_2 = mag_squared;
           outputs.band_2 = k;
@@ -1782,10 +1785,10 @@ struct Synth
     // 1. Process the MIDI messages. We'll just play the latest note-on
     // in a not very sample-accurate way..
 
-    for (auto&amp; m : inputs.midi.midi_messages)
+    for(auto&amp; m : inputs.midi.midi_messages)
     {
       // Let's ignore channels
-      switch ((libremidi::message_type) (m.bytes[0] &amp; 0xF0))
+      switch((libremidi::message_type)(m.bytes[0] &amp; 0xF0))
       {
         case libremidi::message_type::NOTE_ON:
           in_flight++;
@@ -1807,7 +1810,7 @@ struct Synth
     }
 
     // 2. Quit if we don't have any more note to play
-    if (in_flight &lt;= 0)
+    if(in_flight &lt;= 0)
       return;
 
     // 3. Output some bleeps
@@ -1815,7 +1818,7 @@ struct Synth
         = ossia::two_pi * last_note.dataspace_value / double(configuration.sample_rate);
     auto&amp; out = outputs.audio.samples;
 
-    for (int64_t j = 0; j &lt; frames; j++)
+    for(int64_t j = 0; j &lt; frames; j++)
     {
       out[0][j] = last_volume.dataspace_value * std::sin(phase);
       out[1][j] = out[0][j];
@@ -1873,12 +1876,12 @@ tex.upload();
 <div style="break-before: page; page-break-before: always;"></div><h1 id="image-processor-example"><a class="header" href="#image-processor-example">Image processor example</a></h1>
 <p>This example is a very simple image filter. It takes an input image and downscales &amp; degrades it.</p>
 <pre><code class="language-cpp">#pragma once
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
 #include &lt;halp/sample_accurate_controls.hpp&gt;
 #include &lt;halp/texture.hpp&gt;
-#include &lt;cmath&gt;
 
 namespace examples
 {
@@ -1915,21 +1918,21 @@ struct TextureFilterExample
 
     // Since GPU readbacks are asynchronous: reading textures may take some time and
     // thus the data may not be available from the beginning.
-    if (in_tex.bytes == nullptr)
+    if(in_tex.bytes == nullptr)
       return;
 
     // Texture hasn't changed since last time, no need to recompute anything
-    if (!in_tex.changed)
+    if(!in_tex.changed)
       return;
     in_tex.changed = false;
 
     // We (dirtily) downscale by a factor of 16
-    if (out_tex.width != in_tex.width || out_tex.height != in_tex.height)
+    if(out_tex.width != in_tex.width || out_tex.height != in_tex.height)
       outputs.image.create(in_tex.width / 16, in_tex.height / 16);
 
-    for (int y = 0; y &lt; in_tex.height / 16; y++)
+    for(int y = 0; y &lt; in_tex.height / 16; y++)
     {
-      for (int x = 0; x &lt; in_tex.width / 16; x++)
+      for(int x = 0; x &lt; in_tex.width / 16; x++)
       {
         // Get a pixel
         auto [r, g, b, a] = inputs.image.get(x * 16, y * 16);
@@ -2203,13 +2206,13 @@ This is so far only supported in ossia, and will not preserve names, but be tran
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
 #include &lt;avnd/concepts/parameter.hpp&gt;
+#include &lt;boost/pfr.hpp&gt;
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 #include &lt;halp/controls_fmt.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
 #include &lt;halp/sample_accurate_controls.hpp&gt;
-#include &lt;boost/pfr.hpp&gt;
-#include &lt;cmath&gt;
 
 namespace examples
 {
@@ -2338,10 +2341,16 @@ struct ControlGallery
     //!   }
     //!
     //! OSC messages can use either the int index or the string.
-    struct enum_t { halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole) };
+    struct enum_t
+    {
+      halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole)
+    };
     halp::accurate&lt;enum_t&gt; simpler_enumeration;
 
-    struct combobox_t { halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange) };
+    struct combobox_t
+    {
+      halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange)
+    };
     halp::accurate&lt;combobox_t&gt; simpler_enumeration_in_a_combobox;
 
     //! Crosshair XY chooser
@@ -2356,20 +2365,17 @@ struct ControlGallery
   {
     const bool has_impulse = !inputs.impulse_button.values.empty();
     const bool has_button = std::any_of(
-        inputs.button.values.begin(),
-        inputs.button.values.end(),
+        inputs.button.values.begin(), inputs.button.values.end(),
         [](const auto&amp; p) { return p.second == true; });
 
-    if (!has_impulse &amp;&amp; !has_button)
+    if(!has_impulse &amp;&amp; !has_button)
       return;
 
-    avnd::pfr::for_each_field(
-        inputs,
-        [] &lt;typename Control&gt; (const Control&amp; input) {
-          {
-            auto val = input.values.begin()-&gt;second;
-            fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
-          }
+    avnd::pfr::for_each_field(inputs, []&lt;typename Control&gt;(const Control&amp; input) {
+      {
+        auto val = input.values.begin()-&gt;second;
+        fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
+      }
     });
   }
 };
@@ -2898,8 +2904,9 @@ struct custom_item
 
 namespace avnd
 {
-template&lt;typename T&gt;
-concept painter = requires (T t) {
+template &lt;typename T&gt;
+concept painter = requires(T t)
+{
   // Paths:
   t.begin_path();
   t.close_path();
@@ -2911,10 +2918,10 @@ concept painter = requires (T t) {
   t.line_to(0., 0.);
 
   //       x , y , w , h , startAngle, arcLength
-  t.arc_to(0., 1., 2., 3., 11.       , 12.);
+  t.arc_to(0., 1., 2., 3., 11., 12.);
 
   //         c1x, c1y, c2x, c2y, endx, endy
-  t.cubic_to(0. ,  1., 2. , 3. , 11. , 12.);
+  t.cubic_to(0., 1., 2., 3., 11., 12.);
   //        x1, y1, x2, y2
   t.quad_to(0., 1., 2., 3.);
 
@@ -3033,58 +3040,55 @@ struct MyProcessor {
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include &lt;avnd/concepts/processor.hpp&gt;
 #include &lt;avnd/concepts/painter.hpp&gt;
+#include &lt;avnd/concepts/processor.hpp&gt;
 #include &lt;avnd/wrappers/controls.hpp&gt;
-#include &lt;halp/custom_widgets.hpp&gt;
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
+#include &lt;halp/custom_widgets.hpp&gt;
 #include &lt;halp/layout.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
-#include &lt;cmath&gt;
-#include &lt;variant&gt;
+
 #include &lt;cstdio&gt;
+#include &lt;variant&gt;
 
 namespace examples::helpers
 {
 struct custom_button
 {
-    static constexpr double width() { return 100.; }
-    static constexpr double height() { return 100.; }
+  static constexpr double width() { return 100.; }
+  static constexpr double height() { return 100.; }
 
-    void paint(avnd::painter auto ctx)
-    {
-      ctx.set_stroke_color({200, 200, 200, 255});
-      ctx.set_stroke_width(2.);
-      ctx.set_fill_color({100, 100, 100, 255});
-      ctx.begin_path();
-      ctx.draw_rounded_rect(0., 0., width(), height(), 5);
-      ctx.fill();
-      ctx.stroke();
+  void paint(avnd::painter auto ctx)
+  {
+    ctx.set_stroke_color({200, 200, 200, 255});
+    ctx.set_stroke_width(2.);
+    ctx.set_fill_color({100, 100, 100, 255});
+    ctx.begin_path();
+    ctx.draw_rounded_rect(0., 0., width(), height(), 5);
+    ctx.fill();
+    ctx.stroke();
 
-      ctx.set_fill_color({0, 0, 0, 255});
-      ctx.begin_path();
-      ctx.draw_text(20., 20., fmt::format(&quot;{}&quot;, press_count));
-      ctx.fill();
-    }
+    ctx.set_fill_color({0, 0, 0, 255});
+    ctx.begin_path();
+    ctx.draw_text(20., 20., fmt::format(&quot;{}&quot;, press_count));
+    ctx.fill();
+  }
 
-    bool mouse_press(double x, double y)
-    {
-      on_pressed();
-      return true;
-    }
+  bool mouse_press(double x, double y)
+  {
+    on_pressed();
+    return true;
+  }
 
-    void mouse_move(double x, double y)
-    {
-    }
+  void mouse_move(double x, double y) { }
 
-    void mouse_release(double x, double y)
-    {
-    }
+  void mouse_release(double x, double y) { }
 
-    int press_count{0};
+  int press_count{0};
 
-    std::function&lt;void()&gt; on_pressed = [] { };
+  std::function&lt;void()&gt; on_pressed = [] {};
 };
 
 /**
@@ -3118,8 +3122,12 @@ struct MessageBusUi
   static consteval auto c_name() { return &quot;avnd_mbus_ui&quot;; }
   static consteval auto uuid() { return &quot;4ed8e7fd-a1fa-40a7-bbbe-13ee50044248&quot;; }
 
-  struct { } inputs;
-  struct { } outputs;
+  struct
+  {
+  } inputs;
+  struct
+  {
+  } outputs;
 
   void operator()(int N) { }
 
@@ -3127,20 +3135,24 @@ struct MessageBusUi
   // aggregates. What matters is that they are used as arguments to process_message.
 
   // This one will be serialized / deserialized as it is not a trivial type
-  struct ui_to_processor {
+  struct ui_to_processor
+  {
     int foo;
     std::string bar;
     std::variant&lt;float, double&gt; x;
     std::vector&lt;float&gt; y;
-    struct {
+    struct
+    {
       int x, y;
     } baz;
   };
 
   // This one will be memcpy'd as it is a trivial type
-  struct processor_to_ui {
+  struct processor_to_ui
+  {
     float bar;
-    struct {
+    struct
+    {
       int x, y;
     } baz;
   };
@@ -3156,29 +3168,32 @@ struct MessageBusUi
   std::function&lt;void(processor_to_ui)&gt; send_message;
 
   // Define our UI
-  struct ui {
+  struct ui
+  {
     halp_meta(layout, halp::layouts::container)
     halp_meta(width, 100)
     halp_meta(height, 100)
 
-    struct {
+    struct
+    {
       halp_meta(layout, halp::layouts::container)
       halp::custom_actions_item&lt;custom_button&gt; button{
-          .x = 10
-        , .y = 10
-        // We'd like to define our callback here,
-        // sadly C++ scoping rules do not allow it as soon as there is nesting
+          .x = 10, .y = 10
+          // We'd like to define our callback here,
+          // sadly C++ scoping rules do not allow it as soon as there is nesting
       };
     } foo;
 
     // Define the communication between UI and processor.
-    struct bus {
+    struct bus
+    {
       // 3. Set up connections
       void init(ui&amp; ui)
       {
         ui.foo.button.on_pressed = [&amp;] {
           fprintf(stderr, &quot;Sending message from UI thread !\n&quot;);
-          this-&gt;send_message(ui_to_processor{.foo = 123, .bar = &quot;hiii&quot;, .x = 0.5f, .y = { 1, 3, 5 }});
+          this-&gt;send_message(
+              ui_to_processor{.foo = 123, .bar = &quot;hiii&quot;, .x = 0.5f, .y = {1, 3, 5}});
         };
       }
 
@@ -3254,7 +3269,8 @@ struct Logger
 
   // Helpers for referring to local functions.
   // Ideally metaclasses would make that obsolete.
-  void example(float x) {
+  void example(float x)
+  {
     logger.trace(&quot;example: {}&quot;, x);
     logger.info(&quot;example: {}&quot;, x);
     logger.debug(&quot;example: {}&quot;, x);
@@ -3277,11 +3293,11 @@ struct Logger
 <p>FFT operates on complex numbers ; you can expect a <code>real()</code> and <code>complex()</code> members.
 Here is a simple example, which looks for the band with the most amplitude.</p>
 <pre><code class="language-cpp">#pragma once
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
-#include &lt;halp/meta.hpp&gt;
 #include &lt;halp/fft.hpp&gt;
-#include &lt;cmath&gt;
+#include &lt;halp/meta.hpp&gt;
 
 namespace examples::helpers
 {
@@ -3336,10 +3352,10 @@ struct PeakBand
     auto cplx = fft.execute(inputs.audio.channel, frames);
 
     // Compute the band with the highest amplitude
-    for (int k = 0; k &lt; frames / 2; k++)
+    for(int k = 0; k &lt; frames / 2; k++)
     {
       const double mag_squared = std::norm(cplx[k]);
-      if (mag_squared &gt; outputs.peak)
+      if(mag_squared &gt; outputs.peak)
       {
         outputs.peak = mag_squared;
         outputs.band = k;
@@ -3426,11 +3442,11 @@ halp::accurate&lt;halp::knob_i32&lt;&quot;Blah&quot;, int&gt;&gt; my_widget;
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
 #include &lt;avnd/concepts/parameter.hpp&gt;
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
 #include &lt;halp/sample_accurate_controls.hpp&gt;
-#include &lt;cmath&gt;
 
 namespace examples
 {
@@ -3459,7 +3475,7 @@ struct SampleAccurateFilterExample
   void operator()()
   {
     // The output is copied at the same timestamp at which each input happened.
-    for (auto&amp; [timestamp, value] : inputs.value.values)
+    for(auto&amp; [timestamp, value] : inputs.value.values)
     {
       outputs.value.values[timestamp] = cos(value * value) * cos(value);
     }
@@ -4075,11 +4091,10 @@ using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 <p>In this case, one can omit all the functions and most of the pipeline layout, 
 and only define for instance an UBO, samplers and a fragment shader.</p>
 <pre><code class="language-cpp">#pragma once
-#include &lt;gpp/meta.hpp&gt;
-#include &lt;gpp/ports.hpp&gt;
 #include &lt;gpp/commands.hpp&gt;
 #include &lt;gpp/layout.hpp&gt;
-
+#include &lt;gpp/meta.hpp&gt;
+#include &lt;gpp/ports.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 
 namespace examples
@@ -4089,17 +4104,25 @@ struct GpuSolidColorExample
   halp_meta(name, &quot;Solid color&quot;);
   halp_meta(uuid, &quot;c9a5fd8e-b66e-41ff-8feb-bca2cdab4990&quot;);
 
-  struct layout {
-    enum { graphics };
+  struct layout
+  {
+    enum
+    {
+      graphics
+    };
 
     // Here we only need a fragment output
-    struct fragment_output {
-      gpp_attribute(0, fragColor, float[4]) fragColor;
+    struct fragment_output
+    {
+      gpp_attribute(0, fragColor, float[4])
+      fragColor;
     } fragment_output;
 
     // We define one UBO with a vec4: our solid color
-    struct bindings {
-      struct custom_ubo {
+    struct bindings
+    {
+      struct custom_ubo
+      {
         halp_meta(name, &quot;custom&quot;);
         halp_meta(binding, 0);
         halp_flags(std140, ubo);
@@ -4109,21 +4132,23 @@ struct GpuSolidColorExample
     };
   };
 
-  struct {
+  struct
+  {
     // Make this uniform visible as a port
     gpp::uniform_control_port&lt;
-        halp::color_chooser&lt;&quot;Color&quot;&gt;
-      , &amp;layout::bindings::custom_ubo::col
-    &gt; color;
+        halp::color_chooser&lt;&quot;Color&quot;&gt;, &amp;layout::bindings::custom_ubo::col&gt;
+        color;
   } inputs;
 
-  struct {
+  struct
+  {
     // Make an output port from the fragment output
     gpp::color_attachment_port&lt;&quot;Color output&quot;, &amp;layout::fragment_output&gt; out;
   } outputs;
 
   // Trivial fragment shader
-  std::string_view fragment() {
+  std::string_view fragment()
+  {
     return R&quot;_(
 void main() {
   fragColor = color;
@@ -4141,15 +4166,13 @@ void main() {
 <li>The texture also comes from the node's code.</li>
 </ul>
 <pre><code class="language-cpp">#pragma once
-#include &lt;halp/static_string.hpp&gt;
-#include &lt;halp/controls.hpp&gt;
 #include &lt;avnd/common/member_reflection.hpp&gt;
-
+#include &lt;cmath&gt;
+#include &lt;gpp/commands.hpp&gt;
 #include &lt;gpp/meta.hpp&gt;
 #include &lt;gpp/ports.hpp&gt;
-#include &lt;gpp/commands.hpp&gt;
-
-#include &lt;cmath&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/static_string.hpp&gt;
 namespace examples
 {
 
@@ -4162,28 +4185,38 @@ struct GpuFilterExample
   static constexpr struct layout
   {
     halp_flags(graphics);
-    struct vertex_input {
-      gpp_attribute(0, v_position, float[3], position) pos;
-      gpp_attribute(1, v_texcoord, float[2], texcoord) tex;
+    struct vertex_input
+    {
+      gpp_attribute(0, v_position, float[3], position)
+      pos;
+      gpp_attribute(1, v_texcoord, float[2], texcoord)
+      tex;
     } vertex_input;
 
-    struct vertex_output {
-      gpp_attribute(0, texcoord,float[2], texcoord) tex;
+    struct vertex_output
+    {
+      gpp_attribute(0, texcoord, float[2], texcoord)
+      tex;
       gpp::vertex_position_out position;
     } vertex_output;
 
-    struct fragment_input {
-      gpp_attribute(0, texcoord, float[2], texcoord) tex;
+    struct fragment_input
+    {
+      gpp_attribute(0, texcoord, float[2], texcoord)
+      tex;
     } fragment_input;
 
-    struct fragment_output {
-      gpp_attribute(0, fragColor, float[4], color) col;
+    struct fragment_output
+    {
+      gpp_attribute(0, fragColor, float[4], color)
+      col;
     } fragment_output;
 
     // Define the ubos, samplers, etc.
     struct bindings
     {
-      struct custom_ubo {
+      struct custom_ubo
+      {
         halp_meta(name, &quot;custom&quot;);
         halp_flags(std140, ubo);
 
@@ -4199,7 +4232,8 @@ struct GpuFilterExample
   using bindings = decltype(layout::bindings);
   using uniforms = decltype(bindings::ubo);
 
-  struct {
+  struct
+  {
     // If samplers &amp; buffers are referenced here the GPU side of things
     // will be automatically allocated as they are expect to come from &quot;outside&quot;
     gpp::uniform_control_port&lt;halp::hslider_f32&lt;&quot;Alpha&quot;&gt;, &amp;uniforms::slider&gt; bright;
@@ -4208,7 +4242,8 @@ struct GpuFilterExample
     halp::hslider_f32&lt;&quot;Other&quot;&gt; other;
   } inputs;
 
-  struct {
+  struct
+  {
     gpp::color_attachment_port&lt;&quot;Main out&quot;, &amp;layout::fragment_output::col&gt; fragColor;
   } outputs;
 
@@ -4238,30 +4273,21 @@ void main()
     // In this example we test the automatic UBO filling with the inputs declared above.
 
     // Here the surrounding environment makes sure that the UBO already has a handle
-    auto ubo = co_yield gpp::get_ubo_handle{
-      .binding = lay.bindings.ubo.binding()
-    };
+    auto ubo = co_yield gpp::get_ubo_handle{.binding = lay.bindings.ubo.binding()};
 
     // Upload some data into it, using an input (non-uniform) of our node
     using namespace std;
     float xy[2] = {cos(inputs.other), sin(inputs.other)};
 
     co_yield gpp::dynamic_ubo_upload{
-        .handle = ubo,
-        .offset = 0,
-        .size = sizeof(xy),
-        .data = &amp;xy
-    };
+        .handle = ubo, .offset = 0, .size = sizeof(xy), .data = &amp;xy};
 
     // The sampler is not used by the inputs block, so we have to allocate it ourselves
-    int sz = 16*16*4;
+    int sz = 16 * 16 * 4;
     if(!tex_handle)
     {
       this-&gt;tex_handle = co_yield gpp::texture_allocation{
-          .binding = lay.bindings.texture_input.binding()
-        , .width = 16
-        , .height = 16
-      };
+          .binding = lay.bindings.texture_input.binding(), .width = 16, .height = 16};
     }
 
     // And upload some data
@@ -4270,16 +4296,13 @@ void main()
       tex[i] = rand();
 
     co_yield gpp::texture_upload{
-        .handle = tex_handle
-      , .offset = 0
-      , .size = sz
-      , .data = tex.data()
-    };
+        .handle = tex_handle, .offset = 0, .size = sz, .data = tex.data()};
   }
 
   gpp::co_release release()
   {
-    if(tex_handle) {
+    if(tex_handle)
+    {
       co_yield gpp::texture_release{.handle = tex_handle};
       tex_handle = nullptr;
     }
@@ -4297,15 +4320,14 @@ private:
 Instead of <code>draw</code>, the method in which to run compute dispatch calls is called <code>dispatch</code>.</p>
 <p>Here is an example:</p>
 <pre><code class="language-cpp">#pragma once
-#include &lt;halp/static_string.hpp&gt;
-#include &lt;halp/controls.hpp&gt;
 #include &lt;avnd/common/member_reflection.hpp&gt;
 #include &lt;fmt/format.h&gt;
 #include &lt;fmt/printf.h&gt;
-
+#include &lt;gpp/commands.hpp&gt;
 #include &lt;gpp/meta.hpp&gt;
 #include &lt;gpp/ports.hpp&gt;
-#include &lt;gpp/commands.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/static_string.hpp&gt;
 
 namespace examples
 {
@@ -4330,7 +4352,8 @@ struct GpuComputeExample
     struct bindings
     {
       // Each binding is a struct member
-      struct {
+      struct
+      {
         halp_meta(name, &quot;my_buf&quot;);
         halp_meta(binding, 0);
         halp_flags(std140, buffer, load, store);
@@ -4340,7 +4363,8 @@ struct GpuComputeExample
       } my_buf;
 
       // Define the members of our ubos
-      struct custom_ubo {
+      struct custom_ubo
+      {
         halp_meta(name, &quot;custom&quot;);
         halp_meta(binding, 1);
         halp_flags(std140, ubo);
@@ -4349,7 +4373,8 @@ struct GpuComputeExample
         gpp::uniform&lt;&quot;height&quot;, int&gt; height;
       } ubo;
 
-      struct  {
+      struct
+      {
         halp_meta(name, &quot;img&quot;)
         halp_meta(format, &quot;rgba32f&quot;)
         halp_meta(binding, 2);
@@ -4363,24 +4388,25 @@ struct GpuComputeExample
 
   // Definition of our ports which will get parsed by the
   // software that instantiate this class
-  struct {
-      // Here we use some helper types in the usual fashion
-      gpp::image_input_port&lt;&quot;Image&quot;, &amp;bindings::image&gt; tex;
+  struct
+  {
+    // Here we use some helper types in the usual fashion
+    gpp::image_input_port&lt;&quot;Image&quot;, &amp;bindings::image&gt; tex;
 
-      gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Width&quot;, halp::range{1, 1000, 100}&gt;
-        , &amp;uniforms::width
-      &gt; width;
+    gpp::uniform_control_port&lt;
+        halp::hslider_i32&lt;&quot;Width&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::width&gt;
+        width;
 
-      gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Height&quot;, halp::range{1, 1000, 100}&gt;
-        , &amp;uniforms::height
-      &gt; height;
+    gpp::uniform_control_port&lt;
+        halp::hslider_i32&lt;&quot;Height&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::height&gt;
+        height;
   } inputs;
 
   // The output port on which we write the average color
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       halp_meta(name, &quot;color&quot;)
       float value[4];
     } color_out;
@@ -4427,7 +4453,8 @@ void main()
     const int h = this-&gt;inputs.height / downscale;
     if(last_w != w || last_h != h)
     {
-      if(this-&gt;buf) {
+      if(this-&gt;buf)
+      {
         co_yield gpp::buffer_release{.handle = buf};
         buf = nullptr;
       }
@@ -4442,9 +4469,7 @@ void main()
       if(!this-&gt;buf)
       {
         this-&gt;buf = co_yield gpp::static_allocation{
-           .binding = lay.bindings.my_buf.binding()
-         , .size = bytes
-        };
+            .binding = lay.bindings.my_buf.binding(), .size = bytes};
       }
     }
   }
@@ -4452,7 +4477,8 @@ void main()
   // Relaease allocated data
   gpp::co_release release()
   {
-    if(buf) {
+    if(buf)
+    {
       co_yield gpp::buffer_release{.handle = buf};
       buf = nullptr;
     }
@@ -4474,11 +4500,8 @@ void main()
     co_yield gpp::compute_dispatch{.x = 1, .y = 1, .z = 1};
 
     // Request an asynchronous readback
-    gpp::buffer_awaiter readback = co_yield gpp::readback_buffer{
-        .handle = buf
-      , .offset = 0
-      , .size = bytes
-    };
+    gpp::buffer_awaiter readback
+        = co_yield gpp::readback_buffer{.handle = buf, .offset = 0, .size = bytes};
 
     co_yield gpp::end_compute_pass{};
 
@@ -4493,7 +4516,8 @@ void main()
     auto&amp; final = outputs.color_out.value;
     std::fill(std::begin(final), std::end(final), 0.f);
 
-    for(int i = 0; i &lt; w * h; i++) {
+    for(int i = 0; i &lt; w * h; i++)
+    {
       for(int j = 0; j &lt; 4; j++)
         final[j] += flt[i][j];
     }

@@ -174,7 +174,8 @@ struct Logger
 
   // Helpers for referring to local functions.
   // Ideally metaclasses would make that obsolete.
-  void example(float x) {
+  void example(float x)
+  {
     logger.trace(&quot;example: {}&quot;, x);
     logger.info(&quot;example: {}&quot;, x);
     logger.debug(&quot;example: {}&quot;, x);

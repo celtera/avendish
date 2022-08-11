@@ -139,15 +139,14 @@
 Instead of <code>draw</code>, the method in which to run compute dispatch calls is called <code>dispatch</code>.</p>
 <p>Here is an example:</p>
 <pre><code class="language-cpp">#pragma once
-#include &lt;halp/static_string.hpp&gt;
-#include &lt;halp/controls.hpp&gt;
 #include &lt;avnd/common/member_reflection.hpp&gt;
 #include &lt;fmt/format.h&gt;
 #include &lt;fmt/printf.h&gt;
-
+#include &lt;gpp/commands.hpp&gt;
 #include &lt;gpp/meta.hpp&gt;
 #include &lt;gpp/ports.hpp&gt;
-#include &lt;gpp/commands.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/static_string.hpp&gt;
 
 namespace examples
 {
@@ -172,7 +171,8 @@ struct GpuComputeExample
     struct bindings
     {
       // Each binding is a struct member
-      struct {
+      struct
+      {
         halp_meta(name, &quot;my_buf&quot;);
         halp_meta(binding, 0);
         halp_flags(std140, buffer, load, store);
@@ -182,7 +182,8 @@ struct GpuComputeExample
       } my_buf;
 
       // Define the members of our ubos
-      struct custom_ubo {
+      struct custom_ubo
+      {
         halp_meta(name, &quot;custom&quot;);
         halp_meta(binding, 1);
         halp_flags(std140, ubo);
@@ -191,7 +192,8 @@ struct GpuComputeExample
         gpp::uniform&lt;&quot;height&quot;, int&gt; height;
       } ubo;
 
-      struct  {
+      struct
+      {
         halp_meta(name, &quot;img&quot;)
         halp_meta(format, &quot;rgba32f&quot;)
         halp_meta(binding, 2);
@@ -205,24 +207,25 @@ struct GpuComputeExample
 
   // Definition of our ports which will get parsed by the
   // software that instantiate this class
-  struct {
-      // Here we use some helper types in the usual fashion
-      gpp::image_input_port&lt;&quot;Image&quot;, &amp;bindings::image&gt; tex;
+  struct
+  {
+    // Here we use some helper types in the usual fashion
+    gpp::image_input_port&lt;&quot;Image&quot;, &amp;bindings::image&gt; tex;
 
-      gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Width&quot;, halp::range{1, 1000, 100}&gt;
-        , &amp;uniforms::width
-      &gt; width;
+    gpp::uniform_control_port&lt;
+        halp::hslider_i32&lt;&quot;Width&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::width&gt;
+        width;
 
-      gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Height&quot;, halp::range{1, 1000, 100}&gt;
-        , &amp;uniforms::height
-      &gt; height;
+    gpp::uniform_control_port&lt;
+        halp::hslider_i32&lt;&quot;Height&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::height&gt;
+        height;
   } inputs;
 
   // The output port on which we write the average color
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       halp_meta(name, &quot;color&quot;)
       float value[4];
     } color_out;
@@ -269,7 +272,8 @@ void main()
     const int h = this-&gt;inputs.height / downscale;
     if(last_w != w || last_h != h)
     {
-      if(this-&gt;buf) {
+      if(this-&gt;buf)
+      {
         co_yield gpp::buffer_release{.handle = buf};
         buf = nullptr;
       }
@@ -284,9 +288,7 @@ void main()
       if(!this-&gt;buf)
       {
         this-&gt;buf = co_yield gpp::static_allocation{
-           .binding = lay.bindings.my_buf.binding()
-         , .size = bytes
-        };
+            .binding = lay.bindings.my_buf.binding(), .size = bytes};
       }
     }
   }
@@ -294,7 +296,8 @@ void main()
   // Relaease allocated data
   gpp::co_release release()
   {
-    if(buf) {
+    if(buf)
+    {
       co_yield gpp::buffer_release{.handle = buf};
       buf = nullptr;
     }
@@ -316,11 +319,8 @@ void main()
     co_yield gpp::compute_dispatch{.x = 1, .y = 1, .z = 1};
 
     // Request an asynchronous readback
-    gpp::buffer_awaiter readback = co_yield gpp::readback_buffer{
-        .handle = buf
-      , .offset = 0
-      , .size = bytes
-    };
+    gpp::buffer_awaiter readback
+        = co_yield gpp::readback_buffer{.handle = buf, .offset = 0, .size = bytes};
 
     co_yield gpp::end_compute_pass{};
 
@@ -335,7 +335,8 @@ void main()
     auto&amp; final = outputs.color_out.value;
     std::fill(std::begin(final), std::end(final), 0.f);
 
-    for(int i = 0; i &lt; w * h; i++) {
+    for(int i = 0; i &lt; w * h; i++)
+    {
       for(int j = 0; j &lt; 4; j++)
         final[j] += flt[i][j];
     }

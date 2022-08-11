@@ -139,13 +139,13 @@
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
 #include &lt;avnd/concepts/parameter.hpp&gt;
+#include &lt;boost/pfr.hpp&gt;
+#include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
 #include &lt;halp/controls.hpp&gt;
 #include &lt;halp/controls_fmt.hpp&gt;
 #include &lt;halp/meta.hpp&gt;
 #include &lt;halp/sample_accurate_controls.hpp&gt;
-#include &lt;boost/pfr.hpp&gt;
-#include &lt;cmath&gt;
 
 namespace examples
 {
@@ -274,10 +274,16 @@ struct ControlGallery
     //!   }
     //!
     //! OSC messages can use either the int index or the string.
-    struct enum_t { halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole) };
+    struct enum_t
+    {
+      halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole)
+    };
     halp::accurate&lt;enum_t&gt; simpler_enumeration;
 
-    struct combobox_t { halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange) };
+    struct combobox_t
+    {
+      halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange)
+    };
     halp::accurate&lt;combobox_t&gt; simpler_enumeration_in_a_combobox;
 
     //! Crosshair XY chooser
@@ -292,20 +298,17 @@ struct ControlGallery
   {
     const bool has_impulse = !inputs.impulse_button.values.empty();
     const bool has_button = std::any_of(
-        inputs.button.values.begin(),
-        inputs.button.values.end(),
+        inputs.button.values.begin(), inputs.button.values.end(),
         [](const auto&amp; p) { return p.second == true; });
 
-    if (!has_impulse &amp;&amp; !has_button)
+    if(!has_impulse &amp;&amp; !has_button)
       return;
 
-    avnd::pfr::for_each_field(
-        inputs,
-        [] &lt;typename Control&gt; (const Control&amp; input) {
-          {
-            auto val = input.values.begin()-&gt;second;
-            fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
-          }
+    avnd::pfr::for_each_field(inputs, []&lt;typename Control&gt;(const Control&amp; input) {
+      {
+        auto val = input.values.begin()-&gt;second;
+        fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
+      }
     });
   }
 };
