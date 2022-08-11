@@ -51,6 +51,24 @@ template <typename T>
 concept uniform_port = requires {
   T::uniform();
 };
+
+
+template <typename T>
+concept static_geometry_port = requires (T t) {
+  sizeof(t.buffers);
+  sizeof(t.input);
+  sizeof(typename T::attributes);
+  sizeof(typename T::bindings);
+} && (requires (T t) { t.vertices; } || requires (T t) { t.indices; });
+template <typename T>
+concept dynamic_geometry_port = requires (T t) {
+  t.buffers.size();
+  t.input.size();
+  t.attributes.size();
+  t.bindings.size();
+} && (requires (T t) { t.vertices; } || requires (T t) { t.indices; });
+template <typename T>
+concept geometry_port = static_geometry_port<T> || dynamic_geometry_port<T>;
 }
 
 /*
@@ -81,3 +99,26 @@ struct tester {
 
 };
 */
+
+namespace avnd
+{
+type_or_value_qualification(geometry)
+type_or_value_reflection(geometry)
+type_or_value_accessors(geometry)
+
+type_or_value_qualification(buffers)
+type_or_value_reflection(buffers)
+type_or_value_accessors(buffers)
+
+type_or_value_qualification(bindings)
+type_or_value_reflection(bindings)
+type_or_value_accessors(bindings)
+
+type_or_value_qualification(attributes)
+type_or_value_reflection(attributes)
+type_or_value_accessors(attributes)
+
+type_or_value_qualification(input)
+type_or_value_reflection(input)
+type_or_value_accessors(input)
+}

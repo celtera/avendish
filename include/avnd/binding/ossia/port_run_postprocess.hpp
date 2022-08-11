@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <avnd/binding/ossia/to_value.hpp>
+#include <avnd/binding/ossia/geometry.hpp>
 #include <avnd/common/struct_reflection.hpp>
 // #include <halp/midi.hpp>
 #include <avnd/introspection/input.hpp>
@@ -36,6 +37,11 @@ struct process_after_run
 
   template <typename Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::texture_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
+
+  template <typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::geometry_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 
@@ -163,6 +169,12 @@ struct process_after_run
   template <avnd::callback Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+  }
+
+  template <avnd::geometry_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::geometry_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    load_geometry(ctrl, port.data.geometry);
   }
 };
 

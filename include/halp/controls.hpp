@@ -580,8 +580,14 @@ struct soundfile_port
   HALP_INLINE_FLATTEN operator bool() const noexcept { return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0; }
 
   HALP_INLINE_FLATTEN std::span<const T> channel(int channel) const noexcept { return std::span(soundfile.data[channel], soundfile.frames); }
-  HALP_INLINE_FLATTEN int channels() const noexcept { return soundfile.channels; }
-  HALP_INLINE_FLATTEN int64_t frames() const noexcept { return soundfile.frames; }
+  [[nodiscard]] HALP_INLINE_FLATTEN int channels() const noexcept
+  {
+    return soundfile.channels;
+  }
+  [[nodiscard]] HALP_INLINE_FLATTEN int64_t frames() const noexcept
+  {
+    return soundfile.frames;
+  }
 
   HALP_INLINE_FLATTEN const T* operator[](int channel) const noexcept {
     return soundfile.data[channel];

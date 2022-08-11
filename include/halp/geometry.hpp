@@ -1,0 +1,118 @@
+#pragma once
+#include <cinttypes>
+#include <vector>
+
+namespace halp
+{
+
+// In this example the vertex buffer has
+// all the position attributes, then all the normal attributes
+struct position_normals_geometry
+{
+  struct buffers {
+    struct {
+      enum { dynamic, vertex };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } main_buffer;
+  } buffers;
+
+  // This example uses two successive bindings to one buffer.
+  struct bindings {
+    struct {
+      enum { per_vertex };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } position_binding;
+
+    struct {
+      enum { per_vertex };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } texcoord_binding;
+  };
+
+  struct attributes
+  {
+    struct
+    {
+      enum { position };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 0;
+    } position;
+
+    struct
+    {
+      enum { normal };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 1;
+    } normal;
+  };
+
+  struct {
+    struct {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input0;
+    struct {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input1;
+  } input;
+
+  int vertices = 0;
+  bool dirty{};
+  enum { triangles, counter_clockwise, cull_back };
+};
+
+// This example allows to define the geometry at run-time instead
+
+struct dynamic_geometry
+{
+  struct buffer {
+    void* data{};
+    int64_t size{};
+    bool dirty{};
+  };
+
+  struct binding {
+    int stride{};
+    enum { per_vertex, per_instance } classification{};
+    int step_rate{};
+  };
+
+  struct attribute {
+    int binding = 0;
+    enum : uint32_t { position, tex_coord, color, normal, tangent } location{};
+    enum { float4, float3, float2, float1, uint4, uint2, uint1 } format{};
+    int32_t offset{};
+  };
+
+  struct input {
+    int buffer{}; // Index of the buffer to use
+    int64_t offset{};
+  };
+
+  std::vector<buffer> buffers;
+  std::vector<binding> bindings;
+  std::vector<attribute> attributes;
+  std::vector<input> input;
+  int vertices = 0;
+  enum { triangles, triangle_strip, triangle_fan, lines, line_strip, points } topology;
+  enum { none, front, back } cull_mode;
+  enum { counter_clockwise, clockwise } front_face;
+
+  struct {
+    int buffer{-1};
+    int64_t offset{};
+    enum { uint16, uint32 } format{};
+  } index;
+
+  bool dirty{};
+};
+
+
+}

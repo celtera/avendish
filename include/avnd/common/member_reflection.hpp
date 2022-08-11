@@ -16,4 +16,6 @@ struct member_reflection<member>
   using class_type = T;
 };
 
+template<auto M>
+using member_type = typename member_reflection<M>::member_type;
 }

@@ -60,6 +60,11 @@ struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
+template <typename N, avnd::geometry_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::geometry_inlet;
+};
 
 template <typename N, typename T>
 struct get_ossia_outlet_type;
@@ -92,6 +97,11 @@ template <typename N, avnd::callback T>
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::value_outlet;
+};
+template <typename N, avnd::geometry_port T>
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::geometry_outlet;
 };
 
 template <typename T>
@@ -313,6 +323,12 @@ struct setup_inlets
   {
     inlets.push_back(std::addressof(port));
   }
+  template <std::size_t Idx, avnd::geometry_port Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::geometry_inlet& port)
+      const noexcept
+  {
+    inlets.push_back(std::addressof(port));
+  }
 };
 
 template <typename Exec_T>
@@ -359,6 +375,13 @@ struct setup_outlets
 
   template <std::size_t Idx, typename Field>
   void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_outlet& port)
+      const noexcept
+  {
+    outlets.push_back(std::addressof(port));
+  }
+
+  template <std::size_t Idx, avnd::geometry_port Field>
+  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::geometry_outlet& port)
       const noexcept
   {
     outlets.push_back(std::addressof(port));

@@ -5,6 +5,7 @@
 #include <avnd/common/coroutines.hpp>
 #include <avnd/common/aggregates.hpp>
 #include <avnd/common/index.hpp>
+#include <avnd/concepts/generic.hpp>
 
 #include <cassert>
 #include <utility>
@@ -23,8 +24,10 @@ constexpr void for_nth(int k, auto&& f)
 }
 
 template <class T, class F>
+requires (!avnd::vector_ish<std::decay_t<T>>)
 constexpr void for_each_field_ref(T&& value, F&& func)
 {
+  static_assert(!requires { value.size(); });
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
@@ -43,6 +46,7 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 #endif
 }
 template <class T, class F>
+requires (!avnd::vector_ish<T>)
 constexpr void for_each_field_ref_n(T&& value, F&& func)
 {
 #if AVND_USE_BOOST_PFR
@@ -85,6 +89,16 @@ void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
   for (auto& v : value)
   {
     for_each_field_ref(v, func);
+  }
+}
+
+template <typename T, class F>
+requires avnd::vector_ish<std::decay_t<T>>
+void for_each_field_ref(T&& value, F&& func)
+{
+  for (auto& v : value)
+  {
+    func(v);
   }
 }
 

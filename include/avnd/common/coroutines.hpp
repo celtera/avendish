@@ -142,7 +142,7 @@ public:
     return iterator{m_coroutine};
   }
 
-  std::default_sentinel_t end() const noexcept { return {}; }
+  [[nodiscard]] std::default_sentinel_t end() const noexcept { return {}; }
 
 private:
   handle m_coroutine;
@@ -251,7 +251,7 @@ public:
     return iterator{m_coroutine};
   }
 
-  std::default_sentinel_t end() const noexcept { return {}; }
+  [[nodiscard]] std::default_sentinel_t end() const noexcept { return {}; }
 
 private:
   handle m_coroutine;

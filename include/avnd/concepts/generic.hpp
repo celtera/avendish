@@ -176,20 +176,20 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
  * Used for instance for inputs and outputs introspection.
  * C++2y: we'd like to have the token "inputs" itself be generic
  */
-#define type_or_value_qualification(Name) \
-  template <typename T>                   \
-  concept Name##_is_value = requires(T t) \
-  {                                       \
-    decltype(T::Name){};                  \
-  };                                      \
-                                          \
-  template <typename T>                   \
-  concept Name##_is_type = requires(T t)  \
-  {                                       \
-    !std::is_void_v<typename T::Name>;    \
-  };                                      \
-                                          \
-  template <typename T>                   \
+#define type_or_value_qualification(Name)            \
+  template <typename T>                              \
+  concept Name##_is_value = requires(T t)            \
+  {                                                  \
+    decltype(std::decay_t<T>::Name){};               \
+  };                                                 \
+                                                     \
+  template <typename T>                              \
+  concept Name##_is_type = requires(T t)             \
+  {                                                  \
+    !std::is_void_v<typename std::decay_t<T>::Name>; \
+  };                                                 \
+                                                     \
+  template <typename T>                              \
   concept has_##Name = Name##_is_type<T> || Name##_is_value<T>;
 
 /**
@@ -229,7 +229,7 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   template <Name##_is_type T>                                               \
   struct Name##_type<T>                                                     \
   {                                                                         \
-    using type = typename T::Name;                                          \
+    using type = typename std::decay_t<T>::Name;                                          \
     using tuple = decltype(pfr::structure_to_typelist(type{}));             \
     static constexpr const auto size = pfr::tuple_size_v<type>;             \
   };                                                                        \
@@ -237,8 +237,19 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   template <Name##_is_value T>                                              \
   struct Name##_type<T>                                                     \
   {                                                                         \
-    using type = std::remove_reference_t<decltype(std::declval<T>().Name)>; \
+    using type = std::remove_reference_t<decltype(std::declval<std::decay_t<T>>().Name)>; \
     using tuple = decltype(pfr::structure_to_typelist(type{}));             \
     static constexpr const auto size = pfr::tuple_size_v<type>;             \
   };
+}
+
+#define type_or_value_accessors(Name)                     \
+template<typename T>                                      \
+requires (Name##_is_type<T> || Name##_is_value<T>)        \
+auto get_##Name(T&& t) -> decltype(auto)                  \
+{                                                         \
+  if constexpr(Name##_is_type<T>)                         \
+    return typename std::decay_t<T>::Name{};              \
+  else if constexpr(Name##_is_value<T>)                   \
+    return std::forward<T>(t).Name;                       \
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/binding/ossia/from_value.hpp>
+#include <avnd/binding/ossia/geometry.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -267,6 +268,12 @@ struct process_before_run
   {
   }
 
+  template <typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::geometry_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    geometry_from_ossia(port.data.geometry, ctrl);
+  }
+
   template <avnd::soundfile_port Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
   {
@@ -358,6 +365,11 @@ struct process_before_run
 
   template <avnd::callback Field, std::size_t Idx>
   void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
+
+  template <typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, ossia::geometry_outlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
 };
