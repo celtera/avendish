@@ -11,10 +11,9 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdlib>
+#include <type_traits>
 #include <utility>
 #include <vector>
-
-#include <type_traits>
 
 namespace avnd
 {

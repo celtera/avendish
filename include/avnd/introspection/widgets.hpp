@@ -3,7 +3,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <array>
-
 #include <string_view>
 #include <type_traits>
 

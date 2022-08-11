@@ -11,7 +11,6 @@
 #include <pluginterfaces/vst/vstpresetkeys.h>
 
 #include <algorithm>
-
 #include <string_view>
 
 namespace stv3

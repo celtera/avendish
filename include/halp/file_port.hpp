@@ -7,9 +7,8 @@
 #include <halp/static_string.hpp>
 
 #include <cstddef>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace halp
 {

@@ -2,9 +2,8 @@
 #include <avnd/common/coroutines.hpp>
 #include <m_pd.h>
 
-#include <variant>
-
 #include <string_view>
+#include <variant>
 
 namespace pd
 {

@@ -6,7 +6,6 @@
 #include <boost/mp11/list.hpp>
 
 #include <functional>
-
 #include <type_traits>
 
 namespace avnd

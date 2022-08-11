@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cassert>
-
 #include <string_view>
 
 namespace avnd

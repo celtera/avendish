@@ -6,9 +6,8 @@
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/concepts/generic.hpp>
 
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 namespace avnd
 {

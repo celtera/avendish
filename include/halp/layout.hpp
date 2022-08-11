@@ -7,7 +7,6 @@
 #include <halp/static_string.hpp>
 
 #include <functional>
-
 #include <string_view>
 
 namespace halp

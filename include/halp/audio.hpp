@@ -9,7 +9,6 @@
 
 #include <cstdint>
 #include <functional>
-
 #include <string_view>
 namespace halp
 {

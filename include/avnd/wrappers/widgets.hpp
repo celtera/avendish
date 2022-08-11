@@ -5,7 +5,6 @@
 #include <avnd/introspection/widgets.hpp>
 
 #include <string>
-
 #include <string_view>
 #include <type_traits>
 

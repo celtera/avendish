@@ -9,7 +9,6 @@
 #include <cinttypes>
 #include <cstdint>
 #include <exception>
-
 #include <string_view>
 
 namespace stv3

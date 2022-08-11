@@ -103,6 +103,6 @@ IncludeCategories:
     Priority:        70
   - Regex:           '<([[:alnum:]_]+\/?)+.(h|hpp)>'
     Priority:        80
-  - Regex:           '<[[:alnum:]]+>'
+  - Regex:           '<[[:alnum:]_]+>'
     Priority:        900
     

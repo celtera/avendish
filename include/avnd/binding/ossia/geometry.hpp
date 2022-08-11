@@ -1,6 +1,7 @@
 #pragma once
 
 #include <avnd/common/enums.hpp>
+#include <avnd/common/for_nth.hpp>
 #include <ossia/dataflow/geometry_port.hpp>
 
 #include <memory>

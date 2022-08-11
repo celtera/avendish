@@ -4,9 +4,8 @@
 
 #include <avnd/common/index_sequence.hpp>
 
-#include <tuple>
-
 #include <string_view>
+#include <tuple>
 
 namespace avnd
 {

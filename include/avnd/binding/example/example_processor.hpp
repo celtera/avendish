@@ -16,9 +16,8 @@
 #include <halp/fft.hpp>
 #include <halp/log.hpp>
 
-#include <utility>
-
 #include <string_view>
+#include <utility>
 namespace exhs
 {
 struct config

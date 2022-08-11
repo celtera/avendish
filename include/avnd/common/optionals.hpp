@@ -6,7 +6,6 @@
 
 #include <optional>
 #include <span>
-
 #include <type_traits>
 
 namespace avnd
