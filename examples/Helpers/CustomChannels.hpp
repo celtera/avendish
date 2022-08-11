@@ -28,7 +28,8 @@ public:
   struct
   {
     halp::fixed_audio_bus<"Input", double, 2> audio;
-    halp::hslider_i32<"Channels", halp::range{.min = 0., .max = 100., .init = 1.}> channels;
+    halp::hslider_i32<"Channels", halp::range{.min = 0., .max = 100., .init = 1.}>
+        channels;
   } inputs;
 
   struct
@@ -36,10 +37,7 @@ public:
     halp::variable_audio_bus<"Output", double> audio;
   } outputs;
 
-  void prepare(halp::setup s)
-  {
-    outputs.audio.request_channels(inputs.channels.value);
-  }
+  void prepare(halp::setup s) { outputs.audio.request_channels(inputs.channels.value); }
 
   void operator()(halp::tick t)
   {

@@ -1,7 +1,7 @@
 #pragma once
 #include <avnd/common/aggregates.hpp>
-#include <avnd/common/member_reflection.hpp>
 #include <avnd/common/for_nth.hpp>
+#include <avnd/common/member_reflection.hpp>
 #include <boost/mp11/algorithm.hpp>
 
 #include <optional>
@@ -49,17 +49,26 @@ struct ubitset
   {
     const auto [quo, rem] = quo_rem(idx);
     const auto b = enabled[quo];
-    switch (rem)
+    switch(rem)
     {
-      case 0: return b.a;
-      case 1: return b.b;
-      case 2: return b.c;
-      case 3: return b.d;
-      case 4: return b.e;
-      case 5: return b.f;
-      case 6: return b.g;
-      case 7: return b.h;
-      default: return 0;
+      case 0:
+        return b.a;
+      case 1:
+        return b.b;
+      case 2:
+        return b.c;
+      case 3:
+        return b.d;
+      case 4:
+        return b.e;
+      case 5:
+        return b.f;
+      case 6:
+        return b.g;
+      case 7:
+        return b.h;
+      default:
+        return 0;
     }
   }
 
@@ -67,16 +76,32 @@ struct ubitset
   {
     const auto [quo, rem] = quo_rem(idx);
     auto& b = enabled[quo];
-    switch (rem)
+    switch(rem)
     {
-      case 0: b.a = bo; break;
-      case 1: b.b = bo; break;
-      case 2: b.c = bo; break;
-      case 3: b.d = bo; break;
-      case 4: b.e = bo; break;
-      case 5: b.f = bo; break;
-      case 6: b.g = bo; break;
-      case 7: b.h = bo; break;
+      case 0:
+        b.a = bo;
+        break;
+      case 1:
+        b.b = bo;
+        break;
+      case 2:
+        b.c = bo;
+        break;
+      case 3:
+        b.d = bo;
+        break;
+      case 4:
+        b.e = bo;
+        break;
+      case 5:
+        b.f = bo;
+        break;
+      case 6:
+        b.g = bo;
+        break;
+      case 7:
+        b.h = bo;
+        break;
     }
   }
 };
@@ -92,12 +117,7 @@ requires(is_pod_v<T>) struct optionalize_all<T>
   {
     // Note that m_storage won't be zeroed - we
     // only care about m_engaged
-    return {
-            .m_storage = { },
-            .m_engaged = {
-                      .enabled = {}
-        }
-    };
+    return {.m_storage = {}, .m_engaged = {.enabled = {}}};
   }
 
   template <auto member>
@@ -145,111 +165,101 @@ struct optionalize_all
   ~optionalize_all()
   {
     std::size_t i = 0;
-      avnd::pfr::for_each_field(
-          *reinterpret_cast<T*>(m_storage),
-          [&]<typename F>(F& field)
-          {
-            if constexpr (!is_pod_v<F>)
-              if (m_engaged.test(i))
-                std::destroy_at(&field);
-            i++;
-          });
+    avnd::pfr::for_each_field(
+        *reinterpret_cast<T*>(m_storage), [&]<typename F>(F& field) {
+          if constexpr(!is_pod_v<F>)
+            if(m_engaged.test(i))
+              std::destroy_at(&field);
+          i++;
+        });
   }
 
   optionalize_all(const optionalize_all& other)
       : m_engaged{other.m_engaged}
   {
     std::size_t i = 0;
-      avnd::pfr::for_each_field(
-          *reinterpret_cast<T*>(m_storage),
-          [&]<typename F>(F& field)
-          {
-            if (other.m_engaged.test(i))
-            {
-              const std::ptrdiff_t offset = (char*)(&field) - m_storage;
-              std::construct_at(
-                  &field, *reinterpret_cast<const F*>(other.m_storage + offset));
-            }
-            i++;
-          });
+    avnd::pfr::for_each_field(
+        *reinterpret_cast<T*>(m_storage),
+        [&]<typename F>(F& field) {
+      if(other.m_engaged.test(i))
+      {
+        const std::ptrdiff_t offset = (char*)(&field) - m_storage;
+        std::construct_at(&field, *reinterpret_cast<const F*>(other.m_storage + offset));
+      }
+      i++;
+        });
   }
 
   optionalize_all(optionalize_all&& other) noexcept
       : m_engaged{other.m_engaged}
   {
     std::size_t i = 0;
-      avnd::pfr::for_each_field(
-          *reinterpret_cast<T*>(m_storage),
-          [&]<typename F>(F& field)
+    avnd::pfr::for_each_field(
+        *reinterpret_cast<T*>(m_storage), [&]<typename F>(F& field) {
+          if(other.m_engaged.test(i))
           {
-            if (other.m_engaged.test(i))
-            {
-              const std::ptrdiff_t offset = (char*)(&field) - m_storage;
-              std::construct_at(
-                  &field, std::move(*reinterpret_cast<F*>(other.m_storage + offset)));
-            }
-            i++;
-          });
+            const std::ptrdiff_t offset = (char*)(&field) - m_storage;
+            std::construct_at(
+                &field, std::move(*reinterpret_cast<F*>(other.m_storage + offset)));
+          }
+          i++;
+        });
   }
 
   optionalize_all& operator=(const optionalize_all& other)
   {
     std::size_t i = 0;
-      avnd::pfr::for_each_field(
-          *reinterpret_cast<T*>(m_storage),
-          [&]<typename F>(F& field)
-          {
-            if (m_engaged.test(i) && other.m_engaged.test(i))
-            {
-              const std::ptrdiff_t offset = (char*)(&field) - m_storage;
-              field = *reinterpret_cast<const F*>(other.m_storage + offset);
-            }
-            else if (m_engaged.test(i) && !other.m_engaged.test(i))
-            {
-              std::destroy_at(&field);
-              m_engaged.set(i, false);
-            }
-            else if (!m_engaged.test(i) && other.m_engaged.test(i))
-            {
-              const std::ptrdiff_t offset = (char*)(&field) - m_storage;
-              std::construct_at(
-                  &field, *reinterpret_cast<const F*>(other.m_storage + offset));
-              m_engaged.set(i, true);
-            }
-            // Final case where none are engaged: do nothing
-            i++;
-          });
+    avnd::pfr::for_each_field(
+        *reinterpret_cast<T*>(m_storage),
+        [&]<typename F>(F& field) {
+      if(m_engaged.test(i) && other.m_engaged.test(i))
+      {
+        const std::ptrdiff_t offset = (char*)(&field) - m_storage;
+        field = *reinterpret_cast<const F*>(other.m_storage + offset);
+      }
+      else if(m_engaged.test(i) && !other.m_engaged.test(i))
+      {
+        std::destroy_at(&field);
+        m_engaged.set(i, false);
+      }
+      else if(!m_engaged.test(i) && other.m_engaged.test(i))
+      {
+        const std::ptrdiff_t offset = (char*)(&field) - m_storage;
+        std::construct_at(&field, *reinterpret_cast<const F*>(other.m_storage + offset));
+        m_engaged.set(i, true);
+      }
+      // Final case where none are engaged: do nothing
+      i++;
+        });
     return *this;
   }
 
   optionalize_all& operator=(optionalize_all&& other) noexcept
   {
     std::size_t i = 0;
-      avnd::pfr::for_each_field(
-          *reinterpret_cast<T*>(m_storage),
-          [&]<typename F>(F& field)
-          {
-            if (m_engaged.test(i) && other.m_engaged.test(i))
-            {
-              const std::ptrdiff_t offset = (char*)(&field) - m_storage;
-              field = std::move(*reinterpret_cast<const F*>(other.m_storage + offset));
-            }
-            else if (m_engaged.test(i) && !other.m_engaged.test(i))
-            {
-              std::destroy_at(&field);
-              m_engaged.set(i, false);
-            }
-            else if (!m_engaged.test(i) && other.m_engaged.test(i))
-            {
-              const std::ptrdiff_t offset = (char*)(&field) - m_storage;
-              std::construct_at(
-                  &field,
-                  std::move(*reinterpret_cast<const F*>(other.m_storage + offset)));
-              m_engaged.set(i, true);
-            }
-            // Final case where none are engaged: do nothing
-            i++;
-          });
+    avnd::pfr::for_each_field(
+        *reinterpret_cast<T*>(m_storage),
+        [&]<typename F>(F& field) {
+      if(m_engaged.test(i) && other.m_engaged.test(i))
+      {
+        const std::ptrdiff_t offset = (char*)(&field) - m_storage;
+        field = std::move(*reinterpret_cast<const F*>(other.m_storage + offset));
+      }
+      else if(m_engaged.test(i) && !other.m_engaged.test(i))
+      {
+        std::destroy_at(&field);
+        m_engaged.set(i, false);
+      }
+      else if(!m_engaged.test(i) && other.m_engaged.test(i))
+      {
+        const std::ptrdiff_t offset = (char*)(&field) - m_storage;
+        std::construct_at(
+            &field, std::move(*reinterpret_cast<const F*>(other.m_storage + offset)));
+        m_engaged.set(i, true);
+      }
+      // Final case where none are engaged: do nothing
+      i++;
+        });
     return *this;
   }
 
@@ -277,14 +287,14 @@ struct optionalize_all
     constexpr auto idx = index_in_struct(T{}, member);
 
     auto& mem = (reinterpret_cast<T*>(m_storage)->*member);
-    if constexpr (is_pod_v<ret>)
+    if constexpr(is_pod_v<ret>)
     {
       mem = std::forward<U>(value);
       m_engaged.set(idx, true);
     }
     else
     {
-      if (!m_engaged.test(idx))
+      if(!m_engaged.test(idx))
       {
         std::construct_at(&mem, std::forward<U>(value));
         m_engaged.set(idx, true);
@@ -301,9 +311,9 @@ struct optionalize_all
   {
     using ret = avnd::member_type<member>;
     constexpr auto idx = index_in_struct(T{}, member);
-    if constexpr (!is_pod_v<ret>)
+    if constexpr(!is_pod_v<ret>)
     {
-      if (m_engaged.test(idx))
+      if(m_engaged.test(idx))
         std::destroy_at(reinterpret_cast<T*>(m_storage)->*member);
     }
 

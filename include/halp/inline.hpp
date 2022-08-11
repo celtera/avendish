@@ -10,7 +10,6 @@
 #define HALP_INLINE inline
 #endif
 
-
 #if defined(__clang__)
 #define HALP_INLINE_FLATTEN HALP_INLINE __attribute__((flatten))
 #else

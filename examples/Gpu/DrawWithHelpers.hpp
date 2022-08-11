@@ -1,13 +1,11 @@
 #pragma once
-#include <halp/static_string.hpp>
-#include <halp/controls.hpp>
 #include <avnd/common/member_reflection.hpp>
-
+#include <cmath>
+#include <gpp/commands.hpp>
 #include <gpp/meta.hpp>
 #include <gpp/ports.hpp>
-#include <gpp/commands.hpp>
-
-#include <cmath>
+#include <halp/controls.hpp>
+#include <halp/static_string.hpp>
 namespace examples
 {
 
@@ -20,28 +18,38 @@ struct GpuFilterExample
   static constexpr struct layout
   {
     halp_flags(graphics);
-    struct vertex_input {
-      gpp_attribute(0, v_position, float[3], position) pos;
-      gpp_attribute(1, v_texcoord, float[2], texcoord) tex;
+    struct vertex_input
+    {
+      gpp_attribute(0, v_position, float[3], position)
+      pos;
+      gpp_attribute(1, v_texcoord, float[2], texcoord)
+      tex;
     } vertex_input;
 
-    struct vertex_output {
-      gpp_attribute(0, texcoord,float[2], texcoord) tex;
+    struct vertex_output
+    {
+      gpp_attribute(0, texcoord, float[2], texcoord)
+      tex;
       gpp::vertex_position_out position;
     } vertex_output;
 
-    struct fragment_input {
-      gpp_attribute(0, texcoord, float[2], texcoord) tex;
+    struct fragment_input
+    {
+      gpp_attribute(0, texcoord, float[2], texcoord)
+      tex;
     } fragment_input;
 
-    struct fragment_output {
-      gpp_attribute(0, fragColor, float[4], color) col;
+    struct fragment_output
+    {
+      gpp_attribute(0, fragColor, float[4], color)
+      col;
     } fragment_output;
 
     // Define the ubos, samplers, etc.
     struct bindings
     {
-      struct custom_ubo {
+      struct custom_ubo
+      {
         halp_meta(name, "custom");
         halp_flags(std140, ubo);
 
@@ -57,7 +65,8 @@ struct GpuFilterExample
   using bindings = decltype(layout::bindings);
   using uniforms = decltype(bindings::ubo);
 
-  struct {
+  struct
+  {
     // If samplers & buffers are referenced here the GPU side of things
     // will be automatically allocated as they are expect to come from "outside"
     gpp::uniform_control_port<halp::hslider_f32<"Alpha">, &uniforms::slider> bright;
@@ -66,7 +75,8 @@ struct GpuFilterExample
     halp::hslider_f32<"Other"> other;
   } inputs;
 
-  struct {
+  struct
+  {
     gpp::color_attachment_port<"Main out", &layout::fragment_output::col> fragColor;
   } outputs;
 
@@ -96,30 +106,21 @@ void main()
     // In this example we test the automatic UBO filling with the inputs declared above.
 
     // Here the surrounding environment makes sure that the UBO already has a handle
-    auto ubo = co_yield gpp::get_ubo_handle{
-      .binding = lay.bindings.ubo.binding()
-    };
+    auto ubo = co_yield gpp::get_ubo_handle{.binding = lay.bindings.ubo.binding()};
 
     // Upload some data into it, using an input (non-uniform) of our node
     using namespace std;
     float xy[2] = {cos(inputs.other), sin(inputs.other)};
 
     co_yield gpp::dynamic_ubo_upload{
-        .handle = ubo,
-        .offset = 0,
-        .size = sizeof(xy),
-        .data = &xy
-    };
+        .handle = ubo, .offset = 0, .size = sizeof(xy), .data = &xy};
 
     // The sampler is not used by the inputs block, so we have to allocate it ourselves
-    int sz = 16*16*4;
+    int sz = 16 * 16 * 4;
     if(!tex_handle)
     {
       this->tex_handle = co_yield gpp::texture_allocation{
-          .binding = lay.bindings.texture_input.binding()
-        , .width = 16
-        , .height = 16
-      };
+          .binding = lay.bindings.texture_input.binding(), .width = 16, .height = 16};
     }
 
     // And upload some data
@@ -128,16 +129,13 @@ void main()
       tex[i] = rand();
 
     co_yield gpp::texture_upload{
-        .handle = tex_handle
-      , .offset = 0
-      , .size = sz
-      , .data = tex.data()
-    };
+        .handle = tex_handle, .offset = 0, .size = sz, .data = tex.data()};
   }
 
   gpp::co_release release()
   {
-    if(tex_handle) {
+    if(tex_handle)
+    {
       co_yield gpp::texture_release{.handle = tex_handle};
       tex_handle = nullptr;
     }

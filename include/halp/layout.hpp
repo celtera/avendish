@@ -2,16 +2,16 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <halp/meta.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
-#include <halp/meta.hpp>
+
+#include <functional>
 
 #include <string_view>
-#include <functional>
 
 namespace halp
 {
-
 
 enum class layouts
 {
@@ -64,11 +64,11 @@ struct item : item_base
 
 struct image_item_base
 {
-    halp_meta(layout, layouts::control)
-    double x = 0.0;
-    double y = 0.0;
-    double scale = 1.0;
-    std::string_view image;
+  halp_meta(layout, layouts::control)
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+  std::string_view image;
 };
 
 template <auto F>
@@ -87,7 +87,6 @@ struct custom_item_base
   double y = 0.0;
   double scale = 1.0;
 };
-
 
 template <typename T, auto F>
 struct custom_item : custom_item_base<T>
@@ -114,8 +113,6 @@ struct prop
 
 // template<typename T>
 // using prop = ::prop<Ui, layout, T>;
-
-
 
 /* first tentative, not very good but still there for posterity...
 template <int w>

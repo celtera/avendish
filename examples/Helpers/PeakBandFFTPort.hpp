@@ -1,9 +1,9 @@
 #pragma once
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
-#include <halp/meta.hpp>
 #include <halp/fft.hpp>
-#include <cmath>
+#include <halp/meta.hpp>
 
 namespace examples::helpers
 {
@@ -28,12 +28,14 @@ struct PeakBandFFTPort
     halp::audio_spectrum_channel<"In", double> audio;
 
     // Option B with the raw spectrum ; no window is defined.
-    struct {
+    struct
+    {
       halp_meta(name, "In 2");
 
       double* channel{};
       // complex numbers... using value_type = double[2] is also ok
-      struct {
+      struct
+      {
         std::complex<double>* bin;
       } spectrum{};
     } audio_2;
@@ -55,13 +57,13 @@ struct PeakBandFFTPort
       outputs.peak = 0.;
 
       // Compute the band with the highest amplitude
-      for (int k = 0; k < frames / 2; k++)
+      for(int k = 0; k < frames / 2; k++)
       {
         const double ampl = inputs.audio.spectrum.amplitude[k];
         const double phas = inputs.audio.spectrum.phase[k];
         const double mag_squared = ampl * ampl + phas * phas;
 
-        if (mag_squared > outputs.peak)
+        if(mag_squared > outputs.peak)
         {
           outputs.peak = mag_squared;
           outputs.band = k;
@@ -76,11 +78,11 @@ struct PeakBandFFTPort
       outputs.peak_2 = 0.;
 
       // Compute the band with the highest amplitude
-      for (int k = 0; k < frames / 2; k++)
+      for(int k = 0; k < frames / 2; k++)
       {
         const double mag_squared = std::norm(inputs.audio_2.spectrum.bin[k]);
 
-        if (mag_squared > outputs.peak_2)
+        if(mag_squared > outputs.peak_2)
         {
           outputs.peak_2 = mag_squared;
           outputs.band_2 = k;

@@ -38,7 +38,10 @@ struct Controls
     // The enum is a bit harder to do since we want to
     // define the enumerators and the matching strings in one go...
     // First argument after the name is the default (init) value.
-    struct { halp__enum("Enum", Bar, Foo, Bar) } f;
+    struct
+    {
+      halp__enum("Enum", Bar, Foo, Bar)
+    } f;
 
     // halp::range_slider_f32<"Range"> g;
 
@@ -46,7 +49,9 @@ struct Controls
     {
       halp_meta(name, "Combo_A");
       enum widget
-      { combobox };
+      {
+        combobox
+      };
 
       struct range
       {
@@ -56,7 +61,7 @@ struct Controls
 
       float value{};
     } combobox_a;
-/*
+    /*
     struct
     {
         halp_meta(name, "Combo_B");
@@ -81,7 +86,7 @@ struct Controls
 
   void operator()()
   {
-    if (inputs.f == inputs.f.Foo)
+    if(inputs.f == inputs.f.Foo)
     {
       outputs.display = inputs.a + inputs.b;
     }

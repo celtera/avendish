@@ -92,17 +92,17 @@
 #define AVND_FOREACHSUB1_11(M, A, ...) M(A) AVND_FOREACHSUB1_10(M, __VA_ARGS__)
 #define AVND_FOREACHSUB1_12(M, A, ...) M(A) AVND_FOREACHSUB1_11(M, __VA_ARGS__)
 
-#define AVND_ENUM_MATCHER_IMPL_IMPL(N)            \
-  if constexpr (requires { decltype(value)::N; }) \
-  {                                               \
-    ok = ok || (value == (decltype(value)::N));   \
+#define AVND_ENUM_MATCHER_IMPL_IMPL(N)           \
+  if constexpr(requires { decltype(value)::N; }) \
+  {                                              \
+    ok = ok || (value == (decltype(value)::N));  \
   }
 
 #define AVND_ENUM_MATCHER_IMPL2(id, ...)                        \
   {                                                             \
     bool ok = false;                                            \
     AVND_FOREACHSUB1(AVND_ENUM_MATCHER_IMPL_IMPL, __VA_ARGS__); \
-    if (ok)                                                     \
+    if(ok)                                                      \
       return id;                                                \
   }
 
@@ -123,10 +123,10 @@
     TMatcher::N;                      \
   }
 
-#define AVND_TAG_MATCHER_IMPL2(id, ...)                                        \
-  {                                                                            \
-    if constexpr (0 AVND_FOREACHSUB1(AVND_TAG_MATCHER_IMPL_IMPL, __VA_ARGS__)) \
-      return id;                                                               \
+#define AVND_TAG_MATCHER_IMPL2(id, ...)                                       \
+  {                                                                           \
+    if constexpr(0 AVND_FOREACHSUB1(AVND_TAG_MATCHER_IMPL_IMPL, __VA_ARGS__)) \
+      return id;                                                              \
   }
 
 #define AVND_TAG_MATCHER_IMPL(...) AVND_TAG_MATCHER_IMPL2 __VA_ARGS__
@@ -141,42 +141,42 @@
     return defaultvalue;                                            \
   };
 
-#define AVND_ENUM_OR_TAG_MATCHER(member_name, ...)                 \
-  [](auto& container, auto defaultvalue) -> decltype(defaultvalue) \
-  {                                                                \
-    if constexpr (requires { container.member_name; })             \
-    {                                                              \
-      constexpr auto m = AVND_ENUM_MATCHER(__VA_ARGS__);           \
-      return m(container.member_name, defaultvalue);               \
-    }                                                              \
-    else                                                           \
-    {                                                              \
-      constexpr auto m = AVND_TAG_MATCHER(__VA_ARGS__);            \
-      return m(container, defaultvalue);                           \
-    }                                                              \
+#define AVND_ENUM_OR_TAG_MATCHER(member_name, ...)                   \
+  [](auto& container, auto defaultvalue) -> decltype(defaultvalue) { \
+    if constexpr(requires { container.member_name; })                \
+    {                                                                \
+      constexpr auto m = AVND_ENUM_MATCHER(__VA_ARGS__);             \
+      return m(container.member_name, defaultvalue);                 \
+    }                                                                \
+    else                                                             \
+    {                                                                \
+      constexpr auto m = AVND_TAG_MATCHER(__VA_ARGS__);              \
+      return m(container, defaultvalue);                             \
+    }                                                                \
   };
 
-#define AVND_ENUM_CONVERTER_IMPL_IMPL(N)          \
-  if constexpr (requires { decltype(defaultvalue)::N; }) \
-  {                                               \
-    return decltype(defaultvalue)::N;   \
+#define AVND_ENUM_CONVERTER_IMPL_IMPL(N)                \
+  if constexpr(requires { decltype(defaultvalue)::N; }) \
+  {                                                     \
+    return decltype(defaultvalue)::N;                   \
   }
 
 #define AVND_ENUM_CONVERTER_IMPL2(id, ...)                        \
   case id: {                                                      \
     AVND_FOREACHSUB1(AVND_ENUM_CONVERTER_IMPL_IMPL, __VA_ARGS__); \
-    break; \
+    break;                                                        \
   }
 
 #define AVND_ENUM_CONVERTER_IMPL(...) AVND_ENUM_CONVERTER_IMPL2 __VA_ARGS__
 
 #define AVND_CONVERT_ALL_ENUMS(...) AVND_FOREACH(AVND_ENUM_CONVERTER_IMPL, __VA_ARGS__)
 
-#define AVND_ENUM_CONVERTER(...) \
+#define AVND_ENUM_CONVERTER(...)                                               \
   [](auto value, auto defaultvalue) constexpr noexcept->decltype(defaultvalue) \
-  { \
-    switch(value) { \
-      AVND_CONVERT_ALL_ENUMS(__VA_ARGS__); \
-    } \
-    return defaultvalue; \
+  {                                                                            \
+    switch(value)                                                              \
+    {                                                                          \
+      AVND_CONVERT_ALL_ENUMS(__VA_ARGS__);                                     \
+    }                                                                          \
+    return defaultvalue;                                                       \
   };

@@ -47,28 +47,26 @@ public:
 
     // Scan the input channels
     bool ok = tuplet::apply(
-        [&](auto&&... ports)
-        {
-          audio_inlet_scan match{*this};
+        [&](auto&&... ports) {
+      audio_inlet_scan match{*this};
 
-          if constexpr (requires { this->audio_ports.in; })
-            match(this->audio_ports.in);
+      if constexpr(requires { this->audio_ports.in; })
+        match(this->audio_ports.in);
 
-          (match(ports), ...);
-          return match.ok;
+      (match(ports), ...);
+      return match.ok;
         },
         this->ossia_inlets.ports);
 
     // Ensure that we have enough output space
     tuplet::apply(
-        [&](auto&&... ports)
-        {
-          audio_outlet_scan match{*this};
+        [&](auto&&... ports) {
+      audio_outlet_scan match{*this};
 
-          if constexpr (requires { this->audio_ports.out; })
-            match(this->audio_ports.out);
+      if constexpr(requires { this->audio_ports.out; })
+        match(this->audio_ports.out);
 
-          (match(ports), ...);
+      (match(ports), ...);
         },
         this->ossia_outlets.ports);
 
@@ -87,7 +85,7 @@ public:
 
     void operator()(const ossia::audio_inlet& in) noexcept
     {
-      for (const ossia::audio_channel& c : in.data)
+      for(const ossia::audio_channel& c : in.data)
       {
         if(k < in_n)
           ins[k++] = c.data();
@@ -96,7 +94,7 @@ public:
 
     void operator()(ossia::audio_outlet& out) noexcept
     {
-      for (ossia::audio_channel& c : out.data)
+      for(ossia::audio_channel& c : out.data)
       {
         if(k < out_n)
           outs[k++] = c.data();
@@ -106,33 +104,32 @@ public:
     void operator()(const auto& other) noexcept { }
   };
 
-  void initialize_audio_arrays(const double** ins, double** outs, std::size_t kin, std::size_t kout)
+  void initialize_audio_arrays(
+      const double** ins, double** outs, std::size_t kin, std::size_t kout)
   {
     tuplet::apply(
-        [&](auto&&... ports)
-        {
-          initialize_audio match{ins, outs, kin, kout, 0};
+        [&](auto&&... ports) {
+      initialize_audio match{ins, outs, kin, kout, 0};
 
-          if constexpr (requires { this->audio_ports.in; })
-          {
-            match(this->audio_ports.in);
-          }
+      if constexpr(requires { this->audio_ports.in; })
+      {
+        match(this->audio_ports.in);
+      }
 
-          (match(ports), ...);
+      (match(ports), ...);
         },
         this->ossia_inlets.ports);
 
     tuplet::apply(
-        [&](auto&&... ports)
-        {
-          initialize_audio match{ins, outs, kin, kout, 0};
+        [&](auto&&... ports) {
+      initialize_audio match{ins, outs, kin, kout, 0};
 
-          if constexpr (requires { this->audio_ports.out; })
-          {
-            match(this->audio_ports.out);
-          }
+      if constexpr(requires { this->audio_ports.out; })
+      {
+        match(this->audio_ports.out);
+      }
 
-          (match(ports), ...);
+      (match(ports), ...);
         },
         this->ossia_outlets.ports);
   }
@@ -140,7 +137,7 @@ public:
   {
     auto [start, frames] = st.timings(tk);
 
-    if (!this->prepare_run(start, frames))
+    if(!this->prepare_run(start, frames))
     {
       this->finish_run();
       return;
@@ -157,22 +154,20 @@ public:
     std::fill_n(audio_ins, 1 + current_input_channels, nullptr);
     std::fill_n(audio_outs, 1 + current_output_channels, nullptr);
 
-    this->initialize_audio_arrays(audio_ins, audio_outs, current_input_channels, current_output_channels);
+    this->initialize_audio_arrays(
+        audio_ins, audio_outs, current_input_channels, current_output_channels);
 
     std::size_t init_audio_ins = 0;
     std::size_t init_audio_outs = 0;
-    for (int i = 0; i < current_input_channels; i++)
+    for(int i = 0; i < current_input_channels; i++)
       init_audio_ins += bool(audio_ins[i]) ? 1 : 0;
-    for (int i = 0; i < current_output_channels; i++)
+    for(int i = 0; i < current_output_channels; i++)
       init_audio_outs += bool(audio_outs[i]) ? 1 : 0;
 
     // Run
     this->processor.process(
-        this->impl,
-        avnd::span<double*>{
-            const_cast<double**>(audio_ins), init_audio_ins},
-        avnd::span<double*>{audio_outs, init_audio_outs},
-        frames);
+        this->impl, avnd::span<double*>{const_cast<double**>(audio_ins), init_audio_ins},
+        avnd::span<double*>{audio_outs, init_audio_outs}, frames);
 
     this->finish_run();
   }

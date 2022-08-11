@@ -60,7 +60,7 @@ struct TextureGeneratorExample
   {
     // Allocate some initial data
     bytes = halp::rgba_texture::allocate(480, 270);
-    for (unsigned char& c : bytes)
+    for(unsigned char& c : bytes)
     {
       c = std::rand() % 10;
     }
@@ -73,7 +73,7 @@ struct TextureGeneratorExample
   {
     // Do some magic
     int k = 0;
-    for (unsigned char& c : bytes)
+    for(unsigned char& c : bytes)
     {
       c += k++ * inputs.bamboozle.value;
     }

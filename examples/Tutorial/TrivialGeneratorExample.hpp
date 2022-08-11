@@ -42,7 +42,7 @@ struct TrivialGeneratorExample
   void operator()()
   {
     outputs.main.value++;
-    if (outputs.main.value > 100)
+    if(outputs.main.value > 100)
       outputs.main.value = 0;
   }
 };

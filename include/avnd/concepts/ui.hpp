@@ -5,17 +5,20 @@
 namespace avnd
 {
 
-template<typename T>
-concept has_processor_to_gui_bus = requires (T t) {
+template <typename T>
+concept has_processor_to_gui_bus = requires(T t)
+{
   // The processor can send a message to the GUI
   t.send_message({});
 
   // The GUI can process a message
-  std::declval<typename T::ui::bus>().process_message(std::declval<typename T::ui&>(), {});
+  std::declval<typename T::ui::bus>().process_message(
+      std::declval<typename T::ui&>(), {});
 };
 
-template<typename T>
-concept has_gui_to_processor_bus = requires (T t) {
+template <typename T>
+concept has_gui_to_processor_bus = requires(T t)
+{
   // The processor can receive a message from the GUI
   t.process_message({});
 

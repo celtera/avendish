@@ -62,7 +62,7 @@ struct audio_processor
   void init(int argc, t_atom* argv)
   {
     /// Pass arguments
-    if constexpr (avnd::can_initialize<T>)
+    if constexpr(avnd::can_initialize<T>)
     {
       init_setup.process(implementation, argc, argv);
     }
@@ -72,7 +72,7 @@ struct audio_processor
     dsp_setup(&x_obj, 1);
 
     // Create an audio outlet
-    if constexpr (output_channels != 0)
+    if constexpr(output_channels != 0)
     {
       outlet_new(&x_obj, "multichannelsignal");
     }
@@ -113,83 +113,61 @@ struct audio_processor
     avnd::prepare(implementation, setup_info);
 
     // Notify puredata of the dsp execution
-    constexpr t_perfroutine64 perf = +[](t_object* x,
-                                         t_object* dsp64,
-                                         double** ins,
-                                         long numins,
-                                         double** outs,
-                                         long numouts,
-                                         long sampleframes,
-                                         long flags,
-                                         void* userparam)
-    {
-      return reinterpret_cast<audio_processor*>(x)->perform(
-          ins, numins, outs, numouts, sampleframes, flags, userparam);
-    };
+    constexpr t_perfroutine64 perf
+        = +[](t_object* x, t_object* dsp64, double** ins, long numins, double** outs,
+              long numouts, long sampleframes, long flags, void* userparam) {
+            return reinterpret_cast<audio_processor*>(x)->perform(
+                ins, numins, outs, numouts, sampleframes, flags, userparam);
+          };
 
     dsp_add64(dsp64, (t_object*)this, (t_perfroutine64)perf, 0, NULL);
   }
 
   void perform(
-      double** ins,
-      long numins,
-      double** outs,
-      long numouts,
-      long sampleframes,
-      long flags,
-      void* userparam)
+      double** ins, long numins, double** outs, long numouts, long sampleframes,
+      long flags, void* userparam)
   {
     processor.process(
-        implementation,
-        avnd::span<double*>{ins, std::size_t(numins)},
-        avnd::span<double*>{outs, std::size_t(numouts)},
-        sampleframes);
+        implementation, avnd::span<double*>{ins, std::size_t(numins)},
+        avnd::span<double*>{outs, std::size_t(numouts)}, sampleframes);
   }
 
   void process_inlet_control(t_symbol* s, long argc, t_atom* argv)
   {
     for(auto& state : implementation.full_state())
     {
-      switch (argv[0].a_type)
+      switch(argv[0].a_type)
       {
-        case A_FLOAT:
-        {
+        case A_FLOAT: {
           // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
           // but most pd externals seem to just do a chain of if() so this is equivalent
           float res = argv[0].a_w.w_float;
-          avnd::pfr::for_each_field(
-              state.inputs,
-              [s, res, &state]<typename C>(C& ctl)
+          avnd::pfr::for_each_field(state.inputs, [s, res, &state]<typename C>(C& ctl) {
+            if constexpr(requires { ctl.value = float{}; })
+            {
+              if(std::string_view{C::name()} == s->s_name)
               {
-                if constexpr (requires { ctl.value = float{}; })
-                {
-                  if (std::string_view{C::name()} == s->s_name)
-                  {
-                    avnd::apply_control(ctl, res);
-                    if_possible(ctl.update(state.effect));
-                  }
-                }
-              });
+                avnd::apply_control(ctl, res);
+                if_possible(ctl.update(state.effect));
+              }
+            }
+          });
           break;
         }
 
-        case A_SYM:
-        {
+        case A_SYM: {
           // TODO ?
           std::string res = argv[0].a_w.w_sym->s_name;
-          avnd::pfr::for_each_field(
-              state.inputs,
-              [s, &res, &state](auto& ctl)
+          avnd::pfr::for_each_field(state.inputs, [s, &res, &state](auto& ctl) {
+            if constexpr(requires { ctl.value = std::string{}; })
+            {
+              if(std::string_view{ctl.name()} == s->s_name)
               {
-                if constexpr (requires { ctl.value = std::string{}; })
-                {
-                  if (std::string_view{ctl.name()} == s->s_name)
-                  {
-                    avnd::apply_control(ctl, std::move(res));
-                    if_possible(ctl.update(state.effect));
-                  }
-                }
-              });
+                avnd::apply_control(ctl, std::move(res));
+                if_possible(ctl.update(state.effect));
+              }
+            }
+          });
           break;
         }
 
@@ -202,15 +180,15 @@ struct audio_processor
   void process(t_symbol* s, int argc, t_atom* argv)
   {
     // First try to process messages handled explicitely in the object
-    if (messages_setup.process_messages(implementation, s, argc, argv))
+    if(messages_setup.process_messages(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
-    switch (argc)
+    switch(argc)
     {
       case 0: // bang
       {
-        if (strcmp(s->s_name, "bang") == 0)
+        if(strcmp(s->s_name, "bang") == 0)
         {
           // Unlike message_processor, here we don't run operator() which is
           // being run in the dsp system.
@@ -224,8 +202,7 @@ struct audio_processor
         }
         break;
       }
-      default:
-      {
+      default: {
         // Apply the data to the inlets.
         process_inlet_control(s, argc, argv);
 
@@ -255,37 +232,32 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void*
-  {
+  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
 
     // Initializes the rest
     auto obj = reinterpret_cast<instance*>(ptr);
-    new (obj) instance;
+    new(obj) instance;
     obj->init(argc, argv);
     return obj;
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void
-  {
+  constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // DSP
-  constexpr auto obj_dsp = +[](instance* obj,
-                               t_object* dsp64,
-                               short* count,
-                               double samplerate,
-                               long maxvectorsize,
-                               long flags) -> void
-  { obj->dsp(dsp64, count, samplerate, maxvectorsize, flags); };
+  constexpr auto obj_dsp
+      = +[](instance* obj, t_object* dsp64, short* count, double samplerate,
+            long maxvectorsize, long flags) -> void {
+    obj->dsp(dsp64, count, samplerate, maxvectorsize, flags);
+  };
 
-  constexpr auto inputchange = +[](instance* x, long index, long count) -> long
-  {
-    if (count != x->m_runtime_input_count)
+  constexpr auto inputchange = +[](instance* x, long index, long count) -> long {
+    if(count != x->m_runtime_input_count)
     {
       x->m_runtime_input_count = count;
       return true;
@@ -293,26 +265,21 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
     else
       return false;
   };
-  constexpr auto outputcount = +[](instance* x, long index) -> long
-  {
+  constexpr auto outputcount = +[](instance* x, long index) -> long {
     // TODO check whether the outputs are fixed or dynamic
     return x->m_runtime_input_count;
   };
 
   // Message processing
   constexpr auto obj_process
-      = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void
-  { obj->process(s, argc, argv); };
+      = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
+    obj->process(s, argc, argv);
+  };
 
   /// Class creation ///
   g_class = class_new(
-      avnd::get_c_name<T>().data(),
-      (method)obj_new,
-      (method)obj_free,
-      sizeof(audio_processor<T>),
-      0L,
-      A_GIMME,
-      0);
+      avnd::get_c_name<T>().data(), (method)obj_new, (method)obj_free,
+      sizeof(audio_processor<T>), 0L, A_GIMME, 0);
 
   class_dspinit(g_class);
   class_register(CLASS_BOX, g_class);

@@ -71,7 +71,7 @@ struct midi_storage
 
   void reserve_space(avnd::effect_container<T>& t, int buffer_size)
   {
-    if constexpr (raw_midi_in_info::size > 0)
+    if constexpr(raw_midi_in_info::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -86,7 +86,7 @@ struct midi_storage
       raw_midi_in_info::for_all_n(avnd::get_inputs(t), init_raw_in);
     }
 
-    if constexpr (raw_midi_out_info::size > 0)
+    if constexpr(raw_midi_out_info::size > 0)
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -101,8 +101,7 @@ struct midi_storage
       raw_midi_out_info::for_all_n(avnd::get_outputs(t), init_raw_out);
     }
 
-    auto init_dyn = [&](auto& port)
-    {
+    auto init_dyn = [&](auto& port) {
       // Here we use the vector in the port directly.
       port.midi_messages.clear();
       port.midi_messages.reserve(buffer_size);
@@ -120,7 +119,7 @@ struct midi_storage
 
   void clear_inputs(avnd::effect_container<T>& t)
   {
-    if constexpr (midi_in_info::size > 0)
+    if constexpr(midi_in_info::size > 0)
     {
       auto clearer = [this](auto&& port) { this->do_clear(port); };
 
@@ -130,7 +129,7 @@ struct midi_storage
 
   void clear_outputs(avnd::effect_container<T>& t)
   {
-    if constexpr (midi_in_info::size > 0)
+    if constexpr(midi_in_info::size > 0)
     {
       auto clearer = [this](auto&& port) { this->do_clear(port); };
 

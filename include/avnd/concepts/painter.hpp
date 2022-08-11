@@ -4,8 +4,9 @@
 
 namespace avnd
 {
-template<typename T>
-concept painter = requires (T t) {
+template <typename T>
+concept painter = requires(T t)
+{
   // Paths:
   t.begin_path();
   t.close_path();
@@ -17,10 +18,10 @@ concept painter = requires (T t) {
   t.line_to(0., 0.);
 
   //       x , y , w , h , startAngle, arcLength
-  t.arc_to(0., 1., 2., 3., 11.       , 12.);
+  t.arc_to(0., 1., 2., 3., 11., 12.);
 
   //         c1x, c1y, c2x, c2y, endx, endy
-  t.cubic_to(0. ,  1., 2. , 3. , 11. , 12.);
+  t.cubic_to(0., 1., 2., 3., 11., 12.);
   //        x1, y1, x2, y2
   t.quad_to(0., 1., 2., 3.);
 

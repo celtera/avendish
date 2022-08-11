@@ -28,7 +28,7 @@ public:
   {
     {
       // check if already initialized
-      if (hostContext)
+      if(hostContext)
         return Steinberg::kResultFalse;
 
       hostContext = context;
@@ -39,13 +39,13 @@ public:
 
   Steinberg::tresult terminate() final override
   {
-    if (componentHandler)
+    if(componentHandler)
     {
       componentHandler->release();
       componentHandler = nullptr;
     }
 
-    if (componentHandler2)
+    if(componentHandler2)
     {
       componentHandler2->release();
       componentHandler2 = nullptr;
@@ -56,7 +56,7 @@ public:
 
     // in case host did not disconnect us,
     // release peer now
-    if (peerConnection)
+    if(peerConnection)
     {
       peerConnection->disconnect(this);
       peerConnection = nullptr;
@@ -68,30 +68,30 @@ public:
   Steinberg::tresult
   setComponentHandler(Steinberg::Vst::IComponentHandler* newHandler) final override
   {
-    if (componentHandler == newHandler)
+    if(componentHandler == newHandler)
     {
       return Steinberg::kResultTrue;
     }
 
-    if (componentHandler)
+    if(componentHandler)
     {
       componentHandler->release();
     }
 
     componentHandler = newHandler;
-    if (componentHandler)
+    if(componentHandler)
     {
       componentHandler->addRef();
     }
 
     // try to get the extended version
-    if (componentHandler2)
+    if(componentHandler2)
     {
       componentHandler2->release();
       componentHandler2 = nullptr;
     }
 
-    if (newHandler)
+    if(newHandler)
     {
       newHandler->queryInterface(
           Steinberg::Vst::IComponentHandler2::iid, (void**)&componentHandler2);

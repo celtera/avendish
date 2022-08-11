@@ -54,9 +54,9 @@ struct effect_container
 
   auto& inputs() noexcept
   {
-    if constexpr (has_inputs<T>)
+    if constexpr(has_inputs<T>)
     {
-      if constexpr (inputs_is_type<T>)
+      if constexpr(inputs_is_type<T>)
         return this->inputs_storage;
       else
         return effect.inputs;
@@ -66,9 +66,9 @@ struct effect_container
   }
   auto& inputs() const noexcept
   {
-    if constexpr (has_inputs<T>)
+    if constexpr(has_inputs<T>)
     {
-      if constexpr (inputs_is_type<T>)
+      if constexpr(inputs_is_type<T>)
         return this->inputs_storage;
       else
         return effect.inputs;
@@ -78,9 +78,9 @@ struct effect_container
   }
   auto& outputs() noexcept
   {
-    if constexpr (has_outputs<T>)
+    if constexpr(has_outputs<T>)
     {
-      if constexpr (outputs_is_type<T>)
+      if constexpr(outputs_is_type<T>)
         return this->outputs_storage;
       else
         return effect.outputs;
@@ -90,9 +90,9 @@ struct effect_container
   }
   auto& outputs() const noexcept
   {
-    if constexpr (has_outputs<T>)
+    if constexpr(has_outputs<T>)
     {
-      if constexpr (outputs_is_type<T>)
+      if constexpr(outputs_is_type<T>)
         return this->outputs_storage;
       else
         return effect.outputs;
@@ -172,12 +172,12 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
   {
     // FIXME do that everywhere
     // FIXME how to save controls when we go down to 0 channels ?
-    if (effect.empty())
+    if(effect.empty())
       effect.resize(input);
-    else if (effect.size() > input)
+    else if(effect.size() > input)
       effect.resize(input);
     else
-      while (effect.size() < input)
+      while(effect.size() < input)
         effect.push_back(effect[0]);
   }
 
@@ -188,7 +188,7 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
 
   member_iterator<T> effects()
   {
-    for (auto& eff : effect)
+    for(auto& eff : effect)
       co_yield eff;
   }
 
@@ -203,7 +203,7 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
 
   member_iterator<ref> full_state()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
     {
       ref r{e, {}, {}};
       co_yield r;
@@ -241,7 +241,7 @@ requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>) struct effect_contain
 
   member_iterator<ref> full_state()
   {
-    for (T& e : effect)
+    for(T& e : effect)
     {
       ref r{e, this->inputs_storage, dummy_instance};
       co_yield r;
@@ -250,7 +250,7 @@ requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>) struct effect_contain
 
   member_iterator<T> effects()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e;
   }
 };
@@ -289,7 +289,7 @@ struct effect_container<T>
 
   member_iterator<ref> full_state()
   {
-    for (state& e : effect)
+    for(state& e : effect)
     {
       ref r{e.effect, this->inputs_storage, e.outputs_storage};
       co_yield r;
@@ -298,13 +298,13 @@ struct effect_container<T>
 
   member_iterator<T> effects()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e.effect;
   }
 
   member_iterator<typename T::outputs> outputs()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e.outputs_storage;
   }
 };
@@ -340,7 +340,7 @@ struct effect_container<T>
   };
   member_iterator<ref> full_state()
   {
-    for (T& e : effect)
+    for(T& e : effect)
     {
       ref r{e.effect, this->inputs_storage, e.effect.outputs};
       co_yield r;
@@ -349,13 +349,13 @@ struct effect_container<T>
 
   member_iterator<T> effects()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e;
   }
 
   member_iterator<typename T::outputs> outputs()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e.output;
   }
 };
@@ -378,9 +378,9 @@ struct effect_container<T>
     int orig = effect.size();
     int sz = std::max(input, output);
     effect.resize(sz);
-    if (orig > 0)
+    if(orig > 0)
     {
-      for (int i = orig; i < sz; i++)
+      for(int i = orig; i < sz; i++)
       {
         effect[i].inputs = effect[0].inputs;
       }
@@ -395,7 +395,7 @@ struct effect_container<T>
   };
   member_iterator<ref> full_state()
   {
-    for (T& e : effect)
+    for(T& e : effect)
     {
       ref r{e.effect, e.effect.inputs, e.effect.outputs};
       co_yield r;
@@ -404,18 +404,18 @@ struct effect_container<T>
 
   member_iterator<T> effects()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e;
   }
 
   member_iterator<decltype(T::inputs)> inputs()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e.inputs;
   }
   member_iterator<decltype(T::outputs)> outputs()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e.outputs;
   }
 };
@@ -436,9 +436,9 @@ requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>) struct effect_contai
     int orig = effect.size();
     int sz = std::max(input, output);
     effect.resize(sz);
-    if (orig > 0)
+    if(orig > 0)
     {
-      for (int i = orig; i < sz; i++)
+      for(int i = orig; i < sz; i++)
       {
         effect[i].inputs = effect[0].inputs;
       }
@@ -454,7 +454,7 @@ requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>) struct effect_contai
   };
   member_iterator<ref> full_state()
   {
-    for (T& e : effect)
+    for(T& e : effect)
     {
       ref r{e.effect, e.effect.inputs, avnd::dummy_instance};
       co_yield r;
@@ -463,13 +463,13 @@ requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>) struct effect_contai
 
   member_iterator<T> effects()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e;
   }
 
   member_iterator<decltype(T::inputs)> inputs()
   {
-    for (auto& e : effect)
+    for(auto& e : effect)
       co_yield e.inputs;
   }
 

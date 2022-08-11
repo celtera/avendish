@@ -20,7 +20,7 @@ static constexpr int32_t hash_uuid(std::string_view uuid)
 {
   int32_t res = 0;
   int k = 0;
-  for (std::size_t i = 0; i < uuid.size(); i++)
+  for(std::size_t i = 0; i < uuid.size(); i++)
   {
     res += unsigned(uuid[i]) << (k * 8);
     k = (k + 1) % 4;
@@ -64,23 +64,23 @@ struct SimpleAudioEffect : vintage::Effect
     Effect::numParams = Controls<T>::parameter_count;
 
     Effect::flags |= EffectFlags::CanReplacing;
-    if constexpr (avnd::double_processor<T>)
+    if constexpr(avnd::double_processor<T>)
       Effect::flags |= EffectFlags::CanDoubleReplacing;
-    if constexpr (avnd::midi_input_introspection<T>::size > 0)
+    if constexpr(avnd::midi_input_introspection<T>::size > 0)
       Effect::flags |= EffectFlags::IsSynth;
 
     Effect::ioRatio = 1.;
     Effect::object = this;
     Effect::user = this;
 
-    if constexpr (requires { T::unique_id(); })
+    if constexpr(requires { T::unique_id(); })
       Effect::uniqueID = T::unique_id();
-    else if constexpr (requires { T::uuid(); })
+    else if constexpr(requires { T::uuid(); })
       Effect::uniqueID = hash_uuid(T::uuid());
     else
       Effect::uniqueID = 0xBADBAD;
 
-    if constexpr (avnd::has_version<T>)
+    if constexpr(avnd::has_version<T>)
       Effect::version = avnd::get_int_version<T>();
     else
       Effect::version = 1;
@@ -96,7 +96,7 @@ struct SimpleAudioEffect : vintage::Effect
     buffer_size = request(HostOpcodes::GetBlockSize, 0, 0, nullptr, 0.f);
 
     /// Read the initial state of the controls
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       // First the default value
       avnd::init_controls(effect);
@@ -119,11 +119,11 @@ struct SimpleAudioEffect : vintage::Effect
     // Setup buffers for eventual float <-> double conversion
     // We always do so for float, as the plug-in API requires the existence of this
     processor.allocate_buffers(setup_info, float{});
-    if constexpr (avnd::double_processor<T>)
+    if constexpr(avnd::double_processor<T>)
       processor.allocate_buffers(setup_info, double{});
 
     // Setup buffers for storing MIDI messages
-    if constexpr (midi_input_introspection<T>::size > 0)
+    if constexpr(midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
       auto& in_port = avnd::pfr::get<i_info::index_map[0]>(effect.inputs());
@@ -146,15 +146,14 @@ struct SimpleAudioEffect : vintage::Effect
   }
 
   void process(
-      std::floating_point auto** inputs,
-      std::floating_point auto** outputs,
+      std::floating_point auto** inputs, std::floating_point auto** outputs,
       int32_t sampleFrames)
   {
     // Check if processing is to be bypassed
-    if constexpr (avnd::can_bypass<T>)
+    if constexpr(avnd::can_bypass<T>)
     {
-      for (auto& impl : effect.effects())
-        if (impl.bypass)
+      for(auto& impl : effect.effects())
+        if(impl.bypass)
           return;
     }
 
@@ -167,10 +166,8 @@ struct SimpleAudioEffect : vintage::Effect
     // Actual processing
     using fp_t = std::decay_t<decltype(inputs[0][0])>;
     processor.process(
-        effect,
-        avnd::span<fp_t*>{inputs, std::size_t(this->Effect::numInputs)},
-        avnd::span<fp_t*>{outputs, std::size_t(this->Effect::numOutputs)},
-        sampleFrames);
+        effect, avnd::span<fp_t*>{inputs, std::size_t(this->Effect::numInputs)},
+        avnd::span<fp_t*>{outputs, std::size_t(this->Effect::numOutputs)}, sampleFrames);
 
     // Clear our midi inputs
     midi.clear_inputs(effect);
@@ -178,7 +175,7 @@ struct SimpleAudioEffect : vintage::Effect
 
   void event_input(const vintage::Events* evs)
   {
-    if constexpr (midi_input_introspection<T>::size > 0)
+    if constexpr(midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
       auto& in_port = avnd::pfr::get<i_info::index_map[0]>(effect.inputs());
@@ -187,13 +184,12 @@ struct SimpleAudioEffect : vintage::Effect
       const int n = evs->numEvents;
       midi.reserve_space(this->effect, n);
 
-      for (int32_t i = 0; i < n; i++)
+      for(int32_t i = 0; i < n; i++)
       {
         const auto* ev = evs->events[i];
-        switch (ev->type)
+        switch(ev->type)
         {
-          case vintage::EventTypes::Midi:
-          {
+          case vintage::EventTypes::Midi: {
             auto& event = *reinterpret_cast<const vintage::MidiEvent*>(ev);
             midi.add_message(in_port, event);
             break;
@@ -207,24 +203,20 @@ struct SimpleAudioEffect : vintage::Effect
 
   // Process messages from the host
   static std::intptr_t host_dispatcher(
-      Effect* effect,
-      int32_t opcode,
-      int32_t index,
-      intptr_t value,
-      void* ptr,
+      Effect* effect, int32_t opcode, int32_t index, intptr_t value, void* ptr,
       float opt)
   {
     auto& self = *static_cast<SimpleAudioEffect*>(effect);
     auto code = static_cast<EffectOpcodes>(opcode);
 
-    if (code == EffectOpcodes::Close)
+    if(code == EffectOpcodes::Close)
     {
       delete &self;
       return 1;
     }
 
     // If our plug-in has a custom dispatching implementation, then we can use it
-    if constexpr (vintage::can_dispatch<T>)
+    if constexpr(vintage::can_dispatch<T>)
     {
       return self.implementation.dispatch(self, code, index, value, ptr, opt);
     }

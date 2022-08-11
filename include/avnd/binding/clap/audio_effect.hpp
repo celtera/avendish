@@ -23,7 +23,7 @@ struct midi_processor : public avnd::midi_storage<T>
   void init_midi_message(avnd::dynamic_midi_message auto& in, const clap_event& ev)
   {
     using mb = unsigned char;
-    switch (ev.type)
+    switch(ev.type)
     {
       case CLAP_EVENT_NOTE_ON:
         in.bytes
@@ -50,7 +50,7 @@ struct midi_processor : public avnd::midi_storage<T>
   void init_midi_message(avnd::raw_midi_message auto& in, const clap_event& ev)
   {
     using bytes_type = decltype(in.bytes);
-    switch (ev.type)
+    switch(ev.type)
     {
       case CLAP_EVENT_NOTE_ON:
         in.bytes[0] = 0x90 | ev.note.channel;
@@ -124,11 +124,9 @@ struct SimpleAudioEffect : clap_plugin
     clap_plugin::destroy
         = [](const struct clap_plugin* plugin) -> void { delete self(plugin); };
 
-    clap_plugin::activate = [](const struct clap_plugin* plugin,
-                               double sample_rate,
-                               uint32_t min_frames_count,
-                               uint32_t max_frames_count) -> bool
-    {
+    clap_plugin::activate
+        = [](const struct clap_plugin* plugin, double sample_rate,
+             uint32_t min_frames_count, uint32_t max_frames_count) -> bool {
       auto& p = *self(plugin);
       p.sample_rate = sample_rate;
       p.buffer_size = max_frames_count;
@@ -147,24 +145,22 @@ struct SimpleAudioEffect : clap_plugin
     };
 
     clap_plugin::process = [](const struct clap_plugin* plugin,
-                              const clap_process* process) -> clap_process_status
-    {
+                              const clap_process* process) -> clap_process_status {
       auto& p = *self(plugin);
       p.process(*process);
       return CLAP_PROCESS_CONTINUE;
     };
 
     clap_plugin::get_extension
-        = [](const struct clap_plugin* plugin, const char* id) -> const void*
-    {
+        = [](const struct clap_plugin* plugin, const char* id) -> const void* {
       auto& p = *self(plugin);
 
       const std::string_view id_sv = id;
-      if (id_sv == "clap.params")
+      if(id_sv == "clap.params")
         return &p.params;
-      if (id_sv == "clap.audio-ports")
+      if(id_sv == "clap.audio-ports")
         return &p.audio_ports;
-      if (id_sv == "clap.note-ports")
+      if(id_sv == "clap.note-ports")
         return &p.note_ports;
 
       return nullptr;
@@ -173,7 +169,7 @@ struct SimpleAudioEffect : clap_plugin
     clap_plugin::on_main_thread = [](const struct clap_plugin* plugin) {};
 
     /// Read the initial state of the controls
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::init_controls(effect);
     }
@@ -192,7 +188,7 @@ struct SimpleAudioEffect : clap_plugin
     effect.init_channels(setup_info.input_channels, setup_info.output_channels);
 
     // Setup buffers for storing MIDI messages
-    if constexpr (midi_in_info::size > 0)
+    if constexpr(midi_in_info::size > 0)
     {
       midi.reserve_space(this->effect, buffer_size);
     }
@@ -203,23 +199,19 @@ struct SimpleAudioEffect : clap_plugin
 
   template <auto access_samples>
   void process_impl(
-      const clap_process& process,
-      auto** inputs,
-      int in_N,
-      auto** outputs,
-      int out_N)
+      const clap_process& process, auto** inputs, int in_N, auto** outputs, int out_N)
   {
     // Note: we map everything to a span.
     // But since this API has a very good bus implementation
     // we could try to leverage directly it if possible.
 
     int in_i = 0;
-    for (int bus = 0; bus < process.audio_inputs_count; bus++)
+    for(int bus = 0; bus < process.audio_inputs_count; bus++)
     {
       auto& b = process.audio_inputs[bus];
-      for (int k = 0; k < b.channel_count; ++k)
+      for(int k = 0; k < b.channel_count; ++k)
       {
-        if (in_i < in_N)
+        if(in_i < in_N)
         {
           inputs[in_i] = (b.*access_samples)[k];
           ++in_i;
@@ -228,12 +220,12 @@ struct SimpleAudioEffect : clap_plugin
     }
 
     int out_i = 0;
-    for (int bus = 0; bus < process.audio_outputs_count; bus++)
+    for(int bus = 0; bus < process.audio_outputs_count; bus++)
     {
       auto& b = process.audio_outputs[bus];
-      for (int k = 0; k < b.channel_count; ++k)
+      for(int k = 0; k < b.channel_count; ++k)
       {
-        if (out_i < out_N)
+        if(out_i < out_N)
         {
           outputs[out_i] = (b.*access_samples)[k];
           ++out_i;
@@ -243,10 +235,8 @@ struct SimpleAudioEffect : clap_plugin
 
     using samples_t = std::decay_t<decltype(inputs[0][0])>;
     processor.process(
-        effect,
-        avnd::span<samples_t*>{inputs, std::size_t(in_N)},
-        avnd::span<samples_t*>{outputs, std::size_t(out_N)},
-        process.frames_count);
+        effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
+        avnd::span<samples_t*>{outputs, std::size_t(out_N)}, process.frames_count);
   }
 
   void process(const clap_process& process)
@@ -265,14 +255,14 @@ struct SimpleAudioEffect : clap_plugin
       int in_N = avnd::input_channels<T>(2);
       int out_N = avnd::input_channels<T>(2);
 
-      if constexpr (avnd::float_processor<T>)
+      if constexpr(avnd::float_processor<T>)
       {
         auto inputs = (float**)alloca(sizeof(float*) * in_N);
         auto outputs = (float**)alloca(sizeof(float*) * out_N);
 
         process_impl<&clap_audio_buffer::data32>(process, inputs, in_N, outputs, out_N);
       }
-      else if constexpr (avnd::double_processor<T>)
+      else if constexpr(avnd::double_processor<T>)
       {
         auto inputs = (double**)alloca(sizeof(double*) * in_N);
         auto outputs = (double**)alloca(sizeof(double*) * out_N);
@@ -294,10 +284,9 @@ struct SimpleAudioEffect : clap_plugin
   void process_param(const clap_event_param_value& p)
   {
     param_in_info::for_nth_mapped(
-        this->effect.inputs(),
-        p.param_id,
-        [&]<typename C>(C& field)
-        { field.value = avnd::map_control_from_01<C>(p.value); });
+        this->effect.inputs(), p.param_id, [&]<typename C>(C& field) {
+          field.value = avnd::map_control_from_01<C>(p.value);
+        });
   }
 
   void process_transport(const clap_event_transport& transport)
@@ -307,52 +296,44 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_in_events(const clap_process& p)
   {
-    if constexpr (midi_in_info::size > 0)
+    if constexpr(midi_in_info::size > 0)
     {
       auto N = p.in_events->size(p.in_events);
 
-      for (uint32_t i = 0; i < N; i++)
+      for(uint32_t i = 0; i < N; i++)
       {
         auto ev = p.in_events->get(p.in_events, i);
 
-        switch (ev->type)
+        switch(ev->type)
         {
           case CLAP_EVENT_NOTE_ON:
-          case CLAP_EVENT_NOTE_OFF:
-          {
+          case CLAP_EVENT_NOTE_OFF: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(),
-                ev->note.port_index,
+                this->effect.inputs(), ev->note.port_index,
                 [&]<typename C>(C& in_port) { midi.add_message(in_port, *ev); });
             break;
           }
-          case CLAP_EVENT_MIDI:
-          {
+          case CLAP_EVENT_MIDI: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(),
-                ev->midi.port_index,
+                this->effect.inputs(), ev->midi.port_index,
                 [&]<typename C>(C& in_port) { midi.add_message(in_port, *ev); });
             break;
           }
-          case CLAP_EVENT_MIDI_SYSEX:
-          {
+          case CLAP_EVENT_MIDI_SYSEX: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(),
-                ev->midi_sysex.port_index,
+                this->effect.inputs(), ev->midi_sysex.port_index,
                 [&]<typename C>(C& in_port) { midi.add_message(in_port, *ev); });
             break;
           }
 
-          case CLAP_EVENT_PARAM_VALUE:
-          {
+          case CLAP_EVENT_PARAM_VALUE: {
             process_param(ev->param_value);
             break;
           }
           break;
           case CLAP_EVENT_PARAM_MOD:
             break;
-          case CLAP_EVENT_TRANSPORT:
-          {
+          case CLAP_EVENT_TRANSPORT: {
             process_transport(ev->time_info);
             break;
           }
@@ -374,39 +355,42 @@ struct SimpleAudioEffect : clap_plugin
 
   bool get_param_info(int32_t param_index, clap_param_info* info)
   {
-    if (param_index < 0 || param_index >= param_in_info::size)
+    if(param_index < 0 || param_index >= param_in_info::size)
       return false;
 
     info->id = param_in_info::index_map[param_index];
     param_in_info::for_nth_raw(
         info->id,
-        [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field)
-        {
-          if constexpr (avnd::has_range<C>)
-          {
-            constexpr auto range = avnd::get_range<C>();
-            if constexpr(requires { range.init; })
-              info->default_value = avnd::map_control_to_double<C>(range.init);
+        [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
+      if constexpr(avnd::has_range<C>)
+      {
+        constexpr auto range = avnd::get_range<C>();
+        if constexpr(requires { range.init; })
+          info->default_value = avnd::map_control_to_double<C>(range.init);
 
-            if constexpr (avnd::enum_parameter<C>)
-            {
-              info->min_value = 0;
-              info->max_value = avnd::get_enum_choices_count<C>() - 1;
-              info->flags |= CLAP_PARAM_IS_STEPPED;
-            }
-            else
-            {
-              if constexpr(requires { range.min; range.max; }) {
-                info->min_value = avnd::map_control_to_double<C>(range.min);
-                info->max_value = avnd::map_control_to_double<C>(range.max);
-              }
-              if constexpr (requires { range.step; })
-                info->flags |= CLAP_PARAM_IS_STEPPED;
-            }
+        if constexpr(avnd::enum_parameter<C>)
+        {
+          info->min_value = 0;
+          info->max_value = avnd::get_enum_choices_count<C>() - 1;
+          info->flags |= CLAP_PARAM_IS_STEPPED;
+        }
+        else
+        {
+          if constexpr(requires {
+                         range.min;
+                         range.max;
+                       })
+          {
+            info->min_value = avnd::map_control_to_double<C>(range.min);
+            info->max_value = avnd::map_control_to_double<C>(range.max);
           }
-          copy_string(info->name, C::name());
-          copy_string(info->module, "");
-          // TODO module
+          if constexpr(requires { range.step; })
+            info->flags |= CLAP_PARAM_IS_STEPPED;
+        }
+      }
+      copy_string(info->name, C::name());
+      copy_string(info->module, "");
+      // TODO module
         });
     return true;
   }
@@ -414,10 +398,9 @@ struct SimpleAudioEffect : clap_plugin
   bool get_param_value(clap_id param_id, double* value)
   {
     param_in_info::for_nth_raw(
-        this->effect.inputs(),
-        param_id,
-        [&]<typename C>(const C& field)
-        { *value = avnd::map_control_to_double(field); });
+        this->effect.inputs(), param_id, [&]<typename C>(const C& field) {
+          *value = avnd::map_control_to_double(field);
+        });
 
     return true;
   }
@@ -427,7 +410,7 @@ struct SimpleAudioEffect : clap_plugin
     bool ok = false;
     param_in_info::for_nth_raw(
         param_id, [&]<auto Idx, typename C>(avnd::field_reflection<Idx, C> tag) {
-          if (!ok)
+          if(!ok)
           {
             ok = avnd::display_control<C>(
                 avnd::map_control_from_double<C>(value), display, size);
@@ -467,65 +450,55 @@ struct SimpleAudioEffect : clap_plugin
   static constexpr clap_plugin_params params{
       .count = [](const clap_plugin* plugin) -> uint32_t { return param_in_info::size; },
 
-      .get_info = [](const clap_plugin* plugin,
-                     int32_t param_index,
-                     clap_param_info* param_info) -> bool
-      { return self(plugin)->get_param_info(param_index, param_info); },
+      .get_info = [](const clap_plugin* plugin, int32_t param_index,
+                     clap_param_info* param_info) -> bool {
+        return self(plugin)->get_param_info(param_index, param_info);
+      },
 
-      .get_value = [](const clap_plugin* plugin, clap_id param_id, double* value) -> bool
-      { return self(plugin)->get_param_value(param_id, value); },
+      .get_value
+      = [](const clap_plugin* plugin, clap_id param_id, double* value) -> bool {
+        return self(plugin)->get_param_value(param_id, value);
+      },
 
-      .value_to_text = [](const clap_plugin* plugin,
-                          clap_id param_id,
-                          double value,
-                          char* display,
-                          uint32_t size) -> bool
-      { return self(plugin)->get_value_text(param_id, value, display, size); },
+      .value_to_text = [](const clap_plugin* plugin, clap_id param_id, double value,
+                          char* display, uint32_t size) -> bool {
+        return self(plugin)->get_value_text(param_id, value, display, size);
+      },
 
-      .text_to_value = [](const clap_plugin* plugin,
-                          clap_id param_id,
-                          const char* display,
-                          double* value) -> bool { return false; },
+      .text_to_value = [](const clap_plugin* plugin, clap_id param_id,
+                          const char* display, double* value) -> bool { return false; },
 
-      .flush = [](const clap_plugin* plugin,
-                  const clap_event_list* input_parameter_changes,
-                  const clap_event_list* output_parameter_changes) -> void {}};
+      .flush
+      = [](const clap_plugin* plugin, const clap_event_list* input_parameter_changes,
+           const clap_event_list* output_parameter_changes) -> void {}};
 
   static constexpr clap_plugin_audio_ports audio_ports{
-      .count = [](const clap_plugin* plugin, bool input) -> uint32_t
-      {
-        if (input)
+      .count = [](const clap_plugin* plugin, bool input) -> uint32_t {
+        if(input)
           return avnd_clap::audio_bus_info<T>::input_count();
         else
           return avnd_clap::audio_bus_info<T>::output_count();
       },
 
-      .get = [](const clap_plugin* plugin,
-                uint32_t index,
-                bool input,
-                clap_audio_port_info* info) -> bool
-      {
-        if (input)
+      .get = [](const clap_plugin* plugin, uint32_t index, bool input,
+                clap_audio_port_info* info) -> bool {
+        if(input)
           return avnd_clap::audio_bus_info<T>::input_info(index, *info);
         else
           return avnd_clap::audio_bus_info<T>::output_info(index, *info);
       }};
 
   static constexpr clap_plugin_note_ports note_ports{
-      .count = [](const clap_plugin* plugin, bool input) -> uint32_t
-      {
-        if (input)
+      .count = [](const clap_plugin* plugin, bool input) -> uint32_t {
+        if(input)
           return avnd_clap::event_bus_info<T>::input_count();
         else
           return avnd_clap::event_bus_info<T>::output_count();
       },
 
-      .get = [](const clap_plugin* plugin,
-                uint32_t index,
-                bool input,
-                clap_note_port_info* info) -> bool
-      {
-        if (input)
+      .get = [](const clap_plugin* plugin, uint32_t index, bool input,
+                clap_note_port_info* info) -> bool {
+        if(input)
           return avnd_clap::event_bus_info<T>::input_info(index, *info);
         else
           return avnd_clap::event_bus_info<T>::output_info(index, *info);

@@ -27,13 +27,10 @@ requires(
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
-    pfr::for_each_field(
-        ins,
-        [in]<typename Field>(Field& field)
-        {
-          // We know that there is only one in that case so just copy
-          if_possible(field.sample = in);
-        });
+    pfr::for_each_field(ins, [in]<typename Field>(Field& field) {
+      // We know that there is only one in that case so just copy
+      if_possible(field.sample = in);
+    });
 
     // Execute
     fx(ins, outs, tick);
@@ -65,9 +62,7 @@ requires(
 
   template <std::floating_point FP>
   void process(
-      avnd::effect_container<T>& implementation,
-      avnd::span<FP*> in,
-      avnd::span<FP*> out,
+      avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
       int32_t n)
   {
     const int input_channels = in.size();
@@ -77,7 +72,7 @@ requires(
 
     auto input_buf = (FP*)alloca(channels * sizeof(FP));
 
-    for (int32_t i = 0; i < n; i++)
+    for(int32_t i = 0; i < n; i++)
     {
       // Some hosts like puredata uses the same buffers for input and output.
       // Thus, we have to :
@@ -88,7 +83,7 @@ requires(
       // before we could read it for instance
 
       // Copy the input channels
-      for (int c = 0; c < channels; c++)
+      for(int c = 0; c < channels; c++)
       {
         input_buf[c] = in[c][i];
       }
@@ -97,10 +92,10 @@ requires(
       // C++20: we're using our coroutine here !
       auto effects_range = implementation.full_state();
       auto effects_it = effects_range.begin();
-      for (int c = 0; c < channels && effects_it != effects_range.end();
-           ++c, ++effects_it)
+      for(int c = 0; c < channels && effects_it != effects_range.end();
+          ++c, ++effects_it)
       {
-        if constexpr (requires { sizeof(current_tick(implementation)); })
+        if constexpr(requires { sizeof(current_tick(implementation)); })
         {
           out[c][i] = process_0(
               implementation, input_buf[c], *effects_it, current_tick(implementation));
@@ -120,18 +115,17 @@ requires(
 template <typename T>
 requires(
     poly_per_sample_port_processor<
-        float,
-        T> || poly_per_sample_port_processor<double, T>) struct process_adapter<T>
+        float, T> || poly_per_sample_port_processor<double, T>) struct process_adapter<T>
 {
   void process_sample(T& fx, auto& ins, auto& outs, auto&& tick)
   {
-    if constexpr (requires { fx(ins, outs, tick); })
+    if constexpr(requires { fx(ins, outs, tick); })
       return fx(ins, outs, tick);
-    else if constexpr (requires { fx(ins, tick); })
+    else if constexpr(requires { fx(ins, tick); })
       return fx(ins, tick);
-    else if constexpr (requires { fx(outs, tick); })
+    else if constexpr(requires { fx(outs, tick); })
       return fx(outs, tick);
-    else if constexpr (requires { fx(tick); })
+    else if constexpr(requires { fx(tick); })
       return fx(tick);
     else
       static_assert(std::is_void_v<T>, "Canno call processor");
@@ -139,13 +133,13 @@ requires(
 
   void process_sample(T& fx, auto& ins, auto& outs)
   {
-    if constexpr (requires { fx(ins, outs); })
+    if constexpr(requires { fx(ins, outs); })
       return fx(ins, outs);
-    else if constexpr (requires { fx(ins); })
+    else if constexpr(requires { fx(ins); })
       return fx(ins);
-    else if constexpr (requires { fx(outs); })
+    else if constexpr(requires { fx(outs); })
       return fx(outs);
-    else if constexpr (requires { fx(); })
+    else if constexpr(requires { fx(); })
       return fx();
     else
       static_assert(std::is_void_v<T>, "Canno call processor");
@@ -158,38 +152,33 @@ requires(
 
   template <std::floating_point FP>
   void process(
-      avnd::effect_container<T>& implementation,
-      avnd::span<FP*> in,
-      avnd::span<FP*> out,
+      avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
       int32_t n)
   {
     auto& fx = implementation.effect;
     auto& ins = implementation.inputs();
     auto& outs = implementation.outputs();
 
-    for (int32_t i = 0; i < n; i++)
+    for(int32_t i = 0; i < n; i++)
     {
       // Copy inputs in the effect
       {
         int k = 0;
         // Here we know that we have a single effect. We copy the sample data directly inside.
-        avnd::for_each_field_ref(
-            ins,
-            [&k, in, i]<typename Field>(Field& field)
+        avnd::for_each_field_ref(ins, [&k, in, i]<typename Field>(Field& field) {
+          if constexpr(avnd::generic_audio_sample_port<Field>)
+          {
+            if(k < in.size())
             {
-              if constexpr (avnd::generic_audio_sample_port<Field>)
-              {
-                if (k < in.size())
-                {
-                  field.sample = in[k][i];
-                  ++k;
-                }
-              }
-            });
+              field.sample = in[k][i];
+              ++k;
+            }
+          }
+        });
       }
 
       // Process
-      if constexpr (requires { sizeof(current_tick(implementation)); })
+      if constexpr(requires { sizeof(current_tick(implementation)); })
       {
         process_sample(fx, ins, outs, current_tick(implementation));
       }
@@ -202,19 +191,16 @@ requires(
       {
         int k = 0;
         // Here we know that we have a single effect. We copy the sample data directly inside.
-        pfr::for_each_field(
-            outs,
-            [&k, out, i]<typename Field>(Field& field)
+        pfr::for_each_field(outs, [&k, out, i]<typename Field>(Field& field) {
+          if constexpr(avnd::generic_audio_sample_port<Field>)
+          {
+            if(k < out.size())
             {
-              if constexpr (avnd::generic_audio_sample_port<Field>)
-              {
-                if (k < out.size())
-                {
-                  out[k][i] = field.sample;
-                  ++k;
-                }
-              }
-            });
+              out[k][i] = field.sample;
+              ++k;
+            }
+          }
+        });
       }
     }
   }

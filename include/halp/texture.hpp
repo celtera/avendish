@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <boost/container/vector.hpp>
 #include <halp/controls.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/texture_formats.hpp>
-#include <boost/container/vector.hpp>
 
 namespace halp
 {
@@ -80,10 +80,7 @@ struct texture_output
     texture.set(x, y, r, g, b, a);
   }
 
-  void set(int x, int y, rgba_color col) noexcept
-  {
-    texture.set(x, y, col);
-  }
+  void set(int x, int y, rgba_color col) noexcept { texture.set(x, y, col); }
 
   TextureType texture;
 

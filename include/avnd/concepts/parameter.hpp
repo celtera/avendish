@@ -34,8 +34,10 @@ template <typename T>
 concept enum_parameter = std::is_enum_v<std::decay_t<decltype(T::value)>>;
 
 template <typename Field>
-concept enum_ish_parameter = avnd::enum_parameter<Field> ||
-        (avnd::has_range<Field>&& requires { avnd::get_range<Field>().values[0]; });
+concept enum_ish_parameter
+    = avnd::enum_parameter<Field> ||(avnd::has_range<Field>&& requires {
+        avnd::get_range<Field>().values[0];
+      });
 
 template <typename T>
 concept float_parameter = requires(T t)
@@ -92,7 +94,9 @@ template <typename C>
 concept parameter_with_values_range = requires
 {
   avnd::get_range<C>().values[0];
-  { avnd::get_range<C>().init } -> std::integral;
+  {
+    avnd::get_range<C>().init
+    } -> std::integral;
 };
 
 /**
@@ -226,6 +230,5 @@ concept span_sample_accurate_parameter = sample_accurate_parameter<
 template <typename T>
 concept dynamic_sample_accurate_parameter = sample_accurate_parameter<
     T> && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
-
 
 }

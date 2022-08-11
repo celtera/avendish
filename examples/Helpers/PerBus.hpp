@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
-#include <cmath>
 
 namespace examples::helpers
 {
@@ -21,9 +21,9 @@ struct PerBusAsArgs
   void operator()(double** inputs, double** outputs, int frames)
   {
     using namespace std;
-    for (int c = 0; c < input_channels(); ++c)
+    for(int c = 0; c < input_channels(); ++c)
     {
-      for (int k = 0; k < frames; k++)
+      for(int k = 0; k < frames; k++)
       {
         outputs[c][k] = tanh(10. * inputs[c][k]);
       }
@@ -53,9 +53,9 @@ struct PerBusAsPortsFixed
   {
     using namespace std;
 
-    for (int c = 0; c < inputs.audio.channels(); ++c)
+    for(int c = 0; c < inputs.audio.channels(); ++c)
     {
-      for (int k = 0; k < frames; k++)
+      for(int k = 0; k < frames; k++)
       {
         outputs.audio[c][k] = tanh(10. * (inputs.audio[c][k] + inputs.sidechain[c][k]));
       }
@@ -87,9 +87,9 @@ struct PerBusAsPortsDynamic
     using namespace std;
     int max_channels = std::min(inputs.audio.channels, outputs.audio.channels);
 
-    for (int c = 0; c < max_channels; ++c)
+    for(int c = 0; c < max_channels; ++c)
     {
-      for (int k = 0; k < frames; k++)
+      for(int k = 0; k < frames; k++)
       {
         outputs.audio[c][k] = tanh(10. * inputs.audio[c][k]);
       }

@@ -64,7 +64,7 @@ struct message_processor
   void init(int argc, t_atom* argv)
   {
     /// Pass arguments
-    if constexpr (avnd::can_initialize<T>)
+    if constexpr(avnd::can_initialize<T>)
     {
       init_setup.process(implementation.effect, argc, argv);
     }
@@ -80,7 +80,7 @@ struct message_processor
     this->control_buffers.reserve_space(implementation, 16);
 
     /// Initialize controls
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::init_controls(implementation);
     }
@@ -88,22 +88,20 @@ struct message_processor
 
   void destroy() { }
 
-  template<typename C>
+  template <typename C>
   void set_inlet(C& port, t_atom& arg)
   {
-    switch (arg.a_type)
+    switch(arg.a_type)
     {
-      case A_FLOAT:
-      {
+      case A_FLOAT: {
         // This is the float that is supposed to go inside the first inlet if any ?
-        if constexpr (requires { port.value = 0.f; })
+        if constexpr(requires { port.value = 0.f; })
           avnd::apply_control(port, arg.a_w.w_float);
         break;
       }
 
-      case A_SYMBOL:
-      {
-        if constexpr (requires { port.value = "string"; })
+      case A_SYMBOL: {
+        if constexpr(requires { port.value = "string"; })
           avnd::apply_control(port, arg.a_w.w_symbol->s_name);
         break;
       }
@@ -115,9 +113,9 @@ struct message_processor
 
   void process_first_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
-      if constexpr (avnd::parameter_input_introspection<T>::size > 0)
+      if constexpr(avnd::parameter_input_introspection<T>::size > 0)
       {
         auto& first_inlet = avnd::pfr::get<0>(avnd::get_inputs<T>(implementation));
         if(argc > 0)
@@ -127,7 +125,7 @@ struct message_processor
         else
         {
           // Bang
-          if constexpr (requires { first_inlet.values[0] = {}; })
+          if constexpr(requires { first_inlet.values[0] = {}; })
           {
             first_inlet.values[0] = {};
           }
@@ -146,8 +144,7 @@ struct message_processor
 
     // Do our stuff if it makes sense - some objects may not
     // even have a "processing" method
-    if_possible(implementation.effect())
-    else if_possible(implementation.effect(1));
+    if_possible(implementation.effect()) else if_possible(implementation.effect(1));
 
     // Then bang
     output_setup.commit(*this);
@@ -159,14 +156,14 @@ struct message_processor
   void process(t_symbol* s, int argc, t_atom* argv)
   {
     // First try to process messages handled explicitely in the object
-    if (messages_setup.process_messages(implementation, s, argc, argv))
+    if(messages_setup.process_messages(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
-    switch (argc)
+    switch(argc)
     {
       case 0: // bang
-        if (strcmp(s->s_name, s_bang.s_name) == 0)
+        if(strcmp(s->s_name, s_bang.s_name) == 0)
           default_process(s, argc, argv);
         else
           process_generic_message(implementation, s);
@@ -195,39 +192,33 @@ message_processor_metaclass<T>::message_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void*
-  {
+  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     t_pd* ptr = pd_new(g_class);
 
     // Initializes the rest
     auto obj = reinterpret_cast<instance*>(ptr);
-    new (obj) instance;
+    new(obj) instance;
     obj->init(argc, argv);
     return obj;
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void
-  {
+  constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // Message processing
   constexpr auto obj_process
-      = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void
-  { obj->process(s, argc, argv); };
+      = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
+    obj->process(s, argc, argv);
+  };
 
   /// Class creation ///
   g_class = class_new(
-      symbol_from_name<T>(),
-      (t_newmethod)obj_new,
-      (t_method)obj_free,
-      sizeof(message_processor<T>),
-      CLASS_DEFAULT,
-      A_GIMME,
-      0);
+      symbol_from_name<T>(), (t_newmethod)obj_new, (t_method)obj_free,
+      sizeof(message_processor<T>), CLASS_DEFAULT, A_GIMME, 0);
 
   // Connect our methods
   class_addanything(g_class, (t_method)obj_process);

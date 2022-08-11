@@ -2,9 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include <avnd/concepts/gfx.hpp>
-#include <random>
+
 #include <cstdlib>
 #include <cstring>
+#include <random>
 
 // Some performance pointers:
 
@@ -31,82 +32,35 @@ namespace examples
 {
 // Some cube data
 static constexpr float default_cube_position[] = {
-    -1.0f,-1.0f,-1.0f,
-    -1.0f,-1.0f, 1.0f,
-    -1.0f, 1.0f, 1.0f,
-    1.0f, 1.0f,-1.0f,
-    -1.0f,-1.0f,-1.0f,
-    -1.0f, 1.0f,-1.0f,
-    1.0f,-1.0f, 1.0f,
-    -1.0f,-1.0f,-1.0f,
-    1.0f,-1.0f,-1.0f,
-    1.0f, 1.0f,-1.0f,
-    1.0f,-1.0f,-1.0f,
-    -1.0f,-1.0f,-1.0f,
-    -1.0f,-1.0f,-1.0f,
-    -1.0f, 1.0f, 1.0f,
-    -1.0f, 1.0f,-1.0f,
-    1.0f,-1.0f, 1.0f,
-    -1.0f,-1.0f, 1.0f,
-    -1.0f,-1.0f,-1.0f,
-    -1.0f, 1.0f, 1.0f,
-    -1.0f,-1.0f, 1.0f,
-    1.0f,-1.0f, 1.0f,
-    1.0f, 1.0f, 1.0f,
-    1.0f,-1.0f,-1.0f,
-    1.0f, 1.0f,-1.0f,
-    1.0f,-1.0f,-1.0f,
-    1.0f, 1.0f, 1.0f,
-    1.0f,-1.0f, 1.0f,
-    1.0f, 1.0f, 1.0f,
-    1.0f, 1.0f,-1.0f,
-    -1.0f, 1.0f,-1.0f,
-    1.0f, 1.0f, 1.0f,
-    -1.0f, 1.0f,-1.0f,
-    -1.0f, 1.0f, 1.0f,
-    1.0f, 1.0f, 1.0f,
-    -1.0f, 1.0f, 1.0f,
-    1.0f,-1.0f, 1.0f
-};
+    -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  -1.0f,
+    -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f,
+    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,
+    -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
+    1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f,
+    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
+    -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  -1.0f, 1.0f};
 
-static constexpr float default_cube_texcoord[] = {
-    0.000059f, 1.0f - 0.000004f,
-    0.000103f, 1.0f - 0.336048f,
-    0.335973f, 1.0f - 0.335903f,
-    1.000023f, 1.0f - 0.000013f,
-    0.667979f, 1.0f - 0.335851f,
-    0.999958f, 1.0f - 0.336064f,
-    0.667979f, 1.0f - 0.335851f,
-    0.336024f, 1.0f - 0.671877f,
-    0.667969f, 1.0f - 0.671889f,
-    1.000023f, 1.0f - 0.000013f,
-    0.668104f, 1.0f - 0.000013f,
-    0.667979f, 1.0f - 0.335851f,
-    0.000059f, 1.0f - 0.000004f,
-    0.335973f, 1.0f - 0.335903f,
-    0.336098f, 1.0f - 0.000071f,
-    0.667979f, 1.0f - 0.335851f,
-    0.335973f, 1.0f - 0.335903f,
-    0.336024f, 1.0f - 0.671877f,
-    1.000004f, 1.0f - 0.671847f,
-    0.999958f, 1.0f - 0.336064f,
-    0.667979f, 1.0f - 0.335851f,
-    0.668104f, 1.0f - 0.000013f,
-    0.335973f, 1.0f - 0.335903f,
-    0.667979f, 1.0f - 0.335851f,
-    0.335973f, 1.0f - 0.335903f,
-    0.668104f, 1.0f - 0.000013f,
-    0.336098f, 1.0f - 0.000071f,
-    0.000103f, 1.0f - 0.336048f,
-    0.000004f, 1.0f - 0.671870f,
-    0.336024f, 1.0f - 0.671877f,
-    0.000103f, 1.0f - 0.336048f,
-    0.336024f, 1.0f - 0.671877f,
-    0.335973f, 1.0f - 0.335903f,
-    0.667969f, 1.0f - 0.671889f,
-    1.000004f, 1.0f - 0.671847f,
-    0.667979f, 1.0f - 0.335851f
-};
+static constexpr float default_cube_texcoord[]
+    = {0.000059f, 1.0f - 0.000004f, 0.000103f, 1.0f - 0.336048f,
+       0.335973f, 1.0f - 0.335903f, 1.000023f, 1.0f - 0.000013f,
+       0.667979f, 1.0f - 0.335851f, 0.999958f, 1.0f - 0.336064f,
+       0.667979f, 1.0f - 0.335851f, 0.336024f, 1.0f - 0.671877f,
+       0.667969f, 1.0f - 0.671889f, 1.000023f, 1.0f - 0.000013f,
+       0.668104f, 1.0f - 0.000013f, 0.667979f, 1.0f - 0.335851f,
+       0.000059f, 1.0f - 0.000004f, 0.335973f, 1.0f - 0.335903f,
+       0.336098f, 1.0f - 0.000071f, 0.667979f, 1.0f - 0.335851f,
+       0.335973f, 1.0f - 0.335903f, 0.336024f, 1.0f - 0.671877f,
+       1.000004f, 1.0f - 0.671847f, 0.999958f, 1.0f - 0.336064f,
+       0.667979f, 1.0f - 0.335851f, 0.668104f, 1.0f - 0.000013f,
+       0.335973f, 1.0f - 0.335903f, 0.667979f, 1.0f - 0.335851f,
+       0.335973f, 1.0f - 0.335903f, 0.668104f, 1.0f - 0.000013f,
+       0.336098f, 1.0f - 0.000071f, 0.000103f, 1.0f - 0.336048f,
+       0.000004f, 1.0f - 0.671870f, 0.336024f, 1.0f - 0.671877f,
+       0.000103f, 1.0f - 0.336048f, 0.336024f, 1.0f - 0.671877f,
+       0.335973f, 1.0f - 0.335903f, 0.667969f, 1.0f - 0.671889f,
+       1.000004f, 1.0f - 0.671847f, 0.667979f, 1.0f - 0.335851f};
 
 // In this example the vertex buffer has
 // all the position attributes, then all the texcoord attributes
@@ -114,9 +68,15 @@ struct non_indexed_split_geometry
 {
   static consteval auto name() { return "Geometry"; }
 
-  struct buffers {
-    struct {
-      enum { dynamic, vertex };
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
       float* data{};
       int size{};
       bool dirty{};
@@ -124,24 +84,37 @@ struct non_indexed_split_geometry
   } buffers;
 
   // This example uses two successive bindings to one buffer.
-  struct bindings {
-    struct {
-      enum { per_vertex };
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
       int stride = 3 * sizeof(float);
       int step_rate = 1;
     } position_binding;
 
-    struct {
-      enum { per_vertex };
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
       int stride = 2 * sizeof(float);
       int step_rate = 1;
     } texcoord_binding;
   };
 
-  struct attributes {
+  struct attributes
+  {
     struct
     {
-      enum { position };
+      enum
+      {
+        position
+      };
       using datatype = float[3];
 
       // If we have non-interleaved buffers, e.g. each individual attribute is contiguous
@@ -152,26 +125,38 @@ struct non_indexed_split_geometry
       int32_t binding = 0;
     } position;
 
-    struct {
-      enum { tex_coord };
+    struct
+    {
+      enum
+      {
+        tex_coord
+      };
       using datatype = float[2];
       int32_t binding = 1;
     } texcoord;
   };
 
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       static constexpr auto buffer() { return &buffers::main_buffer; }
       int offset = 0;
     } input0;
-    struct {
+    struct
+    {
       static constexpr auto buffer() { return &buffers::main_buffer; }
       int offset = sizeof(default_cube_position);
     } input1;
   } input;
   int vertices = 0;
   bool dirty{};
-  enum { triangles, counter_clockwise, cull_back };
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_back
+  };
 };
 
 struct GenerateGeometryNonInterleaved
@@ -185,12 +170,17 @@ struct GenerateGeometryNonInterleaved
     struct
     {
       static consteval auto name() { return "Radius"; }
-      struct range { double min = 0.001, max = 2, init = 0.1; };
-      void update(GenerateGeometryNonInterleaved& self) {
+      struct range
+      {
+        double min = 0.001, max = 2, init = 0.1;
+      };
+      void update(GenerateGeometryNonInterleaved& self)
+      {
 
         for(int i = 0; i < std::ssize(default_cube_position); i++)
         {
-          self.outputs.geometry.buffers.main_buffer.data[i] = self.inputs.radius.value * default_cube_position[i];
+          self.outputs.geometry.buffers.main_buffer.data[i]
+              = self.inputs.radius.value * default_cube_position[i];
         }
 
         self.outputs.geometry.buffers.main_buffer.dirty = true;
@@ -201,24 +191,24 @@ struct GenerateGeometryNonInterleaved
     } radius;
   } inputs;
 
-
   struct
   {
     non_indexed_split_geometry geometry;
     static_assert(avnd::geometry_port<decltype(geometry)>);
   } outputs;
 
-
   GenerateGeometryNonInterleaved()
   {
-    constexpr auto float_count = std::ssize(default_cube_position) + std::ssize(default_cube_texcoord);
-    outputs.geometry.buffers.main_buffer = {
-        .data = new float[float_count],
-        .size = float_count,
-        .dirty = true
-    };
-    memcpy(outputs.geometry.buffers.main_buffer.data, default_cube_position, sizeof(default_cube_position));
-    memcpy(outputs.geometry.buffers.main_buffer.data + std::ssize(default_cube_position), default_cube_texcoord, sizeof(default_cube_texcoord));
+    constexpr auto float_count
+        = std::ssize(default_cube_position) + std::ssize(default_cube_texcoord);
+    outputs.geometry.buffers.main_buffer
+        = {.data = new float[float_count], .size = float_count, .dirty = true};
+    memcpy(
+        outputs.geometry.buffers.main_buffer.data, default_cube_position,
+        sizeof(default_cube_position));
+    memcpy(
+        outputs.geometry.buffers.main_buffer.data + std::ssize(default_cube_position),
+        default_cube_texcoord, sizeof(default_cube_texcoord));
 
     outputs.geometry.input.input0.offset = 0;
     outputs.geometry.input.input1.offset = sizeof(default_cube_position);
@@ -226,53 +216,29 @@ struct GenerateGeometryNonInterleaved
     outputs.geometry.vertices = std::ssize(default_cube_position) / 3;
   }
 
-  ~GenerateGeometryNonInterleaved()
-  {
-    delete outputs.geometry.buffers.main_buffer.data;
-  }
+  ~GenerateGeometryNonInterleaved() { delete outputs.geometry.buffers.main_buffer.data; }
 
-  void operator()() {
-
-  }
+  void operator()() { }
 };
 
-
 ///////////////
 ///////////////
 ///////////////
-
-
-
 
 // Some cube data
-static constexpr float indexed_cube_position[] = {
-    -1.0f,1.0f,1.0f,
-    -1.0f,-1.0f,1.0f,
-    1.0f,1.0f,1.0f,
-    1.0f,-1.0f,1.0f,
-    -1.0f,1.0f,-1.0f,
-    -1.0f,-1.0f,-1.0f,
-    1.0f,1.0f,-1.0f,
-    1.0f,-1.0f,-1.0f
-};
+static constexpr float indexed_cube_position[]
+    = {-1.0f, 1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f, 1.0f, 1.0f,  1.0f, -1.0f, 1.0f,
+       -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f};
 static constexpr uint16_t indexed_cube_index[] = {
-    0, 2, 3, 0, 3, 1,
-    2, 6, 7, 2, 7, 3,
-    6, 4, 5, 6, 5, 7,
-    4, 0, 1, 4, 1, 5,
-    0, 4, 6, 0, 6, 2,
-    1, 5, 7, 1, 7, 3,
+    0, 2, 3, 0, 3, 1, 2, 6, 7, 2, 7, 3, 6, 4, 5, 6, 5, 7,
+    4, 0, 1, 4, 1, 5, 0, 4, 6, 0, 6, 2, 1, 5, 7, 1, 7, 3,
 };
 
 static constexpr float indexed_cube_texcoord[] = {
-   0.335973f, 1.0f - 0.335903f,
-   0.000103f, 1.0f - 0.336048f,
-   0.668104f, 1.0f - 0.000013f,
-   0.667979f, 1.0f - 0.335851f,
-   0.336098f, 1.0f - 0.000071f,
-   0.000059f, 1.0f - 0.000004f,
-   1.000023f, 1.0f - 0.000013f,
-   0.667969f, 1.0f - 0.671889f,
+    0.335973f, 1.0f - 0.335903f, 0.000103f, 1.0f - 0.336048f,
+    0.668104f, 1.0f - 0.000013f, 0.667979f, 1.0f - 0.335851f,
+    0.336098f, 1.0f - 0.000071f, 0.000059f, 1.0f - 0.000004f,
+    1.000023f, 1.0f - 0.000013f, 0.667969f, 1.0f - 0.671889f,
 };
 
 // In this example the vertex buffer has
@@ -281,15 +247,25 @@ struct indexed_split_geometry
 {
   static consteval auto name() { return "Geometry"; }
 
-  struct buffers {
-    struct {
-      enum { dynamic, vertex };
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
       float* data{};
       int size{};
       bool dirty{};
     } main_buffer;
-    struct {
-      enum { index };
+    struct
+    {
+      enum
+      {
+        index
+      };
       uint32_t* data{};
       int size{};
       bool dirty{};
@@ -297,24 +273,37 @@ struct indexed_split_geometry
   } buffers;
 
   // This example uses two successive bindings to one buffer.
-  struct bindings {
-    struct {
-      enum { per_vertex };
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
       int stride = 3 * sizeof(float);
       int step_rate = 1;
     } position_binding;
 
-    struct {
-      enum { per_vertex };
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
       int stride = 2 * sizeof(float);
       int step_rate = 1;
     } texcoord_binding;
   };
 
-  struct attributes {
+  struct attributes
+  {
     struct
     {
-      enum { position };
+      enum
+      {
+        position
+      };
       using datatype = float[3];
 
       // If we have non-interleaved buffers, e.g. each individual attribute is contiguous
@@ -325,25 +314,33 @@ struct indexed_split_geometry
       int32_t binding = 0;
     } position;
 
-    struct {
-      enum { tex_coord };
+    struct
+    {
+      enum
+      {
+        tex_coord
+      };
       using datatype = float[2];
       int32_t binding = 1;
     } texcoord;
   };
 
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       static constexpr auto buffer() { return &buffers::main_buffer; }
       int offset = 0;
     } input0;
-    struct {
+    struct
+    {
       static constexpr auto buffer() { return &buffers::main_buffer; }
       int offset = sizeof(indexed_cube_position);
     } input1;
   } input;
 
-  struct {
+  struct
+  {
     static constexpr auto buffer() { return &buffers::index_buffer; }
     int offset = 0;
   } index;
@@ -351,7 +348,11 @@ struct indexed_split_geometry
   // Not vertices !
   int indices = 0;
   bool dirty{};
-  enum { triangles, clockwise } ;
+  enum
+  {
+    triangles,
+    clockwise
+  };
 };
 
 struct GenerateGeometryNonInterleavedIndexed
@@ -365,12 +366,16 @@ struct GenerateGeometryNonInterleavedIndexed
     struct
     {
       static consteval auto name() { return "Radius"; }
-      struct range { double min = 0.001, max = 2, init = 0.1; };
+      struct range
+      {
+        double min = 0.001, max = 2, init = 0.1;
+      };
       void update(GenerateGeometryNonInterleavedIndexed& self)
       {
         for(int i = 0; i < std::ssize(indexed_cube_position); i++)
         {
-          self.outputs.geometry.buffers.main_buffer.data[i] = self.inputs.radius.value * indexed_cube_position[i];
+          self.outputs.geometry.buffers.main_buffer.data[i]
+              = self.inputs.radius.value * indexed_cube_position[i];
         }
 
         self.outputs.geometry.buffers.main_buffer.dirty = true;
@@ -382,33 +387,31 @@ struct GenerateGeometryNonInterleavedIndexed
     } radius;
   } inputs;
 
-
   struct
   {
     indexed_split_geometry geometry;
     static_assert(avnd::geometry_port<decltype(geometry)>);
   } outputs;
 
-
   GenerateGeometryNonInterleavedIndexed()
   {
-    constexpr auto float_count = std::ssize(indexed_cube_position) + std::ssize(indexed_cube_texcoord);
-    outputs.geometry.buffers.main_buffer = {
-        .data = new float[float_count],
-        .size = float_count,
-        .dirty = true
-    };
-    memcpy(outputs.geometry.buffers.main_buffer.data, indexed_cube_position, sizeof(indexed_cube_position));
-    memcpy(outputs.geometry.buffers.main_buffer.data + std::ssize(indexed_cube_position), indexed_cube_texcoord, sizeof(indexed_cube_texcoord));
+    constexpr auto float_count
+        = std::ssize(indexed_cube_position) + std::ssize(indexed_cube_texcoord);
+    outputs.geometry.buffers.main_buffer
+        = {.data = new float[float_count], .size = float_count, .dirty = true};
+    memcpy(
+        outputs.geometry.buffers.main_buffer.data, indexed_cube_position,
+        sizeof(indexed_cube_position));
+    memcpy(
+        outputs.geometry.buffers.main_buffer.data + std::ssize(indexed_cube_position),
+        indexed_cube_texcoord, sizeof(indexed_cube_texcoord));
 
     constexpr auto index_count = std::ssize(indexed_cube_index);
-    outputs.geometry.buffers.index_buffer = {
-       .data = new uint32_t[index_count]
-     , .size = index_count
-     , .dirty= true
-    };
+    outputs.geometry.buffers.index_buffer
+        = {.data = new uint32_t[index_count], .size = index_count, .dirty = true};
 
-    std::copy_n(indexed_cube_index, index_count, outputs.geometry.buffers.index_buffer.data);
+    std::copy_n(
+        indexed_cube_index, index_count, outputs.geometry.buffers.index_buffer.data);
 
     outputs.geometry.input.input0.offset = 0;
     outputs.geometry.input.input1.offset = sizeof(indexed_cube_position);
@@ -423,59 +426,50 @@ struct GenerateGeometryNonInterleavedIndexed
     delete outputs.geometry.buffers.index_buffer.data;
   }
 
-  void operator()() {
-
-  }
+  void operator()() { }
 };
 
-
-
-
-
-
-
 ///////////////////
 ///////////////////
 ///////////////////
 
-static constexpr float default_cube_interleaved[] = {
-    -1.0f,-1.0f,-1.0f,    0.000059f, 1.0f - 0.000004f,
-    -1.0f,-1.0f, 1.0f,    0.000103f, 1.0f - 0.336048f,
-    -1.0f, 1.0f, 1.0f,    0.335973f, 1.0f - 0.335903f,
-    1.0f, 1.0f, -1.0f,    1.000023f, 1.0f - 0.000013f,
-    -1.0f,-1.0f,-1.0f,    0.667979f, 1.0f - 0.335851f,
-    -1.0f, 1.0f,-1.0f,    0.999958f, 1.0f - 0.336064f,
-    1.0f,-1.0f,  1.0f,    0.667979f, 1.0f - 0.335851f,
-    -1.0f,-1.0f,-1.0f,    0.336024f, 1.0f - 0.671877f,
-    1.0f,-1.0f, -1.0f,    0.667969f, 1.0f - 0.671889f,
-    1.0f, 1.0f, -1.0f,    1.000023f, 1.0f - 0.000013f,
-    1.0f,-1.0f, -1.0f,    0.668104f, 1.0f - 0.000013f,
-    -1.0f,-1.0f,-1.0f,    0.667979f, 1.0f - 0.335851f,
-    -1.0f,-1.0f,-1.0f,    0.000059f, 1.0f - 0.000004f,
-    -1.0f, 1.0f, 1.0f,    0.335973f, 1.0f - 0.335903f,
-    -1.0f, 1.0f,-1.0f,    0.336098f, 1.0f - 0.000071f,
-    1.0f,-1.0f,  1.0f,    0.667979f, 1.0f - 0.335851f,
-    -1.0f,-1.0f, 1.0f,    0.335973f, 1.0f - 0.335903f,
-    -1.0f,-1.0f,-1.0f,    0.336024f, 1.0f - 0.671877f,
-    -1.0f, 1.0f, 1.0f,    1.000004f, 1.0f - 0.671847f,
-    -1.0f,-1.0f, 1.0f,    0.999958f, 1.0f - 0.336064f,
-    1.0f,-1.0f,  1.0f,    0.667979f, 1.0f - 0.335851f,
-    1.0f, 1.0f,  1.0f,    0.668104f, 1.0f - 0.000013f,
-    1.0f,-1.0f, -1.0f,    0.335973f, 1.0f - 0.335903f,
-    1.0f, 1.0f, -1.0f,    0.667979f, 1.0f - 0.335851f,
-    1.0f,-1.0f, -1.0f,    0.335973f, 1.0f - 0.335903f,
-    1.0f, 1.0f,  1.0f,    0.668104f, 1.0f - 0.000013f,
-    1.0f,-1.0f,  1.0f,    0.336098f, 1.0f - 0.000071f,
-    1.0f, 1.0f,  1.0f,    0.000103f, 1.0f - 0.336048f,
-    1.0f, 1.0f, -1.0f,    0.000004f, 1.0f - 0.671870f,
-    -1.0f, 1.0f,-1.0f,    0.336024f, 1.0f - 0.671877f,
-    1.0f, 1.0f,  1.0f,    0.000103f, 1.0f - 0.336048f,
-    -1.0f, 1.0f,-1.0f,    0.336024f, 1.0f - 0.671877f,
-    -1.0f, 1.0f, 1.0f,    0.335973f, 1.0f - 0.335903f,
-    1.0f, 1.0f,  1.0f,    0.667969f, 1.0f - 0.671889f,
-    -1.0f, 1.0f, 1.0f,    1.000004f, 1.0f - 0.671847f,
-    1.0f,-1.0f,  1.0f,    0.667979f, 1.0f - 0.335851f
-};
+static constexpr float default_cube_interleaved[]
+    = {-1.0f, -1.0f, -1.0f, 0.000059f, 1.0f - 0.000004f,
+       -1.0f, -1.0f, 1.0f,  0.000103f, 1.0f - 0.336048f,
+       -1.0f, 1.0f,  1.0f,  0.335973f, 1.0f - 0.335903f,
+       1.0f,  1.0f,  -1.0f, 1.000023f, 1.0f - 0.000013f,
+       -1.0f, -1.0f, -1.0f, 0.667979f, 1.0f - 0.335851f,
+       -1.0f, 1.0f,  -1.0f, 0.999958f, 1.0f - 0.336064f,
+       1.0f,  -1.0f, 1.0f,  0.667979f, 1.0f - 0.335851f,
+       -1.0f, -1.0f, -1.0f, 0.336024f, 1.0f - 0.671877f,
+       1.0f,  -1.0f, -1.0f, 0.667969f, 1.0f - 0.671889f,
+       1.0f,  1.0f,  -1.0f, 1.000023f, 1.0f - 0.000013f,
+       1.0f,  -1.0f, -1.0f, 0.668104f, 1.0f - 0.000013f,
+       -1.0f, -1.0f, -1.0f, 0.667979f, 1.0f - 0.335851f,
+       -1.0f, -1.0f, -1.0f, 0.000059f, 1.0f - 0.000004f,
+       -1.0f, 1.0f,  1.0f,  0.335973f, 1.0f - 0.335903f,
+       -1.0f, 1.0f,  -1.0f, 0.336098f, 1.0f - 0.000071f,
+       1.0f,  -1.0f, 1.0f,  0.667979f, 1.0f - 0.335851f,
+       -1.0f, -1.0f, 1.0f,  0.335973f, 1.0f - 0.335903f,
+       -1.0f, -1.0f, -1.0f, 0.336024f, 1.0f - 0.671877f,
+       -1.0f, 1.0f,  1.0f,  1.000004f, 1.0f - 0.671847f,
+       -1.0f, -1.0f, 1.0f,  0.999958f, 1.0f - 0.336064f,
+       1.0f,  -1.0f, 1.0f,  0.667979f, 1.0f - 0.335851f,
+       1.0f,  1.0f,  1.0f,  0.668104f, 1.0f - 0.000013f,
+       1.0f,  -1.0f, -1.0f, 0.335973f, 1.0f - 0.335903f,
+       1.0f,  1.0f,  -1.0f, 0.667979f, 1.0f - 0.335851f,
+       1.0f,  -1.0f, -1.0f, 0.335973f, 1.0f - 0.335903f,
+       1.0f,  1.0f,  1.0f,  0.668104f, 1.0f - 0.000013f,
+       1.0f,  -1.0f, 1.0f,  0.336098f, 1.0f - 0.000071f,
+       1.0f,  1.0f,  1.0f,  0.000103f, 1.0f - 0.336048f,
+       1.0f,  1.0f,  -1.0f, 0.000004f, 1.0f - 0.671870f,
+       -1.0f, 1.0f,  -1.0f, 0.336024f, 1.0f - 0.671877f,
+       1.0f,  1.0f,  1.0f,  0.000103f, 1.0f - 0.336048f,
+       -1.0f, 1.0f,  -1.0f, 0.336024f, 1.0f - 0.671877f,
+       -1.0f, 1.0f,  1.0f,  0.335973f, 1.0f - 0.335903f,
+       1.0f,  1.0f,  1.0f,  0.667969f, 1.0f - 0.671889f,
+       -1.0f, 1.0f,  1.0f,  1.000004f, 1.0f - 0.671847f,
+       1.0f,  -1.0f, 1.0f,  0.667979f, 1.0f - 0.335851f};
 
 // In this example the vertex buffer has
 // the position and texcoord attributes interleaved
@@ -483,9 +477,15 @@ struct non_indexed_interleaved_geometry
 {
   static consteval auto name() { return "Geometry"; }
 
-  struct buffers {
-    struct {
-      enum { dynamic, vertex };
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
       float* data{};
       int size{};
       bool dirty{};
@@ -493,34 +493,49 @@ struct non_indexed_interleaved_geometry
   } buffers;
 
   // This example uses a single binding & input
-  struct bindings {
-    struct {
-      enum { per_vertex };
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
       int stride = 5 * sizeof(float);
       int step_rate = 1;
     } position_texcoord_binding;
   };
 
   // We still have two attributes
-  struct attributes {
+  struct attributes
+  {
     struct
     {
-      enum { position };
+      enum
+      {
+        position
+      };
       using datatype = float[3];
       int32_t offset = 0;
       int32_t binding = 0;
     } position;
 
-    struct {
-      enum { tex_coord };
+    struct
+    {
+      enum
+      {
+        tex_coord
+      };
       using datatype = float[2];
       int32_t offset = 3 * sizeof(float);
       int32_t binding = 0;
     } texcoord;
   };
 
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       static constexpr auto buffer() { return &buffers::main_buffer; }
       int offset = 0;
     } input0;
@@ -533,7 +548,12 @@ struct non_indexed_interleaved_geometry
 
   int vertices = 0;
   bool dirty{};
-  enum { triangles, counter_clockwise, cull_back } ;
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_back
+  };
 };
 
 struct GenerateGeometryInterleaved
@@ -547,14 +567,21 @@ struct GenerateGeometryInterleaved
     struct
     {
       static consteval auto name() { return "Radius"; }
-      struct range { double min = 0.001, max = 2, init = 0.1; };
-      void update(GenerateGeometryInterleaved& self) {
+      struct range
+      {
+        double min = 0.001, max = 2, init = 0.1;
+      };
+      void update(GenerateGeometryInterleaved& self)
+      {
         constexpr int vertices = std::ssize(default_cube_position) / 3;
         for(int i = 0; i < vertices; i++)
         {
-          self.outputs.geometry.buffers.main_buffer.data[i * 5 + 0] = self.inputs.radius.value * default_cube_position[i * 3 + 0];
-          self.outputs.geometry.buffers.main_buffer.data[i * 5 + 1] = self.inputs.radius.value * default_cube_position[i * 3 + 1];
-          self.outputs.geometry.buffers.main_buffer.data[i * 5 + 2] = self.inputs.radius.value * default_cube_position[i * 3 + 2];
+          self.outputs.geometry.buffers.main_buffer.data[i * 5 + 0]
+              = self.inputs.radius.value * default_cube_position[i * 3 + 0];
+          self.outputs.geometry.buffers.main_buffer.data[i * 5 + 1]
+              = self.inputs.radius.value * default_cube_position[i * 3 + 1];
+          self.outputs.geometry.buffers.main_buffer.data[i * 5 + 2]
+              = self.inputs.radius.value * default_cube_position[i * 3 + 2];
         }
 
         self.outputs.geometry.buffers.main_buffer.dirty = true;
@@ -574,22 +601,18 @@ struct GenerateGeometryInterleaved
   GenerateGeometryInterleaved()
   {
     constexpr auto float_count = std::ssize(default_cube_interleaved);
-    outputs.geometry.buffers.main_buffer = {
-        .data = new float[float_count],
-        .size = float_count,
-        .dirty = true
-    };
-    memcpy(outputs.geometry.buffers.main_buffer.data, default_cube_interleaved, sizeof(default_cube_interleaved));
+    outputs.geometry.buffers.main_buffer
+        = {.data = new float[float_count], .size = float_count, .dirty = true};
+    memcpy(
+        outputs.geometry.buffers.main_buffer.data, default_cube_interleaved,
+        sizeof(default_cube_interleaved));
 
     outputs.geometry.input.input0.offset = 0;
 
     outputs.geometry.vertices = std::ssize(default_cube_position) / 3;
   }
 
-  ~GenerateGeometryInterleaved()
-  {
-    delete outputs.geometry.buffers.main_buffer.data;
-  }
+  ~GenerateGeometryInterleaved() { delete outputs.geometry.buffers.main_buffer.data; }
 
   void operator()()
   {

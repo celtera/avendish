@@ -965,19 +965,9 @@ struct Bank
 struct Effect;
 
 using HostCallback = intptr_t (*)(
-    Effect* effect,
-    int32_t opcode,
-    int32_t index,
-    intptr_t value,
-    void* ptr,
-    float opt);
+    Effect* effect, int32_t opcode, int32_t index, intptr_t value, void* ptr, float opt);
 using EffectDispatcherProc = intptr_t (*)(
-    Effect* effect,
-    int32_t opcode,
-    int32_t index,
-    intptr_t value,
-    void* ptr,
-    float opt);
+    Effect* effect, int32_t opcode, int32_t index, intptr_t value, void* ptr, float opt);
 using EffectProcessProc
     = void (*)(Effect* effect, float** inputs, float** outputs, int32_t sampleFrames);
 using EffectProcessDoubleProc

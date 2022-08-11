@@ -7,14 +7,14 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
-#include <ossia/dataflow/nodes/media.hpp>
 #include <boost/mp11.hpp>
+#include <ossia/dataflow/nodes/media.hpp>
 
 namespace oscr
 {
-template<typename T>
+template <typename T>
 using channel_vector = ossia::small_vector<T, 8>;
-template<typename T>
+template <typename T>
 struct audio_data_t
 {
   ossia::pod_vector<T> data;
@@ -31,12 +31,16 @@ template <typename Field>
 struct soundfile_handle_type;
 
 template <typename Field>
-requires std::is_convertible_v<soundfile_channel_type<Field>, const float*>
-struct soundfile_handle_type<Field> : ossia::audio_handle { };
+requires std::is_convertible_v < soundfile_channel_type<Field>,
+const float* > struct soundfile_handle_type<Field> : ossia::audio_handle
+{
+};
 
 template <typename Field>
-requires std::is_convertible_v<soundfile_channel_type<Field>, const double*>
-struct soundfile_handle_type<Field> : audio_data_t<double> { };
+requires std::is_convertible_v < soundfile_channel_type<Field>,
+const double* > struct soundfile_handle_type<Field> : audio_data_t<double>
+{
+};
 
 template <typename T>
 struct soundfile_input_storage
@@ -44,18 +48,14 @@ struct soundfile_input_storage
 };
 
 template <typename T>
-requires(avnd::soundfile_input_introspection<T>::size > 0)
-struct soundfile_input_storage<T>
+requires(
+    avnd::soundfile_input_introspection<T>::size > 0) struct soundfile_input_storage<T>
 {
   // std::tuple< float*, double* >
   using ptr_tuple = avnd::filter_and_apply<
-    soundfile_channel_type,
-    avnd::soundfile_input_introspection,
-    T>;
+      soundfile_channel_type, avnd::soundfile_input_introspection, T>;
   using hdl_tuple = avnd::filter_and_apply<
-    soundfile_handle_type,
-    avnd::soundfile_input_introspection,
-    T>;
+      soundfile_handle_type, avnd::soundfile_input_introspection, T>;
 
   using ptr_vectors = boost::mp11::mp_transform<channel_vector, ptr_tuple>;
 
@@ -66,21 +66,19 @@ struct soundfile_input_storage<T>
   [[no_unique_address]] hdl_tuple handles;
 };
 
-
 /**
  * Used to store RAM-loaded soundfiles channel pointers
  */
 template <typename T>
-struct soundfile_storage
-    : soundfile_input_storage<T>
+struct soundfile_storage : soundfile_input_storage<T>
 {
   using sf_in = avnd::soundfile_input_introspection<T>;
 
   void init(avnd::effect_container<T>& t)
   {
-    if constexpr (sf_in::size > 0)
+    if constexpr(sf_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::predicate_index<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage, a std::vector<timed_value>
         auto& buf = get<Idx>(this->pointers);
@@ -98,8 +96,10 @@ struct soundfile_storage
     }
   }
 
-  template<std::size_t N, std::size_t NField>
-  void load(avnd::effect_container<T>& t, ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  template <std::size_t N, std::size_t NField>
+  void load(
+      avnd::effect_container<T>& t, ossia::audio_handle& hdl, avnd::predicate_index<N>,
+      avnd::field_index<NField>)
   {
     auto& buf = get<N>(this->pointers);
     using pointer_type = typename std::decay_t<decltype(buf)>::value_type;
@@ -116,7 +116,7 @@ struct soundfile_storage
 
       // Copy the pointers in our storage if no conversion is needed
       for(int i = 0; i < chans; i++)
-       buf[i] = g->data[i].data();
+        buf[i] = g->data[i].data();
 
       // Update the port
       for(auto& state : t.full_state())
@@ -162,8 +162,6 @@ struct soundfile_storage
 };
 }
 
-
-
 #include <libremidi/libremidi.hpp>
 #include <libremidi/reader.hpp>
 namespace oscr
@@ -178,37 +176,35 @@ template <typename Field>
 struct midifile_handle_type;
 
 template <avnd::midifile_port Field>
-struct midifile_handle_type<Field> : std::shared_ptr<midifile_data> { };
+struct midifile_handle_type<Field> : std::shared_ptr<midifile_data>
+{
+};
 
 template <typename T>
 struct midifile_input_storage
 {
-
 };
 
 template <typename T>
-requires(avnd::midifile_input_introspection<T>::size > 0)
-struct midifile_input_storage<T>
+requires(
+    avnd::midifile_input_introspection<T>::size > 0) struct midifile_input_storage<T>
 {
   using hdl_tuple = avnd::filter_and_apply<
-    midifile_handle_type,
-    avnd::midifile_input_introspection,
-    T>;
+      midifile_handle_type, avnd::midifile_input_introspection, T>;
 
   // std::tuple< std::shared_ptr<midifile_data> >
   [[no_unique_address]] hdl_tuple handles;
 };
 
 template <typename T>
-struct midifile_storage
-        : midifile_input_storage<T>
+struct midifile_storage : midifile_input_storage<T>
 {
-  void init(avnd::effect_container<T>& t)
-  {
-  }
+  void init(avnd::effect_container<T>& t) { }
 
-  template<std::size_t N, std::size_t NField>
-  void load(avnd::effect_container<T>& t, const std::shared_ptr<midifile_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  template <std::size_t N, std::size_t NField>
+  void load(
+      avnd::effect_container<T>& t, const std::shared_ptr<midifile_data>& hdl,
+      avnd::predicate_index<N>, avnd::field_index<NField>)
   {
     std::shared_ptr<midifile_data>& g = get<N>(this->handles);
 
@@ -238,7 +234,7 @@ struct midifile_storage
           out.resize(in.size());
 
         int64_t abs_tick = 0;
-        auto set_tick = [&abs_tick] (auto& in, auto& out) mutable {
+        auto set_tick = [&abs_tick](auto& in, auto& out) mutable {
           // Compute the tick
           auto delta_tick = in.tick;
           abs_tick += delta_tick;
@@ -248,13 +244,15 @@ struct midifile_storage
             out.tick_absolute = abs_tick;
         };
 
-        for (std::size_t k = 0; k < in.size(); ++k)
+        for(std::size_t k = 0; k < in.size(); ++k)
         {
           // Copy the MIDI bytes
           auto& in_b = in[k].m.bytes;
           if constexpr(is_c_array)
           {
-            static_assert(std::extent<bytes_type, 0>::value == 3, "MIDI arrays must have at least 3 bytes");
+            static_assert(
+                std::extent<bytes_type, 0>::value == 3,
+                "MIDI arrays must have at least 3 bytes");
             if(in_b.size() != 3)
               continue;
 
@@ -289,11 +287,6 @@ struct midifile_storage
 };
 }
 
-
-
-
-
-
 #if __has_include(<QFile>)
 #define OSCR_HAS_MMAP_FILE_STORAGE 1
 #include <QFile>
@@ -310,37 +303,35 @@ template <typename Field>
 struct raw_file_handle_type;
 
 template <avnd::raw_file_port Field>
-struct raw_file_handle_type<Field> : std::shared_ptr<raw_file_data> { };
+struct raw_file_handle_type<Field> : std::shared_ptr<raw_file_data>
+{
+};
 
 template <typename T>
 struct raw_file_input_storage
 {
-
 };
 
 template <typename T>
-requires(avnd::raw_file_input_introspection<T>::size > 0)
-struct raw_file_input_storage<T>
+requires(
+    avnd::raw_file_input_introspection<T>::size > 0) struct raw_file_input_storage<T>
 {
   using hdl_tuple = avnd::filter_and_apply<
-    raw_file_handle_type,
-    avnd::raw_file_input_introspection,
-    T>;
+      raw_file_handle_type, avnd::raw_file_input_introspection, T>;
 
   // std::tuple< std::shared_ptr<raw_file_data> >
   [[no_unique_address]] hdl_tuple handles;
 };
 
 template <typename T>
-struct raw_file_storage
-  : raw_file_input_storage<T>
+struct raw_file_storage : raw_file_input_storage<T>
 {
-  void init(avnd::effect_container<T>& t)
-  {
-  }
+  void init(avnd::effect_container<T>& t) { }
 
-  template<std::size_t N, std::size_t NField>
-  void load(avnd::effect_container<T>& t, const std::shared_ptr<raw_file_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  template <std::size_t N, std::size_t NField>
+  void load(
+      avnd::effect_container<T>& t, const std::shared_ptr<raw_file_data>& hdl,
+      avnd::predicate_index<N>, avnd::field_index<NField>)
   {
     std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
 

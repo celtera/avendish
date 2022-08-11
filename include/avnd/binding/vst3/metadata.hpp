@@ -34,7 +34,7 @@ struct UnionID
 
 static consteval uint8_t hex_to_int(char c1)
 {
-  switch (c1)
+  switch(c1)
   {
     case '0':
       return 0;

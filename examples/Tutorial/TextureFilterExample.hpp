@@ -1,10 +1,10 @@
 #pragma once
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 #include <halp/texture.hpp>
-#include <cmath>
 
 namespace examples
 {
@@ -41,21 +41,21 @@ struct TextureFilterExample
 
     // Since GPU readbacks are asynchronous: reading textures may take some time and
     // thus the data may not be available from the beginning.
-    if (in_tex.bytes == nullptr)
+    if(in_tex.bytes == nullptr)
       return;
 
     // Texture hasn't changed since last time, no need to recompute anything
-    if (!in_tex.changed)
+    if(!in_tex.changed)
       return;
     in_tex.changed = false;
 
     // We (dirtily) downscale by a factor of 16
-    if (out_tex.width != in_tex.width || out_tex.height != in_tex.height)
+    if(out_tex.width != in_tex.width || out_tex.height != in_tex.height)
       outputs.image.create(in_tex.width / 16, in_tex.height / 16);
 
-    for (int y = 0; y < in_tex.height / 16; y++)
+    for(int y = 0; y < in_tex.height / 16; y++)
     {
-      for (int x = 0; x < in_tex.width / 16; x++)
+      for(int x = 0; x < in_tex.width / 16; x++)
       {
         // Get a pixel
         auto [r, g, b, a] = inputs.image.get(x * 16, y * 16);

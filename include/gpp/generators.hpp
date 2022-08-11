@@ -17,27 +17,22 @@ public:
     Out current_command;
     In feedback_value;
 
-    template<typename Ret>
+    template <typename Ret>
     struct awaiter : std::suspend_always
     {
       friend promise_type;
-      constexpr auto await_resume() const {
-          return get<Ret>(p.feedback_value);
-      }
+      constexpr auto await_resume() const { return get<Ret>(p.feedback_value); }
 
       promise_type& p;
     };
 
-    generator get_return_object()
-    {
-      return generator{handle::from_promise(*this)};
-    }
+    generator get_return_object() { return generator{handle::from_promise(*this)}; }
 
     static std::suspend_always initial_suspend() noexcept { return {}; }
 
     static std::suspend_always final_suspend() noexcept { return {}; }
 
-    template<typename T>
+    template <typename T>
     auto yield_value(T value) noexcept
     {
       current_command = value;
@@ -98,9 +93,9 @@ public:
 
   generator& operator=(generator&& other) noexcept
   {
-    if (this != &other)
+    if(this != &other)
     {
-      if (m_coroutine)
+      if(m_coroutine)
       {
         m_coroutine.destroy();
       }
@@ -113,7 +108,7 @@ public:
 
   ~generator()
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.destroy();
     }
@@ -122,7 +117,7 @@ public:
   // Range-based for loop support.
   iterator begin() noexcept
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.resume();
     }
@@ -144,16 +139,13 @@ public:
   struct promise_type
   {
     Out current_command;
-    generator get_return_object()
-    {
-      return generator{handle::from_promise(*this)};
-    }
+    generator get_return_object() { return generator{handle::from_promise(*this)}; }
 
     static std::suspend_always initial_suspend() noexcept { return {}; }
 
     static std::suspend_always final_suspend() noexcept { return {}; }
 
-    template<typename T>
+    template <typename T>
     std::suspend_always yield_value(T&& value) noexcept
     {
       current_command = std::move(value);
@@ -210,9 +202,9 @@ public:
 
   generator& operator=(generator&& other) noexcept
   {
-    if (this != &other)
+    if(this != &other)
     {
-      if (m_coroutine)
+      if(m_coroutine)
       {
         m_coroutine.destroy();
       }
@@ -225,7 +217,7 @@ public:
 
   ~generator()
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.destroy();
     }
@@ -234,7 +226,7 @@ public:
   // Range-based for loop support.
   iterator begin() noexcept
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.resume();
     }
@@ -248,10 +240,6 @@ private:
   handle m_coroutine;
 };
 
-
-
-
-
 struct suspend
 {
   bool await_ready() const noexcept { return false; }
@@ -260,7 +248,7 @@ struct suspend
 };
 //static const constexpr auto qSuspend = QSuspend{};
 
-template<typename Promise>
+template <typename Promise>
 class task
 {
 public:
@@ -271,7 +259,8 @@ public:
   {
   }
 
-  task(task&& other) noexcept : m_handle{std::exchange(other.m_handle, {})}
+  task(task&& other) noexcept
+      : m_handle{std::exchange(other.m_handle, {})}
   {
   }
 
@@ -283,7 +272,7 @@ public:
 
   ~task()
   {
-    if (m_handle)
+    if(m_handle)
       m_handle.destroy();
   }
 
@@ -292,7 +281,7 @@ public:
 
   bool resume()
   {
-    if (!m_handle.done())
+    if(!m_handle.done())
       m_handle.resume();
     return !m_handle.done();
   }
@@ -300,6 +289,5 @@ public:
 private:
   std::coroutine_handle<Promise> m_handle;
 };
-
 
 }

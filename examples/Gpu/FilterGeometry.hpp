@@ -2,35 +2,60 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include <avnd/concepts/gfx.hpp>
-#include <random>
-#include <span>
+
 #include <cstdlib>
 #include <cstring>
+#include <random>
+#include <span>
 
 namespace examples
 {
 struct dynamic_geometry
 {
-  struct buffer {
+  struct buffer
+  {
     void* data{};
     int size{};
     bool dirty{};
   };
 
-  struct binding {
+  struct binding
+  {
     int stride{};
-    enum { per_vertex, per_instance } classification{};
+    enum
+    {
+      per_vertex,
+      per_instance
+    } classification{};
     int step_rate{};
   };
 
-  struct attribute {
+  struct attribute
+  {
     int binding = 0;
-    enum : uint32_t { position, tex_coord, color, normal, tangent } location{};
-    enum { float4, float3, float2, float1, uint4, uint2, uint1 } format{};
+    enum : uint32_t
+    {
+      position,
+      tex_coord,
+      color,
+      normal,
+      tangent
+    } location{};
+    enum
+    {
+      float4,
+      float3,
+      float2,
+      float1,
+      uint4,
+      uint2,
+      uint1
+    } format{};
     int32_t offset{};
   };
 
-  struct input {
+  struct input
+  {
     int buffer{}; // Index of the buffer to use
     int offset{};
   };
@@ -40,14 +65,36 @@ struct dynamic_geometry
   std::vector<attribute> attributes;
   std::vector<input> input;
   int vertices = 0;
-  enum { triangles, triangle_strip, triangle_fan, lines, line_strip, points } topology;
-  enum { none, front, back } cull_mode;
-  enum { counter_clockwise, clockwise } front_face;
+  enum
+  {
+    triangles,
+    triangle_strip,
+    triangle_fan,
+    lines,
+    line_strip,
+    points
+  } topology;
+  enum
+  {
+    none,
+    front,
+    back
+  } cull_mode;
+  enum
+  {
+    counter_clockwise,
+    clockwise
+  } front_face;
 
-  struct {
+  struct
+  {
     int buffer{-1};
     int offset{};
-    enum { uint16, uint32 } format{};
+    enum
+    {
+      uint16,
+      uint32
+    } format{};
   } index;
 
   bool dirty{};
@@ -70,10 +117,7 @@ struct FilterGeometry
     dynamic_geometry geometry;
   } outputs;
 
-
-  FilterGeometry()
-  {
-  }
+  FilterGeometry() { }
 
   ~FilterGeometry()
   {
@@ -89,7 +133,8 @@ struct FilterGeometry
 
     // Find the position attribute:
     auto& attr = outputs.geometry.attributes;
-    auto it = std::find_if(attr.begin(), attr.end(), [] (auto& a) { return a.location == 0; });
+    auto it = std::find_if(
+        attr.begin(), attr.end(), [](auto& a) { return a.location == 0; });
     if(it == attr.end())
       return;
 
@@ -110,13 +155,14 @@ struct FilterGeometry
     // and that things aren't interleaved,
     // and that we have float[3]s, ...
     using type = float[3];
-    std::span<type> vertices((type*) buf.data, outputs.geometry.vertices);
+    std::span<type> vertices((type*)buf.data, outputs.geometry.vertices);
 
-   for(float (&v)[3]: vertices) {
-     v[0] += 0.01;
-     v[1] += 0.01;
-     v[2] += 0.01;
-   }
+    for(float(&v)[3] : vertices)
+    {
+      v[0] += 0.01;
+      v[1] += 0.01;
+      v[2] += 0.01;
+    }
 
     //auto b = (float*) outputs.geometry.buffers[0].data;
     //for(int i = 0; i < 16; i++)
@@ -124,7 +170,6 @@ struct FilterGeometry
     //  b[i] += 0.01;
     //}
     outputs.geometry.buffers[0].dirty = true;
-
   }
 };
 }

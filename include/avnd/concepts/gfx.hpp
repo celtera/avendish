@@ -27,46 +27,52 @@ concept cpu_texture_port = requires(T t)
 
 template <typename T>
 concept sampler_port = requires(T t)
-{ T::sampler(); };
+{
+  T::sampler();
+};
 
 template <typename T>
 concept image_port = requires(T t)
-{ T::image(); };
+{
+  T::image();
+};
 
 template <typename T>
-concept attachment_port = requires {
+concept attachment_port = requires
+{
   T::attachment();
 };
 
 template <typename T>
-concept texture_port =
-   cpu_texture_port<T>
-|| sampler_port<T>
-|| attachment_port<T>
-|| image_port<T>
-;
-
+concept texture_port
+    = cpu_texture_port<T> || sampler_port<T> || attachment_port<T> || image_port<T>;
 
 template <typename T>
-concept uniform_port = requires {
+concept uniform_port = requires
+{
   T::uniform();
 };
 
-
 template <typename T>
-concept static_geometry_port = requires (T t) {
+concept static_geometry_port = requires(T t)
+{
   sizeof(t.buffers);
   sizeof(t.input);
   sizeof(typename T::attributes);
   sizeof(typename T::bindings);
-} && (requires (T t) { t.vertices; } || requires (T t) { t.indices; });
+}
+&&(
+    requires(T t) { t.vertices; } || requires(T t) { t.indices; });
 template <typename T>
-concept dynamic_geometry_port = requires (T t) {
+concept dynamic_geometry_port = requires(T t)
+{
   t.buffers.size();
   t.input.size();
   t.attributes.size();
   t.bindings.size();
-} && (requires (T t) { t.vertices; } || requires (T t) { t.indices; });
+}
+&&(
+    requires(T t) { t.vertices; } || requires(T t) { t.indices; });
 template <typename T>
 concept geometry_port = static_geometry_port<T> || dynamic_geometry_port<T>;
 }

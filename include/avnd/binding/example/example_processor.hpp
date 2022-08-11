@@ -13,20 +13,19 @@
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/widgets.hpp>
+#include <halp/fft.hpp>
+#include <halp/log.hpp>
 
 #include <utility>
 
 #include <string_view>
-
-#include <halp/log.hpp>
-#include <halp/fft.hpp>
 namespace exhs
 {
 struct config
 {
   using logger_type = halp::basic_logger;
 
-  template<typename T>
+  template <typename T>
   using fft_type = halp::fft<T>;
 };
 
@@ -123,7 +122,7 @@ public:
     }
 
     /// Initialize the built-in presets
-    if constexpr (avnd::has_programs<T>)
+    if constexpr(avnd::has_programs<T>)
     {
       // Presets are stored in T::programs, here they can be enumerated
       // to the host.
@@ -132,7 +131,7 @@ public:
 
     /// Read the initial state of the controls, e.g.
     /// for each control make sure that it is initialized to its init value if any is specified
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::init_controls(effect);
     }
@@ -143,17 +142,13 @@ public:
     /// Initialize the callbacks for nodes which have them.
     /// They allow the plug-in to notify the host.
     /// Mostly useful for programming-language-ish things, Pd, Max, etc.
-    if constexpr (avnd::callback_introspection<outputs_t>::size > 0)
+    if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
     {
 #if !defined(_MSC_VER)
       auto callbacks_initializer = [this]<
-          typename Field,
-          template <typename...> typename L,
-          typename Ret,
-          typename... Args,
-          std::size_t Idx>(
-          Field& field, L<Ret,Args...>, avnd::num<Idx>)
-      {
+                                       typename Field, template <typename...> typename L,
+                                       typename Ret, typename... Args, std::size_t Idx>(
+                                       Field& field, L<Ret, Args...>, avnd::num<Idx>) {
         std::string_view message = avnd::get_name<Field>();
         // This method will be called for every callback.
         // It must return a function that takes Args... in arguments, and
@@ -165,7 +160,7 @@ public:
 
         /* CUSTOMIZATION POINT */
 
-        if constexpr (std::is_void_v<Ret>)
+        if constexpr(std::is_void_v<Ret>)
           return [this](Args...) { return; };
         else
           return [this](Args...) { return Ret{}; };
@@ -195,13 +190,13 @@ public:
     effect.init_channels(setup_info.input_channels, setup_info.output_channels);
 
     // Setup buffers for storing MIDI messages
-    if constexpr (midi_in_info::size > 0 || midi_out_info::size > 0)
+    if constexpr(midi_in_info::size > 0 || midi_out_info::size > 0)
     {
       midi_buffers.reserve_space(effect, buffer_size);
     }
 
     // Setup buffers for storing sample-accurate controls
-    if constexpr (sizeof(control_buffers) > 1)
+    if constexpr(sizeof(control_buffers) > 1)
     {
       control_buffers.reserve_space(effect, buffer_size);
     }
@@ -236,25 +231,21 @@ public:
     // the corresponding indices would be 1 and 3 respectively.
 
     param_in_info::for_nth_mapped(
-        this->effect.inputs(),
-        control_id,
+        this->effect.inputs(), control_id,
         [&]<typename C>(C& field) { field.value = value; });
   }
 
   void apply_midi_in(int midi_id, std::array<unsigned char, 3> bytes)
   {
     midi_in_info::for_nth_mapped(
-        this->effect.inputs(),
-        midi_id,
-        [&]<avnd::midi_port C>(C& port)
-        {
+        this->effect.inputs(), midi_id, [&]<avnd::midi_port C>(C& port) {
           // Apply the midi message:
-          if constexpr (avnd::dynamic_container_midi_port<C>)
+          if constexpr(avnd::dynamic_container_midi_port<C>)
           {
             port.midi_messages.push_back(
                 {.bytes = {bytes[0], bytes[1], bytes[2]}, .timestamp = 0});
           }
-          else if constexpr (avnd::raw_container_midi_port<C>)
+          else if constexpr(avnd::raw_container_midi_port<C>)
           {
             // TODO
           }
@@ -304,12 +295,12 @@ public:
   void process(Fp** inputs, int in_N, Fp** outputs, int out_N, int frames)
   {
     // Sanity checks
-    if (in_N != this->channels.actual_runtime_inputs)
+    if(in_N != this->channels.actual_runtime_inputs)
     {
       // logger.error("Host provided incorrect input channel count: expected {}, got {}", this->channels.actual_runtime_inputs, in_N);
       return;
     }
-    if (out_N != this->channels.actual_runtime_outputs)
+    if(out_N != this->channels.actual_runtime_outputs)
     {
       // logger.error("Host provided incorrect output channel count", this->channels.actual_runtime_outputs, out_N);
       return;
@@ -318,11 +309,11 @@ public:
     before_process();
 
     // Check if processing is to be bypassed
-    if constexpr (avnd::can_bypass<T>)
+    if constexpr(avnd::can_bypass<T>)
     {
-      for (auto& impl : effect.effects())
+      for(auto& impl : effect.effects())
       {
-        if (impl.bypass)
+        if(impl.bypass)
         {
           after_process();
           return;
@@ -341,10 +332,8 @@ public:
   void run_process(Fp** inputs, int in_N, Fp** outputs, int out_N, int frames)
   {
     processor.process(
-        effect,
-        avnd::span<Fp*>{inputs, std::size_t(in_N)},
-        avnd::span<Fp*>{outputs, std::size_t(out_N)},
-        frames);
+        effect, avnd::span<Fp*>{inputs, std::size_t(in_N)},
+        avnd::span<Fp*>{outputs, std::size_t(out_N)}, frames);
   }
 
   void after_process()

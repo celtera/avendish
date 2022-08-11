@@ -6,8 +6,9 @@
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/concepts/generic.hpp>
 
-#include <string_view>
 #include <vector>
+
+#include <string_view>
 
 namespace avnd
 {
@@ -50,14 +51,18 @@ concept function_object_message = requires
 };
 
 template <typename Node, typename T>
-concept variadic_function_object_message =
-   requires (T t)         { t(std::vector<int>{}); }
-|| requires (Node n, T t) { t(n, std::vector<int>{}); }
-;
+concept variadic_function_object_message = requires(T t)
+{
+  t(std::vector<int>{});
+}
+|| requires(Node n, T t)
+{
+  t(n, std::vector<int>{});
+};
 
 template <typename T>
-concept reflectable_message
-    = stateless_message<T> || stateful_message<T> || stdfunc_message<T> || function_object_message<T>;
+concept reflectable_message = stateless_message<T> || stateful_message<
+    T> || stdfunc_message<T> || function_object_message<T>;
 
 template <typename T>
 concept message = reflectable_message<T> && requires(T t)
@@ -68,10 +73,11 @@ concept message = reflectable_message<T> && requires(T t)
 };
 
 template <typename T, typename N>
-concept unreflectable_message =
-   (!reflectable_message<T>)
-&& requires(T t) { t.name(); }
-&& (requires(T t) { t.func(); } || variadic_function_object_message<N, T>);
+concept unreflectable_message = (!reflectable_message<T>)&&requires(T t)
+{
+  t.name();
+}
+&&(requires(T t) { t.func(); } || variadic_function_object_message<N, T>);
 
 type_or_value_qualification(messages)
 type_or_value_reflection(messages)
@@ -79,19 +85,19 @@ type_or_value_reflection(messages)
 template <typename M>
 consteval auto message_function_reflection()
 {
-  if constexpr (stateless_message<M>)
+  if constexpr(stateless_message<M>)
   {
     return avnd::function_reflection<M::func()>{};
   }
-  else if constexpr (stateful_message<M>)
+  else if constexpr(stateful_message<M>)
   {
     return avnd::function_reflection_o<decltype(M::func())>{};
   }
-  else if constexpr (stdfunc_message<M>)
+  else if constexpr(stdfunc_message<M>)
   {
     return avnd::function_reflection_t<decltype(M::func())>{};
   }
-  else if constexpr (function_object_message<M>)
+  else if constexpr(function_object_message<M>)
   {
     return avnd::function_reflection<&M::operator()>{};
   }
@@ -104,19 +110,19 @@ consteval auto message_function_reflection()
 template <typename M>
 consteval auto message_get_func()
 {
-  if constexpr (stateless_message<M>)
+  if constexpr(stateless_message<M>)
   {
     return M::func();
   }
-  else if constexpr (stateful_message<M>)
+  else if constexpr(stateful_message<M>)
   {
     return M::func();
   }
-  else if constexpr (stdfunc_message<M>)
+  else if constexpr(stdfunc_message<M>)
   {
     return M::func();
   }
-  else if constexpr (function_object_message<M>)
+  else if constexpr(function_object_message<M>)
   {
     return &M::operator();
   }

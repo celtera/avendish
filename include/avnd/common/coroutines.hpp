@@ -110,9 +110,9 @@ public:
 
   member_iterator& operator=(member_iterator&& other) noexcept
   {
-    if (this != &other)
+    if(this != &other)
     {
-      if (m_coroutine)
+      if(m_coroutine)
       {
         m_coroutine.destroy();
       }
@@ -125,7 +125,7 @@ public:
 
   ~member_iterator()
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.destroy();
     }
@@ -134,7 +134,7 @@ public:
   // Range-based for loop support.
   iterator begin() noexcept
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.resume();
     }
@@ -219,9 +219,9 @@ public:
 
   generator& operator=(generator&& other) noexcept
   {
-    if (this != &other)
+    if(this != &other)
     {
-      if (m_coroutine)
+      if(m_coroutine)
       {
         m_coroutine.destroy();
       }
@@ -234,7 +234,7 @@ public:
 
   ~generator()
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.destroy();
     }
@@ -243,7 +243,7 @@ public:
   // Range-based for loop support.
   iterator begin() noexcept
   {
-    if (m_coroutine)
+    if(m_coroutine)
     {
       m_coroutine.resume();
     }

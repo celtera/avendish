@@ -59,12 +59,12 @@ struct AudioEffectExample
     const auto chans = p1.channels;
 
     // Process the input buffer
-    for (std::size_t i = 0; i < chans; i++)
+    for(std::size_t i = 0; i < chans; i++)
     {
       auto& in = p1.samples[i];
       auto& out = p2.samples[i];
 
-      for (std::size_t j = 0; j < N; j++)
+      for(std::size_t j = 0; j < N; j++)
       {
         out[j] = in[j] * gain.value;
       }

@@ -2,58 +2,55 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/concepts/processor.hpp>
 #include <avnd/concepts/painter.hpp>
+#include <avnd/concepts/processor.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <halp/custom_widgets.hpp>
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/custom_widgets.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
-#include <cmath>
-#include <variant>
+
 #include <cstdio>
+#include <variant>
 
 namespace examples::helpers
 {
 struct custom_button
 {
-    static constexpr double width() { return 100.; }
-    static constexpr double height() { return 100.; }
+  static constexpr double width() { return 100.; }
+  static constexpr double height() { return 100.; }
 
-    void paint(avnd::painter auto ctx)
-    {
-      ctx.set_stroke_color({200, 200, 200, 255});
-      ctx.set_stroke_width(2.);
-      ctx.set_fill_color({100, 100, 100, 255});
-      ctx.begin_path();
-      ctx.draw_rounded_rect(0., 0., width(), height(), 5);
-      ctx.fill();
-      ctx.stroke();
+  void paint(avnd::painter auto ctx)
+  {
+    ctx.set_stroke_color({200, 200, 200, 255});
+    ctx.set_stroke_width(2.);
+    ctx.set_fill_color({100, 100, 100, 255});
+    ctx.begin_path();
+    ctx.draw_rounded_rect(0., 0., width(), height(), 5);
+    ctx.fill();
+    ctx.stroke();
 
-      ctx.set_fill_color({0, 0, 0, 255});
-      ctx.begin_path();
-      ctx.draw_text(20., 20., fmt::format("{}", press_count));
-      ctx.fill();
-    }
+    ctx.set_fill_color({0, 0, 0, 255});
+    ctx.begin_path();
+    ctx.draw_text(20., 20., fmt::format("{}", press_count));
+    ctx.fill();
+  }
 
-    bool mouse_press(double x, double y)
-    {
-      on_pressed();
-      return true;
-    }
+  bool mouse_press(double x, double y)
+  {
+    on_pressed();
+    return true;
+  }
 
-    void mouse_move(double x, double y)
-    {
-    }
+  void mouse_move(double x, double y) { }
 
-    void mouse_release(double x, double y)
-    {
-    }
+  void mouse_release(double x, double y) { }
 
-    int press_count{0};
+  int press_count{0};
 
-    std::function<void()> on_pressed = [] { };
+  std::function<void()> on_pressed = [] {};
 };
 
 /**
@@ -87,8 +84,12 @@ struct MessageBusUi
   static consteval auto c_name() { return "avnd_mbus_ui"; }
   static consteval auto uuid() { return "4ed8e7fd-a1fa-40a7-bbbe-13ee50044248"; }
 
-  struct { } inputs;
-  struct { } outputs;
+  struct
+  {
+  } inputs;
+  struct
+  {
+  } outputs;
 
   void operator()(int N) { }
 
@@ -96,20 +97,24 @@ struct MessageBusUi
   // aggregates. What matters is that they are used as arguments to process_message.
 
   // This one will be serialized / deserialized as it is not a trivial type
-  struct ui_to_processor {
+  struct ui_to_processor
+  {
     int foo;
     std::string bar;
     std::variant<float, double> x;
     std::vector<float> y;
-    struct {
+    struct
+    {
       int x, y;
     } baz;
   };
 
   // This one will be memcpy'd as it is a trivial type
-  struct processor_to_ui {
+  struct processor_to_ui
+  {
     float bar;
-    struct {
+    struct
+    {
       int x, y;
     } baz;
   };
@@ -125,29 +130,32 @@ struct MessageBusUi
   std::function<void(processor_to_ui)> send_message;
 
   // Define our UI
-  struct ui {
+  struct ui
+  {
     halp_meta(layout, halp::layouts::container)
     halp_meta(width, 100)
     halp_meta(height, 100)
 
-    struct {
+    struct
+    {
       halp_meta(layout, halp::layouts::container)
       halp::custom_actions_item<custom_button> button{
-          .x = 10
-        , .y = 10
-        // We'd like to define our callback here,
-        // sadly C++ scoping rules do not allow it as soon as there is nesting
+          .x = 10, .y = 10
+          // We'd like to define our callback here,
+          // sadly C++ scoping rules do not allow it as soon as there is nesting
       };
     } foo;
 
     // Define the communication between UI and processor.
-    struct bus {
+    struct bus
+    {
       // 3. Set up connections
       void init(ui& ui)
       {
         ui.foo.button.on_pressed = [&] {
           fprintf(stderr, "Sending message from UI thread !\n");
-          this->send_message(ui_to_processor{.foo = 123, .bar = "hiii", .x = 0.5f, .y = { 1, 3, 5 }});
+          this->send_message(
+              ui_to_processor{.foo = 123, .bar = "hiii", .x = 0.5f, .y = {1, 3, 5}});
         };
       }
 

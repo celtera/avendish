@@ -12,4 +12,4 @@
   do              \
   {               \
     std::abort(); \
-  } while (0)
+  } while(0)

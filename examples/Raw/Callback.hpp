@@ -63,10 +63,10 @@ struct Callback
 
   void work()
   {
-    if (outputs.bang.call)
+    if(outputs.bang.call)
       outputs.bang.call(inputs.a.value * 10);
 
-    if (outputs.bong.call)
+    if(outputs.bong.call)
       outputs.bong.call(inputs.a.value * 1000);
   }
 };

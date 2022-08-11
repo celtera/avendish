@@ -1,13 +1,13 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <boost/pfr.hpp>
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/controls_fmt.hpp>
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
-#include <boost/pfr.hpp>
-#include <cmath>
 
 namespace examples
 {
@@ -136,10 +136,16 @@ struct ControlGallery
     //!   }
     //!
     //! OSC messages can use either the int index or the string.
-    struct enum_t { halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole) };
+    struct enum_t
+    {
+      halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole)
+    };
     halp::accurate<enum_t> simpler_enumeration;
 
-    struct combobox_t { halp__enum_combobox("Color", Blue, Red, Green, Teal, Blue, Black, Orange) };
+    struct combobox_t
+    {
+      halp__enum_combobox("Color", Blue, Red, Green, Teal, Blue, Black, Orange)
+    };
     halp::accurate<combobox_t> simpler_enumeration_in_a_combobox;
 
     //! Crosshair XY chooser
@@ -154,20 +160,17 @@ struct ControlGallery
   {
     const bool has_impulse = !inputs.impulse_button.values.empty();
     const bool has_button = std::any_of(
-        inputs.button.values.begin(),
-        inputs.button.values.end(),
+        inputs.button.values.begin(), inputs.button.values.end(),
         [](const auto& p) { return p.second == true; });
 
-    if (!has_impulse && !has_button)
+    if(!has_impulse && !has_button)
       return;
 
-    avnd::pfr::for_each_field(
-        inputs,
-        [] <typename Control> (const Control& input) {
-          {
-            auto val = input.values.begin()->second;
-            fmt::print("changed: {} {}", Control::name(), val);
-          }
+    avnd::pfr::for_each_field(inputs, []<typename Control>(const Control& input) {
+      {
+        auto val = input.values.begin()->second;
+        fmt::print("changed: {} {}", Control::name(), val);
+      }
     });
   }
 };

@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/aggregates.hpp>
 #include <avnd/common/index_sequence.hpp>
 #include <avnd/concepts/all.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-#include <avnd/common/aggregates.hpp>
 
 namespace avnd
 {
@@ -78,7 +78,7 @@ struct gpu_attachment_introspection
 
 template <typename T>
 struct gpu_image_output_introspection
-        : gpu_image_port_introspection<typename outputs_type<T>::type>
+    : gpu_image_port_introspection<typename outputs_type<T>::type>
 {
 };
 

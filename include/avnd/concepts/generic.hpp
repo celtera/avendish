@@ -2,23 +2,23 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
-#include <avnd/common/dummy.hpp>
 #include <avnd/common/aggregates.hpp>
+#include <avnd/common/dummy.hpp>
 
 #include <type_traits>
 
 namespace avnd
 {
-#define if_possible(action)           \
-  if constexpr (requires { action; }) \
-  {                                   \
-    action;                           \
+#define if_possible(action)          \
+  if constexpr(requires { action; }) \
+  {                                  \
+    action;                          \
   }
 
 #define value_if_possible(A, X, B) \
   []() consteval                   \
   {                                \
-    if constexpr (requires { A; }) \
+    if constexpr(requires { A; })  \
       return A;                    \
     else                           \
       return B;                    \
@@ -39,17 +39,23 @@ concept vector_ish = requires(T t)
 };
 
 template <typename T>
-concept set_ish = requires (T t) {
+concept set_ish = requires(T t)
+{
   sizeof(typename T::key_type);
   sizeof(typename T::value_type);
   t.insert(typename T::key_type{});
   t.find(typename T::key_type{});
   t.size();
   t.clear();
-} && !requires (T t) { sizeof(typename T::mapped_type); };
+}
+&&!requires(T t)
+{
+  sizeof(typename T::mapped_type);
+};
 
 template <typename T>
-concept map_ish = requires (T t) {
+concept map_ish = requires(T t)
+{
   sizeof(typename T::key_type);
   sizeof(typename T::mapped_type);
   sizeof(typename T::value_type);
@@ -60,27 +66,29 @@ concept map_ish = requires (T t) {
   t.clear();
 };
 
-template<typename T, typename V>
-concept vector_v_ish = requires (T t) {
+template <typename T, typename V>
+concept vector_v_ish = requires(T t)
+{
   t.push_back(V{});
   t.size();
   t.resize(1);
   t.reserve(1);
   t.clear();
   t.data();
-  { t[1] } -> std::convertible_to<V>;
+  {
+    t[1]
+    } -> std::convertible_to<V>;
   t[1] = std::declval<V>();
 };
 
-
-template<typename T>
+template <typename T>
 concept variant_ish = requires(T t)
 {
   t.index();
   t.valueless_by_exception();
 };
 
-template<typename T>
+template <typename T>
 concept optional_ish = requires(T t)
 {
   bool(t);
@@ -90,7 +98,8 @@ concept optional_ish = requires(T t)
 };
 
 template <typename T, std::size_t N>
-concept c_array_ish = std::extent_v<T, 0> >= N;
+concept c_array_ish = std::extent_v<T, 0>
+>= N;
 template <typename T, std::size_t N>
 concept cpp_tuple_ish = requires
 {
@@ -107,7 +116,8 @@ template <typename T, std::size_t N>
 concept array_ish = c_array_ish<T, N> || cpp_array_ish<T, N>;
 
 template <typename T>
-concept bitset_ish = requires (T t) {
+concept bitset_ish = requires(T t)
+{
   t.size();
 
   t.test(123);
@@ -138,8 +148,8 @@ concept string_ish = requires(T t, std::string_view v)
 template <typename T>
 concept int_ish = std::is_same_v < std::decay_t<T>,
 signed int >
-    || std::
-        is_same_v<std::remove_reference_t<T>, signed short> || std::is_same_v<std::decay_t<T>, signed long> || std::is_same_v<std::decay_t<T>, signed long long> || std::is_same_v<std::decay_t<T>, unsigned int> || std::is_same_v<std::decay_t<T>, unsigned short> || std::is_same_v<std::decay_t<T>, unsigned long> || std::is_same_v<std::decay_t<T>, unsigned long long>;
+    || std::is_same_v<
+        std::remove_reference_t<T>, signed short> || std::is_same_v<std::decay_t<T>, signed long> || std::is_same_v<std::decay_t<T>, signed long long> || std::is_same_v<std::decay_t<T>, unsigned int> || std::is_same_v<std::decay_t<T>, unsigned short> || std::is_same_v<std::decay_t<T>, unsigned long> || std::is_same_v<std::decay_t<T>, unsigned long long>;
 
 template <typename T>
 concept fp_ish = std::is_floating_point_v<std::decay_t<T>>;
@@ -217,39 +227,40 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
  * inputs_type<bar>::type will yield the type of "inputs".
  *
  */
-#define type_or_value_reflection(Name)                                      \
-  template <typename T>                                                     \
-  struct Name##_type                                                        \
-  {                                                                         \
-    using type = dummy;                                                     \
-    using tuple = tpl::tuple<>;                                             \
-    static constexpr const auto size = 0;                                   \
-  };                                                                        \
-                                                                            \
-  template <Name##_is_type T>                                               \
-  struct Name##_type<T>                                                     \
-  {                                                                         \
-    using type = typename std::decay_t<T>::Name;                                          \
-    using tuple = decltype(pfr::structure_to_typelist(type{}));             \
-    static constexpr const auto size = pfr::tuple_size_v<type>;             \
-  };                                                                        \
-                                                                            \
-  template <Name##_is_value T>                                              \
-  struct Name##_type<T>                                                     \
-  {                                                                         \
-    using type = std::remove_reference_t<decltype(std::declval<std::decay_t<T>>().Name)>; \
-    using tuple = decltype(pfr::structure_to_typelist(type{}));             \
-    static constexpr const auto size = pfr::tuple_size_v<type>;             \
+#define type_or_value_reflection(Name)                                             \
+  template <typename T>                                                            \
+  struct Name##_type                                                               \
+  {                                                                                \
+    using type = dummy;                                                            \
+    using tuple = tpl::tuple<>;                                                    \
+    static constexpr const auto size = 0;                                          \
+  };                                                                               \
+                                                                                   \
+  template <Name##_is_type T>                                                      \
+  struct Name##_type<T>                                                            \
+  {                                                                                \
+    using type = typename std::decay_t<T>::Name;                                   \
+    using tuple = decltype(pfr::structure_to_typelist(type{}));                    \
+    static constexpr const auto size = pfr::tuple_size_v<type>;                    \
+  };                                                                               \
+                                                                                   \
+  template <Name##_is_value T>                                                     \
+  struct Name##_type<T>                                                            \
+  {                                                                                \
+    using type                                                                     \
+        = std::remove_reference_t<decltype(std::declval<std::decay_t<T>>().Name)>; \
+    using tuple = decltype(pfr::structure_to_typelist(type{}));                    \
+    static constexpr const auto size = pfr::tuple_size_v<type>;                    \
   };
 }
 
-#define type_or_value_accessors(Name)                     \
-template<typename T>                                      \
-requires (Name##_is_type<T> || Name##_is_value<T>)        \
-auto get_##Name(T&& t) -> decltype(auto)                  \
-{                                                         \
-  if constexpr(Name##_is_type<T>)                         \
-    return typename std::decay_t<T>::Name{};              \
-  else if constexpr(Name##_is_value<T>)                   \
-    return std::forward<T>(t).Name;                       \
-}
+#define type_or_value_accessors(Name)                                      \
+  template <typename T>                                                    \
+  requires(Name##_is_type<T> || Name##_is_value<T>) auto get_##Name(T&& t) \
+      ->decltype(auto)                                                     \
+  {                                                                        \
+    if constexpr(Name##_is_type<T>)                                        \
+      return typename std::decay_t<T>::Name{};                             \
+    else if constexpr(Name##_is_value<T>)                                  \
+      return std::forward<T>(t).Name;                                      \
+  }

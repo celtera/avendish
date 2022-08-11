@@ -35,8 +35,7 @@ struct midi_processor : public avnd::midi_storage<T>
   }
 
   void add_message(
-      avnd::dynamic_container_midi_port auto& port,
-      const vintage::MidiEvent& msg)
+      avnd::dynamic_container_midi_port auto& port, const vintage::MidiEvent& msg)
   {
     port.midi_messages.push_back({});
     auto& elt = port.midi_messages.back();

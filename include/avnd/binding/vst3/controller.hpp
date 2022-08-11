@@ -51,7 +51,7 @@ class Controller final
   uint32 addRef() override { return ++m_refcount; }
   uint32 release() override
   {
-    if (--m_refcount == 0)
+    if(--m_refcount == 0)
     {
       delete this;
       return 0;
@@ -74,28 +74,26 @@ public:
 
   Steinberg::tresult getParameterInfo(int32 paramIndex, ParameterInfo& info) override
   {
-    if (paramIndex < 0 || paramIndex >= inputs_info_t::size)
+    if(paramIndex < 0 || paramIndex >= inputs_info_t::size)
       return Steinberg::kInvalidArgument;
 
     info.id = inputs_info_t::index_map[paramIndex];
     inputs_info_t::for_nth_raw(
         info.id,
-        [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field)
-        {
-          setStr(info.title, C::name());
-          setStr(info.shortTitle, C::name());
-          if constexpr (requires { C::units(); })
-            setStr(info.shortTitle, C::units());
-          if constexpr (avnd::has_range<C>)
-          {
-            constexpr auto range = avnd::get_range<C>();
-            if constexpr (requires { range.init; })
-              info.defaultNormalizedValue
-                  = avnd::map_control_to_01<C>(range.init);
+        [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
+      setStr(info.title, C::name());
+      setStr(info.shortTitle, C::name());
+      if constexpr(requires { C::units(); })
+        setStr(info.shortTitle, C::units());
+      if constexpr(avnd::has_range<C>)
+      {
+        constexpr auto range = avnd::get_range<C>();
+        if constexpr(requires { range.init; })
+          info.defaultNormalizedValue = avnd::map_control_to_01<C>(range.init);
 
-            if constexpr (requires { range.step; })
-              info.stepCount = avnd::get_range<C>().step;
-           }
+        if constexpr(requires { range.step; })
+          info.stepCount = avnd::get_range<C>().step;
+      }
         });
 
     info.unitId = 1;
@@ -108,15 +106,11 @@ public:
   {
     ParamValue res = valueNormalized;
 
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth_raw(
-          this->inputs_mirror,
-          tag,
-          [&]<typename C>(C& field)
-          {
-            if_possible(res = avnd::map_control_from_01_to_fp<C>(valueNormalized));
-          });
+      inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
+        if_possible(res = avnd::map_control_from_01_to_fp<C>(valueNormalized));
+      });
     }
     return res;
   }
@@ -125,15 +119,11 @@ public:
   {
     ParamValue res = plainValue;
 
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth_raw(
-          this->inputs_mirror,
-          tag,
-          [&]<typename C>(C& field)
-          {
-            if_possible(res = avnd::map_control_from_fp_to_01<C>(plainValue));
-          });
+      inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
+        if_possible(res = avnd::map_control_from_fp_to_01<C>(plainValue));
+      });
     }
     return res;
   }
@@ -142,30 +132,25 @@ public:
   {
     ParamValue res{};
 
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth_raw(
-          this->inputs_mirror,
-          tag,
-          [&]<typename C>(C& field) {
-            if_possible(res = avnd::map_control_to_01(field));
-          });
+      inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
+        if_possible(res = avnd::map_control_to_01(field));
+      });
     }
     return res;
   }
 
   Steinberg::tresult setParamNormalized(ParamID tag, ParamValue value) override
   {
-    if (tag < 0 || tag >= inputs_info_t::size)
+    if(tag < 0 || tag >= inputs_info_t::size)
       return Steinberg::kInvalidArgument;
 
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
-      inputs_info_t::for_nth_raw(
-          this->inputs_mirror,
-          tag,
-          [&]<typename C>(C& field)
-          { if_possible(field.value = avnd::map_control_from_01<C>(value)); });
+      inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
+        if_possible(field.value = avnd::map_control_from_01<C>(value));
+      });
     }
 
     return Steinberg::kResultTrue;
@@ -177,19 +162,17 @@ public:
   {
     using namespace Steinberg;
     using namespace Steinberg::Vst;
-    if (!state)
+    if(!state)
       return Steinberg::kResultFalse;
 
     IBStreamer streamer(state, kLittleEndian);
 
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       bool ok = inputs_info_t::for_all_unless(
-          this->inputs_mirror,
-          [&]<typename C>(C& field) -> bool
-          {
+          this->inputs_mirror, [&]<typename C>(C& field) -> bool {
             double param = 0.f;
-            if (streamer.readDouble(param) == false)
+            if(streamer.readDouble(param) == false)
               return false;
             if_possible(field.value = avnd::map_control_from_01<C>(param));
             return true;
@@ -208,7 +191,7 @@ public:
     IBStreamer streamer(state, kLittleEndian);
 
     int8 byteOrder;
-    if (streamer.readInt8(byteOrder) == false)
+    if(streamer.readInt8(byteOrder) == false)
       return Steinberg::kResultFalse;
 
     return Steinberg::kResultTrue;
@@ -219,16 +202,14 @@ public:
     IBStreamer streamer(state, kLittleEndian);
 
     int8 byteOrder = BYTEORDER;
-    if (streamer.writeInt8(byteOrder) == false)
+    if(streamer.writeInt8(byteOrder) == false)
       return Steinberg::kResultFalse;
 
     return Steinberg::kResultTrue;
   }
 
   Steinberg::tresult getParamStringByValue(
-      ParamID tag,
-      ParamValue valueNormalized,
-      String128 string) override
+      ParamID tag, ParamValue valueNormalized, String128 string) override
   {
     using namespace Steinberg;
     using namespace Steinberg::Vst;
@@ -254,9 +235,7 @@ public:
   }
 
   Steinberg::tresult getMidiControllerAssignment(
-      int32 busIndex,
-      int16 channel,
-      CtrlNumber midiControllerNumber,
+      int32 busIndex, int16 channel, CtrlNumber midiControllerNumber,
       ParamID& tag) override
   {
     using namespace Steinberg;

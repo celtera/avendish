@@ -47,16 +47,16 @@ struct AudioSidechainExample
     const std::size_t chans = p1.channels;
 
     // Process the input buffer
-    for (std::size_t i = 0; i < chans; i++)
+    for(std::size_t i = 0; i < chans; i++)
     {
       auto& in = p1.samples[i];
       auto& out = p2.samples[i];
 
       // If there's enough channels in the sidechain, use it
-      if (sc.channels > i)
+      if(sc.channels > i)
       {
         auto& sidechain = sc.samples[i];
-        for (std::size_t j = 0; j < N; j++)
+        for(std::size_t j = 0; j < N; j++)
         {
           out[j] = std::abs(sidechain[j] * gain.value) > 0.5 ? in[j] * gain.value : 0.0;
           mono[j] += out[j];
@@ -65,7 +65,7 @@ struct AudioSidechainExample
       else
       {
         // Don't use the sidechain
-        for (std::size_t j = 0; j < N; j++)
+        for(std::size_t j = 0; j < N; j++)
         {
           out[j] = in[j] * gain.value;
           mono[j] += out[j];

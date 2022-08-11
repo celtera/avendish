@@ -28,7 +28,7 @@ struct process_setup
 template <typename T>
 void prepare(avnd::effect_container<T>& implementation, process_setup setup)
 {
-  if constexpr (avnd::can_prepare<T>)
+  if constexpr(avnd::can_prepare<T>)
   {
     using prepare_type = avnd::first_argument<&T::prepare>;
     prepare_type t;
@@ -45,7 +45,7 @@ void prepare(avnd::effect_container<T>& implementation, process_setup setup)
 
     // Coroutines get used here.
     int k = 0;
-    for (auto& eff : implementation.effects())
+    for(auto& eff : implementation.effects())
     {
       // Individual instance for the polyphonic object case
       if_possible(t.subinstance = k);
@@ -58,7 +58,7 @@ void prepare(avnd::effect_container<T>& implementation, process_setup setup)
 template <typename T>
 void prepare(T& implementation, process_setup setup)
 {
-  if constexpr (avnd::can_prepare<T>)
+  if constexpr(avnd::can_prepare<T>)
   {
     using prepare_type = avnd::first_argument<&T::prepare>;
     prepare_type t;

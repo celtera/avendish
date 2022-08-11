@@ -12,7 +12,7 @@ constexpr auto configure()
   static_assert(
       requires { std::declval<T<C>>(); },
       "A requested configuration option is not supported");
-  if constexpr (requires { std::declval<T<C>>(); })
+  if constexpr(requires { std::declval<T<C>>(); })
   {
     struct
     {

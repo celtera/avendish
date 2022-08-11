@@ -23,14 +23,11 @@ struct soundfile_input_storage
 };
 
 template <typename T>
-requires(soundfile_input_introspection<T>::size > 0)
-struct soundfile_input_storage<T>
+requires(soundfile_input_introspection<T>::size > 0) struct soundfile_input_storage<T>
 {
   // std::tuple< float*, double* >
-  using tuple = filter_and_apply<
-      soundfile_channel_type,
-      soundfile_input_introspection,
-      T>;
+  using tuple
+      = filter_and_apply<soundfile_channel_type, soundfile_input_introspection, T>;
 
   // std::tuple< std::vector<float*>, std::vector<double*> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
@@ -38,19 +35,17 @@ struct soundfile_input_storage<T>
   [[no_unique_address]] vectors soundfiles;
 };
 
-
 /**
  * Used to store RAM-loaded soundfiles channel pointers
  */
 template <typename T>
-struct soundfile_storage
-    : soundfile_input_storage<T>
+struct soundfile_storage : soundfile_input_storage<T>
 {
   using sf_in = soundfile_input_introspection<T>;
 
   void init(avnd::effect_container<T>& t)
   {
-    if constexpr (sf_in::size > 0)
+    if constexpr(sf_in::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::num<Idx>)
       {

@@ -56,8 +56,8 @@ struct Presets
     const double preamp = 100. * inputs.preamp.value;
     const double volume = inputs.volume.value;
 
-    for (int c = 0; c < channels; c++)
-      for (int i = 0; i < frames; i++)
+    for(int c = 0; c < channels; c++)
+      for(int i = 0; i < frames; i++)
         out[c][i] = volume * std::tanh(in[c][i] * preamp);
   }
 };

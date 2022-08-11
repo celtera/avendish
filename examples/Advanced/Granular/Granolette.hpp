@@ -2,12 +2,12 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 
 #include <vector>
-#include <cmath>
 
 namespace oscr
 {
@@ -45,12 +45,12 @@ public:
     const int64_t start = std::floor(inputs.pos * inputs.sound.frames());
 
     // Copy it at the given position for each output
-    for (int i = 0; i < outputs.audio.channels; i++)
+    for(int i = 0; i < outputs.audio.channels; i++)
     {
       // Output buffer for channel i, also a std::span.
       auto out = outputs.audio.channel(i, t.frames);
 
-      for (int j = 0; j < t.frames; j++)
+      for(int j = 0; j < t.frames; j++)
       {
         // If we're before the end of the file copy the sample
         if(start + j < inputs.sound.frames())

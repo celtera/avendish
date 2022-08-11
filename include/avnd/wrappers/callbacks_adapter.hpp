@@ -19,20 +19,17 @@ struct callback_storage_views
 {
 };
 
-
-
 template <typename... Args>
 struct view_callback_function_type;
 template <typename R, typename... Args>
-struct view_callback_function_type<R(void*, Args...)> {
+struct view_callback_function_type<R(void*, Args...)>
+{
   using type = R(Args...);
 };
 
 template <avnd::view_callback Field>
-using view_callback_message_type
-    = typename view_callback_function_type<
-        std::remove_pointer_t<std::decay_t<decltype(Field{}.call.function)>>
-      >::type;
+using view_callback_message_type = typename view_callback_function_type<
+    std::remove_pointer_t<std::decay_t<decltype(Field{}.call.function)>>>::type;
 
 template <typename T>
 requires(
@@ -40,12 +37,9 @@ requires(
     > 0) struct callback_storage_views<T>
 {
   using tuple = filter_and_apply<
-      view_callback_message_type,
-      view_callback_introspection,
+      view_callback_message_type, view_callback_introspection,
       typename avnd::outputs_type<T>::type>;
-  using vectors = boost::mp11::mp_transform<
-    std::function, tuple
-  >;
+  using vectors = boost::mp11::mp_transform<std::function, tuple>;
 
   [[no_unique_address]] vectors functions_storage;
 };
@@ -60,7 +54,7 @@ struct callback_storage : callback_storage_views<T>
   {
     using outputs_t = typename avnd::outputs_type<T>::type;
 
-    if constexpr (dynamic_callback_introspection<outputs_t>::size > 0)
+    if constexpr(dynamic_callback_introspection<outputs_t>::size > 0)
     {
       auto setup_dyn = [callback_handler]<auto Idx, auto IdxGlob, typename C>(
           C & cb, avnd::predicate_index<Idx>, avnd::field_index<IdxGlob>)
@@ -76,15 +70,14 @@ struct callback_storage : callback_storage_views<T>
 
         // Here, "cb.call" is something like std::function,
         // thus we can store the callback directly.
-        cb.call
-            = callback_handler(cb, typelist{}, avnd::num<IdxGlob>{});
+        cb.call = callback_handler(cb, typelist{}, avnd::num<IdxGlob>{});
       };
 
       avnd::dynamic_callback_introspection<outputs_t>::for_all_n2(
           effect.outputs(), setup_dyn);
     }
 
-    if constexpr (view_callback_introspection<outputs_t>::size > 0)
+    if constexpr(view_callback_introspection<outputs_t>::size > 0)
     {
       auto setup_view = [ this, callback_handler ]<auto Idx, auto IdxGlob, typename C>(
           C & cb, avnd::predicate_index<Idx>, avnd::field_index<IdxGlob>)
@@ -120,15 +113,12 @@ struct callback_storage : callback_storage_views<T>
 
 #if !defined(_MSC_VER)
         cb.call.function =
-            []<template <typename...> typename L, typename... Args>(L<void*, Args...>)
-        {
+            []<template <typename...> typename L, typename... Args>(L<void*, Args...>) {
           // this is what actually goes in cb.call.function:
-          return +[](void* self, Args... args)
-          {
+          return +[](void* self, Args... args) {
             (*reinterpret_cast<stored_type*>(self))(args...);
           };
-        }
-        (args{}); // < note that the top-level lambda is immediately invoked here !
+        }(args{}); // < note that the top-level lambda is immediately invoked here !
 
         cb.call.context = &buf;
 #endif

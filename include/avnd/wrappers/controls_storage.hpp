@@ -36,9 +36,7 @@ requires(
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
-      linear_timed_param_values_type,
-      linear_timed_parameter_input_introspection,
-      T>;
+      linear_timed_param_values_type, linear_timed_parameter_input_introspection, T>;
 
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
@@ -58,9 +56,7 @@ requires(
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
-      span_timed_param_values_type,
-      span_timed_parameter_input_introspection,
-      T>;
+      span_timed_param_values_type, span_timed_parameter_input_introspection, T>;
 
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
@@ -80,9 +76,7 @@ requires(
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
-      linear_timed_param_values_type,
-      linear_timed_parameter_output_introspection,
-      T>;
+      linear_timed_param_values_type, linear_timed_parameter_output_introspection, T>;
 
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
@@ -102,9 +96,7 @@ requires(
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
-      span_timed_param_values_type,
-      span_timed_parameter_output_introspection,
-      T>;
+      span_timed_param_values_type, span_timed_parameter_output_introspection, T>;
 
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
@@ -132,7 +124,7 @@ struct control_storage
 
   void reserve_space(avnd::effect_container<T>& t, int buffer_size)
   {
-    if constexpr (lin_in::size > 0)
+    if constexpr(lin_in::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -147,7 +139,7 @@ struct control_storage
       };
       lin_in::for_all_n(avnd::get_inputs(t), init_raw_in);
     }
-    if constexpr (lin_out::size > 0)
+    if constexpr(lin_out::size > 0)
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -158,7 +150,7 @@ struct control_storage
       lin_out::for_all_n(avnd::get_outputs(t), init_raw_out);
     }
 
-    if constexpr (span_in::size > 0)
+    if constexpr(span_in::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -173,7 +165,7 @@ struct control_storage
       };
       span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
     }
-    if constexpr (span_out::size > 0)
+    if constexpr(span_out::size > 0)
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -184,8 +176,7 @@ struct control_storage
       span_out::for_all_n(avnd::get_outputs(t), init_raw_out);
     }
 
-    auto init_dyn = [&](auto& port)
-    {
+    auto init_dyn = [&](auto& port) {
       // Here we use the vector in the port directly.
       port.values.clear();
       if_possible(port.values.reserve(buffer_size));
@@ -196,18 +187,18 @@ struct control_storage
 
   void clear_inputs(avnd::effect_container<T>& t)
   {
-    if constexpr (lin_in::size > 0)
+    if constexpr(lin_in::size > 0)
     {
       auto clear_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = tpl::get<Idx>(this->linear_inputs);
-        for (auto& b : buf)
+        for(auto& b : buf)
           b = {};
       };
       lin_in::for_all_n(avnd::get_inputs(t), clear_raw_in);
     }
 
-    if constexpr (span_in::size > 0)
+    if constexpr(span_in::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -223,18 +214,19 @@ struct control_storage
 
   void clear_outputs(avnd::effect_container<T>& t)
   {
-    if constexpr (lin_out::size > 0)
+    if constexpr(lin_out::size > 0)
     {
-      auto clear_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
+      auto clear_raw_out
+          = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         auto& buf = tpl::get<Idx>(this->linear_outputs);
-        for (auto& b : buf)
+        for(auto& b : buf)
           b = {};
       };
       lin_out::for_all_n(avnd::get_outputs(t), clear_raw_out);
     }
 
-    if constexpr (span_out::size > 0)
+    if constexpr(span_out::size > 0)
     {
       auto init_raw_out = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {

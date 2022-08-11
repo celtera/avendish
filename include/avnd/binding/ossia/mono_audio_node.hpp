@@ -11,13 +11,14 @@ public:
 
   ossia::audio_inlet& audio_inlet()
   {
-    if constexpr (requires { this->audio_ports.in; })
+    if constexpr(requires { this->audio_ports.in; })
     {
       return this->audio_ports.in;
     }
     else
     {
-      using audio_ins = avnd::audio_port_introspection<typename avnd::inputs_type<T>::type>;
+      using audio_ins
+          = avnd::audio_port_introspection<typename avnd::inputs_type<T>::type>;
       static_assert(audio_ins::size == 1);
       constexpr int index_of_audio_input = audio_ins::template unmap<0>();
       return tuplet::get<index_of_audio_input>(this->ossia_inlets.ports);
@@ -25,13 +26,14 @@ public:
   }
   ossia::audio_outlet& audio_outlet()
   {
-    if constexpr (requires { this->audio_ports.out; })
+    if constexpr(requires { this->audio_ports.out; })
     {
       return this->audio_ports.out;
     }
     else
     {
-      using audio_outs = avnd::audio_port_introspection<typename avnd::outputs_type<T>::type>;
+      using audio_outs
+          = avnd::audio_port_introspection<typename avnd::outputs_type<T>::type>;
       static_assert(audio_outs::size == 1);
       constexpr int index_of_audio_output = audio_outs::template unmap<0>();
       return tuplet::get<index_of_audio_output>(this->ossia_outlets.ports);
@@ -41,14 +43,14 @@ public:
   bool scan_audio_input_channels()
   {
     const int current_input_channels = this->channels.actual_runtime_inputs;
-    for (auto& chan : *audio_inlet())
+    for(auto& chan : *audio_inlet())
     {
-      if (chan.size() < this->buffer_size)
+      if(chan.size() < this->buffer_size)
         chan.resize(this->buffer_size);
     }
 
     int port_input_channels = audio_inlet()->channels();
-    if (port_input_channels != current_input_channels)
+    if(port_input_channels != current_input_channels)
     {
       this->channels.set_input_channels(this->impl, 0, port_input_channels);
       this->channels.set_output_channels(this->impl, 0, port_input_channels);
@@ -66,7 +68,7 @@ public:
   {
     auto [start, frames] = st.timings(tk);
 
-    if (!this->prepare_run(start, frames))
+    if(!this->prepare_run(start, frames))
     {
       this->finish_run();
       return;
@@ -85,7 +87,7 @@ public:
 
     std::fill_n(audio_ins, 1 + current_input_channels, nullptr);
     std::fill_n(audio_outs, 1 + current_output_channels, nullptr);
-    for (int i = 0; i < current_input_channels; i++)
+    for(int i = 0; i < current_input_channels; i++)
     {
       audio_ins[i] = audio_in.channel(i).data();
       audio_outs[i] = audio_out.channel(i).data();
@@ -96,8 +98,7 @@ public:
         this->impl,
         avnd::span<double*>{
             const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
-        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
-        frames);
+        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)}, frames);
 
     this->finish_run();
   }

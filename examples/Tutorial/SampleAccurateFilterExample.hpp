@@ -1,11 +1,11 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
-#include <cmath>
 
 namespace examples
 {
@@ -34,7 +34,7 @@ struct SampleAccurateFilterExample
   void operator()()
   {
     // The output is copied at the same timestamp at which each input happened.
-    for (auto& [timestamp, value] : inputs.value.values)
+    for(auto& [timestamp, value] : inputs.value.values)
     {
       outputs.value.values[timestamp] = cos(value * value) * cos(value);
     }

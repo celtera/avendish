@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/meta.hpp>
-#include <cmath>
 
 namespace examples::helpers
 {

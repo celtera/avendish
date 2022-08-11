@@ -2,8 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <halp/log.hpp>
 #include <avnd/wrappers/configure.hpp>
+#include <halp/log.hpp>
 
 #include <utility>
 

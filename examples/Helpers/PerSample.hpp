@@ -3,10 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/concepts/processor.hpp>
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
-#include <cmath>
 
 namespace examples::helpers
 {
@@ -34,7 +34,8 @@ struct PerSampleAsArgs2
   {
   };
 
-  float operator()(float input, const inputs& ins, const outputs& out) {
+  float operator()(float input, const inputs& ins, const outputs& out)
+  {
     return std::tanh(ins.gain * input);
   }
 };

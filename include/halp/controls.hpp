@@ -2,15 +2,16 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <halp/polyfill.hpp>
 #include <halp/inline.hpp>
+#include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
 #include <array>
 #include <cstddef>
 #include <optional>
-#include <string>
 #include <span>
+#include <string>
+
 #include <string_view>
 #include <type_traits>
 
@@ -176,7 +177,6 @@ using knob_f32 = halp::knob_t<float, lit, setup>;
 template <static_string lit, irange setup = default_irange<int>>
 using knob_i32 = halp::knob_t<int, lit, setup>;
 
-
 // template <static_string lit, long double min, long double max, long double init>
 // using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
 
@@ -247,7 +247,9 @@ struct maintained_button_t
 template <static_string lit>
 using maintained_button = maintained_button_t<lit>;
 
-struct impulse_type { };
+struct impulse_type
+{
+};
 template <static_string lit>
 struct impulse_button_t
 {
@@ -256,10 +258,7 @@ struct impulse_button_t
     bang,
     impulse
   };
-  static clang_buggy_consteval auto range()
-  {
-    return impulse_type{};
-  }
+  static clang_buggy_consteval auto range() { return impulse_type{}; }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   std::optional<impulse_type> value;
@@ -434,7 +433,6 @@ struct xy_pad_t
 template <static_string lit, range setup = default_range<float>>
 using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
-
 /// 1D range ///
 template <typename T>
 struct range_slider_value
@@ -456,10 +454,7 @@ struct range_slider_t
   {
     hrange_slider
   };
-  static clang_buggy_consteval auto range()
-  {
-    return setup;
-  }
+  static clang_buggy_consteval auto range() { return setup; }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   value_type value{setup.init.start, setup.init.end};
@@ -475,7 +470,6 @@ struct range_slider_t
 
 template <static_string lit, range_slider_range setup = range_slider_range{}>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
-
 
 /// RGBA color ///
 struct color_type
@@ -560,8 +554,9 @@ using vbargraph_f32 = halp::vbargraph_t<float, lit, setup>;
 template <static_string lit, range setup = default_range<int>>
 using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 
-template<typename T>
-struct soundfile_view {
+template <typename T>
+struct soundfile_view
+{
   const T** data{};
   int64_t frames{};
   int32_t channels{};
@@ -576,10 +571,19 @@ struct soundfile_port
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   HALP_INLINE_FLATTEN operator soundfile_view<T>&() noexcept { return soundfile; }
-  HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept { return soundfile; }
-  HALP_INLINE_FLATTEN operator bool() const noexcept { return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0; }
+  HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept
+  {
+    return soundfile;
+  }
+  HALP_INLINE_FLATTEN operator bool() const noexcept
+  {
+    return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0;
+  }
 
-  HALP_INLINE_FLATTEN std::span<const T> channel(int channel) const noexcept { return std::span(soundfile.data[channel], soundfile.frames); }
+  HALP_INLINE_FLATTEN std::span<const T> channel(int channel) const noexcept
+  {
+    return std::span(soundfile.data[channel], soundfile.frames);
+  }
   [[nodiscard]] HALP_INLINE_FLATTEN int channels() const noexcept
   {
     return soundfile.channels;
@@ -589,7 +593,8 @@ struct soundfile_port
     return soundfile.frames;
   }
 
-  HALP_INLINE_FLATTEN const T* operator[](int channel) const noexcept {
+  HALP_INLINE_FLATTEN const T* operator[](int channel) const noexcept
+  {
     return soundfile.data[channel];
   }
 
@@ -600,7 +605,8 @@ struct soundfile_port
 
 // Helpers for defining an enumeration without repeating the enumerated members
 #define HALP_NUM_ARGS_(_12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
-#define HALP_NUM_ARGS(...) HALP_NUM_ARGS_(__VA_ARGS__, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define HALP_NUM_ARGS(...) \
+  HALP_NUM_ARGS_(__VA_ARGS__, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #define HALP_FOREACH(MACRO, ...) \
   HALP_FOREACH_(HALP_NUM_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
 #define HALP_FOREACH_(N, M, ...) HALP_FOREACH__(N, M, __VA_ARGS__)
@@ -627,54 +633,79 @@ struct soundfile_port
 #define HALP_STRING_LITERAL_ARRAY(...) HALP_FOREACH(HALP_COMMA_STRINGIFY, __VA_ARGS__)
 
 #define HALP_ENUM_ARRAY_ELEMENT(X) HALP_COMMA({HALP_COMMA_STRINGIFY(X) X})
-#define HALP_STRING_LITERAL_ENUM_ARRAY(...) HALP_FOREACH(HALP_ENUM_ARRAY_ELEMENT, __VA_ARGS__)
+#define HALP_STRING_LITERAL_ENUM_ARRAY(...) \
+  HALP_FOREACH(HALP_ENUM_ARRAY_ELEMENT, __VA_ARGS__)
 
-#define halp__enum(Name, default_v, ...)                                   \
-    static clang_buggy_consteval auto name() { return Name; }              \
-    enum enum_type { __VA_ARGS__  } value;                                 \
-                                                                           \
-    enum widget                                                            \
-    {                                                                      \
-      enumeration,                                                         \
-      list,                                                                \
-      combobox                                                             \
-    };                                                                     \
-                                                                           \
-    struct range                                                           \
-    {                                                                      \
-      std::string_view values[HALP_NUM_ARGS(__VA_ARGS__)]                  \
-         {HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};                         \
-      enum_type init = default_v;                                          \
-    };                                                                     \
-                                                                           \
-    operator enum_type&() noexcept { return value; }                       \
-    operator enum_type() const noexcept { return value; }                  \
-    auto& operator=(enum_type t) noexcept                                  \
-    {                                                                      \
-      value = t;                                                           \
-      return *this;                                                        \
-    }
+#define halp__enum(Name, default_v, ...)                 \
+  static clang_buggy_consteval auto name()               \
+  {                                                      \
+    return Name;                                         \
+  }                                                      \
+  enum enum_type                                         \
+  {                                                      \
+    __VA_ARGS__                                          \
+  } value;                                               \
+                                                         \
+  enum widget                                            \
+  {                                                      \
+    enumeration,                                         \
+    list,                                                \
+    combobox                                             \
+  };                                                     \
+                                                         \
+  struct range                                           \
+  {                                                      \
+    std::string_view values[HALP_NUM_ARGS(__VA_ARGS__)]{ \
+        HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};         \
+    enum_type init = default_v;                          \
+  };                                                     \
+                                                         \
+  operator enum_type&() noexcept                         \
+  {                                                      \
+    return value;                                        \
+  }                                                      \
+  operator enum_type() const noexcept                    \
+  {                                                      \
+    return value;                                        \
+  }                                                      \
+  auto& operator=(enum_type t) noexcept                  \
+  {                                                      \
+    value = t;                                           \
+    return *this;                                        \
+  }
 
-#define halp__enum_combobox(Name, default_v, ...)                                \
-    static clang_buggy_consteval auto name() { return Name; }                    \
-    enum enum_type { __VA_ARGS__  } value;                                       \
-                                                                                 \
-    enum widget                                                                  \
-    {                                                                            \
-      combobox                                                                   \
-    };                                                                           \
-                                                                                 \
-    struct range                                                                 \
-    {                                                                            \
-      std::pair<std::string_view, enum_type> values[HALP_NUM_ARGS(__VA_ARGS__)] \
-         {HALP_STRING_LITERAL_ENUM_ARRAY(__VA_ARGS__)};                               \
-      enum_type init = default_v;                                                \
-    };                                                                           \
-                                                                                 \
-    operator enum_type&() noexcept { return value; }                             \
-    operator enum_type() const noexcept { return value; }                        \
-    auto& operator=(enum_type t) noexcept                                        \
-    {                                                                            \
-      value = t;                                                                 \
-      return *this;                                                              \
-    }
+#define halp__enum_combobox(Name, default_v, ...)                              \
+  static clang_buggy_consteval auto name()                                     \
+  {                                                                            \
+    return Name;                                                               \
+  }                                                                            \
+  enum enum_type                                                               \
+  {                                                                            \
+    __VA_ARGS__                                                                \
+  } value;                                                                     \
+                                                                               \
+  enum widget                                                                  \
+  {                                                                            \
+    combobox                                                                   \
+  };                                                                           \
+                                                                               \
+  struct range                                                                 \
+  {                                                                            \
+    std::pair<std::string_view, enum_type> values[HALP_NUM_ARGS(__VA_ARGS__)]{ \
+        HALP_STRING_LITERAL_ENUM_ARRAY(__VA_ARGS__)};                          \
+    enum_type init = default_v;                                                \
+  };                                                                           \
+                                                                               \
+  operator enum_type&() noexcept                                               \
+  {                                                                            \
+    return value;                                                              \
+  }                                                                            \
+  operator enum_type() const noexcept                                          \
+  {                                                                            \
+    return value;                                                              \
+  }                                                                            \
+  auto& operator=(enum_type t) noexcept                                        \
+  {                                                                            \
+    value = t;                                                                 \
+    return *this;                                                              \
+  }

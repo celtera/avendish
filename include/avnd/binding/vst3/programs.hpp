@@ -31,10 +31,9 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
   }
 
   Steinberg::tresult getProgramListInfo(
-      int32 listIndex,
-      Steinberg::Vst::ProgramListInfo& info /*out*/) override
+      int32 listIndex, Steinberg::Vst::ProgramListInfo& info /*out*/) override
   {
-    if (listIndex < 0)
+    if(listIndex < 0)
       return Steinberg::kResultFalse;
     /*
     if (listIndex < 0 || listIndex >= static_cast<int32>(programLists.size()))
@@ -45,8 +44,7 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
   }
 
   Steinberg::tresult getProgramName(
-      Steinberg::Vst::ProgramListID listId,
-      int32 programIndex,
+      Steinberg::Vst::ProgramListID listId, int32 programIndex,
       Steinberg::Vst::String128 name /*out*/) override
   {
     /*
@@ -60,8 +58,7 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
   }
 
   Steinberg::tresult getProgramInfo(
-      Steinberg::Vst::ProgramListID listId,
-      int32 programIndex,
+      Steinberg::Vst::ProgramListID listId, int32 programIndex,
       Steinberg::Vst::CString attributeId /*in*/,
       Steinberg::Vst::String128 attributeValue /*out*/) override
   {
@@ -89,9 +86,7 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
     return Steinberg::kResultFalse;
   }
   Steinberg::tresult getProgramPitchName(
-      Steinberg::Vst::ProgramListID listId,
-      int32 programIndex,
-      int16 midiPitch,
+      Steinberg::Vst::ProgramListID listId, int32 programIndex, int16 midiPitch,
       Steinberg::Vst::String128 name /*out*/) override
   {
     /*
@@ -114,17 +109,14 @@ class UnitInfo : public Steinberg::Vst::IUnitInfo
   }
 
   Steinberg::tresult getUnitByBus(
-      Steinberg::Vst::MediaType /*type*/,
-      Steinberg::Vst::BusDirection /*dir*/,
-      int32 /*busIndex*/,
-      int32 /*channel*/,
+      Steinberg::Vst::MediaType /*type*/, Steinberg::Vst::BusDirection /*dir*/,
+      int32 /*busIndex*/, int32 /*channel*/,
       Steinberg::Vst::UnitID& /*unitId*/ /*out*/) override
   {
     return Steinberg::kResultFalse;
   }
   Steinberg::tresult setUnitProgramData(
-      int32 /*listOrUnitId*/,
-      int32 /*programIndex*/,
+      int32 /*listOrUnitId*/, int32 /*programIndex*/,
       Steinberg::IBStream* /*data*/) override
   {
     return Steinberg::kResultFalse;

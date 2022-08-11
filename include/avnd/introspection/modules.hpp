@@ -33,7 +33,7 @@ auto& get_modules(T& t)
 template <typename T>
 static constexpr void for_all_modules(T& obj, auto&& func) noexcept
 {
-  if constexpr (modules_introspection<T>::size > 0)
+  if constexpr(modules_introspection<T>::size > 0)
   {
     pfr::for_each_field(get_modules(obj), func);
   }

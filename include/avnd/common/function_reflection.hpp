@@ -26,11 +26,7 @@ struct looks_like_std_function<F<R(Args...)>> : std::true_type
 };
 
 template <
-    template <typename...>
-    typename F,
-    typename R,
-    typename... Args,
-    typename... Rem>
+    template <typename...> typename F, typename R, typename... Args, typename... Rem>
 struct looks_like_std_function<F<R(Args...), Rem...>> : std::true_type
 {
 };
@@ -168,10 +164,7 @@ struct function_reflection<member>
 };
 
 template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) const volatile&>
+    typename T, typename R, typename... Args, R (T::*member)(Args...) const volatile&>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -186,10 +179,7 @@ struct function_reflection<member>
 };
 
 template <
-    typename T,
-    typename R,
-    typename... Args,
-    R (T::*member)(Args...) const volatile&&>
+    typename T, typename R, typename... Args, R (T::*member)(Args...) const volatile&&>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -261,7 +251,7 @@ struct function_reflection_t<R (&)(Args...)>
 
   static constexpr auto synthesize()
   {
-    if constexpr (std::is_void_v<R>)
+    if constexpr(std::is_void_v<R>)
       return [](Args...) -> void { return; };
     else
       return [](Args...) -> R { return {}; };

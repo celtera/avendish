@@ -33,15 +33,30 @@ struct basic_logger
     std::fflush(stderr);
   }
   template <typename... T>
-  static void trace(fmt::format_string<T...> fmt, T&&... args) noexcept { log(fmt, std::forward<T>(args)...); }
+  static void trace(fmt::format_string<T...> fmt, T&&... args) noexcept
+  {
+    log(fmt, std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void debug(fmt::format_string<T...> fmt, T&&... args) noexcept { log(fmt, std::forward<T>(args)...); }
+  static void debug(fmt::format_string<T...> fmt, T&&... args) noexcept
+  {
+    log(fmt, std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void info(fmt::format_string<T...> fmt, T&&... args) noexcept { log(fmt, std::forward<T>(args)...); }
+  static void info(fmt::format_string<T...> fmt, T&&... args) noexcept
+  {
+    log(fmt, std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void warn(fmt::format_string<T...> fmt, T&&... args) noexcept { error(fmt, std::forward<T>(args)...); }
+  static void warn(fmt::format_string<T...> fmt, T&&... args) noexcept
+  {
+    error(fmt, std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void critical(fmt::format_string<T...> fmt, T&&... args) noexcept { error(fmt, std::forward<T>(args)...); }
+  static void critical(fmt::format_string<T...> fmt, T&&... args) noexcept
+  {
+    error(fmt, std::forward<T>(args)...);
+  }
 };
 #else
 struct basic_logger
@@ -55,17 +70,35 @@ struct basic_logger
   }
 
   template <typename... T>
-  static void trace(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  static void trace(T&&... args) noexcept
+  {
+    log(std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void debug(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  static void debug(T&&... args) noexcept
+  {
+    log(std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void info(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  static void info(T&&... args) noexcept
+  {
+    log(std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void warn(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  static void warn(T&&... args) noexcept
+  {
+    log(std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void error(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  static void error(T&&... args) noexcept
+  {
+    log(std::forward<T>(args)...);
+  }
   template <typename... T>
-  static void critical(T&&... args) noexcept { log(std::forward<T>(args)...); }
+  static void critical(T&&... args) noexcept
+  {
+    log(std::forward<T>(args)...);
+  }
 };
 #endif
 
@@ -73,19 +106,33 @@ struct no_logger
 {
   using logger_type = no_logger;
   template <typename... T>
-  static void log(T&&... args) noexcept { }
+  static void log(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void trace(T&&... args) noexcept { }
+  static void trace(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void debug(T&&... args) noexcept { }
+  static void debug(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void info(T&&... args) noexcept { }
+  static void info(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void warn(T&&... args) noexcept { }
+  static void warn(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void error(T&&... args) noexcept { }
+  static void error(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void critical(T&&... args) noexcept { }
+  static void critical(T&&... args) noexcept
+  {
+  }
 };
 
 static_assert(avnd::logger<halp::basic_logger>);

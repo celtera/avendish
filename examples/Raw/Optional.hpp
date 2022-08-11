@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <array>
 #include <optional>
+#include <string>
 #include <variant>
 #include <vector>
-#include <string>
-#include <array>
 
 namespace examples
 {
@@ -22,20 +22,27 @@ struct OptionalTest
   static consteval auto c_name() { return "avnd_optional"; }
   static consteval auto uuid() { return "d7cb78dd-46bc-4b49-8f23-262cb0b457b7"; }
 
-  struct TestAggregate {
+  struct TestAggregate
+  {
     int a, b;
     float c;
-    struct {
+    struct
+    {
       std::string d;
     } sub;
   };
 
-  template<typename T>
+  template <typename T>
   using array = std::array<T, 7>;
 
   using variant = std::variant<int, bool, std::string>;
 
-#define port(type, var) struct { static consteval auto name() { return #type; } std::optional<type> value; } var
+#define port(type, var)                            \
+  struct                                           \
+  {                                                \
+    static consteval auto name() { return #type; } \
+    std::optional<type> value;                     \
+  } var
   struct
   {
     port(variant, in_var);
@@ -87,7 +94,7 @@ struct OptionalTest
     port(array<std::string>, out_arrstr);
     port(array<TestAggregate>, out_arraggreg);
   } outputs;
-  #undef port
+#undef port
 
   void operator()()
   {

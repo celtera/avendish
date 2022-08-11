@@ -47,8 +47,7 @@ public:
   void value_changed(int idx, const Val& value)
   {
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(implementation),
-        idx,
+        avnd::get_inputs(implementation), idx,
         [value]<typename C>(C& ctl) { ctl.value = value; });
   }
 
@@ -58,12 +57,9 @@ public:
     QString res;
 
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(implementation),
-        idx,
-        [&res, value]<typename C>(C& ctl)
-        {
+        avnd::get_inputs(implementation), idx, [&res, value]<typename C>(C& ctl) {
           char buf[128] = {0};
-          if constexpr (requires { ctl.display(buf, value); })
+          if constexpr(requires { ctl.display(buf, value); })
           {
             ctl.display(buf, value);
             res = QString::fromUtf8(buf);
@@ -124,10 +120,8 @@ Item {{
     // The controls
     int control_k = 0;
     avnd::input_introspection<T>::for_all(
-        avnd::get_inputs(this->implementation),
-        [this, &control_k]<typename C>(C& c)
-        {
-          if constexpr (avnd::parameter<C>)
+        avnd::get_inputs(this->implementation), [this, &control_k]<typename C>(C& c) {
+          if constexpr(avnd::parameter<C>)
             create(*this, c, control_k);
 
           control_k++;
@@ -138,11 +132,7 @@ Item {{
 
     /// Create and instantiate the QML component
     QObject::connect(
-        &this->comp,
-        &QQmlComponent::statusChanged,
-        this,
-        [this](auto status)
-        {
+        &this->comp, &QQmlComponent::statusChanged, this, [this](auto status) {
           this->item = qobject_cast<QQuickItem*>(
               this->comp.create(this->view.engine()->rootContext()));
           assert(this->item);

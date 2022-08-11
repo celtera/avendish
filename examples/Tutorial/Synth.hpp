@@ -55,10 +55,10 @@ struct Synth
     // 1. Process the MIDI messages. We'll just play the latest note-on
     // in a not very sample-accurate way..
 
-    for (auto& m : inputs.midi.midi_messages)
+    for(auto& m : inputs.midi.midi_messages)
     {
       // Let's ignore channels
-      switch ((libremidi::message_type) (m.bytes[0] & 0xF0))
+      switch((libremidi::message_type)(m.bytes[0] & 0xF0))
       {
         case libremidi::message_type::NOTE_ON:
           in_flight++;
@@ -80,7 +80,7 @@ struct Synth
     }
 
     // 2. Quit if we don't have any more note to play
-    if (in_flight <= 0)
+    if(in_flight <= 0)
       return;
 
     // 3. Output some bleeps
@@ -88,7 +88,7 @@ struct Synth
         = ossia::two_pi * last_note.dataspace_value / double(configuration.sample_rate);
     auto& out = outputs.audio.samples;
 
-    for (int64_t j = 0; j < frames; j++)
+    for(int64_t j = 0; j < frames; j++)
     {
       out[0][j] = last_volume.dataspace_value * std::sin(phase);
       out[1][j] = out[0][j];

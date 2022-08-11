@@ -15,13 +15,12 @@ struct SynthControls : Controls<T>
   void init(Effect_T& effect)
   {
     effect.Effect::setParameter
-        = [](Effect* effect, int32_t index, float parameter) noexcept
-    {
-      if (index < Controls<T>::parameter_count + 3)
+        = [](Effect* effect, int32_t index, float parameter) noexcept {
+      if(index < Controls<T>::parameter_count + 3)
       {
         auto& self = *static_cast<Effect_T*>(effect);
 
-        switch (index)
+        switch(index)
         {
           default:
             self.controls.parameters[index].store(parameter, std::memory_order_release);
@@ -39,13 +38,12 @@ struct SynthControls : Controls<T>
       }
     };
 
-    effect.Effect::getParameter = [](Effect* effect, int32_t index) noexcept
-    {
-      if (index < Controls<T>::parameter_count + 3)
+    effect.Effect::getParameter = [](Effect* effect, int32_t index) noexcept {
+      if(index < Controls<T>::parameter_count + 3)
       {
         auto& self = *static_cast<Effect_T*>(effect);
 
-        switch (index)
+        switch(index)
         {
           default:
             return self.controls.parameters[index].load(std::memory_order_acquire);
@@ -66,7 +64,7 @@ struct SynthControls : Controls<T>
   void label(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.implementation;
-    switch (index)
+    switch(index)
     {
       default:
         Controls<T>::label(effect, index, ptr);
@@ -86,7 +84,7 @@ struct SynthControls : Controls<T>
   void name(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.implementation;
-    switch (index)
+    switch(index)
     {
       default:
         Controls<T>::name(effect, index, ptr);
@@ -106,30 +104,24 @@ struct SynthControls : Controls<T>
   void display(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.implementation;
-    switch (index)
+    switch(index)
     {
       default:
         Controls<T>::display(effect, index, ptr);
         break;
       case Controls<T>::parameter_count:
         snprintf(
-            reinterpret_cast<char*>(ptr),
-            vintage::Constants::ParamStrLen,
-            "%d",
+            reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen, "%d",
             int(effect.controls.unison_voices.load() * 20));
         break;
       case Controls<T>::parameter_count + 1:
         snprintf(
-            reinterpret_cast<char*>(ptr),
-            vintage::Constants::ParamStrLen,
-            "%.2f",
+            reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen, "%.2f",
             effect.controls.unison_detune.load());
         break;
       case Controls<T>::parameter_count + 2:
         snprintf(
-            reinterpret_cast<char*>(ptr),
-            vintage::Constants::ParamStrLen,
-            "%.2f",
+            reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen, "%.2f",
             effect.controls.unison_volume.load());
         break;
     }

@@ -28,7 +28,7 @@ concept audio_arg_output = avnd::sample_arg_processor<T> || avnd::channel_arg_pr
 template <typename T>
 consteval int total_input_count()
 {
-  if (audio_arg_input<T>)
+  if(audio_arg_input<T>)
     return avnd::inputs_type<T>::size + 1;
   else
     return avnd::inputs_type<T>::size;
@@ -37,7 +37,7 @@ consteval int total_input_count()
 template <typename T>
 consteval int total_output_count()
 {
-  if (audio_arg_output<T>)
+  if(audio_arg_output<T>)
     return avnd::outputs_type<T>::size + 1;
   else
     return avnd::outputs_type<T>::size;
@@ -50,7 +50,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   // Handle "virtual" audio ports for simple processors
   // which pass things by arguments
 
-  if constexpr (avnd::mono_per_sample_arg_processor<double, T>)
+  if constexpr(avnd::mono_per_sample_arg_processor<double, T>)
   {
     struct
     {
@@ -65,7 +65,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::mono_per_sample_arg_processor<float, T>)
+  else if constexpr(avnd::mono_per_sample_arg_processor<float, T>)
   {
     struct
     {
@@ -80,7 +80,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::mono_per_channel_arg_processor<double, T>)
+  else if constexpr(avnd::mono_per_channel_arg_processor<double, T>)
   {
     struct
     {
@@ -95,7 +95,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::mono_per_channel_arg_processor<float, T>)
+  else if constexpr(avnd::mono_per_channel_arg_processor<float, T>)
   {
     struct
     {
@@ -110,7 +110,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::polyphonic_arg_audio_effect<double, T>)
+  else if constexpr(avnd::polyphonic_arg_audio_effect<double, T>)
   {
     struct
     {
@@ -125,7 +125,7 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
     func_inlets(fake_in, avnd::field_index<0>{});
     func_outlets(fake_out, avnd::field_index<0>{});
   }
-  else if constexpr (avnd::polyphonic_arg_audio_effect<float, T>)
+  else if constexpr(avnd::polyphonic_arg_audio_effect<float, T>)
   {
     struct
     {
@@ -142,18 +142,18 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   }
 
   // Handle message inputs
-  if constexpr (avnd::messages_type<T>::size > 0)
+  if constexpr(avnd::messages_type<T>::size > 0)
   {
     avnd::messages_introspection<T>::for_all([&](auto m) { func_inlets(m); });
   }
 
-  if constexpr (avnd::has_inputs<T>)
+  if constexpr(avnd::has_inputs<T>)
   {
     using inputs_t = typename avnd::inputs_type<T>::type;
     inputs_t ins;
     avnd::for_each_field_ref_n(ins, func_inlets);
   }
-  if constexpr (avnd::has_outputs<T>)
+  if constexpr(avnd::has_outputs<T>)
   {
     using outputs_t = typename avnd::outputs_type<T>::type;
     outputs_t outs;

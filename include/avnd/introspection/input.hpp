@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/aggregates.hpp>
 #include <avnd/common/index_sequence.hpp>
 #include <avnd/concepts/all.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-#include <avnd/common/aggregates.hpp>
 
 namespace avnd
 {
@@ -23,7 +23,8 @@ struct control_input_introspection : control_introspection<typename inputs_type<
 };
 
 template <typename T>
-struct mapped_control_input_introspection : mapped_control_introspection<typename inputs_type<T>::type>
+struct mapped_control_input_introspection
+    : mapped_control_introspection<typename inputs_type<T>::type>
 {
 };
 
@@ -70,13 +71,13 @@ struct gpu_sampler_introspection
 
 template <typename T>
 struct gpu_image_input_introspection
-        : gpu_image_port_introspection<typename inputs_type<T>::type>
+    : gpu_image_port_introspection<typename inputs_type<T>::type>
 {
 };
 
 template <typename T>
 struct gpu_uniform_introspection
-        : gpu_uniform_port_introspection<typename inputs_type<T>::type>
+    : gpu_uniform_port_introspection<typename inputs_type<T>::type>
 {
 };
 
@@ -124,25 +125,25 @@ struct raw_file_input_introspection
 
 template <typename T>
 struct spectrum_split_channel_input_introspection
-        : spectrum_split_channel_port_introspection<typename inputs_type<T>::type>
+    : spectrum_split_channel_port_introspection<typename inputs_type<T>::type>
 {
 };
 
 template <typename T>
 struct spectrum_complex_channel_input_introspection
-        : spectrum_complex_channel_port_introspection<typename inputs_type<T>::type>
+    : spectrum_complex_channel_port_introspection<typename inputs_type<T>::type>
 {
 };
 
 template <typename T>
 struct spectrum_split_bus_input_introspection
-        : spectrum_split_bus_port_introspection<typename inputs_type<T>::type>
+    : spectrum_split_bus_port_introspection<typename inputs_type<T>::type>
 {
 };
 
 template <typename T>
 struct spectrum_complex_bus_input_introspection
-        : spectrum_complex_bus_port_introspection<typename inputs_type<T>::type>
+    : spectrum_complex_bus_port_introspection<typename inputs_type<T>::type>
 {
 };
 

@@ -70,19 +70,19 @@ struct ZeroDependencyAudioEffect
     const auto chans = p1.channels;
 
     // Process the input buffer
-    for (int i = 0; i < chans; i++)
+    for(int i = 0; i < chans; i++)
     {
       auto& in = p1.samples[i];
       auto& out = p2.samples[i];
 
       // Cronch cronch cronch
-      for (int j = 0; j < N; j++)
+      for(int j = 0; j < N; j++)
       {
         out[j] = in[j];
-        for (int i = 0; i < factor; i++)
+        for(int i = 0; i < factor; i++)
           out[j] *= in[j] * factor;
         out[j] *= in[j] * (1 + factor);
-        while ((1. - out[j] * out[j]) > 1.0)
+        while((1. - out[j] * out[j]) > 1.0)
           out[j] = 1. - out[j];
         out[j] = out[j] < -0.999 ? -0.999 : out[j] > 0.999 ? 0.999 : out[j];
       }

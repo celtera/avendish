@@ -18,8 +18,9 @@ struct CCC
   halp_meta(c_name, "avnd_lp_ccc");
   halp_meta(category, "Demo");
   halp_meta(author, "Peter Castine");
-  halp_meta(description,
-    "1/f noise, using the Schuster/Procaccia deterministic (chaotic) algorithm");
+  halp_meta(
+      description,
+      "1/f noise, using the Schuster/Procaccia deterministic (chaotic) algorithm");
   halp_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");
 
   struct
@@ -43,7 +44,7 @@ struct CCC
   /** No particular argument is needed here, we can just process the whole input buffer **/
   void operator()()
   {
-    for (auto& [timestamp, value] : inputs.bang.values)
+    for(auto& [timestamp, value] : inputs.bang.values)
     {
       // CCC algorithm, copied verbatim from the LitterPower source code.
       {
@@ -53,17 +54,17 @@ struct CCC
 
         // Sanity check... due to limitations in accuracy, we can die at very small values.
         // Also, we prefer to only "nudge" the value towards chaos...
-        if (curVal <= kMinPink)
+        if(curVal <= kMinPink)
         {
-          if (curVal == 0.0)
+          if(curVal == 0.0)
             curVal = kMinPink;
           else
             curVal += curVal;
         }
 
         curVal = curVal * curVal + curVal;
-        if (curVal >= 1.0) // Cheaper than fmod(), and works quite nicely
-          curVal -= 1.0;   // in the range of values that can occur.
+        if(curVal >= 1.0) // Cheaper than fmod(), and works quite nicely
+          curVal -= 1.0;  // in the range of values that can occur.
 
         this->current_value = curVal;
       }

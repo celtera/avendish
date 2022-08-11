@@ -2,18 +2,19 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
 
-#include <vector>
-#include <cmath>
 #include <ratio>
+#include <vector>
 
 namespace examples::helpers
 {
-consteval halp::range frequency_range() {
+consteval halp::range frequency_range()
+{
   return {20., 2000., 200.};
 }
 /**
@@ -27,13 +28,16 @@ struct Sine
 
   struct inputs
   {
-    struct : halp::knob_f32<"Log m=0.85", frequency_range()> {
+    struct : halp::knob_f32<"Log m=0.85", frequency_range()>
+    {
       using mapper = halp::log_mapper<std::ratio<85, 100>>;
     } f1;
-    struct : halp::hslider_f32<"Log m=0.15", frequency_range()> {
+    struct : halp::hslider_f32<"Log m=0.15", frequency_range()>
+    {
       using mapper = halp::log_mapper<std::ratio<15, 100>>;
     } f2;
-    struct : halp::hslider_f32<"Inverse quintic", frequency_range()> {
+    struct : halp::hslider_f32<"Inverse quintic", frequency_range()>
+    {
       using mapper = halp::inverse_mapper<halp::pow_mapper<5>>;
     } f3;
     halp::hslider_f32<"Linear", frequency_range()> f4;
@@ -45,22 +49,20 @@ struct Sine
   };
 
   float rate{};
-  void prepare(halp::setup info)
-  {
-    this->rate = info.rate;
-  }
+  void prepare(halp::setup info) { this->rate = info.rate; }
 
-  double phase[4] = { 0. };
+  double phase[4] = {0.};
   void operator()(const inputs& inputs, outputs& outputs)
   {
     const double phi[4] = {
-      2 * 3.14 * inputs.f1.value / rate,
-      2 * 3.14 * inputs.f2.value / rate,
-      2 * 3.14 * inputs.f3.value / rate,
-      2 * 3.14 * inputs.f4.value / rate,
+        2 * 3.14 * inputs.f1.value / rate,
+        2 * 3.14 * inputs.f2.value / rate,
+        2 * 3.14 * inputs.f3.value / rate,
+        2 * 3.14 * inputs.f4.value / rate,
     };
     outputs.audio.sample = 0.;
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < 4; i++)
+    {
       outputs.audio.sample += 0.15 * sin(phase[i] += phi[i]);
     }
   }

@@ -1,13 +1,12 @@
 #pragma once
-#include <halp/static_string.hpp>
-#include <halp/controls.hpp>
 #include <avnd/common/member_reflection.hpp>
 #include <fmt/format.h>
 #include <fmt/printf.h>
-
+#include <gpp/commands.hpp>
 #include <gpp/meta.hpp>
 #include <gpp/ports.hpp>
-#include <gpp/commands.hpp>
+#include <halp/controls.hpp>
+#include <halp/static_string.hpp>
 
 namespace examples
 {
@@ -32,7 +31,8 @@ struct GpuComputeExample
     struct bindings
     {
       // Each binding is a struct member
-      struct {
+      struct
+      {
         halp_meta(name, "my_buf");
         halp_meta(binding, 0);
         halp_flags(std140, buffer, load, store);
@@ -42,7 +42,8 @@ struct GpuComputeExample
       } my_buf;
 
       // Define the members of our ubos
-      struct custom_ubo {
+      struct custom_ubo
+      {
         halp_meta(name, "custom");
         halp_meta(binding, 1);
         halp_flags(std140, ubo);
@@ -51,7 +52,8 @@ struct GpuComputeExample
         gpp::uniform<"height", int> height;
       } ubo;
 
-      struct  {
+      struct
+      {
         halp_meta(name, "img")
         halp_meta(format, "rgba32f")
         halp_meta(binding, 2);
@@ -65,24 +67,25 @@ struct GpuComputeExample
 
   // Definition of our ports which will get parsed by the
   // software that instantiate this class
-  struct {
-      // Here we use some helper types in the usual fashion
-      gpp::image_input_port<"Image", &bindings::image> tex;
+  struct
+  {
+    // Here we use some helper types in the usual fashion
+    gpp::image_input_port<"Image", &bindings::image> tex;
 
-      gpp::uniform_control_port<
-        halp::hslider_i32<"Width", halp::range{1, 1000, 100}>
-        , &uniforms::width
-      > width;
+    gpp::uniform_control_port<
+        halp::hslider_i32<"Width", halp::range{1, 1000, 100}>, &uniforms::width>
+        width;
 
-      gpp::uniform_control_port<
-        halp::hslider_i32<"Height", halp::range{1, 1000, 100}>
-        , &uniforms::height
-      > height;
+    gpp::uniform_control_port<
+        halp::hslider_i32<"Height", halp::range{1, 1000, 100}>, &uniforms::height>
+        height;
   } inputs;
 
   // The output port on which we write the average color
-  struct {
-    struct {
+  struct
+  {
+    struct
+    {
       halp_meta(name, "color")
       float value[4];
     } color_out;
@@ -129,7 +132,8 @@ void main()
     const int h = this->inputs.height / downscale;
     if(last_w != w || last_h != h)
     {
-      if(this->buf) {
+      if(this->buf)
+      {
         co_yield gpp::buffer_release{.handle = buf};
         buf = nullptr;
       }
@@ -144,9 +148,7 @@ void main()
       if(!this->buf)
       {
         this->buf = co_yield gpp::static_allocation{
-           .binding = lay.bindings.my_buf.binding()
-         , .size = bytes
-        };
+            .binding = lay.bindings.my_buf.binding(), .size = bytes};
       }
     }
   }
@@ -154,7 +156,8 @@ void main()
   // Relaease allocated data
   gpp::co_release release()
   {
-    if(buf) {
+    if(buf)
+    {
       co_yield gpp::buffer_release{.handle = buf};
       buf = nullptr;
     }
@@ -176,11 +179,8 @@ void main()
     co_yield gpp::compute_dispatch{.x = 1, .y = 1, .z = 1};
 
     // Request an asynchronous readback
-    gpp::buffer_awaiter readback = co_yield gpp::readback_buffer{
-        .handle = buf
-      , .offset = 0
-      , .size = bytes
-    };
+    gpp::buffer_awaiter readback
+        = co_yield gpp::readback_buffer{.handle = buf, .offset = 0, .size = bytes};
 
     co_yield gpp::end_compute_pass{};
 
@@ -195,7 +195,8 @@ void main()
     auto& final = outputs.color_out.value;
     std::fill(std::begin(final), std::end(final), 0.f);
 
-    for(int i = 0; i < w * h; i++) {
+    for(int i = 0; i < w * h; i++)
+    {
       for(int j = 0; j < 4; j++)
         final[j] += flt[i][j];
     }

@@ -1,9 +1,9 @@
 #pragma once
 #include <avnd/binding/ossia/configure.hpp>
+#include <avnd/binding/ossia/ffts.hpp>
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
 #include <avnd/binding/ossia/port_setup.hpp>
-#include <avnd/binding/ossia/ffts.hpp>
 #include <avnd/binding/ossia/soundfiles.hpp>
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/gfx.hpp>
@@ -125,7 +125,7 @@ requires(avnd::messages_introspection<T>::size > 0) struct builtin_message_value
   ossia::value_inlet message_inlets[avnd::messages_introspection<T>::size];
   void init(ossia::inlets& inlets)
   {
-    for (auto& in : message_inlets)
+    for(auto& in : message_inlets)
     {
       inlets.push_back(&in);
     }
@@ -162,36 +162,40 @@ struct controls_mirror
 };
 
 template <typename T>
-struct controls_input_queue { };
+struct controls_input_queue
+{
+};
 template <typename T>
-struct controls_output_queue { };
+struct controls_output_queue
+{
+};
 template <typename T>
-requires (avnd::control_input_introspection<T>::size > 0)
-struct controls_input_queue<T> {
-    static constexpr int i_size = avnd::control_input_introspection<T>::size;
-    using i_tuple
-        = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+requires(avnd::control_input_introspection<T>::size > 0) struct controls_input_queue<T>
+{
+  static constexpr int i_size = avnd::control_input_introspection<T>::size;
+  using i_tuple
+      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
 
-    moodycamel::ConcurrentQueue<i_tuple> ins_queue;
-    std::bitset<i_size> inputs_set;
+  moodycamel::ConcurrentQueue<i_tuple> ins_queue;
+  std::bitset<i_size> inputs_set;
 };
 
 template <typename T>
-requires (avnd::control_output_introspection<T>::size > 0)
-struct controls_output_queue<T> {
-    static constexpr int o_size = avnd::control_output_introspection<T>::size;
-    using o_tuple
-        = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+requires(avnd::control_output_introspection<T>::size > 0) struct controls_output_queue<T>
+{
+  static constexpr int o_size = avnd::control_output_introspection<T>::size;
+  using o_tuple
+      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
 
-    moodycamel::ConcurrentQueue<o_tuple> outs_queue;
+  moodycamel::ConcurrentQueue<o_tuple> outs_queue;
 
-    std::bitset<o_size> outputs_set;
+  std::bitset<o_size> outputs_set;
 };
 
 template <typename T>
-struct controls_queue :
-   controls_input_queue<T>
- , controls_output_queue<T>
+struct controls_queue
+    : controls_input_queue<T>
+    , controls_output_queue<T>
 {
 };
 
@@ -292,40 +296,34 @@ public:
   void process_inputs_impl(Functor& f, auto& in)
   {
     using info = avnd::input_introspection<T>;
-    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
-    {
+    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
       using namespace tpl;
-      (f(avnd::pfr::get<Index>(in),
-         tuplet::get<Index>(this->ossia_inlets.ports),
+      (f(avnd::pfr::get<Index>(in), tuplet::get<Index>(this->ossia_inlets.ports),
          avnd::field_index<Index>{}),
        ...);
-    }
-    (typename info::indices_n{});
+        }(typename info::indices_n{});
   }
 
   template <typename Functor>
   void process_outputs_impl(Functor& f, auto& out)
   {
     using info = avnd::output_introspection<T>;
-    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
-    {
-      (f(avnd::pfr::get<Index>(out),
-         tuplet::get<Index>(this->ossia_outlets.ports),
+    [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+      (f(avnd::pfr::get<Index>(out), tuplet::get<Index>(this->ossia_outlets.ports),
          avnd::field_index<Index>{}),
        ...);
-    }
-    (typename info::indices_n{});
+        }(typename info::indices_n{});
   }
 
   template <typename Functor>
   void process_all_ports()
   {
-    for (auto& [impl, i, o] : this->impl.full_state())
+    for(auto& [impl, i, o] : this->impl.full_state())
     {
       Functor f{*this, impl};
-      if constexpr (avnd::inputs_type<T>::size > 0)
+      if constexpr(avnd::inputs_type<T>::size > 0)
         process_inputs_impl(f, i);
-      if constexpr (avnd::outputs_type<T>::size > 0)
+      if constexpr(avnd::outputs_type<T>::size > 0)
         process_outputs_impl(f, o);
     }
   }
@@ -333,41 +331,36 @@ public:
   void initialize_all_ports()
   {
     // Setup inputs
-    if constexpr (avnd::inputs_type<T>::size > 0)
+    if constexpr(avnd::inputs_type<T>::size > 0)
     {
       using in_info = avnd::input_introspection<T>;
       using in_type = typename avnd::inputs_type<T>::type;
       auto& port_tuple = this->ossia_inlets.ports;
 
-      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
-      {
+      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         setup_inlets<safe_node_base_base<T>> init{*this, this->m_inlets};
         (init(
-             avnd::
-                 field_reflection<Index, avnd::pfr::tuple_element_t<Index, in_type>>{},
+             avnd::field_reflection<Index, avnd::pfr::tuple_element_t<Index, in_type>>{},
              tuplet::get<Index>(port_tuple)),
          ...);
-      }
-      (typename in_info::indices_n{});
+          }(typename in_info::indices_n{});
     }
 
     // Setup outputs
-    if constexpr (avnd::outputs_type<T>::size > 0)
+    if constexpr(avnd::outputs_type<T>::size > 0)
     {
       using out_info = avnd::output_introspection<T>;
       using out_type = typename avnd::outputs_type<T>::type;
       auto& port_tuple = this->ossia_outlets.ports;
 
-      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>)
-      {
+      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         setup_outlets<safe_node_base_base<T>> init{*this, this->m_outlets};
         (init(
-             avnd::
-                 field_reflection<Index, avnd::pfr::tuple_element_t<Index, out_type>>{},
+             avnd::field_reflection<
+                 Index, avnd::pfr::tuple_element_t<Index, out_type>>{},
              tuplet::get<Index>(port_tuple)),
          ...);
-      }
-      (typename out_info::indices_n{});
+          }(typename out_info::indices_n{});
     }
 
     // Small setup step for the variable channel counts
@@ -384,12 +377,12 @@ public:
       // Idx is the index of the port in the complete input array.
       // We need to map it to the callback index.
       ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
-      if constexpr (sizeof...(Args) == 0)
+      if constexpr(sizeof...(Args) == 0)
         port.data.write_value(ossia::impulse{}, 0);
-      else if constexpr (sizeof...(Args) == 1)
+      else if constexpr(sizeof...(Args) == 1)
         port.data.write_value(to_ossia_value(field, args...), 0);
 
-      if constexpr (!std::is_void_v<R>)
+      if constexpr(!std::is_void_v<R>)
         return R{};
     }
   };
@@ -400,16 +393,12 @@ public:
     avnd::init_controls(this->impl);
 
     // Initialize the callbacks
-    if constexpr (avnd::callback_introspection<outputs_t>::size > 0)
+    if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
     {
       auto callbacks_initializer = [this]<
-          typename Field,
-          template <typename...> typename L,
-          typename Ret,
-          typename... Args,
-          std::size_t Idx>(
-          Field& field, L<Ret, Args...>, avnd::num<Idx>)
-      {
+                                       typename Field, template <typename...> typename L,
+                                       typename Ret, typename... Args, std::size_t Idx>(
+                                       Field& field, L<Ret, Args...>, avnd::num<Idx>) {
         return do_callback<Idx, Field, Ret, Args...>{*this, field};
       };
       this->callbacks.wrap_callbacks(this->impl, callbacks_initializer);
@@ -427,12 +416,13 @@ public:
   {
     if constexpr(requires { avnd::effect_container<T>::multi_instance; })
     {
-      for (const auto& state : this->impl.full_state())
+      for(const auto& state : this->impl.full_state())
       {
         // Replace the value in the field
-        auto& field = avnd::control_input_introspection<T>::template get<N>(state.inputs);
+        auto& field
+            = avnd::control_input_introspection<T>::template get<N>(state.inputs);
 
-         // OPTIMIZEME we're loosing a few allocations here that should be gc'd
+        // OPTIMIZEME we're loosing a few allocations here that should be gc'd
         field.value = new_value;
 
         if_possible(field.update(state.effect));
@@ -441,8 +431,8 @@ public:
     else
     {
       // Replace the value in the field
-      auto& field = avnd::control_input_introspection<T>::template get<N>(
-          this->impl.inputs());
+      auto& field
+          = avnd::control_input_introspection<T>::template get<N>(this->impl.inputs());
 
       std::swap(field.value, new_value);
 
@@ -464,8 +454,7 @@ public:
         .output_channels = this->channels.actual_runtime_outputs,
         .frames_per_buffer = this->buffer_size,
         .rate = this->sample_rate,
-        .instance = this->instance
-    };
+        .instance = this->instance};
 
     // This allocates the buffers that may be used for conversion
     // if e.g. we have an API that works with doubles,
@@ -492,15 +481,15 @@ public:
   void set_channels(ossia::audio_port& port, int channels)
   {
     const int cur = port.channels();
-    if (cur != channels)
+    if(cur != channels)
     {
       // qDebug() << "Setting port channels: " << channels;
       port.set_channels(channels);
     }
 
-    for (auto& chan : port)
+    for(auto& chan : port)
     {
-      if (chan.size() < this->buffer_size)
+      if(chan.size() < this->buffer_size)
         chan.resize(this->buffer_size);
     }
   }
@@ -510,13 +499,13 @@ public:
     // Check all the audio channels
     bool changed = static_cast<AudioCount&>(*this).scan_audio_input_channels();
 
-    if (frames > this->buffer_size)
+    if(frames > this->buffer_size)
     {
       this->buffer_size = frames;
       changed = true;
     }
 
-    if (changed)
+    if(changed)
     {
       audio_configuration_changed();
     }
@@ -531,7 +520,7 @@ public:
     this->process_all_ports<process_before_run<safe_node_base, T>>();
 
     // Process messages
-    if constexpr (avnd::messages_type<T>::size > 0)
+    if constexpr(avnd::messages_type<T>::size > 0)
       process_messages();
     return true;
   }
@@ -539,17 +528,17 @@ public:
   template <auto Idx, typename M>
   void invoke_message(const ossia::value& val, avnd::field_reflection<Idx, M>)
   {
-    if constexpr (!std::is_void_v<avnd::message_reflection<M>>)
+    if constexpr(!std::is_void_v<avnd::message_reflection<M>>)
     {
       using refl = avnd::message_reflection<M>;
       constexpr auto arg_count = refl::count;
       constexpr auto f = avnd::message_get_func<M>();
 
-      if constexpr (arg_count == 0)
+      if constexpr(arg_count == 0)
       {
-        for (auto& m : this->impl.effects())
+        for(auto& m : this->impl.effects())
         {
-          if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+          if constexpr(std::is_member_function_pointer_v<decltype(f)>)
           {
             if constexpr(requires { M{}(); })
               M{}();
@@ -560,13 +549,13 @@ public:
             f();
         }
       }
-      else if constexpr (arg_count == 1)
+      else if constexpr(arg_count == 1)
       {
-        if constexpr (std::is_same_v<avnd::first_message_argument<M>, T&>)
+        if constexpr(std::is_same_v<avnd::first_message_argument<M>, T&>)
         {
-          for (auto& m : this->impl.effects())
+          for(auto& m : this->impl.effects())
           {
-            if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+            if constexpr(std::is_member_function_pointer_v<decltype(f)>)
             {
               if constexpr(requires { M{}(m); })
                 M{}(m);
@@ -579,27 +568,27 @@ public:
         }
         else
         {
-            constexpr M field;
+          constexpr M field;
 
-            using arg_type = std::decay_t<avnd::first_message_argument<M>>;
-            arg_type arg;
-            from_ossia_value(field, val, arg);
+          using arg_type = std::decay_t<avnd::first_message_argument<M>>;
+          arg_type arg;
+          from_ossia_value(field, val, arg);
 
-            for (auto& m : this->impl.effects())
+          for(auto& m : this->impl.effects())
+          {
+            if constexpr(std::is_member_function_pointer_v<decltype(f)>)
             {
-              if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-              {
-                if constexpr(requires { M{}(arg); })
-                  M{}(arg);
-                else if constexpr(requires { (m.*f)(arg); })
-                  (m.*f)(arg);
-              }
-              else
-              {
-                f(arg);
-              }
+              if constexpr(requires { M{}(arg); })
+                M{}(arg);
+              else if constexpr(requires { (m.*f)(arg); })
+                (m.*f)(arg);
             }
-            /*
+            else
+            {
+              f(arg);
+            }
+          }
+          /*
           for (auto& m : this->impl.effects())
           {
             if constexpr (std::is_member_function_pointer_v<decltype(f)>)
@@ -626,15 +615,15 @@ public:
       }
       else
       {
-        if constexpr (arg_count == 2)
+        if constexpr(arg_count == 2)
         {
           constexpr M field;
           using arg_type = std::decay_t<avnd::second_message_argument<M>>;
           arg_type arg;
           from_ossia_value(field, val, arg);
-          for (auto& m : this->impl.effects())
+          for(auto& m : this->impl.effects())
           {
-            if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+            if constexpr(std::is_member_function_pointer_v<decltype(f)>)
             {
               if constexpr(requires { M{}(m, arg); })
                 M{}(m, arg);
@@ -659,9 +648,9 @@ public:
   void process_message(avnd::field_reflection<Idx, M>)
   {
     ossia::value_inlet& inl = this->message_ports.message_inlets[Idx];
-    if (inl.data.get_data().empty())
+    if(inl.data.get_data().empty())
       return;
-    for (const auto& val : inl.data.get_data())
+    for(const auto& val : inl.data.get_data())
     {
       invoke_message(val.value, avnd::field_reflection<Idx, M>{});
     }
@@ -695,9 +684,9 @@ public:
     this->control_buffers.clear_inputs(this->impl);
 
     // Clear control bitsets for UI
-    if constexpr (avnd::control_input_introspection<T>::size > 0)
+    if constexpr(avnd::control_input_introspection<T>::size > 0)
     {
-      if (this->control.inputs_set.any())
+      if(this->control.inputs_set.any())
       {
         // Notify the UI
         this->control.ins_queue.enqueue(make_controls_in_tuple());
@@ -705,9 +694,9 @@ public:
       }
     }
 
-    if constexpr (avnd::control_output_introspection<T>::size > 0)
+    if constexpr(avnd::control_output_introspection<T>::size > 0)
     {
-      if (this->control.outputs_set.any())
+      if(this->control.outputs_set.any())
       {
         // Notify the UI
         this->control.outs_queue.enqueue(make_controls_out_tuple());
@@ -720,7 +709,6 @@ public:
   {
     return std::string{avnd::get_name<T>()};
   }
-
 
   void soundfile_release_request(std::string& str, int idx)
   {
@@ -740,21 +728,29 @@ public:
     fprintf(stderr, "%s:%d\n", str.c_str(), idx);
   }
 
-  template<std::size_t N, std::size_t NField>
-  void soundfile_loaded(ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  template <std::size_t N, std::size_t NField>
+  void soundfile_loaded(
+      ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
   {
-    this->soundfiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
+    this->soundfiles.load(
+        this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
-  template<std::size_t N, std::size_t NField>
-  void midifile_loaded(const std::shared_ptr<oscr::midifile_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  template <std::size_t N, std::size_t NField>
+  void midifile_loaded(
+      const std::shared_ptr<oscr::midifile_data>& hdl, avnd::predicate_index<N>,
+      avnd::field_index<NField>)
   {
-    this->midifiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
+    this->midifiles.load(
+        this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
 #if OSCR_HAS_MMAP_FILE_STORAGE
-  template<std::size_t N, std::size_t NField>
-  void file_loaded(const std::shared_ptr<oscr::raw_file_data>& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
+  template <std::size_t N, std::size_t NField>
+  void file_loaded(
+      const std::shared_ptr<oscr::raw_file_data>& hdl, avnd::predicate_index<N>,
+      avnd::field_index<NField>)
   {
-    this->rawfiles.load(this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
+    this->rawfiles.load(
+        this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
 #endif
 };
@@ -762,12 +758,10 @@ public:
 // FIXME these concepts are super messy
 
 template <typename FP, typename T>
-concept real_mono_processor =
-   avnd::mono_per_sample_arg_processor<FP, T>
-|| avnd::mono_per_sample_port_processor<FP, T>
-|| avnd::monophonic_single_port_audio_effect<FP, T>
-|| avnd::mono_per_channel_arg_processor<FP, T>
-|| avnd::mono_per_channel_port_processor<FP, T>;
+concept real_mono_processor = avnd::mono_per_sample_arg_processor<
+    FP, T> || avnd::mono_per_sample_port_processor<FP, T> || avnd::
+    monophonic_single_port_audio_effect<FP, T> || avnd::mono_per_channel_arg_processor<
+        FP, T> || avnd::mono_per_channel_port_processor<FP, T>;
 template <typename T>
 concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;

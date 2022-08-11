@@ -1,9 +1,9 @@
 #pragma once
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
-#include <halp/meta.hpp>
 #include <halp/fft.hpp>
-#include <cmath>
+#include <halp/meta.hpp>
 
 namespace examples::helpers
 {
@@ -58,10 +58,10 @@ struct PeakBand
     auto cplx = fft.execute(inputs.audio.channel, frames);
 
     // Compute the band with the highest amplitude
-    for (int k = 0; k < frames / 2; k++)
+    for(int k = 0; k < frames / 2; k++)
     {
       const double mag_squared = std::norm(cplx[k]);
-      if (mag_squared > outputs.peak)
+      if(mag_squared > outputs.peak)
       {
         outputs.peak = mag_squared;
         outputs.band = k;

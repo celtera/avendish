@@ -7,8 +7,8 @@
 
 namespace avnd
 {
-template<typename T>
-concept message_bus = requires (T t, typename T::ui ui, typename T::ui::bus bus)
+template <typename T>
+concept message_bus = requires(T t, typename T::ui ui, typename T::ui::bus bus)
 {
   t.send_message({});
   t.process_message({});

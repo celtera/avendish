@@ -2,13 +2,13 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/aggregates.hpp>
 #include <avnd/common/for_nth.hpp>
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/common/span_polyfill.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_execution.hpp>
-#include <avnd/common/aggregates.hpp>
 
 #include <concepts>
 #include <cstdint>
@@ -45,9 +45,7 @@ struct process_adapter
 
   template <std::floating_point FP>
   void process(
-      avnd::effect_container<T>& implementation,
-      avnd::span<FP*> in,
-      avnd::span<FP*> out,
+      avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
       int32_t n)
   {
     // Audio buffers aren't used at all
@@ -78,7 +76,7 @@ struct audio_buffer_storage
   {
     // If our effect is written with doubles, and we're in a host
     // which requires floats, we allocate buffers to store the converted data
-    if constexpr (needs_storage<SrcFP, T>::value)
+    if constexpr(needs_storage<SrcFP, T>::value)
     {
       using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
       input_buffer_for(needed_type{})
@@ -102,12 +100,12 @@ struct audio_buffer_storage
     floats.zero_pointers_out.resize(max_channels_out);
     doubles.zero_pointers_in.resize(max_channels_in);
     doubles.zero_pointers_out.resize(max_channels_out);
-    for (int i = 0; i < max_channels_in; i++)
+    for(int i = 0; i < max_channels_in; i++)
     {
       floats.zero_pointers_in[i] = floats.zeros_in.data();
       doubles.zero_pointers_in[i] = doubles.zeros_in.data();
     }
-    for (int i = 0; i < max_channels_out; i++)
+    for(int i = 0; i < max_channels_out; i++)
     {
       floats.zero_pointers_out[i] = floats.zeros_out.data();
       doubles.zero_pointers_out[i] = doubles.zeros_out.data();

@@ -33,8 +33,7 @@ inline void** getChannelBuffersPointer(
 }
 
 inline uint32 getSampleFramesSizeInBytes(
-    const Steinberg::Vst::ProcessSetup& processSetup,
-    int32 numSamples)
+    const Steinberg::Vst::ProcessSetup& processSetup, int32 numSamples)
 {
   using namespace Steinberg::Vst;
   return numSamples
@@ -56,7 +55,7 @@ public:
     using namespace Steinberg;
     {
       // check if already initialized
-      if (hostContext)
+      if(hostContext)
         return kResultFalse;
 
       hostContext = context;
@@ -73,7 +72,7 @@ public:
 
     // in case host did not disconnect us,
     // release peer now
-    if (peerConnection)
+    if(peerConnection)
     {
       peerConnection->disconnect(this);
       peerConnection = nullptr;

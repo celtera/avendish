@@ -19,14 +19,14 @@ struct reactive_value
   reactive_value& operator=(const T& t)
   {
     value = t;
-    if (notify)
+    if(notify)
       notify(value);
   }
 
   reactive_value& operator=(T&& t)
   {
     value = t;
-    if (notify)
+    if(notify)
       notify(value);
   }
 };

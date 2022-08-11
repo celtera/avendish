@@ -6,5 +6,6 @@
 
 namespace avnd
 {
-type_or_value_qualification(modules) type_or_value_reflection(modules)
+type_or_value_qualification(modules)
+type_or_value_reflection(modules)
 }

@@ -127,39 +127,36 @@ template <typename T, std::size_t Count>
 consteval int std140_offset_impl()
 {
   int sz = 0;
-  auto func = [&](auto field)
-  {
-    switch (sizeof(field.value))
+  auto func = [&](auto field) {
+    switch(sizeof(field.value))
     {
       case 4:
         sz += 4;
         break;
       case 8:
-        if (sz % 8 != 0)
+        if(sz % 8 != 0)
           sz += 4;
         sz += 8;
         break;
       case 12:
-        while (sz % 16 != 0)
+        while(sz % 16 != 0)
           sz += 4;
         sz += 12;
         break;
       case 16:
-        while (sz % 16 != 0)
+        while(sz % 16 != 0)
           sz += 4;
         sz += 16;
         break;
     }
   };
 
-  if constexpr (Count > 0)
+  if constexpr(Count > 0)
   {
-    [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>)
-    {
+    [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
       constexpr T t{};
       (func(avnd::pfr::get<Index>(t)), ...);
-    }
-    (std::make_index_sequence<Count>{});
+        }(std::make_index_sequence<Count>{});
   }
   return sz;
 }
@@ -180,4 +177,3 @@ consteval int std140_size()
 }
 
 }
-

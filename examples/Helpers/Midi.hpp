@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
-#include <cmath>
 
 #include <array>
 #include <cstddef>
@@ -38,7 +38,7 @@ struct Midi
     auto& i = inputs.midi;
     auto& o = outputs.midi;
 
-    for (auto& message : i)
+    for(auto& message : i)
     {
       o.push_back(message);
     }

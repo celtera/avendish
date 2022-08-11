@@ -1,6 +1,6 @@
 #pragma once
-#include <halp/log.hpp>
 #include <avnd/wrappers/configure.hpp>
+#include <halp/log.hpp>
 
 #include <utility>
 

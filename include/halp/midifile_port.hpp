@@ -8,8 +8,9 @@
 #include <halp/static_string.hpp>
 
 #include <cstddef>
-#include <string_view>
 #include <vector>
+
+#include <string_view>
 
 namespace halp
 {
@@ -25,11 +26,12 @@ struct simple_midi_track_event
   int64_t tick_absolute;
 };
 
-template<typename Event>
+template <typename Event>
 using midi_track = std::vector<Event>;
 
-template<typename Event>
-struct midifile_view {
+template <typename Event>
+struct midifile_view
+{
   std::vector<midi_track<Event>> tracks;
 
   // Length in ticks and other timing-relevant properties
@@ -48,8 +50,14 @@ struct midifile_port
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   HALP_INLINE_FLATTEN operator midifile_view_type&() noexcept { return midifile; }
-  HALP_INLINE_FLATTEN operator const midifile_view_type&() const noexcept { return midifile; }
-  HALP_INLINE_FLATTEN operator bool() const noexcept { return midifile.tracks.size() > 0; }
+  HALP_INLINE_FLATTEN operator const midifile_view_type&() const noexcept
+  {
+    return midifile;
+  }
+  HALP_INLINE_FLATTEN operator bool() const noexcept
+  {
+    return midifile.tracks.size() > 0;
+  }
 
   midifile_view_type midifile;
 };

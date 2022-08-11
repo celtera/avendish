@@ -181,5 +181,4 @@ struct rgb_texture
   }
 };
 
-
 }

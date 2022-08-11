@@ -55,7 +55,7 @@ struct message_processor
   void init(int argc, t_atom* argv)
   {
     /// Pass arguments
-    if constexpr (avnd::can_initialize<T>)
+    if constexpr(avnd::can_initialize<T>)
     {
       init_setup.process(implementation.effect, argc, argv);
     }
@@ -68,7 +68,7 @@ struct message_processor
     output_setup.init(implementation, x_obj);
 
     /// Initialize controls
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::init_controls(implementation);
     }
@@ -78,15 +78,12 @@ struct message_processor
 
   void process_inlet_control(int inlet, t_atom_long val)
   {
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::input_introspection<T>::for_nth(
-          avnd::get_inputs<T>(implementation),
-          inlet,
-          [val](auto& field)
-          {
+          avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
             // TODO dangerous if const char*
-            if constexpr (requires { field.value = 0; })
+            if constexpr(requires { field.value = 0; })
             {
               field.value = val;
             }
@@ -96,15 +93,12 @@ struct message_processor
 
   void process_inlet_control(int inlet, t_atom_float val)
   {
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::input_introspection<T>::for_nth(
-          avnd::get_inputs<T>(implementation),
-          inlet,
-          [val](auto& field)
-          {
+          avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
             // TODO dangerous if const char*
-            if constexpr (requires { field.value = 0; })
+            if constexpr(requires { field.value = 0; })
             {
               field.value = val;
             }
@@ -114,15 +108,12 @@ struct message_processor
 
   void process_inlet_control(int inlet, struct symbol* val)
   {
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       avnd::input_introspection<T>::for_nth(
-          avnd::get_inputs<T>(implementation),
-          inlet,
-          [val](auto& field)
-          {
+          avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
             // TODO dangerous if const char*
-            if constexpr (requires { field.value = "str"; })
+            if constexpr(requires { field.value = "str"; })
             {
               field.value = val->s_name;
             }
@@ -132,9 +123,9 @@ struct message_processor
 
   void process_inlet_control(int inlet, t_symbol* s, int argc, t_atom* argv)
   {
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
-      switch (argv[0].a_type)
+      switch(argv[0].a_type)
       {
         case A_LONG:
           process_inlet_control(inlet, argv[0].a_w.w_long);
@@ -179,17 +170,17 @@ struct message_processor
     const int inlet = proxy_getinlet(&x_obj);
 
     // First try to process messages handled explicitely in the object
-    if (inlet == 0 && messages_setup.process_messages(implementation, s, argc, argv))
+    if(inlet == 0 && messages_setup.process_messages(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
-    switch (argc)
+    switch(argc)
     {
       case 0: // bang
       {
-        if (inlet == 0)
+        if(inlet == 0)
         {
-          if (strcmp(s->s_name, "bang") == 0)
+          if(strcmp(s->s_name, "bang") == 0)
           {
             process();
           }
@@ -201,8 +192,7 @@ struct message_processor
         }
         [[fallthrough]];
       }
-      default:
-      {
+      default: {
         // First apply the data to the first inlet (other inlets are handled by Pd).
         process_inlet_control(inlet, s, argc, argv);
 
@@ -228,29 +218,28 @@ message_processor_metaclass<T>::message_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void*
-  {
+  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
 
     // Initializes the rest
     auto obj = reinterpret_cast<instance*>(ptr);
-    new (obj) instance;
+    new(obj) instance;
     obj->init(argc, argv);
     return obj;
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void
-  {
+  constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // Message processing
   constexpr auto obj_process
-      = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void
-  { obj->process(s, argc, argv); };
+      = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
+    obj->process(s, argc, argv);
+  };
 
   constexpr auto obj_process_bang = +[](instance* obj) -> void { obj->process(); };
 
@@ -265,13 +254,8 @@ message_processor_metaclass<T>::message_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      avnd::get_c_name<T>().data(),
-      (method)obj_new,
-      (method)obj_free,
-      sizeof(message_processor<T>),
-      0L,
-      A_GIMME,
-      0);
+      avnd::get_c_name<T>().data(), (method)obj_new, (method)obj_free,
+      sizeof(message_processor<T>), 0L, A_GIMME, 0);
 
   // Connect our methods
   class_addmethod(g_class, (method)obj_process_int, "int", A_LONG, 0);

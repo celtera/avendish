@@ -58,7 +58,7 @@ struct formatter<halp::color_type>
   }
 };
 
-template<>
+template <>
 struct formatter<halp::impulse_type>
 {
   template <typename ParseContext>

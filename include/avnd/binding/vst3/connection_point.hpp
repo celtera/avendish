@@ -20,10 +20,10 @@ public:
 
   Steinberg::tresult connect(IConnectionPoint* other) final override
   {
-    if (!other)
+    if(!other)
       return Steinberg::kInvalidArgument;
 
-    if (peerConnection)
+    if(peerConnection)
       return Steinberg::kResultFalse;
 
     peerConnection = other;
@@ -32,7 +32,7 @@ public:
 
   Steinberg::tresult disconnect(IConnectionPoint* other) final override
   {
-    if (peerConnection && other == peerConnection)
+    if(peerConnection && other == peerConnection)
     {
       peerConnection = nullptr;
       return Steinberg::kResultOk;
@@ -42,7 +42,7 @@ public:
 
   Steinberg::tresult notify(Steinberg::Vst::IMessage* message) final override
   {
-    if (!message)
+    if(!message)
       return Steinberg::kInvalidArgument;
 
     return Steinberg::kResultFalse;

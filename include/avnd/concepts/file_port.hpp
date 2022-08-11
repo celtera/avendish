@@ -15,16 +15,17 @@ concept file = requires(T t)
 };
 
 template <typename T>
-concept raw_file = file<T>
-&& requires(T t)
+concept raw_file = file<T> && requires(T t)
 {
   t.bytes;
 };
 
 template <typename T>
-concept raw_file_port = requires (T t)
+concept raw_file_port = requires(T t)
 {
-  { t.file } -> raw_file;
+  {
+    t.file
+    } -> raw_file;
 };
 
 }

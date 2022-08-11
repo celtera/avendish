@@ -41,9 +41,7 @@ struct oscquery_mapper
       , m_context{std::make_shared<ossia::net::network_context>()}
       , m_dev{
             std::make_unique<ossia::oscquery_asio::oscquery_server_protocol>(
-                m_context,
-                1234,
-                5678),
+                m_context, 1234, 5678),
             "my_device"}
   {
     create_ports();
@@ -74,13 +72,12 @@ struct oscquery_mapper
 
   template <avnd::parameter Field>
   requires(!avnd::enum_parameter<Field>) void setup_control(
-      Field& field,
-      ossia::net::parameter_base& param)
+      Field& field, ossia::net::parameter_base& param)
   {
     param.set_value_type(type_for_arg<decltype(Field::value)>());
 
     // Set-up the metadata
-    if constexpr (avnd::parameter_with_minmax_range<Field>)
+    if constexpr(avnd::parameter_with_minmax_range<Field>)
     {
       constexpr auto ctl = avnd::get_range<Field>();
       param.set_domain(ossia::make_domain(ctl.min, ctl.max));
@@ -90,8 +87,9 @@ struct oscquery_mapper
     param.set_access(ossia::access_mode::BI);
 
     // Set-up the external callback
-    param.add_callback([&field](const ossia::value& val)
-                       { field.value = convert(val, tag<decltype(field.value)>{}); });
+    param.add_callback([&field](const ossia::value& val) {
+      field.value = convert(val, tag<decltype(field.value)>{});
+    });
   }
 
   template <avnd::enum_parameter Field>
@@ -109,34 +107,32 @@ struct oscquery_mapper
 
     // Set-up the external callback
 
-    param.add_callback(
-        [&field](const ossia::value& val)
+    param.add_callback([&field](const ossia::value& val) {
+      if(const int* iindex = val.target<int>())
+      {
+        if(*iindex >= 0 && *iindex < choices_count)
         {
-          if (const int* iindex = val.target<int>())
-          {
-            if (*iindex >= 0 && *iindex < choices_count)
-            {
-              field.value = static_cast<decltype(field.value)>(*iindex);
-            }
-          }
-          else if (const float* findex = val.target<float>())
-          {
-            int index = *findex;
-            if (index >= 0 && index < choices_count)
-            {
-              field.value = static_cast<decltype(field.value)>(index);
-            }
-          }
-          else if (const std::string* txt = val.target<std::string>())
-          {
-            auto it = std::find(choices.begin(), choices.end(), *txt);
-            if (it != choices.end())
-            {
-              int index = std::distance(choices.begin(), it);
-              field.value = static_cast<decltype(field.value)>(index);
-            }
-          }
-        });
+          field.value = static_cast<decltype(field.value)>(*iindex);
+        }
+      }
+      else if(const float* findex = val.target<float>())
+      {
+        int index = *findex;
+        if(index >= 0 && index < choices_count)
+        {
+          field.value = static_cast<decltype(field.value)>(index);
+        }
+      }
+      else if(const std::string* txt = val.target<std::string>())
+      {
+        auto it = std::find(choices.begin(), choices.end(), *txt);
+        if(it != choices.end())
+        {
+          int index = std::distance(choices.begin(), it);
+          field.value = static_cast<decltype(field.value)>(index);
+        }
+      }
+    });
   }
 
   template <avnd::parameter Field>
@@ -144,11 +140,11 @@ struct oscquery_mapper
   {
     ossia::net::node_base& node = m_dev.get_root_node();
     std::string name = "input";
-    if constexpr (requires { Field::name(); })
+    if constexpr(requires { Field::name(); })
       name = Field::name();
 
-    if (auto param
-        = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
+    if(auto param
+       = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
     {
       setup_control(field, *param);
     }
@@ -157,26 +153,26 @@ struct oscquery_mapper
   template <typename Arg>
   static bool compatible(ossia::val_type type)
   {
-    if constexpr (requires(Arg arg) { arg = "str"; })
+    if constexpr(requires(Arg arg) { arg = "str"; })
       return type == ossia::val_type::STRING;
-    else if constexpr (requires(Arg arg) { arg = std::array<float, 2>{}; })
+    else if constexpr(requires(Arg arg) { arg = std::array<float, 2>{}; })
       return type == ossia::val_type::VEC2F;
-    else if constexpr (requires(Arg arg) { arg = std::array<float, 3>{}; })
+    else if constexpr(requires(Arg arg) { arg = std::array<float, 3>{}; })
       return type == ossia::val_type::VEC3F;
-    else if constexpr (requires(Arg arg) { arg = std::array<float, 4>{}; })
+    else if constexpr(requires(Arg arg) { arg = std::array<float, 4>{}; })
       return type == ossia::val_type::VEC4F;
 
-    else if constexpr (std::is_same_v<Arg, bool>)
+    else if constexpr(std::is_same_v<Arg, bool>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
              || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
-    else if constexpr (std::is_same_v<Arg, char>)
+    else if constexpr(std::is_same_v<Arg, char>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
              || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
 
-    else if constexpr (std::floating_point<Arg>)
+    else if constexpr(std::floating_point<Arg>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
              || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
-    else if constexpr (std::integral<Arg>)
+    else if constexpr(std::integral<Arg>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
              || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
 
@@ -211,7 +207,7 @@ struct oscquery_mapper
   template <auto f, typename... Args>
   void call_message_impl(Args&&... args)
   {
-    if constexpr (std::is_member_function_pointer_v<decltype(f)>)
+    if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       return (object.effect.*f)(std::forward<Args>(args)...);
     else
       return f(std::forward<Args>(args)...);
@@ -222,35 +218,35 @@ struct oscquery_mapper
   {
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
     using arg_t = typename avnd::first_argument<f>;
-    if constexpr (std::floating_point<arg_t>)
+    if constexpr(std::floating_point<arg_t>)
     {
       call_message_impl<f>(ossia::convert<float>(in));
     }
-    else if constexpr (std::integral<arg_t>)
+    else if constexpr(std::integral<arg_t>)
     {
       call_message_impl<f>(ossia::convert<int>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, bool>)
+    else if constexpr(std::is_same_v<arg_t, bool>)
     {
       call_message_impl<f>(ossia::convert<bool>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, const char*>)
+    else if constexpr(std::is_same_v<arg_t, const char*>)
     {
       call_message_impl<f>(ossia::convert<std::string>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::string>)
+    else if constexpr(std::is_same_v<arg_t, std::string>)
     {
       call_message_impl<f>(ossia::convert<std::string>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 2>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 2>>)
     {
       call_message_impl<f>(ossia::convert<std::array<float, 2>>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 3>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 3>>)
     {
       call_message_impl<f>(ossia::convert<std::array<float, 3>>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 4>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 4>>)
     {
       call_message_impl<f>(ossia::convert<std::array<float, 4>>(in));
     }
@@ -261,35 +257,35 @@ struct oscquery_mapper
   {
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
     using arg_t = typename avnd::first_argument<f>;
-    if constexpr (std::floating_point<arg_t>)
+    if constexpr(std::floating_point<arg_t>)
     {
       f(object.effect, ossia::convert<float>(in));
     }
-    else if constexpr (std::integral<arg_t>)
+    else if constexpr(std::integral<arg_t>)
     {
       f(object.effect, ossia::convert<int>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, bool>)
+    else if constexpr(std::is_same_v<arg_t, bool>)
     {
       f(object.effect, ossia::convert<bool>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, const char*>)
+    else if constexpr(std::is_same_v<arg_t, const char*>)
     {
       f(object.effect, ossia::convert<std::string>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::string>)
+    else if constexpr(std::is_same_v<arg_t, std::string>)
     {
       f(object.effect, ossia::convert<std::string>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 2>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 2>>)
     {
       f(object.effect, ossia::convert<std::array<float, 2>>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 3>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 3>>)
     {
       f(object.effect, ossia::convert<std::array<float, 3>>(in));
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 4>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 4>>)
     {
       f(object.effect, ossia::convert<std::array<float, 4>>(in));
     }
@@ -304,13 +300,11 @@ struct oscquery_mapper
     // Check if all arguments passed are convertible to the expected
     // type of the method:
     auto can_apply_args = [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
-    {
+                              boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
       return (compatible<Args>(argv[I].get_type()) && ...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
 
-    if (!can_apply_args)
+    if(!can_apply_args)
     {
       ossia::logger().error("Error: invalid argument count for call.");
       return;
@@ -318,12 +312,10 @@ struct oscquery_mapper
 
     // Call the method
     [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<Args...>, std::index_sequence<I...>)
-    {
+        boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
       std::tuple args{convert(argv[I], tag<Args>{})...};
       call_message_impl<f>(deref(get<I>(args), tag<Args>{})...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+        }(arg_list_t{}, std::make_index_sequence<arg_counts>());
   }
 
   template <auto f>
@@ -332,11 +324,11 @@ struct oscquery_mapper
     constexpr auto arg_counts = avnd::function_reflection<f>::count;
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
 
-    if (in.get_type() != ossia::val_type::LIST)
+    if(in.get_type() != ossia::val_type::LIST)
       return;
     auto& lst = *in.target<std::vector<ossia::value>>();
 
-    if (arg_counts != lst.size())
+    if(arg_counts != lst.size())
     {
       ossia::logger().error("Error: invalid argument count for call.");
       return;
@@ -351,15 +343,15 @@ struct oscquery_mapper
     constexpr auto arg_counts = avnd::function_reflection<f>::count;
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
 
-    if constexpr (arg_counts == 0)
+    if constexpr(arg_counts == 0)
     {
       call_message_impl<f>();
     }
     else
     {
-      if constexpr (std::is_same_v<avnd::first_argument<f>, T&>)
+      if constexpr(std::is_same_v<avnd::first_argument<f>, T&>)
       {
-        if constexpr (arg_counts == 1)
+        if constexpr(arg_counts == 1)
         {
           call_message_1_arg_self<f>(in);
         }
@@ -370,7 +362,7 @@ struct oscquery_mapper
       }
       else
       {
-        if constexpr (arg_counts == 1)
+        if constexpr(arg_counts == 1)
         {
           call_message_1_arg<f>(in);
         }
@@ -385,35 +377,35 @@ struct oscquery_mapper
   template <typename arg_t>
   static constexpr ossia::val_type type_for_arg()
   {
-    if constexpr (std::floating_point<arg_t>)
+    if constexpr(std::floating_point<arg_t>)
     {
       return ossia::val_type::FLOAT;
     }
-    else if constexpr (std::integral<arg_t>)
+    else if constexpr(std::integral<arg_t>)
     {
       return ossia::val_type::INT;
     }
-    else if constexpr (std::is_same_v<arg_t, bool>)
+    else if constexpr(std::is_same_v<arg_t, bool>)
     {
       return ossia::val_type::BOOL;
     }
-    else if constexpr (std::is_same_v<arg_t, const char*>)
+    else if constexpr(std::is_same_v<arg_t, const char*>)
     {
       return ossia::val_type::STRING;
     }
-    else if constexpr (std::is_same_v<arg_t, std::string>)
+    else if constexpr(std::is_same_v<arg_t, std::string>)
     {
       return ossia::val_type::STRING;
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 2>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 2>>)
     {
       return ossia::val_type::VEC2F;
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 3>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 3>>)
     {
       return ossia::val_type::VEC3F;
     }
-    else if constexpr (std::is_same_v<arg_t, std::array<float, 4>>)
+    else if constexpr(std::is_same_v<arg_t, std::array<float, 4>>)
     {
       return ossia::val_type::VEC4F;
     }
@@ -422,14 +414,13 @@ struct oscquery_mapper
 
   template <typename... Args>
   void init_message_arguments(
-      ossia::net::parameter_base& param,
-      boost::mp11::mp_list<Args...>)
+      ossia::net::parameter_base& param, boost::mp11::mp_list<Args...>)
   {
-    if constexpr (sizeof...(Args) == 0)
+    if constexpr(sizeof...(Args) == 0)
     {
       param.set_value_type(ossia::val_type::IMPULSE);
     }
-    else if constexpr (sizeof...(Args) == 1)
+    else if constexpr(sizeof...(Args) == 1)
     {
       param.set_value_type(type_for_arg<Args...>());
     }
@@ -445,14 +436,13 @@ struct oscquery_mapper
   }
   template <typename... Args>
   void init_message_arguments(
-      ossia::net::parameter_base& param,
-      boost::mp11::mp_list<T&, Args...>)
+      ossia::net::parameter_base& param, boost::mp11::mp_list<T&, Args...>)
   {
-    if constexpr (sizeof...(Args) == 0)
+    if constexpr(sizeof...(Args) == 0)
     {
       param.set_value_type(ossia::val_type::IMPULSE);
     }
-    else if constexpr (sizeof...(Args) == 1)
+    else if constexpr(sizeof...(Args) == 1)
     {
       param.set_value_type(type_for_arg<Args...>());
     }
@@ -470,34 +460,29 @@ struct oscquery_mapper
   template <typename Field>
   void create_message(Field& field)
   {
-    if constexpr (requires { avnd::function_reflection<Field::func()>::count; })
+    if constexpr(requires { avnd::function_reflection<Field::func()>::count; })
     {
       ossia::net::node_base& node = m_dev.get_root_node();
       std::string name{Field::name()};
-      if (auto param = ossia::net::create_parameter<ossia::net::generic_parameter>(
-              node, name)) // TODO
+      if(auto param = ossia::net::create_parameter<ossia::net::generic_parameter>(
+             node, name)) // TODO
       {
         // Set-up the parameter
         using arg_list_t = typename avnd::function_reflection<Field::func()>::arguments;
         init_message_arguments(*param, arg_list_t{});
 
         // Set-up the external callback
-        param->add_callback(
-            [this, &field](auto& val)
-            {
-              if constexpr (requires {
-                              avnd::function_reflection<Field::func()>::count;
-                            })
-              {
-                call_message<Field::func()>(val);
-                return true;
-              }
-              else
-              {
-                static_assert(
-                    std::is_void_v<Field>, "func() does not return a function");
-              }
-            });
+        param->add_callback([this, &field](auto& val) {
+          if constexpr(requires { avnd::function_reflection<Field::func()>::count; })
+          {
+            call_message<Field::func()>(val);
+            return true;
+          }
+          else
+          {
+            static_assert(std::is_void_v<Field>, "func() does not return a function");
+          }
+        });
       }
     }
   }
@@ -507,14 +492,14 @@ struct oscquery_mapper
   {
     ossia::net::node_base& node = m_dev.get_root_node();
     std::string name = "output";
-    if constexpr (requires { Field::name(); })
+    if constexpr(requires { Field::name(); })
       name = Field::name();
 
-    if (auto param
-        = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
+    if(auto param
+       = ossia::net::create_parameter<ossia::net::generic_parameter>(node, name))
     {
       param->set_value_type(type_for_arg<decltype(Field::value)>());
-      if constexpr (avnd::has_range<Field>)
+      if constexpr(avnd::has_range<Field>)
       {
         constexpr auto ctl = avnd::get_range<Field>();
         param->set_domain(ossia::make_domain(ctl.min, ctl.max));
@@ -551,7 +536,7 @@ struct oscquery_mapper
           [this]<typename Field>(Field& f) { create_output(f); });
     }
 */
-    if constexpr (avnd::has_messages<T>)
+    if constexpr(avnd::has_messages<T>)
     {
       avnd::pfr::for_each_field(
           avnd::get_messages(object),

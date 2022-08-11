@@ -18,11 +18,8 @@ struct enum_control
   {
     using T = typename Parent::type;
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(parent.implementation),
-        idx,
-        [value]<typename C>(C& ctl)
-        {
-          if constexpr (avnd::enum_parameter<C>)
+        avnd::get_inputs(parent.implementation), idx, [value]<typename C>(C& ctl) {
+          if constexpr(avnd::enum_parameter<C>)
             ctl.value = static_cast<decltype(C::value)>(value);
         });
   }
@@ -36,7 +33,7 @@ struct enum_control
     // Concat enumerator texts
     std::string enumerators;
     enumerators.reserve(16 * avnd::get_enum_choices_count<C>());
-    for (std::string_view e : avnd::get_enum_choices<C>())
+    for(std::string_view e : avnd::get_enum_choices<C>())
     {
       enumerators += '"';
       enumerators += e;
@@ -44,7 +41,7 @@ struct enum_control
     }
 
     // Remove last ,
-    if (enumerators.size() > 0)
+    if(enumerators.size() > 0)
     {
       enumerators.pop_back();
       enumerators.pop_back();
@@ -54,11 +51,7 @@ struct enum_control
     fmt::format_to(
         std::back_inserter(parent.componentData),
 #include <avnd/binding/ui/qml/enum_ui.hpp>
-        ,
-        control_k,
-        enumerators,
-        init,
-        name);
+        , control_k, enumerators, init, name);
   }
 };
 

@@ -39,14 +39,14 @@ struct func_ref
   ;
 
 #define halp_mem_fun(Mem) ::halp::func_ref<#Mem, &parent_type::Mem> m_##Mem;
-#define halp_mem_fun_t(Mem, MemT)                                \
+#define halp_mem_fun_t(Mem, MemT)                                  \
   ::halp::func_ref<#Mem, &parent_type::Mem MemT> HALP_TOKENPASTE2( \
       m_, HALP_TOKENPASTE2(Mem, __LINE__));
 #define halp_free_fun(Fun) ::halp::func_ref<#Fun, Fun> m_##Fun;
 #define halp_free_fun_t(Fun, FunT) \
   ::halp::func_ref<#Fun, Fun FunT> HALP_TOKENPASTE2(m_, HALP_TOKENPASTE2(Mem, __LINE__));
 
-#if (defined(__clang__) || defined(_MSC_VER))
+#if(defined(__clang__) || defined(_MSC_VER))
 #define halp_lambda(Name, Fun) \
   struct                       \
   {                            \

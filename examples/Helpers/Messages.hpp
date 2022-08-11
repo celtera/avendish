@@ -48,18 +48,17 @@ struct Messages
     logger.warn("example3: {}", x);
   }
 
-  halp_start_messages(Messages)
-    halp_mem_fun(example)
-    halp_mem_fun(example2)
-    halp_mem_fun_t(example3, <int>)
-    halp_mem_fun_t(example3, <float>)
-    halp_mem_fun_t(example3, <const char*>)
-    halp_free_fun(free_example)
-    halp_free_fun_t(free_template_example, <C>)
-    halp_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
+  halp_start_messages(Messages) halp_mem_fun(example)
+  halp_mem_fun(example2)
+  halp_mem_fun_t(example3, <int>)
+  halp_mem_fun_t(example3, <float>)
+  halp_mem_fun_t(example3, <const char*>)
+  halp_free_fun(free_example)
+  halp_free_fun_t(free_template_example, <C>)
+  halp_lambda(my_lambda, [](Messages& self) { puts("lambda"); })
 
-    // General case:
-    halp::func_ref<"my_message", &Messages::example> m_my_message;
+  // General case:
+  halp::func_ref<"my_message", &Messages::example> m_my_message;
   halp_end_messages
 };
 }

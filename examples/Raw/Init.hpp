@@ -76,7 +76,7 @@ struct Init
   //     [](Init& self, std::string_view a) { std::cout << "C: " << a << std::endl; }};
 
 // broken in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83258
-#if (defined(__clang__) || defined(_MSC_VER))
+#if(defined(__clang__) || defined(_MSC_VER))
   // halp_meta makes it a bit easier to define messages. Also, lambdas are possible.
   struct
   {
@@ -89,7 +89,7 @@ struct Init
       void operator()(Init& self, INPUT_RANGE auto range)
       {
         // value is a std::variant-like type
-        for (auto& value : range)
+        for(auto& value : range)
         {
           // Use ADL here
           visit([](auto& e) { std::cout << e << std::endl; }, value);
@@ -100,10 +100,7 @@ struct Init
     struct
     {
       halp_meta(name, "float_call");
-      void operator()(float v)
-      {
-        std::cerr << "custom_call: " << v << std::endl;
-      }
+      void operator()(float v) { std::cerr << "custom_call: " << v << std::endl; }
     } custom_call;
 
     // If the object type is passed as first argument, the obvious will happen.
@@ -118,6 +115,9 @@ struct Init
   } messages;
 #endif
 
-  void operator()() { outputs.out.value = inputs.a.value; }
+  void operator()()
+  {
+    outputs.out.value = inputs.a.value;
+  }
 };
 }

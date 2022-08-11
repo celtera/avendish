@@ -28,13 +28,14 @@ struct event_bus_info
   {
     static const constexpr int input_event_busses = input_count();
 
-    if (index < input_event_busses)
+    if(index < input_event_busses)
     {
       info.id = index;
       input_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          { copy_string(info.name, C::name()); });
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+          });
       return true;
     }
     else
@@ -47,13 +48,14 @@ struct event_bus_info
   {
     static const constexpr int output_event_busses = output_count();
 
-    if (index < output_event_busses)
+    if(index < output_event_busses)
     {
       info.id = index;
       output_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          { copy_string(info.name, C::name()); });
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+          });
       return true;
     }
     else
@@ -100,7 +102,7 @@ struct audio_bus_info<T>
   {
     static const constexpr int input_audio_busses
         = avnd::bus_introspection<T>::input_busses;
-    if (index == 0)
+    if(index == 0)
     {
       info.id = index;
       copy_string(info.name, "Stereo In");
@@ -123,7 +125,7 @@ struct audio_bus_info<T>
     static const constexpr int output_audio_busses
         = avnd::bus_introspection<T>::output_busses;
 
-    if (index == 0)
+    if(index == 0)
     {
       info.id = index;
       copy_string(info.name, "Stereo Out");
@@ -155,7 +157,7 @@ struct audio_bus_info<T>
 
   static bool input_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.id = index;
       copy_string(info.name, "Mono In");
@@ -175,7 +177,7 @@ struct audio_bus_info<T>
 
   static bool output_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.id = index;
       copy_string(info.name, "Mono Out");
@@ -207,7 +209,7 @@ struct audio_bus_info<T>
 
   static bool input_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.id = index;
       copy_string(info.name, "Mono In");
@@ -227,7 +229,7 @@ struct audio_bus_info<T>
 
   static bool output_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.id = index;
       copy_string(info.name, "Mono Out");
@@ -267,15 +269,14 @@ struct audio_bus_info<T>
 
   static bool input_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index < input_refl::size)
+    if(index < input_refl::size)
     {
       info.id = index;
       input_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          {
-            copy_string(info.name, C::name());
-            info.sample_size = avnd::poly_array_sample_port<double, C> ? 64 : 32;
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+        info.sample_size = avnd::poly_array_sample_port<double, C> ? 64 : 32;
           });
 
       info.channel_count = default_input_channel_count();
@@ -292,15 +293,14 @@ struct audio_bus_info<T>
 
   static bool output_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index < output_refl::size)
+    if(index < output_refl::size)
     {
       info.id = index;
       output_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          {
-            copy_string(info.name, C::name());
-            info.sample_size = avnd::poly_array_sample_port<double, C> ? 64 : 32;
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+        info.sample_size = avnd::poly_array_sample_port<double, C> ? 64 : 32;
           });
 
       info.channel_count = default_output_channel_count();
@@ -331,15 +331,14 @@ struct audio_bus_info<T>
 
   static bool input_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index < input_count())
+    if(index < input_count())
     {
       info.id = index;
       input_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          {
-            copy_string(info.name, C::name());
-            info.sample_size = avnd::audio_sample_port<double, C> ? 64 : 32;
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+        info.sample_size = avnd::audio_sample_port<double, C> ? 64 : 32;
           });
 
       info.channel_count = 1;
@@ -356,15 +355,14 @@ struct audio_bus_info<T>
 
   static bool output_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index < output_count())
+    if(index < output_count())
     {
       info.id = index;
       output_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          {
-            copy_string(info.name, C::name());
-            info.sample_size = avnd::audio_sample_port<double, C> ? 64 : 32;
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+        info.sample_size = avnd::audio_sample_port<double, C> ? 64 : 32;
           });
 
       info.channel_count = 1;
@@ -394,15 +392,14 @@ struct audio_bus_info<T>
 
   static bool input_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index < input_count())
+    if(index < input_count())
     {
       info.id = index;
       input_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          {
-            copy_string(info.name, C::name());
-            info.sample_size = avnd::mono_array_sample_port<double, C> ? 64 : 32;
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+        info.sample_size = avnd::mono_array_sample_port<double, C> ? 64 : 32;
           });
 
       info.channel_count = 1;
@@ -419,15 +416,14 @@ struct audio_bus_info<T>
 
   static bool output_info(uint32_t index, clap_audio_port_info& info)
   {
-    if (index < output_count())
+    if(index < output_count())
     {
       info.id = index;
       output_refl::for_nth_mapped(
           index,
-          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port)
-          {
-            copy_string(info.name, C::name());
-            info.sample_size = avnd::mono_array_sample_port<double, C> ? 64 : 32;
+          [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
+        copy_string(info.name, C::name());
+        info.sample_size = avnd::mono_array_sample_port<double, C> ? 64 : 32;
           });
 
       info.channel_count = 1;

@@ -1,74 +1,75 @@
 #pragma once
 
-#include <ossia/dataflow/geometry_port.hpp>
 #include <avnd/common/enums.hpp>
+#include <ossia/dataflow/geometry_port.hpp>
+
 #include <memory>
 
 namespace oscr
 {
 
-template<typename T>
-struct is_shared_ptr : std::false_type { };
-template<typename T>
-struct is_shared_ptr<std::shared_ptr<T>> : std::true_type { };
+template <typename T>
+struct is_shared_ptr : std::false_type
+{
+};
+template <typename T>
+struct is_shared_ptr<std::shared_ptr<T>> : std::true_type
+{
+};
 
-template<typename Attr>
-constexpr int standard_location_for_attribute(int k) {
-  if constexpr(requires { Attr::position; } || requires { Attr::positions; })
+template <typename Attr>
+constexpr int standard_location_for_attribute(int k)
+{
+  if constexpr(
+      requires { Attr::position; } || requires { Attr::positions; })
     return 0;
-  else if constexpr(requires { Attr::texcoord; } || requires { Attr::tex_coord; } || requires { Attr::texcoords; } || requires { Attr::tex_coords; })
+  else if constexpr(
+      requires { Attr::texcoord; } || requires { Attr::tex_coord; }
+      || requires { Attr::texcoords; } || requires { Attr::tex_coords; })
     return 1;
-  else if constexpr(requires { Attr::color; } || requires { Attr::colors; })
+  else if constexpr(
+      requires { Attr::color; } || requires { Attr::colors; })
     return 2;
-  else if constexpr(requires { Attr::normal; } || requires { Attr::normals; })
+  else if constexpr(
+      requires { Attr::normal; } || requires { Attr::normals; })
     return 3;
-  else if constexpr(requires { Attr::tangent; } || requires { Attr::tangents; })
+  else if constexpr(
+      requires { Attr::tangent; } || requires { Attr::tangents; })
     return 4;
   else
     return k;
 }
 
-template<typename T>
-constexpr auto get_topology(const T& t)
-    -> decltype(ossia::geometry::topology)
+template <typename T>
+constexpr auto get_topology(const T& t) -> decltype(ossia::geometry::topology)
 {
   constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
-      topology,
-      (ossia::geometry::triangles     , triangle, triangles),
+      topology, (ossia::geometry::triangles, triangle, triangles),
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
-      (ossia::geometry::triangle_fan  , triangle_fan, triangles_fan),
-      (ossia::geometry::lines         , line, lines),
-      (ossia::geometry::points        , point, points)
-      );
+      (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
+      (ossia::geometry::lines, line, lines), (ossia::geometry::points, point, points));
   return m(t, ossia::geometry::triangles);
 }
 
-template<typename T>
-constexpr auto get_front_face(const T& t)
-    -> decltype(ossia::geometry::front_face)
+template <typename T>
+constexpr auto get_front_face(const T& t) -> decltype(ossia::geometry::front_face)
 {
   constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
-      front_face,
-      (ossia::geometry::clockwise        , clockwise, cw, CW),
-      (ossia::geometry::counter_clockwise, counter_clockwise, ccw, CCW)
-      );
+      front_face, (ossia::geometry::clockwise, clockwise, cw, CW),
+      (ossia::geometry::counter_clockwise, counter_clockwise, ccw, CCW));
   return m(t, ossia::geometry::clockwise);
 }
 
-template<typename T>
-constexpr auto get_cull_mode(const T& t)
-    -> decltype(ossia::geometry::cull_mode)
+template <typename T>
+constexpr auto get_cull_mode(const T& t) -> decltype(ossia::geometry::cull_mode)
 {
   constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
-      cull_mode,
-      (ossia::geometry::front, front, cull_front),
-      (ossia::geometry::back , back, cull_back),
-      (ossia::geometry::none , none)
-      );
+      cull_mode, (ossia::geometry::front, front, cull_front),
+      (ossia::geometry::back, back, cull_back), (ossia::geometry::none, none));
   return m(t, ossia::geometry::none);
 }
 
-template<avnd::geometry_port T>
+template <avnd::geometry_port T>
 void load_geometry(T& ctrl, ossia::geometry& geom)
 {
   if(!ctrl.dirty)
@@ -92,96 +93,92 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
 
   {
     std::size_t buf_k = 0;
-    avnd::for_each_field_ref(
-        ctrl.buffers,
-        [&] (auto& buf) {
-          using ptr_type = std::decay_t<decltype(buf.data)>;
-          if constexpr(std::is_same_v<ptr_type, void*>)
+    avnd::for_each_field_ref(ctrl.buffers, [&](auto& buf) {
+      using ptr_type = std::decay_t<decltype(buf.data)>;
+      if constexpr(std::is_same_v<ptr_type, void*>)
+      {
+        // using data_type = float[4];
+        // Dynamic case
+        if(buf_k >= geom.buffers.size())
+        {
+          ossia::geometry::buffer in;
+          auto data = std::make_unique<char[]>(buf.size);
+          std::copy_n((char*)buf.data, buf.size, data.get());
+          in.data = std::move(data);
+          in.size = buf.size;
+          buf.dirty = false;
+          in.dirty = true;
+          geom.buffers.push_back(std::move(in));
+        }
+        else if(buf.dirty)
+        {
+          auto& in = geom.buffers[buf_k];
+          auto data = std::make_unique<char[]>(buf.size);
+          std::copy_n((char*)buf.data, buf.size, data.get());
+          in.data = std::move(data);
+          in.size = buf.size;
+          buf.dirty = false;
+          in.dirty = true;
+        }
+      }
+      else
+      {
+        // Static case
+        using data_type = std::decay_t<decltype(buf.data[0])>;
+        static_assert(!std::is_reference_v<data_type>);
+        static_assert(!std::is_const_v<data_type>);
+
+        if(buf_k >= geom.buffers.size())
+        {
+          ossia::geometry::buffer in;
+
+          // FIXME find a way to do it with some linear allocator or whatever
+          // - we need to handle cleanly both static and dynamic geometry
+          // if constexpr(is_shared_ptr<ptr_type>::value)
+          // {
+          //   in.data = buf.data;
+          // }
+          // else
           {
-            // using data_type = float[4];
-            // Dynamic case
-            if(buf_k >= geom.buffers.size())
-            {
-              ossia::geometry::buffer in;
-              auto data = std::make_unique<char[]>(buf.size);
-              std::copy_n((char*)buf.data, buf.size, data.get());
-              in.data = std::move(data);
-              in.size = buf.size;
-              buf.dirty = false;
-              in.dirty = true;
-              geom.buffers.push_back(std::move(in));
-            }
-            else if(buf.dirty)
-            {
-              auto& in = geom.buffers[buf_k];
-              auto data = std::make_unique<char[]>(buf.size);
-              std::copy_n((char*)buf.data, buf.size, data.get());
-              in.data = std::move(data);
-              in.size = buf.size;
-              buf.dirty = false;
-              in.dirty = true;
-            }
+            auto data = std::make_unique<data_type[]>(buf.size);
+            std::copy_n(buf.data, buf.size, data.get());
+            in.data = std::move(data);
           }
-          else
-          {
-            // Static case
-            using data_type = std::decay_t<decltype(buf.data[0])>;
-            static_assert(!std::is_reference_v<data_type>);
-            static_assert(!std::is_const_v<data_type>);
 
-            if(buf_k >= geom.buffers.size())
-            {
-              ossia::geometry::buffer in;
+          in.size = buf.size * sizeof(data_type);
+          buf.dirty = false;
+          in.dirty = true;
 
-              // FIXME find a way to do it with some linear allocator or whatever
-              // - we need to handle cleanly both static and dynamic geometry
-              // if constexpr(is_shared_ptr<ptr_type>::value)
-              // {
-              //   in.data = buf.data;
-              // }
-              // else
-              {
-                auto data = std::make_unique<data_type[]>(buf.size);
-                std::copy_n(buf.data, buf.size, data.get());
-                in.data = std::move(data);
-              }
-
-              in.size = buf.size * sizeof(data_type);
-              buf.dirty = false;
-              in.dirty = true;
-
-              geom.buffers.push_back(std::move(in));
-            }
-            else if(buf.dirty)
-            {
-              auto& in = geom.buffers[buf_k];
-              auto data = std::make_unique<data_type[]>(buf.size);
-              std::copy_n(buf.data, buf.size, data.get());
-              in.data = std::move(data);
-              in.size = buf.size * sizeof(data_type);
-              buf.dirty = false;
-              in.dirty = true;
-            }
-          }
-          buf_k++;
-        });
+          geom.buffers.push_back(std::move(in));
+        }
+        else if(buf.dirty)
+        {
+          auto& in = geom.buffers[buf_k];
+          auto data = std::make_unique<data_type[]>(buf.size);
+          std::copy_n(buf.data, buf.size, data.get());
+          in.data = std::move(data);
+          in.size = buf.size * sizeof(data_type);
+          buf.dirty = false;
+          in.dirty = true;
+        }
+      }
+      buf_k++;
+    });
   }
 
   geom.input.clear();
-  avnd::for_each_field_ref(
-      ctrl.input,
-      [&] (auto& input) {
-        struct ossia::geometry::input in;
+  avnd::for_each_field_ref(ctrl.input, [&](auto& input) {
+    struct ossia::geometry::input in;
 
-        if constexpr(requires { input.buffer(); })
-          in.buffer = avnd::index_in_struct(ctrl.buffers, input.buffer());
-        else
-          in.buffer = input.buffer;
+    if constexpr(requires { input.buffer(); })
+      in.buffer = avnd::index_in_struct(ctrl.buffers, input.buffer());
+    else
+      in.buffer = input.buffer;
 
-        in.offset = input.offset;
+    in.offset = input.offset;
 
-        geom.input.push_back(in);
-      });
+    geom.input.push_back(in);
+  });
 
   if constexpr(requires { ctrl.index; })
   {
@@ -189,12 +186,20 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
     if constexpr(requires { ctrl.index.buffer(); })
     {
       geom.index.buffer = avnd::index_in_struct(ctrl.buffers, ctrl.index.buffer());
-      using index_buf_type = std::decay_t<decltype((ctrl.buffers.*(ctrl.index.buffer())).data[0])>;
+      using index_buf_type
+          = std::decay_t<decltype((ctrl.buffers.*(ctrl.index.buffer())).data[0])>;
 
-      switch(sizeof(index_buf_type)) {
-        case 2: geom.index.format = decltype(ossia::geometry::index)::uint16; break;
-        case 4: geom.index.format = decltype(ossia::geometry::index)::uint32; break;
-        default: assert(false); break;
+      switch(sizeof(index_buf_type))
+      {
+        case 2:
+          geom.index.format = decltype(ossia::geometry::index)::uint16;
+          break;
+        case 4:
+          geom.index.format = decltype(ossia::geometry::index)::uint32;
+          break;
+        default:
+          assert(false);
+          break;
       }
     }
     else if constexpr(requires { ctrl.index.buffer; })
@@ -218,126 +223,115 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
       geom.index.offset = 0;
   }
 
-
   if(geom.bindings.empty())
   {
-    avnd::for_each_field_ref(
-        avnd::get_bindings(ctrl),
-        [&] (auto& binding) {
-          ossia::geometry::binding b;
+    avnd::for_each_field_ref(avnd::get_bindings(ctrl), [&](auto& binding) {
+      ossia::geometry::binding b;
 
-          b.stride = binding.stride;
-          if constexpr(requires { binding.classification; })
-          {
-            constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
-                classification,
-                (ossia::geometry::binding::per_vertex, per_vertex),
-                (ossia::geometry::binding::per_instance, per_instance)
-                );
-            b.classification = m(binding.classification, ossia::geometry::binding::per_vertex);
-          }
+      b.stride = binding.stride;
+      if constexpr(requires { binding.classification; })
+      {
+        constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
+            classification, (ossia::geometry::binding::per_vertex, per_vertex),
+            (ossia::geometry::binding::per_instance, per_instance));
+        b.classification
+            = m(binding.classification, ossia::geometry::binding::per_vertex);
+      }
 
-          if constexpr(requires { binding.step_rate; })
-            b.step_rate = binding.step_rate;
+      if constexpr(requires { binding.step_rate; })
+        b.step_rate = binding.step_rate;
 
-          geom.bindings.push_back(b);
-        });
+      geom.bindings.push_back(b);
+    });
   }
 
   if(geom.attributes.empty())
   {
     std::size_t k = 0;
-    avnd::for_each_field_ref(
-        avnd::get_attributes(ctrl),
-        [&] <typename A> (A& attr) {
-          ossia::geometry::attribute a;
+    avnd::for_each_field_ref(avnd::get_attributes(ctrl), [&]<typename A>(A& attr) {
+      ossia::geometry::attribute a;
 
-          // FIXME very brittle
-          if constexpr(requires { a.location = static_cast<int>(attr.location); })
-            a.location = static_cast<int>(attr.location);
-          else
-            a.location = standard_location_for_attribute<A>(k++);
+      // FIXME very brittle
+      if constexpr(requires { a.location = static_cast<int>(attr.location); })
+        a.location = static_cast<int>(attr.location);
+      else
+        a.location = standard_location_for_attribute<A>(k++);
 
-          if constexpr(requires { attr.binding; })
-            a.binding = attr.binding;
+      if constexpr(requires { attr.binding; })
+        a.binding = attr.binding;
 
-          if constexpr(requires { attr.offset; })
-            a.offset = attr.offset;
+      if constexpr(requires { attr.offset; })
+        a.offset = attr.offset;
 
-          if constexpr(requires { typename A::datatype; })
-          {
-            using tp = typename A::datatype;
-            if constexpr(std::is_same_v<tp, float>)
-              a.format = ossia::geometry::attribute::fp1;
-            else if constexpr(std::is_same_v<tp, float[2]>)
-              a.format = ossia::geometry::attribute::fp2;
-            else if constexpr(std::is_same_v<tp, float[3]>)
-              a.format = ossia::geometry::attribute::fp3;
-            else if constexpr(std::is_same_v<tp, float[4]>)
-              a.format = ossia::geometry::attribute::fp4;
-            else if constexpr(std::is_same_v<tp, uint8_t> || std::is_same_v<tp, unsigned char>)
-              a.format = ossia::geometry::attribute::unsigned1;
-            else if constexpr(std::is_same_v<tp, uint16_t>)
-              a.format = ossia::geometry::attribute::unsigned2;
-            else if constexpr(std::is_same_v<tp, uint32_t>)
-              a.format = ossia::geometry::attribute::unsigned4;
-          }
-          else
-          {
-            constexpr auto m = AVND_ENUM_MATCHER(
-                (ossia::geometry::attribute::fp1, float1, fp1, Float1),
-                (ossia::geometry::attribute::fp2, float2, fp2, Float2, vec2),
-                (ossia::geometry::attribute::fp3, float3, fp3, Float3, vec3),
-                (ossia::geometry::attribute::fp4, float4, fp4, Float4, vec4),
-                (ossia::geometry::attribute::unsigned1, unsigned1, u1, uchar1),
-                (ossia::geometry::attribute::unsigned2, unsigned2, u2, uchar2, uvec2),
-                (ossia::geometry::attribute::unsigned4, unsigned4, u4, uchar4, uvec4)
-                );
-            a.format = m(attr.format, ossia::geometry::attribute::fp4);
-          }
+      if constexpr(requires { typename A::datatype; })
+      {
+        using tp = typename A::datatype;
+        if constexpr(std::is_same_v<tp, float>)
+          a.format = ossia::geometry::attribute::fp1;
+        else if constexpr(std::is_same_v<tp, float[2]>)
+          a.format = ossia::geometry::attribute::fp2;
+        else if constexpr(std::is_same_v<tp, float[3]>)
+          a.format = ossia::geometry::attribute::fp3;
+        else if constexpr(std::is_same_v<tp, float[4]>)
+          a.format = ossia::geometry::attribute::fp4;
+        else if constexpr(
+            std::is_same_v<tp, uint8_t> || std::is_same_v<tp, unsigned char>)
+          a.format = ossia::geometry::attribute::unsigned1;
+        else if constexpr(std::is_same_v<tp, uint16_t>)
+          a.format = ossia::geometry::attribute::unsigned2;
+        else if constexpr(std::is_same_v<tp, uint32_t>)
+          a.format = ossia::geometry::attribute::unsigned4;
+      }
+      else
+      {
+        constexpr auto m = AVND_ENUM_MATCHER(
+            (ossia::geometry::attribute::fp1, float1, fp1, Float1),
+            (ossia::geometry::attribute::fp2, float2, fp2, Float2, vec2),
+            (ossia::geometry::attribute::fp3, float3, fp3, Float3, vec3),
+            (ossia::geometry::attribute::fp4, float4, fp4, Float4, vec4),
+            (ossia::geometry::attribute::unsigned1, unsigned1, u1, uchar1),
+            (ossia::geometry::attribute::unsigned2, unsigned2, u2, uchar2, uvec2),
+            (ossia::geometry::attribute::unsigned4, unsigned4, u4, uchar4, uvec4));
+        a.format = m(attr.format, ossia::geometry::attribute::fp4);
+      }
 
-          geom.attributes.push_back(a);
-        });
+      geom.attributes.push_back(a);
+    });
   }
 
   qDebug("ayy");
 }
 
-template<typename T>
+template <typename T>
 constexpr auto to_front_face(auto v)
 {
   constexpr auto m = AVND_ENUM_CONVERTER(
-      (ossia::geometry::clockwise        , clockwise, cw, CW),
-      (ossia::geometry::counter_clockwise, counter_clockwise, ccw, CCW)
-      );
+      (ossia::geometry::clockwise, clockwise, cw, CW),
+      (ossia::geometry::counter_clockwise, counter_clockwise, ccw, CCW));
   return m(v, decltype(T::front_face){});
 }
 
-template<typename T>
+template <typename T>
 constexpr auto to_topology(auto v)
 {
   constexpr auto m = AVND_ENUM_CONVERTER(
-      (ossia::geometry::triangles     , triangle, triangles),
+      (ossia::geometry::triangles, triangle, triangles),
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
-      (ossia::geometry::triangle_fan  , triangle_fan, triangles_fan),
-      (ossia::geometry::lines         , line, lines),
-      (ossia::geometry::points        , point, points)
-      );
+      (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
+      (ossia::geometry::lines, line, lines), (ossia::geometry::points, point, points));
   return m(v, decltype(T::topology){});
 }
 
-template<typename T>
+template <typename T>
 constexpr auto to_cull_mode(auto v)
 {
   constexpr auto m = AVND_ENUM_CONVERTER(
       (ossia::geometry::front, front, cull_front),
-      (ossia::geometry::back , back, cull_back),
-      (ossia::geometry::none , none)
-      );
+      (ossia::geometry::back, back, cull_back), (ossia::geometry::none, none));
   return m(v, decltype(T::cull_mode){});
 }
 
-template<avnd::geometry_port T>
+template <avnd::geometry_port T>
 void geometry_from_ossia(const ossia::geometry& src, T& dst)
 {
   if(!src.dirty)
@@ -362,12 +356,7 @@ void geometry_from_ossia(const ossia::geometry& src, T& dst)
     {
       using value_type = typename decltype(dst.buffers)::value_type;
       dst.buffers.emplace_back(
-          value_type{
-           .data = buf.data.get(),
-           .size = buf.size,
-           .dirty = buf.dirty
-          });
-
+          value_type{.data = buf.data.get(), .size = buf.size, .dirty = buf.dirty});
     }
   }
 
@@ -375,10 +364,7 @@ void geometry_from_ossia(const ossia::geometry& src, T& dst)
   for(const struct ossia::geometry::input& in : src.input)
   {
     using value_type = typename decltype(dst.input)::value_type;
-    dst.input.emplace_back(value_type{
-            .buffer = in.buffer
-          , .offset = in.offset
-    });
+    dst.input.emplace_back(value_type{.buffer = in.buffer, .offset = in.offset});
   }
 
   if constexpr(requires { dst.index; })
@@ -396,9 +382,10 @@ void geometry_from_ossia(const ossia::geometry& src, T& dst)
   {
     using value_type = typename decltype(dst.bindings)::value_type;
     dst.bindings.push_back({
-          .stride = in.stride
-        , .step_rate = in.step_rate
-        , .classification = static_cast<decltype(value_type::classification)>(in.classification) // FIXME
+        .stride = in.stride,
+        .step_rate = in.step_rate,
+        .classification
+        = static_cast<decltype(value_type::classification)>(in.classification) // FIXME
     });
   }
 
@@ -406,12 +393,11 @@ void geometry_from_ossia(const ossia::geometry& src, T& dst)
   for(const ossia::geometry::attribute& in : src.attributes)
   {
     using value_type = typename decltype(dst.attributes)::value_type;
-    dst.attributes.push_back({
-        .binding = in.binding,
-                              .location = static_cast<decltype(value_type::location)>(in.location),
-                              .format  = static_cast<decltype(value_type::format)>(in.format), // FIXME
-        .offset = in.offset
-    });
+    dst.attributes.push_back(
+        {.binding = in.binding,
+         .location = static_cast<decltype(value_type::location)>(in.location),
+         .format = static_cast<decltype(value_type::format)>(in.format), // FIXME
+         .offset = in.offset});
   }
 }
 

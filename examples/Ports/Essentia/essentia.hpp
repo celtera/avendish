@@ -5,26 +5,26 @@ namespace essentia_ports
 {
 using Real = double;
 //
-template<halp::static_string Name, halp::static_string Desc>
+template <halp::static_string Name, halp::static_string Desc>
 struct array_port
 {
-    static consteval auto name() noexcept { return Name; }
-    static consteval auto description() noexcept { return Desc;}
+  static consteval auto name() noexcept { return Name; }
+  static consteval auto description() noexcept { return Desc; }
 
-    Real* channel{};
+  Real* channel{};
 
-    operator Real*() const noexcept { return channel; }
+  operator Real*() const noexcept { return channel; }
 };
-template<halp::static_string Name, halp::static_string Desc>
+template <halp::static_string Name, halp::static_string Desc>
 struct real_port
 {
-    static consteval auto name() noexcept { return Name; }
-    static consteval auto description() noexcept { return Desc;}
+  static consteval auto name() noexcept { return Name; }
+  static consteval auto description() noexcept { return Desc; }
 
-    Real value{};
+  Real value{};
 
-    operator Real() const noexcept { return value; }
-    operator Real&() noexcept { return value; }
+  operator Real() const noexcept { return value; }
+  operator Real&() noexcept { return value; }
 };
 }
 

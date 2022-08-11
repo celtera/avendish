@@ -75,183 +75,183 @@ consteval auto get_widget()
 {
   using value_type = as_type(T::value);
   // Handle cases where an explicit widget is asked
-  if constexpr (
+  if constexpr(
       requires { T::widget::bang; } || requires { T::widget::impulse; })
   {
     return widget_reflection<bang>{widget_type::bang};
   }
-  else if constexpr (
+  else if constexpr(
       requires { T::widget::button; } || requires { T::widget::pushbutton; })
   {
     return widget_reflection<bang>{widget_type::button};
   }
-  else if constexpr (
+  else if constexpr(
       requires { T::widget::toggle; } || requires { T::widget::checkbox; })
   {
     return widget_reflection<bool>{widget_type::toggle};
   }
-  else if constexpr (requires { T::widget::hslider; })
+  else if constexpr(requires { T::widget::hslider; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return slider_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return slider_reflection<float>{slider_orientation::horizontal};
     }
   }
-  else if constexpr (requires { T::widget::vslider; })
+  else if constexpr(requires { T::widget::vslider; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return slider_reflection<int>{slider_orientation::vertical};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return slider_reflection<float>{slider_orientation::vertical};
     }
   }
-  else if constexpr (requires { T::widget::slider; })
+  else if constexpr(requires { T::widget::slider; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return slider_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return slider_reflection<float>{slider_orientation::horizontal};
     }
   }
-  else if constexpr (requires { T::widget::hrange_slider; })
+  else if constexpr(requires { T::widget::hrange_slider; })
   {
     using element_value_type = std::decay_t<decltype(value_type{}.start)>;
-    if constexpr (std::is_integral_v<element_value_type>)
+    if constexpr(std::is_integral_v<element_value_type>)
     {
       return range_slider_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr (std::is_floating_point_v<element_value_type>)
+    else if constexpr(std::is_floating_point_v<element_value_type>)
     {
       return range_slider_reflection<float>{slider_orientation::horizontal};
     }
   }
-  else if constexpr (requires { T::widget::vrange_slider; })
+  else if constexpr(requires { T::widget::vrange_slider; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return range_slider_reflection<int>{slider_orientation::vertical};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return range_slider_reflection<float>{slider_orientation::vertical};
     }
   }
-  else if constexpr (requires { T::widget::range_slider; })
+  else if constexpr(requires { T::widget::range_slider; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return range_slider_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return range_slider_reflection<float>{slider_orientation::horizontal};
     }
   }
-  else if constexpr (requires { T::widget::spinbox; })
+  else if constexpr(requires { T::widget::spinbox; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return widget_reflection<int>{widget_type::spinbox};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return widget_reflection<float>{widget_type::spinbox};
     }
   }
-  else if constexpr (requires { T::widget::knob; })
+  else if constexpr(requires { T::widget::knob; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return widget_reflection<int>{widget_type::knob};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return widget_reflection<float>{widget_type::knob};
     }
   }
-  else if constexpr (requires { T::widget::lineedit; })
+  else if constexpr(requires { T::widget::lineedit; })
   {
     return widget_reflection<value_type>{widget_type::lineedit};
   }
-  else if constexpr (
+  else if constexpr(
       requires { T::widget::choices; } || requires { T::widget::enumeration; })
   {
     return widget_reflection<value_type>{widget_type::choices};
   }
-  else if constexpr (
+  else if constexpr(
       requires { T::widget::combobox; } || requires { T::widget::list; })
   {
     return widget_reflection<value_type>{widget_type::combobox};
   }
-  else if constexpr (requires { T::widget::xy; })
+  else if constexpr(requires { T::widget::xy; })
   {
     return widget_reflection<value_type>{widget_type::xy};
   }
-  else if constexpr (requires { T::widget::color; })
+  else if constexpr(requires { T::widget::color; })
   {
     return widget_reflection<value_type>{widget_type::color};
   }
   // Otherwise just try to make something that makes sense with the type
-  else if constexpr (std::is_same_v<value_type, bool>)
+  else if constexpr(std::is_same_v<value_type, bool>)
   {
     return widget_reflection<bool>{widget_type::toggle};
   }
-  else if constexpr (std::is_same_v<value_type, std::string>)
+  else if constexpr(std::is_same_v<value_type, std::string>)
   {
     return widget_reflection<bool>{widget_type::lineedit};
   }
 
   // Handle outputs
-  else if constexpr (requires { T::widget::hbargraph; })
+  else if constexpr(requires { T::widget::hbargraph; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return bargraph_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return bargraph_reflection<float>{slider_orientation::horizontal};
     }
   }
-  else if constexpr (requires { T::widget::vbargraph; })
+  else if constexpr(requires { T::widget::vbargraph; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return bargraph_reflection<int>{slider_orientation::vertical};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return bargraph_reflection<float>{slider_orientation::vertical};
     }
   }
-  else if constexpr (requires { T::widget::bargraph; })
+  else if constexpr(requires { T::widget::bargraph; })
   {
-    if constexpr (std::is_integral_v<value_type>)
+    if constexpr(std::is_integral_v<value_type>)
     {
       return bargraph_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr (std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
       return bargraph_reflection<float>{slider_orientation::horizontal};
     }
   }
 
   // Most general categories at the end
-  else if constexpr (std::is_floating_point_v<value_type>)
+  else if constexpr(std::is_floating_point_v<value_type>)
   {
     return slider_reflection<value_type>{slider_orientation::horizontal};
   }
-  else if constexpr (std::is_integral_v<value_type>)
+  else if constexpr(std::is_integral_v<value_type>)
   {
     return slider_reflection<value_type>{slider_orientation::horizontal};
   }

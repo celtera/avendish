@@ -3,12 +3,14 @@
 namespace avnd
 {
 template <std::size_t N>
-struct field_index {
+struct field_index
+{
   consteval operator std::size_t() const noexcept { return N; }
 };
 
 template <std::size_t N>
-struct predicate_index {
+struct predicate_index
+{
   consteval operator std::size_t() const noexcept { return N; }
 };
 
@@ -24,12 +26,11 @@ consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
 {
   static_assert(sizeof...(Idx) > 0);
 
-  constexpr int ret = []
-  {
+  constexpr int ret = [] {
     int k = 0;
-    for (int i : {Idx...})
+    for(int i : {Idx...})
     {
-      if (i == N)
+      if(i == N)
         return k;
       k++;
     }
@@ -43,20 +44,19 @@ consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept
 template <typename T, T... Idx>
 constexpr int index_of_element(T N, std::integer_sequence<T, Idx...>) noexcept
 {
-    static_assert(sizeof...(Idx) > 0);
+  static_assert(sizeof...(Idx) > 0);
 
-    int ret = [N]
+  int ret = [N] {
+    int k = 0;
+    for(int i : {Idx...})
     {
-        int k = 0;
-        for (int i : {Idx...})
-        {
-            if (i == N)
-                return k;
-            k++;
-        }
-        return -1;
-    }();
+      if(i == N)
+        return k;
+      k++;
+    }
+    return -1;
+  }();
 
-    return ret;
+  return ret;
 }
 }

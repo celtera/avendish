@@ -12,8 +12,8 @@
 #include <avnd/concepts/message.hpp>
 #include <avnd/concepts/midi.hpp>
 #include <avnd/concepts/midi_port.hpp>
+#include <avnd/concepts/midifile.hpp>
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/concepts/port.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/concepts/soundfile.hpp>
-#include <avnd/concepts/midifile.hpp>

@@ -28,4 +28,3 @@ concept logger = requires(T t)
 };
 
 }
-

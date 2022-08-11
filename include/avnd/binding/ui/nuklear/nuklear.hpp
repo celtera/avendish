@@ -23,10 +23,9 @@
 #define NK_IMPLEMENTATION
 #define NK_GLFW_GL4_IMPLEMENTATION
 #define NK_KEYSTATE_BASED_INPUT
-#include <nuklear.h>
-
 #include "nuklear_glfw_gl4.h"
 
+#include <nuklear.h>
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
@@ -41,7 +40,7 @@ static inline int nk_tab(struct nk_context* ctx, const char* title, int active)
   float widget_width = text_width + 3 * ctx->style.button.padding.x;
   nk_layout_row_push(ctx, widget_width);
   struct nk_style_item c = ctx->style.button.normal;
-  if (active)
+  if(active)
   {
     ctx->style.button.normal = ctx->style.button.active;
   }

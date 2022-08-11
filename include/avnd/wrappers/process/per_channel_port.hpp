@@ -24,53 +24,45 @@ requires(
   void initialize_busses(Ports& ports, auto buffers)
   {
     int k = 0;
-    Info::for_all(
-        ports,
-        [&](auto& bus)
+    Info::for_all(ports, [&](auto& bus) {
+      using sample_type = std::decay_t<decltype(bus.channel[0])>;
+      if(k + 1 <= buffers.size())
+      {
+        bus.channel = const_cast<decltype(bus.channel)>(buffers[k]);
+      }
+      else
+      {
+        auto& b = this->zero_storage_for(sample_type{});
+        if constexpr(Input)
         {
-          using sample_type = std::decay_t<decltype(bus.channel[0])>;
-          if (k + 1 <= buffers.size())
-          {
-            bus.channel = const_cast<decltype(bus.channel)>(buffers[k]);
-          }
-          else
-          {
-            auto& b = this->zero_storage_for(sample_type{});
-            if constexpr (Input)
-            {
-              bus.channel = b.zeros_in.data();
-            }
-            else
-            {
-              bus.channel = b.zeros_out.data();
-            }
-          }
-          k++;
-          // FIXME for variable channels, we have to set them beforehand !!
-        });
+          bus.channel = b.zeros_in.data();
+        }
+        else
+        {
+          bus.channel = b.zeros_out.data();
+        }
+      }
+      k++;
+      // FIXME for variable channels, we have to set them beforehand !!
+    });
   }
 
   template <typename Ports, typename SrcFP>
   void copy_outputs(Ports& ports, avnd::span<SrcFP*> buffers, int n)
   {
     int k = 0;
-    o_info::for_all(
-        ports,
-        [&](auto& bus)
-        {
-          if (k + 1 <= buffers.size())
-          {
-            std::copy_n(bus.channel, n, buffers[k]);
-          }
-          k++;
-        });
+    o_info::for_all(ports, [&](auto& bus) {
+      if(k + 1 <= buffers.size())
+      {
+        std::copy_n(bus.channel, n, buffers[k]);
+      }
+      k++;
+    });
   }
   template <typename SrcFP, typename DstFP>
   void process_port(
-      avnd::effect_container<T>& implementation,
-      avnd::span<SrcFP*> in,
-      avnd::span<SrcFP*> out,
-      int32_t n)
+      avnd::effect_container<T>& implementation, avnd::span<SrcFP*> in,
+      avnd::span<SrcFP*> out, int32_t n)
   {
     auto& ins = implementation.inputs();
     auto& outs = implementation.outputs();
@@ -78,13 +70,13 @@ requires(
     const int input_channels = in.size();
     const int output_channels = out.size();
 
-    if constexpr (needs_storage<SrcFP, T>::value)
+    if constexpr(needs_storage<SrcFP, T>::value)
     {
       // In this case we need to convert, e.g. from float to double or conversely
       using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
 
       // If there are inputs:
-      if constexpr (i_info::size > 0)
+      if constexpr(i_info::size > 0)
       {
         // Fetch the required temporary storage
         auto& dsp_buffer_input
@@ -92,24 +84,23 @@ requires(
 
         // Convert inputs to the right FP type, init outputs
         auto i_conv = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
-        for (int c = 0; c < input_channels; ++c)
+        for(int c = 0; c < input_channels; ++c)
         {
           i_conv[c] = dsp_buffer_input.data() + c * n;
           std::copy_n(in[c], n, i_conv[c]);
         }
 
-        initialize_busses<i_info, true>(
-            ins, avnd::span<DstFP*>(i_conv, input_channels));
+        initialize_busses<i_info, true>(ins, avnd::span<DstFP*>(i_conv, input_channels));
       }
 
       // Same process for the outputs
-      if constexpr (o_info::size > 0)
+      if constexpr(o_info::size > 0)
       {
         auto& dsp_buffer_output
             = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
         auto o_conv = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
-        for (int c = 0; c < output_channels; ++c)
+        for(int c = 0; c < output_channels; ++c)
         {
           o_conv[c] = dsp_buffer_output.data() + c * n;
         }
@@ -138,18 +129,16 @@ requires(
 
   template <std::floating_point FP>
   void process(
-      avnd::effect_container<T>& implementation,
-      avnd::span<FP*> in,
-      avnd::span<FP*> out,
+      avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
       int32_t n)
   {
     // Note: here we have a redundant check. This is to make sure that we always check the case
     // where we won't have to do a conversion first.
-    if constexpr (avnd::monophonic_port_audio_effect<FP, T>)
+    if constexpr(avnd::monophonic_port_audio_effect<FP, T>)
       process_port<FP, FP>(implementation, in, out, n);
-    else if constexpr (avnd::monophonic_port_audio_effect<float, T>)
+    else if constexpr(avnd::monophonic_port_audio_effect<float, T>)
       process_port<FP, float>(implementation, in, out, n);
-    else if constexpr (avnd::monophonic_port_audio_effect<double, T>)
+    else if constexpr(avnd::monophonic_port_audio_effect<double, T>)
       process_port<FP, double>(implementation, in, out, n);
     else
       AVND_STATIC_TODO(FP)

@@ -15,7 +15,7 @@ struct limited_string : std::string
   constexpr limited_string(std::string&& str) noexcept
       : std::string{std::move(str)}
   {
-    if (this->size() > N)
+    if(this->size() > N)
       this->resize(N);
   }
 

@@ -18,11 +18,8 @@ struct toggle_control
   {
     using T = typename Parent::type;
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(parent.implementation),
-        idx,
-        [value]<typename C>(C& ctl)
-        {
-          if constexpr (avnd::enum_parameter<C>)
+        avnd::get_inputs(parent.implementation), idx, [value]<typename C>(C& ctl) {
+          if constexpr(avnd::enum_parameter<C>)
             ctl.value = static_cast<decltype(C::value)>(value);
         });
   }
@@ -37,10 +34,7 @@ struct toggle_control
     fmt::format_to(
         std::back_inserter(parent.componentData),
 #include <avnd/binding/ui/qml/toggle_ui.hpp>
-        ,
-        control_k,
-        init ? "true" : "false",
-        name);
+        , control_k, init ? "true" : "false", name);
   }
 };
 

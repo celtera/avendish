@@ -9,7 +9,7 @@
 #include <type_traits>
 
 #if defined(_LIBCPP_CONCEPTS)
-#if (__cpp_lib_concepts < 202002L)
+#if(__cpp_lib_concepts < 202002L)
 // Taken from libstdc++, and as such follows libstdc++ license
 namespace std
 {
@@ -39,11 +39,11 @@ concept default_initializable = constructible_from<_Tp> && requires
 
 namespace __detail
 {
-  template <typename _Tp>
-  using __cref = const remove_reference_t<_Tp>&;
+template <typename _Tp>
+using __cref = const remove_reference_t<_Tp>&;
 
-  template <typename _Tp>
-  concept __class_or_enum = is_class_v<_Tp> || is_union_v<_Tp> || is_enum_v<_Tp>;
+template <typename _Tp>
+concept __class_or_enum = is_class_v<_Tp> || is_union_v<_Tp> || is_enum_v<_Tp>;
 } // namespace __detail
 
 template <typename _Lhs, typename _Rhs>
@@ -74,13 +74,12 @@ concept swappable = requires(_Tp& __a, _Tp& __b)
 };
 
 template <typename _Tp>
-concept movable = is_object_v<_Tp> && move_constructible<
-    _Tp> && assignable_from<_Tp&, _Tp> && swappable<_Tp>;
+concept movable = is_object_v<_Tp> && move_constructible<_Tp> && assignable_from<
+    _Tp&, _Tp> && swappable<_Tp>;
 
 template <typename _Tp>
 concept copyable = copy_constructible<_Tp> && movable<_Tp> && assignable_from<
-    _Tp&,
-    _Tp&> && assignable_from<_Tp&, const _Tp&> && assignable_from<_Tp&, const _Tp>;
+    _Tp&, _Tp&> && assignable_from<_Tp&, const _Tp&> && assignable_from<_Tp&, const _Tp>;
 }
 #endif
 #endif

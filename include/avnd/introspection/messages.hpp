@@ -44,7 +44,7 @@ auto& get_messages(T& t)
 template <typename T>
 static constexpr void for_all_messages(T& obj, auto&& func) noexcept
 {
-  if constexpr (messages_introspection<T>::size > 0)
+  if constexpr(messages_introspection<T>::size > 0)
   {
     pfr::for_each_field(get_messages(obj), func);
   }

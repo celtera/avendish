@@ -36,22 +36,22 @@ inline consteval const char* c_str(const char* v) noexcept
 
 namespace py = pybind11;
 
-template<auto Idx, typename C>
+template <auto Idx, typename C>
 constexpr auto input_name(avnd::field_reflection<Idx, C>)
 {
-  if constexpr (avnd::has_name<C>)
+  if constexpr(avnd::has_name<C>)
     return avnd::get_name<C>();
   else
     return "input_" + std::to_string(Idx);
 }
 
-template<auto Idx, typename C>
+template <auto Idx, typename C>
 constexpr auto output_name(avnd::field_reflection<Idx, C>)
 {
-  if constexpr (avnd::has_name<C>)
-      return avnd::get_name<C>();
+  if constexpr(avnd::has_name<C>)
+    return avnd::get_name<C>();
   else
-  return "output_" + std::to_string(Idx);
+    return "output_" + std::to_string(Idx);
 }
 
 template <typename T>
@@ -72,7 +72,7 @@ struct processor
   template <auto Idx, typename C>
   void setup_output(avnd::field_reflection<Idx, C> refl)
   {
-    if constexpr (requires { avnd::get_name<C>(); })
+    if constexpr(requires { avnd::get_name<C>(); })
     {
       class_def.def_property(
           c_str(output_name(refl)),
@@ -85,15 +85,15 @@ struct processor
   void setup_message(avnd::field_reflection<Idx, M>)
   {
     using func_type = decltype(avnd::message_get_func<M>());
-    if constexpr (std::is_member_function_pointer_v<func_type>)
+    if constexpr(std::is_member_function_pointer_v<func_type>)
     {
       constexpr auto func = avnd::message_get_func<M>();
       using refl = avnd::function_reflection<func>;
       using class_type = typename refl::class_type;
       if constexpr(std::is_same_v<class_type, M>)
       {
-        auto synth_fun = [] <typename... Args> (boost::mp11::mp_list<Args...>) {
-          return [] (Args... args) { M{}(args...); };
+        auto synth_fun = []<typename... Args>(boost::mp11::mp_list<Args...>) {
+          return [](Args... args) { M{}(args...); };
         };
         class_def.def(c_str(avnd::get_name<M>()), synth_fun(typename refl::arguments{}));
       }
@@ -102,7 +102,7 @@ struct processor
         class_def.def(c_str(avnd::get_name<M>()), func);
       }
     }
-    else if constexpr (requires { avnd::function_reflection<M::func()>::count; })
+    else if constexpr(requires { avnd::function_reflection<M::func()>::count; })
     {
       // TODO other cases: see pd
       class_def.def_static(c_str(avnd::get_name<M>()), avnd::message_get_func<M>());
@@ -115,23 +115,23 @@ struct processor
     m.doc() = c_str(avnd::get_description<T>());
 
     class_def.def(py::init<>());
-    if constexpr (requires { T{}(); })
+    if constexpr(requires { T{}(); })
     {
       class_def.def("process", &T::operator());
     }
 
-    if constexpr (avnd::inputs_is_value<T>)
+    if constexpr(avnd::inputs_is_value<T>)
     {
-      avnd::parameter_input_introspection<T>::for_all([this](auto a)
-                                                      { setup_input(a); });
+      avnd::parameter_input_introspection<T>::for_all(
+          [this](auto a) { setup_input(a); });
     }
 
-    if constexpr (avnd::outputs_is_value<T>)
+    if constexpr(avnd::outputs_is_value<T>)
     {
-      avnd::parameter_output_introspection<T>::for_all([this](auto a)
-                                                       { setup_output(a); });
-      avnd::callback_output_introspection<T>::for_all([this](auto a)
-                                                      { setup_callback(a); });
+      avnd::parameter_output_introspection<T>::for_all(
+          [this](auto a) { setup_output(a); });
+      avnd::callback_output_introspection<T>::for_all(
+          [this](auto a) { setup_callback(a); });
     }
 
     avnd::messages_introspection<T>::for_all([this](auto a) { setup_message(a); });
@@ -140,10 +140,10 @@ struct processor
   template <std::size_t Idx, typename C>
   void setup_callback(const avnd::field_reflection<Idx, C>& out)
   {
-    if constexpr (requires { avnd::get_name<C>(); })
+    if constexpr(requires { avnd::get_name<C>(); })
     {
       using call_type = decltype(C::call);
-      if constexpr (avnd::function_view_ish<call_type>)
+      if constexpr(avnd::function_view_ish<call_type>)
       {
         /* not easily doable...
         class_def.def_property(
@@ -153,13 +153,14 @@ struct processor
         );
         */
       }
-      else if constexpr (avnd::function_ish<call_type>)
+      else if constexpr(avnd::function_ish<call_type>)
       {
         class_def.def_property(
             c_str(avnd::get_name<C>()),
             [](T& t) { return avnd::pfr::get<Idx>(t.outputs).call; },
-            [](T& t, call_type cb)
-            { avnd::pfr::get<Idx>(t.outputs).call = std::move(cb); });
+            [](T& t, call_type cb) {
+          avnd::pfr::get<Idx>(t.outputs).call = std::move(cb);
+            });
       }
     }
   }

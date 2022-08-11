@@ -19,11 +19,8 @@ struct float_control
   {
     using T = typename Parent::type;
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(parent.implementation),
-        idx,
-        [value]<typename C>(C& ctl)
-        {
-          if constexpr (avnd::float_parameter<C>)
+        avnd::get_inputs(parent.implementation), idx, [value]<typename C>(C& ctl) {
+          if constexpr(avnd::float_parameter<C>)
             ctl.value = value;
         });
   }
@@ -43,31 +40,19 @@ struct float_control
     float init = value_if_possible(avnd::get_range<C>().init, else, 0.5f);
     float step = value_if_possible(avnd::get_range<C>().step, else, 0.0f);
 
-    if constexpr (requires { C::widget::knob; })
+    if constexpr(requires { C::widget::knob; })
     {
       fmt::format_to(
           std::back_inserter(parent.componentData),
 #include <avnd/binding/ui/qml/float_knob.hpp>
-          ,
-          control_k,
-          min,
-          max,
-          init,
-          step,
-          name);
+          , control_k, min, max, init, step, name);
     }
     else
     {
       fmt::format_to(
           std::back_inserter(parent.componentData),
 #include <avnd/binding/ui/qml/float_slider.hpp>
-          ,
-          control_k,
-          min,
-          max,
-          init,
-          step,
-          name);
+          , control_k, min, max, init, step, name);
     }
   }
 };

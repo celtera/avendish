@@ -37,17 +37,15 @@ struct needs_storage : std::false_type
 // And our host wants to send float, then we have to allocate a buffer
 // of doubles
 template <typename T>
-requires(
-    avnd::double_processor<
-        T> && !avnd::float_processor<T>) struct needs_storage<float, T> : std::true_type
+requires(avnd::double_processor<T> && !avnd::float_processor<T>) struct needs_storage<
+    float, T> : std::true_type
 {
   using needed_storage_t = double;
 };
 
 template <typename T>
-requires(
-    !avnd::double_processor<
-        T> && avnd::float_processor<T>) struct needs_storage<double, T> : std::true_type
+requires(!avnd::double_processor<T> && avnd::float_processor<T>) struct needs_storage<
+    double, T> : std::true_type
 {
   using needed_storage_t = float;
 };
@@ -66,7 +64,7 @@ auto current_tick(avnd::effect_container<T>& implementation)
 {
   // Nice little C++20 goodie: remove_cvref_t
   // unused in the end using tick_setup_t = std::remove_cvref_t<avnd::second_argument<&T::operator()>>;
-  if constexpr (has_tick<T>)
+  if constexpr(has_tick<T>)
   {
     using tick_t = typename T::tick;
     static_assert(std::is_aggregate_v<tick_t>);

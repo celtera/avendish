@@ -31,7 +31,7 @@ struct event_bus_info
     static const constexpr int input_event_busses
         = avnd::midi_input_introspection<T>::size;
 
-    if (index < input_event_busses)
+    if(index < input_event_busses)
     {
       info.mediaType = MediaTypes::kEvent;
       info.direction = BusDirections::kInput;
@@ -55,7 +55,7 @@ struct event_bus_info
     static const constexpr int output_event_busses
         = avnd::midi_output_introspection<T>::size;
 
-    if (index < output_event_busses)
+    if(index < output_event_busses)
     {
       info.mediaType = MediaTypes::kEvent;
       info.direction = BusDirections::kOutput;
@@ -74,7 +74,7 @@ struct event_bus_info
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < inputCount())
+    if(index < inputCount())
     {
       inputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -84,7 +84,7 @@ struct event_bus_info
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < outputCount())
+    if(index < outputCount())
     {
       outputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -99,7 +99,7 @@ struct event_bus_info
 static constexpr inline Steinberg::tresult
 default_speaker_arrangement(int channels, Steinberg::Vst::SpeakerArrangement& arr)
 {
-  switch (channels)
+  switch(channels)
   {
     case 0:
       arr = Steinberg::Vst::SpeakerArr::kEmpty;
@@ -201,14 +201,12 @@ struct audio_bus_info
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace Steinberg;
-    if (numIns == 0 && numOuts == 0)
+    if(numIns == 0 && numOuts == 0)
       return kResultTrue;
     return kResultFalse;
   }
@@ -236,7 +234,7 @@ struct audio_bus_info<T>
   {
     static const constexpr int input_audio_busses
         = avnd::bus_introspection<T>::input_busses;
-    if (index == 0)
+    if(index == 0)
     {
       info.channelCount = avnd::input_channels<T>(2);
       setStr(info.name, u16 "Stereo In");
@@ -254,7 +252,7 @@ struct audio_bus_info<T>
     static const constexpr int output_audio_busses
         = avnd::bus_introspection<T>::output_busses;
 
-    if (index == 0)
+    if(index == 0)
     {
       info.channelCount = avnd::output_channels<T>(2);
       setStr(info.name, u16 "Stereo Out");
@@ -279,17 +277,15 @@ struct audio_bus_info<T>
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace stv3;
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (numIns == 1 && numOuts == 1)
+    if(numIns == 1 && numOuts == 1)
     {
       runtime_input_channel_count = SpeakerArr::getChannelCount(inputs[0]);
       runtime_output_channel_count = SpeakerArr::getChannelCount(outputs[0]);
@@ -303,7 +299,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index == 0)
+    if(index == 0)
     {
       inputActive = state;
       return Steinberg::kResultTrue;
@@ -313,7 +309,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index == 0)
+    if(index == 0)
     {
       outputActive = state;
       return Steinberg::kResultTrue;
@@ -345,7 +341,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.channelCount = avnd::input_channels<T>(2);
       setStr(info.name, u16 "Mono In");
@@ -360,7 +356,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.channelCount = avnd::output_channels<T>(2);
       setStr(info.name, u16 "Mono Out");
@@ -385,17 +381,15 @@ struct audio_bus_info<T>
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace stv3;
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (numIns == 1 && numOuts == 1)
+    if(numIns == 1 && numOuts == 1)
     {
       runtime_input_channel_count = SpeakerArr::getChannelCount(inputs[0]);
       runtime_output_channel_count = SpeakerArr::getChannelCount(outputs[0]);
@@ -409,7 +403,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index == 0)
+    if(index == 0)
     {
       inputActive = state;
       return Steinberg::kResultTrue;
@@ -419,7 +413,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index == 0)
+    if(index == 0)
     {
       outputActive = state;
       return Steinberg::kResultTrue;
@@ -451,7 +445,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.channelCount = avnd::input_channels<T>(2);
       setStr(info.name, u16 "Mono In");
@@ -466,7 +460,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index == 0)
+    if(index == 0)
     {
       info.channelCount = avnd::output_channels<T>(2);
       setStr(info.name, u16 "Mono Out");
@@ -491,17 +485,15 @@ struct audio_bus_info<T>
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace stv3;
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (numIns == 1 && numOuts == 1)
+    if(numIns == 1 && numOuts == 1)
     {
       runtime_input_channel_count = SpeakerArr::getChannelCount(inputs[0]);
       runtime_output_channel_count = SpeakerArr::getChannelCount(outputs[0]);
@@ -515,7 +507,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index == 0)
+    if(index == 0)
     {
       inputActive = state;
       return Steinberg::kResultTrue;
@@ -525,7 +517,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index == 0)
+    if(index == 0)
     {
       outputActive = state;
       return Steinberg::kResultTrue;
@@ -559,7 +551,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index < input_refl::size)
+    if(index < input_refl::size)
     {
       info.channelCount = 2;
       setStr(info.name, u16 "Stereo In");
@@ -574,7 +566,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index < output_refl::size)
+    if(index < output_refl::size)
     {
       info.channelCount = 2;
       setStr(info.name, u16 "Stereo Out");
@@ -601,27 +593,25 @@ struct audio_bus_info<T>
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace stv3;
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (numIns == inputCount() && numOuts == outputCount())
+    if(numIns == inputCount() && numOuts == outputCount())
     {
       // Count the total number of requested channels
-      for (int i = 0; i < numIns; i++)
+      for(int i = 0; i < numIns; i++)
       {
         // TODO if bus channels are fixed, check that they are the same.
         // Otherwise..
         runtime_input_channel_count += SpeakerArr::getChannelCount(inputs[i]);
       }
 
-      for (int i = 0; i < numOuts; i++)
+      for(int i = 0; i < numOuts; i++)
       {
         runtime_output_channel_count += SpeakerArr::getChannelCount(outputs[i]);
       }
@@ -635,7 +625,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < inputCount())
+    if(index < inputCount())
     {
       inputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -645,7 +635,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < outputCount())
+    if(index < outputCount())
     {
       outputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -673,7 +663,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index < inputCount())
+    if(index < inputCount())
     {
       info.channelCount = 1;
       setStr(info.name, u16 "Main In");
@@ -688,7 +678,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index < outputCount())
+    if(index < outputCount())
     {
       info.channelCount = 1;
       setStr(info.name, u16 "Main Out");
@@ -713,24 +703,22 @@ struct audio_bus_info<T>
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace stv3;
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (numIns == inputCount() && numOuts == outputCount())
+    if(numIns == inputCount() && numOuts == outputCount())
     {
       // Count the total number of requested channels
-      for (int i = 0; i < numIns; i++)
-        if (SpeakerArr::getChannelCount(inputs[i]) != 1)
+      for(int i = 0; i < numIns; i++)
+        if(SpeakerArr::getChannelCount(inputs[i]) != 1)
           return kResultFalse;
-      for (int i = 0; i < numOuts; i++)
-        if (SpeakerArr::getChannelCount(outputs[i]) != 1)
+      for(int i = 0; i < numOuts; i++)
+        if(SpeakerArr::getChannelCount(outputs[i]) != 1)
           return kResultFalse;
 
       return kResultTrue;
@@ -740,7 +728,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < inputCount())
+    if(index < inputCount())
     {
       inputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -750,7 +738,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < outputCount())
+    if(index < outputCount())
     {
       outputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -778,7 +766,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index < inputCount())
+    if(index < inputCount())
     {
       info.channelCount = 1;
       setStr(info.name, u16 "Main In");
@@ -793,7 +781,7 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    if (index < outputCount())
+    if(index < outputCount())
     {
       info.channelCount = 1;
       setStr(info.name, u16 "Main Out");
@@ -818,24 +806,22 @@ struct audio_bus_info<T>
   }
 
   Steinberg::tresult setBusArrangements(
-      avnd::effect_container<T>& effect,
-      Steinberg::Vst::SpeakerArrangement* inputs,
-      Steinberg::int32 numIns,
-      Steinberg::Vst::SpeakerArrangement* outputs,
+      avnd::effect_container<T>& effect, Steinberg::Vst::SpeakerArrangement* inputs,
+      Steinberg::int32 numIns, Steinberg::Vst::SpeakerArrangement* outputs,
       Steinberg::int32 numOuts)
   {
     using namespace stv3;
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (numIns == inputCount() && numOuts == outputCount())
+    if(numIns == inputCount() && numOuts == outputCount())
     {
       // Count the total number of requested channels
-      for (int i = 0; i < numIns; i++)
-        if (SpeakerArr::getChannelCount(inputs[i]) != 1)
+      for(int i = 0; i < numIns; i++)
+        if(SpeakerArr::getChannelCount(inputs[i]) != 1)
           return kResultFalse;
-      for (int i = 0; i < numOuts; i++)
-        if (SpeakerArr::getChannelCount(outputs[i]) != 1)
+      for(int i = 0; i < numOuts; i++)
+        if(SpeakerArr::getChannelCount(outputs[i]) != 1)
           return kResultFalse;
 
       return kResultTrue;
@@ -845,7 +831,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < inputCount())
+    if(index < inputCount())
     {
       inputActive[index] = state;
       return Steinberg::kResultTrue;
@@ -855,7 +841,7 @@ struct audio_bus_info<T>
 
   Steinberg::tresult activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    if (index < outputCount())
+    if(index < outputCount())
     {
       outputActive[index] = state;
       return Steinberg::kResultTrue;

@@ -109,13 +109,13 @@ struct SampleAccurateControls
   void operator()(int N)
   {
     // For the "values" members, each control change is associated with a frame index.
-    for (int i = 0; i < N; i++)
+    for(int i = 0; i < N; i++)
     {
       // In this case the values are allocated with as many elements as there are audio frames
       // in the audio buffer.
       // Ideally there should be a way to optimize the storage so that all the values are first,
       // and all the bools packed at the end... FIXME !
-      if (inputs.weight_A.values[i])
+      if(inputs.weight_A.values[i])
       {
         std::cout << "Output on A[" << i << "]: " << *inputs.weight_A.values[i]
                   << std::endl;
@@ -123,7 +123,7 @@ struct SampleAccurateControls
     }
 
     // In this case
-    for (auto& val : inputs.weight_B.values)
+    for(auto& val : inputs.weight_B.values)
     {
       std::cout << "Output on B[" << val.frame << "]: " << val.value << std::endl;
     }

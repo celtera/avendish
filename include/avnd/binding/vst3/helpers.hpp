@@ -42,24 +42,24 @@ inline Steinberg::tresult isProjectState(Steinberg::IBStream* state)
 {
   using namespace Steinberg;
   using namespace Steinberg::Vst;
-  if (!state)
+  if(!state)
     return kInvalidArgument;
 
   FUnknownPtr<IStreamAttributes> stream(state);
-  if (!stream)
+  if(!stream)
     return kNotImplemented;
 
-  if (IAttributeList* list = stream->getAttributes())
+  if(IAttributeList* list = stream->getAttributes())
   {
     // get the current type (project/Default..) of this state
     String128 string = {0};
-    if (list->getString(PresetAttributes::kStateType, string, 128 * sizeof(TChar))
-        == kResultTrue)
+    if(list->getString(PresetAttributes::kStateType, string, 128 * sizeof(TChar))
+       == kResultTrue)
     {
       UString128 tmp(string);
       char ascii[128];
       tmp.toAscii(ascii, 128);
-      if (!strncmp(ascii, StateType::kProject, strlen(StateType::kProject)))
+      if(!strncmp(ascii, StateType::kProject, strlen(StateType::kProject)))
       {
         return kResultTrue;
       }

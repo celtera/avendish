@@ -35,25 +35,20 @@ struct PolyphonicSynthesizer : vintage::Effect
   explicit PolyphonicSynthesizer(vintage::HostCallback master)
       : master{master}
   {
-    Effect::dispatcher = [](Effect* effect,
-                            int32_t opcode,
-                            int32_t index,
-                            intptr_t value,
-                            void* ptr,
-                            float opt) -> intptr_t
-    {
+    Effect::dispatcher = [](Effect* effect, int32_t opcode, int32_t index,
+                            intptr_t value, void* ptr, float opt) -> intptr_t {
       auto& self = *static_cast<PolyphonicSynthesizer*>(effect);
       auto code = static_cast<EffectOpcodes>(opcode);
 
-      if (code == EffectOpcodes::Close)
+      if(code == EffectOpcodes::Close)
       {
         delete &self;
         return 1;
       }
 
-      if constexpr (requires {
-                      self.implementation.dispatch(nullptr, 0, 0, 0, nullptr, 0.f);
-                    })
+      if constexpr(requires {
+                     self.implementation.dispatch(nullptr, 0, 0, 0, nullptr, 0.f);
+                   })
       {
         return self.implementation.dispatch(self, code, index, value, ptr, opt);
       }
@@ -96,7 +91,7 @@ struct PolyphonicSynthesizer : vintage::Effect
     float unison = this->controls.unison_voices * 20.0;
     float detune = this->controls.unison_detune;
     float vol = this->controls.unison_volume;
-    for (float i = -unison; i <= unison; i += 2.f)
+    for(float i = -unison; i <= unison; i += 2.f)
     {
       voices.push_back(
           {.note = float(note),
@@ -108,9 +103,9 @@ struct PolyphonicSynthesizer : vintage::Effect
 
   void note_off(int32_t note, int32_t velocity)
   {
-    for (auto it = voices.begin(); it != voices.end();)
+    for(auto it = voices.begin(); it != voices.end();)
     {
-      if (it->note == note)
+      if(it->note == note)
       {
         it->implementation.release_frame = it->implementation.elapsed;
         release_voices.push_back(*it);
@@ -125,11 +120,11 @@ struct PolyphonicSynthesizer : vintage::Effect
 
   void bend(int32_t bend)
   {
-    for (auto& voice : voices)
+    for(auto& voice : voices)
     {
       voice.bend = bend / 100.;
     }
-    for (auto& voice : release_voices)
+    for(auto& voice : release_voices)
     {
       voice.bend = bend / 100.;
     }
@@ -137,7 +132,7 @@ struct PolyphonicSynthesizer : vintage::Effect
 
   void midi_input(const vintage::MidiEvent& e)
   {
-    switch (e.midiData[0] & 0xF0)
+    switch(e.midiData[0] & 0xF0)
     {
       case 0x80: // Note off
       {
@@ -147,7 +142,7 @@ struct PolyphonicSynthesizer : vintage::Effect
 
       case 0x90: // Note on
       {
-        if (int velocity = e.midiData[2] & 0x7F; velocity > 0)
+        if(int velocity = e.midiData[2] & 0x7F; velocity > 0)
         {
           note_on(e.midiData[1] & 0x7F, velocity);
         }
@@ -185,7 +180,7 @@ struct PolyphonicSynthesizer : vintage::Effect
           = 440. * std::pow(2.0, (note - 69) / 12.0) + detune + bend;
       implementation.volume = velocity / 127.;
 
-      if constexpr (std::size(decltype(implementation.pan){}) == 2)
+      if constexpr(std::size(decltype(implementation.pan){}) == 2)
       {
         implementation.pan[0] = pan == -1.f ? 1. : 0.;
         implementation.pan[1] = pan == 1.f ? 1. : 0.;
@@ -196,14 +191,13 @@ struct PolyphonicSynthesizer : vintage::Effect
   };
 
   void process(
-      avnd::floating_point auto** inputs,
-      avnd::floating_point auto** outputs,
+      avnd::floating_point auto** inputs, avnd::floating_point auto** outputs,
       int32_t frames)
   {
     // Check if processing is to be bypassed
-    if constexpr (requires { implementation.bypass; })
+    if constexpr(requires { implementation.bypass; })
     {
-      if (implementation.bypass)
+      if(implementation.bypass)
         return;
     }
 
@@ -211,29 +205,29 @@ struct PolyphonicSynthesizer : vintage::Effect
     controls.write(implementation);
 
     // Clear buffer
-    for (int32_t c = 0; c < implementation.channels; c++)
-      for (int32_t i = 0; i < frames; i++)
+    for(int32_t c = 0; c < implementation.channels; c++)
+      for(int32_t i = 0; i < frames; i++)
         outputs[c][i] = 0.0;
 
     // Process voices
-    for (auto& voice : voices)
+    for(auto& voice : voices)
     {
       voice.process(*this, outputs, frames);
     }
 
     // Process voices that were note'off'd in order to cleanly fade out
-    for (auto it = release_voices.begin(); it != release_voices.end();)
+    for(auto it = release_voices.begin(); it != release_voices.end();)
     {
       auto& voice = *it;
       voice.process(*this, outputs, frames);
-      if (voice.implementation.recycle)
+      if(voice.implementation.recycle)
         it = release_voices.erase(it);
       else
         ++it;
     }
 
     // Post-processing
-    if constexpr (effect_processor<float, T> || effect_processor<double, T>)
+    if constexpr(effect_processor<float, T> || effect_processor<double, T>)
     {
       implementation.process(inputs, outputs, frames);
     }

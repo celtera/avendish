@@ -12,77 +12,87 @@
  * The filter code is based on the example in the "Designing IIR Filters" section of the "Digital Signal Processing" chapter of the book "The Scientist and Engineer's Guide to Digital Signal Processing" by Steven W. Smith.
  */
 
-#include <iostream>
 #include <cmath>
+
+#include <iostream>
 
 class ResonantBandpassFilter
 {
 public:
-    static consteval auto name() { return "GPT-3 Resonant Bandpass"; }
-    static consteval auto c_name() { return "avnd_gpt3_resonant_bandpass"; }
-    static consteval auto uuid() { return "49ae1c97-8ff5-47fc-8f53-1d73f8b99c39"; }
+  static consteval auto name() { return "GPT-3 Resonant Bandpass"; }
+  static consteval auto c_name() { return "avnd_gpt3_resonant_bandpass"; }
+  static consteval auto uuid() { return "49ae1c97-8ff5-47fc-8f53-1d73f8b99c39"; }
 
-    struct inputs {
-      struct {
-        static constexpr auto name() { return "Cutoff"; }
-        struct range { double min = 0., max = 1., init = 0.1; };
-        double value;
-      } m_cutoff;   // Cutoff frequency
-      struct {
-        static constexpr auto name() { return "Resonance"; }
-        struct range { double min = 0., max = 1., init = 0.1; };
-        double value;
-      } m_resonance; // Resonance
-    };
-    struct outputs {
-
-    };
-
-    // Processes an input signal and applies the filter to it
-    void operator()(double* in, double* out, const struct inputs& inputs, int size)
+  struct inputs
+  {
+    struct
     {
-        auto& m_cutoff = inputs.m_cutoff.value;
-        auto& m_resonance = inputs.m_resonance.value;
+      static constexpr auto name() { return "Cutoff"; }
+      struct range
+      {
+        double min = 0., max = 1., init = 0.1;
+      };
+      double value;
+    } m_cutoff; // Cutoff frequency
+    struct
+    {
+      static constexpr auto name() { return "Resonance"; }
+      struct range
+      {
+        double min = 0., max = 1., init = 0.1;
+      };
+      double value;
+    } m_resonance; // Resonance
+  };
+  struct outputs
+  {
+  };
 
-        // Calculate filter coefficients
-        double Q = 1.0 / m_resonance;
-        double w0 = 2.0 * M_PI * m_cutoff;
-        double alpha = sin(w0) / (2.0 * Q);
+  // Processes an input signal and applies the filter to it
+  void operator()(double* in, double* out, const struct inputs& inputs, int size)
+  {
+    auto& m_cutoff = inputs.m_cutoff.value;
+    auto& m_resonance = inputs.m_resonance.value;
 
-        // Initialize filter state
-        double b0 =  1.0 - alpha;
-        double b1 = -2.0 * cos(w0);
-        double b2 =  1.0 + alpha;
-        double a0 =  1.0 + alpha;
-        double a1 = -2.0 * cos(w0);
-        double a2 =  1.0 - alpha;
+    // Calculate filter coefficients
+    double Q = 1.0 / m_resonance;
+    double w0 = 2.0 * M_PI * m_cutoff;
+    double alpha = sin(w0) / (2.0 * Q);
 
-        double x0 = 0.0;
-        double x1 = 0.0;
-        double x2 = 0.0;
-        double y0 = 0.0;
-        double y1 = 0.0;
-        double y2 = 0.0;
+    // Initialize filter state
+    double b0 = 1.0 - alpha;
+    double b1 = -2.0 * cos(w0);
+    double b2 = 1.0 + alpha;
+    double a0 = 1.0 + alpha;
+    double a1 = -2.0 * cos(w0);
+    double a2 = 1.0 - alpha;
 
-        // Process input samples
-        for (int i = 0; i < size; i++)
-        {
-            // Read input sample
-            x0 = in[i];
+    double x0 = 0.0;
+    double x1 = 0.0;
+    double x2 = 0.0;
+    double y0 = 0.0;
+    double y1 = 0.0;
+    double y2 = 0.0;
 
-            // Calculate output sample
-            y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    // Process input samples
+    for(int i = 0; i < size; i++)
+    {
+      // Read input sample
+      x0 = in[i];
 
-            // Update filter state
-            x2 = x1;
-            x1 = x0;
-            y2 = y1;
-            y1 = y0;
+      // Calculate output sample
+      y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
 
-            // Write output sample
-            out[i] = y0;
-        }
+      // Update filter state
+      x2 = x1;
+      x1 = x0;
+      y2 = y1;
+      y1 = y0;
+
+      // Write output sample
+      out[i] = y0;
     }
+  }
 };
 
 #include "/home/jcelerier/ossia/score/3rdparty/avendish/include/avnd/concepts/processor.hpp"
@@ -99,8 +109,9 @@ The filter is implemented using a simple IIR filter design. The cutoff frequency
 
 The filter code is based on the example in the "Designing IIR Filters" section of the "Digital Signal Processing" chapter of the book "The Scientist and Engineer's Guide to Digital Signal Processing" by Steven W. Smith.
 
-#include <iostream>
 #include <cmath>
+
+#include <iostream>
 
 class ResonantBandpassFilter
 {

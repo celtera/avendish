@@ -3,8 +3,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/wrappers/avnd.hpp>
-#include <avnd/wrappers/widgets.hpp>
 #include <avnd/wrappers/ranges.hpp>
+#include <avnd/wrappers/widgets.hpp>
 #include <cmath>
 
 #include <string>
@@ -18,12 +18,12 @@ namespace avnd
 template <avnd::float_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  if constexpr (avnd::parameter_with_minmax_range<T>)
+  if constexpr(avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
-  else if constexpr (avnd::parameter_with_values_range<T>)
+  else if constexpr(avnd::parameter_with_values_range<T>)
   {
     // Here we just map from / to the index of the value
 
@@ -42,12 +42,12 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 template <avnd::int_parameter T>
 static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
-  if constexpr (avnd::parameter_with_minmax_range<T>)
+  if constexpr(avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
-  else if constexpr (avnd::parameter_with_values_range<T>)
+  else if constexpr(avnd::parameter_with_values_range<T>)
   {
     // Here we just map from / to the index of the value
 
@@ -96,13 +96,13 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   // Apply the value
   double v{};
-  if constexpr (avnd::parameter_with_minmax_range<T>)
+  if constexpr(avnd::parameter_with_minmax_range<T>)
   {
     constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
-  else if constexpr (avnd::parameter_with_values_range<T>)
+  else if constexpr(avnd::parameter_with_values_range<T>)
   {
     const int idx = closest_value_index<T>(value);
     v = map_index_to_01<avnd::get_enum_choices_count<T>()>(idx);
@@ -119,7 +119,7 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 {
   // Apply the value
   double v{};
-  if constexpr (avnd::parameter_with_minmax_range<T>)
+  if constexpr(avnd::parameter_with_minmax_range<T>)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);
@@ -127,7 +127,7 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
 
     v = (value - c.min) / double(c.max - c.min);
   }
-  else if constexpr (avnd::parameter_with_values_range<T>)
+  else if constexpr(avnd::parameter_with_values_range<T>)
   {
     const int idx = closest_value_index<T>(value);
     v = map_index_to_01<avnd::get_enum_choices_count<T>()>(idx);

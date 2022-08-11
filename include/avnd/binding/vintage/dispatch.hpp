@@ -31,11 +31,7 @@ concept can_event = requires(T eff)
 
 template <typename Self_T>
 intptr_t default_dispatch(
-    Self_T& object,
-    EffectOpcodes opcode,
-    int32_t index,
-    intptr_t value,
-    void* ptr,
+    Self_T& object, EffectOpcodes opcode, int32_t index, intptr_t value, void* ptr,
     float opt)
 {
   using effect_type = typename Self_T::effect_type;
@@ -46,7 +42,7 @@ intptr_t default_dispatch(
   // C++20: Not supported by clang-13 yet :-(
   // using enum EffectOpcodes;
 
-  switch (opcode)
+  switch(opcode)
   {
     case EffectOpcodes::Identify: // 22
       return 0;
@@ -81,9 +77,9 @@ intptr_t default_dispatch(
       // Clang 13 still struggles with that...
 #if !defined(_MSC_VER)
 #if !defined(__clang__) || (__clang_major__ > 13)
-      if constexpr (requires { static_cast<int32_t>(effect_type::category()); })
+      if constexpr(requires { static_cast<int32_t>(effect_type::category()); })
         return static_cast<int32_t>(effect_type::category());
-      else if constexpr (requires { static_cast<int32_t>(effect_type::category); })
+      else if constexpr(requires { static_cast<int32_t>(effect_type::category); })
         return static_cast<int32_t>(effect_type::category);
 #endif
 #endif
@@ -100,7 +96,7 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::GetProgram: // 3
     {
-      if constexpr (avnd::has_programs<effect_type>)
+      if constexpr(avnd::has_programs<effect_type>)
       {
         return object.current_program;
       }
@@ -109,9 +105,9 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::SetProgram: // 2
     {
-      if constexpr (avnd::has_programs<effect_type>)
+      if constexpr(avnd::has_programs<effect_type>)
       {
-        if (value >= 0 && value < std::ssize(effect_type::programs))
+        if(value >= 0 && value < std::ssize(effect_type::programs))
         {
           object.current_program = value;
           object.controls.read(effect_type::programs[value].parameters);
@@ -133,7 +129,7 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::SetBypass: // 44
     {
-      if constexpr (avnd::can_bypass<effect_type>)
+      if constexpr(avnd::can_bypass<effect_type>)
       {
         container.bypass = bool(value);
       }
@@ -141,7 +137,7 @@ intptr_t default_dispatch(
     }
     case EffectOpcodes::MainsChanged: // 12
     {
-      if (value)
+      if(value)
         object.start();
       else
         object.stop();
@@ -178,7 +174,7 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::GetVendorString: // 47
     {
-      if constexpr (avnd::has_vendor<effect_type>)
+      if constexpr(avnd::has_vendor<effect_type>)
       {
         vintage::vendor_name{avnd::get_vendor<effect_type>()}.copy_to(ptr);
         return 1;
@@ -191,7 +187,7 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::GetProductString: // 48
     {
-      if constexpr (requires { effect_type::product(); })
+      if constexpr(requires { effect_type::product(); })
       {
         vintage::product_name{effect_type::product()}.copy_to(ptr);
         return 1;
@@ -205,9 +201,9 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::GetProgramName: // 5
     {
-      if constexpr (avnd::has_programs<effect_type>)
+      if constexpr(avnd::has_programs<effect_type>)
       {
-        if (object.current_program < std::ssize(effect_type::programs))
+        if(object.current_program < std::ssize(effect_type::programs))
         {
           vintage::program_name{effect_type::programs[object.current_program].name}
               .copy_to(ptr);
@@ -219,9 +215,9 @@ intptr_t default_dispatch(
 
     case EffectOpcodes::GetProgramNameIndexed: // 29
     {
-      if constexpr (avnd::has_programs<effect_type>)
+      if constexpr(avnd::has_programs<effect_type>)
       {
-        if (index >= 0 && index < std::ssize(effect_type::programs))
+        if(index >= 0 && index < std::ssize(effect_type::programs))
         {
           vintage::program_name{effect_type::programs[index].name}.copy_to(ptr);
           return 1;
@@ -248,17 +244,16 @@ intptr_t default_dispatch(
       return 1;
     }
 
-    case EffectOpcodes::ProcessEvents:
-    {
+    case EffectOpcodes::ProcessEvents: {
       auto evs = reinterpret_cast<const vintage::Events*>(ptr);
-      if constexpr (requires {
-                      object.midi_input(std::declval<const vintage::MidiEvent&>());
-                    })
+      if constexpr(requires {
+                     object.midi_input(std::declval<const vintage::MidiEvent&>());
+                   })
       {
-        for (int32_t i = 0, n = evs->numEvents; i < n; i++)
+        for(int32_t i = 0, n = evs->numEvents; i < n; i++)
         {
           const auto* ev = evs->events[i];
-          switch (ev->type)
+          switch(ev->type)
           {
             case vintage::EventTypes::Midi:
               object.midi_input(*reinterpret_cast<const vintage::MidiEvent*>(ev));
@@ -268,7 +263,7 @@ intptr_t default_dispatch(
           }
         }
       }
-      else if constexpr (requires { object.event_input(evs); })
+      else if constexpr(requires { object.event_input(evs); })
       {
         object.event_input(evs);
       }
@@ -282,7 +277,7 @@ intptr_t default_dispatch(
       return Constants::ApiVersion;
     case EffectOpcodes::CanDo: // 51
     {
-      if constexpr (can_event<Effect>)
+      if constexpr(can_event<Effect>)
       {
         static const std::array<std::string_view, 3> available{
             //"MPE",
@@ -292,8 +287,7 @@ intptr_t default_dispatch(
             "receiveVstSysexEvent",
         };
         return std::find(
-                   available.begin(),
-                   available.end(),
+                   available.begin(), available.end(),
                    reinterpret_cast<const char*>(ptr))
                        != available.end()
                    ? 1

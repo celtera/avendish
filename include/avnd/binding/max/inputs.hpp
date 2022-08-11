@@ -29,10 +29,8 @@ requires(avnd::parameter_input_introspection<T>::size > 0) struct inputs<T>
     int n = proxy_count;
     int k = 0;
     refl::for_all(
-        avnd::get_inputs<T>(implementation),
-        [&x_obj, &n, &k, this](auto& ctl)
-        {
-          if (n-- > 0)
+        avnd::get_inputs<T>(implementation), [&x_obj, &n, &k, this](auto& ctl) {
+          if(n-- > 0)
             proxies[k++] = proxy_new(&x_obj, n + 1, 0L);
         });
   }

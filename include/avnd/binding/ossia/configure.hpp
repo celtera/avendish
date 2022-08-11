@@ -10,19 +10,33 @@ struct logger
 {
   using logger_type = logger;
   template <typename... T>
-  static void log(T&&... args) noexcept { }
+  static void log(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void trace(T&&... args) noexcept { }
+  static void trace(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void debug(T&&... args) noexcept { }
+  static void debug(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void info(T&&... args) noexcept { }
+  static void info(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void warn(T&&... args) noexcept { }
+  static void warn(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void error(T&&... args) noexcept { }
+  static void error(T&&... args) noexcept
+  {
+  }
   template <typename... T>
-  static void critical(T&&... args) noexcept { }
+  static void critical(T&&... args) noexcept
+  {
+  }
 };
 
 struct config

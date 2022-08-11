@@ -86,14 +86,14 @@ struct Lowpass
     const auto chans = p1.channels;
 
     // Process the input buffer
-    for (int i = 0; i < chans; i++)
+    for(int i = 0; i < chans; i++)
     {
       auto& in = p1.samples[i];
       auto& out = p2.samples[i];
 
       float& prev = this->previous_values[i];
 
-      for (int j = 0; j < N; j++)
+      for(int j = 0; j < N; j++)
       {
         out[j] = weight * in[j] + (1.0 - weight) * prev;
         prev = out[j];

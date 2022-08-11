@@ -7,15 +7,14 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
-#include <ossia/dataflow/nodes/media.hpp>
-#include <ossia/audio/fft.hpp>
 #include <boost/mp11.hpp>
+#include <ossia/audio/fft.hpp>
+#include <ossia/dataflow/nodes/media.hpp>
 
 namespace oscr
 {
 template <typename Field>
-using spectrum_fft_type
-    = ossia::fft;
+using spectrum_fft_type = ossia::fft;
 
 template <typename Field>
 struct spectrum_split_channel_fft_type
@@ -43,48 +42,47 @@ struct spectrum_complex_bus_fft_type
 template <typename T>
 struct spectrum_split_channel_input_storage
 {
-    void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size) { }
 };
 
 template <typename T>
 struct spectrum_complex_channel_input_storage
 {
-    void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size) { }
 };
 
 template <typename T>
 struct spectrum_split_bus_input_storage
 {
-    void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size) { }
 };
 
 template <typename T>
 struct spectrum_complex_bus_input_storage
 {
-    void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size) { }
 };
 
 // Field:
 // struct { T* amplitude; T* phase; } spectrum;
 template <typename T>
-requires(avnd::spectrum_split_channel_input_introspection<T>::size > 0)
-struct spectrum_split_channel_input_storage<T>
+requires(
+    avnd::spectrum_split_channel_input_introspection<T>::size
+    > 0) struct spectrum_split_channel_input_storage<T>
 {
   using sc_in = avnd::spectrum_split_channel_input_introspection<T>;
 
   using fft_tuple = avnd::filter_and_apply<
-    spectrum_fft_type,
-    avnd::spectrum_split_channel_input_introspection,
-    T>;
+      spectrum_fft_type, avnd::spectrum_split_channel_input_introspection, T>;
 
   // std::tuple< ossia::fft, ossia::fft >
   [[no_unique_address]] fft_tuple ffts;
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
-    if constexpr (sc_in::size > 0)
+    if constexpr(sc_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::predicate_index<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching fft in our storage
         ossia::fft& fft = get<Idx>(this->ffts);
@@ -103,15 +101,14 @@ struct spectrum_split_channel_input_storage<T>
 // Field:
 // struct { T** amplitude; T** phase; } spectrum;
 template <typename T>
-requires(avnd::spectrum_split_bus_input_introspection<T>::size > 0)
-struct spectrum_split_bus_input_storage<T>
+requires(
+    avnd::spectrum_split_bus_input_introspection<T>::size
+    > 0) struct spectrum_split_bus_input_storage<T>
 {
   using sc_in = avnd::spectrum_split_bus_input_introspection<T>;
 
   using fft_tuple = avnd::filter_and_apply<
-  spectrum_split_bus_fft_type,
-  avnd::spectrum_split_bus_input_introspection,
-  T>;
+      spectrum_split_bus_fft_type, avnd::spectrum_split_bus_input_introspection, T>;
 
   // TODO optimize for fixed bussys
   // std::tuple< std::vector<ossia::fft>, std::vector<ossia::fft> >
@@ -119,9 +116,9 @@ struct spectrum_split_bus_input_storage<T>
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
-    if constexpr (sc_in::size > 0)
+    if constexpr(sc_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::predicate_index<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching fft in our storage
         spectrum_split_bus_fft_type<M>& ffts = get<Idx>(this->ffts);
@@ -143,50 +140,48 @@ struct spectrum_split_bus_input_storage<T>
 };
 
 template <typename T>
-requires(avnd::spectrum_complex_channel_input_introspection<T>::size > 0)
-struct spectrum_complex_channel_input_storage<T>
+requires(
+    avnd::spectrum_complex_channel_input_introspection<T>::size
+    > 0) struct spectrum_complex_channel_input_storage<T>
 {
-    using sc_in = avnd::spectrum_complex_channel_input_introspection<T>;
+  using sc_in = avnd::spectrum_complex_channel_input_introspection<T>;
 
-    using fft_tuple = avnd::filter_and_apply<
-      spectrum_fft_type,
-      avnd::spectrum_complex_channel_input_introspection,
-    T>;
+  using fft_tuple = avnd::filter_and_apply<
+      spectrum_fft_type, avnd::spectrum_complex_channel_input_introspection, T>;
 
-    // std::tuple< ossia::fft, ossia::fft >
-    [[no_unique_address]] fft_tuple ffts;
+  // std::tuple< ossia::fft, ossia::fft >
+  [[no_unique_address]] fft_tuple ffts;
 
-    void init(avnd::effect_container<T>& t, int buffer_size)
+  void init(avnd::effect_container<T>& t, int buffer_size)
+  {
+    if constexpr(sc_in::size > 0)
     {
-      if constexpr (sc_in::size > 0)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::predicate_index<Idx>)
-        {
-          // Get the matching fft in our storage
-          ossia::fft& fft = get<Idx>(this->ffts);
+        // Get the matching fft in our storage
+        ossia::fft& fft = get<Idx>(this->ffts);
 
-          // Reserve space for the current buffer size
-          fft.reset(buffer_size);
+        // Reserve space for the current buffer size
+        fft.reset(buffer_size);
 
-          port.spectrum.bin = nullptr;
-        };
-        sc_in::for_all_n(avnd::get_inputs(t), init_raw_in);
-      }
+        port.spectrum.bin = nullptr;
+      };
+      sc_in::for_all_n(avnd::get_inputs(t), init_raw_in);
     }
+  }
 };
 
 // Field:
 // struct { T** amplitude; T** phase; } spectrum;
 template <typename T>
-requires(avnd::spectrum_complex_bus_input_introspection<T>::size > 0)
-struct spectrum_complex_bus_input_storage<T>
+requires(
+    avnd::spectrum_complex_bus_input_introspection<T>::size
+    > 0) struct spectrum_complex_bus_input_storage<T>
 {
   using sc_in = avnd::spectrum_complex_bus_input_introspection<T>;
 
   using fft_tuple = avnd::filter_and_apply<
-  spectrum_complex_bus_fft_type,
-  avnd::spectrum_complex_bus_input_introspection,
-  T>;
+      spectrum_complex_bus_fft_type, avnd::spectrum_complex_bus_input_introspection, T>;
 
   // TODO optimize for fixed bussys
   // std::tuple< std::vector<ossia::fft>, std::vector<ossia::fft> >
@@ -194,9 +189,9 @@ struct spectrum_complex_bus_input_storage<T>
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
-    if constexpr (sc_in::size > 0)
+    if constexpr(sc_in::size > 0)
     {
-      auto init_raw_in = [&]<auto Idx, typename M>(M& port, avnd::predicate_index<Idx>)
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching fft in our storage
         spectrum_complex_bus_fft_type<M>& ffts = get<Idx>(this->ffts);
@@ -218,14 +213,10 @@ struct spectrum_complex_bus_input_storage<T>
 template <typename T>
 struct spectrum_storage
 {
-  [[no_unique_address]]
-  spectrum_split_channel_input_storage<T> split_channel;
-  [[no_unique_address]]
-  spectrum_complex_channel_input_storage<T> complex_channel;
-  [[no_unique_address]]
-  spectrum_split_bus_input_storage<T> split_bus;
-  [[no_unique_address]]
-  spectrum_complex_bus_input_storage<T> complex_bus;
+  [[no_unique_address]] spectrum_split_channel_input_storage<T> split_channel;
+  [[no_unique_address]] spectrum_complex_channel_input_storage<T> complex_channel;
+  [[no_unique_address]] spectrum_split_bus_input_storage<T> split_bus;
+  [[no_unique_address]] spectrum_complex_bus_input_storage<T> complex_bus;
 
   void reserve_space(avnd::effect_container<T>& t, int buffer_size)
   {

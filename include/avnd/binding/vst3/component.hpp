@@ -62,7 +62,7 @@ struct Component final
   uint32 addRef() override { return ++m_refcount; }
   uint32 release() override
   {
-    if (--m_refcount == 0)
+    if(--m_refcount == 0)
     {
       delete this;
       return 0;
@@ -121,11 +121,10 @@ struct Component final
   getBusCount(Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir) override
   {
     using namespace Steinberg::Vst;
-    switch (type)
+    switch(type)
     {
-      case kAudio:
-      {
-        switch (dir)
+      case kAudio: {
+        switch(dir)
         {
           case kInput:
             return audio_busses.inputCount();
@@ -135,9 +134,8 @@ struct Component final
             break;
         }
       }
-      case kEvent:
-      {
-        switch (dir)
+      case kEvent: {
+        switch(dir)
         {
           case kInput:
             return event_busses.inputCount();
@@ -152,20 +150,17 @@ struct Component final
   }
 
   Steinberg::tresult activateBus(
-      Steinberg::Vst::MediaType type,
-      Steinberg::Vst::BusDirection dir,
-      int32 index,
+      Steinberg::Vst::MediaType type, Steinberg::Vst::BusDirection dir, int32 index,
       Steinberg::TBool state) override
   {
     using namespace Steinberg::Vst;
-    if (index < 0)
+    if(index < 0)
       return Steinberg::kInvalidArgument;
 
-    switch (type)
+    switch(type)
     {
-      case kAudio:
-      {
-        switch (dir)
+      case kAudio: {
+        switch(dir)
         {
           case kInput:
             return audio_busses.activateInput(index, state);
@@ -175,9 +170,8 @@ struct Component final
             break;
         }
       }
-      case kEvent:
-      {
-        switch (dir)
+      case kEvent: {
+        switch(dir)
         {
           case kInput:
             return event_busses.activateInput(index, state);
@@ -196,16 +190,15 @@ struct Component final
   getBusInfo(MediaType type, BusDirection dir, int32 index, BusInfo& info) override
   {
     using namespace Steinberg::Vst;
-    if (index < 0)
+    if(index < 0)
       return Steinberg::kInvalidArgument;
 
-    switch (type)
+    switch(type)
     {
-      case kAudio:
-      {
+      case kAudio: {
         info.mediaType = MediaTypes::kAudio;
         info.flags = BusInfo::kDefaultActive;
-        switch (dir)
+        switch(dir)
         {
           case kInput:
             info.direction = BusDirections::kInput;
@@ -217,9 +210,8 @@ struct Component final
             break;
         }
       }
-      case kEvent:
-      {
-        switch (dir)
+      case kEvent: {
+        switch(dir)
         {
           case kInput:
             info.direction = BusDirections::kInput;
@@ -246,10 +238,10 @@ struct Component final
   getBusArrangement(BusDirection dir, int32 index, SpeakerArrangement& arr) override
   {
     using namespace Steinberg::Vst;
-    if (index < 0)
+    if(index < 0)
       return Steinberg::kInvalidArgument;
 
-    switch (dir)
+    switch(dir)
     {
       case kInput:
         return audio_busses.inputArrangement(index, arr);
@@ -262,9 +254,7 @@ struct Component final
   }
 
   tresult setBusArrangements(
-      SpeakerArrangement* inputs,
-      int32 numIns,
-      SpeakerArrangement* outputs,
+      SpeakerArrangement* inputs, int32 numIns, SpeakerArrangement* outputs,
       int32 numOuts) override
   {
     using namespace stv3;
@@ -317,7 +307,7 @@ struct Component final
         audio_busses.runtime_output_channel_count);
 
     // Setup buffers for storing MIDI messages
-    if constexpr (avnd::midi_input_introspection<T>::size > 0)
+    if constexpr(avnd::midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
       auto& in_port = avnd::pfr::get<i_info::index_map[0]>(effect.inputs());
@@ -337,12 +327,10 @@ struct Component final
     int32 numPoints = queue.getPointCount();
 
     int id = queue.getParameterId();
-    if (queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
+    if(queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
     {
       avnd::parameter_input_introspection<T>::for_nth_raw(
-          effect.inputs(),
-          id,
-          [&]<typename C>(C& ctl) {
+          effect.inputs(), id, [&]<typename C>(C& ctl) {
             if_possible(ctl.value = avnd::map_control_from_01<C>(value));
           });
     };
@@ -353,13 +341,13 @@ struct Component final
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (auto paramChanges = data.inputParameterChanges)
+    if(auto paramChanges = data.inputParameterChanges)
     {
       int32 numParamsChanged = paramChanges->getParameterCount();
       // for each parameter which are some changes in this audio block:
-      for (int32 i = 0; i < numParamsChanged; i++)
+      for(int32 i = 0; i < numParamsChanged; i++)
       {
-        if (auto q = paramChanges->getParameterData(i))
+        if(auto q = paramChanges->getParameterData(i))
         {
           processControl(*q);
         }
@@ -370,7 +358,7 @@ struct Component final
   template <typename Bus>
   void add_message(Bus& bus, uint8_t a, uint8_t b, uint8_t c, auto ts)
   {
-    if constexpr (avnd::dynamic_container_midi_port<Bus>)
+    if constexpr(avnd::dynamic_container_midi_port<Bus>)
     {
       bus.midi_messages.push_back({.bytes = {a, b, c}, .timestamp = ts});
     }
@@ -387,9 +375,7 @@ struct Component final
   }
 
   void processEvent(
-      avnd::midi_port auto& bus,
-      const Steinberg::Vst::NoteOffEvent& ev,
-      auto ts)
+      avnd::midi_port auto& bus, const Steinberg::Vst::NoteOffEvent& ev, auto ts)
   {
     add_message(bus, ev.channel | 0x80, ev.pitch, ev.velocity * 127, ts);
   }
@@ -399,58 +385,45 @@ struct Component final
     using refl = avnd::midi_input_introspection<T>;
     // 0 <= event.busIndex < count(midi_ports)
     // thus we have to map to the actual port index in our input struct
-    switch (event.type)
+    switch(event.type)
     {
-      case Event::kNoteOnEvent:
-      {
-        refl::for_nth_mapped(
-            this->effect.inputs(),
-            event.busIndex,
-            [&](auto& bus)
-            { this->processEvent(bus, event.noteOn, event.sampleOffset); });
+      case Event::kNoteOnEvent: {
+        refl::for_nth_mapped(this->effect.inputs(), event.busIndex, [&](auto& bus) {
+          this->processEvent(bus, event.noteOn, event.sampleOffset);
+        });
         break;
       }
-      case Event::kNoteOffEvent:
-      {
-        refl::for_nth_mapped(
-            this->effect.inputs(),
-            event.busIndex,
-            [&](auto& bus)
-            { this->processEvent(bus, event.noteOff, event.sampleOffset); });
+      case Event::kNoteOffEvent: {
+        refl::for_nth_mapped(this->effect.inputs(), event.busIndex, [&](auto& bus) {
+          this->processEvent(bus, event.noteOff, event.sampleOffset);
+        });
         break;
       }
-      case Event::kDataEvent:
-      {
+      case Event::kDataEvent: {
         auto& e = event.data;
         break;
       }
-      case Event::kPolyPressureEvent:
-      {
+      case Event::kPolyPressureEvent: {
         auto& e = event.polyPressure;
         break;
       }
-      case Event::kNoteExpressionValueEvent:
-      {
+      case Event::kNoteExpressionValueEvent: {
         auto& e = event.noteExpressionValue;
         break;
       }
-      case Event::kNoteExpressionTextEvent:
-      {
+      case Event::kNoteExpressionTextEvent: {
         auto& e = event.noteExpressionText;
         break;
       }
-      case Event::kChordEvent:
-      {
+      case Event::kChordEvent: {
         auto& e = event.chord;
         break;
       }
-      case Event::kScaleEvent:
-      {
+      case Event::kScaleEvent: {
         auto& e = event.scale;
         break;
       }
-      case Event::kLegacyMIDICCOutEvent:
-      {
+      case Event::kLegacyMIDICCOutEvent: {
         auto& e = event.midiCCOut;
         break;
       }
@@ -462,13 +435,13 @@ struct Component final
     using namespace Steinberg;
     using namespace Steinberg::Vst;
 
-    if (data.inputEvents)
+    if(data.inputEvents)
     {
       const int32 numEvent = data.inputEvents->getEventCount();
-      for (int32 i = 0; i < numEvent; i++)
+      for(int32 i = 0; i < numEvent; i++)
       {
         Event event;
-        if (data.inputEvents->getEvent(i, event) == kResultOk)
+        if(data.inputEvents->getEvent(i, event) == kResultOk)
         {
           processEvent(event);
         }
@@ -487,7 +460,7 @@ struct Component final
     auto out = stv3::getChannelBuffersPointer(processSetup, data.outputs[0]);
 
     data.outputs[0].silenceFlags = 0;
-    if (data.symbolicSampleSize == kSample32)
+    if(data.symbolicSampleSize == kSample32)
     {
       processor.process(
           effect,
@@ -525,7 +498,7 @@ struct Component final
     processControls(data);
     processEvents(data);
 
-    if (data.numInputs != 0 && data.numOutputs != 0)
+    if(data.numInputs != 0 && data.numOutputs != 0)
     {
       processAudio(data);
       processOutputs(data);
@@ -547,14 +520,12 @@ struct Component final
     // called when we load a preset, the model has to be reloaded
 
     IBStreamer streamer(state, kLittleEndian);
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       bool ok = inputs_info_t::for_all_unless(
-          this->effect.inputs(),
-          [&]<typename C>(C& field) -> bool
-          {
+          this->effect.inputs(), [&]<typename C>(C& field) -> bool {
             double param = 0.f;
-            if (streamer.readDouble(param) == false)
+            if(streamer.readDouble(param) == false)
               return false;
             if_possible(field.value = avnd::map_control_from_01<C>(param));
             return true;
@@ -573,12 +544,10 @@ struct Component final
     using namespace Steinberg;
 
     IBStreamer streamer(state, kLittleEndian);
-    if constexpr (avnd::has_inputs<T>)
+    if constexpr(avnd::has_inputs<T>)
     {
       bool ok = inputs_info_t::for_all_unless(
-          this->effect.inputs(),
-          [&]<typename C>(C& field) -> bool
-          {
+          this->effect.inputs(), [&]<typename C>(C& field) -> bool {
             double param{};
             if_possible(param = avnd::map_control_to_01<C>(field.value));
             return streamer.writeDouble(param);

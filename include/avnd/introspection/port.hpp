@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/aggregates.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/all.hpp>
-#include <avnd/common/aggregates.hpp>
 
 namespace avnd
 {
@@ -92,7 +92,8 @@ using gpu_image_port_introspection = predicate_introspection<T, is_gpu_image_por
 template <typename Field>
 using is_gpu_attachment_port_t = boost::mp11::mp_bool<attachment_port<Field>>;
 template <typename T>
-using gpu_attachment_port_introspection = predicate_introspection<T, is_gpu_attachment_port_t>;
+using gpu_attachment_port_introspection
+    = predicate_introspection<T, is_gpu_attachment_port_t>;
 
 template <typename Field>
 using is_gpu_uniform_port_t = boost::mp11::mp_bool<uniform_port<Field>>;
@@ -171,23 +172,31 @@ using raw_file_introspection = predicate_introspection<T, is_raw_file_t>;
 
 // FFT
 template <typename Field>
-using is_spectrum_split_channel_port_t = boost::mp11::mp_bool<spectrum_split_channel_port<Field>>;
+using is_spectrum_split_channel_port_t
+    = boost::mp11::mp_bool<spectrum_split_channel_port<Field>>;
 template <typename T>
-using spectrum_split_channel_port_introspection = predicate_introspection<T, is_spectrum_split_channel_port_t>;
+using spectrum_split_channel_port_introspection
+    = predicate_introspection<T, is_spectrum_split_channel_port_t>;
 
 template <typename Field>
-using is_spectrum_complex_channel_port_t = boost::mp11::mp_bool<spectrum_complex_channel_port<Field>>;
+using is_spectrum_complex_channel_port_t
+    = boost::mp11::mp_bool<spectrum_complex_channel_port<Field>>;
 template <typename T>
-using spectrum_complex_channel_port_introspection = predicate_introspection<T, is_spectrum_complex_channel_port_t>;
+using spectrum_complex_channel_port_introspection
+    = predicate_introspection<T, is_spectrum_complex_channel_port_t>;
 
 template <typename Field>
-using is_spectrum_split_bus_port_t = boost::mp11::mp_bool<spectrum_split_bus_port<Field>>;
+using is_spectrum_split_bus_port_t
+    = boost::mp11::mp_bool<spectrum_split_bus_port<Field>>;
 template <typename T>
-using spectrum_split_bus_port_introspection = predicate_introspection<T, is_spectrum_split_bus_port_t>;
+using spectrum_split_bus_port_introspection
+    = predicate_introspection<T, is_spectrum_split_bus_port_t>;
 
 template <typename Field>
-using is_spectrum_complex_bus_port_t = boost::mp11::mp_bool<spectrum_complex_bus_port<Field>>;
+using is_spectrum_complex_bus_port_t
+    = boost::mp11::mp_bool<spectrum_complex_bus_port<Field>>;
 template <typename T>
-using spectrum_complex_bus_port_introspection = predicate_introspection<T, is_spectrum_complex_bus_port_t>;
+using spectrum_complex_bus_port_introspection
+    = predicate_introspection<T, is_spectrum_complex_bus_port_t>;
 
 }

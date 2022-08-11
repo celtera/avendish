@@ -2,9 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <halp/controls.hpp>
-#include <boost/container/small_vector.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/container/small_vector.hpp>
+#include <halp/controls.hpp>
 
 #include <map>
 
@@ -22,7 +22,6 @@ struct accurate
     : T
     , sample_accurate_values<std::decay_t<decltype(T::value)>>
 {
-
 };
 
 }

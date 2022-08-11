@@ -1,11 +1,11 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
-#include <cmath>
 
 #include <vector>
 
@@ -80,14 +80,14 @@ struct Distortion
     // First sum all the input channels into a mono buffer
     temp_buffer.clear();
     temp_buffer.resize(N);
-    for (int i = 0; i < chans; i++)
+    for(int i = 0; i < chans; i++)
     {
       // The buffers are accessed through spans.
       auto in = inputs.audio.channel(i, N);
 
       // Sum samples from the input buffer
       const int64_t samples_to_read = N;
-      for (int64_t j = 0; j < samples_to_read; j++)
+      for(int64_t j = 0; j < samples_to_read; j++)
       {
         temp_buffer[j] += in[j];
       }
@@ -107,7 +107,7 @@ struct Distortion
     auto out_l = outputs.audio.channel(0, N);
     auto out_r = outputs.audio.channel(1, N);
 
-    for (int64_t j = 0; j < samples_to_write; j++)
+    for(int64_t j = 0; j < samples_to_write; j++)
     {
       // Tanh
       out_l[j] = std::tanh(temp_buffer[j] * gain.value);

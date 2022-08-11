@@ -30,7 +30,7 @@ public:
       : implementation{impl}
   {
     glfwSetErrorCallback([](int e, const char* d) { printf("Error %d: %s\n", e, d); });
-    if (!glfwInit())
+    if(!glfwInit())
     {
       fprintf(stdout, "[GFLW] failed to init!\n");
       exit(1);
@@ -47,7 +47,7 @@ public:
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glewExperimental = 1;
-    if (glewInit() != GLEW_OK)
+    if(glewInit() != GLEW_OK)
     {
       fprintf(stderr, "Failed to setup GLEW\n");
       exit(1);
@@ -94,15 +94,15 @@ public:
 
   void createWidget(const auto& item)
   {
-    if constexpr (requires {
-                    {
-                      item
-                      } -> std::convertible_to<std::string_view>;
-                  })
+    if constexpr(requires {
+                   {
+                     item
+                     } -> std::convertible_to<std::string_view>;
+                 })
     {
       nk_label(ctx, item, NK_TEXT_LEFT);
     }
-    else if constexpr (requires { (avnd::get_inputs<T>(this->implementation).*item); })
+    else if constexpr(requires { (avnd::get_inputs<T>(this->implementation).*item); })
     {
       auto& ins = avnd::get_inputs<T>(this->implementation);
       auto& control = ins.*item;
@@ -118,63 +118,57 @@ public:
     nk_layout_row_begin(ctx, NK_STATIC, row_height, child_count);
 
     int k = 0;
-    avnd::for_each_field_ref(
-        item,
-        [&]<typename TT>(const TT& child)
-        {
-          if (nk_tab(ctx, c_str(TT::name()), tab_state == k))
-          {
-            tab_state = k;
-          }
-          k++;
-        });
+    avnd::for_each_field_ref(item, [&]<typename TT>(const TT& child) {
+      if(nk_tab(ctx, c_str(TT::name()), tab_state == k))
+      {
+        tab_state = k;
+      }
+      k++;
+    });
     k = 0;
-    avnd::for_each_field_ref(
-        item,
-        [&]<typename TT>(const TT& child)
-        {
-          if (k == tab_state)
-          {
-            createItem(child);
-          }
-          k++;
-        });
+    avnd::for_each_field_ref(item, [&]<typename TT>(const TT& child) {
+      if(k == tab_state)
+      {
+        createItem(child);
+      }
+      k++;
+    });
   }
 
   template <typename Item>
   void createItem(const Item& item)
   {
     constexpr int child_count = avnd::pfr::tuple_size_v<Item>;
-    if constexpr (requires { item.spacing; })
+    if constexpr(requires { item.spacing; })
     {
       nk_label(ctx, " ", NK_TEXT_LEFT);
     }
-    else if constexpr (requires { item.hbox; })
+    else if constexpr(requires { item.hbox; })
     {
       nk_layout_row_dynamic(ctx, row_height, child_count);
       recurseItem(item);
     }
-    else if constexpr (requires { item.vbox; })
+    else if constexpr(requires { item.vbox; })
     {
       recurseItem(item);
     }
-    else if constexpr (requires { item.split; })
+    else if constexpr(requires { item.split; })
     {
-      if (nk_tree_push(ctx, NK_TREE_TAB, "Split", NK_MINIMIZED))
+      if(nk_tree_push(ctx, NK_TREE_TAB, "Split", NK_MINIMIZED))
       {
         recurseItem(item);
         nk_tree_pop(ctx);
       }
     }
-    else if constexpr (requires { item.group; })
+    else if constexpr(requires { item.group; })
     {
-      if (nk_tree_push(ctx, NK_TREE_TAB, c_str(Item::name()), NK_MINIMIZED))
+      if(nk_tree_push(ctx, NK_TREE_TAB, c_str(Item::name()), NK_MINIMIZED))
       {
         recurseItem(item);
         nk_tree_pop(ctx);
       }
     }
-    else if constexpr (requires { item.tabs; })
+    else if constexpr(requires { item.tabs; })
     {
       createTabs(item);
     }
@@ -194,14 +188,14 @@ public:
 
   void render()
   {
-    while (!glfwWindowShouldClose(win))
+    while(!glfwWindowShouldClose(win))
     {
       glfwPollEvents();
       nk_glfw3_new_frame();
 
       glfwGetWindowSize(win, &width, &height);
 
-      if (nk_begin(ctx, "Demo", nk_rect(0, 0, width, height), 0))
+      if(nk_begin(ctx, "Demo", nk_rect(0, 0, width, height), 0))
         createLayout();
       nk_end(ctx);
 

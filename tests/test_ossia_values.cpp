@@ -1,19 +1,21 @@
 #include <avnd/binding/ossia/from_value.hpp>
 #include <avnd/binding/ossia/to_value.hpp>
-#include <array>
-#include <vector>
-#include <set>
-#include <unordered_set>
-#include <map>
-#include <unordered_map>
-#include <boost/container/flat_set.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
+
+#include <array>
+#include <map>
+#include <set>
+#include <vector>
+
+#include <unordered_map>
+#include <unordered_set>
 
 void test()
 {
   using namespace avnd;
   using namespace oscr;
-  auto test = [] <typename T> (T v){
+  auto test = []<typename T>(T v) {
     ossia::value val = to_ossia_value(v);
     T t;
     SCORE_ASSERT(from_ossia_value(val, t));
@@ -37,7 +39,8 @@ void test()
   test.operator()<std::set<int>>(std::set<int>{1, 3, 5, 7});
   test.operator()<std::map<int, int>>(std::map<int, int>{{1, 3}, {2, 5}});
 
-  struct Agg {
+  struct Agg
+  {
     bool operator==(const Agg&) const noexcept = default;
     int a;
     float b;
@@ -54,5 +57,17 @@ void test()
   };
 
   test.operator()<Agg>(Agg{});
-  test.operator()<Agg>(Agg{1, 0.5f, true, 'x', "hello", {1, 3, 5}, {6,7}, std::bitset<64>{1234ULL}, {1, -1}, { {1, 2}, {3, 4}}, {"foo", "bar"}, {{ 1, "foo"}, {3, "bar"}}});
+  test.operator()<Agg>(
+      Agg{1,
+          0.5f,
+          true,
+          'x',
+          "hello",
+          {1, 3, 5},
+          {6, 7},
+          std::bitset<64>{1234ULL},
+          {1, -1},
+          {{1, 2}, {3, 4}},
+          {"foo", "bar"},
+          {{1, "foo"}, {3, "bar"}}});
 }

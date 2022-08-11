@@ -7,27 +7,36 @@
 #include <halp/static_string.hpp>
 
 #include <cstddef>
-#include <string_view>
 #include <vector>
+
+#include <string_view>
 
 namespace halp
 {
 // TODO look into using the LLFIO concepts instead for maximum power
-struct text_file_view {
+struct text_file_view
+{
   std::string_view bytes;
 
   // std::fs::path would be great but limits to macOS 10.15+
   std::string_view filename;
 
-  enum { text };
+  enum
+  {
+    text
+  };
 };
-struct mmap_file_view {
+struct mmap_file_view
+{
   std::string_view bytes;
 
   // std::fs::path would be great but limits to macOS 10.15+
   std::string_view filename;
 
-  enum { mmap };
+  enum
+  {
+    mmap
+  };
 };
 
 template <halp::static_string lit, typename FileType = text_file_view>
@@ -42,4 +51,3 @@ struct file_port
   FileType file;
 };
 }
-

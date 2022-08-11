@@ -11,10 +11,8 @@ struct inputs
   {
     int k = 0;
     avnd::input_introspection<T>::for_all(
-        avnd::get_inputs<T>(implementation),
-        [&x_obj, &k](auto& ctl)
-        {
-          if (k++)
+        avnd::get_inputs<T>(implementation), [&x_obj, &k](auto& ctl) {
+          if(k++)
           { // Skip the first port
             if_possible(floatinlet_new(&x_obj, &ctl.value))
 

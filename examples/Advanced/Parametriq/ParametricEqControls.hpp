@@ -158,12 +158,9 @@ struct EQBand
   struct range
   {
     my_pair<filters> values[filters::FILTERS_NB]{
-        {"Lowpass", filters::lowpass},
-        {"Highpass", filters::highpass},
-        {"Bandpass", filters::bandpass},
-        {"Bandstop", filters::bandstop},
-        {"Lowshelf", filters::lowshelf},
-        {"Highshelf", filters::highshelf},
+        {"Lowpass", filters::lowpass},    {"Highpass", filters::highpass},
+        {"Bandpass", filters::bandpass},  {"Bandstop", filters::bandstop},
+        {"Lowshelf", filters::lowshelf},  {"Highshelf", filters::highshelf},
         {"Bandshelf", filters::bandshelf}};
     filters init = filters::lowpass;
   };

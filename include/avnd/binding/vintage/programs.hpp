@@ -15,7 +15,7 @@ struct programs_setup
   void init(Self_T& effect)
   {
     using T = typename Self_T::effect_type;
-    if constexpr (has_programs<T>)
+    if constexpr(has_programs<T>)
     {
       effect.Effect::numPrograms = std::size(T::programs);
     }

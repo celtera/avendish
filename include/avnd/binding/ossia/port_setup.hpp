@@ -118,14 +118,12 @@ struct inlet_storage
   // typelist<a, b, c>
   using inputs_tuple = typename avnd::inputs_type<T>::tuple;
 
-  template<typename Port>
+  template <typename Port>
   using inputs_getter = typename get_ossia_inlet_type<T, Port>::type;
 
   // tuple<ossia::audio_inlet, ossia::audio_outlet, ossia::value_inlet>
-  using ossia_inputs_tuple
-      = boost::mp11::mp_rename<
-          boost::mp11::mp_transform<inputs_getter, inputs_tuple>,
-        tuplet::tuple>;
+  using ossia_inputs_tuple = boost::mp11::mp_rename<
+      boost::mp11::mp_transform<inputs_getter, inputs_tuple>, tuplet::tuple>;
   ossia_inputs_tuple ports;
 };
 
@@ -135,13 +133,11 @@ struct outlet_storage
   using outputs_type = typename avnd::outputs_type<T>::type;
   using outputs_tuple = typename avnd::outputs_type<T>::tuple;
 
-  template<typename Port>
+  template <typename Port>
   using outputs_getter = typename get_ossia_outlet_type<T, Port>::type;
 
-  using ossia_outputs_tuple
-      = boost::mp11::mp_rename<
-          boost::mp11::mp_transform<outputs_getter, outputs_tuple>,
-        tuplet::tuple>;
+  using ossia_outputs_tuple = boost::mp11::mp_rename<
+      boost::mp11::mp_transform<outputs_getter, outputs_tuple>, tuplet::tuple>;
   ossia_outputs_tuple ports;
 };
 
@@ -179,12 +175,12 @@ struct setup_value_port
     if constexpr(avnd::has_range<T>)
     {
       constexpr auto dom = avnd::get_range<T>();
-      if constexpr (requires { std::string_view{dom.values[0].first}; })
+      if constexpr(requires { std::string_view{dom.values[0].first}; })
       {
         // Case for combo_pair things
         using val_type = std::decay_t<decltype(T::value)>;
         ossia::domain_base<val_type> v;
-        for (auto& val : dom.values)
+        for(auto& val : dom.values)
         {
           v.values.push_back(val.second);
         }
@@ -271,11 +267,11 @@ struct setup_value_port
   template <typename Field>
   void setup(ossia::value_port& port)
   {
-    if constexpr (requires { bool(Field::event); })
+    if constexpr(requires { bool(Field::event); })
       port.is_event = Field::event;
-    if constexpr (requires { Field::value; })
+    if constexpr(requires { Field::value; })
     {
-      if constexpr (avnd::optional_ish<decltype(Field::value)>)
+      if constexpr(avnd::optional_ish<decltype(Field::value)>)
         port.is_event = true;
     }
   }
@@ -288,38 +284,38 @@ struct setup_inlets
   ossia::inlets& inlets;
 
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_inlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::value_inlet& port) const noexcept
   {
     inlets.push_back(std::addressof(port));
 
     setup_value_port{}.setup<Field>(*port);
 
-    if constexpr (avnd::has_unit<Field>)
+    if constexpr(avnd::has_unit<Field>)
     {
       constexpr auto unit = avnd::get_unit<Field>();
-      if (!unit.empty())
+      if(!unit.empty())
         port->type = ossia::parse_dataspace(unit);
     }
   }
 
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_inlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::audio_inlet& port) const noexcept
   {
     inlets.push_back(std::addressof(port));
   }
 
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_inlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::midi_inlet& port) const noexcept
   {
     inlets.push_back(std::addressof(port));
   }
 
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::texture_inlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::texture_inlet& port) const noexcept
   {
     inlets.push_back(std::addressof(port));
   }
@@ -337,38 +333,38 @@ struct setup_outlets
   Exec_T& self;
   ossia::outlets& outlets;
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port) const noexcept
   {
     outlets.push_back(std::addressof(port));
 
     setup_value_port{}.setup<Field>(*port);
 
-    if constexpr (avnd::has_unit<Field>)
+    if constexpr(avnd::has_unit<Field>)
     {
       constexpr auto unit = avnd::get_unit<Field>();
-      if (!unit.empty())
+      if(!unit.empty())
         port->type = ossia::parse_dataspace(unit);
     }
   }
   template <std::size_t Idx, avnd::callback Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port) const noexcept
   {
     // FIXME likely there are interesting things to do
     outlets.push_back(std::addressof(port));
   }
 
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::audio_outlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::audio_outlet& port) const noexcept
   {
     outlets.push_back(std::addressof(port));
   }
 
   template <std::size_t Idx, typename Field>
-  void operator()(avnd::field_reflection<Idx, Field> ctrl, ossia::midi_outlet& port)
-      const noexcept
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl, ossia::midi_outlet& port) const noexcept
   {
     outlets.push_back(std::addressof(port));
   }
@@ -388,7 +384,6 @@ struct setup_outlets
   }
 };
 
-
 template <typename Exec_T, typename Obj_T>
 struct setup_variable_audio_ports
 {
@@ -396,28 +391,26 @@ struct setup_variable_audio_ports
   Obj_T& impl;
 
   template <avnd::variable_poly_audio_port Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
+  void operator()(
+      Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
   {
-    ctrl.request_channels = [&ctrl,&s=self](int x)
-    {
+    ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
       s.channels.set_input_channels(s.impl, 0, x);
     };
   }
 
   template <avnd::variable_poly_audio_port Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::audio_outlet& port, avnd::field_index<Idx>) const noexcept
+  void operator()(
+      Field& ctrl, ossia::audio_outlet& port, avnd::field_index<Idx>) const noexcept
   {
-    ctrl.request_channels = [&ctrl,&s=self](int x)
-    {
+    ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
       s.channels.set_output_channels(s.impl, 0, x);
     };
   }
 
-  void operator()(auto&&...) const noexcept
-  {
-  }
+  void operator()(auto&&...) const noexcept { }
 };
 
 }

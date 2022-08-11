@@ -2,9 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <vector>
 #include <cmath>
+
 #include <ratio>
+#include <vector>
 
 namespace examples
 {
@@ -19,11 +20,11 @@ struct Sine
   static constexpr auto uuid() { return "ce5469ca-1be1-4846-b690-4f4d0081ecab"; }
 
   // FIXME: when clang supports double arguments we can use them here instead
-  template<typename Ratio>
+  template <typename Ratio>
   struct log_mapper
   {
-    static constexpr double mid = double(Ratio::num)/double(Ratio::den);
-    static constexpr double b = (1./mid - 1. ) * (1./mid - 1.);
+    static constexpr double mid = double(Ratio::num) / double(Ratio::den);
+    static constexpr double b = (1. / mid - 1.) * (1. / mid - 1.);
     static constexpr double a = 1. / (b - 1.);
     static double map(double v) noexcept { return a * (std::pow(b, v) - 1.); }
     static double unmap(double v) noexcept { return std::log(v / a + 1.) / std::log(b); }
@@ -77,7 +78,8 @@ struct Sine
 
   struct outputs
   {
-    struct {
+    struct
+    {
       static consteval auto name() { return "Out"; }
       float sample;
     } audio;
@@ -88,22 +90,20 @@ struct Sine
     float rate{};
   } setup;
 
-  void prepare(struct setup info)
-  {
-    this->setup = info;
-  }
+  void prepare(struct setup info) { this->setup = info; }
 
-  double phase[4] = { 0. };
+  double phase[4] = {0.};
   void operator()(const inputs& inputs, outputs& outputs)
   {
     const double phi[4] = {
-      2 * 3.14 * inputs.f1.value / setup.rate,
-      2 * 3.14 * inputs.f2.value / setup.rate,
-      2 * 3.14 * inputs.f3.value / setup.rate,
-      2 * 3.14 * inputs.f4.value / setup.rate,
+        2 * 3.14 * inputs.f1.value / setup.rate,
+        2 * 3.14 * inputs.f2.value / setup.rate,
+        2 * 3.14 * inputs.f3.value / setup.rate,
+        2 * 3.14 * inputs.f4.value / setup.rate,
     };
     outputs.audio.sample = 0.;
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < 4; i++)
+    {
       outputs.audio.sample += 0.15 * sin(phase[i] += phi[i]);
     }
   }

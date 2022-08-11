@@ -74,10 +74,10 @@ struct Midi
 
     const auto chans = p1.channels;
 
-    for (int i = 0; i < inputs.midi_unsafe.size; i++)
+    for(int i = 0; i < inputs.midi_unsafe.size; i++)
     {
       auto& m = inputs.midi_unsafe.midi_messages[i];
-      if (m.bytes[0] == 144)
+      if(m.bytes[0] == 144)
       {
         notes[m.bytes[1]].velocity = m.bytes[2];
         notes[m.bytes[1]].phase = 0.;
@@ -90,12 +90,12 @@ struct Midi
     }
 
     // Zero our buffer
-    for (int i = 0; i < chans; i++)
+    for(int i = 0; i < chans; i++)
     {
       auto& in = p1.samples[i];
       auto& out = p2.samples[i];
 
-      for (int j = 0; j < N; j++)
+      for(int j = 0; j < N; j++)
       {
         out[j] = 0.;
       }
@@ -103,10 +103,10 @@ struct Midi
 
     // Process notes
     double g{};
-    for (int note = 0; note < notes.size(); ++note)
+    for(int note = 0; note < notes.size(); ++note)
     {
       auto& [velocity, note_phase] = notes[note];
-      if (velocity == 0)
+      if(velocity == 0)
         continue;
 
       const double freq = std::pow(2., (note - 69.) / 12.) * 440.;
@@ -114,14 +114,14 @@ struct Midi
 
       const double init_phase = note_phase;
       // Process the input buffer
-      for (int i = 0; i < chans; i++)
+      for(int i = 0; i < chans; i++)
       {
         g = gain;
         double phase = init_phase;
         auto& in = p1.samples[i];
         auto& out = p2.samples[i];
 
-        for (int j = 0; j < N; j++)
+        for(int j = 0; j < N; j++)
         {
           out[j] += std::sin(in[j] + phase) * (velocity / 127.) * (g *= 0.99995);
           phase += phase_increment;

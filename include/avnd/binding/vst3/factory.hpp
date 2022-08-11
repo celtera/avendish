@@ -49,17 +49,17 @@ public:
 
   Steinberg::tresult getFactoryInfo(Steinberg::PFactoryInfo* info) override
   {
-    if constexpr (requires { T::vendor(); })
+    if constexpr(requires { T::vendor(); })
       factory_vendor{avnd::get_vendor<T>()}.copy_to(info->vendor);
     else
       factory_vendor{""}.copy_to(info->vendor);
 
-    if constexpr (requires { T::url(); })
+    if constexpr(requires { T::url(); })
       factory_url{avnd::get_url<T>()}.copy_to(info->url);
     else
       factory_url{""}.copy_to(info->url);
 
-    if constexpr (requires { T::email(); })
+    if constexpr(requires { T::email(); })
       factory_email{avnd::get_email<T>()}.copy_to(info->email);
     else
       factory_email{""}.copy_to(info->email);
@@ -74,25 +74,21 @@ public:
   Steinberg::tresult getClassInfo(int32 index, Steinberg::PClassInfo* info) override
   {
     memset(info, 0, sizeof(Steinberg::PClassInfo));
-    switch (index)
+    switch(index)
     {
-      case 0:
-      {
+      case 0: {
         memcpy(info->cid, &component_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstAudioEffectClass}.copy_to(info->category);
         class_name{avnd::get_name<T>()}.copy_to(info->name);
         return Steinberg::kResultOk;
       }
-      case 1:
-      {
+      case 1: {
         memcpy(info->cid, &controller_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstComponentControllerClass}.copy_to(info->category);
         snprintf(
-            info->name,
-            Steinberg::PClassInfo::kNameSize,
-            "%sController",
+            info->name, Steinberg::PClassInfo::kNameSize, "%sController",
             avnd::get_name<T>().data());
         return Steinberg::kResultOk;
       }
@@ -106,7 +102,7 @@ public:
     memset(info, 0, sizeof(Steinberg::PClassInfo2));
     getClassInfo(index, reinterpret_cast<Steinberg::PClassInfo*>(info));
 
-    switch (index)
+    switch(index)
     {
       case 0:
         info->classFlags = Steinberg::Vst::kDistributable;
@@ -118,12 +114,12 @@ public:
         return Steinberg::kInvalidArgument;
     }
 
-    if constexpr (requires { T::vendor(); })
+    if constexpr(requires { T::vendor(); })
       class_vendor{T::vendor()}.copy_to(info->vendor);
     else
       class_vendor{"Undefined"}.copy_to(info->vendor);
 
-    if constexpr (requires { T::version(); })
+    if constexpr(requires { T::version(); })
       class_version{T::version()}.copy_to(info->version);
     else
       class_version{"0.0.0"}.copy_to(info->version);
@@ -136,10 +132,9 @@ public:
   getClassInfoUnicode(int32 index, Steinberg::PClassInfoW* info) override
   {
     memset(info, 0, sizeof(Steinberg::PClassInfoW));
-    switch (index)
+    switch(index)
     {
-      case 0:
-      {
+      case 0: {
         memcpy(info->cid, &component_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstAudioEffectClass}.copy_to(info->category);
@@ -149,8 +144,7 @@ public:
         class_subcategories{"Fx"}.copy_to(info->subCategories);
         break;
       }
-      case 1:
-      {
+      case 1: {
         memcpy(info->cid, &controller_uid, sizeof(Steinberg::TUID));
         info->cardinality = Steinberg::PClassInfo::kManyInstances;
         class_category{kVstComponentControllerClass}.copy_to(info->category);
@@ -165,12 +159,12 @@ public:
         return Steinberg::kInvalidArgument;
     }
 
-    if constexpr (requires { T::vendor(); })
+    if constexpr(requires { T::vendor(); })
       class_vendor{avnd::get_vendor<T>()}.copy_to(info->vendor);
     else
       class_vendor{""}.copy_to(info->vendor);
 
-    if constexpr (requires { T::version(); })
+    if constexpr(requires { T::version(); })
       class_version{avnd::get_version<T>()}.copy_to(info->version);
     else
       class_version{"0.0.0"}.copy_to(info->version);
@@ -180,15 +174,13 @@ public:
   }
 
   Steinberg::tresult createInstance(
-      Steinberg::FIDString cid,
-      Steinberg::FIDString _iid,
-      void** obj) override
+      Steinberg::FIDString cid, Steinberg::FIDString _iid, void** obj) override
   {
     using namespace Steinberg::Vst;
-    if (memcmp(&component_uid, cid, sizeof(Steinberg::TUID)) == 0)
+    if(memcmp(&component_uid, cid, sizeof(Steinberg::TUID)) == 0)
     {
       FUnknown* instance = static_cast<IAudioProcessor*>(new Component);
-      if (instance->queryInterface(_iid, obj) == Steinberg::kResultOk)
+      if(instance->queryInterface(_iid, obj) == Steinberg::kResultOk)
       {
         instance->release();
         return Steinberg::kResultOk;
@@ -198,10 +190,10 @@ public:
         instance->release();
       }
     }
-    else if (memcmp(&controller_uid, cid, sizeof(Steinberg::TUID)) == 0)
+    else if(memcmp(&controller_uid, cid, sizeof(Steinberg::TUID)) == 0)
     {
       FUnknown* instance = static_cast<IEditController*>(new Controller);
-      if (instance->queryInterface(_iid, obj) == Steinberg::kResultOk)
+      if(instance->queryInterface(_iid, obj) == Steinberg::kResultOk)
       {
         instance->release();
         return Steinberg::kResultOk;

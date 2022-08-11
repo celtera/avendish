@@ -21,16 +21,16 @@ static constexpr bool valid_char_for_name(char c)
 template <typename T>
 t_symbol* symbol_from_name()
 {
-  if constexpr (const char* str; requires { str = T::c_name(); })
+  if constexpr(const char* str; requires { str = T::c_name(); })
   {
     return gensym(avnd::get_c_name<T>().data());
   }
   else
   {
     std::string name{avnd::get_name<T>()};
-    for (char& c : name)
+    for(char& c : name)
     {
-      if (!valid_char_for_name(c))
+      if(!valid_char_for_name(c))
         c = '_';
     }
     return gensym(name.c_str());
@@ -45,58 +45,42 @@ static void process_generic_message(T& implementation, t_symbol* s)
   // Gets T from effect_container<T>
   using object_type = avnd::get_object_type_t<T>;
 
-  if ("dumpall"sv == s->s_name)
+  if("dumpall"sv == s->s_name)
   {
     int k = 0;
     avnd::input_introspection<object_type>::for_all(
-        avnd::get_inputs<object_type>(implementation),
-        [&k]<typename C>(C& ctl)
-        {
+        avnd::get_inputs<object_type>(implementation), [&k]<typename C>(C& ctl) {
           constexpr auto obj_name = avnd::get_name<object_type>().data();
-          if constexpr (avnd::has_name<C>)
+          if constexpr(avnd::has_name<C>)
           {
-            if constexpr (requires { (float)ctl.value; })
+            if constexpr(requires { (float)ctl.value; })
             {
               post(
-                  "[dumpall] %s : %s = %f",
-                  obj_name,
-                  avnd::get_name<C>().data(),
+                  "[dumpall] %s : %s = %f", obj_name, avnd::get_name<C>().data(),
                   (float)ctl.value);
             }
-            else if constexpr (requires { ctl.value.c_str(); })
+            else if constexpr(requires { ctl.value.c_str(); })
             {
               post(
-                  "[dumpall] %s : %s = %s",
-                  obj_name,
-                  avnd::get_name<C>().data(),
+                  "[dumpall] %s : %s = %s", obj_name, avnd::get_name<C>().data(),
                   ctl.value.c_str());
             }
-            else if constexpr (requires { (const char*)ctl.value.data(); })
+            else if constexpr(requires { (const char*)ctl.value.data(); })
             {
               post(
-                  "[dumpall] %s : %s = %s",
-                  obj_name,
-                  avnd::get_name<C>().data(),
+                  "[dumpall] %s : %s = %s", obj_name, avnd::get_name<C>().data(),
                   ctl.value.data());
             }
           }
           else
           {
-            if constexpr (requires { (float)ctl.value; })
+            if constexpr(requires { (float)ctl.value; })
             {
-              post(
-                  "[dumpall] %s : [%d] = %f",
-                  obj_name,
-                  k,
-                  (float)ctl.value);
+              post("[dumpall] %s : [%d] = %f", obj_name, k, (float)ctl.value);
             }
-            else if constexpr (requires { ctl.value = std::string{}; })
+            else if constexpr(requires { ctl.value = std::string{}; })
             {
-              post(
-                  "[dumpall] %s : [%d] = %s",
-                  obj_name,
-                  k,
-                  ctl.value.c_str());
+              post("[dumpall] %s : [%d] = %s", obj_name, k, ctl.value.c_str());
             }
           }
           k++;
@@ -107,9 +91,9 @@ static void process_generic_message(T& implementation, t_symbol* s)
 template <typename Arg>
 static constexpr bool compatible(t_atomtype type)
 {
-  if constexpr (requires(Arg arg) { arg = 0.f; })
+  if constexpr(requires(Arg arg) { arg = 0.f; })
     return type == t_atomtype::A_FLOAT;
-  else if constexpr (requires(Arg arg) { arg = "str"; })
+  else if constexpr(requires(Arg arg) { arg = "str"; })
     return type == t_atomtype::A_SYMBOL;
 
   return false;
@@ -118,9 +102,9 @@ static constexpr bool compatible(t_atomtype type)
 template <typename Arg>
 static Arg convert(t_atom& atom)
 {
-  if constexpr (requires(Arg arg) { arg = 0.f; })
+  if constexpr(requires(Arg arg) { arg = 0.f; })
     return atom.a_w.w_float;
-  else if constexpr (requires(Arg arg) { arg = "str"; })
+  else if constexpr(requires(Arg arg) { arg = "str"; })
     return atom.a_w.w_symbol->s_name;
   else
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");

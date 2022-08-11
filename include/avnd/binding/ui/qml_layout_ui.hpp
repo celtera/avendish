@@ -47,8 +47,7 @@ public:
   void value_changed(int idx, const Val& value)
   {
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(implementation),
-        idx,
+        avnd::get_inputs(implementation), idx,
         [value]<typename C>(C& ctl) { ctl.value = value; });
   }
 
@@ -58,12 +57,9 @@ public:
     QString res;
 
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(implementation),
-        idx,
-        [&res, value]<typename C>(C& ctl)
-        {
+        avnd::get_inputs(implementation), idx, [&res, value]<typename C>(C& ctl) {
           char buf[128] = {0};
-          if constexpr (requires { ctl.display(buf, value); })
+          if constexpr(requires { ctl.display(buf, value); })
           {
             ctl.display(buf, value);
             res = QString::fromUtf8(buf);
@@ -145,18 +141,18 @@ ApplicationWindow {{
   static inline int tab_bar_k = 0;
   void createWidget(const auto& item)
   {
-    if constexpr (requires {
-                    {
-                      item
-                      } -> std::convertible_to<std::string_view>;
-                  })
+    if constexpr(requires {
+                   {
+                     item
+                     } -> std::convertible_to<std::string_view>;
+                 })
     {
       append(
           R"_(Label {{ text: "{}";  }}
 )_",
           item);
     }
-    else if constexpr (requires { (avnd::get_inputs<T>(this->implementation).*item); })
+    else if constexpr(requires { (avnd::get_inputs<T>(this->implementation).*item); })
     {
       auto& ins = avnd::get_inputs<T>(this->implementation);
       auto& control = ins.*item;
@@ -166,21 +162,19 @@ ApplicationWindow {{
 
   void createTabBar(const auto& item)
   {
-    avnd::for_each_field_ref(
-        item,
-        [this]<typename Item>(const Item& child) {
-          append(R"_(TabButton {{ text: "{}"; width: implicitWidth }})_", Item::name());
-        });
+    avnd::for_each_field_ref(item, [this]<typename Item>(const Item& child) {
+      append(R"_(TabButton {{ text: "{}"; width: implicitWidth }})_", Item::name());
+    });
   }
 
   template <typename Item>
   void createItem(const Item& item)
   {
-    if constexpr (requires { item.spacing; })
+    if constexpr(requires { item.spacing; })
     {
       append("Item {{ width: {}; height: {} }}\n", Item::width(), Item::height());
     }
-    if constexpr (requires { item.hbox; })
+    if constexpr(requires { item.hbox; })
     {
       append("RowLayout {{ width: parent.width;  \n");
       depth++;
@@ -188,7 +182,7 @@ ApplicationWindow {{
       depth--;
       append("}}\n");
     }
-    else if constexpr (requires { item.vbox; })
+    else if constexpr(requires { item.vbox; })
     {
       append("ColumnLayout {{ width: parent.width; \n");
       depth++;
@@ -196,7 +190,7 @@ ApplicationWindow {{
       depth--;
       append("\n}}\n");
     }
-    else if constexpr (requires { item.split; })
+    else if constexpr(requires { item.split; })
     {
       append("SplitView {{ width: {}; height: {} \n", Item::width(), Item::height());
       depth++;
@@ -204,7 +198,7 @@ ApplicationWindow {{
       depth--;
       append("\n}}\n");
     }
-    else if constexpr (requires { item.group; })
+    else if constexpr(requires { item.group; })
     {
       append("GroupBox {{ width: parent.width; title: \"{}\" \n", Item::name());
       depth++;
@@ -212,7 +206,7 @@ ApplicationWindow {{
       depth--;
       append("\n}}\n");
     }
-    else if constexpr (requires { item.tabs; })
+    else if constexpr(requires { item.tabs; })
     {
       const int bar = tab_bar_k++;
       append("TabBar {{ width: parent.width; id: tabbar_{}\n", bar);

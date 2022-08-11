@@ -5,24 +5,24 @@
 #include "Tunings.h"
 #include "TuningsImpl.h"
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/file_port.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
-#include <halp/file_port.hpp>
 #include <halp/midifile_port.hpp>
 #include <libremidi/message.hpp>
-#include <cmath>
+
+#include <QDebug>
 
 #include <array>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <istream>
-#include <sstream>
 #include <optional>
+#include <sstream>
 #include <strstream>
-#include <QDebug>
 
 namespace examples::helpers
 {
@@ -57,12 +57,16 @@ struct MidiFileOctaver
         }
         else
         {
-          try {
+          try
+          {
             std::istrstream s{
-                (char*)this->file.bytes.data()
-              , (std::streamsize)this->file.bytes.size()};
+                (char*)this->file.bytes.data(),
+                (std::streamsize)this->file.bytes.size()};
             self.scale = Tunings::readSCLStream(s);
-          } catch(...) { }
+          }
+          catch(...)
+          {
+          }
         }
         self.update_tuning();
       }
@@ -83,12 +87,16 @@ struct MidiFileOctaver
         }
         else
         {
-          try {
+          try
+          {
             std::istrstream s{
-                              (char*)this->file.bytes.data()
-                              , (std::streamsize)this->file.bytes.size()};
+                (char*)this->file.bytes.data(),
+                (std::streamsize)this->file.bytes.size()};
             self.mapping = Tunings::readKBMStream(s);
-          } catch(...) { }
+          }
+          catch(...)
+          {
+          }
         }
         self.update_tuning();
       }
@@ -101,7 +109,8 @@ struct MidiFileOctaver
 
   struct
   {
-    struct {
+    struct
+    {
       halp_meta(name, "Frequency output");
       float value{};
     } freq;
@@ -132,7 +141,8 @@ struct MidiFileOctaver
         this->tuning = Tunings::Tuning{};
 
       this->tuning = this->tuning.withSkippedNotesInterpolated();
-    } catch(...)
+    }
+    catch(...)
     {
       // Revert to the most basic tuning
       this->tuning = Tunings::Tuning{};
@@ -143,10 +153,7 @@ struct MidiFileOctaver
   std::optional<Tunings::KeyboardMapping> mapping;
   Tunings::Tuning tuning;
 
-  void prepare(halp::setup s)
-  {
-    update_tuning();
-  }
+  void prepare(halp::setup s) { update_tuning(); }
 
   void operator()(int N)
   {
@@ -167,9 +174,10 @@ struct MidiFileOctaver
     auto it = std::lower_bound(
         track.begin(), track.end(),
         halp::simple_midi_track_event{.bytes = {}, .tick_absolute = target_tick},
-        [] (const halp::simple_midi_track_event& lhs, const halp::simple_midi_track_event& rhs) {
-          return lhs.tick_absolute < rhs.tick_absolute;
-    });
+        [](const halp::simple_midi_track_event& lhs,
+           const halp::simple_midi_track_event& rhs) {
+      return lhs.tick_absolute < rhs.tick_absolute;
+        });
     while(it != track.end())
     {
       auto& ev = *it;
@@ -182,10 +190,10 @@ struct MidiFileOctaver
       }
 
       int note = msg.bytes[1];
-      outputs.freq.value = (tuning.frequencyForMidiNote(note) + inputs.adjust) * inputs.rescale;
+      outputs.freq.value
+          = (tuning.frequencyForMidiNote(note) + inputs.adjust) * inputs.rescale;
       break;
     }
   }
 };
 }
-

@@ -17,28 +17,25 @@ struct outputs
 
     call.context = &outlet;
     call.function = nullptr;
-    if constexpr (refl::count == 0)
+    if constexpr(refl::count == 0)
     {
-      call.function = [](void* ptr)
-      {
+      call.function = [](void* ptr) {
         t_outlet* p = static_cast<t_outlet*>(ptr);
         outlet_bang(p);
       };
     }
-    else if constexpr (refl::count == 1)
+    else if constexpr(refl::count == 1)
     {
-      if constexpr (std::is_same_v<func_t, void(float)>)
+      if constexpr(std::is_same_v<func_t, void(float)>)
       {
-        call.function = [](void* ptr, float f)
-        {
+        call.function = [](void* ptr, float f) {
           t_outlet* p = static_cast<t_outlet*>(ptr);
           outlet_float(p, f);
         };
       }
-      else if constexpr (std::is_same_v<func_t, void(const char*)>)
+      else if constexpr(std::is_same_v<func_t, void(const char*)>)
       {
-        call.function = [](void* ptr, const char* f)
-        {
+        call.function = [](void* ptr, const char* f) {
           t_outlet* p = static_cast<t_outlet*>(ptr);
           outlet_anything(p, gensym(f), 0, nullptr);
         };
@@ -56,20 +53,21 @@ struct outputs
     using func_t = R(Args...);
     using refl = avnd::function_reflection_t<func_t>;
 
-    if constexpr (refl::count == 0)
+    if constexpr(refl::count == 0)
     {
       call = [&outlet] { outlet_bang(&outlet); };
     }
-    else if constexpr (refl::count == 1)
+    else if constexpr(refl::count == 1)
     {
-      if constexpr (std::is_same_v<func_t, void(float)>)
+      if constexpr(std::is_same_v<func_t, void(float)>)
       {
         call = [&outlet](float f) { outlet_float(&outlet, f); };
       }
-      else if constexpr (std::is_same_v<func_t, void(const char*)>)
+      else if constexpr(std::is_same_v<func_t, void(const char*)>)
       {
-        call = [&outlet](const char* f)
-        { outlet_anything(&outlet, gensym(f), 0, nullptr); };
+        call = [&outlet](const char* f) {
+          outlet_anything(&outlet, gensym(f), 0, nullptr);
+        };
       }
     }
     else
@@ -82,11 +80,11 @@ struct outputs
   static void setup(C& out, t_outlet& outlet)
   {
     using call_type = decltype(C::call);
-    if constexpr (avnd::function_view_ish<call_type>)
+    if constexpr(avnd::function_view_ish<call_type>)
     {
       init_func_view(out.call, outlet);
     }
-    else if constexpr (avnd::function_ish<call_type>)
+    else if constexpr(avnd::function_ish<call_type>)
     {
       init_func(out.call, outlet);
     }
@@ -101,10 +99,8 @@ struct outputs
   {
     int k = 0;
     avnd::output_introspection<T>::for_all(
-        avnd::get_outputs<T>(implementation),
-        [this, &k]<typename C>(C& ctl)
-        {
-          if constexpr (requires(float v) { v = ctl.value; })
+        avnd::get_outputs<T>(implementation), [this, &k]<typename C>(C& ctl) {
+          if constexpr(requires(float v) { v = ctl.value; })
           {
             outlet_float(outlets[k], ctl.value);
           }
@@ -116,9 +112,7 @@ struct outputs
   {
     int out_k = 0;
     avnd::output_introspection<T>::for_all(
-        avnd::get_outputs<T>(implementation),
-        [this, &out_k, &x_obj](auto& ctl)
-        {
+        avnd::get_outputs<T>(implementation), [this, &out_k, &x_obj](auto& ctl) {
           auto ptr = outlet_new(&x_obj, symbol_for_port(ctl)->s_name);
           outlets[out_k] = static_cast<t_outlet*>(ptr);
           this->setup(ctl, *outlets[out_k]);
