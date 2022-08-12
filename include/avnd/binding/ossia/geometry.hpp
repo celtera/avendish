@@ -70,7 +70,8 @@ constexpr auto get_cull_mode(const T& t) -> decltype(ossia::geometry::cull_mode)
   return m(t, ossia::geometry::none);
 }
 
-template <avnd::geometry_port T>
+template <typename T>
+requires (avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
 void load_geometry(T& ctrl, ossia::geometry& geom)
 {
   if(!ctrl.dirty)
@@ -79,7 +80,6 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
     return;
   }
 
-  qDebug() << "Loading geometry from" << typeid(T).name();
   ctrl.dirty = false;
   geom.dirty = true;
 
@@ -299,8 +299,24 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
       geom.attributes.push_back(a);
     });
   }
+}
 
-  qDebug("ayy");
+
+template <typename T>
+requires (avnd::static_geometry_type<typename decltype(T::mesh)::value_type> || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>)
+    void load_geometry(T& ctrl, ossia::mesh_list& geom)
+{
+  const auto N = ctrl.mesh.size();
+  geom.dirty = ctrl.dirty;
+  if(!ctrl.dirty)
+    return;
+  ctrl.dirty = false;
+  geom.meshes.resize(N);
+  for(int i = 0; i < N; i++)
+  {
+    load_geometry(ctrl.mesh[i], geom.meshes[i]);
+    geom.dirty |= geom.meshes[i].dirty;
+  }
 }
 
 template <typename T>
@@ -332,7 +348,8 @@ constexpr auto to_cull_mode(auto v)
   return m(v, decltype(T::cull_mode){});
 }
 
-template <avnd::geometry_port T>
+template <typename T>
+requires (avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
 void geometry_from_ossia(const ossia::geometry& src, T& dst)
 {
   if(!src.dirty)
@@ -402,4 +419,10 @@ void geometry_from_ossia(const ossia::geometry& src, T& dst)
   }
 }
 
+template <typename T>
+requires (avnd::static_geometry_type<typename decltype(T::mesh)::value_type> || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>)
+    void geometry_from_ossia(const ossia::geometry& src, T& dst)
+{
+
+}
 }

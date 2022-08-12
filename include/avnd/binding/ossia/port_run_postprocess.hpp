@@ -178,7 +178,23 @@ struct process_after_run
   void operator()(
       Field& ctrl, ossia::geometry_outlet& port, avnd::field_index<Idx>) const noexcept
   {
-    load_geometry(ctrl, port.data.geometry);
+    using namespace avnd;
+    if constexpr(static_geometry_type<Field> || dynamic_geometry_type<Field>)
+    {
+      port.data.meshes.meshes.resize(1);
+      port.data.meshes.dirty = ctrl.mesh.dirty;
+      load_geometry(ctrl, port.data.meshes.meshes[0]);
+    }
+    else if constexpr(static_geometry_type<decltype(Field::mesh)> || dynamic_geometry_type<decltype(Field::mesh)>)
+    {
+      port.data.meshes.meshes.resize(1);
+      port.data.meshes.dirty = ctrl.mesh.dirty;
+      load_geometry(ctrl.mesh, port.data.meshes.meshes[0]);
+    }
+    else
+    {
+      load_geometry(ctrl, port.data.meshes);
+    }
   }
 };
 

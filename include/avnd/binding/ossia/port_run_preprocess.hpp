@@ -290,7 +290,7 @@ struct process_before_run
   void operator()(
       Field& ctrl, ossia::geometry_inlet& port, avnd::field_index<Idx>) const noexcept
   {
-    geometry_from_ossia(port.data.geometry, ctrl);
+    geometry_from_ossia(port.data.meshes, ctrl);
   }
 
   template <avnd::soundfile_port Field, std::size_t Idx>

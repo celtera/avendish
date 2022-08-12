@@ -54,7 +54,7 @@ concept uniform_port = requires
 };
 
 template <typename T>
-concept static_geometry_port = requires(T t)
+concept static_geometry_type = requires(T t)
 {
   sizeof(t.buffers);
   sizeof(t.input);
@@ -64,7 +64,7 @@ concept static_geometry_port = requires(T t)
 &&(
     requires(T t) { t.vertices; } || requires(T t) { t.indices; });
 template <typename T>
-concept dynamic_geometry_port = requires(T t)
+concept dynamic_geometry_type = requires(T t)
 {
   t.buffers.size();
   t.input.size();
@@ -74,7 +74,14 @@ concept dynamic_geometry_port = requires(T t)
 &&(
     requires(T t) { t.vertices; } || requires(T t) { t.indices; });
 template <typename T>
-concept geometry_port = static_geometry_port<T> || dynamic_geometry_port<T>;
+concept geometry_port =
+       static_geometry_type<T>
+    || dynamic_geometry_type<T>
+    || static_geometry_type<decltype(T::mesh)>
+    || dynamic_geometry_type<decltype(T::mesh)>
+    || static_geometry_type<typename decltype(T::mesh)::value_type>
+    || dynamic_geometry_type<typename decltype(T::mesh)::value_type>
+;
 }
 
 /*
