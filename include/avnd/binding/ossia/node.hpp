@@ -5,6 +5,7 @@
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
 #include <avnd/binding/ossia/port_setup.hpp>
 #include <avnd/binding/ossia/soundfiles.hpp>
+#include <avnd/binding/ossia/time_controls.hpp>
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/gfx.hpp>
 #include <avnd/concepts/midi_port.hpp>
@@ -210,6 +211,7 @@ public:
 
   int buffer_size{};
   double sample_rate{};
+  double tempo{ossia::root_tempo};
 
   [[no_unique_address]] avnd::effect_container<T> impl;
 
@@ -229,6 +231,8 @@ public:
 
   [[no_unique_address]] avnd::control_storage<T> control_buffers;
 
+  [[no_unique_address]] oscr::time_control_storage<T> time_controls;
+
   [[no_unique_address]] avnd::callback_storage<T> callbacks;
 
   [[no_unique_address]] oscr::soundfile_storage<T> soundfiles;
@@ -242,6 +246,7 @@ public:
   [[no_unique_address]] oscr::spectrum_storage<T> spectrums;
 
   [[no_unique_address]] controls_queue<T> control;
+
 
   using control_input_values_type
       = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
@@ -494,8 +499,23 @@ public:
     }
   }
 
-  bool prepare_run(int start, int frames)
+  void update_tempo(double new_tempo)
   {
+    using time_controls = avnd::time_control_input_introspection<T>;
+    if constexpr(time_controls::size > 0)
+    {
+      this->tempo = new_tempo;
+      time_controls::for_all_n2(this->impl.inputs(), [this, new_tempo] (auto& field, auto pred_idx, auto f_idx) {
+        this->time_controls.set_tempo(this->impl, pred_idx, f_idx, new_tempo);
+      });
+    }
+  }
+
+  bool prepare_run(const ossia::token_request& tk, int start, int frames)
+  {
+    // Update metadatas
+    this->update_tempo(tk.tempo);
+
     // Check all the audio channels
     bool changed = static_cast<AudioCount&>(*this).scan_audio_input_channels();
 
@@ -620,7 +640,7 @@ public:
           constexpr M field;
           using arg_type = std::decay_t<avnd::second_message_argument<M>>;
           arg_type arg;
-          from_ossia_value(field, val, arg);
+          from_ossia_value(field, val, arg, avnd::field_index<Idx>{});
           for(auto& m : this->impl.effects())
           {
             if constexpr(std::is_member_function_pointer_v<decltype(f)>)
@@ -708,6 +728,30 @@ public:
   std::string label() const noexcept override
   {
     return std::string{avnd::get_name<T>()};
+  }
+
+  template<typename Field, typename Val, std::size_t NField>
+  inline constexpr void from_ossia_value(Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField>)
+  {
+    return oscr::from_ossia_value(field, src, dst);
+  }
+
+  // Special case: this one may require the current tempo information
+  template <avnd::time_control Field, typename Val, std::size_t NField>
+  inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
+  {
+    auto vec = ossia::convert<ossia::vec2f>(src);
+    if(vec[1] == 0.)
+    {
+      // Time in seconds, free mode
+      dst = vec[0];
+      this->time_controls.update_control(this->impl, idx, vec[0], false);
+    }
+    else
+    {
+      dst = to_seconds(vec[0], this->tempo);
+      this->time_controls.update_control(this->impl, idx, vec[0], true);
+    }
   }
 
   void soundfile_release_request(std::string& str, int idx)

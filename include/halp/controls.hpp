@@ -179,6 +179,36 @@ using knob_i32 = halp::knob_t<int, lit, setup>;
 // template <static_string lit, long double min, long double max, long double init>
 // using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
 
+/// Time chooser ///
+struct ratio { int num{1}, denom{1}; };
+template <typename T, static_string lit, range setup>
+struct time_chooser_t
+{
+  enum widget
+  {
+    time_chooser
+  };
+  static clang_buggy_consteval auto range()
+  {
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+  }
+
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  T value = setup.init;
+
+  operator T&() noexcept { return value; }
+  operator T() const noexcept { return value; }
+  auto& operator=(T t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
+
+template <static_string lit, range setup = range{.min = 0.001, .max = 5., .init = 0.25}>
+using time_chooser = time_chooser_t<float, lit, setup>;
+
 /// Toggle ///
 
 struct toggle_setup

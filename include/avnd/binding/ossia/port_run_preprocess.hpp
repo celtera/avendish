@@ -73,11 +73,11 @@ struct apply_window
   }
 };
 
-template <typename Field>
-inline void update_value(auto& obj, Field& field, const ossia::value& src, auto& dst)
+template <typename Field, std::size_t Idx>
+inline void update_value(auto& node, auto& obj, Field& field, const ossia::value& src, auto& dst, avnd::field_index<Idx> idx)
 {
-  from_ossia_value(field, src, dst);
-  if constexpr(requires { &Field::update; })
+  node.from_ossia_value(field, src, dst, idx);
+  if constexpr(requires { field.update(obj); })
   {
     field.update(obj);
   }
@@ -91,12 +91,12 @@ struct process_before_run
 
   template <avnd::parameter Field, std::size_t Idx>
   requires(!avnd::control<Field>) void init_value(
-      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
+      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
     if(!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
-      update_value(impl, ctrl, last, ctrl.value);
+      update_value(self, impl, ctrl, last, ctrl.value, idx);
     }
   }
 
@@ -107,7 +107,7 @@ struct process_before_run
     if(!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
-      update_value(impl, ctrl, last, ctrl.value);
+      update_value(self, impl, ctrl, last, ctrl.value, idx);
 
       // Get the index of the control in [0; N[
       using type = typename Exec_T::processor_type;
@@ -121,7 +121,7 @@ struct process_before_run
 
   template <avnd::parameter Field, std::size_t Idx>
   requires(!avnd::sample_accurate_parameter<Field>) void operator()(
-      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
+      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
     init_value(ctrl, port, avnd::field_index<Idx>{});
   }
@@ -136,7 +136,7 @@ struct process_before_run
     for(auto& [val, ts] : port->get_data())
     {
       auto& v = ctrl.values[ts].emplace();
-      update_value(impl, ctrl, val, v);
+      update_value(self, impl, ctrl, val, v);
     }
   }
 
@@ -158,7 +158,7 @@ struct process_before_run
     init_value(ctrl, port, avnd::field_index<Idx>{});
     for(auto& [val, ts] : port->get_data())
     {
-      update_value(impl, ctrl, val, ctrl.values[ts]);
+      update_value(self, impl, ctrl, val, ctrl.values[ts]);
     }
   }
 

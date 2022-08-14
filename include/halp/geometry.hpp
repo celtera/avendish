@@ -1,6 +1,7 @@
 #pragma once
 #include <cinttypes>
 #include <vector>
+#include <memory>
 
 namespace halp
 {

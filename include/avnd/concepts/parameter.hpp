@@ -134,6 +134,8 @@ template <typename T>
 concept bool_control = bool_parameter<T> && control<T>;
 template <typename T>
 concept string_control = string_parameter<T> && control<T>;
+template <typename T>
+concept time_control = float_control<T> && requires { T::time_chooser; };
 
 template <typename T>
 concept int_value_port = int_parameter<T> && !control<T>;

@@ -137,7 +137,7 @@ public:
   {
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(start, frames))
+    if(!this->prepare_run(tk, start, frames))
     {
       this->finish_run();
       return;

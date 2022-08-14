@@ -29,6 +29,12 @@ struct mapped_control_input_introspection
 };
 
 template <typename T>
+struct time_control_input_introspection
+    : time_control_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct linear_timed_parameter_input_introspection
     : linear_timed_parameter_introspection<typename inputs_type<T>::type>
 {

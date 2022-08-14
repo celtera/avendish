@@ -30,6 +30,7 @@ enum class widget_type
   choices,
   xy,
   color,
+  time_chooser,
   bargraph,
   range
 };
@@ -54,6 +55,15 @@ struct slider_reflection
   static constexpr widget_type widget = widget_type::slider;
   slider_orientation orientation{slider_orientation::horizontal};
 };
+
+template <typename T>
+struct time_chooser_reflection
+{
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::time_chooser;
+  slider_orientation orientation{slider_orientation::horizontal};
+};
+
 template <typename T>
 struct range_slider_reflection
 {
@@ -88,6 +98,10 @@ consteval auto get_widget()
       requires { T::widget::toggle; } || requires { T::widget::checkbox; })
   {
     return widget_reflection<bool>{widget_type::toggle};
+  }
+  else if constexpr(requires { T::widget::time_chooser; })
+  {
+    return time_chooser_reflection<float>{slider_orientation::horizontal};
   }
   else if constexpr(requires { T::widget::hslider; })
   {

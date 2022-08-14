@@ -42,6 +42,13 @@ struct mapped_control_introspection : predicate_introspection<T, is_mapped_contr
 };
 
 template <typename Field>
+using is_time_control_t = boost::mp11::mp_bool<time_control<Field>>;
+template <typename T>
+struct time_control_introspection : predicate_introspection<T, is_time_control_t>
+{
+};
+
+template <typename Field>
 using is_linear_timed_parameter_t
     = boost::mp11::mp_bool<linear_sample_accurate_parameter<Field>>;
 template <typename T>
