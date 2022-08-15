@@ -136,7 +136,7 @@ struct process_before_run
     for(auto& [val, ts] : port->get_data())
     {
       auto& v = ctrl.values[ts].emplace();
-      update_value(self, impl, ctrl, val, v);
+      update_value(self, impl, ctrl, val, v, avnd::field_index<Idx>{});
     }
   }
 
@@ -158,7 +158,7 @@ struct process_before_run
     init_value(ctrl, port, avnd::field_index<Idx>{});
     for(auto& [val, ts] : port->get_data())
     {
-      update_value(self, impl, ctrl, val, ctrl.values[ts]);
+      update_value(self, impl, ctrl, val, ctrl.values[ts], avnd::field_index<Idx>{});
     }
   }
 

@@ -2,7 +2,6 @@
 
 #include <Gamma/Effects.h>
 #include <Gamma/Oscillator.h>
-
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
@@ -25,7 +24,10 @@ public:
   struct inputs
   {
     halp::hslider_f32<"Amount", halp::range{0., 1e-2, 1e-3}> amount;
-    halp::hslider_f32<"Delay", halp::range{0., 10., 0.5}> delay;
+    struct : halp::time_chooser<"Delay", halp::range{0., 10., 0.5}>
+    {
+      using mapper = halp::log_mapper<std::ratio<95, 100>>;
+    } delay;
     halp::hslider_f32<"Frequency", halp::range{0.001, 100., 0.5}> freq;
     halp::hslider_f32<"Feed-forward", halp::range{-0.99, 0.99, 0.7}> ffd;
     halp::hslider_f32<"Feed-back", halp::range{-0.99, 0.99, 0.7}> fbk;
@@ -35,10 +37,7 @@ public:
   {
   };
 
-  void prepare(halp::setup info) noexcept
-  {
-    gam::sampleRate(info.rate);
-  }
+  void prepare(halp::setup info) noexcept { gam::sampleRate(info.rate); }
 
   double operator()(double v, const inputs& i, outputs& o) noexcept
   {

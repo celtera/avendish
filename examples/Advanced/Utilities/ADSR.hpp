@@ -5,6 +5,7 @@
 #include <Gamma/Envelope.h>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/meta.hpp>
 
 #include <optional>
 

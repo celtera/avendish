@@ -592,7 +592,7 @@ public:
 
           using arg_type = std::decay_t<avnd::first_message_argument<M>>;
           arg_type arg;
-          from_ossia_value(field, val, arg);
+          from_ossia_value(field, val, arg, avnd::field_index<Idx>{});
 
           for(auto& m : this->impl.effects())
           {

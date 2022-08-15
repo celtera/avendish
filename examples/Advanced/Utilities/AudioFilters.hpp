@@ -200,10 +200,13 @@ public:
   using tick = halp::tick;
   void operator()(halp::tick tck) noexcept
   {
-    filter.processBlock(tck.frames, inputs.audio.samples);
     const int C = inputs.audio.channels;
-    for(int i = 0; i < C; i++)
-      std::copy_n(inputs.audio.samples[i], tck.frames, outputs.audio.samples[i]);
+    if(C > 0)
+    {
+      filter.processBlock(tck.frames, inputs.audio.samples);
+      for(int i = 0; i < C; i++)
+        std::copy_n(inputs.audio.samples[i], tck.frames, outputs.audio.samples[i]);
+    }
   }
 
 private:

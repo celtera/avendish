@@ -64,6 +64,7 @@ public:
     return false;
   }
 
+  OSSIA_MAXIMUM_INLINE
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
     auto [start, frames] = st.timings(tk);
