@@ -91,7 +91,7 @@ struct slider_t
   T value = setup.init;
 
   operator T&() noexcept { return value; }
-  operator T() const noexcept { return value; }
+  operator const T&() const noexcept { return value; }
   auto& operator=(T t) noexcept
   {
     value = t;
@@ -163,7 +163,7 @@ struct knob_t
   T value = setup.init;
 
   operator T&() noexcept { return value; }
-  operator T() const noexcept { return value; }
+  operator const T&() const noexcept { return value; }
   auto& operator=(T t) noexcept
   {
     value = t;
@@ -198,7 +198,7 @@ struct time_chooser_t
   T value = setup.init;
 
   operator T&() noexcept { return value; }
-  operator T() const noexcept { return value; }
+  operator const T&() const noexcept { return value; }
   auto& operator=(T t) noexcept
   {
     value = t;
@@ -230,7 +230,7 @@ struct toggle_t
   bool value = setup.init;
 
   operator bool&() noexcept { return value; }
-  operator bool() const noexcept { return value; }
+  operator const bool&() const noexcept { return value; }
   auto& operator=(bool t) noexcept
   {
     value = t;
@@ -265,7 +265,7 @@ struct maintained_button_t
 
   bool value = false;
   operator bool&() noexcept { return value; }
-  operator bool() const noexcept { return value; }
+  operator const bool&() const noexcept { return value; }
   auto& operator=(bool t) noexcept
   {
     value = t;
@@ -372,7 +372,7 @@ struct enum_t
 
   Enum value{};
   operator Enum&() noexcept { return value; }
-  operator Enum() const noexcept { return value; }
+  operator const Enum&() const noexcept { return value; }
   auto& operator=(Enum t) noexcept
   {
     value = t;
@@ -415,7 +415,7 @@ struct combobox_t
 
   value_type value{};
   operator value_type&() noexcept { return value; }
-  operator value_type() const noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
   auto& operator=(value_type t) noexcept { value = t; return *this; }
 };
 */
@@ -451,7 +451,7 @@ struct xy_pad_t
   value_type value = {setup.init, setup.init};
 
   operator value_type&() noexcept { return value; }
-  operator value_type() const noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
   auto& operator=(value_type t) noexcept
   {
     value = t;
@@ -489,7 +489,7 @@ struct range_slider_t
   value_type value{setup.init.start, setup.init.end};
 
   operator value_type&() noexcept { return value; }
-  operator value_type() const noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
   auto& operator=(value_type t) noexcept
   {
     value = t;
@@ -533,7 +533,7 @@ struct color_chooser
   value_type value = setup.init;
 
   operator value_type&() noexcept { return value; }
-  operator value_type() const noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
   auto& operator=(value_type t) noexcept
   {
     value = t;
@@ -693,7 +693,7 @@ struct soundfile_port
   {                                                      \
     return value;                                        \
   }                                                      \
-  operator enum_type() const noexcept                    \
+  operator const enum_type&() const noexcept             \
   {                                                      \
     return value;                                        \
   }                                                      \
@@ -729,7 +729,7 @@ struct soundfile_port
   {                                                                            \
     return value;                                                              \
   }                                                                            \
-  operator enum_type() const noexcept                                          \
+  operator const enum_type&() const noexcept                                   \
   {                                                                            \
     return value;                                                              \
   }                                                                            \
