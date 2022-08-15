@@ -3,6 +3,7 @@
 #include <Gamma/Effects.h>
 #include <Gamma/Oscillator.h>
 #include <halp/audio.hpp>
+#include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
@@ -45,7 +46,9 @@ public:
 
   void prepare(halp::setup info) noexcept
   {
-    gam::sampleRate(info.rate);
+    delay.set_sample_rate(info.rate);
+    lpf.set_sample_rate(info.rate);
+
     lpf.type(gam::LOW_PASS);
     delay.maxDelay(30.);
   }
@@ -64,8 +67,8 @@ public:
     return s * (1. - i.drywet) + echo * i.drywet;
   }
 
-  gam::Delay<> delay;
-  gam::OnePole<> lpf;
+  gam::Delay<double, gam::ipl::Linear, halp::compat::gamma_domain> delay;
+  gam::OnePole<double, double, halp::compat::gamma_domain> lpf;
 };
 
 }

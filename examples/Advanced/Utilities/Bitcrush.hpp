@@ -1,9 +1,8 @@
 #pragma once
 
 #include <Gamma/Effects.h>
-#include <Gamma/Oscillator.h>
-
 #include <halp/audio.hpp>
+#include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
@@ -32,10 +31,7 @@ public:
   {
   };
 
-  void prepare(halp::setup info) noexcept
-  {
-    gam::sampleRate(info.rate);
-  }
+  void prepare(halp::setup info) noexcept { crush.set_sample_rate(info.rate); }
 
   double operator()(double v, const inputs& i, outputs& o) noexcept
   {
@@ -44,7 +40,7 @@ public:
     return crush(v);
   }
 
-  gam::Quantizer<> crush;
+  gam::Quantizer<double, halp::compat::gamma_domain> crush;
 };
 
 }

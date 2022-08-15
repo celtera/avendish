@@ -4,6 +4,7 @@
 
 #include <Gamma/Envelope.h>
 #include <halp/audio.hpp>
+#include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 
@@ -67,7 +68,8 @@ public:
 
   void prepare(halp::setup info) noexcept
   {
-    gam::sampleRate(info.rate);
+    ad.set_sample_rate(info.rate);
+    adsr.set_sample_rate(info.rate);
     ad.finish();
     adsr.finish();
     was_holding = false;
@@ -114,8 +116,8 @@ public:
   }
 
 private:
-  gam::AD<float, float> ad;
-  gam::ADSR<float, float> adsr;
+  gam::AD<float, float, halp::compat::gamma_domain> ad;
+  gam::ADSR<float, float, halp::compat::gamma_domain> adsr;
   bool was_holding = false;
 };
 }

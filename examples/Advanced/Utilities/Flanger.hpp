@@ -3,6 +3,7 @@
 #include <Gamma/Effects.h>
 #include <Gamma/Oscillator.h>
 #include <halp/audio.hpp>
+#include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
@@ -37,7 +38,11 @@ public:
   {
   };
 
-  void prepare(halp::setup info) noexcept { gam::sampleRate(info.rate); }
+  void prepare(halp::setup info) noexcept
+  {
+    comb.set_sample_rate(info.rate);
+    mod.set_sample_rate(info.rate);
+  }
 
   double operator()(double v, const inputs& i, outputs& o) noexcept
   {
@@ -48,8 +53,9 @@ public:
     return comb(v);
   }
 
-  gam::Comb<float, gam::ipl::AllPass> comb{1. / 20., 1. / 500., 1, 0};
-  gam::LFO<> mod{0.5};
+  gam::Comb<double, gam::ipl::AllPass, double, halp::compat::gamma_domain> comb{
+      1. / 20., 1. / 500., 1, 0};
+  gam::LFO<gam::phsInc::Loop, halp::compat::gamma_domain> mod{0.5};
 };
 
 }

@@ -4,6 +4,7 @@
 #include <boost/math/constants/constants.hpp>
 #include <cmath>
 #include <halp/audio.hpp>
+#include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 
@@ -17,7 +18,6 @@ struct DynamicsProcessor
   void prepare(halp::setup info) noexcept
   {
     this->info = info;
-    gam::sampleRate(info.rate);
     this->m_ampEnvelope = 0;
     this->m_gainEnvelope = 1;
 
@@ -48,6 +48,7 @@ struct DynamicsProcessor
       this->m_lookahead.resize(in_channels);
       for(int c = 0; c < in_channels; c++)
       {
+        m_lookahead[c].set_sample_rate(info.rate);
         m_lookahead[c].maxDelay(0.1, false);
       }
     }
@@ -181,7 +182,8 @@ struct DynamicsProcessor
 private:
   double m_ampEnvelope = 0;
   double m_gainEnvelope = 1;
-  std::vector<gam::Delay<double>> m_lookahead;
+  std::vector<gam::Delay<double, gam::ipl::Linear, halp::compat::gamma_domain>>
+      m_lookahead;
 };
 
 /**
