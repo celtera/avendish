@@ -163,7 +163,7 @@ template <typename Impl, typename Inputs>
 struct Filter
 {
 public:
-  halp_meta(category, "Audio/Filter")
+  halp_meta(category, "Audio/Filters")
   halp_meta(author, "Vinnie Falco, DSPFilters library")
 
   Inputs inputs;

@@ -25,6 +25,7 @@ enum class widget_type
   slider,
   spinbox,
   knob,
+  iknob,
   lineedit,
   combobox,
   choices,
@@ -191,6 +192,10 @@ consteval auto get_widget()
     {
       return widget_reflection<float>{widget_type::knob};
     }
+  }
+  else if constexpr(requires { T::widget::iknob; })
+  {
+    return widget_reflection<int>{widget_type::knob};
   }
   else if constexpr(requires { T::widget::lineedit; })
   {

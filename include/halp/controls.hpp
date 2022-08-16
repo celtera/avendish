@@ -176,6 +176,34 @@ using knob_f32 = halp::knob_t<float, lit, setup>;
 template <static_string lit, irange setup = default_irange<int>>
 using knob_i32 = halp::knob_t<int, lit, setup>;
 
+// For the case where we want a "float value;" but an integer widget
+template <typename T, static_string lit, auto setup>
+struct iknob_t
+{
+  enum widget
+  {
+    iknob
+  };
+  static clang_buggy_consteval auto range()
+  {
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+  }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  T value = setup.init;
+
+  operator T&() noexcept { return value; }
+  operator const T&() const noexcept { return value; }
+  auto& operator=(T t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
+
+template <static_string lit, irange setup = default_irange<int>>
+using iknob_f32 = halp::knob_t<float, lit, setup>;
+
 // template <static_string lit, long double min, long double max, long double init>
 // using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
 
@@ -216,7 +244,7 @@ struct toggle_setup
   bool init;
 };
 
-template <static_string lit, toggle_setup setup = toggle_setup{false}>
+template <static_string lit, typename T, auto setup>
 struct toggle_t
 {
   enum widget
@@ -227,11 +255,11 @@ struct toggle_t
   static clang_buggy_consteval auto range() { return setup; }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  bool value = setup.init;
+  T value = setup.init;
 
-  operator bool&() noexcept { return value; }
-  operator const bool&() const noexcept { return value; }
-  auto& operator=(bool t) noexcept
+  operator T&() noexcept { return value; }
+  operator const T&() const noexcept { return value; }
+  auto& operator=(T t) noexcept
   {
     value = t;
     return *this;
@@ -240,7 +268,10 @@ struct toggle_t
 
 // Necessary because we have that "toggle" enum member..
 template <static_string lit, toggle_setup setup = toggle_setup{false}>
-using toggle = toggle_t<lit, setup>;
+using toggle = toggle_t<lit, bool, setup>;
+
+template <static_string lit, toggle_setup setup = toggle_setup{false}>
+using toggle_f32 = toggle_t<lit, float, halp::range{0., 1., setup.init ? 1.f : 0.f}>;
 
 /// Button ///
 struct impulse

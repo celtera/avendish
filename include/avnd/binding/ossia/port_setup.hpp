@@ -147,7 +147,10 @@ struct setup_value_port
   ossia::domain range_to_domain()
   {
     constexpr auto dom = avnd::get_range<T>();
-    return ossia::make_domain(dom.min, dom.max);
+    if constexpr(std::is_floating_point_v<decltype(dom.min)>)
+      return ossia::make_domain((float)dom.min, (float)dom.max);
+    else
+      return ossia::make_domain(dom.min, dom.max);
   }
   template <avnd::string_parameter T>
   ossia::domain range_to_domain()
