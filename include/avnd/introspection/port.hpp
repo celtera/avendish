@@ -177,6 +177,12 @@ using is_raw_file_t = boost::mp11::mp_bool<raw_file_port<Field>>;
 template <typename T>
 using raw_file_introspection = predicate_introspection<T, is_raw_file_t>;
 
+// Any kind of file
+template <typename Field>
+using is_file_t = boost::mp11::mp_bool<file_port<Field>>;
+template <typename T>
+using file_introspection = predicate_introspection<T, is_file_t>;
+
 // FFT
 template <typename Field>
 using is_spectrum_split_channel_port_t
