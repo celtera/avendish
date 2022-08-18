@@ -18,3 +18,9 @@
   {                     \
     __VA_ARGS__         \
   }
+
+#if defined(_MSC_VER)
+#define HALP_RESTRICT __restrict
+#else
+#define HALP_RESTRICT __restrict__
+#endif
