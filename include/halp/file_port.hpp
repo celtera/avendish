@@ -41,6 +41,7 @@ struct mmap_file_view
 template <halp::static_string lit, typename FileType = text_file_view>
 struct file_port
 {
+  using file_type = FileType;
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   HALP_INLINE_FLATTEN operator FileType&() noexcept { return file; }

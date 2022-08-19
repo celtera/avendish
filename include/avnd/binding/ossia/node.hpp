@@ -292,9 +292,6 @@ public:
 
     // TODO
     this->impl.init_channels(2, 2);
-
-    // Initialize the other ports
-    this->finish_init();
   }
 
   template <typename Functor>
