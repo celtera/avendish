@@ -6,6 +6,13 @@
 namespace halp
 {
 
+struct mesh
+{
+  float transform[16]{};
+  bool dirty_mesh = false;
+  bool dirty_transform = false;
+};
+
 // In this example the vertex buffer has
 // all the position attributes, then all the normal attributes
 struct position_normals_geometry
@@ -89,7 +96,6 @@ struct position_normals_geometry
   } input;
 
   int vertices = 0;
-  bool dirty{};
   enum
   {
     triangles,
@@ -186,8 +192,6 @@ struct dynamic_geometry
       uint32
     } format{};
   } index;
-
-  bool dirty{};
 };
 
 }

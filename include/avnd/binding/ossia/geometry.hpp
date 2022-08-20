@@ -74,15 +74,6 @@ template <typename T>
 requires (avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
 void load_geometry(T& ctrl, ossia::geometry& geom)
 {
-  if(!ctrl.dirty)
-  {
-    geom.dirty = false;
-    return;
-  }
-
-  ctrl.dirty = false;
-  geom.dirty = true;
-
   if constexpr(requires { ctrl.vertices; })
     geom.vertices = ctrl.vertices;
   if constexpr(requires { ctrl.indices; })
@@ -304,18 +295,13 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
 
 template <typename T>
 requires (avnd::static_geometry_type<typename decltype(T::mesh)::value_type> || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>)
-    void load_geometry(T& ctrl, ossia::mesh_list& geom)
+void load_geometry(T& ctrl, ossia::mesh_list& geom)
 {
   const auto N = ctrl.mesh.size();
-  geom.dirty = ctrl.dirty;
-  if(!ctrl.dirty)
-    return;
-  ctrl.dirty = false;
   geom.meshes.resize(N);
   for(int i = 0; i < N; i++)
   {
     load_geometry(ctrl.mesh[i], geom.meshes[i]);
-    geom.dirty |= geom.meshes[i].dirty;
   }
 }
 
@@ -352,14 +338,6 @@ template <typename T>
 requires (avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
 void geometry_from_ossia(const ossia::geometry& src, T& dst)
 {
-  if(!src.dirty)
-  {
-    dst.dirty = false;
-    return;
-  }
-  // src.dirty = false;
-  dst.dirty = true;
-
   if constexpr(requires { dst.vertices; })
     dst.vertices = src.vertices;
   if constexpr(requires { dst.indices; })

@@ -30,6 +30,9 @@ enum class widget_type
   combobox,
   choices,
   xy,
+  xy_spinbox,
+  xyz,
+  xyz_spinbox,
   color,
   time_chooser,
   bargraph,
@@ -173,6 +176,14 @@ consteval auto get_widget()
   }
   else if constexpr(requires { T::widget::spinbox; })
   {
+    if constexpr(requires { T::widget::xyz; })
+    {
+      return widget_reflection<float>{widget_type::xyz_spinbox};
+    }
+    else if constexpr(requires { T::widget::xy; })
+    {
+      return widget_reflection<float>{widget_type::xy_spinbox};
+    }
     if constexpr(std::is_integral_v<value_type>)
     {
       return widget_reflection<int>{widget_type::spinbox};
@@ -210,6 +221,10 @@ consteval auto get_widget()
       requires { T::widget::combobox; } || requires { T::widget::list; })
   {
     return widget_reflection<value_type>{widget_type::combobox};
+  }
+  else if constexpr(requires { T::widget::xyz; })
+  {
+    return widget_reflection<value_type>{widget_type::xyz};
   }
   else if constexpr(requires { T::widget::xy; })
   {

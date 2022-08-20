@@ -465,6 +465,7 @@ struct xy_type
     return *this;
   }
 };
+
 template <typename T, static_string lit, range setup>
 struct xy_pad_t
 {
@@ -493,6 +494,50 @@ struct xy_pad_t
 template <static_string lit, range setup = default_range<float>>
 using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
+
+template <typename T>
+struct xyz_type
+{
+  T x, y, z;
+
+  constexpr xyz_type& operator=(T single) noexcept
+  {
+    x = single;
+    y = single;
+    z = single;
+    return *this;
+  }
+};
+
+
+template <typename T, static_string lit, range setup>
+struct xyz_spinboxes_t
+{
+  using value_type = xyz_type<T>;
+  enum widget
+  {
+    xyz, spinbox
+  };
+  static clang_buggy_consteval auto range() noexcept
+  {
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+  }
+  static clang_buggy_consteval auto name() noexcept { return std::string_view{lit.value}; }
+
+  value_type value = {setup.init, setup.init, setup.init};
+
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
+
+template <static_string lit, range setup = default_range<float>>
+using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;
+
 /// 1D range ///
 template <typename T>
 struct range_slider_value
@@ -514,8 +559,8 @@ struct range_slider_t
   {
     hrange_slider
   };
-  static clang_buggy_consteval auto range() { return setup; }
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto range() noexcept { return setup; }
+  static clang_buggy_consteval auto name() noexcept { return std::string_view{lit.value}; }
 
   value_type value{setup.init.start, setup.init.end};
 

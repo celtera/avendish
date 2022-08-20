@@ -179,22 +179,44 @@ struct process_after_run
       Field& ctrl, ossia::geometry_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     using namespace avnd;
-    if constexpr(static_geometry_type<Field> || dynamic_geometry_type<Field>)
+    bool mesh_dirty{};
+    bool tform_dirty{};
+    mesh_dirty = ctrl.dirty_mesh;
+
+    if(ctrl.dirty_mesh)
     {
-      port.data.meshes.meshes.resize(1);
-      port.data.meshes.dirty = ctrl.mesh.dirty;
-      load_geometry(ctrl, port.data.meshes.meshes[0]);
+      if constexpr(static_geometry_type<Field> || dynamic_geometry_type<Field>)
+      {
+        port.data.meshes.meshes.resize(1);
+        load_geometry(ctrl, port.data.meshes.meshes[0]);
+      }
+      else if constexpr(static_geometry_type<decltype(Field::mesh)> || dynamic_geometry_type<decltype(Field::mesh)>)
+      {
+        port.data.meshes.meshes.resize(1);
+        load_geometry(ctrl.mesh, port.data.meshes.meshes[0]);
+      }
+      else
+      {
+        load_geometry(ctrl, port.data.meshes);
+      }
     }
-    else if constexpr(static_geometry_type<decltype(Field::mesh)> || dynamic_geometry_type<decltype(Field::mesh)>)
+    ctrl.dirty_mesh = false;
+
+    if constexpr(requires { ctrl.transform; })
     {
-      port.data.meshes.meshes.resize(1);
-      port.data.meshes.dirty = ctrl.mesh.dirty;
-      load_geometry(ctrl.mesh, port.data.meshes.meshes[0]);
+      if(ctrl.dirty_transform)
+      {
+        std::copy_n(ctrl.transform, std::ssize(ctrl.transform), port.data.transform.matrix);
+        tform_dirty = true;
+        ctrl.dirty_transform = false;
+      }
     }
-    else
-    {
-      load_geometry(ctrl, port.data.meshes);
-    }
+
+    port.data.flags = {};
+    if(mesh_dirty)
+      port.data.flags = port.data.flags | ossia::geometry_port::dirty_meshes;
+    if(tform_dirty)
+      port.data.flags = port.data.flags | ossia::geometry_port::dirty_transform;
   }
 };
 

@@ -290,6 +290,10 @@ struct process_before_run
   void operator()(
       Field& ctrl, ossia::geometry_inlet& port, avnd::field_index<Idx>) const noexcept
   {
+    if(port.data.dirty_meshes)
+      ctrl.dirty_mesh = true;
+    if(port.data.dirty_transform)
+      ctrl.dirty_transform = true;
     geometry_from_ossia(port.data.meshes, ctrl);
   }
 
