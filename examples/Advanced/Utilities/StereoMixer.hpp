@@ -35,22 +35,36 @@ public:
     halp::knob_f32<"Pan 4"> c3p;
   } inputs;
 
-  struct outputs
+  struct
   {
     halp::fixed_audio_bus<"Out", double, 2> audio;
   } outputs;
 
   void mix(double* HALP_RESTRICT * HALP_RESTRICT samples, int channels, double gain, double pan, int i, double* HALP_RESTRICT l, double* HALP_RESTRICT r)
   {
-    if(channels == 1)
+    const auto lp = gain * (1. - pan);
+    const auto rp = gain * pan;
+    switch(channels)
     {
-      l[i] += samples[0][i] * gain * (1. - pan);
-      r[i] += samples[0][i] * gain * pan;
-    }
-    else if(channels == 2)
-    {
-      l[i] += samples[0][i] * gain * (1. - pan);
-      r[i] += samples[1][i] * gain * pan;
+      case 0:
+        break;
+      case 1:
+        l[i] += samples[0][i] * lp;
+        r[i] += samples[0][i] * rp;
+        break;
+      case 2:
+        l[i] += samples[0][i] * lp;
+        r[i] += samples[1][i] * rp;
+        break;
+      default:
+      {
+        double res = 0.;
+        for(int c = 0; c < channels; c++)
+          res += samples[c][i];
+        l[i] += res * lp;
+        r[i] += res * rp;
+        break;
+      }
     }
   }
 
