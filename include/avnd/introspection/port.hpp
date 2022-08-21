@@ -28,6 +28,13 @@ struct parameter_introspection : predicate_introspection<T, is_parameter_t>
 };
 
 template <typename Field>
+using is_program_parameter_t = boost::mp11::mp_bool<program_parameter<Field>>;
+template <typename T>
+struct program_parameter_introspection : predicate_introspection<T, is_program_parameter_t>
+{
+};
+
+template <typename Field>
 using is_control_t = boost::mp11::mp_bool<control<Field>>;
 template <typename T>
 struct control_introspection : predicate_introspection<T, is_control_t>

@@ -99,6 +99,15 @@ concept parameter_with_values_range = requires
     } -> std::integral;
 };
 
+
+// Used for defining process which take programs in some lang as input
+template <typename T>
+concept program_parameter = string_parameter<T> && requires
+{
+  { T::language() } -> std::convertible_to<std::string>;
+};
+
+
 /**
  * A "control" is a parameter + some metadata:
  *

@@ -1,7 +1,7 @@
 #pragma once
 #include <cinttypes>
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace halp
 {
@@ -53,7 +53,7 @@ struct position_normals_geometry
       };
       int stride = 3 * sizeof(float);
       int step_rate = 1;
-    } texcoord_binding;
+    } normals_binding;
   };
 
   struct attributes
@@ -99,6 +99,97 @@ struct position_normals_geometry
   enum
   {
     triangles,
+    counter_clockwise,
+    cull_back
+  };
+};
+
+// In this example the vertex buffer has
+// all the position attributes, then all the texcoord attributes
+struct position_texcoords_geometry
+{
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } main_buffer;
+  } buffers;
+
+  // This example uses two successive bindings to one buffer.
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } position_binding;
+
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 2 * sizeof(float);
+      int step_rate = 1;
+    } texcoord_binding;
+  };
+
+  struct attributes
+  {
+    struct
+    {
+      enum
+      {
+        position
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 0;
+    } position;
+
+    struct
+    {
+      enum
+      {
+        texcoord
+      };
+      using datatype = float[2];
+      int32_t offset = 0;
+      int32_t binding = 1;
+    } texcoord;
+  };
+
+  struct
+  {
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input0;
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input1;
+  } input;
+
+  int vertices = 0;
+  enum
+  {
+    triangle_strip,
     counter_clockwise,
     cull_back
   };
