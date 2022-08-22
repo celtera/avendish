@@ -30,8 +30,8 @@ jobs:
               name: "Ubuntu (clang)",
               os: ubuntu-latest,
               path: "/opt/ossia-sdk/llvm/bin",
-              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-14 \
-                             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-14 \
+              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-15 \
+                             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-15 \
                              -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld \
                              -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld \
                              -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld",
@@ -44,7 +44,7 @@ jobs:
                              chmod +x ./llvm.sh ; \
                              sudo ./llvm.sh ; \
                              sudo apt update ; \
-                             sudo apt install ninja-build clang-14 lld-14 libc++-14-dev libc++1-14 libc++abi1-14 libc++abi-14-dev",
+                             sudo apt install ninja-build clang-15 lld-15 libc++-15-dev libc++1-15 libc++abi1-15 libc++abi-15-dev",
               sdk: "/opt/ossia-sdk",
             }
           - {
