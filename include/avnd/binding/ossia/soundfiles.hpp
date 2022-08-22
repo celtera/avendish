@@ -342,7 +342,7 @@ struct raw_file_storage : raw_file_input_storage<T>
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-      port.file.bytes = {hdl->data.constData(), hdl->file.size()};
+      port.file.bytes = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
       port.file.filename = hdl->filename;
 
       if_possible(port.update(state.effect));

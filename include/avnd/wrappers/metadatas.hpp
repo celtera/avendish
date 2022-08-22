@@ -262,6 +262,8 @@ inline tag_iterator get_tags()
   else if constexpr(requires { T::tags; })
     for(std::string_view tag : T::tags)
       co_yield tag;
+  else
+      co_return;
 }
 #else
 template <typename T>
