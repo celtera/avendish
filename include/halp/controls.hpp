@@ -16,6 +16,7 @@
 
 namespace halp
 {
+struct dummy_range { };
 template <static_string lit, typename T>
 struct val_port
 {
@@ -242,6 +243,8 @@ using time_chooser = time_chooser_t<float, lit, setup>;
 struct toggle_setup
 {
   bool init;
+  clang_buggy_consteval range to_range() const noexcept
+  { return range{0., 1., init ? 1. : 0.}; }
 };
 
 template <static_string lit, typename T, auto setup>
@@ -271,7 +274,7 @@ template <static_string lit, toggle_setup setup = toggle_setup{false}>
 using toggle = toggle_t<lit, bool, setup>;
 
 template <static_string lit, toggle_setup setup = toggle_setup{false}>
-using toggle_f32 = toggle_t<lit, float, halp::range{0., 1., setup.init ? 1.f : 0.f}>;
+using toggle_f32 = toggle_t<lit, float, setup.to_range()>;
 
 /// Button ///
 struct impulse
@@ -285,12 +288,9 @@ struct maintained_button_t
     button,
     pushbutton
   };
-  static clang_buggy_consteval auto range()
+  static clang_buggy_consteval dummy_range range()
   {
-    struct
-    {
-    } dummy;
-    return dummy;
+    return {};
   }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
