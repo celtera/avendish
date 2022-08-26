@@ -15,22 +15,19 @@ concept type_wrapper = requires(T t)
 template <typename T>
 consteval bool vecf_compatible()
 {
-#define is_fp(X) std::is_floating_point_v<std::decay_t<decltype(X)>>
+#define is_fp(...) std::is_floating_point_v<std::decay_t<__VA_ARGS__>>
   constexpr int sz = avnd::pfr::tuple_size_v<T>;
   if constexpr(sz == 2)
   {
-    auto [x, y] = T{};
-    return is_fp(x) && is_fp(y);
+    return is_fp(avnd::pfr::tuple_element_t<0, T>) && is_fp(avnd::pfr::tuple_element_t<1, T>);
   }
   else if constexpr(sz == 3)
   {
-    auto [x, y, z] = T{};
-    return is_fp(x) && is_fp(y) && is_fp(z);
+      return is_fp(avnd::pfr::tuple_element_t<0, T>) && is_fp(avnd::pfr::tuple_element_t<1, T>)  && is_fp(avnd::pfr::tuple_element_t<2, T>);
   }
   else if constexpr(sz == 4)
   {
-    auto [x, y, z, w] = T{};
-    return is_fp(x) && is_fp(y) && is_fp(z) && is_fp(w);
+      return is_fp(avnd::pfr::tuple_element_t<0, T>) && is_fp(avnd::pfr::tuple_element_t<1, T>)  && is_fp(avnd::pfr::tuple_element_t<2, T>) && is_fp(avnd::pfr::tuple_element_t<3, T>);
   }
 #undef is_fp
   return false;

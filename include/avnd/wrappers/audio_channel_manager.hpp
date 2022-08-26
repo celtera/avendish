@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/array.hpp>
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/introspection/channels.hpp>
@@ -454,9 +455,9 @@ requires(
       = avnd::poly_sample_array_output_port_count<
             float, T> + avnd::poly_sample_array_output_port_count<double, T>;
 
-  [[no_unique_address]] std::array<int, input_bus_count> input_channels;
+  [[no_unique_address]] ebo_array<int, input_bus_count> input_channels;
 
-  [[no_unique_address]] std::array<int, output_bus_count> output_channels;
+  [[no_unique_address]] ebo_array<int, output_bus_count> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
