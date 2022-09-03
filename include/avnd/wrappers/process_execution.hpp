@@ -56,34 +56,11 @@ using buffer_type = std::conditional_t<
     ,
     dummy>;
 
-template <typename T>
-void invoke_effect(avnd::effect_container<T>& implementation, int frames)
-{
-  // clang-format off
-  if constexpr (has_tick<T>)
-  {
-    // Set-up the "tick" struct
-    using tick_t = typename T::tick;
-    static_assert(std::is_aggregate_v<tick_t>);
-    tick_t t{};
-    if_possible(t.frames = frames);
-
-    // Do the process call
-    if_possible(implementation.effect(t))
-    else if_possible(implementation.effect(frames))
-    else if_possible(implementation.effect(frames,t))
-    else if_possible(implementation.effect());
-  }
-  else
-  {
-    if_possible(implementation.effect(frames))
-    else if_possible(implementation.effect());
-  }
-  // clang-format on
-}
-
 template <typename T, typename Tick>
-requires requires (Tick t) { t.frames(); }
+requires requires(Tick t)
+{
+  t.frames();
+}
 auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_data)
 {
   // Nice little C++20 goodie: remove_cvref_t
@@ -97,7 +74,8 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
     if_possible(t.frames = tick_data.frames());
     if_possible(t.speed = tick_data.speed());
     if_possible(t.tempo = tick_data.tempo());
-    if constexpr(requires { t.signature; } && requires { tick_data.signature(); })
+    if constexpr(
+        requires { t.signature; } && requires { tick_data.signature(); })
     {
       auto [num, denom] = tick_data.signature();
       t.signature = {num, denom};
@@ -118,55 +96,80 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
   }
 }
 
-// This function goes from a host-provided tick to what the plugin expects
+inline constexpr auto get_frames(std::integral auto v)
+{
+  return v;
+}
+
+template <typename Tick>
+requires requires(Tick t)
+{
+  t.frames();
+}
+inline constexpr auto get_frames(const Tick& v)
+{
+  return v.frames();
+}
+
+template <typename T>
+inline constexpr auto
+get_tick_or_frames(avnd::effect_container<T>& implementation, std::integral auto v)
+{
+  if constexpr(avnd::has_tick<T>)
+  {
+    using tick_t = typename T::tick;
+    static_assert(std::is_aggregate_v<tick_t>);
+    tick_t t{};
+    if_possible(t.frames = v);
+    return t;
+  }
+  else
+  {
+    return v;
+  }
+}
 template <typename T, typename Tick>
-requires requires (Tick t) { t.frames(); }
-void invoke_effect(avnd::effect_container<T>& implementation, const Tick& tick_data)
+requires requires(Tick t)
+{
+  t.frames();
+}
+inline constexpr auto
+get_tick_or_frames(avnd::effect_container<T>& implementation, const Tick& v)
+{
+  if constexpr(avnd::has_tick<T>)
+    return current_tick(implementation, v);
+  else
+    return v.frames();
+}
+
+// This function goes from a host-provided tick to what the plugin expects
+template <typename T>
+void invoke_effect(avnd::effect_container<T>& implementation, const auto& t)
 {
   // clang-format off
   if constexpr (has_tick<T>)
   {
-    // Set-up the "tick" struct
-    auto t = current_tick(implementation, tick_data);
-
     // Do the process call
     if_possible(implementation.effect(t))
-    else if_possible(implementation.effect(tick_data.frames))
-    else if_possible(implementation.effect(tick_data.frames,t))
+    else if_possible(implementation.effect(t.frames))
+    else if_possible(implementation.effect(t.frames, t))
     else if_possible(implementation.effect());
   }
   else
   {
-    if_possible(implementation.effect(tick_data.frames))
+    if_possible(implementation.effect(t.frames))
     else if_possible(implementation.effect());
   }
   // clang-format on
 }
-
-inline constexpr auto get_frames(std::integral auto v)
+template <typename T>
+void invoke_effect(avnd::effect_container<T>& implementation, std::integral auto frames)
 {
-   return v;
+  // clang-format off
+  static_assert(!has_tick<T>);
+  if_possible(implementation.effect(frames))
+  else if_possible(implementation.effect());
+  // clang-format on
 }
 
-template <typename Tick>
-requires requires (Tick t) { t.frames(); }
-inline constexpr auto get_frames(const Tick& v)
-{
-   return v.frames();
-}
-
-template<typename T>
-inline constexpr auto get_tick_or_frames(avnd::effect_container<T>& implementation, std::integral auto v)
-{
-  return v;
-}
-template<typename T, typename Tick>
-requires requires (Tick t) { t.frames(); }
-inline constexpr auto get_tick_or_frames(avnd::effect_container<T>& implementation, const Tick& v)
-{
-  if constexpr(avnd::has_tick<T>)
-    return v;
-  else
-    return v.frames();
-}
 }

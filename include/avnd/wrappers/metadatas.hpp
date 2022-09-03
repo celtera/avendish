@@ -43,20 +43,21 @@ namespace avnd
     Type{T::PropName};                                 \
   };
 
-template<typename T>
-std::string_view get_typeid_name() {
-#if __has_include(<boost/core/demangle.hpp>)
-    static const auto str = [] () -> std::string {
-      auto dem = boost::core::demangle(typeid(T).name());
-      auto idx = dem.find_last_of(':');
-      if(idx != std::string::npos)
-        return dem.substr(idx + 1);
-      else
-        return dem;
-    }();
-    return str;
+template <typename T>
+std::string_view get_typeid_name()
+{
+#if __has_include(<boost/core/demangle.hpp>) && !defined(BOOST_NO_RTTI)
+  static const auto str = []() -> std::string {
+    auto dem = boost::core::demangle(typeid(T).name());
+    auto idx = dem.find_last_of(':');
+    if(idx != std::string::npos)
+      return dem.substr(idx + 1);
+    else
+      return dem;
+  }();
+  return str;
 #else
-    return "(name)";
+  return "(name)";
 #endif
 }
 define_get_property(name, std::string_view, get_typeid_name<T>())

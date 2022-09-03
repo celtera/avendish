@@ -22,7 +22,7 @@ requires(
   }
 
   template <typename FP>
-  FP process_sample(FP in, T& fx, auto& ins, auto& outs, auto&& tick)
+  FP process_sample(FP in, T& fx, auto& ins, auto& outs, const auto& tick)
   {
     if constexpr(requires { fx(in, ins, outs, tick); })
       return fx(in, ins, outs, tick);
@@ -96,7 +96,7 @@ requires(
         if constexpr(avnd::has_tick<T>)
         {
           out[c][i] = process_sample(
-              input_buf[c], impl, ins, outs, current_tick(implementation, tick));
+              input_buf[c], impl, ins, outs, get_tick_or_frames(implementation, tick));
         }
         else
         {

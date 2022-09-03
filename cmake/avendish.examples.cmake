@@ -261,26 +261,26 @@ avnd_make_object(
 )
 
 ## WaveDigitalFilters
-find_path (CHOWDSP_WDF_INCLUDE chowdsp_wdf/chowdsp_wdf.h)
-if(CHOWDSP_WDF_INCLUDE)
-  add_library(wdft_PassiveLPF STATIC src/dummy.cpp)
-  target_include_directories(wdft_PassiveLPF PUBLIC ${CHOWDSP_WDF_INCLUDE})
-  avnd_make_all(
-    TARGET wdft_PassiveLPF
-    MAIN_FILE examples/Ports/WaveDigitalFilters/PassiveLPF.hpp
-    MAIN_CLASS chowdsp_ports::PassiveLPF
-    C_NAME wdft_PassiveLPF
-  )
-
-  add_library(wdft_VoltageDivider STATIC src/dummy.cpp)
-  target_include_directories(wdft_VoltageDivider PUBLIC ${CHOWDSP_WDF_INCLUDE})
-  avnd_make_all(
-    TARGET wdft_VoltageDivider
-    MAIN_FILE examples/Ports/WaveDigitalFilters/VoltageDivider.hpp
-    MAIN_CLASS chowdsp_ports::VoltageDivider
-    C_NAME wdft_VoltageDivider
-  )
-endif()
+# find_path (CHOWDSP_WDF_INCLUDE chowdsp_wdf/chowdsp_wdf.h)
+# if(CHOWDSP_WDF_INCLUDE)
+#   add_library(wdft_PassiveLPF STATIC src/dummy.cpp)
+#   target_include_directories(wdft_PassiveLPF PUBLIC ${CHOWDSP_WDF_INCLUDE})
+#   avnd_make_all(
+#     TARGET wdft_PassiveLPF
+#     MAIN_FILE examples/Ports/WaveDigitalFilters/PassiveLPF.hpp
+#     MAIN_CLASS chowdsp_ports::PassiveLPF
+#     C_NAME wdft_PassiveLPF
+#   )
+#
+#   add_library(wdft_VoltageDivider STATIC src/dummy.cpp)
+#   target_include_directories(wdft_VoltageDivider PUBLIC ${CHOWDSP_WDF_INCLUDE})
+#   avnd_make_all(
+#     TARGET wdft_VoltageDivider
+#     MAIN_FILE examples/Ports/WaveDigitalFilters/VoltageDivider.hpp
+#     MAIN_CLASS chowdsp_ports::VoltageDivider
+#     C_NAME wdft_VoltageDivider
+#   )
+# endif()
 
 
 # Demo: dump all the known metadata.
