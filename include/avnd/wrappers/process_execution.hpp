@@ -56,24 +56,6 @@ using buffer_type = std::conditional_t<
     ,
     dummy>;
 
-// Original idea was to pass everything by arguments here.
-// Sadly hard to do as soon as there are references as we cannot do it piecewise
-template <typename T>
-auto current_tick(avnd::effect_container<T>& implementation)
-{
-  // Nice little C++20 goodie: remove_cvref_t
-  // unused in the end using tick_setup_t = std::remove_cvref_t<avnd::second_argument<&T::operator()>>;
-  if constexpr(has_tick<T>)
-  {
-    using tick_t = typename T::tick;
-    static_assert(std::is_aggregate_v<tick_t>);
-
-    // TODO setup shjit
-
-    return tick_t{};
-  }
-}
-
 template <typename T>
 void invoke_effect(avnd::effect_container<T>& implementation, int frames)
 {
@@ -81,7 +63,9 @@ void invoke_effect(avnd::effect_container<T>& implementation, int frames)
   if constexpr (has_tick<T>)
   {
     // Set-up the "tick" struct
-    auto t = current_tick(implementation);
+    using tick_t = typename T::tick;
+    static_assert(std::is_aggregate_v<tick_t>);
+    tick_t t{};
     if_possible(t.frames = frames);
 
     // Do the process call
@@ -96,5 +80,93 @@ void invoke_effect(avnd::effect_container<T>& implementation, int frames)
     else if_possible(implementation.effect());
   }
   // clang-format on
+}
+
+template <typename T, typename Tick>
+requires requires (Tick t) { t.frames(); }
+auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_data)
+{
+  // Nice little C++20 goodie: remove_cvref_t
+  // unused in the end using tick_setup_t = std::remove_cvref_t<avnd::second_argument<&T::operator()>>;
+  if constexpr(has_tick<T>)
+  {
+    using tick_t = typename T::tick;
+    static_assert(std::is_aggregate_v<tick_t>);
+
+    tick_t t{};
+    if_possible(t.frames = tick_data.frames());
+    if_possible(t.speed = tick_data.speed());
+    if_possible(t.tempo = tick_data.tempo());
+    if constexpr(requires { t.signature; } && requires { tick_data.signature(); })
+    {
+      auto [num, denom] = tick_data.signature();
+      t.signature = {num, denom};
+    }
+    if_possible(t.position_in_frames = tick_data.position_in_frames());
+    if_possible(t.position_in_seconds = tick_data.position_in_seconds());
+    if_possible(t.position_in_nanoseconds = tick_data.position_in_nanoseconds());
+    if_possible(t.start_position_in_quarters = tick_data.start_position_in_quarters());
+    if_possible(t.end_position_in_quarters = tick_data.end_position_in_quarters());
+
+    // Position of the last bar relative to start in quarter notes
+    if_possible(t.bar_at_start = tick_data.bar_at_start());
+
+    // Position of the last bar relative to end in quarter notes
+    if_possible(t.bar_at_end = tick_data.bar_at_end());
+
+    return tick_t{};
+  }
+}
+
+// This function goes from a host-provided tick to what the plugin expects
+template <typename T, typename Tick>
+requires requires (Tick t) { t.frames(); }
+void invoke_effect(avnd::effect_container<T>& implementation, const Tick& tick_data)
+{
+  // clang-format off
+  if constexpr (has_tick<T>)
+  {
+    // Set-up the "tick" struct
+    auto t = current_tick(implementation, tick_data);
+
+    // Do the process call
+    if_possible(implementation.effect(t))
+    else if_possible(implementation.effect(tick_data.frames))
+    else if_possible(implementation.effect(tick_data.frames,t))
+    else if_possible(implementation.effect());
+  }
+  else
+  {
+    if_possible(implementation.effect(tick_data.frames))
+    else if_possible(implementation.effect());
+  }
+  // clang-format on
+}
+
+inline constexpr auto get_frames(std::integral auto v)
+{
+   return v;
+}
+
+template <typename Tick>
+requires requires (Tick t) { t.frames(); }
+inline constexpr auto get_frames(const Tick& v)
+{
+   return v.frames();
+}
+
+template<typename T>
+inline constexpr auto get_tick_or_frames(avnd::effect_container<T>& implementation, std::integral auto v)
+{
+  return v;
+}
+template<typename T, typename Tick>
+requires requires (Tick t) { t.frames(); }
+inline constexpr auto get_tick_or_frames(avnd::effect_container<T>& implementation, const Tick& v)
+{
+  if constexpr(avnd::has_tick<T>)
+    return v;
+  else
+    return v.frames();
 }
 }

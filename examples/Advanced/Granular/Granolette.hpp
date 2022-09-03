@@ -29,13 +29,21 @@ public:
 
   struct
   {
-    halp::dynamic_audio_bus<"Output", double> audio;
+    halp::variable_audio_bus<"Output", double> audio;
   } outputs;
+
+  void prepare(halp::setup s) {
+    if(inputs.sound)
+      outputs.audio.request_channels(inputs.sound.channels());
+  }
 
   void operator()(halp::tick t)
   {
     if(!inputs.sound)
       return;
+
+    if(outputs.audio.channels != inputs.sound.channels())
+      outputs.audio.request_channels(inputs.sound.channels());
 
     // Just take the first channel of the soundfile.
     // in is a std::span

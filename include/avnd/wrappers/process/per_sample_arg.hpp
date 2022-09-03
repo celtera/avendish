@@ -58,12 +58,13 @@ requires(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      int32_t n)
+      const auto& tick)
   {
     const int input_channels = in.size();
     const int output_channels = out.size();
     assert(input_channels == output_channels);
     const int channels = input_channels;
+    const auto n = get_frames(tick);
 
     auto input_buf = (FP*)alloca(channels * sizeof(FP));
 
@@ -92,10 +93,10 @@ requires(
       {
         auto& [impl, ins, outs] = *effects_it;
 
-        if constexpr(requires { sizeof(current_tick(implementation)); })
+        if constexpr(avnd::has_tick<T>)
         {
           out[c][i] = process_sample(
-              input_buf[c], impl, ins, outs, current_tick(implementation));
+              input_buf[c], impl, ins, outs, current_tick(implementation, tick));
         }
         else
         {

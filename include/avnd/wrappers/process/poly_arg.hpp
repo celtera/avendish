@@ -19,10 +19,11 @@ requires polyphonic_audio_processor<T> &&(
   template <typename SrcFP, typename DstFP>
   void process_arg(
       avnd::effect_container<T>& implementation, avnd::span<SrcFP*> in,
-      avnd::span<SrcFP*> out, int32_t n)
+      avnd::span<SrcFP*> out, const auto& tick)
   {
     const int input_channels = in.size();
     const int output_channels = out.size();
+    const auto n = get_frames(tick);
     if constexpr(needs_storage<SrcFP, T>::value)
     {
       // Fetch the required temporary storage
@@ -47,7 +48,7 @@ requires polyphonic_audio_processor<T> &&(
         out_samples[c] = dsp_buffer_output.data() + c * n;
       }
 
-      implementation.effect(in_samples, out_samples, n);
+      implementation.effect(in_samples, out_samples, get_tick_or_frames(implementation, tick));
 
       // Copy & convert output channels
       for(int c = 0; c < output_channels; ++c)
@@ -58,23 +59,23 @@ requires polyphonic_audio_processor<T> &&(
     else
     {
       // Pass the buffers directly
-      implementation.effect(in.data(), out.data(), n);
+      implementation.effect(in.data(), out.data(), get_tick_or_frames(implementation, tick));
     }
   }
 
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      int32_t n)
+      const auto& tick)
   {
     // Note: here we have a redundant check. This is to make sure that we always check the case
     // where we won't have to do a conversion first.
     if constexpr(avnd::polyphonic_arg_audio_effect<FP, T>)
-      process_arg<FP, FP>(implementation, in, out, n);
+      process_arg<FP, FP>(implementation, in, out, tick);
     else if constexpr(avnd::polyphonic_arg_audio_effect<float, T>)
-      process_arg<FP, float>(implementation, in, out, n);
+      process_arg<FP, float>(implementation, in, out, tick);
     else if constexpr(avnd::polyphonic_arg_audio_effect<double, T>)
-      process_arg<FP, double>(implementation, in, out, n);
+      process_arg<FP, double>(implementation, in, out, tick);
     else
       AVND_STATIC_TODO(FP)
   }

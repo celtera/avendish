@@ -223,8 +223,6 @@ public:
 
   [[no_unique_address]] oscr::outlet_storage<T> ossia_outlets;
 
-  [[no_unique_address]] avnd::process_adapter<T> processor;
-
   [[no_unique_address]] avnd::audio_channel_manager<T> channels;
 
   [[no_unique_address]] avnd::midi_storage<T> midi_buffers;
@@ -462,8 +460,12 @@ public:
     // if e.g. we have an API that works with doubles,
     // and a plug-in that expects floats.
     // Here for instance we allocate buffers for an host that may invoke "process" with either floats or doubles.
-    this->processor.allocate_buffers(setup_info, float{});
-    this->processor.allocate_buffers(setup_info, double{});
+    if constexpr(requires (AudioCount t) { t.processor; })
+    {
+      auto& self = static_cast<AudioCount&>(*this);
+      self.processor.allocate_buffers(setup_info, float{});
+      self.processor.allocate_buffers(setup_info, double{});
+    }
 
     // Initialize the channels for the effect duplicator
     this->impl.init_channels(setup_info.input_channels, setup_info.output_channels);
@@ -807,7 +809,46 @@ template <typename T>
 concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;
 
+template<typename T>
+concept ossia_compatible_nonaudio_processor =
+    !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>)
+    ;
+
+template<typename T>
+concept ossia_compatible_audio_processor =
+       avnd::poly_sample_array_input_port_count<double, T> > 0
+    || avnd::poly_sample_array_output_port_count<double, T> > 0
+;
+
 template <typename T>
 class safe_node;
 
+struct tick_info
+{
+  const ossia::token_request& tk;
+  ossia::exec_state_facade st;
+  int64_t m_frames{};
+
+  int64_t frames() const noexcept {
+    return m_frames;
+  }
+
+  int64_t position_in_frames() const noexcept
+  {
+    return tk.start_date_to_physical(st.modelToSamples());
+  }
+
+  auto signature() const noexcept {
+    struct sig { int num{}, denom{}; };
+    return sig{.num = tk.signature.upper, .denom = tk.signature.lower };
+  }
+  double speed() const noexcept { return tk.speed; };
+  double tempo() const noexcept { return tk.tempo; };
+  double position_in_seconds() const noexcept { return position_in_nanoseconds() / 1e9; };
+  double position_in_nanoseconds() const noexcept { return (st.currentDate() - st.startDate()); };
+  double start_position_in_quarters() const noexcept { return tk.musical_start_position; };
+  double end_position_in_quarters() const noexcept { return tk.musical_end_position; };
+  double bar_at_start() const noexcept { return tk.musical_start_last_bar; };
+  double bar_at_end() const noexcept { return tk.musical_end_last_bar; };
+};
 }

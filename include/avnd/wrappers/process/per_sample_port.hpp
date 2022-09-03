@@ -14,7 +14,8 @@ template <typename T>
 requires(
     avnd::mono_per_sample_port_processor<
         double,
-        T> || avnd::mono_per_sample_port_processor<float, T>) struct process_adapter<T>
+        T> || avnd::mono_per_sample_port_processor<float, T>)
+struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
   {
@@ -63,7 +64,7 @@ requires(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      int32_t n)
+      const auto& tick)
   {
     const int input_channels = in.size();
     const int output_channels = out.size();
@@ -72,6 +73,7 @@ requires(
 
     auto input_buf = (FP*)alloca(channels * sizeof(FP));
 
+    const auto n = get_frames(tick);
     for(int32_t i = 0; i < n; i++)
     {
       // Some hosts like puredata uses the same buffers for input and output.
@@ -95,7 +97,7 @@ requires(
       for(int c = 0; c < channels && effects_it != effects_range.end();
           ++c, ++effects_it)
       {
-        if constexpr(requires { sizeof(current_tick(implementation)); })
+        if constexpr(avnd::has_tick<T>)
         {
           out[c][i] = process_0(
               implementation, input_buf[c], *effects_it, current_tick(implementation));
@@ -153,12 +155,13 @@ requires(
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      int32_t n)
+      const auto& tick)
   {
     auto& fx = implementation.effect;
     auto& ins = implementation.inputs();
     auto& outs = implementation.outputs();
 
+    const auto n = get_frames(tick);
     for(int32_t i = 0; i < n; i++)
     {
       // Copy inputs in the effect
@@ -178,7 +181,7 @@ requires(
       }
 
       // Process
-      if constexpr(requires { sizeof(current_tick(implementation)); })
+      if constexpr(avnd::has_tick<T>)
       {
         process_sample(fx, ins, outs, current_tick(implementation));
       }

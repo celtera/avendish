@@ -9,6 +9,10 @@
 #include <string_view>
 #include <vector>
 
+#if __has_include(<boost/core/demangle.hpp>)
+#include <boost/core/demangle.hpp>
+#endif
+
 namespace avnd
 {
 #define define_get_property(PropName, Type, Default)   \
@@ -39,32 +43,41 @@ namespace avnd
     Type{T::PropName};                                 \
   };
 
-// clang-format: off
-define_get_property(name, std::string_view, "(name)") define_get_property(
-    c_name, std::string_view,
-    "(c name)") define_get_property(vendor, std::string_view, "(vendor)")
-    define_get_property(product, std::string_view, "(product)") define_get_property(
-        version, std::string_view, "(version)")
-        define_get_property(label, std::string_view, "(label)") define_get_property(
-            uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
-            define_get_property(short_label, std::string_view, "(short label)")
-                define_get_property(category, std::string_view, "(category)")
-                    define_get_property(copyright, std::string_view, "(copyright)")
-                        define_get_property(license, std::string_view, "(license)")
-                            define_get_property(url, std::string_view, "(url)")
-                                define_get_property(email, std::string_view, "(email)")
-                                    define_get_property(
-                                        manual_url, std::string_view, "(manual_url)")
-                                        define_get_property(
-                                            support_url, std::string_view,
-                                            "(support_url)")
-                                            define_get_property(
-                                                description, std::string_view,
-                                                "(description)")
-    // clang-format: on
+template<typename T>
+std::string_view get_typeid_name() {
+#if __has_include(<boost/core/demangle.hpp>)
+    static const auto str = [] () -> std::string {
+      auto dem = boost::core::demangle(typeid(T).name());
+      auto idx = dem.find_last_of(':');
+      if(idx != std::string::npos)
+        return dem.substr(idx + 1);
+      else
+        return dem;
+    }();
+    return str;
+#else
+    return "(name)";
+#endif
+}
+define_get_property(name, std::string_view, get_typeid_name<T>())
+define_get_property(c_name, std::string_view, "(c name)")
+define_get_property(vendor, std::string_view, "(vendor)")
+define_get_property(product, std::string_view, "(product)")
+define_get_property(version, std::string_view, "(version)")
+define_get_property(label, std::string_view, "(label)")
+define_get_property(uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
+define_get_property(short_label, std::string_view, "(short label)")
+define_get_property(category, std::string_view, "(category)")
+define_get_property(copyright, std::string_view, "(copyright)")
+define_get_property(license, std::string_view, "(license)")
+define_get_property(url, std::string_view, "(url)")
+define_get_property(email, std::string_view, "(email)")
+define_get_property(manual_url, std::string_view, "(manual_url)")
+define_get_property(support_url, std::string_view, "(support_url)")
+define_get_property(description, std::string_view, "(description)")
 
-    // FIXME: C++23: constexpr ?
-    std::string array_to_string(auto& authors)
+// FIXME: C++23: constexpr ?
+std::string array_to_string(auto& authors)
 {
   std::string ret;
   for(int i = 0; i < std::ssize(authors); i++)
@@ -263,7 +276,7 @@ inline tag_iterator get_tags()
     for(std::string_view tag : T::tags)
       co_yield tag;
   else
-      co_return;
+    co_return;
 }
 #else
 template <typename T>

@@ -45,10 +45,10 @@ struct process_adapter
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      int32_t n)
+      const auto& tick)
   {
     // Audio buffers aren't used at all
-    invoke_effect(implementation, n);
+    invoke_effect(implementation, tick);
   }
 };
 

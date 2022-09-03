@@ -7,6 +7,8 @@ template <real_good_mono_processor T>
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
+  [[no_unique_address]] avnd::process_adapter<T> processor;
+
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 
   ossia::audio_inlet& audio_inlet()
@@ -67,6 +69,7 @@ public:
   OSSIA_MAXIMUM_INLINE
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
+    // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
     if(!this->prepare_run(tk, start, frames))
@@ -99,7 +102,7 @@ public:
         this->impl,
         avnd::span<double*>{
             const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
-        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)}, frames);
+        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)}, tick_info {tk, st, frames});
 
     this->finish_run();
   }

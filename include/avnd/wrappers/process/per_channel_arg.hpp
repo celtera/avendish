@@ -14,7 +14,8 @@ template <typename T>
 requires(
     avnd::mono_per_channel_arg_processor<
         double,
-        T> || avnd::mono_per_channel_arg_processor<float, T>) struct process_adapter<T>
+        T> || avnd::mono_per_channel_arg_processor<float, T>)
+struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
   {
@@ -24,15 +25,17 @@ requires(
   template <typename FP>
   void process_channel(FP* in, FP* out, T& fx, auto& ins, auto& outs, auto&& tick)
   {
-    if_possible(fx(in, out, tick)) else if_possible(fx(in, out, ins, tick)) else if_possible(fx(in, out, outs, tick)) else if_possible(
-        fx(in, out, ins, outs,
-           tick)) else static_assert(std::is_void_v<FP>, "Cannot call processor");
+    if_possible(fx(in, out, tick))
+    else if_possible(fx(in, out, ins, tick))
+    else if_possible(fx(in, out, outs, tick))
+    else if_possible(fx(in, out, ins, outs, tick))
+    else static_assert(std::is_void_v<FP>, "Cannot call processor");
   }
 
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      int32_t n)
+      const auto& tick)
   {
     const int input_channels = in.size();
     const int output_channels = out.size();
@@ -47,14 +50,7 @@ requires(
     {
       auto& [impl, ins, outs] = *effects_it;
 
-      if constexpr(requires { sizeof(current_tick(implementation)); })
-      {
-        process_channel(in[c], out[c], impl, ins, outs, current_tick(implementation));
-      }
-      else
-      {
-        process_channel(in[c], out[c], impl, ins, outs, n);
-      }
+      process_channel(in[c], out[c], impl, ins, outs, get_tick_or_frames(implementation, tick));
     }
   }
 };
