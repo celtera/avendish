@@ -18,6 +18,18 @@ struct ugen
     halp::val_port<"Out", T> o;
   } outputs;
 };
+template<typename T>
+struct uctl
+{
+  struct ins
+  {
+    T i;
+  } inputs;
+  struct
+  {
+    halp::val_port<"Out", decltype(T::value)> o;
+  } outputs;
+};
 template<typename T = float>
 struct unode
 {
@@ -68,10 +80,13 @@ struct expression_graph
     };
 
     // Expression is a boolean tree of relations
-    struct constant : ugen<float> { void operator()() { outputs.o = 123; }};
+    struct path : uctl<halp::lineedit<"Path", "foo:/bar">> { void operator()() { outputs.o = inputs.i; }};
+    struct constant : uctl<halp::spinbox_f32<"Value">> { void operator()() { outputs.o = inputs.i; }};
     struct boolean_not : unode<bool>{ void operator()() { outputs.o = !inputs.i; } };
     struct boolean_and : binode<bool>{ void operator()() { outputs.o = inputs.a && inputs.b; } };
     struct boolean_or : binode<bool>{ void operator()() { outputs.o = inputs.a || inputs.b; } };
+
+    using node = std::variant<path, constant, boolean_not, boolean_and, boolean_or>;
 };
 
 struct my_graph

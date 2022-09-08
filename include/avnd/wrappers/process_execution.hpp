@@ -143,32 +143,32 @@ get_tick_or_frames(avnd::effect_container<T>& implementation, const Tick& v)
 }
 
 // This function goes from a host-provided tick to what the plugin expects
-template <typename T>
-void invoke_effect(avnd::effect_container<T>& implementation, const auto& t)
+template <typename T, typename Tick>
+void invoke_effect(avnd::effect_container<T>& implementation, const Tick& t)
 {
   // clang-format off
-  if constexpr (has_tick<T>)
+  if constexpr(std::is_integral_v<Tick>)
   {
-    // Do the process call
+    static_assert(!has_tick<T>);
     if_possible(implementation.effect(t))
-    else if_possible(implementation.effect(t.frames))
-    else if_possible(implementation.effect(t.frames, t))
     else if_possible(implementation.effect());
   }
   else
   {
-    if_possible(implementation.effect(t.frames))
-    else if_possible(implementation.effect());
+    if constexpr (has_tick<T>)
+    {
+      // Do the process call
+      if_possible(implementation.effect(t))
+      else if_possible(implementation.effect(t.frames))
+      else if_possible(implementation.effect(t.frames, t))
+      else if_possible(implementation.effect());
+    }
+    else
+    {
+      if_possible(implementation.effect(t.frames))
+      else if_possible(implementation.effect());
+    }
   }
-  // clang-format on
-}
-template <typename T>
-void invoke_effect(avnd::effect_container<T>& implementation, std::integral auto frames)
-{
-  // clang-format off
-  static_assert(!has_tick<T>);
-  if_possible(implementation.effect(frames))
-  else if_possible(implementation.effect());
   // clang-format on
 }
 
