@@ -92,7 +92,7 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
     // Position of the last bar relative to end in quarter notes
     if_possible(t.bar_at_end = tick_data.bar_at_end());
 
-    return tick_t{};
+    return t;
   }
 }
 

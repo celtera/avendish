@@ -165,6 +165,24 @@ struct tick
   int frames{};
 };
 
+struct tick_musical
+{
+  int frames{};
+
+  double tempo = 120.;
+  struct { int num; int denom; } signature;
+  int64_t position_in_frames{};
+  double position_in_nanoseconds{};
+  double start_position_in_quarters{};
+  double end_position_in_quarters{};
+
+  // Position of the last bar relative to start in quarter notes
+  double bar_at_start{};
+
+  // Position of the last bar relative to end in quarter notes
+  double bar_at_end{};
+};
+
 struct setup
 {
   int input_channels{};

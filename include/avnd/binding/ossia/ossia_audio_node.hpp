@@ -154,7 +154,7 @@ public:
     });
 
 
-    avnd::invoke_effect(this->impl, tick_info {tk, st, frames});
+    avnd::invoke_effect(this->impl, avnd::get_tick_or_frames(this->impl, tick_info {tk, st, frames}));
 
     this->finish_run();
   }
