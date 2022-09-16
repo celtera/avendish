@@ -24,23 +24,24 @@
 #include <sstream>
 #include <strstream>
 
-namespace examples::helpers
+namespace mtk
 {
 /**
  * This example demonstrates loading and playing with MIDI data and scala files.
  *
  * It uses the very neat Surge library for handling tunings.
  */
-struct MidiFileOctaver
+struct MidiScaler
 {
-  halp_meta(name, "MidiFile scaled playback")
+  halp_meta(name, "Midi scaler")
   halp_meta(c_name, "avnd_helpers_midifile_scaled")
   halp_meta(uuid, "c43300b0-6c98-4a38-81f2-b549f0297e38")
+  halp_meta(category, "Midi")
 
   struct
   {
     // This port will read a midi file
-    halp::midifile_port<"MIDI file", halp::simple_midi_track_event> midi;
+    halp::midi_bus<"MIDI messages"> midi;
 
     // This port will read any kind of file
     struct : halp::file_port<"SCL file">
@@ -49,7 +50,7 @@ struct MidiFileOctaver
       // file browser
       halp_meta(extensions, "*.scl");
 
-      void update(MidiFileOctaver& self)
+      void update(MidiScaler& self)
       {
         if(this->file.bytes.empty())
         {
@@ -79,7 +80,7 @@ struct MidiFileOctaver
       // file browser
       halp_meta(extensions, "*.kbm");
 
-      void update(MidiFileOctaver& self)
+      void update(MidiScaler& self)
       {
         if(this->file.bytes.empty())
         {
@@ -104,7 +105,6 @@ struct MidiFileOctaver
 
     halp::hslider_f32<"Frequency adjust", halp::range{-500., 500., 0.}> adjust;
     halp::hslider_f32<"Frequency scale", halp::range{0.5, 2., 1.}> rescale;
-    halp::hslider_f32<"Position"> position;
   } inputs;
 
   struct
@@ -112,7 +112,7 @@ struct MidiFileOctaver
     struct
     {
       halp_meta(name, "Frequency output");
-      float value{};
+      std::vector<float> value{};
     } freq;
   } outputs;
 
@@ -153,46 +153,40 @@ struct MidiFileOctaver
   std::optional<Tunings::KeyboardMapping> mapping;
   Tunings::Tuning tuning;
 
+  std::array<int, 128> active = {};
+
   void prepare(halp::setup s) { update_tuning(); }
 
   void operator()(int N)
   {
-    const auto length = this->inputs.midi.midifile.length;
-    if(length == 0)
-      return;
+    outputs.freq.value.clear();
 
-    auto& i = inputs.midi.midifile.tracks;
-    if(i.empty())
-      return;
-    if(i[0].empty())
-      return;
-
-    auto& track = i[0];
-
-    const int64_t target_tick = inputs.position.value * length;
-
-    auto it = std::lower_bound(
-        track.begin(), track.end(),
-        halp::simple_midi_track_event{.bytes = {}, .tick_absolute = target_tick},
-        [](const halp::simple_midi_track_event& lhs,
-           const halp::simple_midi_track_event& rhs) {
-      return lhs.tick_absolute < rhs.tick_absolute;
-        });
-    while(it != track.end())
+    // Update the active notes
+    for(auto& msg : this->inputs.midi)
     {
-      auto& ev = *it;
-      libremidi::message msg;
-      msg.bytes = {ev.bytes[0], ev.bytes[1], ev.bytes[2]};
-      if(msg.get_message_type() != libremidi::message_type::NOTE_ON)
-      {
-        ++it;
-        continue;
-      }
+      libremidi::message m;
+      m.bytes.assign(msg.bytes.begin(), msg.bytes.end());
 
-      int note = msg.bytes[1];
-      outputs.freq.value
-          = (tuning.frequencyForMidiNote(note) + inputs.adjust) * inputs.rescale;
-      break;
+      switch(m.get_message_type())
+      {
+        case libremidi::message_type::NOTE_ON:
+          this->active[m.bytes[1]] = m.bytes[2];
+          break;
+        case libremidi::message_type::NOTE_OFF:
+          this->active[m.bytes[1]] = 0;
+          break;
+        default:
+          break;
+      }
+    }
+
+    for(std::size_t note = 0; note < this->active.size(); note++)
+    {
+      if(this->active[note] > 0)
+      {
+        float f = (tuning.frequencyForMidiNote(note) + inputs.adjust) * inputs.rescale;
+        outputs.freq.value.push_back(f);
+      }
     }
   }
 };

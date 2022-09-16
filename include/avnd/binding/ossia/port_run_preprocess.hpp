@@ -382,10 +382,17 @@ struct process_before_run
   {
   }
 
-  template <typename Field, std::size_t Idx>
+  template <avnd::raw_container_midi_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+  }
+
+  template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    ctrl.midi_messages.clear();
   }
 
   template <typename Field, std::size_t Idx>

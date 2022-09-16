@@ -36,7 +36,7 @@ struct val_port
   }
 
   // Running value (last value before the tick started)
-  T value;
+  T value{};
 };
 
 template <static_string lit, typename T>
@@ -54,7 +54,7 @@ struct val_port<lit, T>
   }
 
   // Running value (last value before the tick started)
-  T value;
+  T value{};
 };
 
 template <typename T>
