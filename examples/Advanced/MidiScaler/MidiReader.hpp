@@ -27,6 +27,7 @@ struct MidiFileReader
   struct
   {
     struct : halp::midifile_port<"MIDI file", halp::simple_midi_track_event> {
+      halp_flag(file_watch);
       void update(MidiFileReader& m) { m.must_clear_notes = true; }
     } midi;
     struct : halp::spinbox_i32<"MIDI track", halp::range{1, 127, 1}> {

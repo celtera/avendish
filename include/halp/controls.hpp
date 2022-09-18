@@ -674,6 +674,7 @@ template <halp::static_string lit, typename T = float>
 struct soundfile_port
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto filters() { enum { audio }; return audio; }
 
   HALP_INLINE_FLATTEN operator soundfile_view<T>&() noexcept { return soundfile; }
   HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept

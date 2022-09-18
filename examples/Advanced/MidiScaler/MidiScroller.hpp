@@ -31,6 +31,7 @@ struct MidiScroller
   struct
   {
     struct : halp::midifile_port<"MIDI file", halp::simple_midi_track_event> {
+      halp_flag(file_watch);
       void update(MidiScroller& s) { s.update_midi(); }
     } midi;
     halp::spinbox_i32<"MIDI track", halp::range{1, 127, 1}> track;
