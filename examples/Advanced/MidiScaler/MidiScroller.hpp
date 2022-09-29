@@ -2,6 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <boost/container/flat_set.hpp>
+#include <boost/container/small_vector.hpp>
+#include <boost/icl/split_interval_map.hpp>
 #include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
@@ -10,10 +13,6 @@
 #include <halp/midi.hpp>
 #include <halp/midifile_port.hpp>
 #include <libremidi/message.hpp>
-
-#include <boost/icl/split_interval_map.hpp>
-#include <boost/container/flat_set.hpp>
-#include <boost/container/small_vector.hpp>
 
 namespace mtk
 {
@@ -30,15 +29,20 @@ struct MidiScroller
 
   struct
   {
-    struct : halp::midifile_port<"MIDI file", halp::simple_midi_track_event> {
+    struct : halp::midifile_port<"MIDI file", halp::simple_midi_track_event>
+    {
       halp_flag(file_watch);
       void update(MidiScroller& s) { s.update_midi(); }
     } midi;
-    halp::spinbox_i32<"MIDI track", halp::range{1, 127, 1}> track;
+    struct : halp::spinbox_i32<"MIDI track", halp::range{1, 127, 1}>
+    {
+      void update(MidiScroller& s) { s.update_midi(); }
+    } track;
     halp::hslider_f32<"Position"> position;
   } inputs;
 
-  struct {
+  struct
+  {
     halp::midi_bus<"MIDI messages"> midi;
   } outputs;
 
@@ -46,8 +50,10 @@ struct MidiScroller
   boost::icl::split_interval_map<int64_t, note_set> times;
   note_set current_notes;
 
-  void update_midi() {
-    struct note {
+  void update_midi()
+  {
+    struct note
+    {
       int velocity;
       int64_t start;
     };
@@ -55,7 +61,17 @@ struct MidiScroller
     times.clear();
     std::array<note, 128> notes;
 
-    for(const auto& ev : inputs.midi.midifile.tracks[1])
+    const int tracks = inputs.midi.midifile.tracks.size();
+    if(tracks == 0)
+      return;
+    int track = inputs.track.value;
+
+    if(track < 0)
+      track = 0;
+    if(track >= inputs.midi.midifile.tracks.size())
+      track = inputs.midi.midifile.tracks.size() - 1;
+
+    for(const auto& ev : inputs.midi.midifile.tracks[track])
     {
       libremidi::message msg;
       msg.bytes = {ev.bytes[0], ev.bytes[1], ev.bytes[2]};
@@ -67,8 +83,7 @@ struct MidiScroller
         case libremidi::message_type::NOTE_ON:
           notes[pitch] = {.velocity = vel, .start = ev.tick_absolute};
           break;
-        case libremidi::message_type::NOTE_OFF:
-        {
+        case libremidi::message_type::NOTE_OFF: {
           auto end = ev.tick_absolute;
           auto vel = notes[pitch].velocity;
           if(vel > 0)
@@ -109,7 +124,8 @@ struct MidiScroller
       for(auto [pitch, vel] : current_notes)
       {
         auto m = libremidi::message::note_off(1, pitch, vel);
-        outputs.midi.midi_messages.emplace_back(halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
+        outputs.midi.midi_messages.emplace_back(
+            halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
       }
       current_notes.clear();
     }
@@ -124,7 +140,8 @@ struct MidiScroller
         if(!new_notes.contains({pitch, vel}))
         {
           auto m = libremidi::message::note_off(1, pitch, vel);
-          outputs.midi.midi_messages.emplace_back(halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
+          outputs.midi.midi_messages.emplace_back(
+              halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
         }
       }
       for(auto [pitch, vel] : new_notes)
@@ -132,7 +149,8 @@ struct MidiScroller
         if(!current_notes.contains({pitch, vel}))
         {
           auto m = libremidi::message::note_on(1, pitch, vel);
-          outputs.midi.midi_messages.emplace_back(halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
+          outputs.midi.midi_messages.emplace_back(
+              halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
         }
       }
       current_notes = new_notes;
