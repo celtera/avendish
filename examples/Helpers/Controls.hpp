@@ -43,8 +43,9 @@ struct Controls
       halp__enum("Enum", Bar, Foo, Bar)
     } f;
 
-    // halp::range_slider_f32<"Range"> g;
-
+#if 0
+    halp::range_slider_f32<"Range"> g;
+#endif
     struct
     {
       halp_meta(name, "Combo_A");
