@@ -43,10 +43,13 @@ namespace avnd
     Type{T::PropName};                                 \
   };
 
+
+
+
+#if __has_include(<boost/core/demangle.hpp>) && !defined(BOOST_NO_RTTI)
 template <typename T>
 std::string_view get_typeid_name()
 {
-#if __has_include(<boost/core/demangle.hpp>) && !defined(BOOST_NO_RTTI)
   static const auto str = []() -> std::string {
     auto dem = boost::core::demangle(typeid(T).name());
     auto idx = dem.find_last_of(':');
@@ -56,10 +59,12 @@ std::string_view get_typeid_name()
       return dem;
   }();
   return str;
-#else
-  return "(name)";
-#endif
 }
+#else
+template <typename T>
+constexpr std::string_view get_typeid_name() { return "(name)"; }
+#endif
+
 define_get_property(name, std::string_view, get_typeid_name<T>())
 define_get_property(c_name, std::string_view, "(c name)")
 define_get_property(vendor, std::string_view, "(vendor)")

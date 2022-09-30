@@ -1,5 +1,10 @@
 add_library(DisableExceptions INTERFACE)
 
+target_compile_definitions(DisableExceptions INTERFACE
+  BOOST_NO_RTTI=1
+  BOOST_NO_TYPEID=1
+  BOOST_NO_EXCEPTIONS=1
+)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   target_compile_options(DisableExceptions INTERFACE
     -fno-exceptions

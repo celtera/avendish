@@ -64,7 +64,7 @@ jobs:
             }
           - {
               name: "macOS",
-              os: macos-latest,
+              os: macos-12,
               common_flags: "",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
