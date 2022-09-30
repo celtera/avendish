@@ -356,25 +356,32 @@ struct process_before_run
     }
   }
 
+
   template <avnd::control Field, std::size_t Idx>
   requires(!avnd::sample_accurate_control<Field>) void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    if constexpr(avnd::optional_ish<decltype(Field::value)>)
+      ctrl.value = {};
   }
   template <avnd::value_port Field, std::size_t Idx>
   requires(!avnd::sample_accurate_value_port<Field>) void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    if constexpr(avnd::optional_ish<decltype(Field::value)>)
+      ctrl.value = {};
   }
   template <avnd::sample_accurate_control Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    // FIXME clear
   }
   template <avnd::sample_accurate_value_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    // FIXME clear
   }
   template <typename Field, std::size_t Idx>
   void operator()(

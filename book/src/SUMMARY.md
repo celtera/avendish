@@ -34,9 +34,10 @@
 # Advanced features
 - [Port data types](./advanced/port_types.md)
   - [Example](./advanced/port_types.example.md)
-  - [Sound files](./advanced/port_types.soundfile.md)
-  - [MIDI files](./advanced/port_types.midifile.md)
-  - [Raw files](./advanced/port_types.rawfile.md)
+  - [Files](./advanced/port_types.file.md)
+    - [Sound files](./advanced/port_types.file.sound.md)
+    - [MIDI files](./advanced/port_types.file.midi.md)
+    - [Raw files](./advanced/port_types.file.raw.md)
 - [Custom UI](./advanced/ui.md)
   - [Declarative layouts](./advanced/ui.layout.md)
   - [Custom items](./advanced/ui.painting.md)
@@ -49,6 +50,7 @@
 - [Sample-accurate processing](./advanced/sample_accurate.md)
   - [Example](./advanced/sample_accurate.example.md)
 - [Channel mimicking](./advanced/channel_mimicking.md)
+- [Threaded workers](./advanced/workers.md)
 - [CMake configuration](./advanced/cmake.md)
 
 # Writing GPU processors
@@ -61,6 +63,7 @@
 
 # Development
 - [Type predicates](./development/predicates.md)
+- [Flags](./development/flags.md)
 <!--
 # Reference
 

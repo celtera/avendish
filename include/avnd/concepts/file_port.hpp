@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
 #include <avnd/common/concepts_polyfill.hpp>
+#include <avnd/common/enums.hpp>
 #include <avnd/concepts/generic.hpp>
 
 namespace avnd
@@ -37,4 +38,5 @@ concept raw_file_port = requires(T t)
     } -> raw_file;
 };
 
+AVND_DEFINE_TAG(file_watch)
 }

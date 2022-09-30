@@ -1,7 +1,7 @@
 # Defining a mapping function
 
 It is common in audio to have a range which is best manipulated by the user in logarithmic space,
-for instance for adjusting frequencies, as the human hear is more sensitive to a 100Hz variation around 100Hz, thank around 15kHz.
+for instance for adjusting frequencies, as the human hear is more sensitive to a 100Hz variation around 100Hz, than around 15kHz.
 
 We can define custom mapping functions as part of the control, which will define
 how the UI controls shall behave:
