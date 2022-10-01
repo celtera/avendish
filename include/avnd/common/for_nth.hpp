@@ -27,7 +27,9 @@ template <class T, class F>
 requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
     T&& value, F&& func)
 {
+#if !defined(_MSC_VER)
   static_assert(!requires { value.size(); });
+#endif
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;

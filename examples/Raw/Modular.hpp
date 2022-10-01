@@ -46,16 +46,12 @@ struct Modular
       static consteval auto name() { return "Gain"; }
       // Controls are just pre-made types with some metadata
       // relevant for setting them up it up.
-      static consteval auto range()
+      struct range
       {
-        struct
-        {
-          const float min = 0.001;
-          const float max = 10.;
-          const float init = 1;
-        } c;
-        return c;
-      }
+        const float min = 0.001;
+        const float max = 10.;
+        const float init = 1;
+      };
 
       float value;
     } gain;

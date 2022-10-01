@@ -34,16 +34,12 @@ struct Minimal
       static consteval auto name() { return "Grunge"; }
       // Controls are just pre-made types with some metadata
       // relevant for setting them up it up.
-      static consteval auto range()
+      struct range
       {
-        struct
-        {
-          const int min = 0;
-          const int max = 30;
-          const int init = 1;
-        } c;
-        return c;
-      }
+        const int min = 0;
+        const int max = 30;
+        const int init = 1;
+      };
 
       int value;
     } gain;

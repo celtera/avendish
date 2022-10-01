@@ -82,10 +82,12 @@ using init_range = init_range_t<long double>;
 template <typename T, static_string lit, range setup>
 struct slider_t
 {
-  static clang_buggy_consteval auto range()
+  struct range
   {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
+    const T min = T(setup.min);
+    const T max = T(setup.max);
+    const T init = T(setup.init);
+  };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -155,10 +157,14 @@ struct knob_t
   {
     knob
   };
-  static clang_buggy_consteval auto range()
+
+  struct range
   {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
+    const T min = T(setup.min);
+    const T max = T(setup.max);
+    const T init = T(setup.init);
+  };
+
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
@@ -185,10 +191,14 @@ struct iknob_t
   {
     iknob
   };
-  static clang_buggy_consteval auto range()
+
+  struct range
   {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
+    const T min = T(setup.min);
+    const T max = T(setup.max);
+    const T init = T(setup.init);
+  };
+
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
@@ -217,10 +227,13 @@ struct time_chooser_t
   {
     time_chooser
   };
-  static clang_buggy_consteval auto range()
+
+  struct range
   {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
+    const T min = T(setup.min);
+    const T max = T(setup.max);
+    const T init = T(setup.init);
+  };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -242,6 +255,8 @@ using time_chooser = time_chooser_t<float, lit, setup>;
 
 struct toggle_setup
 {
+  const bool min = false;
+  const bool max = true;
   bool init;
   clang_buggy_consteval range to_range() const noexcept
   { return range{0., 1., init ? 1. : 0.}; }
@@ -255,7 +270,14 @@ struct toggle_t
     toggle,
     checkbox
   };
-  static clang_buggy_consteval auto range() { return setup; }
+
+  struct range
+  {
+    const T min = T(setup.min);
+    const T max = T(setup.max);
+    const T init = T(setup.init);
+  };
+
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   T value = setup.init;
@@ -288,10 +310,8 @@ struct maintained_button_t
     button,
     pushbutton
   };
-  static clang_buggy_consteval dummy_range range()
-  {
-    return {};
-  }
+  using range = dummy_range;
+
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   bool value = false;
@@ -318,7 +338,7 @@ struct impulse_button_t
     bang,
     impulse
   };
-  static clang_buggy_consteval auto range() { return impulse_type{}; }
+  using range = impulse_type;
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
   std::optional<impulse_type> value;
@@ -348,10 +368,10 @@ struct lineedit_t
     textedit,
     text
   };
-  static clang_buggy_consteval auto range()
+  struct range
   {
-    return lineedit_setup{.init = setup.value};
-  }
+    const std::string_view init = setup.value;
+  };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 

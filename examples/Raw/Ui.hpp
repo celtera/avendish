@@ -35,16 +35,12 @@ struct Ui
         slider
       };
 
-      static consteval auto range()
+      struct range
       {
-        struct
-        {
-          const int min = 0;
-          const int max = 10;
-          const int init = 3;
-        } c;
-        return c;
-      }
+        const int min = 0;
+        const int max = 10;
+        const int init = 3;
+      };
 
       static void display(char* buf, int v) noexcept
       {
@@ -63,16 +59,12 @@ struct Ui
         knob
       };
 
-      static consteval auto range()
+      struct range
       {
-        struct
-        {
-          const float min = 0;
-          const float max = 10;
-          const float init = 3;
-        } c;
-        return c;
-      }
+        const float min = 0;
+        const float max = 10;
+        const float init = 3;
+      };
 
       float value;
     } float_ctl;

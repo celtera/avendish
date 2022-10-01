@@ -28,16 +28,13 @@ struct PerSampleProcessor2
     struct
     {
       static consteval auto name() { return "Gain"; }
-      static consteval auto range()
+
+      struct range
       {
-        struct
-        {
-          const float min = 0.001;
-          const float max = 100;
-          const float init = 1;
-        } c;
-        return c;
-      }
+        const float min = 0.001;
+        const float max = 100;
+        const float init = 1;
+      };
 
       float value;
     } gain;
