@@ -149,6 +149,8 @@ struct setup_value_port
     constexpr auto dom = avnd::get_range<T>();
     if constexpr(std::is_floating_point_v<decltype(dom.min)>)
       return ossia::make_domain((float)dom.min, (float)dom.max);
+    if constexpr(std::is_same_v<std::decay_t<decltype(dom.init)>, bool>)
+      return ossia::domain_base<bool>{};
     else
       return ossia::make_domain(dom.min, dom.max);
   }
@@ -156,11 +158,6 @@ struct setup_value_port
   ossia::domain range_to_domain()
   {
     return {};
-  }
-  template <avnd::bool_parameter T>
-  ossia::domain range_to_domain()
-  {
-    return ossia::domain_base<bool>{};
   }
 
   template <avnd::enum_parameter T>
@@ -175,7 +172,7 @@ struct setup_value_port
   template <typename T>
   ossia::domain range_to_domain()
   {
-    if constexpr(avnd::has_range<T>)
+    if constexpr(avnd::has_range<T> && requires { avnd::get_range<T>().values;})
     {
       constexpr auto dom = avnd::get_range<T>();
       if constexpr(requires { std::string_view{dom.values[0].first}; })
