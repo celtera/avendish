@@ -135,6 +135,9 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="api-calls"><a class="header" href="#api-calls">API calls</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>In general, programming for the GPU involves some level of calling into a graphics API: OpenGL, Vulkan, Metal, or various abstractions on top of them such as the Qt, Unreal, etc... RHIs, libraries such as BGFX, etc.</p>
 <p>Like every non-declarative code, this has the sad side-effect of tying you to said library ; it's pretty hard to migrate to, say, Qt's RHI to pure OpenGL or BGFX.
 Here, we propose a method that aims to keep the algorithms reusable by having them state their needs without making any API calls.</p>

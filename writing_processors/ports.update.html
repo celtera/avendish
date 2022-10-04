@@ -135,9 +135,11 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="port-update-callback"><a class="header" href="#port-update-callback">Port update callback</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>It is possible to get a callback whenever the value of a (value) input port gets updated, to perform complex actions.
 <code>update</code> will always be called before the current tick starts.</p>
-<p>For now, this is only supported in the ossia binding.</p>
 <p>The port simply needs to have a <code>void update(T&amp;) { }</code> method implemented, where <code>T</code> will be the object containing the port:</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-cpp">struct MyProcessor

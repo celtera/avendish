@@ -138,26 +138,33 @@
 <p>The supported port types depend on the back-end. There is, however, some flexibility.</p>
 <h2 id="simple-ports"><a class="header" href="#simple-ports">Simple ports</a></h2>
 <h3 id="float"><a class="header" href="#float">Float</a></h3>
-<p>They should work everywhere.</p>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   float value;
 } my_port;
 </code></pre>
 <h3 id="double"><a class="header" href="#double">Double</a></h3>
-<p>They will not work in Max / Pd message processors (but will work in Max / Pd audio processors)
-as their API expect a pointer to an existing <code>float</code> value.</p>
+<blockquote>
+<p>Supported bindings: all except Max / Pd message processors (they will work in Max / Pd audio processors) as their API expect a pointer to an existing <code>float</code> value.</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   double value;
 } my_port;
 </code></pre>
 <h3 id="int"><a class="header" href="#int">Int</a></h3>
-<p>Same than double.</p>
+<blockquote>
+<p>Supported bindings: Same than double.</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   int value;
 } my_port;
 </code></pre>
 <h3 id="bool"><a class="header" href="#bool">Bool</a></h3>
-<p>Same than double.</p>
+<blockquote>
+<p>Supported bindings: Same than double.</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   bool value;
 } my_port;
@@ -167,12 +174,17 @@ as their API expect a pointer to an existing <code>float</code> value.</p>
 a maintained <code>button</code> or a momentary <code>bang</code>.</p>
 </blockquote>
 <h3 id="string"><a class="header" href="#string">String</a></h3>
-<p>Will not work in environments such as VST3 for obvious reasons.</p>
+<blockquote>
+<p>Supported bindings: ossia, Max, Pd, Python</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   std::string value;
 } my_port;
 </code></pre>
 <h2 id="enumerations"><a class="header" href="#enumerations">Enumerations</a></h2>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>Enumerations are interesting.
 There are multiple ways to implement them.</p>
 <h3 id="mapping-a-string-to-a-value"><a class="header" href="#mapping-a-string-to-a-value">Mapping a string to a value</a></h3>
@@ -262,7 +274,10 @@ struct {
 </code></pre>
 <p>declares a port named &quot;Simple Enum&quot;. The default value will be &quot;Peg&quot;, the 4 enumerators are Square, Peg, Round, Hole.</p>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
-<p>Containers are supported (in environments where this is meaningful -- for now, ossia only !) provided that they provide an API that matches:</p>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>Containers are supported (in environments where this is meaningful) provided that they provide an API that matches:</p>
 <h3 id="stdvector"><a class="header" href="#stdvector"><code>std::vector</code></a></h3>
 <pre><code class="language-cpp">template &lt;typename T&gt;
 concept vector_ish = requires(T t)
@@ -305,12 +320,18 @@ concept vector_ish = requires(T t)
 </code></pre>
 <p>Use <code>std::array</code> instead.</p>
 <h2 id="variants"><a class="header" href="#variants">Variants</a></h2>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Types which look like <code>std::variant</code> (for instance <code>boost::variant2::variant</code> or <code>mpark::variant</code>) are supported.</p>
 <pre><code class="language-cpp">struct {
   std::variant&lt;int, bool, std::string&gt; value;
 } my_port;
 </code></pre>
 <h2 id="optionals"><a class="header" href="#optionals">Optionals</a></h2>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Types which look like <code>std::optional</code> (for instance <code>boost::optional</code> or <code>tl::optional</code>) are supported.</p>
 <pre><code class="language-cpp">struct {
   std::optional&lt;int&gt; value;
@@ -323,18 +344,27 @@ If the processor sets the output, a message will be sent outwards.</p>
 (and thus a small additional storage cost).</p>
 <h2 id="advanced-types"><a class="header" href="#advanced-types">Advanced types</a></h2>
 <h3 id="2d-position-xy"><a class="header" href="#2d-position-xy">2D position: xy</a></h3>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Here a special shape of struct is recognized:</p>
 <pre><code class="language-cpp">struct {
   struct { float x, y; } value;
 } my_port;
 </code></pre>
 <h3 id="color"><a class="header" href="#color">Color</a></h3>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Here a special shape of struct is recognized:</p>
 <pre><code class="language-cpp">struct {
   struct { float r, g, b, a; } value;
 } my_port;
 </code></pre>
 <h3 id="generalized-aggregate-types"><a class="header" href="#generalized-aggregate-types">Generalized aggregate types</a></h3>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Aggregates are <em>somewhat</em> supported: that is, one can define </p>
 <pre><code class="language-cpp">struct Foo {
   int a, b;

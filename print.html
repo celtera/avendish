@@ -163,6 +163,7 @@ an explanation of the concepts and implementation.</p>
 </ul>
 <p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-) </p>
 <p>In contrast, Avendish processors can be written in a way that does not depend on <em>any</em> existing library, not even the standard C or C++ libraries, which makes them trivially portable to such platforms. The only required thing is a C++ compiler, really!</p>
+<p>Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a <code>string</code> output port in a VST plug-in), in other cases just because by lack of time, but it's on the roadmap! In general features are prototyped implemented in the <a href="https://ossia.io">ossia score</a> back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.</p>
 <h1 id="why-c"><a class="header" href="#why-c">Why C++</a></h1>
 <p>To ease porting of most effects, which are also in C++. Step by step, we will be able to lift them towards maybe higher-level descriptions, but first I believe that having something in C++ is important to allow capturing the semantics of the vast majority of media processors in existence.</p>
 <p>Also because this is the language I know best =p</p>
@@ -400,6 +401,9 @@ We'll see in a later chapter how to print on Pd's own console instead.</p>
 <h1 id="running-in-daws"><a class="header" href="#running-in-daws">Running in DAWs</a></h1>
 <p>We could, but so far our object is not really an object that makes sense in a DAW: it does not process audio in any way. We'll see in further chapters how to make audio objects.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="adding-ports"><a class="header" href="#adding-ports">Adding ports</a></h1>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>Our processor so far does not process much. It just reacts to an external trigger, to invoke a print function.</p>
 <blockquote>
 <p>Note that the way this trigger is invoked varies between environments: in Python, we called a <code>process()</code> function, while in PureData, we sent a bang to our object. That is one of the core philosophies of Avendish: bindings should make it so that the object fits as much as possible with the environment's semantics and idioms.</p>
@@ -652,6 +656,9 @@ my_value_port(b, std::string)
 <p>Our ports so far are very simple: floating-point values, without any more information attached than a name to show to the user.</p>
 <p>Most of the time, we'll want to attach some semantic metadata to the ports: for instance, a range of acceptable values, the kind of UI widget that should be shown to the user, etc.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="defining-a-minmax-range"><a class="header" href="#defining-a-minmax-range">Defining a min/max range</a></h1>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>Here is how one can define a port with such a range:</p>
 <pre><code class="language-cpp">struct {
   static consteval auto name() { return &quot;foobar&quot;; } 
@@ -750,6 +757,9 @@ static_assert(sizeof(foobar) == sizeof(float));
 <li>Implement an abstraction layer which would duplicate the parameters with their clamped version, and perform the clamping on all parameters whenever the process function gets called. This would however be hurtful in terms of performance and memory use.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="defining-ui-widgets"><a class="header" href="#defining-ui-widgets">Defining UI widgets</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Avendish can recognize a few names that will indicate that a widget of a certain type must be created.</p>
 <p>For instance: </p>
 <pre><code class="language-cpp">struct {
@@ -783,6 +793,9 @@ hbargraph, vbargraph, bargraph
 <p>This kind of widget definition is here to enable host DAWs to automatically generate appropriate UIs automatically.</p>
 <p>A further chapter will present how to create entirely custom painted UIs and widgets.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="defining-a-mapping-function"><a class="header" href="#defining-a-mapping-function">Defining a mapping function</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>It is common in audio to have a range which is best manipulated by the user in logarithmic space,
 for instance for adjusting frequencies, as the human hear is more sensitive to a 100Hz variation around 100Hz, than around 15kHz.</p>
 <p>We can define custom mapping functions as part of the control, which will define
@@ -859,6 +872,9 @@ struct inverse_mapper
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="widget-helpers"><a class="header" href="#widget-helpers">Widget helpers</a></h1>
+<blockquote>
+<p>Supported bindings: depending on the underlying data type</p>
+</blockquote>
 <p>To simplify the common use case of defining a port such as &quot;slider with a range&quot;, a set of common helper types is provided.</p>
 <p>Here is our example, now as refined as it can be ; almost no character is superfluous or needlessly repeated except the names of controls:</p>
 <pre><code class="language-cpp">#pragma once
@@ -889,9 +905,11 @@ struct MyProcessor
 </code></pre>
 <p>That is, an instance of our object weighs in memory exactly the size of its inputs and outputs, nothing else. In addition, the binding libraries try extremely hard to not allocate any memory dynamically, which leads to very concise memory representations of our media objects.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="port-update-callback"><a class="header" href="#port-update-callback">Port update callback</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>It is possible to get a callback whenever the value of a (value) input port gets updated, to perform complex actions.
 <code>update</code> will always be called before the current tick starts.</p>
-<p>For now, this is only supported in the ossia binding.</p>
 <p>The port simply needs to have a <code>void update(T&amp;) { }</code> method implemented, where <code>T</code> will be the object containing the port:</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-cpp">struct MyProcessor
@@ -952,6 +970,9 @@ struct MyProcessor
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="writing-audio-processors"><a class="header" href="#writing-audio-processors">Writing audio processors</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
+</blockquote>
 <p>The processors we wrote until now only processed &quot;control&quot; values.</p>
 <p>As a convention, those are values that change infrequently, relative to the audio rate: every few milliseconds, as opposed to every few dozen microseconds for individual audio samples.</p>
 <h2 id="argument-based-processors"><a class="header" href="#argument-based-processors">Argument-based processors</a></h2>
@@ -1138,6 +1159,9 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 </code></pre>
 <p>to indicate a per-sample, multi-channel bus, but this has not been implemented yet.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="monophonic-processors"><a class="header" href="#monophonic-processors">Monophonic processors</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, vst, vst3, clap, Max</p>
+</blockquote>
 <p>There are three special cases: </p>
 <ol>
 <li>Processors with one sample input and one sample output.</li>
@@ -1220,6 +1244,9 @@ private:
 </code></pre>
 <p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasses one would also be able to generate the more efficient form directly.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="audio-setup"><a class="header" href="#audio-setup">Audio setup</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
+</blockquote>
 <p>It is fairly common for audio systems to need to have some buffers allocated or perform pre-computations depending on the sample rate and buffer size of the system.</p>
 <p>This can be done by adding the following method in the processor:</p>
 <pre><code class="language-cpp">void prepare(/* some_type */ info) {
@@ -1287,6 +1314,9 @@ if constexpr(requires (T t) { t.rate = 44100; })
 </code></pre>
 <p>This way, only the cost of the variables that are actually used by the algorithm is ever incurred, which is of course not super important but a good reference implementation for this way of doing for other parts of the system where it matters more. </p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="audio-arguments"><a class="header" href="#audio-arguments">Audio arguments</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
+</blockquote>
 <p>In addition of the global set-up step, one may require per-process-step arguments.
 Most common needs are for instance the current tempo, etc.</p>
 <p>The infrastructure put in place for this is very similar to the one previously mentioned for 
@@ -1334,6 +1364,9 @@ the setup step.</p>
 <li>and other similar timing-related things which will all be able to be opt-in.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="audio-fft"><a class="header" href="#audio-fft">Audio FFT</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>It is pretty common for audio analysis tasks to need access to the audio spectrum.</p>
 <p>However, this causes a dramatic situation at the ecosystem level: every plug-in ships with its own FFT 
 implementation, which at best duplicates code for no good reason, and at worse may cause complex 
@@ -1502,6 +1535,9 @@ struct PeakBandFFTPort
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="messages"><a class="header" href="#messages">Messages</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, Max, Pd, Python</p>
+</blockquote>
 <p>So far, we already have something which allows to express a great deal of audio plug-ins, as well as many objects that do not operate in a manner synchronized to a constant sound input, but also in a more asynchronous way, and with things more complicated than single <code>float</code>, <code>int</code> or <code>string</code> values.</p>
 <p>A snippet of code is worth ten thousand words: here is how one defines a message input.</p>
 <pre><code class="language-cpp">struct MyProcessor {
@@ -1599,6 +1635,9 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 </code></pre>
 <p>Here, <code>atom_iterator</code> is what gets passed to <code>my_variadic_message</code>. It allows to deport the iteration of the loop over the arguments into the calling code, but handles the matching from type to union member in a generic way and transforms them into safer <code>std::variant</code> instances on-the-fly, which removes an entire class of possible errors while not costing much : in my experiments for instance, the compiler is able to elide entirely any form of dynamic memory allocation which would normally be required there.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="callbacks"><a class="header" href="#callbacks">Callbacks</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, Max, Pd, Python</p>
+</blockquote>
 <p>Just like messages allow to define functions that will be called from an outside request, it is also possible to define callbacks: functions that our processor will call, and which will be sent to the outside world.</p>
 <p>Just like for messages, this does not really make sense for instance for audio processors ; however it is pretty much necessary to make useful Max or Pd objects.</p>
 <p>Callbacks are defined as part of the <code>outputs</code> struct.</p>
@@ -1657,6 +1696,9 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 } overload;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="initialization"><a class="header" href="#initialization">Initialization</a></h1>
+<blockquote>
+<p>Supported bindings: Max, Pd</p>
+</blockquote>
 <p>Some media systems provide a way for objects to be passed initialization arguments.</p>
 <p>Avendish supports this with a special &quot;initialize&quot; method. Ultimately, I'd like to be able to simply use C++ constructors for this, but haven't managed to yet.</p>
 <p>Here's an example: </p>
@@ -1675,6 +1717,9 @@ void initialize(float a, std::string_view b)
 [my_processor 0 0 0 1 2 3] // Not OK
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="midi-io"><a class="header" href="#midi-io">MIDI I/O</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, vst, vst3, clap</p>
+</blockquote>
 <p>Some media systems may have a concept of MIDI input / output. Note that currently this is only implemented for DAW-ish bindings: ossia, VST3, CLAP... Max and Pd do not support it yet (but if there is a standard for passing MIDI messages between objects there I'd love to hear about it !).</p>
 <p>There are a few ways to specify MIDI ports.</p>
 <p>Here is how one specifies unsafe MIDI ports:</p>
@@ -1830,6 +1875,9 @@ struct Synth
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="image-ports"><a class="header" href="#image-ports">Image ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Some media systems have the ability to process images. Avendish is not restricted here :-)</p>
 <p>Note that this part of the system is still pretty much in flux, in particular with regards of how allocations are supposed to be handled.
 Any feedback on this is welcome.</p>
@@ -1955,6 +2003,9 @@ struct TextureFilterExample
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="metadatas"><a class="header" href="#metadatas">Metadatas</a></h1>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>So far the main metadata we saw for our processor is its name: </p>
 <pre><code class="language-cpp">static consteval auto name() { return &quot;Foo&quot;; }
 </code></pre>
@@ -1983,26 +2034,33 @@ Here is a list in order of importance; it is recommended that strings are used f
 <p>The supported port types depend on the back-end. There is, however, some flexibility.</p>
 <h2 id="simple-ports"><a class="header" href="#simple-ports">Simple ports</a></h2>
 <h3 id="float"><a class="header" href="#float">Float</a></h3>
-<p>They should work everywhere.</p>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   float value;
 } my_port;
 </code></pre>
 <h3 id="double"><a class="header" href="#double">Double</a></h3>
-<p>They will not work in Max / Pd message processors (but will work in Max / Pd audio processors)
-as their API expect a pointer to an existing <code>float</code> value.</p>
+<blockquote>
+<p>Supported bindings: all except Max / Pd message processors (they will work in Max / Pd audio processors) as their API expect a pointer to an existing <code>float</code> value.</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   double value;
 } my_port;
 </code></pre>
 <h3 id="int"><a class="header" href="#int">Int</a></h3>
-<p>Same than double.</p>
+<blockquote>
+<p>Supported bindings: Same than double.</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   int value;
 } my_port;
 </code></pre>
 <h3 id="bool"><a class="header" href="#bool">Bool</a></h3>
-<p>Same than double.</p>
+<blockquote>
+<p>Supported bindings: Same than double.</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   bool value;
 } my_port;
@@ -2012,12 +2070,17 @@ as their API expect a pointer to an existing <code>float</code> value.</p>
 a maintained <code>button</code> or a momentary <code>bang</code>.</p>
 </blockquote>
 <h3 id="string"><a class="header" href="#string">String</a></h3>
-<p>Will not work in environments such as VST3 for obvious reasons.</p>
+<blockquote>
+<p>Supported bindings: ossia, Max, Pd, Python</p>
+</blockquote>
 <pre><code class="language-cpp">struct {
   std::string value;
 } my_port;
 </code></pre>
 <h2 id="enumerations"><a class="header" href="#enumerations">Enumerations</a></h2>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>Enumerations are interesting.
 There are multiple ways to implement them.</p>
 <h3 id="mapping-a-string-to-a-value"><a class="header" href="#mapping-a-string-to-a-value">Mapping a string to a value</a></h3>
@@ -2107,7 +2170,10 @@ struct {
 </code></pre>
 <p>declares a port named &quot;Simple Enum&quot;. The default value will be &quot;Peg&quot;, the 4 enumerators are Square, Peg, Round, Hole.</p>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
-<p>Containers are supported (in environments where this is meaningful -- for now, ossia only !) provided that they provide an API that matches:</p>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>Containers are supported (in environments where this is meaningful) provided that they provide an API that matches:</p>
 <h3 id="stdvector"><a class="header" href="#stdvector"><code>std::vector</code></a></h3>
 <pre><code class="language-cpp">template &lt;typename T&gt;
 concept vector_ish = requires(T t)
@@ -2150,12 +2216,18 @@ concept vector_ish = requires(T t)
 </code></pre>
 <p>Use <code>std::array</code> instead.</p>
 <h2 id="variants"><a class="header" href="#variants">Variants</a></h2>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Types which look like <code>std::variant</code> (for instance <code>boost::variant2::variant</code> or <code>mpark::variant</code>) are supported.</p>
 <pre><code class="language-cpp">struct {
   std::variant&lt;int, bool, std::string&gt; value;
 } my_port;
 </code></pre>
 <h2 id="optionals"><a class="header" href="#optionals">Optionals</a></h2>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Types which look like <code>std::optional</code> (for instance <code>boost::optional</code> or <code>tl::optional</code>) are supported.</p>
 <pre><code class="language-cpp">struct {
   std::optional&lt;int&gt; value;
@@ -2168,18 +2240,27 @@ If the processor sets the output, a message will be sent outwards.</p>
 (and thus a small additional storage cost).</p>
 <h2 id="advanced-types"><a class="header" href="#advanced-types">Advanced types</a></h2>
 <h3 id="2d-position-xy"><a class="header" href="#2d-position-xy">2D position: xy</a></h3>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Here a special shape of struct is recognized:</p>
 <pre><code class="language-cpp">struct {
   struct { float x, y; } value;
 } my_port;
 </code></pre>
 <h3 id="color"><a class="header" href="#color">Color</a></h3>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Here a special shape of struct is recognized:</p>
 <pre><code class="language-cpp">struct {
   struct { float r, g, b, a; } value;
 } my_port;
 </code></pre>
 <h3 id="generalized-aggregate-types"><a class="header" href="#generalized-aggregate-types">Generalized aggregate types</a></h3>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Aggregates are <em>somewhat</em> supported: that is, one can define </p>
 <pre><code class="language-cpp">struct Foo {
   int a, b;
@@ -2383,6 +2464,9 @@ struct ControlGallery
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="file-ports"><a class="header" href="#file-ports">File ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>File ports are currently only supported with the ossia binding.</p>
 <p>They allow to specify that we want the content of a file.
 The host will take care of loading, mmaping, converting, etc... the file in the relevant format - as far as possible outside of DSP / processing threads.</p>
@@ -2441,6 +2525,9 @@ Instead, the host knows which audio file formats it is able to load and should j
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="soundfile-ports"><a class="header" href="#soundfile-ports">Soundfile ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Soundfile ports are currently only supported with the ossia binding.</p>
 <p>They allow to define an input which will be the content of a sound file, along with its metadata: number of channels, number of frames.</p>
 <h2 id="port-definition"><a class="header" href="#port-definition">Port definition</a></h2>
@@ -2491,6 +2578,9 @@ the simplest way is to make an empty struct which inherits from <code>halp::soun
 } port_name;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="midifle-ports"><a class="header" href="#midifle-ports">Midifle ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Midifile ports are currently only supported with the ossia binding.</p>
 <p>They allow to define an input which will be the content of a MIDI file.</p>
 <h2 id="port-definition-1"><a class="header" href="#port-definition-1">Port definition</a></h2>
@@ -2560,6 +2650,9 @@ the simplest way is to make an empty struct which inherits from <code>halp::midi
 } port_name;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="raw-file-ports"><a class="header" href="#raw-file-ports">Raw file ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>File ports are currently only supported with the ossia binding.</p>
 <p>They allow to define an input which will be the content of a file on the hard drive.
 The file is memory-mapped.</p>
@@ -2609,16 +2702,28 @@ This is already a good start for making user interfaces, but most media systems 
 <ol>
 <li>Automatic: nothing to do, all the widgets corresponding to inputs and outputs of the processor will be generated automatically in a list. This is not pretty but sufficient for many simple cases. For instance, here is how some Avendish plug-ins render in <em>ossia score</em>.</li>
 </ol>
+<blockquote>
+<p>Supported bindings: all, not really a feature of Avendish per-se but of the hosts</p>
+</blockquote>
 <p><img src="advanced/images/ui-basic.png" alt="Basic UI" /></p>
 <ol start="2">
 <li>Giving layout hints. A declarative syntax allows to layout said items and text in usual containers, auomatically and with arbitrary nesting: hbox, vbox, tabs, split view... Here is, again, an example in <em>ossia score</em>.</li>
 </ol>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p><img src="advanced/images/ui-layout.png" alt="Basic UI" /></p>
 <ol start="3">
 <li>Creating entirely custom items with a Canvas-based API. It is also possible to load images, make custom animations and handle mouse events.</li>
 </ol>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p><img src="advanced/images/ui-image.gif" alt="Basic UI" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="layout-based-uis"><a class="header" href="#layout-based-uis">Layout-based UIs</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, others are work-in-progress</p>
+</blockquote>
 <p>To define a custom UI, one has to add a <code>struct ui</code> in the processor definition.</p>
 <pre><code class="language-cpp">struct MyProcessor {
   struct ui {
@@ -2803,6 +2908,9 @@ halp::item&lt;&amp;ins::foo&gt; widget{
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="custom-items"><a class="header" href="#custom-items">Custom items</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>One can also define and use custom items. This is however very experimental and only support in the ossia bindings so far :-)</p>
 <h2 id="non-interactive-items"><a class="header" href="#non-interactive-items">Non-interactive items</a></h2>
 <p>Here is a non-interactive item:</p>
@@ -3025,6 +3133,9 @@ concept painter = requires(T t)
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ui-message-bus"><a class="header" href="#ui-message-bus">UI message bus</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Some UIs may have more complicated logic that cannot just be represented through 
 widgets changing single controls: pressing a button may trigger the loading of a file, 
 the entire reconfiguration of the UI, etc.</p>
@@ -3270,6 +3381,9 @@ struct MessageBusUi
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="feature-injection"><a class="header" href="#feature-injection">Feature injection</a></h1>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>Many processors may require some kind of common, cross-cutting algorithm or system for their proper operation.</p>
 <p>Processors can optionally declare a template argument, which will contain the implementations of these &quot;cross-cutting concerns&quot; supported by the backend.</p>
 <p>For now, there are two: </p>
@@ -3288,6 +3402,9 @@ struct MyProcessor {
 <p>This means that for instance, a processor can log to the Pd or Max console through <code>post(...)</code>, to stdout on Python, etc. and that they are relieved of the need to go look for an FFT algorithm.</p>
 <p>Hosts like <em>ossia score</em> will be able to plug-in their own FFT implementation optimized for the platform on which the plug-in is running (and binaries will stop having 45 duplicate FFT implementations...).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="logging-feature"><a class="header" href="#logging-feature">Logging feature</a></h1>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
 <p>The API is modeled after <a href="https://github.com/gabime/spdlog">spdlog</a> and expects the <a href="https://github.com/fmtlib/fmt">fmt</a> syntax: </p>
 <pre><code class="language-cpp">#pragma once
 
@@ -3348,6 +3465,9 @@ struct Logger
 <p>Avendish currently will look for <code>fmtlib</code> for its logger implementation, until <code>std::format</code> gets implemented by compiler authors.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fft-feature"><a class="header" href="#fft-feature">FFT feature</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>FFT operates on complex numbers ; you can expect a <code>real()</code> and <code>complex()</code> members.
 Here is a simple example, which looks for the band with the most amplitude.</p>
 <pre><code class="language-cpp">#pragma once
@@ -3430,6 +3550,9 @@ struct PeakBand
 <p>Avendish currently provides a very simple and unoptimized FFT for the sake of testing. Contributions of bindings to more efficient FFT libraries are very welcome :-)</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="presets"><a class="header" href="#presets">Presets</a></h1>
+<blockquote>
+<p>Supported bindings: VST</p>
+</blockquote>
 <p>An experimental presets feature has been prototyped for the Vintage back-end.</p>
 <p>Here is how one may define presets:</p>
 <pre><code class="language-cpp">// Our inputs
@@ -3455,9 +3578,12 @@ static constexpr const program programs[]{
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sample-accurate-processing"><a class="header" href="#sample-accurate-processing">Sample-accurate processing</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>So far, we saw that control ports / parameters would have a single <code>value</code> member, which as one can expects, 
 stays constant for at least the entire duration of a tick.</p>
-<p>However, some hosts (such as <em>ossia score</em>) are able to give precise timestamps to control values.</p>
+<p>However, some hosts (such as <a href="https://ossia.io">ossia score</a>) are able to give precise timestamps to control values.</p>
 <p>If an algorithm supports this level of precision, it can be expressed by extending value ports in the following way:</p>
 <pre><code class="language-cpp">struct { 
   static consteval auto name() { return &quot;Control&quot;; } 
@@ -3542,6 +3668,9 @@ struct SampleAccurateFilterExample
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="audio-channel-mimicking"><a class="header" href="#audio-channel-mimicking">Audio channel mimicking</a></h1>
+<blockquote>
+<p>Supported bindings: ossia, VST, Clap, Max/MSP</p>
+</blockquote>
 <p>As discussed when introducing audio ports, for the sake of simplicity, a processor with one input and one output audio bus, if it does not specify a specific channel count, is assumed to have as many input as it has output channels.</p>
 <p>For instance, consider the following case:</p>
 <pre><code class="language-cpp">struct
@@ -3586,6 +3715,9 @@ struct outs
 } outputs;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="workers"><a class="header" href="#workers">Workers</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>It is relatively common to require to perform some long-running work in a separate thread: 
 processing samples, etc.</p>
 <p>Avendish provides two APIs for doing this: a general one, and a simpler one for the specific case of pre-processing
@@ -3593,9 +3725,6 @@ the data of a port (for instance when a file is loaded).</p>
 <p>The general idea is that the processor code sends a request to the worker with some data.
 The host processes the request in a thread. This returns a function which is then called back 
 onto the processor, to update its state with the result of the computations.</p>
-<blockquote>
-<p>This is currently only supported in ossia.</p>
-</blockquote>
 <h2 id="general-worker-api-usage"><a class="header" href="#general-worker-api-usage">General worker API Usage</a></h2>
 <p>In the main class, define a <code>worker</code> struct/instance ; the arguments can be anything.
 Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple 
@@ -3803,6 +3932,9 @@ int main()
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gpu-based-draw-nodes"><a class="header" href="#gpu-based-draw-nodes">GPU-based draw nodes</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of &quot;modern GPU pipeline&quot;, 
 in order to define API-independent GPU-based objects.</p>
 <p>Here are some useful readings to get an idea of the problem space: </p>
@@ -4079,6 +4211,9 @@ akin to:</p>
 Contributions welcome !</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="api-calls"><a class="header" href="#api-calls">API calls</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>In general, programming for the GPU involves some level of calling into a graphics API: OpenGL, Vulkan, Metal, or various abstractions on top of them such as the Qt, Unreal, etc... RHIs, libraries such as BGFX, etc.</p>
 <p>Like every non-declarative code, this has the sad side-effect of tying you to said library ; it's pretty hard to migrate to, say, Qt's RHI to pure OpenGL or BGFX.
 Here, we propose a method that aims to keep the algorithms reusable by having them state their needs without making any API calls.</p>
@@ -4245,6 +4380,9 @@ using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 <p>Note that the implementation does not depend on the variant type being <code>std::variant</code> -- I also tested with <code>boost.variant2</code> and <code>mpark::variant</code> which follow the same concepts.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="minimal-shaders"><a class="header" href="#minimal-shaders">Minimal shaders</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Sometimes only very simple fragment shaders are needed.</p>
 <p>In this case, one can omit all the functions and most of the pipeline layout, 
 and only define for instance an UBO, samplers and a fragment shader.</p>
@@ -4474,6 +4612,9 @@ private:
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="compute-nodes"><a class="header" href="#compute-nodes">Compute nodes</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>Compute is simpler than draw, as the pipeline only has one shader (the compute shader).
 Instead of <code>draw</code>, the method in which to run compute dispatch calls is called <code>dispatch</code>.</p>
 <p>Here is an example:</p>

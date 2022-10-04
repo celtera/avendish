@@ -135,6 +135,9 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="workers"><a class="header" href="#workers">Workers</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>It is relatively common to require to perform some long-running work in a separate thread: 
 processing samples, etc.</p>
 <p>Avendish provides two APIs for doing this: a general one, and a simpler one for the specific case of pre-processing
@@ -142,9 +145,6 @@ the data of a port (for instance when a file is loaded).</p>
 <p>The general idea is that the processor code sends a request to the worker with some data.
 The host processes the request in a thread. This returns a function which is then called back 
 onto the processor, to update its state with the result of the computations.</p>
-<blockquote>
-<p>This is currently only supported in ossia.</p>
-</blockquote>
 <h2 id="general-worker-api-usage"><a class="header" href="#general-worker-api-usage">General worker API Usage</a></h2>
 <p>In the main class, define a <code>worker</code> struct/instance ; the arguments can be anything.
 Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple 

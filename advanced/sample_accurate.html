@@ -135,9 +135,12 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="sample-accurate-processing"><a class="header" href="#sample-accurate-processing">Sample-accurate processing</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
 <p>So far, we saw that control ports / parameters would have a single <code>value</code> member, which as one can expects, 
 stays constant for at least the entire duration of a tick.</p>
-<p>However, some hosts (such as <em>ossia score</em>) are able to give precise timestamps to control values.</p>
+<p>However, some hosts (such as <a href="https://ossia.io">ossia score</a>) are able to give precise timestamps to control values.</p>
 <p>If an algorithm supports this level of precision, it can be expressed by extending value ports in the following way:</p>
 <pre><code class="language-cpp">struct { 
   static consteval auto name() { return &quot;Control&quot;; } 
