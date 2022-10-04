@@ -38,6 +38,7 @@
     - [Sound files](./advanced/port_types.file.sound.md)
     - [MIDI files](./advanced/port_types.file.midi.md)
     - [Raw files](./advanced/port_types.file.raw.md)
+  - [Code editor](./advanced/port_types.codeedit.md)
 - [Custom UI](./advanced/ui.md)
   - [Declarative layouts](./advanced/ui.layout.md)
   - [Custom items](./advanced/ui.painting.md)
