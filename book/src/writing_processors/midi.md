@@ -1,5 +1,7 @@
 # MIDI I/O
 
+> Supported bindings: ossia, vst, vst3, clap
+
 Some media systems may have a concept of MIDI input / output. Note that currently this is only implemented for DAW-ish bindings: ossia, VST3, CLAP... Max and Pd do not support it yet (but if there is a standard for passing MIDI messages between objects there I'd love to hear about it !).
 
 There are a few ways to specify MIDI ports.

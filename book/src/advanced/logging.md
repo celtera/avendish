@@ -1,5 +1,7 @@
 # Logging feature
 
+> Supported bindings: all
+
 The API is modeled after [spdlog](https://github.com/gabime/spdlog) and expects the [fmt](https://github.com/fmtlib/fmt) syntax: 
 
 ```cpp

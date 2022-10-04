@@ -1,5 +1,7 @@
 # Layout-based UIs
 
+> Supported bindings: ossia, others are work-in-progress
+
 To define a custom UI, one has to add a `struct ui` in the processor definition.
 
 ```cpp

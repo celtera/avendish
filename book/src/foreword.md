@@ -24,6 +24,8 @@ In addition, such frameworks are generally not suitable for embedded platforms s
 
 In contrast, Avendish processors can be written in a way that does not depend on *any* existing library, not even the standard C or C++ libraries, which makes them trivially portable to such platforms. The only required thing is a C++ compiler, really!
 
+Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a `string` output port in a VST plug-in), in other cases just because by lack of time, but it's on the roadmap! In general features are prototyped implemented in the [ossia score](https://ossia.io) back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.
+
 # Why C++
 
 To ease porting of most effects, which are also in C++. Step by step, we will be able to lift them towards maybe higher-level descriptions, but first I believe that having something in C++ is important to allow capturing the semantics of the vast majority of media processors in existence.

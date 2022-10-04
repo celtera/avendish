@@ -1,5 +1,7 @@
 # FFT feature
 
+> Supported bindings: ossia
+
 FFT operates on complex numbers ; you can expect a `real()` and `complex()` members.
 Here is a simple example, which looks for the band with the most amplitude.
 

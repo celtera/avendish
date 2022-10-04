@@ -1,5 +1,7 @@
 # UI message bus
 
+> Supported bindings: ossia
+
 Some UIs may have more complicated logic that cannot just be represented through 
 widgets changing single controls: pressing a button may trigger the loading of a file, 
 the entire reconfiguration of the UI, etc.

@@ -1,5 +1,7 @@
 # Monophonic processors
 
+> Supported bindings: ossia, vst, vst3, clap, Max
+
 There are three special cases: 
 
 1. Processors with one sample input and one sample output.

@@ -1,5 +1,7 @@
 # Soundfile ports
 
+> Supported bindings: ossia
+
 Soundfile ports are currently only supported with the ossia binding.
 
 They allow to define an input which will be the content of a sound file, along with its metadata: number of channels, number of frames.

@@ -64,9 +64,11 @@
 # Development
 - [Type predicates](./development/predicates.md)
 - [Flags](./development/flags.md)
+
 <!--
 # Reference
 
+- [Feature matrix](./reference/feature-matrix.md)
 - [Processing semantics](./reference/processing.md)
 - [Bindings](./reference/bindings.md)
 - [Controls](./reference/controls.md)

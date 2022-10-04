@@ -1,5 +1,7 @@
 # Workers
 
+> Supported bindings: ossia
+
 It is relatively common to require to perform some long-running work in a separate thread: 
 processing samples, etc.
 
@@ -9,8 +11,6 @@ the data of a port (for instance when a file is loaded).
 The general idea is that the processor code sends a request to the worker with some data.
 The host processes the request in a thread. This returns a function which is then called back 
 onto the processor, to update its state with the result of the computations.
-
-> This is currently only supported in ossia.
 
 ## General worker API Usage
 

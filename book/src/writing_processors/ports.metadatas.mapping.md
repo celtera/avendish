@@ -1,5 +1,7 @@
 # Defining a mapping function
 
+> Supported bindings: ossia
+
 It is common in audio to have a range which is best manipulated by the user in logarithmic space,
 for instance for adjusting frequencies, as the human hear is more sensitive to a 100Hz variation around 100Hz, than around 15kHz.
 

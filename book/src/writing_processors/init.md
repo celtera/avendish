@@ -1,5 +1,7 @@
 # Initialization
 
+> Supported bindings: Max, Pd
+
 Some media systems provide a way for objects to be passed initialization arguments.
 
 Avendish supports this with a special "initialize" method. Ultimately, I'd like to be able to simply use C++ constructors for this, but haven't managed to yet.

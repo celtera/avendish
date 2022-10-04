@@ -1,5 +1,7 @@
 # Minimal shaders
 
+> Supported bindings: ossia
+
 Sometimes only very simple fragment shaders are needed.
 
 In this case, one can omit all the functions and most of the pipeline layout, 

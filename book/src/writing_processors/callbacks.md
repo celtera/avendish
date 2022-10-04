@@ -1,5 +1,7 @@
 # Callbacks
 
+> Supported bindings: ossia, Max, Pd, Python
+
 Just like messages allow to define functions that will be called from an outside request, it is also possible to define callbacks: functions that our processor will call, and which will be sent to the outside world.
 
 Just like for messages, this does not really make sense for instance for audio processors ; however it is pretty much necessary to make useful Max or Pd objects.

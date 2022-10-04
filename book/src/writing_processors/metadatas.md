@@ -1,5 +1,7 @@
 # Metadatas
 
+> Supported bindings: all
+
 So far the main metadata we saw for our processor is its name: 
 
 ```cpp

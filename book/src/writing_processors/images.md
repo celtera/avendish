@@ -1,5 +1,7 @@
 # Image ports
 
+> Supported bindings: ossia
+
 Some media systems have the ability to process images. Avendish is not restricted here :-)
 
 Note that this part of the system is still pretty much in flux, in particular with regards of how allocations are supposed to be handled.

@@ -1,5 +1,7 @@
 # Custom items
 
+> Supported bindings: ossia
+
 One can also define and use custom items. This is however very experimental and only support in the ossia bindings so far :-)
 
 ## Non-interactive items

@@ -1,5 +1,7 @@
 # Presets
 
+> Supported bindings: VST
+
 An experimental presets feature has been prototyped for the Vintage back-end.
 
 Here is how one may define presets:

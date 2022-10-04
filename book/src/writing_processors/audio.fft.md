@@ -1,5 +1,7 @@
 # Audio FFT
 
+> Supported bindings: ossia
+
 It is pretty common for audio analysis tasks to need access to the audio spectrum.
 
 However, this causes a dramatic situation at the ecosystem level: every plug-in ships with its own FFT 

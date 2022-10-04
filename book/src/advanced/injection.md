@@ -1,5 +1,7 @@
 # Feature injection
 
+> Supported bindings: all
+
 Many processors may require some kind of common, cross-cutting algorithm or system for their proper operation.
 
 Processors can optionally declare a template argument, which will contain the implementations of these "cross-cutting concerns" supported by the backend.

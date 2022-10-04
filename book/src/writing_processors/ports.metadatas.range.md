@@ -1,4 +1,7 @@
 # Defining a min/max range
+
+> Supported bindings: all
+
 Here is how one can define a port with such a range:
 
 ```cpp

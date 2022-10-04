@@ -1,5 +1,7 @@
 # Audio setup
 
+> Supported bindings: ossia, vst, vst3, clap, Max, Pd
+
 It is fairly common for audio systems to need to have some buffers allocated or perform pre-computations depending on the sample rate and buffer size of the system.
 
 This can be done by adding the following method in the processor:

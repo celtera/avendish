@@ -1,5 +1,7 @@
 # Defining UI widgets
 
+> Supported bindings: ossia
+
 Avendish can recognize a few names that will indicate that a widget of a certain type must be created.
 
 For instance: 

@@ -6,7 +6,7 @@ The supported port types depend on the back-end. There is, however, some flexibi
 
 ### Float
 
-They should work everywhere.
+> Supported bindings: all
 
 ```cpp
 struct {
@@ -16,8 +16,7 @@ struct {
 
 ### Double
 
-They will not work in Max / Pd message processors (but will work in Max / Pd audio processors)
-as their API expect a pointer to an existing `float` value.
+> Supported bindings: all except Max / Pd message processors (they will work in Max / Pd audio processors) as their API expect a pointer to an existing `float` value.
 
 ```cpp
 struct {
@@ -27,7 +26,7 @@ struct {
 
 ### Int
 
-Same than double.
+> Supported bindings: Same than double.
 
 ```cpp
 struct {
@@ -37,7 +36,7 @@ struct {
 
 ### Bool
 
-Same than double.
+> Supported bindings: Same than double.
 
 ```cpp
 struct {
@@ -50,7 +49,7 @@ struct {
 
 ### String
 
-Will not work in environments such as VST3 for obvious reasons.
+> Supported bindings: ossia, Max, Pd, Python
 
 ```cpp
 struct {
@@ -59,6 +58,8 @@ struct {
 ```
 
 ## Enumerations
+
+> Supported bindings: all
 
 Enumerations are interesting.
 There are multiple ways to implement them.
@@ -175,7 +176,9 @@ declares a port named "Simple Enum". The default value will be "Peg", the 4 enum
 
 ## Containers
 
-Containers are supported (in environments where this is meaningful -- for now, ossia only !) provided that they provide an API that matches:
+> Supported bindings: ossia
+
+Containers are supported (in environments where this is meaningful) provided that they provide an API that matches:
 
 ### `std::vector`
 
@@ -242,6 +245,8 @@ Use `std::array` instead.
 
 ## Variants
 
+> Supported bindings: ossia
+
 Types which look like `std::variant` (for instance `boost::variant2::variant` or `mpark::variant`) are supported.
 
 ```cpp
@@ -251,6 +256,8 @@ struct {
 ```
 
 ## Optionals
+
+> Supported bindings: ossia
 
 Types which look like `std::optional` (for instance `boost::optional` or `tl::optional`) are supported.
 
@@ -271,6 +278,8 @@ This is mostly equivalent to messages and callbacks, but with a value-based inst
 
 ### 2D position: xy
 
+> Supported bindings: ossia
+
 Here a special shape of struct is recognized:
 
 ```cpp
@@ -281,6 +290,8 @@ struct {
 
 ### Color
 
+> Supported bindings: ossia
+
 Here a special shape of struct is recognized:
 
 ```cpp
@@ -290,6 +301,8 @@ struct {
 ```
 
 ### Generalized aggregate types
+
+> Supported bindings: ossia
 
 Aggregates are *somewhat* supported: that is, one can define 
 

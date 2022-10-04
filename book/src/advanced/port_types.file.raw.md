@@ -1,5 +1,7 @@
 # Raw file ports
 
+> Supported bindings: ossia
+
 File ports are currently only supported with the ossia binding.
 
 They allow to define an input which will be the content of a file on the hard drive.

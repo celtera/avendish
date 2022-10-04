@@ -1,5 +1,7 @@
 # Audio arguments
 
+> Supported bindings: ossia, vst, vst3, clap, Max, Pd
+
 In addition of the global set-up step, one may require per-process-step arguments.
 Most common needs are for instance the current tempo, etc.
 

@@ -1,5 +1,7 @@
 # Writing audio processors
 
+> Supported bindings: ossia, vst, vst3, clap, Max, Pd
+
 The processors we wrote until now only processed "control" values.
 
 As a convention, those are values that change infrequently, relative to the audio rate: every few milliseconds, as opposed to every few dozen microseconds for individual audio samples.

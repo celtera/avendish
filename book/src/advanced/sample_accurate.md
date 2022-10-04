@@ -1,9 +1,11 @@
 # Sample-accurate processing
 
+> Supported bindings: ossia
+
 So far, we saw that control ports / parameters would have a single `value` member, which as one can expects, 
 stays constant for at least the entire duration of a tick.
 
-However, some hosts (such as *ossia score*) are able to give precise timestamps to control values.
+However, some hosts (such as [ossia score](https://ossia.io)) are able to give precise timestamps to control values.
 
 If an algorithm supports this level of precision, it can be expressed by extending value ports in the following way:
 

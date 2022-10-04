@@ -1,5 +1,7 @@
 # Audio channel mimicking
 
+> Supported bindings: ossia, VST, Clap, Max/MSP
+
 As discussed when introducing audio ports, for the sake of simplicity, a processor with one input and one output audio bus, if it does not specify a specific channel count, is assumed to have as many input as it has output channels.
 
 For instance, consider the following case:

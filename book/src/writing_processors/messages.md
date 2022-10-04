@@ -1,5 +1,7 @@
 # Messages
 
+> Supported bindings: ossia, Max, Pd, Python
+
 So far, we already have something which allows to express a great deal of audio plug-ins, as well as many objects that do not operate in a manner synchronized to a constant sound input, but also in a more asynchronous way, and with things more complicated than single `float`, `int` or `string` values.
 
 A snippet of code is worth ten thousand words: here is how one defines a message input.

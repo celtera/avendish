@@ -1,5 +1,7 @@
 # Adding ports
 
+> Supported bindings: all
+
 Our processor so far does not process much. It just reacts to an external trigger, to invoke a print function.
 
 > Note that the way this trigger is invoked varies between environments: in Python, we called a `process()` function, while in PureData, we sent a bang to our object. That is one of the core philosophies of Avendish: bindings should make it so that the object fits as much as possible with the environment's semantics and idioms.

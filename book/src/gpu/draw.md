@@ -1,5 +1,7 @@
 # GPU-based draw nodes
 
+> Supported bindings: ossia
+
 The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of "modern GPU pipeline", 
 in order to define API-independent GPU-based objects.
 

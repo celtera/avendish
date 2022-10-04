@@ -1,5 +1,7 @@
 # File ports
 
+> Supported bindings: ossia
+
 File ports are currently only supported with the ossia binding.
 
 They allow to specify that we want the content of a file.

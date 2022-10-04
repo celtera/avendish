@@ -1,5 +1,7 @@
 # Widget helpers
 
+> Supported bindings: depending on the underlying data type
+
 To simplify the common use case of defining a port such as "slider with a range", a set of common helper types is provided.
 
 Here is our example, now as refined as it can be ; almost no character is superfluous or needlessly repeated except the names of controls:
