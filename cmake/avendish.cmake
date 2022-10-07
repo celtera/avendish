@@ -5,11 +5,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED 20)
 set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
-if(MSVC)
-  add_compile_options (/std:c++latest)
-  add_definitions(-DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
-endif()
-
 find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)
 find_package(fmt QUIET)

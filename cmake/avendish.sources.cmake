@@ -1,6 +1,11 @@
 add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
+if(MSVC)
+  target_compile_options(Avendish PUBLIC /std:c++latest)
+  target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
+endif()
+
 target_sources(Avendish
   PUBLIC
     "${AVND_SOURCE_DIR}/include/avnd/concepts/all.hpp"
