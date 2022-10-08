@@ -123,21 +123,40 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
-  void operator()(const avnd::map_ish auto& f)
+  template<avnd::map_ish T>
+  void operator()(const T& f)
   {
-    std::vector<ossia::value> v;
-    v.reserve(f.size());
-
-    for(auto& [map_k, map_v] : f)
+    using key_type = typename T::key_type;
+    if constexpr(std::is_convertible_v<key_type, std::string>)
     {
-      std::vector<ossia::value> sub(2);
+      ossia::value_map_type v;
+      v.reserve(f.size());
 
-      to_ossia_value_impl{sub[0]}(map_k);
-      to_ossia_value_impl{sub[1]}(map_v);
+      for(const auto& [map_k, map_v] : f)
+      {
+        ossia::value sub;
+        to_ossia_value_impl{sub}(map_v);
 
-      v.push_back(std::move(sub));
+        v.emplace_back(map_k, std::move(sub));
+      }
+      val = std::move(v);
     }
-    val = std::move(v);
+    else
+    {
+      std::vector<ossia::value> v;
+      v.reserve(f.size());
+
+      for(auto& [map_k, map_v] : f)
+      {
+        std::vector<ossia::value> sub(2);
+
+        to_ossia_value_impl{sub[0]}(map_k);
+        to_ossia_value_impl{sub[1]}(map_v);
+
+        v.push_back(std::move(sub));
+      }
+      val = std::move(v);
+    }
   }
 
   template <std::floating_point T>

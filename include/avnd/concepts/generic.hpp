@@ -81,6 +81,9 @@ concept vector_v_ish = requires(T t)
   t[1] = std::declval<V>();
 };
 
+template <typename T, typename V>
+concept vector_v_strict = vector_ish<T> && std::is_same_v<typename T::value_type, V>;
+
 template <typename T>
 concept variant_ish = requires(T t)
 {
