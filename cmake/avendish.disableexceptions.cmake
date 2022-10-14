@@ -1,4 +1,4 @@
-add_library(DisableExceptions INTERFACE)
+add_library(DisableExceptions STATIC src/disable_exceptions.cpp)
 
 target_compile_definitions(DisableExceptions INTERFACE
   BOOST_NO_RTTI=1

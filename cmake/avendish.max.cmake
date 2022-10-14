@@ -74,7 +74,7 @@ function(avnd_make_max)
 
   target_link_libraries(
     ${AVND_FX_TARGET}
-    PRIVATE
+    PUBLIC
       Avendish::Avendish_max
       DisableExceptions
   )

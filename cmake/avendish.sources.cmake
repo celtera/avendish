@@ -1,6 +1,8 @@
 add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
+target_compile_definitions(Avendish PUBLIC -DFMT_HEADER_ONLY=1)
+
 if(MSVC)
   target_compile_options(Avendish PUBLIC /std:c++latest)
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)

@@ -69,7 +69,7 @@ function(avnd_make_clap)
 
   target_link_libraries(
     ${AVND_FX_TARGET}
-    PRIVATE
+    PUBLIC
       Avendish::Avendish_clap
       DisableExceptions
   )

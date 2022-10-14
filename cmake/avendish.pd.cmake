@@ -83,9 +83,10 @@ function(avnd_make_pd)
 
   target_link_libraries(
     ${AVND_FX_TARGET}
-    PRIVATE
-      Avendish::Avendish_pd
+    PUBLIC
       DisableExceptions
+    PUBLIC
+      Avendish::Avendish_pd
   )
 
   if(APPLE)

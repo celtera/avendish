@@ -48,7 +48,7 @@ function(avnd_make_vintage)
 
   target_link_libraries(
     ${AVND_FX_TARGET}
-    PRIVATE
+    PUBLIC
       Avendish::Avendish_vintage
       DisableExceptions
   )

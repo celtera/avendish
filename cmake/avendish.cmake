@@ -8,7 +8,6 @@ set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)
 find_package(fmt QUIET)
-add_definitions(-DFMT_HEADER_ONLY=1)
 
 include(avendish.disableexceptions)
 include(avendish.sources)
