@@ -5,15 +5,6 @@
 #include <avnd/binding/standalone/standalone.hpp>
 #include <avnd/binding/standalone/configure.hpp>
 
-namespace boost
-{
-[[noreturn]]
-void throw_exception( std::exception const & e )
-{
-  std::abort();
-}
-}
-
 using type = decltype(avnd::configure<standalone::config, @AVND_MAIN_CLASS@>())::type;
 
 void run_ui(auto& object)
