@@ -25,15 +25,17 @@ static constexpr void init_controls(avnd::effect_container<F>& effect)
       if constexpr(avnd::has_range<T>)
       {
         constexpr auto c = avnd::get_range<T>();
-        if_possible(ctl.value = c.init)                    // Default case
-            else if_possible(ctl.value = c.values[c.init]) // For string enums
+        // clang-format off
+        if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
+        else if_possible(ctl.value = c.values[c.init])   // For string enums
+        else if_possible(ctl.value = c.init);            // Default case
 
-            if_possible(ctl.update(state.effect));
+        if_possible(ctl.update(state.effect));
+        // clang-format on
       }
     });
   }
 }
-
 /**
  * @brief Used for the case where the "host" can handle any
  * range of value: the plug-in will report the range,
