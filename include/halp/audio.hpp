@@ -4,10 +4,12 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/span_polyfill.hpp>
+#include <boost/container/small_vector.hpp>
 #include <halp/inline.hpp>
 #include <halp/static_string.hpp>
 
 #include <cstdint>
+#include <cmath>
 #include <functional>
 #include <string_view>
 namespace halp

@@ -98,6 +98,18 @@ struct process_before_run
       auto& last = port.data.get_data().back().value;
       update_value(self, impl, ctrl, last, ctrl.value, idx);
     }
+    else if(port.cables().empty())
+    {
+      if(auto node_ptr = port.address.target<ossia::net::node_base*>())
+      {
+        ossia::net::node_base& node = **node_ptr;
+      }
+      else if(auto path_ptr = port.address.target<ossia::traversal::path>())
+      {
+        ossia::traversal::path& p = *path_ptr;
+
+      }
+    }
   }
 
   template <avnd::parameter Field, std::size_t Idx>
