@@ -35,6 +35,7 @@ function(avnd_make_example_host)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish
+      DisableExceptions
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
