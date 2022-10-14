@@ -183,6 +183,51 @@ struct tick_musical
 
   // Position of the last bar relative to end in quarter notes
   double bar_at_end{};
+
+
+  // If the division falls in the current tick, returns the corresponding frames
+  [[nodiscard]] boost::container::small_vector<std::pair<int, int>, 8>
+  get_quantification_date(double div) const noexcept
+  {
+    boost::container::small_vector<std::pair<int, int>, 8> frames;
+    double start_in_bar = start_position_in_quarters - bar_at_start;
+    double end_in_bar = end_position_in_quarters - bar_at_start;
+
+    auto pos_to_frame = [this] (double in_bar) {
+      double start = start_position_in_quarters;
+      double musical_pos = in_bar + bar_at_start;
+      double end = end_position_in_quarters;
+
+      double percent = (musical_pos - start) / (end - start);
+      int f = percent * this->frames;
+      return f;
+    };
+    double cur = start_in_bar;
+    double q = std::floor(start_in_bar / div);
+    if(cur == q * div)
+    {
+      // Add it: we're on 0 or the correct thing
+      frames.emplace_back(pos_to_frame(cur), q);
+    }
+    else
+    {
+      cur = q * div;
+    }
+
+    for(;;)
+    {
+      cur += div;
+      if(cur < end_in_bar)
+      {
+        frames.emplace_back(pos_to_frame(cur), q);
+      }
+      else
+      {
+        break;
+      }
+    }
+    return frames;
+  }
 };
 
 struct setup
