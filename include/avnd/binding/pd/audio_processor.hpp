@@ -254,8 +254,8 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   //static_assert(std::is_aggregate_v<T>);
   static_assert(std::is_aggregate_v<instance>);
   static_assert(std::is_nothrow_constructible_v<instance>);
-  static_assert(std::is_nothrow_move_constructible_v<instance>);
-  static_assert(std::is_nothrow_move_assignable_v<instance>);
+  // static_assert(std::is_nothrow_move_constructible_v<instance>);
+  // static_assert(std::is_nothrow_move_assignable_v<instance>);
 #endif
 
   /// Small wrapper methods which will call into our actual type ///

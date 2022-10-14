@@ -61,7 +61,7 @@ static constexpr void apply_control(T& ctl, std::floating_point auto v)
 }
 
 template <typename T>
-static void apply_control(T& ctl, std::string&& v)
+static void apply_control(T& ctl, avnd::string_ish auto&& v)
 {
   // Clamp in range if there's one
   if constexpr(avnd::parameter_with_values_range<T>)
