@@ -145,7 +145,8 @@ struct audio_processor
           avnd::pfr::for_each_field(state.inputs, [s, res, &state]<typename C>(C& ctl) {
             if constexpr(requires { ctl.value = float{}; })
             {
-              if(std::string_view{C::name()} == s->s_name)
+              constexpr std::string_view control_name = avnd::get_name<C>();
+              if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, res);
                 if_possible(ctl.update(state.effect));
@@ -155,13 +156,33 @@ struct audio_processor
           break;
         }
 
+      case A_LONG: {
+        // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
+        // but most pd externals seem to just do a chain of if() so this is equivalent
+        int res = argv[0].a_w.w_long;
+        avnd::pfr::for_each_field(state.inputs, [s, res, &state]<typename C>(C& ctl) {
+          if constexpr(avnd::int_parameter<C> || avnd::float_parameter<C> || avnd::enum_parameter<C>)
+          {
+            constexpr std::string_view control_name = avnd::get_name<C>();
+            if(control_name == s->s_name)
+            {
+              avnd::apply_control(ctl, res);
+              post("Apply contorl :%s %s %d", s->s_name, control_name.data(), ctl.value);
+              if_possible(ctl.update(state.effect));
+            }
+          }
+        });
+        break;
+      }
+
         case A_SYM: {
           // TODO ?
           std::string res = argv[0].a_w.w_sym->s_name;
           avnd::pfr::for_each_field(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
-            if constexpr(requires { ctl.value = std::string{}; })
+            if constexpr(avnd::string_parameter<C>)
             {
-              if(avnd::get_name<C>() == s->s_name)
+              constexpr std::string_view control_name = avnd::get_name<C>();
+              if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, std::move(res));
                 if_possible(ctl.update(state.effect));

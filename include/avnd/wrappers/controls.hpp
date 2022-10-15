@@ -36,13 +36,15 @@ static constexpr void init_controls(avnd::effect_container<F>& effect)
     });
   }
 }
+
 /**
  * @brief Used for the case where the "host" can handle any
  * range of value: the plug-in will report the range,
  * and then we just have to clip to be safe
  */
-template <typename T>
-static constexpr void apply_control(T& ctl, std::floating_point auto v)
+template <typename T, typename V>
+requires (std::floating_point<V> || std::integral<V>)
+static constexpr void apply_control(T& ctl, V v)
 {
   // Apply the value
   ctl.value = v;
