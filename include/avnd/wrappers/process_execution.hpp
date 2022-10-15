@@ -26,6 +26,16 @@ concept single_audio_bus_poly_port_processor
           && audio_bus_output_introspection<T>::size == 1
           && dynamic_poly_audio_port<typename audio_bus_input_introspection<T>::template nth_element<
               0>> && dynamic_poly_audio_port<typename audio_bus_output_introspection<T>::template nth_element<0>>);
+
+
+template <typename T>
+concept single_audio_input_poly_port_processor
+    = polyphonic_audio_processor<T> &&(
+          (poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
+      && (audio_bus_input_introspection<T>::size == 1
+          && audio_bus_output_introspection<T>::size == 0
+          && dynamic_poly_audio_port<typename audio_bus_input_introspection<T>::template nth_element<0>>);
+
 template <typename FP, typename T>
 struct needs_storage : std::false_type
 {

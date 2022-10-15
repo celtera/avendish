@@ -103,6 +103,83 @@ struct process_adapter<T> : audio_buffer_storage<T>
   }
 };
 
+template <typename T>
+requires single_audio_input_poly_port_processor<T>
+struct process_adapter<T> : audio_buffer_storage<T>
+{
+  using i_info = avnd::audio_bus_input_introspection<T>;
+
+  template <typename SrcFP, typename DstFP>
+  void process_port(
+      avnd::effect_container<T>& implementation, avnd::span<SrcFP*> in,
+      avnd::span<SrcFP*> out, auto& tick)
+  {
+    auto& ins = implementation.inputs();
+
+    const int input_channels = in.size();
+    const auto n = get_frames(tick);
+
+    // Here we get the first audio port declared
+    auto& in_port = i_info::template get<0>(ins);
+
+    // Inputs may be double** or const double**
+    using input_fp_type = std::remove_reference_t<decltype(**in_port.samples)>;
+
+    if constexpr(needs_storage<SrcFP, T>::value)
+    {
+      // Fetch the required temporary storage
+      using needed_type = typename needs_storage<SrcFP, T>::needed_storage_t;
+      auto& dsp_buffer_input = audio_buffer_storage<T>::input_buffer_for(needed_type{});
+      auto& dsp_buffer_output
+          = audio_buffer_storage<T>::output_buffer_for(needed_type{});
+
+      // Convert inputs and outputs to double
+      in_port.samples = (input_fp_type**)alloca(sizeof(DstFP*) * input_channels);
+
+      if_possible(in_port.channels = input_channels);
+
+      // Copy & convert input channels
+      for(int c = 0; c < input_channels; ++c)
+      {
+        auto in_ptr = dsp_buffer_input.data() + c * n;
+        std::copy_n(in[c], n, in_ptr);
+        in_port.samples[c] = const_cast<input_fp_type*>(in_ptr);
+      }
+
+      invoke_effect(implementation, get_tick_or_frames(implementation, tick));
+
+    }
+    else
+    {
+      // Pass the buffers directly
+      in_port.samples = const_cast<input_fp_type**>(in.data());
+      if_possible(in_port.channels = input_channels);
+
+      invoke_effect(implementation, get_tick_or_frames(implementation, tick));
+
+      in_port.samples = nullptr;
+    }
+  }
+
+  template <std::floating_point FP>
+  void process(
+      avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
+      const auto& tick)
+  {
+    // Note: here we have a redundant check. This is to make sure that we always check the case
+    // where we won't have to do a conversion first.
+    if constexpr(avnd::polyphonic_single_input_audio_effect<FP, T>)
+      process_port<FP, FP>(implementation, in, out, tick);
+    else if constexpr(avnd::polyphonic_single_input_audio_effect<float, T>)
+      process_port<FP, float>(implementation, in, out, tick);
+    else if constexpr(avnd::polyphonic_single_input_audio_effect<double, T>)
+      process_port<FP, double>(implementation, in, out, tick);
+    else
+      AVND_STATIC_TODO(FP)
+  }
+};
+
+
 /**
  * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.
  */
@@ -110,6 +187,7 @@ template <typename T>
 requires polyphonic_audio_processor<T> &&(
     (poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
     && (!single_audio_bus_poly_port_processor<T>)
+    && (!single_audio_input_poly_port_processor<T>)
 struct process_adapter<T>
     : audio_buffer_storage<T>
 {

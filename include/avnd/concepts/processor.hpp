@@ -92,6 +92,10 @@ concept polyphonic_single_port_audio_effect = poly_sample_array_input_port_count
 == 1 && poly_sample_array_output_port_count<FP, T> == 1;
 
 template <typename FP, typename T>
+concept polyphonic_single_input_audio_effect = poly_sample_array_input_port_count<FP, T>
+== 1 && poly_sample_array_output_port_count<FP, T> == 0;
+
+template <typename FP, typename T>
 concept monophonic_arg_audio_effect = requires(T t)
 {
   t.operator()((FP*)nullptr, (FP*)nullptr, (int32_t)0);
