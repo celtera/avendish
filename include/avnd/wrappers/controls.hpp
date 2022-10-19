@@ -47,7 +47,7 @@ requires (std::floating_point<V> || std::integral<V>)
 static constexpr void apply_control(T& ctl, V v)
 {
   // Apply the value
-  ctl.value = v;
+  ctl.value = static_cast<decltype(T::value)>(v);
 
   // Clamp
   if constexpr(avnd::parameter_with_minmax_range<T>)
