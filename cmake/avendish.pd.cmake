@@ -76,6 +76,12 @@ function(avnd_make_pd)
       "${PD_HEADER}"
   )
 
+  target_compile_definitions(
+    ${AVND_FX_TARGET}
+    PRIVATE
+      AVND_PUREDATA=1
+  )
+
   target_precompile_headers(${AVND_FX_TARGET}
     REUSE_FROM
       Avendish_pd_pch

@@ -3,13 +3,25 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 // See Helpers/Messages.hpp for a better example
+
+#if defined(AVND_MAXMSP)
+#include <ext.h>
+
+#define global_log post
+#elif defined(AVND_PUREDATA)
+#include <m_pd.h>
+
+#define global_log post
+#else
 #include <cstdio>
+#define global_log printf
+#endif
 
 namespace examples
 {
 static void free_function(float a)
 {
-  printf("free_function: %f\n", a);
+  global_log("free_function: %f\n", a);
 }
 
 /**
@@ -44,6 +56,18 @@ struct Messages
 
   struct
   {
+    // Recommended approach:
+    struct
+    {
+      static consteval auto name() { return "functor"; }
+      void operator()(Messages& self, int x) {
+        global_log("functor: %f %f %d\n", self.inputs.a.value, self.inputs.b.value, x);
+      }
+    } functor;
+
+    // Also possible:
+    // (there's no technical difference, the functor version just looks nicer
+    // and more standard C++
     struct
     {
       static consteval auto name() { return "member"; }
@@ -54,7 +78,7 @@ struct Messages
       static consteval auto name() { return "lambda_function"; }
       static consteval auto func()
       {
-        return [] { printf("lambda\n"); };
+        return [] { global_log("lambda\n"); };
       }
     } lambda;
     struct
@@ -70,7 +94,7 @@ struct Messages
     inputs.a.value = x;
     inputs.b.value = y;
 
-    printf("bamboozle: %f %f %s\n", x, y, str);
+    global_log("bamboozle: %f %f %s\n", x, y, str);
   }
 
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }
