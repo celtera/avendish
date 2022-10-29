@@ -241,7 +241,9 @@ concept typed_processor
 || poly_array_port_based<FP, T>
 || mono_per_sample_arg_processor<FP, T>
 || mono_per_channel_arg_processor<FP, T>
-|| polyphonic_arg_audio_effect<FP, T>;
+|| poly_per_sample_port_processor<FP, T>
+|| polyphonic_arg_audio_effect<FP, T>
+;
 template <typename T>
 concept float_processor = typed_processor<float, T>;
 template <typename T>
@@ -266,9 +268,13 @@ concept bus_arg_processor
     = polyphonic_arg_audio_effect<float, T> || polyphonic_arg_audio_effect<double, T>;
 
 template <typename T>
-concept sample_port_processor = mono_per_sample_port_processor<
-    float,
-    T> || mono_per_sample_port_processor<double, T>;
+concept sample_port_processor =
+    mono_per_sample_port_processor<float, T>
+|| mono_per_sample_port_processor<double, T>
+|| poly_per_sample_port_processor<float, T>
+|| poly_per_sample_port_processor<double, T>
+;
+
 template <typename T>
 concept channel_port_processor
     = monophonic_port_audio_effect<float, T> || monophonic_port_audio_effect<double, T>;
