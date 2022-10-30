@@ -87,10 +87,10 @@ struct Modular
   {
     using namespace std;
     outputs.out_l.sample = clamp(
-        fmod(inputs.sidechain_l.sample * inputs.gain.value, inputs.in_l.sample), -1.f,
+        fmod(inputs.sidechain_l.sample * inputs.gain.value, abs(inputs.in_l.sample) + 0.01), -1.f,
         1.f);
     outputs.out_r.sample = clamp(
-        fmod(inputs.sidechain_r.sample * inputs.gain.value, inputs.in_r.sample), -1.f,
+        fmod(inputs.sidechain_r.sample * inputs.gain.value, abs(inputs.in_r.sample) + 0.01), -1.f,
         1.f);
 
     outputs.level.value

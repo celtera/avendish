@@ -100,7 +100,7 @@ void main()
   // about compute shaders ; fixes welcome ;p
 
   ivec2 call = ivec2(gl_GlobalInvocationID.xy);
-  vec4 color = vec4(0,0,0,0);
+  vec4 color = vec4(0.0, 0.0,0,0);
 
   for(int i = 0; i < gl_WorkGroupSize.x; i++)
   {
@@ -171,7 +171,8 @@ void main()
 
     const int w = this->inputs.width / downscale;
     const int h = this->inputs.height / downscale;
-    const int bytes = w * h * sizeof(float) * 4;
+    const int downscaled_pixels_count = w * h;
+    const int bytes = downscaled_pixels_count * sizeof(float) * 4;
 
     // Run a pass
     co_yield gpp::begin_compute_pass{};
@@ -193,19 +194,24 @@ void main()
 
     // finish summing on the cpu
     auto& final = outputs.color_out.value;
-    std::fill(std::begin(final), std::end(final), 0.f);
 
-    for(int i = 0; i < w * h; i++)
+    final[0] = 0.f;
+    final[1] = 0.f;
+    final[2] = 0.f;
+    final[3] = 0.f;
+
+    for(int i = 0; i < downscaled_pixels_count; i++)
     {
       for(int j = 0; j < 4; j++)
+      {
         final[j] += flt[i][j];
+      }
     }
 
-    double pixels_total = this->inputs.width * this->inputs.height;
-    final[0] /= pixels_total;
-    final[1] /= pixels_total;
-    final[2] /= pixels_total;
-    final[3] /= pixels_total;
+    final[0] /= downscaled_pixels_count;
+    final[1] /= downscaled_pixels_count;
+    final[2] /= downscaled_pixels_count;
+    final[3] /= downscaled_pixels_count;
   }
 
 private:
