@@ -171,7 +171,9 @@ struct audio_processor
           // but most pd externals seem to just do a chain of if() so this is equivalent
           float res = argv[0].a_w.w_float;
           avnd::for_each_field_ref(state.inputs, [s, res, &state]<typename C>(C& ctl) {
-            if constexpr(requires { ctl.value = float{}; })
+            if constexpr(
+                avnd::float_parameter<
+                    C> || avnd::int_parameter<C> || avnd::bool_parameter<C>)
             {
               constexpr std::string_view control_name = avnd::get_name<C>();
               if(control_name == s->s_name)
