@@ -158,10 +158,10 @@ struct audio_processor
         case A_SYM: {
           // TODO ?
           std::string res = argv[0].a_w.w_sym->s_name;
-          avnd::pfr::for_each_field(state.inputs, [s, &res, &state](auto& ctl) {
+          avnd::pfr::for_each_field(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
             if constexpr(requires { ctl.value = std::string{}; })
             {
-              if(std::string_view{ctl.name()} == s->s_name)
+              if(avnd::get_name<C>() == s->s_name)
               {
                 avnd::apply_control(ctl, std::move(res));
                 if_possible(ctl.update(state.effect));

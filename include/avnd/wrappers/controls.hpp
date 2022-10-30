@@ -59,16 +59,28 @@ static constexpr void apply_control(T& ctl, std::floating_point auto v)
     ctl.value = range_value<T>(closest_value_index<T>(ctl.value));
   }
 }
-/*
-static void apply_control(auto& ctl, std::string&& v)
-{
-  // Apply the value
-  ctl.value = std::move(v);
 
-  // Clamp in range
-  TODO;
+template <typename T>
+static void apply_control(T& ctl, std::string&& v)
+{
+  // Clamp in range if there's one
+  if constexpr(avnd::parameter_with_values_range<T>)
+  {
+    constexpr auto range = avnd::get_range<T>();
+    static_assert(std::ssize(range.values) > 0);
+    for(const auto& range_v : range.values)
+    {
+      if(range_v == v)
+        ctl.value = std::move(v);
+    }
+  }
+  else
+  {
+    // Apply the value
+    ctl.value = std::move(v);
+  }
 }
-*/
+
 /**
  * @brief Used for the case where the "host" works in a fixed [0. ; 1.] range
  */

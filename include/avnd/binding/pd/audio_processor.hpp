@@ -187,10 +187,10 @@ struct audio_processor
           // TODO ?
           std::string res = argv[0].a_w.w_symbol->s_name;
           // thread_local for perf ?
-          avnd::for_each_field_ref(state.inputs, [s, &res, &state](auto& ctl) {
+          avnd::for_each_field_ref(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
             if constexpr(requires { ctl.value = std::string{}; })
             {
-              if(std::string_view{ctl.name()} == s->s_name)
+              if(avnd::get_name<C>() == s->s_name)
               {
                 avnd::apply_control(ctl, std::move(res));
                 if_possible(ctl.update(state.effect));
