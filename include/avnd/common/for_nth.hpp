@@ -108,7 +108,7 @@ constexpr int index_in_struct(const auto& s, auto... member)
   int index = -1;
   int k = 0;
 
-  avnd::for_each_field_ref(s, [&](auto& m) {
+  avnd::for_each_field_ref(s, [&, member...](auto& m) {
     if constexpr(requires { bool(&m == &(s.*....*member)); })
     {
       if(&m == &(s.*....*member))
