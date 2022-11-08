@@ -685,6 +685,7 @@ struct soundfile_view
   const T** data{};
   int64_t frames{};
   int32_t channels{};
+  int32_t rate{};
 
   // std::fs::path would be great but limits to macOS 10.15+
   std::string_view filename;
