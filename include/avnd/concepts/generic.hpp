@@ -5,6 +5,7 @@
 #include <avnd/common/aggregates.hpp>
 #include <avnd/common/dummy.hpp>
 
+#include <string_view>
 #include <type_traits>
 
 namespace avnd
