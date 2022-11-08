@@ -3,7 +3,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/index_sequence.hpp>
-#include <avnd/concepts/modules.hpp>
 
 #include <string_view>
 #include <tuple>
@@ -24,260 +23,111 @@ struct typelist
 #include <boost/mp11/algorithm.hpp>
 #include <boost/pfr.hpp>
 
-namespace tpl = std;
-/*
-namespace boost::pfr
-{
-constexpr auto structure_to_typelist(const auto& s) noexcept
-{
-  return []<typename... Args>(boost::pfr::detail::sequence_tuple::tuple<Args&...>) {
-    return avnd::typelist<std::decay_t<Args>...>{};
-  }(boost::pfr::detail::tie_as_tuple(s));
-}
-}
-*/
-namespace avnd
-{
-// namespace pfr
-// {
-// decltype(auto) get()
-// }
-/*
-namespace pfr = boost::pfr;
+#include <avnd/common/aggregates.recursive.hpp>
+#include <avnd/common/aggregates.simple.hpp>
 
-template <class T>
-constexpr std::size_t fields_count_unsafe() noexcept
-{
-  using type = std::remove_cv_t<T>;
-
-  constexpr std::size_t middle = sizeof(type) / 2 + 1;
-  return pfr::detail::detect_fields_count<T, 0, middle>(
-      pfr::detail::multi_element_range{}, 1L);
-}
-
-template <typename T>
-using as_tuple_ref = decltype(pfr::detail::tie_as_tuple(std::declval<T&>()));
-template <typename T>
-using as_tuple = decltype(pfr::structure_to_tuple(std::declval<T&>()));
-template <typename T>
-using as_typelist = decltype(pfr::structure_to_typelist(std::declval<T&>()));
-
-// Yields a tuple with the compile-time function applied to each member of the struct
-template <template <typename...> typename F, typename T>
-using struct_apply = boost::mp11::mp_transform<F, as_tuple<T>>;
-*/
-
-namespace pfr
+namespace avnd::pfr
 {
 
 namespace detail
 {
 template <class T>
-constexpr auto tie_as_tuple(T& val)
+requires(avnd::has_recursive_groups<T>) constexpr AVND_INLINE auto tie_as_tuple(T& val)
 {
-  auto t = avnd::flatten_tuple(avnd::detail::detuple<T, true>(val));
-  static_assert(flattening::is_tuple<decltype(t)>::value);
-  return t;
+  return pfr_recursive::detail::tie_as_tuple(val);
 }
+template <class T>
+requires(!avnd::has_recursive_groups<T>) constexpr AVND_INLINE auto tie_as_tuple(T& val)
+{
+  return pfr_simple::detail::tie_as_tuple(val);
 }
 
-constexpr auto structure_to_typelist(const auto& s) noexcept
-{
-  static_assert(flattening::is_tuple<decltype(detail::tie_as_tuple(s))>::value);
-  // mp11 : flatten all the types with "recursive_module" defined in them.
-  return []<template <typename...> typename T, typename... Args>(T<Args...>) {
-    return avnd::typelist<std::decay_t<Args>...>{};
-  }(detail::tie_as_tuple(s));
 }
 
-template <std::size_t N, typename T>
-auto get(T&& v) -> decltype(auto)
-{
-  return get<N>(detail::tie_as_tuple(v));
-}
-
-template <std::size_t N, typename T>
-using tuple_element_t = std::remove_reference_t<
-    std::tuple_element_t<N, decltype(detail::tie_as_tuple(std::declval<T&>()))>>;
 template <typename T>
-using tuple_size = boost::mp11::mp_size<avnd::recursive_groups_transform_t<T>>;
-//std::tuple_size<decltype(detail::tie_as_tuple(std::declval<T&>()))>;
+struct pfr_impl_helper;
+template <typename T>
+requires(avnd::has_recursive_groups<T>) struct pfr_impl_helper<T>
+{
+  using as_typelist = pfr_recursive::as_typelist<T>;
+  using tuple_size = pfr_recursive::tuple_size<T>;
+  template <std::size_t N>
+  using tuple_element_t = pfr_recursive::tuple_element_t<N, T>;
+};
+template <typename T>
+requires(!avnd::has_recursive_groups<T>) struct pfr_impl_helper<T>
+{
+  using as_typelist = pfr_simple::as_typelist<T>;
+  using tuple_size = pfr_simple::tuple_size<T>;
+  template <std::size_t N>
+  using tuple_element_t = pfr_simple::tuple_element_t<N, T>;
+};
+
+template <typename T>
+using tuple_size = typename pfr_impl_helper<T>::tuple_size;
 
 template <typename T>
 inline constexpr size_t tuple_size_v = tuple_size<T>::value;
 
+template <typename T>
+requires(avnd::has_recursive_groups<T>) constexpr AVND_INLINE
+    auto structure_to_typelist(const T& s) noexcept
+{
+  return pfr_recursive::structure_to_typelist(s);
+}
+
+template <typename T>
+requires(!avnd::has_recursive_groups<T>) constexpr AVND_INLINE
+    auto structure_to_typelist(const T& s) noexcept
+{
+  return pfr_simple::structure_to_typelist(s);
+}
+
+template <std::size_t N, typename T>
+requires(avnd::has_recursive_groups<T>) constexpr AVND_INLINE auto get(T&& v)
+    -> decltype(auto)
+{
+  return pfr_recursive::get<N>(std::forward<T>(v));
+}
+
+template <std::size_t N, typename T>
+requires(!avnd::has_recursive_groups<T>) constexpr AVND_INLINE auto get(T&& v)
+    -> decltype(auto)
+{
+  return pfr_simple::get<N>(std::forward<T>(v));
+}
+
 template <class T>
-constexpr std::size_t fields_count() noexcept
+constexpr AVND_INLINE std::size_t fields_count() noexcept
 {
   return tuple_size_v<T>;
 }
+
+template <std::size_t N, typename T>
+using tuple_element_t = typename pfr_impl_helper<T>::template tuple_element_t<N>;
 }
 
-template <class T>
-constexpr std::size_t fields_count_unsafe() noexcept
-{
-  return pfr::tuple_size_v<T>;
-}
-
-template <typename T>
-using as_typelist = decltype(pfr::structure_to_typelist(std::declval<T&>()));
-}
-#else
-#if __has_include(<tuplet/tuple.hpp>)
-#include <tuplet/tuple.hpp>
-namespace tpl = tuplet;
-#else
-namespace tpl = std;
-#endif
 namespace avnd
 {
-namespace pfr
-{
-constexpr auto structure_to_typelist(const auto& s) noexcept
-{
-  const auto& [... elts] = s;
-  return typelist<std::decay_t<decltype(elts)>...>{};
-}
-constexpr auto structure_to_tuple(const auto& s) noexcept
-{
-  const auto& [... elts] = s;
-  return tpl::make_tuple(elts...);
-}
 
-namespace detail
+template <typename T>
+using as_typelist = typename pfr::pfr_impl_helper<T>::as_typelist;
+
+template <class T>
+requires(avnd::has_recursive_groups<T>) constexpr std::size_t
+    fields_count_unsafe() noexcept
 {
-namespace sequence_tuple = ::tpl;
-template <typename S>
-constexpr auto tie_as_tuple(S&& s) noexcept
-{
-  auto&& [... elts] = static_cast<S&&>(s);
-  return tpl::tie(elts...);
-}
+  return pfr_recursive::fields_count_unsafe<T>();
 }
 
 template <class T>
-constexpr auto fields_count_impl(const T& t) noexcept
+requires(!avnd::has_recursive_groups<T>) constexpr std::size_t
+    fields_count_unsafe() noexcept
 {
-  const auto& [... elts] = t;
-  return avnd::num<sizeof...(elts)>{};
+  return pfr_simple::fields_count_unsafe<T>();
 }
 
-template <class T>
-constexpr std::size_t fields_count() noexcept
-{
-  return decltype(fields_count_impl(std::declval<const T&>()))::value;
 }
-
-template <typename T>
-static constexpr const std::size_t tuple_size_v = fields_count<T>();
-
-template <std::size_t I, typename S>
-constexpr auto& get(S&& s) noexcept
-{
-  if constexpr(I == 0)
-  {
-    auto&& [a, ... elts] = static_cast<S&&>(s);
-    return a;
-  }
-  else if constexpr(I == 1)
-  {
-    auto&& [a, b, ... elts] = static_cast<S&&>(s);
-    return b;
-  }
-  else if constexpr(I == 2)
-  {
-    auto&& [a, b, c, ... elts] = static_cast<S&&>(s);
-    return c;
-  }
-  else if constexpr(I == 3)
-  {
-    auto&& [a, b, c, d, ... elts] = static_cast<S&&>(s);
-    return d;
-  }
-  else if constexpr(I == 4)
-  {
-    auto&& [a, b, c, d, e, ... elts] = static_cast<S&&>(s);
-    return e;
-  }
-  else if constexpr(I == 5)
-  {
-    auto&& [a, b, c, d, e, f, ... elts] = static_cast<S&&>(s);
-    return f;
-  }
-  else if constexpr(I == 6)
-  {
-    auto&& [a, b, c, d, e, f, g, ... elts] = static_cast<S&&>(s);
-    return g;
-  }
-  else if constexpr(I == 7)
-  {
-    auto&& [a, b, c, d, e, f, g, h, ... elts] = static_cast<S&&>(s);
-    return h;
-  }
-  else if constexpr(I == 8)
-  {
-    auto&& [a, b, c, d, e, f, g, h, i, ... elts] = static_cast<S&&>(s);
-    return i;
-  }
-  else if constexpr(I == 9)
-  {
-    auto&& [a, b, c, d, e, f, g, h, i, j, ... elts] = static_cast<S&&>(s);
-    return j;
-  }
-  else if constexpr(I == 10)
-  {
-    auto&& [a, b, c, d, e, f, g, h, i, j, k, ... elts] = static_cast<S&&>(s);
-    return k;
-  }
-  else if constexpr(I == 11)
-  {
-    auto&& [a, b, c, d, e, f, g, h, i, j, k, l, ... elts] = static_cast<S&&>(s);
-    return l;
-  }
-  else if constexpr(I == 12)
-  {
-    auto&& [a, b, c, d, e, f, g, h, i, j, k, l, m, ... elts] = static_cast<S&&>(s);
-    return m;
-  }
-  else if constexpr(I > 12)
-  {
-    auto&& [... elts] = static_cast<S&&>(s);
-    return tpl::get<I>(tpl::tie(elts...));
-  }
-}
-
-template <std::size_t Index, typename T>
-using tuple_element_t = std::decay_t<decltype(get<Index>(std::declval<const T&>()))>;
-
-template <typename S>
-constexpr auto for_each_field(S&& s, auto&& f) noexcept
-{
-  auto&& [... elts] = std::forward<S>(s);
-  (f(elts), ...);
-}
-}
-
-template <class T>
-constexpr std::size_t fields_count_unsafe() noexcept
-{
-  return pfr::fields_count<T>();
-}
-
-template <typename T>
-using as_tuple_ref = decltype(pfr::detail::tie_as_tuple(std::declval<T&>()));
-template <typename T>
-using as_tuple = decltype(pfr::structure_to_tuple(std::declval<T&>()));
-template <typename T>
-using as_typelist = decltype(pfr::structure_to_typelist(std::declval<T&>()));
-
-// Yields a tuple with the compile-time function applied to each member of the struct
-template <template <typename...> typename F, typename S>
-constexpr auto struct_apply_impl(S&& s) noexcept
-{
-  auto&& [... elts] = std::forward<S>(s);
-  return tpl::make_tuple(F<decltype(elts)>{}...);
-}
-template <template <typename...> typename F, typename T>
-using struct_apply = decltype(struct_apply_impl(std::declval<T&&>()));
-}
+#else
+#include <avnd/common/aggregates.p1061.hpp>
 #endif

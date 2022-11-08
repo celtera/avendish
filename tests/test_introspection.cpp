@@ -52,12 +52,12 @@ static auto tpl_zero = avnd::pfr::detail::tie_as_tuple(zero);
 static auto tpl_one = avnd::pfr::detail::tie_as_tuple(one);
 static auto tpl_two = avnd::pfr::detail::tie_as_tuple(two);
 
-static_assert(std::tuple_size_v<decltype(tpl_zero)> == 0);
-static_assert(std::tuple_size_v<decltype(tpl_one)> == 1);
-static_assert(std::tuple_size_v<decltype(tpl_two)> == 2);
-static_assert(std::is_same_v<decltype(std::get<0>(tpl_one)), One::A&>);
-static_assert(std::is_same_v<decltype(std::get<0>(tpl_two)), Two::A&>);
-static_assert(std::is_same_v<decltype(std::get<1>(tpl_two)), Two::B&>);
+// static_assert(tuple_size_v<decltype(tpl_zero)> == 0);
+// static_assert(tuple_size_v<decltype(tpl_one)> == 1);
+// static_assert(tuple_size_v<decltype(tpl_two)> == 2);
+static_assert(std::is_same_v<decltype(get<0>(tpl_one)), One::A&>);
+static_assert(std::is_same_v<decltype(get<0>(tpl_two)), Two::A&>);
+static_assert(std::is_same_v<decltype(get<1>(tpl_two)), Two::B&>);
 
 static auto tl_zero = avnd::pfr::structure_to_typelist(zero);
 static auto tl_one = avnd::pfr::structure_to_typelist(one);
@@ -144,12 +144,12 @@ static auto tpl_zero = avnd::pfr::detail::tie_as_tuple(zero);
 static auto tpl_one = avnd::pfr::detail::tie_as_tuple(one);
 static auto tpl_two = avnd::pfr::detail::tie_as_tuple(two);
 
-static_assert(std::tuple_size_v<decltype(tpl_zero)> == 0);
-static_assert(std::tuple_size_v<decltype(tpl_one)> == 1);
-static_assert(std::tuple_size_v<decltype(tpl_two)> == 2);
-static_assert(std::is_same_v<decltype(std::get<0>(tpl_one)), One::A&>);
-static_assert(std::is_same_v<decltype(std::get<0>(tpl_two)), Two::A&>);
-static_assert(std::is_same_v<decltype(std::get<1>(tpl_two)), Two::B&>);
+// static_assert(std::tuple_size_v<decltype(tpl_zero)> == 0);
+// static_assert(std::tuple_size_v<decltype(tpl_one)> == 1);
+// static_assert(std::tuple_size_v<decltype(tpl_two)> == 2);
+static_assert(std::is_same_v<decltype(get<0>(tpl_one)), One::A&>);
+static_assert(std::is_same_v<decltype(get<0>(tpl_two)), Two::A&>);
+static_assert(std::is_same_v<decltype(get<1>(tpl_two)), Two::B&>);
 
 static auto tl_zero = avnd::pfr::structure_to_typelist(zero);
 static auto tl_one = avnd::pfr::structure_to_typelist(one);

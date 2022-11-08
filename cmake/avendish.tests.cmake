@@ -7,6 +7,7 @@ endfunction()
 
 if(BUILD_TESTING)
   avnd_add_static_test(test_introspection tests/test_introspection.cpp)
+  avnd_add_static_test(test_introspection_rec tests/test_introspection_rec.cpp)
   avnd_add_static_test(test_predicate tests/test_predicate.cpp)
   avnd_add_static_test(test_vintage tests/tests_vintage.cpp)
   avnd_add_static_test(test_channels tests/tests_channels.cpp)
