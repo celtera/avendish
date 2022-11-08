@@ -15,6 +15,12 @@ struct midi_msg
   boost::container::small_vector<uint8_t, 15> bytes;
   int64_t timestamp{};
 };
+struct midi_note_msg
+{
+  uint8_t bytes[8];
+  int64_t timestamp{};
+};
+
 
 template <static_string lit, typename MessageType = midi_msg>
 struct midi_bus
@@ -53,4 +59,7 @@ struct midi_bus
     midi_messages.emplace_back(std::forward<Args>(t)...);
   }
 };
+
+template <static_string lit>
+using midi_note_bus = midi_bus<lit, midi_note_msg>;
 }
