@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <avnd/common/for_nth.hpp>
 #include <boost/pfr.hpp>
 #include <cmath>
 #include <halp/audio.hpp>
@@ -166,7 +167,7 @@ struct ControlGallery
     if(!has_impulse && !has_button)
       return;
 
-    avnd::pfr::for_each_field(inputs, []<typename Control>(const Control& input) {
+    avnd::for_each_field_ref(inputs, []<typename Control>(const Control& input) {
       {
         auto val = input.values.begin()->second;
         fmt::print("changed: {} {}", Control::name(), val);

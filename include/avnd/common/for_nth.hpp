@@ -35,13 +35,13 @@ requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
   using namespace pfr::detail;
   constexpr std::size_t fields_count_val = fields_count<std::remove_reference_t<T>>();
 
-  auto t = tie_as_tuple(value, size_t_<fields_count_val>{});
+  auto t = avnd::pfr::detail::tie_as_tuple(value);
 
   [&]<std::size_t... I>(std::index_sequence<I...>)
   {
-    (func(sequence_tuple::get<I>(t)), ...);
+    (func(get<I>(t)), ...);
   }
-  (make_index_sequence<fields_count_val>{});
+  (std::make_index_sequence<fields_count_val>{});
 #else
   auto&& [... elts] = value;
   (func(elts), ...);
@@ -55,13 +55,13 @@ requires(!avnd::vector_ish<T>) constexpr void for_each_field_ref_n(T&& value, F&
   using namespace pfr::detail;
   constexpr std::size_t fields_count_val = fields_count<std::remove_reference_t<T>>();
 
-  auto t = tie_as_tuple(value, size_t_<fields_count_val>{});
+  auto t = avnd::pfr::detail::tie_as_tuple(value);
 
   [&]<std::size_t... I>(std::index_sequence<I...>)
   {
-    (func(sequence_tuple::get<I>(t), avnd::field_index<I>{}), ...);
+    (func(get<I>(t), avnd::field_index<I>{}), ...);
   }
-  (make_index_sequence<fields_count_val>{});
+  (std::make_index_sequence<fields_count_val>{});
 #else
   auto&& [... elts] = value;
   (func(elts), ...);
@@ -103,15 +103,15 @@ void for_each_field_ref(T&& value, F&& func)
   }
 }
 
-constexpr int index_in_struct(const auto& s, auto member)
+constexpr int index_in_struct(const auto& s, auto... member)
 {
   int index = -1;
   int k = 0;
 
   avnd::for_each_field_ref(s, [&](auto& m) {
-    if constexpr(requires { bool(&m == &(s.*member)); })
+    if constexpr(requires { bool(&m == &(s.*....*member)); })
     {
-      if(&m == &(s.*member))
+      if(&m == &(s.*....*member))
       {
         index = k;
       }

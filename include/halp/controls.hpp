@@ -16,7 +16,9 @@
 
 namespace halp
 {
-struct dummy_range { };
+struct dummy_range
+{
+};
 template <static_string lit, typename T>
 struct val_port
 {
@@ -219,7 +221,10 @@ using iknob_f32 = halp::knob_t<float, lit, setup>;
 // using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
 
 /// Time chooser ///
-struct ratio { int num{1}, denom{1}; };
+struct ratio
+{
+  int num{1}, denom{1};
+};
 template <typename T, static_string lit, range setup>
 struct time_chooser_t
 {
@@ -259,7 +264,9 @@ struct toggle_setup
   const bool max = true;
   bool init;
   clang_buggy_consteval range to_range() const noexcept
-  { return range{0., 1., init ? 1. : 0.}; }
+  {
+    return range{0., 1., init ? 1. : 0.};
+  }
 };
 
 template <static_string lit, typename T, auto setup>
@@ -514,7 +521,6 @@ struct xy_pad_t
 template <static_string lit, range setup = default_range<float>>
 using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
-
 template <typename T>
 struct xyz_type
 {
@@ -529,20 +535,23 @@ struct xyz_type
   }
 };
 
-
 template <typename T, static_string lit, range setup>
 struct xyz_spinboxes_t
 {
   using value_type = xyz_type<T>;
   enum widget
   {
-    xyz, spinbox
+    xyz,
+    spinbox
   };
   static clang_buggy_consteval auto range() noexcept
   {
     return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
-  static clang_buggy_consteval auto name() noexcept { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
 
   value_type value = {setup.init, setup.init, setup.init};
 
@@ -580,7 +589,10 @@ struct range_slider_t
     hrange_slider
   };
   static clang_buggy_consteval auto range() noexcept { return setup; }
-  static clang_buggy_consteval auto name() noexcept { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
 
   value_type value{setup.init.start, setup.init.end};
 
@@ -695,7 +707,14 @@ template <halp::static_string lit, typename T = float>
 struct soundfile_port
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-  static clang_buggy_consteval auto filters() { enum { audio }; return audio; }
+  static clang_buggy_consteval auto filters()
+  {
+    enum
+    {
+      audio
+    };
+    return audio;
+  }
 
   HALP_INLINE_FLATTEN operator soundfile_view<T>&() noexcept { return soundfile; }
   HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept

@@ -19,7 +19,8 @@ struct to_ossia_value_impl
     v.resize(fields);
 
     int k = 0;
-    avnd::pfr::for_each_field(f, [&](const auto& f) { to_ossia_value_impl{v[k++]}(f); });
+    boost::pfr::for_each_field(
+        f, [&](const auto& f) { to_ossia_value_impl{v[k++]}(f); });
 
     val = std::move(v);
   }
@@ -123,7 +124,7 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
-  template<avnd::map_ish T>
+  template <avnd::map_ish T>
   void operator()(const T& f)
   {
     using key_type = typename T::key_type;

@@ -6,7 +6,7 @@
 #include <avnd/concepts/modules.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/effect_container.hpp>
-
+/*
 namespace avnd
 {
 template <typename T>
@@ -39,3 +39,4 @@ static constexpr void for_all_modules(T& obj, auto&& func) noexcept
   }
 }
 }
+*/

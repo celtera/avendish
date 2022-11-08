@@ -28,7 +28,7 @@ struct process_adapter<T>
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
-    pfr::for_each_field(ins, [in]<typename Field>(Field& field) {
+    avnd::for_each_field_ref(ins, [in]<typename Field>(Field& field) {
       // We know that there is only one in that case so just copy
       if_possible(field.sample = in);
     });
@@ -38,7 +38,7 @@ struct process_adapter<T>
 
     // Read back the output the input
     FP out;
-    pfr::for_each_field(
+    avnd::for_each_field_ref(
         outs, [&out]<typename Field>(Field& field) { if_possible(out = field.sample); });
     return out;
   }
@@ -48,15 +48,15 @@ struct process_adapter<T>
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
-    pfr::for_each_field(
+    avnd::for_each_field_ref(
         ins, [in]<typename Field>(Field& field) { if_possible(field.sample = in); });
 
     // Execute
     fx(ins, outs);
 
-    // Read back the output the input
+    // Read back the output
     FP out;
-    pfr::for_each_field(
+    avnd::for_each_field_ref(
         outs, [&out]<typename Field>(Field& field) { if_possible(out = field.sample); });
     return out;
   }
@@ -194,7 +194,7 @@ requires(
       {
         int k = 0;
         // Here we know that we have a single effect. We copy the sample data directly inside.
-        pfr::for_each_field(outs, [&k, out, i]<typename Field>(Field& field) {
+        avnd::for_each_field_ref(outs, [&k, out, i]<typename Field>(Field& field) {
           if constexpr(avnd::generic_audio_sample_port<Field>)
           {
             if(k < out.size())

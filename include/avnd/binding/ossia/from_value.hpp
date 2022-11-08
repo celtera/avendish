@@ -255,7 +255,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       auto it = v.begin();
-      avnd::pfr::for_each_field(f, [&](auto& f) {
+      boost::pfr::for_each_field(f, [&](auto& f) {
         if(it != v.end())
         {
           from_ossia_value_impl{}(it->second, f);
@@ -269,7 +269,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      avnd::pfr::for_each_field(f, [&](auto& f) {
+      boost::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -280,7 +280,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      avnd::pfr::for_each_field(f, [&](auto& f) {
+      boost::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -291,7 +291,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      avnd::pfr::for_each_field(f, [&](auto& f) {
+      boost::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -302,7 +302,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      avnd::pfr::for_each_field(f, [&](auto& f) {
+      boost::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -318,7 +318,7 @@ struct from_ossia_value_impl
   requires std::is_aggregate_v<F>
   bool operator()(const ossia::value& src, F& dst)
   {
-    constexpr int sz = avnd::pfr::tuple_size_v<F>;
+    constexpr int sz = boost::pfr::tuple_size_v<F>;
     if constexpr(vecf_compatible<F>())
     {
       if constexpr(sz == 2)
@@ -1109,7 +1109,7 @@ bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using type = std::decay_t<T>;
   static_assert(!oscr::type_wrapper<T>);
-  constexpr int sz = avnd::pfr::tuple_size_v<T>;
+  constexpr int sz = boost::pfr::tuple_size_v<T>;
   if constexpr(sz == 0)
   {
     // Impulse case, nothing to do

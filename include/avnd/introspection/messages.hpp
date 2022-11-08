@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/for_nth.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/message.hpp>
 #include <avnd/wrappers/effect_container.hpp>
@@ -46,7 +47,7 @@ static constexpr void for_all_messages(T& obj, auto&& func) noexcept
 {
   if constexpr(messages_introspection<T>::size > 0)
   {
-    pfr::for_each_field(get_messages(obj), func);
+    avnd::for_each_field_ref(get_messages(obj), func);
   }
 }
 }

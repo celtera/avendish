@@ -110,6 +110,17 @@ struct prop
   std::function<void(M& self, L& layout, const T&)> set;
 };
 
+template <auto F, typename UI = void>
+struct recursive_group_item;
+
+template <auto F, typename UI>
+struct recursive_group_item
+{
+  decltype(F) group = F;
+  using group_ui = UI;
+  group_ui ui;
+};
+
 // template<typename T>
 // using prop = ::prop<Ui, layout, T>;
 

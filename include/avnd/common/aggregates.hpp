@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/index_sequence.hpp>
+#include <avnd/concepts/modules.hpp>
 
 #include <string_view>
 #include <tuple>
@@ -24,6 +25,7 @@ struct typelist
 #include <boost/pfr.hpp>
 
 namespace tpl = std;
+/*
 namespace boost::pfr
 {
 constexpr auto structure_to_typelist(const auto& s) noexcept
@@ -33,9 +35,16 @@ constexpr auto structure_to_typelist(const auto& s) noexcept
   }(boost::pfr::detail::tie_as_tuple(s));
 }
 }
+*/
 namespace avnd
 {
+// namespace pfr
+// {
+// decltype(auto) get()
+// }
+/*
 namespace pfr = boost::pfr;
+
 template <class T>
 constexpr std::size_t fields_count_unsafe() noexcept
 {
@@ -56,7 +65,62 @@ using as_typelist = decltype(pfr::structure_to_typelist(std::declval<T&>()));
 // Yields a tuple with the compile-time function applied to each member of the struct
 template <template <typename...> typename F, typename T>
 using struct_apply = boost::mp11::mp_transform<F, as_tuple<T>>;
+*/
 
+namespace pfr
+{
+
+namespace detail
+{
+template <class T>
+constexpr auto tie_as_tuple(T& val)
+{
+  auto t = avnd::flatten_tuple(avnd::detail::detuple<T, true>(val));
+  static_assert(flattening::is_tuple<decltype(t)>::value);
+  return t;
+}
+}
+
+constexpr auto structure_to_typelist(const auto& s) noexcept
+{
+  static_assert(flattening::is_tuple<decltype(detail::tie_as_tuple(s))>::value);
+  // mp11 : flatten all the types with "recursive_module" defined in them.
+  return []<template <typename...> typename T, typename... Args>(T<Args...>) {
+    return avnd::typelist<std::decay_t<Args>...>{};
+  }(detail::tie_as_tuple(s));
+}
+
+template <std::size_t N, typename T>
+auto get(T&& v) -> decltype(auto)
+{
+  return get<N>(detail::tie_as_tuple(v));
+}
+
+template <std::size_t N, typename T>
+using tuple_element_t = std::remove_reference_t<
+    std::tuple_element_t<N, decltype(detail::tie_as_tuple(std::declval<T&>()))>>;
+template <typename T>
+using tuple_size = boost::mp11::mp_size<avnd::recursive_groups_transform_t<T>>;
+//std::tuple_size<decltype(detail::tie_as_tuple(std::declval<T&>()))>;
+
+template <typename T>
+inline constexpr size_t tuple_size_v = tuple_size<T>::value;
+
+template <class T>
+constexpr std::size_t fields_count() noexcept
+{
+  return tuple_size_v<T>;
+}
+}
+
+template <class T>
+constexpr std::size_t fields_count_unsafe() noexcept
+{
+  return pfr::tuple_size_v<T>;
+}
+
+template <typename T>
+using as_typelist = decltype(pfr::structure_to_typelist(std::declval<T&>()));
 }
 #else
 #if __has_include(<tuplet/tuple.hpp>)

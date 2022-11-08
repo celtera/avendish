@@ -62,9 +62,10 @@ struct fields_introspection
 #if AVND_USE_BOOST_PFR
     if constexpr(size > 0)
     {
+      using namespace std;
       [&func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& ppl = pfr::detail::tie_as_tuple(fields);
-        (func(pfr::detail::sequence_tuple::get<Index>(ppl)), ...);
+        (func(get<Index>(ppl)), ...);
           }(indices_n{});
     }
 #else
@@ -82,11 +83,11 @@ struct fields_introspection
     if constexpr(size > 0)
     {
 #if AVND_USE_BOOST_PFR
+      using namespace std;
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& ppl = pfr::detail::tie_as_tuple(fields);
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(pfr::detail::sequence_tuple::get<Index>(ppl)), true)),
-         ...);
+        ((void)(Index == n && (func(get<Index>(ppl)), true)), ...);
           }(indices_n{});
 #else
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {

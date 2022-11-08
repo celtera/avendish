@@ -130,6 +130,7 @@ void main()
     // Deallocate if the size changed
     const int w = this->inputs.width / downscale;
     const int h = this->inputs.height / downscale;
+
     if(last_w != w || last_h != h)
     {
       if(this->buf)

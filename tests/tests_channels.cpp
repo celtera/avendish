@@ -28,26 +28,45 @@ namespace test_3
 {
 struct object
 {
-  struct
+  struct I
   {
-    struct
+    struct P1
     {
       float sample;
     } a;
-    struct
+    struct P2
     {
       float sample;
     } b;
   } inputs;
-  struct
+  struct O
   {
-    struct
+    struct P1
     {
       float sample;
     } c;
   } outputs;
 };
 
+static_assert(avnd::audio_sample_port<float, object::I::P1>);
+static_assert(avnd::audio_sample_port<float, object::I::P2>);
+static_assert(avnd::audio_sample_port<float, object::O::P1>);
+static_assert(avnd::mono_audio_port<object::I::P1>);
+static_assert(avnd::mono_audio_port<object::I::P2>);
+static_assert(avnd::mono_audio_port<object::O::P1>);
+static_assert(avnd::is_audio_channel_t<object::I::P1>::value);
+static_assert(avnd::is_audio_channel_t<object::I::P2>::value);
+static_assert(avnd::is_audio_channel_t<object::O::P1>::value);
+
+static_assert(avnd::audio_channel_introspection<object::I>::size == 2);
+static_assert(avnd::audio_channel_input_introspection<object>::size == 2);
+static_assert(
+    avnd::input_channels_introspection<object>::input_channels
+    != avnd::undefined_channels);
+static_assert(
+    avnd::output_channels_introspection<object>::output_channels
+    != avnd::undefined_channels);
+static_assert(avnd::input_channels_introspection<object>::input_channels == 2);
 static_assert(input_channels<object>() == 2);
 static_assert(output_channels<object>() == 1);
 }

@@ -22,8 +22,9 @@ struct time_control_input_storage
 };
 
 template <typename T>
-requires(avnd::time_control_input_introspection<T>::size > 0)
-struct time_control_input_storage<T>
+requires(
+    avnd::time_control_input_introspection<T>::size
+    > 0) struct time_control_input_storage<T>
 {
   using hdl_tuple = avnd::filter_and_apply<
       time_control_state_type, avnd::time_control_input_introspection, T>;
@@ -63,13 +64,16 @@ struct time_control_storage : time_control_input_storage<T>
     }
   }
 
-  template<std::size_t NField>
-  void update_control(avnd::effect_container<T>& t, avnd::field_index<NField>, float value, bool sync)
+  template <std::size_t NField>
+  void update_control(
+      avnd::effect_container<T>& t, avnd::field_index<NField>, float value, bool sync)
   {
-    constexpr std::size_t NPred = avnd::time_control_input_introspection<T>::template field_index_to_index(avnd::field_index<NField>{});
+    constexpr std::size_t NPred
+        = avnd::time_control_input_introspection<T>::template field_index_to_index(
+            avnd::field_index<NField>{});
 
     time_control_state& g = get<NPred>(this->handles);
-    g = { .value = value, .sync = sync};
+    g = {.value = value, .sync = sync};
   }
 };
 }

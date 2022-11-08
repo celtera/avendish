@@ -155,7 +155,7 @@ consteval int std140_offset_impl()
   {
     [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
       constexpr T t{};
-      (func(avnd::pfr::get<Index>(t)), ...);
+      (func(boost::pfr::get<Index>(t)), ...);
         }(std::make_index_sequence<Count>{});
   }
   return sz;
@@ -173,7 +173,7 @@ consteval int std140_offset()
 template <typename T>
 consteval int std140_size()
 {
-  return std140_offset_impl<T, avnd::pfr::tuple_size_v<T>>();
+  return std140_offset_impl<T, boost::pfr::tuple_size_v<T>>();
 }
 
 }
