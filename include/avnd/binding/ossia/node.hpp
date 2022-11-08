@@ -844,6 +844,8 @@ struct tick_info
   }
   double speed() const noexcept { return tk.speed; };
   double tempo() const noexcept { return tk.tempo; };
+  double relative_position() const noexcept { return tk.position(); };
+  double parent_duration() const noexcept { return tk.parent_duration.impl; };
   double position_in_seconds() const noexcept { return position_in_nanoseconds() / 1e9; };
   double position_in_nanoseconds() const noexcept { return (st.currentDate() - st.startDate()); };
   double start_position_in_quarters() const noexcept { return tk.musical_start_position; };

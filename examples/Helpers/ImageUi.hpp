@@ -6,11 +6,6 @@
 #include <avnd/concepts/processor.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <cmath>
-#include <halp/audio.hpp>
-#include <halp/controls.hpp>
-#include <halp/custom_widgets.hpp>
-#include <halp/layout.hpp>
-#include <halp/meta.hpp>
 
 #include <cstdio>
 
