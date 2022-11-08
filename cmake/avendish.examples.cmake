@@ -287,3 +287,7 @@ avnd_make_object(
 
 add_executable(demo_dump examples/Demos/Dump.cpp)
 target_link_libraries(demo_dump PRIVATE Avendish)
+
+# Demo: generate matching pd help patches
+add_executable(generate_pd_help examples/Demos/GeneratePdHelp.cpp)
+target_link_libraries(generate_pd_help PRIVATE Avendish)
