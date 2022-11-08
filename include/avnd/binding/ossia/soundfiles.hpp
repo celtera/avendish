@@ -104,6 +104,7 @@ struct soundfile_storage : soundfile_input_storage<T>
     auto& buf = get<N>(this->pointers);
     using pointer_type = typename std::decay_t<decltype(buf)>::value_type;
     const int chans = hdl->data.size();
+    const int rate = hdl->rate;
     const int64_t frames = chans > 0 ? hdl->data[0].size() : 0;
 
     if constexpr(std::is_same_v<pointer_type, const ossia::audio_sample*>)
@@ -125,6 +126,7 @@ struct soundfile_storage : soundfile_input_storage<T>
         port.soundfile.data = buf.data();
         port.soundfile.frames = frames;
         port.soundfile.channels = chans;
+        port.soundfile.rate = rate;
         port.soundfile.filename = g->path;
 
         if_possible(port.update(state.effect));
@@ -153,6 +155,7 @@ struct soundfile_storage : soundfile_input_storage<T>
         port.soundfile.data = buf.data();
         port.soundfile.frames = frames;
         port.soundfile.channels = chans;
+        port.soundfile.rate = rate;
         port.soundfile.filename = g.path;
 
         if_possible(port.update(state.effect));
@@ -342,7 +345,8 @@ struct raw_file_storage : raw_file_input_storage<T>
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-      port.file.bytes = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+      port.file.bytes
+          = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
       port.file.filename = hdl->filename;
 
       if_possible(port.update(state.effect));
