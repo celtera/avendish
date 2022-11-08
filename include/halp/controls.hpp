@@ -730,9 +730,15 @@ struct soundfile_port
 }
 
 // Helpers for defining an enumeration without repeating the enumerated members
-#define HALP_NUM_ARGS_(_12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N
-#define HALP_NUM_ARGS(...) \
-  HALP_NUM_ARGS_(__VA_ARGS__, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define HALP_NUM_ARGS_(                                                               \
+    _35, _34, _33, _32, _31, _30, _29, _28, _27, _26, _25, _24, _23, _22, _21, _20,   \
+    _19, _18, _17, _16, _15, _14, _13, _12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, \
+    _1, N, ...)                                                                       \
+  N
+#define HALP_NUM_ARGS(...)                                                             \
+  HALP_NUM_ARGS_(                                                                      \
+      __VA_ARGS__, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, \
+      18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #define HALP_FOREACH(MACRO, ...) \
   HALP_FOREACH_(HALP_NUM_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
 #define HALP_FOREACH_(N, M, ...) HALP_FOREACH__(N, M, __VA_ARGS__)
@@ -749,6 +755,29 @@ struct soundfile_port
 #define HALP_FOREACH_10(M, A, ...) M(A) HALP_FOREACH_9(M, __VA_ARGS__)
 #define HALP_FOREACH_11(M, A, ...) M(A) HALP_FOREACH_10(M, __VA_ARGS__)
 #define HALP_FOREACH_12(M, A, ...) M(A) HALP_FOREACH_11(M, __VA_ARGS__)
+#define HALP_FOREACH_13(M, A, ...) M(A) HALP_FOREACH_12(M, __VA_ARGS__)
+#define HALP_FOREACH_14(M, A, ...) M(A) HALP_FOREACH_13(M, __VA_ARGS__)
+#define HALP_FOREACH_15(M, A, ...) M(A) HALP_FOREACH_14(M, __VA_ARGS__)
+#define HALP_FOREACH_16(M, A, ...) M(A) HALP_FOREACH_15(M, __VA_ARGS__)
+#define HALP_FOREACH_17(M, A, ...) M(A) HALP_FOREACH_16(M, __VA_ARGS__)
+#define HALP_FOREACH_18(M, A, ...) M(A) HALP_FOREACH_17(M, __VA_ARGS__)
+#define HALP_FOREACH_19(M, A, ...) M(A) HALP_FOREACH_18(M, __VA_ARGS__)
+#define HALP_FOREACH_20(M, A, ...) M(A) HALP_FOREACH_19(M, __VA_ARGS__)
+#define HALP_FOREACH_21(M, A, ...) M(A) HALP_FOREACH_20(M, __VA_ARGS__)
+#define HALP_FOREACH_22(M, A, ...) M(A) HALP_FOREACH_21(M, __VA_ARGS__)
+#define HALP_FOREACH_23(M, A, ...) M(A) HALP_FOREACH_22(M, __VA_ARGS__)
+#define HALP_FOREACH_24(M, A, ...) M(A) HALP_FOREACH_23(M, __VA_ARGS__)
+#define HALP_FOREACH_25(M, A, ...) M(A) HALP_FOREACH_24(M, __VA_ARGS__)
+#define HALP_FOREACH_26(M, A, ...) M(A) HALP_FOREACH_25(M, __VA_ARGS__)
+#define HALP_FOREACH_27(M, A, ...) M(A) HALP_FOREACH_26(M, __VA_ARGS__)
+#define HALP_FOREACH_28(M, A, ...) M(A) HALP_FOREACH_27(M, __VA_ARGS__)
+#define HALP_FOREACH_29(M, A, ...) M(A) HALP_FOREACH_28(M, __VA_ARGS__)
+#define HALP_FOREACH_30(M, A, ...) M(A) HALP_FOREACH_29(M, __VA_ARGS__)
+#define HALP_FOREACH_31(M, A, ...) M(A) HALP_FOREACH_30(M, __VA_ARGS__)
+#define HALP_FOREACH_32(M, A, ...) M(A) HALP_FOREACH_31(M, __VA_ARGS__)
+#define HALP_FOREACH_33(M, A, ...) M(A) HALP_FOREACH_32(M, __VA_ARGS__)
+#define HALP_FOREACH_34(M, A, ...) M(A) HALP_FOREACH_33(M, __VA_ARGS__)
+#define HALP_FOREACH_35(M, A, ...) M(A) HALP_FOREACH_34(M, __VA_ARGS__)
 #define HALP_STRINGIFY_(X) #X
 #define HALP_STRINGIFY(X) HALP_STRINGIFY_(X)
 #define HALP_STRINGIFY_ALL(...) HALP_FOREACH(HALP_STRINGIFY, __VA_ARGS__)
