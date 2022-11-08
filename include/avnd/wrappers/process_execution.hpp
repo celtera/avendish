@@ -82,6 +82,8 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
 
     tick_t t{};
     if_possible(t.frames = tick_data.frames());
+    if_possible(t.relative_position = tick_data.relative_position());
+    if_possible(t.parent_duration = tick_data.parent_duration());
     if_possible(t.speed = tick_data.speed());
     if_possible(t.tempo = tick_data.tempo());
     if constexpr(
