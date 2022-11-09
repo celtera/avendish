@@ -18,7 +18,7 @@
 
 #include <examples/Ports/VB/vb.fourses_tilde.hpp>
 
-#if 1 || __has_include(<fmt/format.h>)
+#if __has_include(<fmt/format.h>)
 #include <boost/core/demangle.hpp>
 #include <fmt/format.h>
 #include <fmt/printf.h>
