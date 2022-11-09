@@ -139,6 +139,7 @@
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
 #include &lt;avnd/concepts/parameter.hpp&gt;
+#include &lt;avnd/common/for_nth.hpp&gt;
 #include &lt;boost/pfr.hpp&gt;
 #include &lt;cmath&gt;
 #include &lt;halp/audio.hpp&gt;
@@ -304,7 +305,7 @@ struct ControlGallery
     if(!has_impulse &amp;&amp; !has_button)
       return;
 
-    avnd::pfr::for_each_field(inputs, []&lt;typename Control&gt;(const Control&amp; input) {
+    avnd::for_each_field_ref(inputs, []&lt;typename Control&gt;(const Control&amp; input) {
       {
         auto val = input.values.begin()-&gt;second;
         fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
