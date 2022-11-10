@@ -524,21 +524,21 @@ struct oscquery_mapper
     /*
     if constexpr (avnd::float_parameter_input_introspection<T>::size > 0)
     {
-      avnd::pfr::for_each_field(
+      avnd::for_each_field_ref(
           object.inputs(),
           [this]<typename Field>(Field& f) { create_control(f); });
     }
 
     if constexpr (avnd::float_parameter_output_introspection<T>::size > 0)
     {
-      avnd::pfr::for_each_field(
+      avnd::for_each_field_ref(
           object.outputs(),
           [this]<typename Field>(Field& f) { create_output(f); });
     }
 */
     if constexpr(avnd::has_messages<T>)
     {
-      avnd::pfr::for_each_field(
+      avnd::for_each_field_ref(
           avnd::get_messages(object),
           [&]<typename Field>(Field& f) { create_message(f); });
     }

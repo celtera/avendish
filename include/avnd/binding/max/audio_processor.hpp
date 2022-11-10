@@ -142,8 +142,10 @@ struct audio_processor
           // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
           // but most pd externals seem to just do a chain of if() so this is equivalent
           float res = argv[0].a_w.w_float;
-          avnd::pfr::for_each_field(state.inputs, [s, res, &state]<typename C>(C& ctl) {
-            if constexpr(avnd::float_parameter<C> || avnd::int_parameter<C> || avnd::bool_parameter<C>)
+          avnd::for_each_field_ref(state.inputs, [s, res, &state]<typename C>(C& ctl) {
+            if constexpr(
+                avnd::float_parameter<
+                    C> || avnd::int_parameter<C> || avnd::bool_parameter<C>)
             {
               constexpr std::string_view control_name = avnd::get_name<C>();
               if(control_name == s->s_name)
@@ -156,29 +158,33 @@ struct audio_processor
           break;
         }
 
-      case A_LONG: {
-        // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
-        // but most pd externals seem to just do a chain of if() so this is equivalent
-        int res = argv[0].a_w.w_long;
-        avnd::pfr::for_each_field(state.inputs, [s, res, &state]<typename C>(C& ctl) {
-          if constexpr(avnd::int_parameter<C> || avnd::float_parameter<C> || avnd::enum_parameter<C> || avnd::bool_parameter<C>)
-          {
-            constexpr std::string_view control_name = avnd::get_name<C>();
-            if(control_name == s->s_name)
+        case A_LONG: {
+          // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
+          // but most pd externals seem to just do a chain of if() so this is equivalent
+          int res = argv[0].a_w.w_long;
+          avnd::for_each_field_ref(state.inputs, [s, res, &state]<typename C>(C& ctl) {
+            if constexpr(
+                avnd::int_parameter<
+                    C> || avnd::float_parameter<C> || avnd::enum_parameter<C> || avnd::bool_parameter<C>)
             {
-              avnd::apply_control(ctl, res);
-              post("Apply contorl :%s %s %d", s->s_name, control_name.data(), ctl.value);
-              if_possible(ctl.update(state.effect));
+              constexpr std::string_view control_name = avnd::get_name<C>();
+              if(control_name == s->s_name)
+              {
+                avnd::apply_control(ctl, res);
+                post(
+                    "Apply contorl :%s %s %d", s->s_name, control_name.data(),
+                    ctl.value);
+                if_possible(ctl.update(state.effect));
+              }
             }
-          }
-        });
-        break;
-      }
+          });
+          break;
+        }
 
         case A_SYM: {
           // TODO ?
           std::string res = argv[0].a_w.w_sym->s_name;
-          avnd::pfr::for_each_field(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
+          avnd::for_each_field_ref(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
             if constexpr(avnd::string_parameter<C>)
             {
               constexpr std::string_view control_name = avnd::get_name<C>();
