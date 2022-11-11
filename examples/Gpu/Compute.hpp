@@ -15,8 +15,12 @@ struct GpuComputeExample
 {
   // halp_meta is a short hand for defining a static function:
   // #define halp_meta(name, val) static constexpr auto name() return { val; }
-  halp_meta(name, "Compute pipeline");
+  halp_meta(name, "Average color");
   halp_meta(uuid, "03bce361-a2ca-4959-95b4-6aac3b6c07b5");
+  halp_meta(category, "Visuals/Computer Vision")
+  halp_meta(c_name, "average_color")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Extract the average color of an input video feed")
 
   static constexpr int downscale = 16;
 

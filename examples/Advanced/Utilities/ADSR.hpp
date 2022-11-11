@@ -21,6 +21,7 @@ public:
   halp_meta(name, "ADSR")
   halp_meta(c_name, "gamma_adsr")
   halp_meta(category, "Control/Mappings")
+  halp_meta(description, "Trigger an ADSR envelope on input")
   halp_meta(author, "Lance Putnam, Gamma library")
   halp_meta(uuid, "2d603ea6-be84-4f8c-8269-643e989f5997")
 

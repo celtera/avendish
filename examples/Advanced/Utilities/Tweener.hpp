@@ -16,9 +16,10 @@ struct Tweener
 {
 public:
   halp_meta(name, "Tweener")
-  halp_meta(c_name, "tweenr")
+  halp_meta(c_name, "tweener")
+  halp_meta(category, "Automations")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(category, "Automation/Tweener")
+  halp_meta(description, "Interpolate between two values over a time span")
   halp_meta(uuid, "1aea36d3-b039-4800-a488-9f3d8a0865a5")
 
   struct inputs_t

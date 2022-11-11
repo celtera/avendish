@@ -16,6 +16,7 @@ public:
   halp_meta(c_name, "ao_stereomixer")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Mix and pan multiple stereo audio inputs")
   halp_meta(uuid, "93910fcf-e45a-4eac-ad55-a14b221a12aa")
 
   struct

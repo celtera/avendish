@@ -262,6 +262,7 @@ struct Lowpass : Filter<Dsp::RBJ::Design::LowPass, LowpassInputs>
 {
   halp_meta(name, "Lowpass")
   halp_meta(c_name, "dspfilters_lowpass")
+  halp_meta(description, "Low-pass audio filter")
   halp_meta(uuid, "8e768065-4c9b-4cb2-aee3-e48a605b05de")
 };
 
@@ -276,6 +277,7 @@ struct Highpass : Filter<Dsp::RBJ::Design::HighPass, HighpassInputs>
 {
   halp_meta(name, "Highpass")
   halp_meta(c_name, "dspfilters_highpass")
+  halp_meta(description, "High-pass audio filter")
   halp_meta(uuid, "c673eeab-fbee-4f2b-89f6-22e84fd5e709")
 };
 
@@ -291,6 +293,7 @@ struct Bandpass : Filter<Dsp::RBJ::Design::BandPass1, BandpassInputs>
 {
   halp_meta(name, "Bandpass")
   halp_meta(c_name, "dspfilters_bandpass")
+  halp_meta(description, "Band-pass audio filter")
   halp_meta(uuid, "c250f18a-b672-4ec5-8539-d29f00020845")
 };
 
@@ -298,6 +301,7 @@ struct Bandstop : Filter<Dsp::RBJ::Design::BandStop, BandpassInputs>
 {
   halp_meta(name, "Bandstop")
   halp_meta(c_name, "dspfilters_bandstop")
+  halp_meta(description, "Band-stop audio filter")
   halp_meta(uuid, "795e9733-7c74-4c01-a390-d6fdcc05c760")
 };
 
@@ -312,6 +316,7 @@ struct Lowshelf : Filter<Dsp::RBJ::Design::LowShelf, LowshelfInputs>
 {
   halp_meta(name, "Lowshelf")
   halp_meta(c_name, "dspfilters_lowshelf")
+  halp_meta(description, "Low-shelf audio filter")
   halp_meta(uuid, "fe15d270-7671-44d3-8f67-f038f1ff1d43")
 };
 
@@ -326,6 +331,7 @@ struct Highshelf : Filter<Dsp::RBJ::Design::HighShelf, HighshelfInputs>
 {
   halp_meta(name, "Highshelf")
   halp_meta(c_name, "dspfilters_highshelf")
+  halp_meta(description, "High-shelf audio filter")
   halp_meta(uuid, "63727018-e3b2-4e61-b7b1-f1978554db56")
 };
 
@@ -340,6 +346,7 @@ struct Bandshelf : Filter<Dsp::RBJ::Design::BandShelf, BandshelfInputs>
 {
   halp_meta(name, "Bandshelf")
   halp_meta(c_name, "dspfilters_bandshelf")
+  halp_meta(description, "Band-shelf audio filter")
   halp_meta(uuid, "e8f05473-2779-457e-916f-4bfe2771d573")
 };
 

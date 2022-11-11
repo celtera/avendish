@@ -245,7 +245,6 @@ public:
 
   [[no_unique_address]] controls_queue<T> control;
 
-
   using control_input_values_type
       = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
   using control_output_values_type
@@ -460,7 +459,7 @@ public:
     // if e.g. we have an API that works with doubles,
     // and a plug-in that expects floats.
     // Here for instance we allocate buffers for an host that may invoke "process" with either floats or doubles.
-    if constexpr(requires (AudioCount t) { t.processor; })
+    if constexpr(requires(AudioCount t) { t.processor; })
     {
       auto& self = static_cast<AudioCount&>(*this);
       self.processor.allocate_buffers(setup_info, float{});
@@ -504,9 +503,11 @@ public:
     if constexpr(time_controls::size > 0)
     {
       this->tempo = new_tempo;
-      time_controls::for_all_n2(this->impl.inputs(), [this, new_tempo] (auto& field, auto pred_idx, auto f_idx) {
+      time_controls::for_all_n2(
+          this->impl.inputs(),
+          [this, new_tempo](auto& field, auto pred_idx, auto f_idx) {
         this->time_controls.set_tempo(this->impl, pred_idx, f_idx, new_tempo);
-      });
+          });
     }
   }
 
@@ -729,15 +730,17 @@ public:
     return std::string{avnd::get_name<T>()};
   }
 
-  template<typename Field, typename Val, std::size_t NField>
-  inline constexpr void from_ossia_value(Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField>)
+  template <typename Field, typename Val, std::size_t NField>
+  inline constexpr void from_ossia_value(
+      Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField>)
   {
     return oscr::from_ossia_value(field, src, dst);
   }
 
   // Special case: this one may require the current tempo information
   template <avnd::time_control Field, typename Val, std::size_t NField>
-  inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
+  inline void from_ossia_value(
+      Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
   {
     auto vec = ossia::convert<ossia::vec2f>(src);
     if(vec[1] == 0.)
@@ -809,16 +812,14 @@ template <typename T>
 concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;
 
-template<typename T>
-concept ossia_compatible_nonaudio_processor =
-    !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>)
-    ;
+template <typename T>
+concept ossia_compatible_nonaudio_processor
+    = !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>);
 
-template<typename T>
-concept ossia_compatible_audio_processor =
-       avnd::poly_sample_array_input_port_count<double, T> > 0
-    || avnd::poly_sample_array_output_port_count<double, T> > 0
-;
+template <typename T>
+concept ossia_compatible_audio_processor
+    = avnd::poly_sample_array_input_port_count<double, T> >
+0 || avnd::poly_sample_array_output_port_count<double, T> > 0;
 
 template <typename T>
 class safe_node;
@@ -829,26 +830,37 @@ struct tick_info
   ossia::exec_state_facade st;
   int64_t m_frames{};
 
-  int64_t frames() const noexcept {
-    return m_frames;
-  }
+  int64_t frames() const noexcept { return m_frames; }
 
   int64_t position_in_frames() const noexcept
   {
     return tk.start_date_to_physical(st.modelToSamples());
   }
 
-  auto signature() const noexcept {
-    struct sig { int num{}, denom{}; };
-    return sig{.num = tk.signature.upper, .denom = tk.signature.lower };
+  auto signature() const noexcept
+  {
+    struct sig
+    {
+      int num{}, denom{};
+    };
+    return sig{.num = tk.signature.upper, .denom = tk.signature.lower};
   }
   double speed() const noexcept { return tk.speed; };
   double tempo() const noexcept { return tk.tempo; };
   double relative_position() const noexcept { return tk.position(); };
   double parent_duration() const noexcept { return tk.parent_duration.impl; };
-  double position_in_seconds() const noexcept { return position_in_nanoseconds() / 1e9; };
-  double position_in_nanoseconds() const noexcept { return (st.currentDate() - st.startDate()); };
-  double start_position_in_quarters() const noexcept { return tk.musical_start_position; };
+  double position_in_seconds() const noexcept
+  {
+    return position_in_nanoseconds() / 1e9;
+  };
+  double position_in_nanoseconds() const noexcept
+  {
+    return (st.currentDate() - st.startDate());
+  };
+  double start_position_in_quarters() const noexcept
+  {
+    return tk.musical_start_position;
+  };
   double end_position_in_quarters() const noexcept { return tk.musical_end_position; };
   double bar_at_start() const noexcept { return tk.musical_start_last_bar; };
   double bar_at_end() const noexcept { return tk.musical_end_last_bar; };

@@ -20,6 +20,15 @@ struct Processor
 {
   halp_meta(name, "Melodial")
   halp_meta(c_name, "melodial")
+  halp_meta(category, "Midi")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(
+      description,
+      "Convert a melodic pattern into MIDI notes. \n"
+      "Pattern data format: [\n"
+      "  [ [ 48, 60 ], [ 55, 127 ] ], // C3 G3 chord\n"
+      "  [ [ 48, 127 ] ] // single C3, louder \n"
+      "]\n")
   halp_meta(uuid, "5b34abbb-dcd2-47d4-a836-f36c17d306ef")
   struct
   {

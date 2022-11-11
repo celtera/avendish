@@ -48,7 +48,7 @@ struct spectrum_display
 
 struct FFTDisplay
 {
-  static consteval auto name() { return "FFT Display example"; }
+  static consteval auto name() { return "FFT Display"; }
   static consteval auto c_name() { return "avnd_fft_display"; }
   static consteval auto uuid() { return "9eeadb52-209a-46ff-b4c6-d6c31d25aad6"; }
 

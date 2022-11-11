@@ -18,6 +18,7 @@ public:
   halp_meta(name, "Bitcrush")
   halp_meta(c_name, "gamma_bitcrush")
   halp_meta(author, "Lance Putnam, Gamma library")
+  halp_meta(description, "Simple but efficient bitcrusher")
   halp_meta(category, "Audio/Effects")
   halp_meta(uuid, "8ba36c05-f2c9-4cb2-b273-d726b56f9199")
 

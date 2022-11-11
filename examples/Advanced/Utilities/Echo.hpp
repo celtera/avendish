@@ -20,6 +20,7 @@ public:
   halp_meta(c_name, "gamma_echo")
   halp_meta(author, "Lance Putnam, Gamma library")
   halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Basic echo audio effect")
   halp_meta(uuid, "d7b7d998-e9d2-4575-9cf4-be5fec20195f")
 
   struct inputs

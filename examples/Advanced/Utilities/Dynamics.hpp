@@ -195,6 +195,7 @@ struct Compressor : DynamicsProcessor
   halp_meta(category, "Audio/Effects")
   halp_meta(author, "ofxTonic library authors")
   halp_meta(c_name, "ofxtonic_compressor")
+  halp_meta(description, "Dynamics compressor")
   halp_meta(uuid, "352ba9b1-eeab-4408-9b98-aa2c2585508a")
   struct
   {
@@ -245,6 +246,7 @@ struct Limiter : DynamicsProcessor
   halp_meta(category, "Audio/Effects")
   halp_meta(author, "ofxTonic library authors")
   halp_meta(c_name, "ofxtonic_limiter")
+  halp_meta(description, "Dynamics limiter")
   halp_meta(uuid, "7570d058-d243-4c74-84cc-f5b3f5d752bd")
   struct
   {

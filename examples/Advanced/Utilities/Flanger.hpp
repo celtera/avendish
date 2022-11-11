@@ -20,6 +20,7 @@ public:
   halp_meta(c_name, "gamma_flanger")
   halp_meta(author, "Lance Putnam, Gamma library")
   halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Basic flanger audio effect")
   halp_meta(uuid, "538165be-18f0-4bbf-bcf0-ef9b97d6a1b1")
 
   struct inputs

@@ -18,6 +18,7 @@ public:
   halp_meta(c_name, "kfr_convolver")
   halp_meta(author, "KFRLib")
   halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Impulse response convolver")
   halp_meta(uuid, "5bd72341-20a5-4b79-b0f3-6586be334610")
 
   struct
