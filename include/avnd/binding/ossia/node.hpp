@@ -251,6 +251,13 @@ public:
       = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
 };
 
+template <std::size_t Index, typename F>
+constexpr void invoke_helper(F& f, auto& avnd_ports, auto& ossia_ports)
+{
+  f(avnd::pfr::get<Index>(avnd_ports), tuplet::get<Index>(ossia_ports),
+    avnd::field_index<Index>{});
+}
+
 template <typename T, typename AudioCount>
 class safe_node_base : public safe_node_base_base<T>
 {
@@ -292,25 +299,21 @@ public:
   }
 
   template <typename Functor>
-  void process_inputs_impl(Functor& f, auto& in)
+  AVND_INLINE_FLATTEN void process_inputs_impl(Functor& f, auto& in)
   {
     using info = avnd::input_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
       using namespace tpl;
-      (f(avnd::pfr::get<Index>(in), tuplet::get<Index>(this->ossia_inlets.ports),
-         avnd::field_index<Index>{}),
-       ...);
+      (invoke_helper<Index>(f, in, this->ossia_inlets.ports), ...);
         }(typename info::indices_n{});
   }
 
   template <typename Functor>
-  void process_outputs_impl(Functor& f, auto& out)
+  AVND_INLINE_FLATTEN void process_outputs_impl(Functor& f, auto& out)
   {
     using info = avnd::output_introspection<T>;
     [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-      (f(avnd::pfr::get<Index>(out), tuplet::get<Index>(this->ossia_outlets.ports),
-         avnd::field_index<Index>{}),
-       ...);
+      (invoke_helper<Index>(f, out, this->ossia_outlets.ports), ...);
         }(typename info::indices_n{});
   }
 

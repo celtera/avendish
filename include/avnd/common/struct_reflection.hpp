@@ -241,8 +241,12 @@ struct predicate_introspection
   // Gives std::tuple<f(field1), f(field2), etc...>
   static constexpr auto filter_tuple(type& unfiltered_fields, auto filter)
   {
+    auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept
+    {
+      return filter(pfr::get<Index>(unfiltered_fields));
+    };
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-      return tpl::make_tuple(filter(pfr::get<Index>(unfiltered_fields))...);
+      return tpl::make_tuple(stack_size_helper.template operator()<Index>()...);
     }(indices_n{});
   }
 
@@ -294,11 +298,15 @@ struct predicate_introspection
   {
     if constexpr(size > 0)
     {
-      [&func, &unfiltered_fields]<typename K, K... Index, size_t... LocalIndex>(
+      auto stack_size_helper
+          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept
+      {
+        func(pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{});
+      };
+      [stack_size_helper]<typename K, K... Index, size_t... LocalIndex>(
           std::integer_sequence<K, Index...>,
           std::integer_sequence<size_t, LocalIndex...>) {
-        (func(pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{}),
-         ...);
+        (stack_size_helper.template operator()<Index, LocalIndex>(), ...);
           }(indices_n{}, std::make_index_sequence<size>{});
     }
   }
@@ -308,13 +316,18 @@ struct predicate_introspection
   {
     if constexpr(size > 0)
     {
-      [&func, &unfiltered_fields]<typename K, K... Index, size_t... LocalIndex>(
+      auto stack_size_helper
+          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept
+      {
+        func(
+            pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{},
+            avnd::field_index<Index>{});
+      };
+
+      [stack_size_helper]<typename K, K... Index, size_t... LocalIndex>(
           std::integer_sequence<K, Index...>,
           std::integer_sequence<size_t, LocalIndex...>) {
-        (func(
-             pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{},
-             avnd::field_index<Index>{}),
-         ...);
+        (stack_size_helper.template operator()<Index, LocalIndex>(), ...);
           }(indices_n{}, std::make_index_sequence<size>{});
     }
   }
@@ -325,12 +338,18 @@ struct predicate_introspection
   {
     if constexpr(size > 0)
     {
-      [&func, &unfiltered_fields]<typename K, K... Index, size_t... LocalIndex>(
+      auto stack_size_helper
+          = [&]<std::size_t Index, std::size_t LocalIndex>(auto& m) constexpr noexcept
+      {
+        func(pfr::get<Index>(m), avnd::predicate_index<LocalIndex>{});
+      };
+      [stack_size_helper,
+       &unfiltered_fields]<typename K, K... Index, size_t... LocalIndex>(
           std::integer_sequence<K, Index...>,
           std::integer_sequence<size_t, LocalIndex...>) {
         for(auto& m : unfiltered_fields)
         {
-          (func(pfr::get<Index>(m), avnd::predicate_index<LocalIndex>{}), ...);
+          (stack_size_helper.template operator()<Index, LocalIndex>(m), ...);
         }
           }(indices_n{}, std::make_index_sequence<size>{});
     }
@@ -341,9 +360,13 @@ struct predicate_introspection
   {
     if constexpr(size > 0)
     {
-      return [&func, &unfiltered_fields]<typename K, K... Index>(
+      auto stack_size_helper = [&]<std::size_t Index>(auto& m) constexpr noexcept
+      {
+        return func(pfr::get<Index>(unfiltered_fields));
+      };
+      return [stack_size_helper]<typename K, K... Index>(
                  std::integer_sequence<K, Index...>) {
-        return (func(pfr::get<Index>(unfiltered_fields)) && ...);
+        return (stack_size_helper.template operator()<Index>() && ...);
       }(indices_n{});
     }
     else

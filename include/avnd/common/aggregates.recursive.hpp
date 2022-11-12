@@ -34,8 +34,9 @@ constexpr AVND_INLINE auto get(T&& v) -> decltype(auto)
 }
 
 template <std::size_t N, typename T>
-using tuple_element_t = std::remove_reference_t<
-    std::tuple_element_t<N, decltype(detail::tie_as_tuple(std::declval<T&>()))>>;
+using tuple_element_t = std::remove_reference_t<typename
+    tuple_element_impl<N, decltype(detail::tie_as_tuple(std::declval<T&>()))>::type>;
+
 
 template <typename T>
 using tuple_size = boost::mp11::mp_size<avnd::recursive_groups_transform_t<T>>;
