@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include <utility>
 
 namespace avnd
 {
@@ -20,6 +22,44 @@ struct field_reflection
   using type = Field;
   static const constexpr auto index = Idx;
 };
+
+template <int N, typename T, std::size_t M>
+constexpr int index_of_element(const std::array<T, M>& arr) noexcept
+{
+  static_assert(M > 0);
+
+  int ret = [&arr] {
+    int k = 0;
+    for(int i : arr)
+    {
+      if(i == N)
+        return k;
+      k++;
+    }
+    return -1;
+  }();
+
+  return ret;
+}
+
+template <typename T, std::size_t M>
+constexpr int index_of_element(T N, const std::array<T, M>& arr) noexcept
+{
+  static_assert(M > 0);
+
+  int ret = [N, &arr] {
+    int k = 0;
+    for(int i : arr)
+    {
+      if(i == N)
+        return k;
+      k++;
+    }
+    return -1;
+  }();
+
+  return ret;
+}
 
 template <int N, typename T, T... Idx>
 consteval int index_of_element(std::integer_sequence<T, Idx...>) noexcept

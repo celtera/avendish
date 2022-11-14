@@ -37,12 +37,6 @@ constexpr auto fields_count_impl(const T& t) noexcept
   return avnd::num<sizeof...(elts)>{};
 }
 
-template <class T>
-constexpr std::size_t fields_count() noexcept
-{
-  return decltype(fields_count_impl(std::declval<const T&>()))::value;
-}
-
 template <typename T>
 static constexpr const std::size_t tuple_size_v = fields_count<T>();
 
@@ -132,26 +126,7 @@ constexpr auto for_each_field(S&& s, auto&& f) noexcept
 }
 }
 
-template <class T>
-constexpr std::size_t fields_count_unsafe() noexcept
-{
-  return pfr::fields_count<T>();
-}
-
-template <typename T>
-using as_tuple_ref = decltype(pfr::detail::tie_as_tuple(std::declval<T&>()));
-template <typename T>
-using as_tuple = decltype(pfr::structure_to_tuple(std::declval<T&>()));
 template <typename T>
 using as_typelist = decltype(pfr::structure_to_typelist(std::declval<T&>()));
 
-// Yields a tuple with the compile-time function applied to each member of the struct
-template <template <typename...> typename F, typename S>
-constexpr auto struct_apply_impl(S&& s) noexcept
-{
-  auto&& [... elts] = std::forward<S>(s);
-  return tpl::make_tuple(F<decltype(elts)>{}...);
-}
-template <template <typename...> typename F, typename T>
-using struct_apply = decltype(struct_apply_impl(std::declval<T&&>()));
 }

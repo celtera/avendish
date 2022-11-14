@@ -37,16 +37,10 @@ static struct TwoRec
   } c;
 } two;
 
-static_assert(avnd::pfr::fields_count<Zero>() == 0);
-static_assert(avnd::fields_count_unsafe<Zero>() == 0);
 static_assert(avnd::pfr::tuple_size_v<Zero> == 0);
 
-static_assert(avnd::pfr::fields_count<OneRec>() == 1);
-static_assert(avnd::fields_count_unsafe<OneRec>() == 1);
 static_assert(avnd::pfr::tuple_size_v<OneRec> == 1);
 
-static_assert(avnd::pfr::fields_count<TwoRec>() == 2);
-static_assert(avnd::fields_count_unsafe<TwoRec>() == 2);
 static_assert(avnd::pfr::tuple_size_v<TwoRec> == 2);
 
 static_assert(std::is_same_v<decltype(avnd::pfr::get<0>(one)), OneRec::A::B&>);
@@ -64,9 +58,9 @@ static_assert(std::is_same_v<decltype(get<0>(tpl_one)), OneRec::A::B&>);
 static_assert(std::is_same_v<decltype(get<0>(tpl_two)), TwoRec::A::B&>);
 static_assert(std::is_same_v<decltype(get<1>(tpl_two)), TwoRec::C&>);
 
-static auto tl_zero = avnd::pfr::structure_to_typelist(zero);
-static auto tl_one = avnd::pfr::structure_to_typelist(one);
-static auto tl_two = avnd::pfr::structure_to_typelist(two);
+static auto tl_zero = avnd::as_typelist<decltype(zero)>{};
+static auto tl_one = avnd::as_typelist<decltype(one)>{};
+static auto tl_two = avnd::as_typelist<decltype(two)>{};
 
 static_assert(boost::mp11::mp_size<decltype(tl_zero)>::value == 0);
 static_assert(boost::mp11::mp_size<decltype(tl_one)>::value == 1);

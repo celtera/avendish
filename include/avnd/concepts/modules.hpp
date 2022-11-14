@@ -108,7 +108,8 @@ using recursive_groups_transform_t = typename recursive_groups_transform<T>::typ
 template <typename T>
 struct recursive_groups_transform
 {
-  using tuple_type = decltype(avnd::structure_to_tpltuple(std::decay_t<T>{}));
+  using tuple_type
+      = decltype(avnd::structure_to_tpltuple(std::declval<std::decay_t<T>>()));
   using transformed_type = boost::mp11::mp_transform_if<
       avnd::is_recursive_group, recursive_groups_transform_t, tuple_type>;
   using type = boost::mp11::mp_flatten<transformed_type>;
@@ -116,8 +117,17 @@ struct recursive_groups_transform
 
 // Check if any member is a recursive group - if not we can generally use the simple PFR implementation.
 template <typename T>
-concept has_recursive_groups = boost::mp11::mp_any_of<
-    decltype(avnd::structure_to_tpltuple(std::decay_t<T>{})), is_recursive_group>::value;
+struct has_recursive_groups_impl
+{
+  static_assert(std::is_aggregate_v<T>);
+  static constexpr bool value = boost::mp11::mp_any_of<
+      decltype(avnd::structure_to_tpltuple(std::declval<std::decay_t<T>>())),
+      is_recursive_group>::value;
+};
+
+template <typename T>
+concept has_recursive_groups
+    = has_recursive_groups_impl<std::remove_reference_t<std::remove_const_t<T>>>::value;
 
 // Flattening some recursive tuples BS
 

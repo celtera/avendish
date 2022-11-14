@@ -6,7 +6,6 @@
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
-#include <tuplet/tuple.hpp>
 
 namespace test_1
 {
@@ -75,6 +74,9 @@ public:
     DrumChannel s7;
     DrumChannel s8;
 
+    DrumChannel ss1;
+    DrumChannel ss2;
+
     halp::knob_f32<"Volume"> volume;
   } inputs;
 
@@ -86,14 +88,22 @@ public:
 
 }
 
+template <std::size_t Index, typename Functor>
+constexpr void ufff(Functor& f, auto& in)
+{
+  f(avnd::pfr::get<Index>(in), avnd::field_index<Index>{});
+}
+
 template <typename Functor, typename T = test_1::Kabang>
-void process_inputs_impl(Functor& f, auto& in)
+constexpr void process_inputs_impl(Functor& f, auto& in)
 {
   using info = avnd::input_introspection<T>;
-  [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+  [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) constexpr
+  {
     using namespace tpl;
-    (f(avnd::pfr::get<Index>(in), avnd::field_index<Index>{}), ...);
-      }(typename info::indices_n{});
+    (ufff<Index>(f, in), ...);
+  }
+  (typename info::indices_n{});
 }
 
 test_1::Kabang g;

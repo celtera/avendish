@@ -6,6 +6,7 @@
 #include <avnd/common/coroutines.hpp>
 #include <avnd/common/dummy.hpp>
 #include <avnd/common/errors.hpp>
+#include <avnd/common/for_nth.hpp>
 #include <avnd/common/index.hpp>
 #include <avnd/common/index_sequence.hpp>
 #include <boost/mp11.hpp>
@@ -27,7 +28,7 @@ struct fields_introspection
 {
   using type = T;
 
-  static constexpr auto size = fields_count_unsafe<type>();
+  static constexpr auto size = pfr::tuple_size_v<type>;
   using indices_n = std::make_integer_sequence<int, size>;
 
   static constexpr void for_all(auto&& func) noexcept
@@ -57,16 +58,13 @@ struct fields_introspection
     }
   }
 
-  static constexpr void for_all(type& fields, auto&& func) noexcept
+  template <typename F>
+  static constexpr void for_all(type& fields, F&& func) noexcept
   {
 #if AVND_USE_BOOST_PFR
     if constexpr(size > 0)
     {
-      using namespace std;
-      [&func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-        auto&& ppl = pfr::detail::tie_as_tuple(fields);
-        (func(get<Index>(ppl)), ...);
-          }(indices_n{});
+      avnd::for_each_field_ref(fields, std::forward<F>(func));
     }
 #else
     auto&& [... elts] = fields;
@@ -142,7 +140,7 @@ struct predicate_introspection
   template <std::size_t Idx>
   static constexpr int unmap() noexcept
   {
-    return avnd::index_of_element<Idx>(indices_n{});
+    return avnd::index_of_element<Idx>(index_map);
   }
 
   template <std::size_t Idx>
@@ -153,7 +151,7 @@ struct predicate_introspection
   template <std::size_t Idx>
   static constexpr auto field_index_to_index(avnd::field_index<Idx>) noexcept
   {
-    return avnd::predicate_index<avnd::index_of_element<Idx>(indices_n{})>{};
+    return avnd::predicate_index<unmap<Idx>()>{};
   }
 
   static constexpr auto index_to_field_index(int pred_idx) noexcept
@@ -214,7 +212,7 @@ struct predicate_introspection
   // Goes from 0, 1, 2 indices to indices in the complete
   // struct with members that may not match this predicate
   template <std::size_t N>
-  using nth_element = std::decay_t<decltype(pfr::get<index_map[N]>(type{}))>;
+  using nth_element = avnd::pfr::tuple_element_t<index_map[N], type>;
 
   template <std::size_t N>
   static constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
@@ -360,7 +358,7 @@ struct predicate_introspection
   {
     if constexpr(size > 0)
     {
-      auto stack_size_helper = [&]<std::size_t Index>(auto& m) constexpr noexcept
+      auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept
       {
         return func(pfr::get<Index>(unfiltered_fields));
       };

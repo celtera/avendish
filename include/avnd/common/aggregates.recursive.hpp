@@ -44,17 +44,6 @@ using tuple_size = boost::mp11::mp_size<avnd::recursive_groups_transform_t<T>>;
 template <typename T>
 inline constexpr size_t tuple_size_v = tuple_size<T>::value;
 
-template <class T>
-constexpr AVND_INLINE std::size_t fields_count() noexcept
-{
-  return tuple_size_v<T>;
-}
-
-template <class T>
-constexpr std::size_t fields_count_unsafe() noexcept
-{
-  return pfr_recursive::tuple_size_v<T>;
-}
 template <typename T>
 using as_typelist = decltype(pfr_recursive::structure_to_typelist(std::declval<T&>()));
 }

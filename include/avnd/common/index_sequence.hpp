@@ -5,7 +5,9 @@
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>
 
+#include <algorithm>
 #include <array>
+#include <numeric>
 #include <utility>
 
 namespace avnd
@@ -50,6 +52,26 @@ template <typename T, T... N>
 static constexpr auto integer_sequence_to_array(std::integer_sequence<T, N...>)
 {
   return std::array<T, sizeof...(N)>{N...};
+}
+
+template <typename T, T... N>
+static constexpr auto integer_sequence_to_inverse_array(std::integer_sequence<T, N...>)
+{
+  if constexpr(sizeof...(N) > 0)
+  {
+    constexpr int max = std::max({N...});
+    std::array<T, max + 1> ret{};
+    int k = 0;
+    for(T val : {N...})
+    {
+      ret[val] = k++;
+    }
+    return ret;
+  }
+  else
+  {
+    return std::array<T, 0>{};
+  }
 }
 
 }

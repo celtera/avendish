@@ -26,22 +26,16 @@ static struct Two
 static_assert(boost::pfr::detail::fields_count<Zero>() == 0);
 static_assert(boost::pfr::tuple_size_v<Zero> == 0);
 
-static_assert(avnd::pfr::fields_count<Zero>() == 0);
-static_assert(avnd::fields_count_unsafe<Zero>() == 0);
 static_assert(avnd::pfr::tuple_size_v<Zero> == 0);
 
 static_assert(boost::pfr::detail::fields_count<One>() == 1);
 static_assert(boost::pfr::tuple_size_v<One> == 1);
 
-static_assert(avnd::pfr::fields_count<One>() == 1);
-static_assert(avnd::fields_count_unsafe<One>() == 1);
 static_assert(avnd::pfr::tuple_size_v<One> == 1);
 
 static_assert(boost::pfr::detail::fields_count<Two>() == 2);
 static_assert(boost::pfr::tuple_size_v<Two> == 2);
 
-static_assert(avnd::pfr::fields_count<Two>() == 2);
-static_assert(avnd::fields_count_unsafe<Two>() == 2);
 static_assert(avnd::pfr::tuple_size_v<Two> == 2);
 
 static_assert(std::is_same_v<decltype(avnd::pfr::get<0>(one)), One::A&>);
@@ -59,9 +53,9 @@ static_assert(std::is_same_v<decltype(get<0>(tpl_one)), One::A&>);
 static_assert(std::is_same_v<decltype(get<0>(tpl_two)), Two::A&>);
 static_assert(std::is_same_v<decltype(get<1>(tpl_two)), Two::B&>);
 
-static auto tl_zero = avnd::pfr::structure_to_typelist(zero);
-static auto tl_one = avnd::pfr::structure_to_typelist(one);
-static auto tl_two = avnd::pfr::structure_to_typelist(two);
+static auto tl_zero = avnd::as_typelist<decltype(zero)>{};
+static auto tl_one = avnd::as_typelist<decltype(one)>{};
+static auto tl_two = avnd::as_typelist<decltype(two)>{};
 
 static_assert(boost::mp11::mp_size<decltype(tl_zero)>::value == 0);
 static_assert(boost::mp11::mp_size<decltype(tl_one)>::value == 1);
@@ -118,22 +112,16 @@ static struct Two
 static_assert(boost::pfr::detail::fields_count<Zero>() == 0);
 static_assert(boost::pfr::tuple_size_v<Zero> == 0);
 
-static_assert(avnd::pfr::fields_count<Zero>() == 0);
-static_assert(avnd::fields_count_unsafe<Zero>() == 0);
 static_assert(avnd::pfr::tuple_size_v<Zero> == 0);
 
 static_assert(boost::pfr::detail::fields_count<One>() == 1);
 static_assert(boost::pfr::tuple_size_v<One> == 1);
 
-static_assert(avnd::pfr::fields_count<One>() == 1);
-static_assert(avnd::fields_count_unsafe<One>() == 1);
 static_assert(avnd::pfr::tuple_size_v<One> == 1);
 
 static_assert(boost::pfr::detail::fields_count<Two>() == 2);
 static_assert(boost::pfr::tuple_size_v<Two> == 2);
 
-static_assert(avnd::pfr::fields_count<Two>() == 2);
-static_assert(avnd::fields_count_unsafe<Two>() == 2);
 static_assert(avnd::pfr::tuple_size_v<Two> == 2);
 
 static_assert(std::is_same_v<decltype(avnd::pfr::get<0>(one)), One::A&>);
@@ -151,9 +139,9 @@ static_assert(std::is_same_v<decltype(get<0>(tpl_one)), One::A&>);
 static_assert(std::is_same_v<decltype(get<0>(tpl_two)), Two::A&>);
 static_assert(std::is_same_v<decltype(get<1>(tpl_two)), Two::B&>);
 
-static auto tl_zero = avnd::pfr::structure_to_typelist(zero);
-static auto tl_one = avnd::pfr::structure_to_typelist(one);
-static auto tl_two = avnd::pfr::structure_to_typelist(two);
+static auto tl_zero = avnd::as_typelist<decltype(zero)>{};
+static auto tl_one = avnd::as_typelist<decltype(one)>{};
+static auto tl_two = avnd::as_typelist<decltype(two)>{};
 
 static_assert(boost::mp11::mp_size<decltype(tl_zero)>::value == 0);
 static_assert(boost::mp11::mp_size<decltype(tl_one)>::value == 1);

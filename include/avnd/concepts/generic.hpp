@@ -244,7 +244,7 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   struct Name##_type<T>                                                            \
   {                                                                                \
     using type = typename std::decay_t<T>::Name;                                   \
-    using tuple = decltype(pfr::structure_to_typelist(type{}));                    \
+    using tuple = avnd::as_typelist<type>;                                         \
     static constexpr const auto size = pfr::tuple_size_v<type>;                    \
   };                                                                               \
                                                                                    \
@@ -253,7 +253,7 @@ concept enum_ish = std::is_enum_v<std::decay<T>>;
   {                                                                                \
     using type                                                                     \
         = std::remove_reference_t<decltype(std::declval<std::decay_t<T>>().Name)>; \
-    using tuple = decltype(pfr::structure_to_typelist(type{}));                    \
+    using tuple = avnd::as_typelist<type>;                                         \
     static constexpr const auto size = pfr::tuple_size_v<type>;                    \
   };
 }

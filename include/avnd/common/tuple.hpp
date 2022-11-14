@@ -1,8 +1,12 @@
 #pragma once
 
-// #include <tuplet/tuple.hpp>
+#if __has_include(<tuplet/tuple.hpp>)
+#include <tuplet/tuple.hpp>
+namespace tpl = tuplet;
+#else
 #include <tuple>
 namespace tpl = std;
+#endif
 
 namespace avnd
 {

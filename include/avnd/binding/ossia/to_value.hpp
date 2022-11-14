@@ -14,7 +14,7 @@ struct to_ossia_value_impl
   template <typename F>
   void to_vector(const F& f)
   {
-    constexpr int fields = avnd::pfr::tuple_size_v<F>;
+    constexpr int fields = boost::pfr::tuple_size_v<F>;
     std::vector<ossia::value> v;
     v.resize(fields);
 
@@ -29,7 +29,7 @@ struct to_ossia_value_impl
   requires std::is_aggregate_v<F>
   void operator()(const F& f)
   {
-    constexpr int fields = avnd::pfr::tuple_size_v<F>;
+    constexpr int fields = boost::pfr::tuple_size_v<F>;
     if constexpr(vecf_compatible<F>())
     {
       if constexpr(fields == 2)
@@ -196,7 +196,7 @@ template <typename T>
 ossia::value to_ossia_value(const T& v)
 {
   using type = std::decay_t<T>;
-  constexpr int sz = avnd::pfr::tuple_size_v<type>;
+  constexpr int sz = boost::pfr::tuple_size_v<type>;
   if constexpr(sz == 0)
   {
     return ossia::impulse{};

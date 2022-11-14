@@ -33,7 +33,8 @@ requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val = fields_count<std::remove_reference_t<T>>();
+  constexpr std::size_t fields_count_val
+      = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = avnd::pfr::detail::tie_as_tuple(value);
 
@@ -47,13 +48,15 @@ requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
   (func(elts), ...);
 #endif
 }
+
 template <class T, class F>
 requires(!avnd::vector_ish<T>) constexpr void for_each_field_ref_n(T&& value, F&& func)
 {
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val = fields_count<std::remove_reference_t<T>>();
+  constexpr std::size_t fields_count_val
+      = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = avnd::pfr::detail::tie_as_tuple(value);
 
@@ -92,7 +95,7 @@ void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
     for_each_field_ref(v, func);
   }
 }
-
+/*
 template <typename T, class F>
 requires avnd::vector_ish<std::decay_t<T>>
 void for_each_field_ref(T&& value, F&& func)
@@ -102,7 +105,7 @@ void for_each_field_ref(T&& value, F&& func)
     func(v);
   }
 }
-
+*/
 constexpr int index_in_struct(const auto& s, auto... member)
 {
   int index = -1;

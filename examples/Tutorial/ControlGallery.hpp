@@ -7,6 +7,8 @@
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/controls_fmt.hpp>
+#include <ossia/network/value/format_value.hpp>
+
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 
