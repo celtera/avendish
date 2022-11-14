@@ -10,6 +10,7 @@
 #include <halp/meta.hpp>
 #include <ossia/editor/curve/curve_segment/easing.hpp>
 #include <ossia/network/dataspace/color.hpp>
+#include <ossia/network/dataspace/dataspace.hpp>
 
 namespace examples::helpers
 {

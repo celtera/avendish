@@ -1,5 +1,7 @@
 #pragma once
+#include <halp/controls.hpp>
 #include <halp/file_port.hpp>
+#include <halp/meta.hpp>
 
 namespace examples::helpers
 {

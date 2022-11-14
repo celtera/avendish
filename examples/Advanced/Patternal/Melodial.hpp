@@ -89,7 +89,7 @@ struct Processor
           }
           else
           {
-            qDebug() << pos << tk.frames;
+            // qDebug() << pos << tk.frames;
           }
         }
       }

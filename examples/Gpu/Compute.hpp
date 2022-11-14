@@ -8,6 +8,7 @@
 #include <halp/controls.hpp>
 #include <halp/static_string.hpp>
 
+#include <vector>
 namespace examples
 {
 

@@ -7,6 +7,7 @@
 #include <boost/container/static_vector.hpp>
 #include <halp/audio.hpp>
 #include <halp/compat/gamma.hpp>
+#include <halp/controls.hpp>
 #include <halp/file_port.hpp>
 
 #include <cinttypes>
