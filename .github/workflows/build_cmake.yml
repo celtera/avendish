@@ -50,8 +50,8 @@ jobs:
           - {
               name: "Ubuntu (GCC)",
               os: ubuntu-latest,
-              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/gcc-11 \
-                             -DCMAKE_CXX_COMPILER=/usr/bin/g++-11",
+              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/gcc-12 \
+                             -DCMAKE_CXX_COMPILER=/usr/bin/g++-12",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
@@ -59,7 +59,7 @@ jobs:
                              sudo apt install lsb-release wget software-properties-common ; \
                              sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; \
                              sudo apt update ; \
-                             sudo apt install ninja-build gcc-11 g++-11",
+                             sudo apt install ninja-build gcc-12 g++-12",
               sdk: "/opt/ossia-sdk",
             }
           - {
