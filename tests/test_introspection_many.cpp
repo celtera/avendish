@@ -114,5 +114,9 @@ int main()
     if constexpr(requires { port.value; })
       std::cout << "port: _Z" << typeid(port).name() << " : " << port.value << "\n";
   };
+
+  //FIXME!
+#if !defined(_MSC_VER)
   process_inputs_impl(ftor, g.inputs);
+#endif
 }

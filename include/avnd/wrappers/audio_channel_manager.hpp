@@ -638,7 +638,9 @@ requires(
     out_refl::for_nth_mapped(
         outputs, output_id,
         [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
+#if !defined(_MSC_VER)
           static_assert(!requires { bus.mimick_channel; });
+#endif
           if constexpr(avnd::variable_poly_audio_port<P>)
           {
             if(bus.channels == channels)

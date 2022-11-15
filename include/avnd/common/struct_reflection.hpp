@@ -210,9 +210,16 @@ struct predicate_introspection
   }
 
   // Goes from 0, 1, 2 indices to indices in the complete
-  // struct with members that may not match this predicate
+  // struct with members that may not match this 
+#if defined(_MSC_VER)
+  template <std::size_t N>
+  static constexpr int nth_element_i = index_map[N];
+  template <std::size_t N>
+  using nth_element = avnd::pfr::tuple_element_t<nth_element_i<N>, type>;
+#else
   template <std::size_t N>
   using nth_element = avnd::pfr::tuple_element_t<index_map[N], type>;
+#endif
 
   template <std::size_t N>
   static constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
