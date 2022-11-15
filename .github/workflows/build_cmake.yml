@@ -28,7 +28,7 @@ jobs:
             }
           - {
               name: "Ubuntu (clang)",
-              os: ubuntu-latest,
+              os: ubuntu-22.04,
               path: "/opt/ossia-sdk/llvm/bin",
               common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-15 \
                              -DCMAKE_CXX_COMPILER=/usr/bin/clang++-15 \
@@ -49,7 +49,7 @@ jobs:
             }
           - {
               name: "Ubuntu (GCC)",
-              os: ubuntu-latest,
+              os: ubuntu-22.04,
               common_flags: "-DCMAKE_C_COMPILER=/usr/bin/gcc-12 \
                              -DCMAKE_CXX_COMPILER=/usr/bin/g++-12",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
