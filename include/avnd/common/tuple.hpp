@@ -1,6 +1,6 @@
 #pragma once
 
-#if __has_include(<tuplet/tuple.hpp>)
+#if AVND_USE_TUPLET_TUPLE
 #include <tuplet/tuple.hpp>
 namespace tpl = tuplet;
 #else
