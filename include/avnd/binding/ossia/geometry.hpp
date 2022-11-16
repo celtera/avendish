@@ -86,7 +86,7 @@ requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void l
 
   {
     std::size_t buf_k = 0;
-    avnd::for_each_field_ref(ctrl.buffers, [&](auto& buf) {
+    boost::pfr::for_each_field_ref(ctrl.buffers, [&](auto& buf) {
       using ptr_type = std::decay_t<decltype(buf.data)>;
       if constexpr(std::is_same_v<ptr_type, void*>)
       {
@@ -160,7 +160,7 @@ requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void l
   }
 
   geom.input.clear();
-  avnd::for_each_field_ref(ctrl.input, [&](auto& input) {
+  boost::pfr::for_each_field_ref(ctrl.input, [&](auto& input) {
     struct ossia::geometry::input in;
 
     if constexpr(requires { input.buffer(); })
@@ -218,7 +218,7 @@ requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void l
 
   if(geom.bindings.empty())
   {
-    avnd::for_each_field_ref(avnd::get_bindings(ctrl), [&](auto& binding) {
+    boost::pfr::for_each_field_ref(avnd::get_bindings(ctrl), [&](auto& binding) {
       ossia::geometry::binding b;
 
       b.stride = binding.stride;
@@ -241,7 +241,7 @@ requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void l
   if(geom.attributes.empty())
   {
     std::size_t k = 0;
-    avnd::for_each_field_ref(avnd::get_attributes(ctrl), [&]<typename A>(A& attr) {
+    boost::pfr::for_each_field_ref(avnd::get_attributes(ctrl), [&]<typename A>(A& attr) {
       ossia::geometry::attribute a;
 
       // FIXME very brittle

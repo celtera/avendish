@@ -10,6 +10,47 @@
 #include <cassert>
 #include <utility>
 
+namespace boost::pfr
+{
+
+template <class T, class F>
+requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
+    T&& value, F&& func)
+{
+#if !defined(_MSC_VER)
+  static_assert(!requires { value.size(); });
+#endif
+#if AVND_USE_BOOST_PFR
+  using namespace pfr;
+  using namespace pfr::detail;
+  constexpr std::size_t fields_count_val
+      = boost::pfr::tuple_size_v<std::remove_reference_t<T>>;
+
+  auto t = boost::pfr::detail::tie_as_tuple(
+      value, boost::pfr::detail::size_t_<fields_count_val>{});
+  [&]<std::size_t... I>(std::index_sequence<I...>)
+  {
+    (func(get<I>(t)), ...);
+  }
+  (std::make_index_sequence<fields_count_val>{});
+#else
+  auto&& [... elts] = value;
+  (func(elts), ...);
+#endif
+}
+
+template <typename T, class F>
+requires avnd::vector_ish<std::decay_t<T>>
+void for_each_field_ref(T&& value, F&& func)
+{
+  for(auto& v : value)
+  {
+    func(v);
+  }
+}
+
+}
+
 namespace avnd
 {
 
@@ -95,17 +136,7 @@ void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
     for_each_field_ref(v, func);
   }
 }
-/*
-template <typename T, class F>
-requires avnd::vector_ish<std::decay_t<T>>
-void for_each_field_ref(T&& value, F&& func)
-{
-  for(auto& v : value)
-  {
-    func(v);
-  }
-}
-*/
+
 constexpr int index_in_struct(const auto& s, auto... member)
 {
   int index = -1;
