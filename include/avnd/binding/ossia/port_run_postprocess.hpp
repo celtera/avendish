@@ -185,19 +185,23 @@ struct process_after_run
 
     if(ctrl.dirty_mesh)
     {
+      port.data.meshes = std::make_shared<ossia::mesh_list>();
+      auto& ossia_meshes = *port.data.meshes;
       if constexpr(static_geometry_type<Field> || dynamic_geometry_type<Field>)
       {
-        port.data.meshes.meshes.resize(1);
-        load_geometry(ctrl, port.data.meshes.meshes[0]);
+        ossia_meshes.meshes.resize(1);
+        load_geometry(ctrl, ossia_meshes.meshes[0]);
       }
-      else if constexpr(static_geometry_type<decltype(Field::mesh)> || dynamic_geometry_type<decltype(Field::mesh)>)
+      else if constexpr(
+          static_geometry_type<
+              decltype(Field::mesh)> || dynamic_geometry_type<decltype(Field::mesh)>)
       {
-        port.data.meshes.meshes.resize(1);
-        load_geometry(ctrl.mesh, port.data.meshes.meshes[0]);
+        ossia_meshes.meshes.resize(1);
+        load_geometry(ctrl.mesh, ossia_meshes.meshes[0]);
       }
       else
       {
-        load_geometry(ctrl, port.data.meshes);
+        load_geometry(ctrl, ossia_meshes);
       }
     }
     ctrl.dirty_mesh = false;
@@ -206,7 +210,8 @@ struct process_after_run
     {
       if(ctrl.dirty_transform)
       {
-        std::copy_n(ctrl.transform, std::ssize(ctrl.transform), port.data.transform.matrix);
+        std::copy_n(
+            ctrl.transform, std::ssize(ctrl.transform), port.data.transform.matrix);
         tform_dirty = true;
         ctrl.dirty_transform = false;
       }
