@@ -346,6 +346,15 @@ inline ossia::value to_ossia_value(const bool& v)
   return v;
 }
 
+// Note: here we SFINAE on T being exactly an ossia::value,
+// we do not want to trigger automatic conversions
+template <typename T>
+requires std::is_same_v<ossia::value, T>
+inline ossia::value to_ossia_value(const T& v)
+{
+  return v;
+}
+
 inline ossia::value to_ossia_value(auto& field, const auto& src)
 {
   return to_ossia_value(src);
