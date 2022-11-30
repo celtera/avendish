@@ -201,8 +201,12 @@ public:
   void operator()(halp::tick tck) noexcept
   {
     const int C = inputs.audio.channels;
+
     if(C > 0)
     {
+      if(C != this->filter.getNumChannels())
+        this->filter.prepare(C);
+
       filter.processBlock(tck.frames, inputs.audio.samples);
       for(int i = 0; i < C; i++)
         std::copy_n(inputs.audio.samples[i], tck.frames, outputs.audio.samples[i]);
