@@ -29,6 +29,11 @@ struct Aggregate
       std::string b;
       std::array<bool, 4> c;
     } sub;
+
+    using variant_t = std::variant<int, std::string>;
+    variant_t var;
+    std::vector<variant_t> varlist;
+    std::map<std::string, variant_t> varmap;
   };
 
   struct

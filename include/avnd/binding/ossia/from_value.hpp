@@ -2,9 +2,9 @@
 #include <avnd/binding/ossia/value.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <boost/mp11/algorithm.hpp>
 #include <ossia/network/value/value_conversion.hpp>
 
-#include <boost/mp11/algorithm.hpp>
 #include <type_traits>
 namespace oscr
 {
@@ -56,76 +56,111 @@ struct is_map_ish<T> : std::true_type
 {
 };
 
-template<typename T>
+template <typename T>
 concept int_compatible = std::is_constructible_v<T, int> && std::is_arithmetic_v<T>;
 
-template<typename T>
+template <typename T>
 concept float_compatible = std::is_constructible_v<T, float> && std::is_arithmetic_v<T>;
 
-template<typename T>
-concept double_compatible = std::is_constructible_v<T, double> && std::is_arithmetic_v<T>;
+template <typename T>
+concept double_compatible
+    = std::is_constructible_v<T, double> && std::is_arithmetic_v<T>;
 
-template <template<typename...> typename Pred, typename T>
+template <template <typename...> typename Pred, typename T>
 struct predicate_vector : std::false_type
 {
   using value_type = void;
 };
 
-template <template<typename...> typename Pred, typename T>
-requires Pred<typename T::value_type>::value
-struct predicate_vector<Pred, T> : std::integral_constant<bool, Pred<typename T::value_type>::value>
+template <template <typename...> typename Pred, typename T>
+requires Pred<typename T::value_type>::value struct predicate_vector<Pred, T>
+    : std::integral_constant<bool, Pred<typename T::value_type>::value>
 {
-  using value_type = std::conditional_t<Pred<typename T::value_type>::value, typename T::value_type, void>;
+  using value_type = std::conditional_t<
+      Pred<typename T::value_type>::value, typename T::value_type, void>;
 };
 
-template <template<typename...> typename Pred, typename T>
+template <template <typename...> typename Pred, typename T>
 struct predicate_map : std::false_type
 {
   using value_type = void;
 };
 
-template <template<typename...> typename Pred, typename T>
-requires Pred<typename T::mapped_type>::value
-struct predicate_map<Pred, T> : std::integral_constant<bool, Pred<typename T::mapped_type>::value>
+template <template <typename...> typename Pred, typename T>
+requires Pred<typename T::mapped_type>::value struct predicate_map<Pred, T>
+    : std::integral_constant<bool, Pred<typename T::mapped_type>::value>
 {
-  using value_type = std::conditional_t<Pred<typename T::mapped_type>::value, typename T::mapped_type, void>;
+  using value_type = std::conditional_t<
+      Pred<typename T::mapped_type>::value, typename T::mapped_type, void>;
 };
-
 
 // Used to lookup types similar to ossia's in variants
 template <typename T>
 using is_float = std::is_same<float, T>;
 // FIXME find better ways
 template <typename T>
-using is_vec2f = std::integral_constant<bool, requires (T t) { T{0.f, 0.f}; } && sizeof(T) == 2 * sizeof(float)>;
+using is_vec2f = std::integral_constant < bool,
+      requires(T t)
+{
+  T{0.f, 0.f};
+}
+&&sizeof(T) == 2 * sizeof(float) > ;
 template <typename T>
-using is_vec3f = std::integral_constant<bool, requires (T t) { T{0.f, 0.f, 0.f}; }  && sizeof(T) == 3 * sizeof(float)>;
+using is_vec3f = std::integral_constant < bool,
+      requires(T t)
+{
+  T{0.f, 0.f, 0.f};
+}
+&&sizeof(T) == 3 * sizeof(float) > ;
 template <typename T>
-using is_vec4f = std::integral_constant<bool, requires (T t) { T{0.f, 0.f, 0.f, 0.f}; } && sizeof(T) == 4 * sizeof(float)>;
+using is_vec4f = std::integral_constant < bool,
+      requires(T t)
+{
+  T{0.f, 0.f, 0.f, 0.f};
+}
+&&sizeof(T) == 4 * sizeof(float) > ;
 template <typename T>
 using is_vecNf = std::integral_constant<bool, avnd::vector_v_strict<T, float>>;
 template <typename T>
-using is_vec2d = std::integral_constant<bool, requires (T t) { T{0., 0.}; } && sizeof(T) == 2 * sizeof(double)>;
+using is_vec2d = std::integral_constant < bool,
+      requires(T t)
+{
+  T{0., 0.};
+}
+&&sizeof(T) == 2 * sizeof(double) > ;
 template <typename T>
-using is_vec3d = std::integral_constant<bool, requires (T t) { T{0., 0., 0.}; }  && sizeof(T) == 3 * sizeof(double)>;
+using is_vec3d = std::integral_constant < bool,
+      requires(T t)
+{
+  T{0., 0., 0.};
+}
+&&sizeof(T) == 3 * sizeof(double) > ;
 template <typename T>
-using is_vec4d = std::integral_constant<bool, requires (T t) { T{0., 0., 0., 0.}; } && sizeof(T) == 4 * sizeof(double)>;
+using is_vec4d = std::integral_constant < bool,
+      requires(T t)
+{
+  T{0., 0., 0., 0.};
+}
+&&sizeof(T) == 4 * sizeof(double) > ;
 template <typename T>
 using is_vecNd = std::integral_constant<bool, avnd::vector_v_strict<T, double>>;
 template <typename T>
 using is_int = std::is_same<int, T>;
-template<typename T>
-using is_large_enough_int = std::integral_constant<bool, std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) >= 4>;
+template <typename T>
+using is_large_enough_int = std::integral_constant<
+    bool, std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) >= 4>;
 template <typename T>
 using is_string = std::is_same<std::string, T>;
 template <typename T>
 using is_bool = std::is_same<bool, T>;
 template <typename T>
-using is_variant = std::integral_constant<bool, avnd::variant_ish<T> || oscr::type_wrapper<T>>;
+using is_variant
+    = std::integral_constant<bool, avnd::variant_ish<T> || oscr::type_wrapper<T>>;
 
 // Exclude string-ish stuff
-template<typename T>
-using is_number = std::conjunction<std::is_arithmetic<T>, std::negation<std::is_same<T, char>>>;
+template <typename T>
+using is_number
+    = std::conjunction<std::is_arithmetic<T>, std::negation<std::is_same<T, char>>>;
 template <typename T>
 using is_number_vector = predicate_vector<is_number, T>;
 
@@ -169,8 +204,6 @@ template <typename T>
 using is_variant_list_vector = predicate_vector<is_variant_vector, T>;
 template <typename T>
 using is_variant_map_vector = predicate_vector<is_variant_map, T>;
-
-
 
 template <typename T>
 struct is_vector_v_ish : std::false_type
@@ -408,42 +441,44 @@ struct from_ossia_value_impl
     }
   }
 
-#define CHECK_PREDICATE(Pred) \
-    using index = boost::mp11::mp_find_if<T<Args...>, Pred>; \
-    (!std::is_same_v<index, sz>)
+#define CHECK_PREDICATE(Pred)                              \
+  using index = boost::mp11::mp_find_if<T<Args...>, Pred>; \
+  (!std::is_same_v<index, sz>)
 
-#define APPLY_VEC_PREDICATE \
-  { \
+#define APPLY_VEC_PREDICATE                                 \
+  {                                                         \
     using var_type = boost::mp11::mp_at<T<Args...>, index>; \
-    var_type t; t.resize(srclist.size()); \
-    for(std::size_t k = 0; k < srclist.size(); k++) \
-      (*this)(srclist[k], t[k]); \
-    f = std::move(t); \
-    return true; \
+    var_type t;                                             \
+    t.resize(srclist.size());                               \
+    for(std::size_t k = 0; k < srclist.size(); k++)         \
+      (*this)(srclist[k], t[k]);                            \
+    f = std::move(t);                                       \
+    return true;                                            \
   }
 
-#define APPLY_MAP_PREDICATE \
-  { \
+#define APPLY_MAP_PREDICATE                                 \
+  {                                                         \
     using var_type = boost::mp11::mp_at<T<Args...>, index>; \
-    var_type t; if_possible(t.reserve(srcmap.size())); \
-    for(const auto& [k, v] : srcmap) { \
-      typename var_type::mapped_type res_v; \
-      (*this)(v, res_v); \
-      t.emplace(k, std::move(res_v)); \
-    } \
-    f = std::move(t); \
-    return true; \
+    var_type t;                                             \
+    if_possible(t.reserve(srcmap.size()));                  \
+    for(const auto& [k, v] : srcmap)                        \
+    {                                                       \
+      typename var_type::mapped_type res_v;                 \
+      (*this)(v, res_v);                                    \
+      t.emplace(k, std::move(res_v));                       \
+    }                                                       \
+    f = std::move(t);                                       \
+    return true;                                            \
   }
 
-  template <template <typename...> typename T,
-      typename... Args>
-  bool variant_assign_vec_to_closest_value_type(ossia::val_type type, const std::vector<ossia::value>& srclist, T<Args...>& f)
+  template <template <typename...> typename T, typename... Args>
+  bool variant_assign_vec_to_closest_value_type(
+      ossia::val_type type, const std::vector<ossia::value>& srclist, T<Args...>& f)
   {
     using sz = boost::mp11::mp_size<T<Args...>>;
     switch(type)
     {
-      case ossia::val_type::FLOAT:
-      {
+      case ossia::val_type::FLOAT: {
         // We likely have a std::vector<ossia::value> where the values are floats.
         // If there's a std::vector<float> type in the variant we use it in priority
         // If there's a std::vector<float-ish> type in the variant we use it
@@ -460,8 +495,7 @@ struct from_ossia_value_impl
           return false;
         break;
       }
-      case ossia::val_type::INT:
-      {
+      case ossia::val_type::INT: {
         if constexpr(CHECK_PREDICATE(is_int_vector))
           APPLY_VEC_PREDICATE
         else if constexpr(CHECK_PREDICATE(is_large_enough_int_vector))
@@ -474,8 +508,7 @@ struct from_ossia_value_impl
           return false;
         break;
       }
-      case ossia::val_type::VEC2F:
-      {
+      case ossia::val_type::VEC2F: {
         if constexpr(CHECK_PREDICATE(is_vec2f_vector))
           APPLY_VEC_PREDICATE
         else if constexpr(CHECK_PREDICATE(is_vec2d_vector))
@@ -484,15 +517,14 @@ struct from_ossia_value_impl
           APPLY_VEC_PREDICATE
         else if constexpr(CHECK_PREDICATE(is_vecNd_vector))
           APPLY_VEC_PREDICATE
-            else if constexpr(CHECK_PREDICATE(is_variant_vector))
-              APPLY_VEC_PREDICATE
+        else if constexpr(CHECK_PREDICATE(is_variant_vector))
+          APPLY_VEC_PREDICATE
         else // FIXME maybe if the type has a generic assignable variant-ihs data type?
             // FIXME or something like a matrix type, e.g. vector<vector<float>> ?
           return false;
         break;
       }
-      case ossia::val_type::VEC3F:
-      {
+      case ossia::val_type::VEC3F: {
         if constexpr(CHECK_PREDICATE(is_vec3f_vector))
           APPLY_VEC_PREDICATE
         else if constexpr(CHECK_PREDICATE(is_vec3d_vector))
@@ -507,8 +539,7 @@ struct from_ossia_value_impl
           return false;
         break;
       }
-      case ossia::val_type::VEC4F:
-      {
+      case ossia::val_type::VEC4F: {
         if constexpr(CHECK_PREDICATE(is_vec4f_vector))
           APPLY_VEC_PREDICATE
         else if constexpr(CHECK_PREDICATE(is_vec4d_vector))
@@ -518,49 +549,45 @@ struct from_ossia_value_impl
         else if constexpr(CHECK_PREDICATE(is_vecNd_vector))
           APPLY_VEC_PREDICATE
 
-            else if constexpr(CHECK_PREDICATE(is_variant_vector))
-              APPLY_VEC_PREDICATE
+        else if constexpr(CHECK_PREDICATE(is_variant_vector))
+          APPLY_VEC_PREDICATE
         else // FIXME maybe if the type has a generic assignable variant-ihs data type?
           return false;
         break;
       }
-      case ossia::val_type::IMPULSE:
-      {
+      case ossia::val_type::IMPULSE: {
         // FIXME bitset?
         if constexpr(CHECK_PREDICATE(is_monostate_vector))
           APPLY_VEC_PREDICATE
-            else if constexpr(CHECK_PREDICATE(is_variant_vector))
-              APPLY_VEC_PREDICATE
+        else if constexpr(CHECK_PREDICATE(is_variant_vector))
+          APPLY_VEC_PREDICATE
         else
           return false;
         break;
       }
-      case ossia::val_type::BOOL:
-      {
+      case ossia::val_type::BOOL: {
         // FIXME bitset?
         if constexpr(CHECK_PREDICATE(is_bool_vector))
           APPLY_VEC_PREDICATE
 
-            else if constexpr(CHECK_PREDICATE(is_variant_vector))
-              APPLY_VEC_PREDICATE
+        else if constexpr(CHECK_PREDICATE(is_variant_vector))
+          APPLY_VEC_PREDICATE
         else
           return false;
         break;
       }
-      case ossia::val_type::STRING:
-      {
+      case ossia::val_type::STRING: {
         // FIXME bitset?
         if constexpr(CHECK_PREDICATE(is_string_vector))
           APPLY_VEC_PREDICATE
 
-            else if constexpr(CHECK_PREDICATE(is_variant_vector))
-              APPLY_VEC_PREDICATE
+        else if constexpr(CHECK_PREDICATE(is_variant_vector))
+          APPLY_VEC_PREDICATE
         else
           return false;
         break;
       }
-      case ossia::val_type::LIST:
-      {
+      case ossia::val_type::LIST: {
         // FIXME bitset?
         if constexpr(CHECK_PREDICATE(is_variant_list_vector))
           APPLY_VEC_PREDICATE
@@ -570,8 +597,7 @@ struct from_ossia_value_impl
           return false;
         break;
       }
-      case ossia::val_type::MAP:
-      {
+      case ossia::val_type::MAP: {
         // FIXME bitset?
         if constexpr(CHECK_PREDICATE(is_variant_map_vector))
           APPLY_VEC_PREDICATE
@@ -659,12 +685,21 @@ struct from_ossia_value_impl
       }
       case ossia::val_type::VEC2F: {
         // FIXME If Args... has a type which looks like a vector of float...
+        auto& srclist = *src.target<ossia::vec2f>();
+        if constexpr(CHECK_PREDICATE(is_vector_ish))
+          APPLY_VEC_PREDICATE
         break;
       }
       case ossia::val_type::VEC3F: {
+        auto& srclist = *src.target<ossia::vec3f>();
+        if constexpr(CHECK_PREDICATE(is_vector_ish))
+          APPLY_VEC_PREDICATE
         break;
       }
       case ossia::val_type::VEC4F: {
+        auto& srclist = *src.target<ossia::vec4f>();
+        if constexpr(CHECK_PREDICATE(is_vector_ish))
+          APPLY_VEC_PREDICATE
         break;
       }
       case ossia::val_type::IMPULSE: {
@@ -710,7 +745,7 @@ struct from_ossia_value_impl
         if(srclist.empty())
         {
           if constexpr(CHECK_PREDICATE(is_vector_ish))
-              APPLY_VEC_PREDICATE
+            APPLY_VEC_PREDICATE
           // FIXME else if(assign_if_matches_predicate_vec<is_vector_v_ish>(src, f))
           // FIXME   return true;
           else
@@ -755,7 +790,7 @@ struct from_ossia_value_impl
         // FIXME do the specific cases, e.g. map<string, int>, etc
         auto& srcmap = *src.target<ossia::value_map_type>();
         if constexpr(CHECK_PREDICATE(is_map_ish))
-            APPLY_MAP_PREDICATE
+          APPLY_MAP_PREDICATE
         else
           return false;
         break;
@@ -1095,8 +1130,6 @@ struct from_ossia_value_impl
 #undef APPLY_VEC_PREDICATE
 #undef APPLY_MAP_PREDICATE
 };
-
-
 
 template <typename T>
 bool from_ossia_value_rec(const ossia::value& src, T& dst)

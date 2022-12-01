@@ -884,3 +884,11 @@ struct soundfile_port
     value = t;                                                                 \
     return *this;                                                              \
   }
+
+#define halp_field_names(...)                                                    \
+  static constexpr auto field_names()                                            \
+  {                                                                              \
+    constexpr auto r = std::array<std::string_view, HALP_NUM_ARGS(__VA_ARGS__)>{ \
+        HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};                                 \
+    return r;                                                                    \
+  }

@@ -26,11 +26,31 @@ struct to_ossia_value_impl
   }
 
   template <typename F>
+  void to_map(const F& f)
+  {
+    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    ossia::value_map_type v;
+    v.reserve(fields);
+
+    constexpr auto field_names = F::field_names();
+    int k = 0;
+    boost::pfr::for_each_field(
+        f, [&](const auto& f) { to_ossia_value_impl{v[field_names[k++]]}(f); });
+
+    val = std::move(v);
+  }
+
+  template <typename F>
   requires std::is_aggregate_v<F>
   void operator()(const F& f)
   {
     constexpr int fields = boost::pfr::tuple_size_v<F>;
-    if constexpr(vecf_compatible<F>())
+    if constexpr(requires { F::field_names()[0][0]; })
+    {
+      static_assert(fields == F::field_names().size());
+      to_map(f);
+    }
+    else if constexpr(vecf_compatible<F>())
     {
       if constexpr(fields == 2)
       {
