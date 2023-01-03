@@ -33,6 +33,11 @@ struct rgba_texture
   int height;
   bool changed;
 
+  constexpr auto bytesize() const noexcept
+  {
+    return width * height * 4 * sizeof(unsigned char);
+  }
+
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
   {
@@ -90,6 +95,8 @@ struct rgba32f_texture
   int width;
   int height;
   bool changed;
+
+  constexpr auto bytesize() const noexcept { return width * height * 4 * sizeof(float); }
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
@@ -164,6 +171,11 @@ struct rgb_texture
   int width;
   int height;
   bool changed;
+
+  constexpr auto bytesize() const noexcept
+  {
+    return width * height * 3 * sizeof(unsigned char);
+  }
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
