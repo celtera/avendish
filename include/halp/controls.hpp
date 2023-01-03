@@ -536,6 +536,38 @@ struct xyz_type
 };
 
 template <typename T, static_string lit, range setup>
+struct xy_spinboxes_t
+{
+  using value_type = xy_type<T>;
+  enum widget
+  {
+    xy_spinbox,
+    spinbox
+  };
+  static clang_buggy_consteval auto range() noexcept
+  {
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+  }
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
+
+  value_type value = {setup.init, setup.init, setup.init};
+
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
+
+template <static_string lit, range setup = default_range<float>>
+using xy_spinboxes_f32 = halp::xy_spinboxes_t<float, lit, setup>;
+
+template <typename T, static_string lit, range setup>
 struct xyz_spinboxes_t
 {
   using value_type = xyz_type<T>;
