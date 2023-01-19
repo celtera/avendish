@@ -79,10 +79,18 @@ struct to_ossia_value_impl
   }
 
   template <typename F>
-  requires(std::is_integral_v<F>) void operator()(const F& f) { val = (int)f; }
+    requires(std::is_integral_v<F>)
+  void operator()(const F& f)
+  {
+    val = (int)f;
+  }
 
   template <typename F>
-  requires(std::is_floating_point_v<F>) void operator()(const F& f) { val = (float)f; }
+    requires(std::is_floating_point_v<F>)
+  void operator()(const F& f)
+  {
+    val = (float)f;
+  }
 
   void operator()(std::string_view f) { val = std::string(f); }
 
@@ -91,7 +99,7 @@ struct to_ossia_value_impl
   void operator()(bool f) { val = f; }
 
   template <template <typename> typename T, typename V>
-  requires avnd::optional_ish<T<V>>
+    requires avnd::optional_ish<T<V>>
   void operator()(const T<V>& f)
   {
     if(f)
@@ -101,7 +109,7 @@ struct to_ossia_value_impl
   }
 
   template <template <typename...> typename T, typename... Args>
-  requires avnd::variant_ish<T<Args...>>
+    requires avnd::variant_ish<T<Args...>>
   void operator()(const T<Args...>& f)
   {
     visit([&](const auto& arg) { (*this)(arg); }, f);
@@ -250,8 +258,8 @@ ossia::value to_ossia_value(const T& v)
 }
 
 template <typename T, std::size_t N>
-requires avnd::array_ish<T, N> &&(!avnd::vector_ish<T>)ossia::value
-    to_ossia_value(const T& v)
+  requires avnd::array_ish<T, N> && (!avnd::vector_ish<T>)
+ossia::value to_ossia_value(const T& v)
 {
   if constexpr(std::is_floating_point_v<T>)
   {
@@ -338,7 +346,8 @@ ossia::value to_ossia_value(const avnd::map_ish auto& v)
 }
 
 template <avnd::vector_ish T>
-requires(!avnd::string_ish<T>) ossia::value to_ossia_value(const T& v)
+  requires(!avnd::string_ish<T>)
+ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);
 }
@@ -355,11 +364,6 @@ ossia::value to_ossia_value(const avnd::enum_ish auto& v)
 {
   return static_cast<int>(v);
 }
-template <typename T>
-requires std::is_enum_v<T> ossia::value to_ossia_value(const T& v)
-{
-  return static_cast<int>(v);
-}
 
 inline ossia::value to_ossia_value(const bool& v)
 {
@@ -369,7 +373,7 @@ inline ossia::value to_ossia_value(const bool& v)
 // Note: here we SFINAE on T being exactly an ossia::value,
 // we do not want to trigger automatic conversions
 template <typename T>
-requires std::is_same_v<ossia::value, T>
+  requires std::is_same_v<ossia::value, T>
 inline ossia::value to_ossia_value(const T& v)
 {
   return v;

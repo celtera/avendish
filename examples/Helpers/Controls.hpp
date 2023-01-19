@@ -41,6 +41,8 @@ struct Controls
     struct
     {
       halp__enum("Enum", Bar, Foo, Bar)
+      static_assert(std::is_enum_v<enum_type>);
+      static_assert(std::is_enum_v<std::decay_t<enum_type>>);
     } f;
 
 #if 0

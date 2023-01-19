@@ -23,90 +23,79 @@ template <typename T>
 concept parameter = std::is_default_constructible_v<decltype(T::value)>;
 
 template <typename T>
-concept int_parameter = requires(T t)
-{
-  {
-    t.value
-    } -> int_ish;
-};
+concept int_parameter = requires(T t) {
+                          {
+                            t.value
+                            } -> int_ish;
+                        };
 
 template <typename T>
 concept enum_parameter = std::is_enum_v<std::decay_t<decltype(T::value)>>;
 
 template <typename Field>
 concept enum_ish_parameter
-    = avnd::enum_parameter<Field> ||(avnd::has_range<Field>&& requires {
-        avnd::get_range<Field>().values[0];
-      });
+    = avnd::enum_parameter<Field>
+      || (avnd::has_range<Field> && requires { avnd::get_range<Field>().values[0]; });
 
 template <typename T>
-concept float_parameter = requires(T t)
-{
-  {
-    t.value
-    } -> fp_ish;
-};
+concept float_parameter = requires(T t) {
+                            {
+                              t.value
+                              } -> fp_ish;
+                          };
 
 template <typename T>
-concept bool_parameter = requires(T t)
-{
-  {
-    t.value
-    } -> bool_ish;
-};
+concept bool_parameter = requires(T t) {
+                           {
+                             t.value
+                             } -> bool_ish;
+                         };
 
 template <typename T>
-concept string_parameter = requires(T t)
-{
-  {
-    t.value
-    } -> std::convertible_to<std::string>;
-};
+concept string_parameter = requires(T t) {
+                             {
+                               t.value
+                               } -> std::convertible_to<std::string>;
+                           };
 
 template <typename T>
-concept xy_value = requires(T t)
-{
-  t.x;
-  t.y;
-};
+concept xy_value = requires(T t) {
+                     t.x;
+                     t.y;
+                   };
 template <typename T>
 concept xy_parameter = xy_value<decltype(T::value)>;
 
 template <typename T>
-concept rgb_value = requires(T t)
-{
-  t.r;
-  t.g;
-  t.b;
-};
+concept rgb_value = requires(T t) {
+                      t.r;
+                      t.g;
+                      t.b;
+                    };
 template <typename T>
 concept rgb_parameter = rgb_value<decltype(T::value)>;
 
 template <typename C>
-concept parameter_with_minmax_range = requires
-{
-  avnd::get_range<C>().min;
-  avnd::get_range<C>().max;
-  avnd::get_range<C>().init;
-};
+concept parameter_with_minmax_range = requires {
+                                        avnd::get_range<C>().min;
+                                        avnd::get_range<C>().max;
+                                        avnd::get_range<C>().init;
+                                      };
 
 template <typename C>
-concept parameter_with_values_range = requires
-{
-  avnd::get_range<C>().values[0];
-  {
-    avnd::get_range<C>().init
-    } -> std::integral;
-};
-
+concept parameter_with_values_range
+    = requires { avnd::get_range<C>().values[0]; }
+      && (std::integral<std::decay_t<decltype(avnd::get_range<C>().init)>>
+          || std::is_enum_v<std::decay_t<decltype(avnd::get_range<C>().init)>>);
 
 // Used for defining process which take programs in some lang as input
 template <typename T>
-concept program_parameter = string_parameter<T> && requires
-{
-  { T::language() } -> std::convertible_to<std::string>;
-};
-
+concept program_parameter
+    = string_parameter<T> && requires {
+                               {
+                                 T::language()
+                                 } -> std::convertible_to<std::string>;
+                             };
 
 /**
  * A "control" is a parameter + some metadata:
@@ -131,7 +120,7 @@ concept program_parameter = string_parameter<T> && requires
  */
 
 template <typename T>
-concept control = parameter<T> &&(has_range<T> || has_widget<T>);
+concept control = parameter<T> && (has_range<T> || has_widget<T>);
 
 template <typename T>
 concept int_control = int_parameter<T> && control<T>;
@@ -147,21 +136,27 @@ template <typename T>
 concept time_control = float_control<T> && requires { T::time_chooser; };
 
 template <typename T>
-concept int_value_port = int_parameter<T> && !control<T>;
+concept int_value_port = int_parameter<T> && !
+control<T>;
 template <typename T>
-concept enum_value_port = enum_parameter<T> && !control<T>;
+concept enum_value_port = enum_parameter<T> && !
+control<T>;
 template <typename T>
-concept float_value_port = float_parameter<T> && !control<T>;
+concept float_value_port = float_parameter<T> && !
+control<T>;
 template <typename T>
-concept bool_value_port = bool_parameter<T> && !control<T>;
+concept bool_value_port = bool_parameter<T> && !
+control<T>;
 template <typename T>
-concept string_value_port = string_parameter<T> && !control<T>;
+concept string_value_port = string_parameter<T> && !
+control<T>;
 
 /**
  * A value port is a parameter which is not a control.
  */
 template <typename T>
-concept value_port = parameter<T> && !control<T>;
+concept value_port = parameter<T> && !
+control<T>;
 
 /**
  * Timed values are used for sample-accurate ports.
@@ -175,10 +170,7 @@ concept value_port = parameter<T> && !control<T>;
  * happened at sample 5 since the beginning of the audio buffer.
  */
 template <typename T>
-concept linear_timed_values = std::is_pointer_v<T> && requires(T t)
-{
-  *(t[0]);
-};
+concept linear_timed_values = std::is_pointer_v<T> && requires(T t) { *(t[0]); };
 
 /**
  * Here T is a e.g. std::span<timed_value>
@@ -190,35 +182,32 @@ concept linear_timed_values = std::is_pointer_v<T> && requires(T t)
  * };
  */
 template <typename T>
-concept span_timed_values = requires(T t)
-{
-  {
-    T::value_type::frame
-    } -> avnd::int_ish;
-  T::value_type::value;
-}
-&&std::is_constructible_v<T, typename T::value_type*, std::size_t>&&
-    std::is_trivially_copy_constructible_v<T>;
+concept span_timed_values
+    = requires(T t) {
+        {
+          T::value_type::frame
+          } -> avnd::int_ish;
+        T::value_type::value;
+      } && std::is_constructible_v<T, typename T::value_type*, std::size_t> && std::is_trivially_copy_constructible_v<T>;
 
 /**
  * Here T is a e.g. std::map<int, float> and manages its own allocations
  */
 template <typename T>
-concept dynamic_timed_values = requires(T t)
-{
-  typename T::allocator_type;
-};
+concept dynamic_timed_values = requires(T t) { typename T::allocator_type; };
 
 /**
  * A sample-accurate parameter has an additional "values" member
  * which allows to know at which sample did a control change
  */
 template <typename T>
-concept sample_accurate_parameter = parameter<T> &&(
-    requires(T t) { t.value = *t.values[1]; }               // linear map
-    || requires(T t) { t.value = t.values[1]; }             // dynamic map
-    || requires(T t) { t.value = t.values.begin()->value; } // span
-);
+concept sample_accurate_parameter
+    = parameter<T>
+      && (
+          requires(T t) { t.value = *t.values[1]; }               // linear map
+          || requires(T t) { t.value = t.values[1]; }             // dynamic map
+          || requires(T t) { t.value = t.values.begin()->value; } // span
+      );
 
 /**
  * Like control but sample-accurate
@@ -230,16 +219,20 @@ concept sample_accurate_control = sample_accurate_parameter<T> && control<T>;
  * Like value_port but sample-accurate
  */
 template <typename T>
-concept sample_accurate_value_port = sample_accurate_parameter<T> && !control<T>;
+concept sample_accurate_value_port = sample_accurate_parameter<T> && !
+control<T>;
 
 template <typename T>
-concept linear_sample_accurate_parameter = sample_accurate_parameter<
-    T> && linear_timed_values<std::decay_t<decltype(T::values)>>;
+concept linear_sample_accurate_parameter
+    = sample_accurate_parameter<T>
+      && linear_timed_values<std::decay_t<decltype(T::values)>>;
 template <typename T>
-concept span_sample_accurate_parameter = sample_accurate_parameter<
-    T> && span_timed_values<std::decay_t<decltype(T::values)>>;
+concept span_sample_accurate_parameter
+    = sample_accurate_parameter<T>
+      && span_timed_values<std::decay_t<decltype(T::values)>>;
 template <typename T>
-concept dynamic_sample_accurate_parameter = sample_accurate_parameter<
-    T> && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
+concept dynamic_sample_accurate_parameter
+    = sample_accurate_parameter<T>
+      && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
 
 }

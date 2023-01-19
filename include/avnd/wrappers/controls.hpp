@@ -43,7 +43,7 @@ static constexpr void init_controls(avnd::effect_container<F>& effect)
  * and then we just have to clip to be safe
  */
 template <typename T, typename V>
-requires (std::floating_point<V> || std::integral<V>)
+  requires(std::floating_point<V> || std::integral<V>)
 static constexpr void apply_control(T& ctl, V v)
 {
   // Apply the value
@@ -72,10 +72,23 @@ static void apply_control(T& ctl, avnd::string_ish auto&& v)
   {
     constexpr auto range = avnd::get_range<T>();
     static_assert(std::ssize(range.values) > 0);
+    int k = 0;
     for(const auto& range_v : range.values)
     {
       if(range_v == v)
-        ctl.value = std::move(v);
+      {
+        if constexpr(requires { ctl.value = v; })
+        {
+          ctl.value = std::move(v);
+        }
+        else if constexpr(avnd::enum_parameter<T>)
+        {
+          using type = typename T::enum_type;
+          ctl.value = static_cast<type>(k);
+        }
+        break;
+      }
+      k++;
     }
   }
   else
@@ -236,10 +249,7 @@ static constexpr auto map_control_to_01(const auto& value) = delete;
 // }
 
 template <avnd::parameter T>
-requires requires(T t)
-{
-  map_control_to_01(t.value);
-}
+  requires requires(T t) { map_control_to_01(t.value); }
 static constexpr auto map_control_to_01(const T& ctl)
 {
   return map_control_to_01<T>(ctl.value);
