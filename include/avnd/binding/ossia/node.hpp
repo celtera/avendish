@@ -391,9 +391,6 @@ public:
 
   void finish_init()
   {
-    // Initialize the controls with their default values
-    avnd::init_controls(this->impl);
-
     // Initialize the callbacks
     if constexpr(avnd::callback_introspection<outputs_t>::size > 0)
     {
@@ -408,6 +405,9 @@ public:
 
     // Initialize the other ports
     this->initialize_all_ports();
+
+    // Initialize the controls with their default values
+    avnd::init_controls(this->impl);
 
     static_cast<AudioCount&>(*this).scan_audio_input_channels();
   }
