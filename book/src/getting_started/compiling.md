@@ -9,12 +9,39 @@ Before anything, we need a C++ compiler. The recommandation is to use Clang (at 
 
 Avendish's code is header-only ; however, CMake automatizes correctly linking to the relevant libraries, and generates a correct entrypoint for the targeted bindings, thus we recommend installing it.
 
-Ninja is recommended: it makes the build faster.
+Ninja is recommended: it makes the build faster. Below are a few useful set-up commands for various operating systems.
 
+#### ArchLinux, Manjaro, etc
+
+```
+$ sudo pacman -S base-devel cmake ninja clang gcc boost
+```
+
+#### Debian, Ubuntu, etc
+
+```
+$ sudo apt install build-essential cmake ninja-build libboost-dev
+```
+
+#### macOS with Homebrew
+
+Xcode is required. Then:
+```
+$ brew install cmake ninja boost
+```
+
+#### Windows with MSYS2 / MinGW
+
+```
+$ pacman -S pactoys
+$ pacboy -S cmake:p ninja:p toolchain:p boost:p
+```
+
+### Install backend-specific dependencies
 The APIs and SDK that you wish to create plug-ins / bindings for must also be available: 
 
 - PureData: needs the PureData API.
-  * m_pd.h and pd.lib must be findable through `CMAKE_PREFIX_PATH`.
+  * `m_pd.h` and `pd.lib` must be findable through `CMAKE_PREFIX_PATH`.
   * On Linux this is automatic if you install PureData through your distribution.
 - Max/MSP: needs the Max SDK.
   * Pass `-DAVND_MAXSDK_PATH=/path/to/max/sdk` to CMake.
