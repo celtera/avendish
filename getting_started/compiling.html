@@ -150,12 +150,27 @@
 <li>On Linux, through your distribution packages.</li>
 </ul>
 <p>Avendish's code is header-only ; however, CMake automatizes correctly linking to the relevant libraries, and generates a correct entrypoint for the targeted bindings, thus we recommend installing it.</p>
-<p>Ninja is recommended: it makes the build faster.</p>
+<p>Ninja is recommended: it makes the build faster. Below are a few useful set-up commands for various operating systems.</p>
+<h4 id="archlinux-manjaro-etc"><a class="header" href="#archlinux-manjaro-etc">ArchLinux, Manjaro, etc</a></h4>
+<pre><code>$ sudo pacman -S base-devel cmake ninja clang gcc boost
+</code></pre>
+<h4 id="debian-ubuntu-etc"><a class="header" href="#debian-ubuntu-etc">Debian, Ubuntu, etc</a></h4>
+<pre><code>$ sudo apt install build-essential cmake ninja-build libboost-dev
+</code></pre>
+<h4 id="macos-with-homebrew"><a class="header" href="#macos-with-homebrew">macOS with Homebrew</a></h4>
+<p>Xcode is required. Then:</p>
+<pre><code>$ brew install cmake ninja boost
+</code></pre>
+<h4 id="windows-with-msys2--mingw"><a class="header" href="#windows-with-msys2--mingw">Windows with MSYS2 / MinGW</a></h4>
+<pre><code>$ pacman -S pactoys
+$ pacboy -S cmake:p ninja:p toolchain:p boost:p
+</code></pre>
+<h3 id="install-backend-specific-dependencies"><a class="header" href="#install-backend-specific-dependencies">Install backend-specific dependencies</a></h3>
 <p>The APIs and SDK that you wish to create plug-ins / bindings for must also be available: </p>
 <ul>
 <li>PureData: needs the PureData API.
 <ul>
-<li>m_pd.h and pd.lib must be findable through <code>CMAKE_PREFIX_PATH</code>.</li>
+<li><code>m_pd.h</code> and <code>pd.lib</code> must be findable through <code>CMAKE_PREFIX_PATH</code>.</li>
 <li>On Linux this is automatic if you install PureData through your distribution.</li>
 </ul>
 </li>
