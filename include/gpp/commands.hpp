@@ -4,10 +4,13 @@
 
 #include <gpp/generators.hpp>
 
-// FIXME: mpark::variant gives the best results
+#if __has_include(<boost/variant2.hpp>)
+#include <boost/variant2.hpp>
+namespace bv2 = boost::variant2;
+#else
 #include <variant>
-
 namespace bv2 = std;
+#endif
 namespace gpp
 {
 struct buffer_handle_t;

@@ -161,33 +161,15 @@ template <typename T>
 }
 
 template <typename T>
-concept has_unit = requires
-{
-  std::string_view{T::unit()};
-}
-|| requires
-{
-  std::string_view{T::unit};
-}
-|| requires
-{
-  std::string_view{T::dataspace()};
-}
-|| requires
-{
-  std::string_view{T::dataspace};
-}
-|| requires
-{
-  std::string_view{T::type()};
-}
-|| requires
-{
-  std::string_view{T::type};
-};
+concept has_unit = requires { std::string_view{T::unit()}; }
+                   || requires { std::string_view{T::unit}; }
+                   || requires { std::string_view{T::dataspace()}; }
+                   || requires { std::string_view{T::dataspace}; }
+                   || requires { std::string_view{T::type()}; }
+                   || requires { std::string_view{T::type}; };
 
 template <typename T>
-/* constexpr */ auto get_unit()
+constexpr std::string_view get_unit()
 {
   if constexpr(requires { T::unit(); })
     return T::unit();
