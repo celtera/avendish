@@ -84,6 +84,12 @@ concept variant_ish = requires(T t) {
                       };
 
 template <typename T>
+concept pair_ish = requires(T t) {
+                     t.first;
+                     t.second;
+                   } && (std::tuple_size_v<T> == 2);
+
+template <typename T>
 concept tuple_ish = requires(T t) {
                       std::tuple_size<T>::value;
                       typename std::tuple_element_t<0, T>;

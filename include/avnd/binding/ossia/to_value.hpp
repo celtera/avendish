@@ -133,6 +133,52 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
+  template <typename U, std::size_t N>
+  void operator()(const std::array<U, N>& f)
+  {
+    std::vector<ossia::value> v;
+    v.resize(f.size());
+    for(int i = 0; i < N; i++)
+      to_ossia_value_impl{v[i]}(f[i]);
+    val = std::move(v);
+  }
+
+  void operator()(const std::array<float, 2>& f) { val = f; }
+  void operator()(const std::array<float, 3>& f) { val = f; }
+  void operator()(const std::array<float, 4>& f) { val = f; }
+
+  void operator()(const std::array<double, 2>& f) { val = ossia::make_vec(f[0], f[1]); }
+  void operator()(const std::array<double, 3>& f)
+  {
+    val = ossia::make_vec(f[0], f[1], f[2]);
+  }
+  void operator()(const std::array<double, 4>& f)
+  {
+    val = ossia::make_vec(f[0], f[1], f[2], f[3]);
+  }
+
+  void operator()(const avnd::pair_ish auto& f)
+  {
+    std::vector<ossia::value> v;
+    v.resize(2);
+    to_ossia_value_impl{v[0]}(f.first);
+    to_ossia_value_impl{v[1]}(f.second);
+    val = std::move(v);
+  }
+
+  template <avnd::tuple_ish U>
+    requires(!avnd::pair_ish<U>)
+  void operator()(const U& f)
+  {
+    std::vector<ossia::value> v;
+    v.resize(std::tuple_size_v<U>);
+
+    std::apply(
+        [&, k = 0](auto&&... args) mutable { (to_ossia_value_impl{v[k++]}(args), ...); },
+        f);
+    val = std::move(v);
+  }
+
   void operator()(const oscr::type_wrapper auto& f)
   {
     auto& [obj] = f;
