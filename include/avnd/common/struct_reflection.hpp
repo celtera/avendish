@@ -52,8 +52,7 @@ struct fields_introspection
     {
       [n, &func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(field_reflection<Index, pfr::tuple_element_t<Index, type>>{}), true)),
-         ...);
+        (void)((Index == n && (func(field_reflection<Index, pfr::tuple_element_t<Index, type>>{}), true)) || ...);
           }(indices_n{});
     }
   }
@@ -85,13 +84,13 @@ struct fields_introspection
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& ppl = pfr::detail::tie_as_tuple(fields);
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(get<Index>(ppl)), true)), ...);
+        (void)((Index == n && (func(get<Index>(ppl)), true)) || ...);
           }(indices_n{});
 #else
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& [... elts] = fields;
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(elts), true)), ...);
+        (void)((Index == n && (func(elts), true)) || ...);
           }(indices_n{});
 #endif
     }
@@ -189,8 +188,7 @@ struct predicate_introspection
     {
       [n, &func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         // TODO compare with || logical-or fold ?
-        ((void)(Index == n && (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), true)),
-         ...);
+        (void)((Index == n && (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), true)) || ...);
           }(indices_n{});
     }
   }
@@ -203,14 +201,13 @@ struct predicate_introspection
       [k = index_map[n],
        &func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         // TODO compare with || logical-or fold ?
-        ((void)(Index == k && (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), true)),
-         ...);
+        (void)((Index == k && (func(field_reflection<Index, pfr::tuple_element_t<Index, T>>{}), true)) || ...);
           }(indices_n{});
     }
   }
 
   // Goes from 0, 1, 2 indices to indices in the complete
-  // struct with members that may not match this 
+  // struct with members that may not match this
 #if defined(_MSC_VER)
   template <std::size_t N>
   static constexpr int nth_element_i = index_map[N];
@@ -395,7 +392,7 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-        ((void)(Index == n && (func(pfr::get<Index>(fields)), true)), ...);
+        (void)((Index == n && (func(pfr::get<Index>(fields)), true)) || ...);
           }(indices_n{});
     }
   }
@@ -406,7 +403,7 @@ struct predicate_introspection
     {
       [k = index_map[n], &func,
        &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-        ((void)(Index == k && (func(pfr::get<Index>(fields)), true)), ...);
+        (void)((Index == k && (func(pfr::get<Index>(fields)), true)) || ...);
           }(indices_n{});
     }
   }
