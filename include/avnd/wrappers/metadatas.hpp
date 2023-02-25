@@ -34,17 +34,8 @@ namespace avnd
   }                                                    \
                                                        \
   template <typename T>                                \
-  concept has_##PropName = requires                    \
-  {                                                    \
-    Type{T::PropName()};                               \
-  }                                                    \
-  || requires                                          \
-  {                                                    \
-    Type{T::PropName};                                 \
-  };
-
-
-
+  concept has_##PropName                               \
+      = requires { Type{T::PropName()}; } || requires { Type{T::PropName}; };
 
 #if __has_include(<boost/core/demangle.hpp>) && !defined(BOOST_NO_RTTI)
 template <typename T>
@@ -62,7 +53,10 @@ std::string_view get_typeid_name()
 }
 #else
 template <typename T>
-constexpr std::string_view get_typeid_name() { return "(name)"; }
+constexpr std::string_view get_typeid_name()
+{
+  return "(name)";
+}
 #endif
 
 define_get_property(name, std::string_view, get_typeid_name<T>())
@@ -110,7 +104,8 @@ constexpr auto get_c_identifier()
 }
 
 template <avnd::has_name T>
-requires(!avnd::has_c_name<T>) auto get_c_identifier()
+  requires(!avnd::has_c_name<T>)
+auto get_c_identifier()
 {
   std::string name{avnd::get_name<T>()};
   for(char& c : name)
@@ -122,8 +117,18 @@ requires(!avnd::has_c_name<T>) auto get_c_identifier()
 }
 
 template <typename T>
-requires(!avnd::has_c_name<T> && !avnd::has_name<T>) auto get_c_identifier() = delete;
+  requires(!avnd::has_c_name<T> && !avnd::has_name<T>)
+auto get_c_identifier() = delete;
 
+template <typename T>
+concept has_author
+    = requires { std::string_view{T::author()}; }
+      || requires { std::string_view{T::author}; } || requires { T::authors(); }
+      || requires { T::authors; } || requires { std::string_view{T::developer()}; }
+      || requires { std::string_view{T::developer}; } || requires { T::developers(); }
+      || requires { T::developers; } || requires { std::string_view{T::creator()}; }
+      || requires { std::string_view{T::creator}; } || requires { T::creators(); }
+      || requires { T::creators; };
 template <typename T>
 /* constexpr */ auto get_author()
 {

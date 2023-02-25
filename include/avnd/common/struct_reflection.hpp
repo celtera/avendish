@@ -246,8 +246,7 @@ struct predicate_introspection
   // Gives std::tuple<f(field1), f(field2), etc...>
   static constexpr auto filter_tuple(type& unfiltered_fields, auto filter)
   {
-    auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept
-    {
+    auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
       return filter(pfr::get<Index>(unfiltered_fields));
     };
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
@@ -304,8 +303,7 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       auto stack_size_helper
-          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept
-      {
+          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept {
         func(pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{});
       };
       [stack_size_helper]<typename K, K... Index, size_t... LocalIndex>(
@@ -322,8 +320,7 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       auto stack_size_helper
-          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept
-      {
+          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept {
         func(
             pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{},
             avnd::field_index<Index>{});
@@ -344,8 +341,7 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       auto stack_size_helper
-          = [&]<std::size_t Index, std::size_t LocalIndex>(auto& m) constexpr noexcept
-      {
+          = [&]<std::size_t Index, std::size_t LocalIndex>(auto& m) constexpr noexcept {
         func(pfr::get<Index>(m), avnd::predicate_index<LocalIndex>{});
       };
       [stack_size_helper,
@@ -365,8 +361,7 @@ struct predicate_introspection
   {
     if constexpr(size > 0)
     {
-      auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept
-      {
+      auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
         return func(pfr::get<Index>(unfiltered_fields));
       };
       return [stack_size_helper]<typename K, K... Index>(

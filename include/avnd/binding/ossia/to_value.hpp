@@ -41,7 +41,7 @@ struct to_ossia_value_impl
   }
 
   template <typename F>
-  requires std::is_aggregate_v<F>
+    requires std::is_aggregate_v<F>
   void operator()(const F& f)
   {
     constexpr int fields = boost::pfr::tuple_size_v<F>;

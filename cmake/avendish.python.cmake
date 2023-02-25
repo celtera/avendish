@@ -1,3 +1,9 @@
+if(CMAKE_SYSTEM_NAME MATCHES "WAS.*")
+  function(avnd_make_python)
+  endfunction()
+  return()
+endif()
+
 find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
 if(NOT TARGET pybind11::module)

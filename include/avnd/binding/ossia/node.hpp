@@ -121,7 +121,8 @@ struct builtin_message_value_ports
 };
 
 template <typename T>
-requires(avnd::messages_introspection<T>::size > 0) struct builtin_message_value_ports<T>
+  requires(avnd::messages_introspection<T>::size > 0)
+struct builtin_message_value_ports<T>
 {
   ossia::value_inlet message_inlets[avnd::messages_introspection<T>::size];
   void init(ossia::inlets& inlets)
@@ -171,7 +172,8 @@ struct controls_output_queue
 {
 };
 template <typename T>
-requires(avnd::control_input_introspection<T>::size > 0) struct controls_input_queue<T>
+  requires(avnd::control_input_introspection<T>::size > 0)
+struct controls_input_queue<T>
 {
   static constexpr int i_size = avnd::control_input_introspection<T>::size;
   using i_tuple
@@ -182,7 +184,8 @@ requires(avnd::control_input_introspection<T>::size > 0) struct controls_input_q
 };
 
 template <typename T>
-requires(avnd::control_output_introspection<T>::size > 0) struct controls_output_queue<T>
+  requires(avnd::control_output_introspection<T>::size > 0)
+struct controls_output_queue<T>
 {
   static constexpr int o_size = avnd::control_output_introspection<T>::size;
   using o_tuple
@@ -807,10 +810,11 @@ public:
 // FIXME these concepts are super messy
 
 template <typename FP, typename T>
-concept real_mono_processor = avnd::mono_per_sample_arg_processor<
-    FP, T> || avnd::mono_per_sample_port_processor<FP, T> || avnd::
-    monophonic_single_port_audio_effect<FP, T> || avnd::mono_per_channel_arg_processor<
-        FP, T> || avnd::mono_per_channel_port_processor<FP, T>;
+concept real_mono_processor = avnd::mono_per_sample_arg_processor<FP, T>
+                              || avnd::mono_per_sample_port_processor<FP, T>
+                              || avnd::monophonic_single_port_audio_effect<FP, T>
+                              || avnd::mono_per_channel_arg_processor<FP, T>
+                              || avnd::mono_per_channel_port_processor<FP, T>;
 template <typename T>
 concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;
@@ -821,8 +825,8 @@ concept ossia_compatible_nonaudio_processor
 
 template <typename T>
 concept ossia_compatible_audio_processor
-    = avnd::poly_sample_array_input_port_count<double, T> >
-0 || avnd::poly_sample_array_output_port_count<double, T> > 0;
+    = avnd::poly_sample_array_input_port_count<double, T> > 0
+      || avnd::poly_sample_array_output_port_count<double, T> > 0;
 
 template <typename T>
 class safe_node;

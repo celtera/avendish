@@ -1,4 +1,4 @@
-
+if(AVND_USE_PCH)
 # Define a PCH
 add_library(Avendish_vintage_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
 
@@ -13,6 +13,7 @@ target_link_libraries(Avendish_vintage_pch
     DisableExceptions
 )
 avnd_common_setup("" "Avendish_vintage_pch")
+endif()
 
 function(avnd_make_vintage)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
@@ -32,10 +33,12 @@ function(avnd_make_vintage)
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vintage.cpp"
   )
 
-  target_precompile_headers(${AVND_FX_TARGET}
-    REUSE_FROM
-      Avendish_vintage_pch
-  )
+  if(AVND_USE_PCH)
+    target_precompile_headers(${AVND_FX_TARGET}
+      REUSE_FROM
+        Avendish_vintage_pch
+    )
+  endif()
 
   set_target_properties(
     ${AVND_FX_TARGET}

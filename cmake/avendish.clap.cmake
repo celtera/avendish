@@ -7,6 +7,7 @@ if(NOT CLAP_HEADER)
   return()
 endif()
 
+if(AVND_USE_PCH)
 # Define a PCH
 add_library(Avendish_clap_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
 
@@ -27,6 +28,7 @@ target_precompile_headers(Avendish_clap_pch
     include/avnd/prefix.hpp
 )
 avnd_common_setup("" "Avendish_clap_pch")
+endif()
 
 # Function that can be used to wrap an object
 function(avnd_make_clap)
@@ -62,10 +64,12 @@ function(avnd_make_clap)
       ${CLAP_HEADER}
   )
 
-  target_precompile_headers(${AVND_FX_TARGET}
-    REUSE_FROM
-      Avendish_clap_pch
-  )
+  if(AVND_USE_PCH)
+    target_precompile_headers(${AVND_FX_TARGET}
+      REUSE_FROM
+        Avendish_clap_pch
+    )
+  endif()
 
   target_link_libraries(
     ${AVND_FX_TARGET}

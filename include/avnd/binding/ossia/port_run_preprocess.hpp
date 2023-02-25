@@ -74,7 +74,9 @@ struct apply_window
 };
 
 template <typename Field, std::size_t Idx>
-inline void update_value(auto& node, auto& obj, Field& field, const ossia::value& src, auto& dst, avnd::field_index<Idx> idx)
+inline void update_value(
+    auto& node, auto& obj, Field& field, const ossia::value& src, auto& dst,
+    avnd::field_index<Idx> idx)
 {
   node.from_ossia_value(field, src, dst, idx);
   if constexpr(requires { field.update(obj); })
@@ -90,7 +92,8 @@ struct process_before_run
   Obj_T& impl;
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(!avnd::control<Field>) void init_value(
+    requires(!avnd::control<Field>)
+  void init_value(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
     if(!port.data.get_data().empty())
@@ -107,13 +110,13 @@ struct process_before_run
       else if(auto path_ptr = port.address.target<ossia::traversal::path>())
       {
         ossia::traversal::path& p = *path_ptr;
-
       }
     }
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(avnd::control<Field>) void init_value(
+    requires(avnd::control<Field>)
+  void init_value(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
     if(!port.data.get_data().empty())
@@ -132,7 +135,8 @@ struct process_before_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(!avnd::sample_accurate_parameter<Field>) void operator()(
+    requires(!avnd::sample_accurate_parameter<Field>)
+  void operator()(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
     init_value(ctrl, port, avnd::field_index<Idx>{});
@@ -360,24 +364,35 @@ struct process_before_run
   void
   operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
   {
-    ctrl.midi_messages.reserve(port.data.messages.size());
-    for(const libremidi::message& msg_in : port.data.messages)
+    using midi_msg_type =
+        typename std::decay_t<decltype(Field::midi_messages)>::value_type;
+
+    if constexpr(std::is_same_v<midi_msg_type, libremidi::message>)
     {
-      ctrl.midi_messages.push_back(
-          {.bytes{msg_in.begin(), msg_in.end()}, .timestamp{(int)msg_in.timestamp}});
+      ctrl.midi_messages.assign(port.data.messages.begin(), port.data.messages.end());
+    }
+    else
+    {
+      ctrl.midi_messages.reserve(port.data.messages.size());
+      for(const libremidi::message& msg_in : port.data.messages)
+      {
+        ctrl.midi_messages.push_back(
+            {.bytes{msg_in.begin(), msg_in.end()}, .timestamp{(int)msg_in.timestamp}});
+      }
     }
   }
 
-
   template <avnd::control Field, std::size_t Idx>
-  requires(!avnd::sample_accurate_control<Field>) void operator()(
+    requires(!avnd::sample_accurate_control<Field>)
+  void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     if constexpr(avnd::optional_ish<decltype(Field::value)>)
       ctrl.value = {};
   }
   template <avnd::value_port Field, std::size_t Idx>
-  requires(!avnd::sample_accurate_value_port<Field>) void operator()(
+    requires(!avnd::sample_accurate_value_port<Field>)
+  void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     if constexpr(avnd::optional_ish<decltype(Field::value)>)

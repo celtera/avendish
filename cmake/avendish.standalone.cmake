@@ -1,3 +1,8 @@
+if(CMAKE_SYSTEM_NAME MATCHES "WAS.*")
+  function(avnd_make_standalone)
+  endfunction()
+  return()
+endif()
 find_package(ossia QUIET)
 find_package(GLEW QUIET)
 find_package(glfw3 QUIET)
