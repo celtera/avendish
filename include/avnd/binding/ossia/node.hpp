@@ -203,6 +203,79 @@ struct controls_queue
 {
 };
 
+template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
+struct do_callback;
+
+template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
+  requires(!requires { Field::timestamp; })
+struct do_callback<Self, Idx, Field, R, Args...>
+{
+  Self& self;
+  Field& field;
+  R operator()(Args... args)
+  {
+    // Idx is the index of the port in the complete input array.
+    // We need to map it to the callback index.
+    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
+    if constexpr(sizeof...(Args) == 0)
+    {
+      port.data.write_value(ossia::impulse{}, 0);
+    }
+    else if constexpr(sizeof...(Args) == 1)
+    {
+      port.data.write_value(to_ossia_value(field, args...), 0);
+    }
+    else
+    {
+      std::vector<ossia::value> vec{to_ossia_value(field, args)...};
+      port.data.write_value(std::move(vec), 0);
+    }
+
+    if constexpr(!std::is_void_v<R>)
+      return R{};
+  }
+};
+
+template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
+  requires(requires { Field::timestamp; })
+struct do_callback<Self, Idx, Field, R, Args...>
+{
+  Self& self;
+  Field& field;
+
+  void do_call(int64_t ts)
+  {
+    // Idx is the index of the port in the complete input array.
+    // We need to map it to the callback index.
+    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
+    port.data.write_value(ossia::impulse{}, ts);
+  }
+
+  template <typename U>
+  void do_call(int64_t ts, U&& u)
+  {
+    // Idx is the index of the port in the complete input array.
+    // We need to map it to the callback index.
+    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
+    port.data.write_value(to_ossia_value(field, std::forward<U>(u)), ts);
+  }
+
+  template <typename... U>
+  void do_call(int64_t ts, U&&... us)
+  {
+    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
+    std::vector<ossia::value> vec{to_ossia_value(field, us)...};
+    port.data.write_value(std::move(vec), ts);
+  }
+
+  R operator()(Args... args)
+  {
+    do_call(static_cast<Args&&>(args)...);
+    if constexpr(!std::is_void_v<R>)
+      return R{};
+  }
+};
+
 template <typename T>
 class safe_node_base_base : public ossia::nonowning_graph_node
 {
@@ -372,26 +445,6 @@ public:
     this->process_all_ports<setup_variable_audio_ports<safe_node_base, T>>();
   }
 
-  template <std::size_t Idx, typename Field, typename R, typename... Args>
-  struct do_callback
-  {
-    safe_node_base& self;
-    Field& field;
-    R operator()(Args... args)
-    {
-      // Idx is the index of the port in the complete input array.
-      // We need to map it to the callback index.
-      ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
-      if constexpr(sizeof...(Args) == 0)
-        port.data.write_value(ossia::impulse{}, 0);
-      else if constexpr(sizeof...(Args) == 1)
-        port.data.write_value(to_ossia_value(field, args...), 0);
-
-      if constexpr(!std::is_void_v<R>)
-        return R{};
-    }
-  };
-
   void finish_init()
   {
     // Initialize the callbacks
@@ -401,7 +454,7 @@ public:
                                        typename Field, template <typename...> typename L,
                                        typename Ret, typename... Args, std::size_t Idx>(
                                        Field& field, L<Ret, Args...>, avnd::num<Idx>) {
-        return do_callback<Idx, Field, Ret, Args...>{*this, field};
+        return do_callback<safe_node_base, Idx, Field, Ret, Args...>{*this, field};
       };
       this->callbacks.wrap_callbacks(this->impl, callbacks_initializer);
     }
