@@ -66,10 +66,10 @@ struct Processor
           if(pos < tk.frames)
           {
             // Stop running notes
-            for(uint8_t n : running)
+            for(unsigned int n : running)
             {
               halp::midi_msg m;
-              m.bytes = {128, n, 0};
+              m.bytes = {128, (uint8_t)std::clamp(n, 0u, 127u), 0};
               m.timestamp = pos;
               outputs.midi.midi_messages.push_back(m);
             }
@@ -81,7 +81,8 @@ struct Processor
             for(auto [pitch, vel] : pat[qq])
             {
               halp::midi_msg m;
-              m.bytes = {144, (uint8_t)pitch, (uint8_t)vel};
+              m.bytes = {
+                  144, (uint8_t)std::clamp((unsigned int)pitch, 0u, 127u), (uint8_t)vel};
               m.timestamp = pos;
               outputs.midi.midi_messages.push_back(m);
               running.push_back(pitch);
