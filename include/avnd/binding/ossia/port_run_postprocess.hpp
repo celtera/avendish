@@ -18,6 +18,8 @@ struct process_after_run
 {
   Exec_T& self;
   Obj_T& impl;
+  int start{};
+  int frames{};
 
   template <typename Field, std::size_t Idx>
   void operator()(
@@ -51,7 +53,8 @@ struct process_after_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(!avnd::control<Field>) void write_value(
+    requires(!avnd::control<Field>)
+  void write_value(
       Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
       avnd::field_index<Idx>) const noexcept
   {
@@ -60,7 +63,8 @@ struct process_after_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(avnd::control<Field>) void write_value(
+    requires(avnd::control<Field>)
+  void write_value(
       Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
       avnd::field_index<Idx> idx) const noexcept
   {
@@ -79,7 +83,8 @@ struct process_after_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(!avnd::sample_accurate_parameter<Field>) void operator()(
+    requires(!avnd::sample_accurate_parameter<Field>)
+  void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
@@ -102,7 +107,7 @@ struct process_after_run
     {
       if(buffer[i])
       {
-        write_value(ctrl, port, *buffer[i], i, avnd::field_index<Idx>{});
+        write_value(ctrl, port, *buffer[i], start + i, avnd::field_index<Idx>{});
         buffer[i] = {};
       }
     }
@@ -114,15 +119,16 @@ struct process_after_run
   {
     for(auto& [timestamp, val] : ctrl.values)
     {
-      write_value(ctrl, port, val, timestamp, avnd::field_index<Idx>{});
+      write_value(ctrl, port, val, start + timestamp, avnd::field_index<Idx>{});
     }
     ctrl.values.clear();
   }
 
   // does not make sense as output, only as input
   template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
-  void operator()(Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>)
-      const noexcept = delete;
+  void operator()(
+      Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
+      = delete;
 
   template <typename Field, std::size_t Idx>
   void operator()(
@@ -142,7 +148,7 @@ struct process_after_run
       auto& m = ctrl.midi_messages[i];
       libremidi::message ms;
       ms.bytes.assign(m.bytes.begin(), m.bytes.end());
-      ms.timestamp = m.timestamp;
+      ms.timestamp = start + m.timestamp;
       port.data.messages.push_back(std::move(ms));
     }
   }
@@ -157,7 +163,7 @@ struct process_after_run
     {
       libremidi::message ms;
       ms.bytes.assign(m.bytes.begin(), m.bytes.end());
-      ms.timestamp = m.timestamp;
+      ms.timestamp = start + m.timestamp;
       port.data.messages.push_back(std::move(ms));
     }
   }

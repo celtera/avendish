@@ -5,6 +5,7 @@
 #include <halp/static_string.hpp>
 
 #include <cinttypes>
+#include <string_view>
 
 namespace halp
 {

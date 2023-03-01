@@ -90,6 +90,8 @@ struct process_before_run
 {
   Exec_T& self;
   Obj_T& impl;
+  int start{};
+  int frames{};
 
   template <avnd::parameter Field, std::size_t Idx>
     requires(!avnd::control<Field>)
@@ -100,17 +102,6 @@ struct process_before_run
     {
       auto& last = port.data.get_data().back().value;
       update_value(self, impl, ctrl, last, ctrl.value, idx);
-    }
-    else if(port.cables().empty())
-    {
-      if(auto node_ptr = port.address.target<ossia::net::node_base*>())
-      {
-        ossia::net::node_base& node = **node_ptr;
-      }
-      else if(auto path_ptr = port.address.target<ossia::traversal::path>())
-      {
-        ossia::traversal::path& p = *path_ptr;
-      }
     }
   }
 
@@ -151,8 +142,11 @@ struct process_before_run
 
     for(auto& [val, ts] : port->get_data())
     {
-      auto& v = ctrl.values[ts].emplace();
-      update_value(self, impl, ctrl, val, v, avnd::field_index<Idx>{});
+      if(ts >= start && ts < start + frames)
+      {
+        auto& v = ctrl.values[ts - start].emplace();
+        update_value(self, impl, ctrl, val, v, avnd::field_index<Idx>{});
+      }
     }
   }
 
@@ -174,7 +168,11 @@ struct process_before_run
     init_value(ctrl, port, avnd::field_index<Idx>{});
     for(auto& [val, ts] : port->get_data())
     {
-      update_value(self, impl, ctrl, val, ctrl.values[ts], avnd::field_index<Idx>{});
+      if(ts >= start && ts < start + frames)
+      {
+        update_value(
+            self, impl, ctrl, val, ctrl.values[ts - start], avnd::field_index<Idx>{});
+      }
     }
   }
 
@@ -369,15 +367,27 @@ struct process_before_run
 
     if constexpr(std::is_same_v<midi_msg_type, libremidi::message>)
     {
-      ctrl.midi_messages.assign(port.data.messages.begin(), port.data.messages.end());
+      ctrl.midi_messages.reserve(port.data.messages.size());
+      for(const libremidi::message& msg_in : port.data.messages)
+      {
+        if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
+        {
+          ctrl.midi_messages.push_back(msg_in);
+          ctrl.midi_messages.back().timestamp -= start;
+        }
+      }
     }
     else
     {
       ctrl.midi_messages.reserve(port.data.messages.size());
       for(const libremidi::message& msg_in : port.data.messages)
       {
-        ctrl.midi_messages.push_back(
-            {.bytes{msg_in.begin(), msg_in.end()}, .timestamp{(int)msg_in.timestamp}});
+        if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
+        {
+          ctrl.midi_messages.push_back(
+              {.bytes{msg_in.begin(), msg_in.end()}, .timestamp{(int)msg_in.timestamp}});
+          ctrl.midi_messages.back().timestamp -= start;
+        }
       }
     }
   }

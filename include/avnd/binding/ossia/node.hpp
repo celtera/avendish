@@ -393,12 +393,12 @@ public:
         }(typename info::indices_n{});
   }
 
-  template <typename Functor>
-  void process_all_ports()
+  template <typename Functor, typename... Args>
+  void process_all_ports(Args&&... args)
   {
     for(auto& [impl, i, o] : this->impl.full_state())
     {
-      Functor f{*this, impl};
+      Functor f{*this, impl, args...};
       if constexpr(avnd::inputs_type<T>::size > 0)
         process_inputs_impl(f, i);
       if constexpr(avnd::outputs_type<T>::size > 0)
@@ -596,7 +596,7 @@ public:
     this->control_buffers.clear_outputs(this->impl);
 
     // Process inputs of all sorts
-    this->process_all_ports<process_before_run<safe_node_base, T>>();
+    this->process_all_ports<process_before_run<safe_node_base, T>>(start, frames);
 
     // Process messages
     if constexpr(avnd::messages_type<T>::size > 0)
