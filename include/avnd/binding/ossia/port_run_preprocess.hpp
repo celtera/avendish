@@ -306,11 +306,11 @@ struct process_before_run
   void operator()(
       Field& ctrl, ossia::geometry_inlet& port, avnd::field_index<Idx>) const noexcept
   {
-    if(port.data.dirty_meshes)
+    if(port.data.flags & port.data.dirty_meshes)
       ctrl.dirty_mesh = true;
-    if(port.data.dirty_transform)
+    if(port.data.flags & port.data.dirty_transform)
       ctrl.dirty_transform = true;
-    geometry_from_ossia(port.data.meshes, ctrl);
+    geometry_from_ossia(port.data, ctrl);
   }
 
   template <avnd::soundfile_port Field, std::size_t Idx>

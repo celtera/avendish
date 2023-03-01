@@ -193,8 +193,8 @@ struct process_after_run
         load_geometry(ctrl, ossia_meshes.meshes[0]);
       }
       else if constexpr(
-          static_geometry_type<
-              decltype(Field::mesh)> || dynamic_geometry_type<decltype(Field::mesh)>)
+          static_geometry_type<decltype(Field::mesh)>
+          || dynamic_geometry_type<decltype(Field::mesh)>)
       {
         ossia_meshes.meshes.resize(1);
         load_geometry(ctrl.mesh, ossia_meshes.meshes[0]);

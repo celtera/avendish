@@ -72,8 +72,8 @@ constexpr auto get_cull_mode(const T& t) -> decltype(ossia::geometry::cull_mode)
 }
 
 template <typename T>
-requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void load_geometry(
-    T& ctrl, ossia::geometry& geom)
+  requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
+void load_geometry(T& ctrl, ossia::geometry& geom)
 {
   if constexpr(requires { ctrl.vertices; })
     geom.vertices = ctrl.vertices;
@@ -294,10 +294,10 @@ requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void l
 }
 
 template <typename T>
-requires(
-    avnd::static_geometry_type<
-        typename decltype(T::mesh)::
-            value_type> || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>) void load_geometry(T& ctrl, ossia::mesh_list& geom)
+  requires(
+      avnd::static_geometry_type<typename decltype(T::mesh)::value_type>
+      || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>)
+void load_geometry(T& ctrl, ossia::mesh_list& geom)
 {
   const auto N = ctrl.mesh.size();
   geom.meshes.resize(N);
@@ -337,8 +337,8 @@ constexpr auto to_cull_mode(auto v)
 }
 
 template <typename T>
-requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void geometry_from_ossia(
-    const ossia::geometry& src, T& dst)
+  requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
+void mesh_from_ossia(const ossia::geometry& src, T& dst)
 {
   if constexpr(requires { dst.vertices; })
     dst.vertices = src.vertices;
@@ -400,10 +400,37 @@ requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>) void g
 }
 
 template <typename T>
-requires(
-    avnd::static_geometry_type<
-        typename decltype(T::mesh)::
-            value_type> || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>) void geometry_from_ossia(const ossia::geometry& src, T& dst)
+  requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
+void meshes_from_ossia(const ossia::mesh_list_ptr& src, T& dst)
 {
+  if(!src)
+    return;
+
+  if(src->meshes.empty())
+  {
+    dst = T{};
+    return;
+  }
+
+  // For now do only one
+  mesh_from_ossia(src->meshes[0], dst);
+}
+
+/*
+template <typename T>
+  requires(
+      avnd::static_geometry_type<typename decltype(T::mesh)::value_type>
+      || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>)
+void meshes_from_ossia(const ossia::mesh_list_ptr& src, T& dst)
+{
+  meshes_from_ossia(src, dst.mesh);
+}
+  */
+template <typename T>
+void geometry_from_ossia(const ossia::geometry_port& src, T& dst)
+{
+  meshes_from_ossia(src.meshes, dst.mesh);
+  static_assert(sizeof(dst.transform) / sizeof(dst.transform[0]) == 16);
+  std::copy_n(src.transform.matrix, std::ssize(src.transform.matrix), dst.transform);
 }
 }
