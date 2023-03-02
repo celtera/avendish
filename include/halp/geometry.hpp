@@ -209,12 +209,12 @@ struct dynamic_geometry
   struct binding
   {
     int stride{};
+    int step_rate{};
     enum
     {
       per_vertex,
       per_instance
     } classification{};
-    int step_rate{};
   };
 
   struct attribute
