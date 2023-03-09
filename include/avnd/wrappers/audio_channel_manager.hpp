@@ -30,7 +30,7 @@ struct audio_channel_manager;
  * is mono by definition.
  */
 template <typename T>
-requires avnd::monophonic_audio_processor<T>
+  requires avnd::monophonic_audio_processor<T>
 struct audio_channel_manager<T>
 {
   explicit audio_channel_manager(auto& processor) { }
@@ -76,9 +76,10 @@ struct audio_channel_manager<T>
  *  or per-channel
  */
 template <typename T>
-requires avnd::poly_per_sample_port_processor<float, T> || avnd::
-    poly_per_sample_port_processor<double, T> || avnd::poly_per_channel_port_processor<
-        float, T> || avnd::poly_per_channel_port_processor<double, T>
+  requires avnd::poly_per_sample_port_processor<float, T>
+           || avnd::poly_per_sample_port_processor<double, T>
+           || avnd::poly_per_channel_port_processor<float, T>
+           || avnd::poly_per_channel_port_processor<double, T>
 struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
@@ -111,7 +112,7 @@ struct audio_channel_manager<T>
  * Case void operator()(float** in, int n_in, float** out, int n_out);
  */
 template <typename T>
-requires avnd::bus_arg_processor<T>
+  requires avnd::bus_arg_processor<T>
 struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
@@ -188,18 +189,18 @@ struct audio_channel_manager<T>
 
 template <typename T>
 static constexpr int input_bus_count
-    = avnd::poly_sample_array_input_port_count<
-          float, T> + avnd::poly_sample_array_input_port_count<double, T>;
+    = avnd::poly_sample_array_input_port_count<float, T>
+      + avnd::poly_sample_array_input_port_count<double, T>;
 template <typename T>
 static constexpr int output_bus_count
-    = avnd::poly_sample_array_output_port_count<
-          float, T> + avnd::poly_sample_array_output_port_count<double, T>;
+    = avnd::poly_sample_array_output_port_count<float, T>
+      + avnd::poly_sample_array_output_port_count<double, T>;
 
 template <typename T>
-requires(
-    (avnd::poly_array_port_based<
-         float, T> || avnd::poly_array_port_based<double, T>)&&input_bus_count<T> > 0
-    && output_bus_count<T> > 0) struct audio_channel_manager<T>
+  requires(
+      (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
+      && input_bus_count<T> > 0 && output_bus_count<T> > 0)
+struct audio_channel_manager<T>
 {
   using in_refl = avnd::audio_bus_input_introspection<T>;
   using out_refl = avnd::audio_bus_output_introspection<T>;
@@ -217,7 +218,7 @@ requires(
     // Initialize the local array with the default values
     int i = 0;
     auto& inputs = avnd::get_inputs(eff);
-    in_refl::for_all(inputs, [this, &i]<avnd::audio_port P>(P& p) {
+    in_refl::for_all(inputs, [this, &i = i]<avnd::audio_port P>(P& p) {
       if constexpr(avnd::fixed_poly_audio_port<P>)
       {
         this->input_channels[i] = p.channels();
@@ -238,7 +239,7 @@ requires(
 
     i = 0;
     auto& outputs = avnd::get_outputs(processor);
-    out_refl::for_all(outputs, [this, &i]<avnd::audio_port P>(P& p) {
+    out_refl::for_all(outputs, [this, &i = i]<avnd::audio_port P>(P& p) {
       if constexpr(avnd::fixed_poly_audio_port<P>)
       {
         this->output_channels[i] = p.channels();
@@ -346,8 +347,8 @@ requires(
       auto& first = out_refl::template get<0>(outputs);
       using first_type = std::decay_t<decltype(first)>;
       if constexpr(
-          avnd::dynamic_poly_audio_port<
-              first_type> && !avnd::variable_poly_audio_port<first_type>)
+          avnd::dynamic_poly_audio_port<first_type>
+          && !avnd::variable_poly_audio_port<first_type>)
       {
         first.channels = new_input_channel_count;
         set_output_impl(0, new_input_channel_count);
@@ -465,122 +466,121 @@ requires(
 };
 
 template <typename T>
-requires ((avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>) && input_bus_count<T> > 0 && output_bus_count<T> == 0)
+  requires(
+      (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
+      && input_bus_count<T> > 0 && output_bus_count<T> == 0)
 struct audio_channel_manager<T>
 {
-    using in_refl = avnd::audio_bus_input_introspection<T>;
-    // using out_refl = avnd::audio_bus_output_introspection<T>;
-    // Given the processor, and the current inputs,
-    // tells us how many channels / instances of the plug-in must
-    // actually be allocated for each port.
+  using in_refl = avnd::audio_bus_input_introspection<T>;
+  // using out_refl = avnd::audio_bus_output_introspection<T>;
+  // Given the processor, and the current inputs,
+  // tells us how many channels / instances of the plug-in must
+  // actually be allocated for each port.
 
-    explicit audio_channel_manager(avnd::effect_container<T>& eff)
-    {
-        auto& processor = eff.effect;
-        this->input_channels.fill(0);
-        this->actual_runtime_inputs = 0;
-        this->actual_runtime_outputs = 0;
-        // Initialize the local array with the default values
-        int i = 0;
-        auto& inputs = avnd::get_inputs(eff);
-        in_refl::for_all(inputs, [this, &i]<avnd::audio_port P>(P& p) {
-            if constexpr(avnd::fixed_poly_audio_port<P>)
-            {
-                this->input_channels[i] = p.channels();
-            }
-            else if constexpr(avnd::variable_poly_audio_port<P>)
-            {
-                this->input_channels[i] = p.channels;
-            }
+  explicit audio_channel_manager(avnd::effect_container<T>& eff)
+  {
+    auto& processor = eff.effect;
+    this->input_channels.fill(0);
+    this->actual_runtime_inputs = 0;
+    this->actual_runtime_outputs = 0;
+    // Initialize the local array with the default values
+    int i = 0;
+    auto& inputs = avnd::get_inputs(eff);
+    in_refl::for_all(inputs, [this, &i]<avnd::audio_port P>(P& p) {
+      if constexpr(avnd::fixed_poly_audio_port<P>)
+      {
+        this->input_channels[i] = p.channels();
+      }
+      else if constexpr(avnd::variable_poly_audio_port<P>)
+      {
+        this->input_channels[i] = p.channels;
+      }
+      else
+      {
+        // Variable number of channels, may not be initialized so we init it to 0
+        p.channels = 0;
+        this->input_channels[i] = 0;
+      }
+      this->actual_runtime_inputs += this->input_channels[i];
+      i++;
+    });
+  }
+
+  void set_input_impl(int id, int count)
+  {
+    this->actual_runtime_inputs -= this->input_channels[id];
+    this->input_channels[id] = count;
+    this->actual_runtime_inputs += count;
+  }
+
+  // By convention, if the processor has audio passed as arguments / return
+  // from its operator() function, they count as a virtual first port.
+  bool
+  set_input_channels(avnd::effect_container<T>& processor, int input_id, int channels)
+  {
+    std::optional<int> ok{};
+    auto& inputs = avnd::get_inputs(processor);
+    in_refl::for_nth_mapped(
+        inputs, input_id, [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
+          if constexpr(avnd::variable_poly_audio_port<P>)
+          {
+            if(bus.channels == channels)
+              ok = bus.channels;
             else
-            {
-                // Variable number of channels, may not be initialized so we init it to 0
-                p.channels = 0;
-                this->input_channels[i] = 0;
-            }
-            this->actual_runtime_inputs += this->input_channels[i];
-            i++;
-        });
-    }
-
-    void set_input_impl(int id, int count)
-    {
-        this->actual_runtime_inputs -= this->input_channels[id];
-        this->input_channels[id] = count;
-        this->actual_runtime_inputs += count;
-    }
-
-
-    // By convention, if the processor has audio passed as arguments / return
-    // from its operator() function, they count as a virtual first port.
-    bool set_input_channels(avnd::effect_container<T>& processor, int input_id, int channels)
-    {
-        std::optional<int> ok{};
-        auto& inputs = avnd::get_inputs(processor);
-        in_refl::for_nth_mapped(
-                    inputs, input_id, [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
-            if constexpr(avnd::variable_poly_audio_port<P>)
-            {
-                if(bus.channels == channels)
-                    ok = bus.channels;
-                else
-                    ok = std::nullopt;
-            }
-            else if constexpr(requires { bus.channels = channels; })
-            {
-                bus.channels = channels;
-                ok = bus.channels;
-            }
-            else if constexpr(requires { P::channels(); })
-            {
-                if(P::channels() == channels)
-                    ok = P::channels();
-                else
-                    ok = std::nullopt;
-            }
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { bus.channels = channels; })
+          {
+            bus.channels = channels;
+            ok = bus.channels;
+          }
+          else if constexpr(requires { P::channels(); })
+          {
+            if(P::channels() == channels)
+              ok = P::channels();
             else
-            {
-                AVND_ERROR(decltype(bus), "Should not happen");
-                ok = std::nullopt;
-            }
+              ok = std::nullopt;
+          }
+          else
+          {
+            AVND_ERROR(decltype(bus), "Should not happen");
+            ok = std::nullopt;
+          }
         });
 
-        if(ok)
-        {
-            set_input_impl(input_id, *ok);
-        }
-
-        return bool(ok);
-    }
-
-    bool set_output_channels(avnd::effect_container<T>& processor, int output_id, int channels)
+    if(ok)
     {
-        return false;
+      set_input_impl(input_id, *ok);
     }
 
-    int get_input_channels(auto& processor, int input_id)
-    {
-        return input_channels[input_id];
-    }
+    return bool(ok);
+  }
 
-    int get_output_channels(auto& processor, int output_id)
-    {
-        return 0;
-    }
+  bool
+  set_output_channels(avnd::effect_container<T>& processor, int output_id, int channels)
+  {
+    return false;
+  }
 
-    // One of the two float/double cases will be null necessarily
-    [[no_unique_address]] ebo_array<int, input_bus_count<T>> input_channels;
+  int get_input_channels(auto& processor, int input_id)
+  {
+    return input_channels[input_id];
+  }
 
-    int actual_runtime_inputs = 0;
-    int actual_runtime_outputs = 0;
+  int get_output_channels(auto& processor, int output_id) { return 0; }
+
+  // One of the two float/double cases will be null necessarily
+  [[no_unique_address]] ebo_array<int, input_bus_count<T>> input_channels;
+
+  int actual_runtime_inputs = 0;
+  int actual_runtime_outputs = 0;
 };
 
 template <typename T>
-requires(
-    (avnd::poly_array_port_based<
-         float,
-         T> || avnd::poly_array_port_based<double, T>)&&input_bus_count<T> == 0) struct
-    audio_channel_manager<T>
+  requires(
+      (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
+      && input_bus_count<T> == 0)
+struct audio_channel_manager<T>
 {
   using out_refl = avnd::audio_bus_output_introspection<T>;
   // Given the processor, and the current inputs,
@@ -636,8 +636,7 @@ requires(
     std::optional<int> ok{};
     auto& outputs = avnd::get_outputs(processor);
     out_refl::for_nth_mapped(
-        outputs, output_id,
-        [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
+        outputs, output_id, [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
 #if !defined(_MSC_VER)
           static_assert(!requires { bus.mimick_channel; });
 #endif
@@ -690,9 +689,8 @@ requires(
 
 // Case for everything that does not handle audio
 template <typename T>
-requires(
-    !avnd::float_processor<
-        T> && !avnd::double_processor<T>) struct audio_channel_manager<T>
+  requires(!avnd::float_processor<T> && !avnd::double_processor<T>)
+struct audio_channel_manager<T>
 {
   static constexpr const int detected_input_channels
       = avnd::input_channels_introspection<T>::input_channels;
