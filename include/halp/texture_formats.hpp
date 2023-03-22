@@ -6,6 +6,12 @@
 
 namespace halp
 {
+
+struct r_color
+{
+  uint8_t r;
+};
+
 struct rgba_color
 {
   uint8_t r, g, b, a;
@@ -19,6 +25,63 @@ struct rgba32f_color
 struct rgb_color
 {
   uint8_t r, g, b;
+};
+
+struct r8_texture
+{
+  using uninitialized_bytes = boost::container::vector<unsigned char>;
+  enum format
+  {
+    R8
+  };
+  unsigned char* bytes;
+  int width;
+  int height;
+  bool changed;
+
+  constexpr auto bytesize() const noexcept
+  {
+    return width * height * sizeof(unsigned char);
+  }
+
+  /* FIXME the allocation should not be managed by the plug-in */
+  static auto allocate(int width, int height)
+  {
+    using namespace boost::container;
+    return uninitialized_bytes(width * height, default_init);
+  }
+
+  void update(unsigned char* data, int w, int h) noexcept
+  {
+    bytes = data;
+    width = w;
+    height = h;
+    changed = true;
+  }
+
+  void set(int x, int y, int r) noexcept
+  {
+    assert(x >= 0 && x < width);
+    assert(y >= 0 && y < height);
+
+    const int pixel_index = y * width + x;
+    const int byte_index = pixel_index;
+
+    auto* pixel_ptr = bytes + byte_index;
+    pixel_ptr[0] = r;
+  }
+
+  void set(int x, int y, r_color col) noexcept
+  {
+    assert(x >= 0 && x < width);
+    assert(y >= 0 && y < height);
+
+    const int pixel_index = y * width + x;
+    const int byte_index = pixel_index;
+
+    auto* pixel_ptr = bytes + byte_index;
+    pixel_ptr[0] = col.r;
+  }
 };
 
 struct rgba_texture
