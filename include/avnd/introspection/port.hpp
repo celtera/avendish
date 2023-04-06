@@ -30,7 +30,8 @@ struct parameter_introspection : predicate_introspection<T, is_parameter_t>
 template <typename Field>
 using is_program_parameter_t = boost::mp11::mp_bool<program_parameter<Field>>;
 template <typename T>
-struct program_parameter_introspection : predicate_introspection<T, is_program_parameter_t>
+struct program_parameter_introspection
+    : predicate_introspection<T, is_program_parameter_t>
 {
 };
 
@@ -75,6 +76,11 @@ using is_dynamic_timed_parameter_t
 template <typename T>
 using dynamic_timed_parameter_introspection
     = predicate_introspection<T, is_dynamic_timed_parameter_t>;
+
+template <typename Field>
+using is_smooth_parameter_t = boost::mp11::mp_bool<smooth_parameter<Field>>;
+template <typename T>
+using smooth_parameter_introspection = predicate_introspection<T, is_smooth_parameter_t>;
 
 template <typename Field>
 using is_midi_port_t = boost::mp11::mp_bool<midi_port<Field>>;

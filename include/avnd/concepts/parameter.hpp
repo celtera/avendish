@@ -235,4 +235,11 @@ concept dynamic_sample_accurate_parameter
     = sample_accurate_parameter<T>
       && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
 
+/**
+ * Parameters that want to be smoothed (range is needed)
+ */
+template <typename T>
+concept smooth_parameter
+    = parameter<T> && has_range<T> && requires(T t) { t.smooth_ratio(); };
+
 }

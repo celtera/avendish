@@ -21,6 +21,7 @@
 #include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <avnd/wrappers/smooth.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <ossia/dataflow/audio_port.hpp>
@@ -309,6 +310,8 @@ public:
 
   [[no_unique_address]] avnd::callback_storage<T> callbacks;
 
+  [[no_unique_address]] avnd::smooth_storage<T> smooth;
+
   [[no_unique_address]] oscr::soundfile_storage<T> soundfiles;
 
   [[no_unique_address]] oscr::midifile_storage<T> midifiles;
@@ -363,6 +366,7 @@ public:
     this->audio_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
     this->soundfiles.init(this->impl);
+    this->smooth.init(this->impl, sample_rate);
 
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
@@ -601,6 +605,7 @@ public:
     // Process messages
     if constexpr(avnd::messages_type<T>::size > 0)
       process_messages();
+
     return true;
   }
 
@@ -740,6 +745,8 @@ public:
     avnd::messages_introspection<T>::for_all([&](auto m) { process_message(m); });
   }
 
+  void process_smooth() { this->smooth.smooth_all(this->impl); }
+
   auto make_controls_in_tuple()
   {
     return avnd::control_input_introspection<T>::filter_tuple(
@@ -790,15 +797,26 @@ public:
   }
 
   template <typename Field, typename Val, std::size_t NField>
-  inline constexpr void from_ossia_value(
+  inline constexpr bool from_ossia_value(
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField>)
   {
-    return oscr::from_ossia_value(field, src, dst);
+    oscr::from_ossia_value(field, src, dst);
+    return true;
+  }
+
+  template <avnd::smooth_parameter Field, typename Val, std::size_t NField>
+  inline bool from_ossia_value(
+      Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
+  {
+    Val next;
+    oscr::from_ossia_value(src, next);
+    this->smooth.update_target(field, next, idx);
+    return false;
   }
 
   // Special case: this one may require the current tempo information
   template <avnd::time_control Field, typename Val, std::size_t NField>
-  inline void from_ossia_value(
+  inline bool from_ossia_value(
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
   {
     auto vec = ossia::convert<ossia::vec2f>(src);
@@ -813,6 +831,7 @@ public:
       dst = to_seconds(vec[0], this->tempo);
       this->time_controls.update_control(this->impl, idx, vec[0], true);
     }
+    return true;
   }
 
   void soundfile_release_request(std::string& str, int idx)

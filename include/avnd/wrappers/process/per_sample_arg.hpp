@@ -11,10 +11,10 @@ namespace avnd
  * Mono processors with e.g. float operator()(float in, ...);
  */
 template <typename T>
-requires(
-    avnd::mono_per_sample_arg_processor<
-        double,
-        T> || avnd::mono_per_sample_arg_processor<float, T>) struct process_adapter<T>
+  requires(
+      avnd::mono_per_sample_arg_processor<double, T>
+      || avnd::mono_per_sample_arg_processor<float, T>)
+struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
   {

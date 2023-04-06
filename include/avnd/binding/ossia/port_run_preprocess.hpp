@@ -78,10 +78,12 @@ inline void update_value(
     auto& node, auto& obj, Field& field, const ossia::value& src, auto& dst,
     avnd::field_index<Idx> idx)
 {
-  node.from_ossia_value(field, src, dst, idx);
-  if constexpr(requires { field.update(obj); })
+  if(node.from_ossia_value(field, src, dst, idx))
   {
-    field.update(obj);
+    if constexpr(requires { field.update(obj); })
+    {
+      field.update(obj);
+    }
   }
 }
 

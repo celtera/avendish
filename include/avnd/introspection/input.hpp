@@ -19,7 +19,7 @@ struct parameter_input_introspection
 
 template <typename T>
 struct program_parameter_input_introspection
-        : program_parameter_introspection<typename inputs_type<T>::type>
+    : program_parameter_introspection<typename inputs_type<T>::type>
 {
 };
 
@@ -55,6 +55,12 @@ struct span_timed_parameter_input_introspection
 template <typename T>
 struct dynamic_timed_parameter_input_introspection
     : dynamic_timed_parameter_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct smooth_parameter_input_introspection
+    : smooth_parameter_introspection<typename inputs_type<T>::type>
 {
 };
 
@@ -136,8 +142,7 @@ struct raw_file_input_introspection
 };
 
 template <typename T>
-struct file_input_introspection
-    : file_introspection<typename inputs_type<T>::type>
+struct file_input_introspection : file_introspection<typename inputs_type<T>::type>
 {
 };
 
