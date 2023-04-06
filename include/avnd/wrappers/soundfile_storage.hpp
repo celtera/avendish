@@ -23,7 +23,8 @@ struct soundfile_input_storage
 };
 
 template <typename T>
-requires(soundfile_input_introspection<T>::size > 0) struct soundfile_input_storage<T>
+  requires(soundfile_input_introspection<T>::size > 0)
+struct soundfile_input_storage<T>
 {
   // std::tuple< float*, double* >
   using tuple

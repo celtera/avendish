@@ -18,12 +18,13 @@ namespace avnd
 {
 // TODO be more fine-grained
 template <typename T>
-concept audio_arg_input = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<
-    T> || avnd::bus_arg_processor<T>;
+concept audio_arg_input = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<T>
+                          || avnd::bus_arg_processor<T>;
 
 template <typename T>
-concept audio_arg_output = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<
-    T> || avnd::bus_arg_processor<T>;
+concept audio_arg_output
+    = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<T>
+      || avnd::bus_arg_processor<T>;
 
 template <typename T>
 consteval int total_input_count()

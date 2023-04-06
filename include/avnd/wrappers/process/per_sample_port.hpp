@@ -11,10 +11,9 @@ namespace avnd
  * Mono processors with e.g. struct { float sample; } audio_in;
  */
 template <typename T>
-requires(
-    avnd::mono_per_sample_port_processor<
-        double,
-        T> || avnd::mono_per_sample_port_processor<float, T>)
+  requires(
+      avnd::mono_per_sample_port_processor<double, T>
+      || avnd::mono_per_sample_port_processor<float, T>)
 struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
@@ -115,9 +114,10 @@ struct process_adapter<T>
  * Handles case where inputs / outputs are multiple one-sample ports
  */
 template <typename T>
-requires(
-    poly_per_sample_port_processor<
-        float, T> || poly_per_sample_port_processor<double, T>) struct process_adapter<T>
+  requires(
+      poly_per_sample_port_processor<float, T>
+      || poly_per_sample_port_processor<double, T>)
+struct process_adapter<T>
 {
   void process_sample(T& fx, auto& ins, auto& outs, auto&& tick)
   {

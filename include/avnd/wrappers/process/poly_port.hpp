@@ -8,7 +8,7 @@ namespace avnd
 {
 
 template <typename T>
-requires single_audio_bus_poly_port_processor<T>
+  requires single_audio_bus_poly_port_processor<T>
 struct process_adapter<T> : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_bus_input_introspection<T>;
@@ -104,7 +104,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
 };
 
 template <typename T>
-requires single_audio_input_poly_port_processor<T>
+  requires single_audio_input_poly_port_processor<T>
 struct process_adapter<T> : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_bus_input_introspection<T>;
@@ -147,7 +147,6 @@ struct process_adapter<T> : audio_buffer_storage<T>
       }
 
       invoke_effect(implementation, get_tick_or_frames(implementation, tick));
-
     }
     else
     {
@@ -179,17 +178,15 @@ struct process_adapter<T> : audio_buffer_storage<T>
   }
 };
 
-
 /**
  * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.
  */
 template <typename T>
-requires polyphonic_audio_processor<T> &&(
-    (poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
-    && (!single_audio_bus_poly_port_processor<T>)
-    && (!single_audio_input_poly_port_processor<T>)
-struct process_adapter<T>
-    : audio_buffer_storage<T>
+  requires polyphonic_audio_processor<T>
+           && ((poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
+           && (!single_audio_bus_poly_port_processor<T>)
+           && (!single_audio_input_poly_port_processor<T>)
+struct process_adapter<T> : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_bus_input_introspection<T>;
   using o_info = avnd::audio_bus_output_introspection<T>;

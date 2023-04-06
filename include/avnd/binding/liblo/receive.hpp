@@ -3,43 +3,44 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/export.hpp>
-#include <avnd/introspection/messages.hpp>
-#include <avnd/introspection/port.hpp>
 #include <avnd/introspection/input.hpp>
+#include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/output.hpp>
+#include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-
+#include <cmath>
 #include <lo/lo.h>
 
-#include <cmath>
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 #include <span>
 #include <string>
 
 namespace osc
 {
-using arg_iterator = avnd::generator<std::variant<std::monostate, int, float, bool, std::string_view>>;
+using arg_iterator
+    = avnd::generator<std::variant<std::monostate, int, float, bool, std::string_view>>;
 
 inline arg_iterator make_arg_iterator(std::string_view types, std::span<lo_arg*> args)
 {
   int k = 0;
-  for(lo_arg* arg: args) {
+  for(lo_arg* arg : args)
+  {
     switch(types[k])
     {
       case LO_INT32:
         co_yield arg->i32;
         break;
       case LO_INT64:
-        co_yield (int)arg->i64;
+        co_yield (int) arg->i64;
         break;
       case LO_FLOAT:
         co_yield arg->f32;
         break;
       case LO_DOUBLE:
-        co_yield (float)arg->f64;
+        co_yield (float) arg->f64;
         break;
       case LO_CHAR:
         co_yield arg->c;
@@ -77,26 +78,42 @@ inline arg_iterator make_arg_iterator(std::string_view types, std::span<lo_arg*>
   }
 }
 
-template<typename T>
-inline avnd::generator<T> make_arg_iterator_t(std::string_view types, std::span<lo_arg*> args)
+template <typename T>
+inline avnd::generator<T>
+make_arg_iterator_t(std::string_view types, std::span<lo_arg*> args)
 {
-#define try_yield(element) \
+#define try_yield(element)                                         \
   if constexpr(std::is_constructible_v<T, decltype(arg->element)>) \
-    co_yield arg->element; \
-  else \
+    co_yield arg->element;                                         \
+  else                                                             \
     co_yield T{};
 
   int k = 0;
-  for(lo_arg* arg: args) {
+  for(lo_arg* arg : args)
+  {
     switch(types[k])
     {
-      case LO_INT32: try_yield(i32); break;
-      case LO_INT64: try_yield(i64); break;
-      case LO_FLOAT: try_yield(f32); break;
-      case LO_DOUBLE: try_yield(f64); break;
-      case LO_CHAR: try_yield(c); break;
-      case LO_STRING: try_yield(s); break;
-      case LO_SYMBOL: try_yield(S); break;
+      case LO_INT32:
+        try_yield(i32);
+        break;
+      case LO_INT64:
+        try_yield(i64);
+        break;
+      case LO_FLOAT:
+        try_yield(f32);
+        break;
+      case LO_DOUBLE:
+        try_yield(f64);
+        break;
+      case LO_CHAR:
+        try_yield(c);
+        break;
+      case LO_STRING:
+        try_yield(s);
+        break;
+      case LO_SYMBOL:
+        try_yield(S);
+        break;
       case LO_TRUE:
       case LO_FALSE:
         if constexpr(std::is_constructible_v<T, bool>)
@@ -116,7 +133,6 @@ inline avnd::generator<T> make_arg_iterator_t(std::string_view types, std::span<
     }
 
     k++;
-
   }
 #undef try_yield
 }
@@ -124,19 +140,22 @@ inline avnd::generator<T> make_arg_iterator_t(std::string_view types, std::span<
 template <typename T>
 struct liblo_recv_binding
 {
-  liblo_recv_binding(std::shared_ptr<T> obj, std::string_view port, std::string_view root = "")
-    : object{std::move(obj)}
-    , root{root}
+  liblo_recv_binding(
+      std::shared_ptr<T> obj, std::string_view port, std::string_view root = "")
+      : object{std::move(obj)}
+      , root{root}
   {
-    constexpr auto error_handler = [] (int num, const char *msg, const char *path) {
+    constexpr auto error_handler = [](int num, const char* msg, const char* path) {
       std::cerr << "liblo: error: " << num << " in " << path << ": " << msg << '\n';
     };
 
     osc_server = lo_server_thread_new(port.data(), error_handler);
 
-    constexpr auto message_handler = [] (const char *p , const char *types, lo_arg ** argv,
-        int argc, lo_message data, void *user_data) -> int {
-        return static_cast<liblo_recv_binding*>(user_data)->handler(p, types, std::span<lo_arg*>(argv, argc));
+    constexpr auto message_handler
+        = [](const char* p, const char* types, lo_arg** argv, int argc, lo_message data,
+             void* user_data) -> int {
+      return static_cast<liblo_recv_binding*>(user_data)->handler(
+          p, types, std::span<lo_arg*>(argv, argc));
     };
 
     lo_server_thread_add_method(osc_server, nullptr, nullptr, message_handler, this);
@@ -149,7 +168,7 @@ struct liblo_recv_binding
     lo_server_thread_free(osc_server);
   }
 
-  template<typename C>
+  template <typename C>
   static bool is_path(const C& f, std::string_view path) noexcept
   {
     if constexpr(requires { C::osc_address(); })
@@ -164,8 +183,8 @@ struct liblo_recv_binding
     }
   }
 
-  template<typename V>
-  requires ((avnd::int_ish<V> || avnd::fp_ish<V>) && (!avnd::enum_ish<V>))
+  template <typename V>
+    requires((avnd::int_ish<V> || avnd::fp_ish<V>) && (!avnd::enum_ish<V>))
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     if(types[0] == LO_INT32)
@@ -182,7 +201,7 @@ struct liblo_recv_binding
       avnd::apply_control(field, 0);
   }
 
-  template<avnd::parameter_with_values_range F, avnd::enum_ish V>
+  template <avnd::parameter_with_values_range F, avnd::enum_ish V>
   void apply(F& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     if(types[0] == LO_STRING)
@@ -191,7 +210,8 @@ struct liblo_recv_binding
       avnd::apply_control(field, &args[0]->S);
   }
 
-  void apply(auto& field, std::string& value, std::string_view types, std::span<lo_arg*> args)
+  void
+  apply(auto& field, std::string& value, std::string_view types, std::span<lo_arg*> args)
   {
     if(types[0] == LO_STRING)
       avnd::apply_control(field, &args[0]->s);
@@ -207,11 +227,14 @@ struct liblo_recv_binding
       avnd::apply_control(field, false);
   }
 
-  template<std::size_t N, typename V>
-  void apply(auto& field, std::array<V, N>& value, std::string_view types, std::span<lo_arg*> args)
+  template <std::size_t N, typename V>
+  void apply(
+      auto& field, std::array<V, N>& value, std::string_view types,
+      std::span<lo_arg*> args)
   {
     int i = 0;
-    for(auto& element : make_arg_iterator_t<V>(types, args)) {
+    for(auto& element : make_arg_iterator_t<V>(types, args))
+    {
       if(i >= N)
         return;
 
@@ -219,45 +242,48 @@ struct liblo_recv_binding
     }
   }
 
-  template<avnd::vector_ish V>
+  template <avnd::vector_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     value.clear();
-    for(auto& element : make_arg_iterator_t<typename V::value_type>(types, args)) {
+    for(auto& element : make_arg_iterator_t<typename V::value_type>(types, args))
+    {
       value.push_back(element);
     }
 
     // TODO apply range
   }
 
-  template<avnd::bitset_ish V>
+  template <avnd::bitset_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     // TODO
   }
 
-  template<avnd::set_ish V>
+  template <avnd::set_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     value.clear();
-    for(auto& element : make_arg_iterator_t<typename V::value_type>(types, args)) {
+    for(auto& element : make_arg_iterator_t<typename V::value_type>(types, args))
+    {
       value.insert(element);
     }
 
     // TODO apply range
   }
 
-  template<avnd::map_ish V>
+  template <avnd::map_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     // TODO
   }
 
-  template<avnd::optional_ish V>
+  template <avnd::optional_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     value.reset();
-    for(auto& element : make_arg_iterator_t<typename V::value_type>(types, args)) {
+    for(auto& element : make_arg_iterator_t<typename V::value_type>(types, args))
+    {
       value = element;
       break;
     }
@@ -265,20 +291,20 @@ struct liblo_recv_binding
     // TODO apply range
   }
 
-  template<avnd::tuple_ish V>
+  template <avnd::tuple_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     // TODO
   }
 
-  template<avnd::variant_ish V>
+  template <avnd::variant_ish V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     // TODO
   }
 
   // Generic aggregate case
-  template<typename V>
+  template <typename V>
   void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     // TODO
@@ -290,15 +316,14 @@ struct liblo_recv_binding
       return;
 
     avnd::input_introspection<T>::for_all(
-          avnd::get_inputs(*object),
-          [=] <typename F> (F& field) {
-       if(is_path(field, path))
-       {
-         apply(field, field.value, types, args);
-         return true;
-       }
-       return false;
-    });
+        avnd::get_inputs(*object), [=]<typename F>(F& field) {
+          if(is_path(field, path))
+          {
+            apply(field, field.value, types, args);
+            return true;
+          }
+          return false;
+        });
   }
 
   int handler(std::string_view path, std::string_view types, std::span<lo_arg*> args)

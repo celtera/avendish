@@ -14,20 +14,12 @@ namespace vintage
 {
 
 template <typename T>
-concept can_dispatch = requires(T t)
-{
-  t.dispatch(nullptr, 0, 0, 0, nullptr, 0.f);
-};
+concept can_dispatch = requires(T t) { t.dispatch(nullptr, 0, 0, 0, nullptr, 0.f); };
 
 template <typename T>
-concept can_event = requires(T eff)
-{
-  eff.midi_input(std::declval<const vintage::MidiEvent&>());
-}
-|| requires(T eff)
-{
-  eff.event_input({});
-};
+concept can_event = requires(T eff) {
+                      eff.midi_input(std::declval<const vintage::MidiEvent&>());
+                    } || requires(T eff) { eff.event_input({}); };
 
 template <typename Self_T>
 intptr_t default_dispatch(

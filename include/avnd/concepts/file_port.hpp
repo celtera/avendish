@@ -10,33 +10,24 @@ namespace avnd
 {
 
 template <typename T>
-concept file = requires(T t)
-{
-  t.filename;
-};
+concept file = requires(T t) { t.filename; };
 
 template <typename T>
-concept file_port = requires(T t)
-{
-  {
-    t.file
-  } -> file;
-};
-
+concept file_port = requires(T t) {
+                      {
+                        t.file
+                        } -> file;
+                    };
 
 template <typename T>
-concept raw_file = file<T> && requires(T t)
-{
-  t.bytes;
-};
+concept raw_file = file<T> && requires(T t) { t.bytes; };
 
 template <typename T>
-concept raw_file_port = requires(T t)
-{
-  {
-    t.file
-    } -> raw_file;
-};
+concept raw_file_port = requires(T t) {
+                          {
+                            t.file
+                            } -> raw_file;
+                        };
 
 AVND_DEFINE_TAG(file_watch)
 }

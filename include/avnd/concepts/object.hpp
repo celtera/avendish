@@ -9,9 +9,6 @@ namespace avnd
 {
 
 template <typename T>
-concept can_initialize = requires(T t)
-{
-  &T::initialize;
-};
+concept can_initialize = requires(T t) { &T::initialize; };
 
 }

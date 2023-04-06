@@ -91,10 +91,7 @@ constexpr AVND_INLINE auto structure_to_tpltuple(const T& val) noexcept
 
 // Concepts and helper types
 template <typename T>
-concept recursive_group = requires
-{
-  T::recursive_group;
-};
+concept recursive_group = requires { T::recursive_group; };
 
 template <typename T>
 using is_recursive_group = boost::mp11::mp_bool<recursive_group<T>>;
@@ -162,15 +159,16 @@ constexpr AVND_INLINE decltype(auto) as_tuple(tpl::tuple<Ts...>& t)
 }
 
 template <typename... Ts>
-requires(is_tuple<Ts>::value || ...) constexpr decltype(auto)
-    flatten(tpl::tuple<Ts...> t);
+  requires(is_tuple<Ts>::value || ...)
+constexpr decltype(auto) flatten(tpl::tuple<Ts...> t);
 template <typename... Ts>
-requires(!(is_tuple<Ts>::value || ...)) constexpr decltype(auto)
-    flatten(tpl::tuple<Ts...> t);
+  requires(!(is_tuple<Ts>::value || ...))
+constexpr decltype(auto) flatten(tpl::tuple<Ts...> t);
 
 // Simple case
 template <typename T>
-requires(!is_tuple<std::decay_t<T>>::value) constexpr AVND_INLINE T& flatten(T& t)
+  requires(!is_tuple<std::decay_t<T>>::value)
+constexpr AVND_INLINE T& flatten(T& t)
 {
   return t;
 }
@@ -194,16 +192,16 @@ constexpr AVND_INLINE decltype(auto) flatten(const tpl::tuple<T>& t)
 
 // No more recursion, (sizeof...Ts != 1) with above overload
 template <typename... Ts>
-requires(!(is_tuple<Ts>::value || ...)) constexpr AVND_INLINE decltype(auto)
-    flatten(tpl::tuple<Ts...> t)
+  requires(!(is_tuple<Ts>::value || ...))
+constexpr AVND_INLINE decltype(auto) flatten(tpl::tuple<Ts...> t)
 {
   return t;
 }
 
 // Handle recursion
 template <typename... Ts>
-requires(is_tuple<Ts>::value || ...) constexpr AVND_INLINE decltype(auto)
-    flatten(tpl::tuple<Ts...> t)
+  requires(is_tuple<Ts>::value || ...)
+constexpr AVND_INLINE decltype(auto) flatten(tpl::tuple<Ts...> t)
 {
   return tpl::apply(
       []<typename... TS>(TS&&... ts) {
@@ -230,22 +228,22 @@ constexpr AVND_INLINE auto flatten_tuple(tpl::tuple<Ts...>&& x)
 namespace detail
 {
 template <typename T>
-requires(!flattening::is_tuple<std::decay_t<T>>::value) constexpr AVND_INLINE
-    auto& ref_or_copy(const T& t)
+  requires(!flattening::is_tuple<std::decay_t<T>>::value)
+constexpr AVND_INLINE auto& ref_or_copy(const T& t)
 {
   static_assert(!flattening::is_tuple<std::decay_t<T>>::value);
   return t;
 }
 template <typename T>
-requires(!flattening::is_tuple<std::decay_t<T>>::value) constexpr AVND_INLINE
-    auto& ref_or_copy(T& t)
+  requires(!flattening::is_tuple<std::decay_t<T>>::value)
+constexpr AVND_INLINE auto& ref_or_copy(T& t)
 {
   static_assert(!flattening::is_tuple<std::decay_t<T>>::value);
   return t;
 }
 template <typename T>
-requires(!flattening::is_tuple<std::decay_t<T>>::value) constexpr AVND_INLINE
-    auto& ref_or_copy(T&& t)
+  requires(!flattening::is_tuple<std::decay_t<T>>::value)
+constexpr AVND_INLINE auto& ref_or_copy(T&& t)
 {
   static_assert(!flattening::is_tuple<std::decay_t<T>>::value);
   return t;

@@ -10,12 +10,11 @@ namespace avnd
 {
 
 template <typename T>
-concept soundfile = file<T> && requires(T t)
-{
-  t.data;
-  t.frames;
-  t.channels;
-};
+concept soundfile = file<T> && requires(T t) {
+                                 t.data;
+                                 t.frames;
+                                 t.channels;
+                               };
 
 template <typename T>
 concept soundfile_port = soundfile<std::decay_t<decltype(std::declval<T>().soundfile)>>;

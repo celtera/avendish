@@ -14,8 +14,8 @@ namespace boost::pfr
 {
 
 template <class T, class F>
-requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
-    T&& value, F&& func)
+  requires(!avnd::vector_ish<std::decay_t<T>>)
+constexpr void for_each_field_ref(T&& value, F&& func)
 {
 #if !defined(_MSC_VER)
   static_assert(!requires { value.size(); });
@@ -40,7 +40,7 @@ requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
 }
 
 template <typename T, class F>
-requires avnd::vector_ish<std::decay_t<T>>
+  requires avnd::vector_ish<std::decay_t<T>>
 void for_each_field_ref(T&& value, F&& func)
 {
   for(auto& v : value)
@@ -65,8 +65,8 @@ constexpr void for_nth(int k, auto&& f)
 }
 
 template <class T, class F>
-requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
-    T&& value, F&& func)
+  requires(!avnd::vector_ish<std::decay_t<T>>)
+constexpr void for_each_field_ref(T&& value, F&& func)
 {
 #if !defined(_MSC_VER)
   static_assert(!requires { value.size(); });
@@ -91,7 +91,8 @@ requires(!avnd::vector_ish<std::decay_t<T>>) constexpr void for_each_field_ref(
 }
 
 template <class T, class F>
-requires(!avnd::vector_ish<T>) constexpr void for_each_field_ref_n(T&& value, F&& func)
+  requires(!avnd::vector_ish<T>)
+constexpr void for_each_field_ref_n(T&& value, F&& func)
 {
 #if AVND_USE_BOOST_PFR
   using namespace pfr;

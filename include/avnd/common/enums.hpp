@@ -110,18 +110,13 @@
 
 #define AVND_MATCH_ALL_ENUMS(...) AVND_FOREACH(AVND_ENUM_MATCHER_IMPL, __VA_ARGS__)
 
-#define AVND_ENUM_MATCHER(...)                                                 \
-  [](auto value, auto defaultvalue) constexpr noexcept->decltype(defaultvalue) \
-  {                                                                            \
-    AVND_MATCH_ALL_ENUMS(__VA_ARGS__);                                         \
-    return defaultvalue;                                                       \
+#define AVND_ENUM_MATCHER(...)                                                     \
+  [](auto value, auto defaultvalue) constexpr noexcept -> decltype(defaultvalue) { \
+    AVND_MATCH_ALL_ENUMS(__VA_ARGS__);                                             \
+    return defaultvalue;                                                           \
   };
 
-#define AVND_TAG_MATCHER_IMPL_IMPL(N) \
-  || requires                         \
-  {                                   \
-    TMatcher::N;                      \
-  }
+#define AVND_TAG_MATCHER_IMPL_IMPL(N) || requires { TMatcher::N; }
 
 #define AVND_TAG_MATCHER_IMPL2(id, ...)                                       \
   {                                                                           \
@@ -132,13 +127,12 @@
 #define AVND_TAG_MATCHER_IMPL(...) AVND_TAG_MATCHER_IMPL2 __VA_ARGS__
 
 #define AVND_MATCH_ALL_TAGS(...) AVND_FOREACH(AVND_TAG_MATCHER_IMPL, __VA_ARGS__)
-#define AVND_TAG_MATCHER(...)                                       \
-  []<typename TMatcher>(                                            \
-      TMatcher & container,                                         \
-      auto defaultvalue) constexpr noexcept->decltype(defaultvalue) \
-  {                                                                 \
-    AVND_MATCH_ALL_TAGS(__VA_ARGS__);                               \
-    return defaultvalue;                                            \
+#define AVND_TAG_MATCHER(...)                                           \
+  []<typename TMatcher>(                                                \
+      TMatcher& container,                                              \
+      auto defaultvalue) constexpr noexcept -> decltype(defaultvalue) { \
+    AVND_MATCH_ALL_TAGS(__VA_ARGS__);                                   \
+    return defaultvalue;                                                \
   };
 
 #define AVND_ENUM_OR_TAG_MATCHER(member_name, ...)                   \
@@ -171,16 +165,16 @@
 
 #define AVND_CONVERT_ALL_ENUMS(...) AVND_FOREACH(AVND_ENUM_CONVERTER_IMPL, __VA_ARGS__)
 
-#define AVND_ENUM_CONVERTER(...)                                               \
-  [](auto value, auto defaultvalue) constexpr noexcept->decltype(defaultvalue) \
-  {                                                                            \
-    switch(value)                                                              \
-    {                                                                          \
-      AVND_CONVERT_ALL_ENUMS(__VA_ARGS__);                                     \
-    }                                                                          \
-    return defaultvalue;                                                       \
+#define AVND_ENUM_CONVERTER(...)                                                   \
+  [](auto value, auto defaultvalue) constexpr noexcept -> decltype(defaultvalue) { \
+    switch(value)                                                                  \
+    {                                                                              \
+      AVND_CONVERT_ALL_ENUMS(__VA_ARGS__);                                         \
+    }                                                                              \
+    return defaultvalue;                                                           \
   };
 
 // Sadly no way to do this without a macro...
 #define AVND_DEFINE_TAG(Tag) \
-template<typename T> concept tag_##Tag = requires { T::Tag; } || requires { sizeof(typename T::Tag*); };
+  template <typename T>      \
+  concept tag_##Tag = requires { T::Tag; } || requires { sizeof(typename T::Tag*); };

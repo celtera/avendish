@@ -11,10 +11,10 @@ namespace avnd
  * Handles case where inputs / outputs are e.g. operator()(float** ins, float** outs)
  */
 template <typename T>
-requires polyphonic_audio_processor<T> &&(
-    polyphonic_arg_audio_effect<
-        double, T> || polyphonic_arg_audio_effect<float, T>)struct process_adapter<T>
-    : audio_buffer_storage<T>
+  requires polyphonic_audio_processor<T>
+           && (polyphonic_arg_audio_effect<double, T>
+               || polyphonic_arg_audio_effect<float, T>)
+struct process_adapter<T> : audio_buffer_storage<T>
 {
   template <typename SrcFP, typename DstFP>
   void process_arg(
@@ -48,7 +48,8 @@ requires polyphonic_audio_processor<T> &&(
         out_samples[c] = dsp_buffer_output.data() + c * n;
       }
 
-      implementation.effect(in_samples, out_samples, get_tick_or_frames(implementation, tick));
+      implementation.effect(
+          in_samples, out_samples, get_tick_or_frames(implementation, tick));
 
       // Copy & convert output channels
       for(int c = 0; c < output_channels; ++c)
@@ -59,7 +60,8 @@ requires polyphonic_audio_processor<T> &&(
     else
     {
       // Pass the buffers directly
-      implementation.effect(in.data(), out.data(), get_tick_or_frames(implementation, tick));
+      implementation.effect(
+          in.data(), out.data(), get_tick_or_frames(implementation, tick));
     }
   }
 

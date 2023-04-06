@@ -7,10 +7,7 @@ namespace oscr
 {
 
 template <typename T>
-concept type_wrapper = requires(T t)
-{
-  sizeof(typename T::wrapped_type);
-};
+concept type_wrapper = requires(T t) { sizeof(typename T::wrapped_type); };
 
 template <typename T>
 consteval bool vecf_compatible()

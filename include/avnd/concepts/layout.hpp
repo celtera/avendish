@@ -32,10 +32,7 @@ template <typename T>
 concept group_layout = (T::layout() == decltype(T::layout())::group)
                        || (T::layout == decltype(T::layout)::group);
 template <typename T>
-concept recursive_group_layout = requires
-{
-  sizeof(typename T::group_ui);
-};
+concept recursive_group_layout = requires { sizeof(typename T::group_ui); };
 
 template <typename T>
 concept container_layout = (T::layout() == decltype(T::layout())::container)

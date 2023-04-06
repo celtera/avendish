@@ -4,10 +4,10 @@ namespace oscr
 {
 
 template <typename T>
-requires(!(
-    real_mono_processor<float, T> || real_mono_processor<double, T> || ossia_compatible_audio_processor<T> || ossia_compatible_nonaudio_processor<T>))
-class safe_node<T>
-    : public safe_node_base<T, safe_node<T>>
+  requires(!(
+      real_mono_processor<float, T> || real_mono_processor<double, T>
+      || ossia_compatible_audio_processor<T> || ossia_compatible_nonaudio_processor<T>))
+class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
   [[no_unique_address]] avnd::process_adapter<T> processor;
@@ -174,11 +174,10 @@ public:
     // Run
     this->processor.process(
         this->impl, avnd::span<double*>{const_cast<double**>(audio_ins), init_audio_ins},
-        avnd::span<double*>{audio_outs, init_audio_outs}, tick_info {tk, st, frames});
+        avnd::span<double*>{audio_outs, init_audio_outs}, tick_info{tk, st, frames});
 
     this->finish_run();
   }
 };
-
 
 }

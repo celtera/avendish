@@ -32,9 +32,8 @@ struct midi_output_storage
 };
 
 template <typename T>
-requires(
-    avnd::raw_container_midi_input_introspection<T>::size
-    > 0) struct midi_input_storage<T>
+  requires(avnd::raw_container_midi_input_introspection<T>::size > 0)
+struct midi_input_storage<T>
 {
   using midi_in_messages_tuple
       = filter_and_apply<midi_message_type, raw_container_midi_input_introspection, T>;
@@ -45,9 +44,8 @@ requires(
 };
 
 template <typename T>
-requires(
-    avnd::raw_container_midi_output_introspection<T>::size
-    > 0) struct midi_output_storage<T>
+  requires(avnd::raw_container_midi_output_introspection<T>::size > 0)
+struct midi_output_storage<T>
 {
   using midi_out_messages_tuple
       = filter_and_apply<midi_message_type, raw_container_midi_output_introspection, T>;

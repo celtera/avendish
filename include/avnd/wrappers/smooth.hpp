@@ -7,18 +7,18 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/avnd.hpp>
-#include <boost/mp11.hpp>
 #include <boost/math/constants/constants.hpp>
+#include <boost/mp11.hpp>
 namespace avnd
 {
 // Field: struct { float smoothing_ratio(); T value; }
 // This gives us: { T current_value, T target_value; }
 template <typename Field>
-using smooth_param_value_type
-    = std::remove_reference_t<decltype(Field::value)>;
+using smooth_param_value_type = std::remove_reference_t<decltype(Field::value)>;
 
 template <typename Field>
-struct smooth_param_storage_type {
+struct smooth_param_storage_type
+{
   smooth_param_value_type<Field> current_value;
   smooth_param_value_type<Field> target_value;
   double smooth_rate{}; // exp(-2pi / (0.0001 * smooth * fs))
@@ -27,7 +27,6 @@ struct smooth_param_storage_type {
 template <typename T>
 struct smooth_param_storage
 {
-
 };
 
 template <typename T>
@@ -41,14 +40,12 @@ struct smooth_param_storage<T>
   [[no_unique_address]] tuple smoothed_inputs;
 };
 
-
 /**
  * Used to store buffers for sample-accurate parameters.
  * These associate timestamps with value changes.
  */
 template <typename T>
-struct smooth_storage
-    : smooth_param_storage<T>
+struct smooth_storage : smooth_param_storage<T>
 {
   using smooth_in = smooth_parameter_input_introspection<T>;
 
@@ -70,8 +67,7 @@ struct smooth_storage
   }
 
   template <avnd::smooth_parameter Field, typename Val, std::size_t NField>
-  void update_target(
-      Field& field,  const Val& next, avnd::field_index<NField> idx)
+  void update_target(Field& field, const Val& next, avnd::field_index<NField> idx)
   {
     static constexpr auto npredicate = smooth_in::template unmap<NField>();
     smooth_param_storage_type<Field>& storage = get<npredicate>(this->smoothed_inputs);
@@ -83,11 +79,14 @@ struct smooth_storage
   {
     if constexpr(smooth_in::size > 0)
     {
-      auto process_smooth = [this]<auto Idx, typename M>(M& field, avnd::predicate_index<Idx> idx)
+      auto process_smooth
+          = [this]<auto Idx, typename M>(M & field, avnd::predicate_index<Idx> idx)
       {
         smooth_param_storage_type<M>& storage = get<Idx>(this->smoothed_inputs);
 
-        storage.current_value = storage.target_value - storage.smooth_rate * (storage.target_value - storage.current_value);
+        storage.current_value
+            = storage.target_value
+              - storage.smooth_rate * (storage.target_value - storage.current_value);
         field.value = storage.current_value;
         qDebug() << storage.current_value << storage.target_value;
       };

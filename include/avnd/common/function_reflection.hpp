@@ -276,10 +276,7 @@ using third_argument_t
 template <typename T>
 struct function_reflection_o;
 template <typename T>
-requires requires
-{
-  function_reflection<&T::operator()>{};
-}
+  requires requires { function_reflection<&T::operator()>{}; }
 struct function_reflection_o<T> : function_reflection<&T::operator()>
 {
 };

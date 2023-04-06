@@ -19,10 +19,11 @@ template <typename T>
 struct ebo_array<T, 0>
 {
   constexpr void fill(const auto& val) noexcept { }
-  constexpr T operator[](std::size_t i) const noexcept {
-        std::terminate();
-        return {};
-    }
+  constexpr T operator[](std::size_t i) const noexcept
+  {
+    std::terminate();
+    return {};
+  }
 };
 
 template <typename T, std::size_t N>

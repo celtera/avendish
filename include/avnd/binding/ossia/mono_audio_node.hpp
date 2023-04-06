@@ -102,7 +102,8 @@ public:
         this->impl,
         avnd::span<double*>{
             const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
-        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)}, tick_info {tk, st, frames});
+        avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
+        tick_info{tk, st, frames});
 
     this->finish_run();
   }

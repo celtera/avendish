@@ -20,21 +20,23 @@ namespace avnd
 
 template <typename T>
 concept single_audio_bus_poly_port_processor
-    = polyphonic_audio_processor<T> &&(
-          (poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
+    = polyphonic_audio_processor<T>
+      && ((poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
       && (audio_bus_input_introspection<T>::size == 1
           && audio_bus_output_introspection<T>::size == 1
-          && dynamic_poly_audio_port<typename audio_bus_input_introspection<T>::template nth_element<
-              0>> && dynamic_poly_audio_port<typename audio_bus_output_introspection<T>::template nth_element<0>>);
-
+          && dynamic_poly_audio_port<
+              typename audio_bus_input_introspection<T>::template nth_element<0>>
+          && dynamic_poly_audio_port<
+              typename audio_bus_output_introspection<T>::template nth_element<0>>);
 
 template <typename T>
 concept single_audio_input_poly_port_processor
-    = polyphonic_audio_processor<T> &&(
-          (poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
+    = polyphonic_audio_processor<T>
+      && ((poly_array_port_based<float, T>) || (poly_array_port_based<double, T>))
       && (audio_bus_input_introspection<T>::size == 1
           && audio_bus_output_introspection<T>::size == 0
-          && dynamic_poly_audio_port<typename audio_bus_input_introspection<T>::template nth_element<0>>);
+          && dynamic_poly_audio_port<
+              typename audio_bus_input_introspection<T>::template nth_element<0>>);
 
 template <typename FP, typename T>
 struct needs_storage : std::false_type
@@ -46,15 +48,15 @@ struct needs_storage : std::false_type
 // And our host wants to send float, then we have to allocate a buffer
 // of doubles
 template <typename T>
-requires(avnd::double_processor<T> && !avnd::float_processor<T>) struct needs_storage<
-    float, T> : std::true_type
+  requires(avnd::double_processor<T> && !avnd::float_processor<T>)
+struct needs_storage<float, T> : std::true_type
 {
   using needed_storage_t = double;
 };
 
 template <typename T>
-requires(!avnd::double_processor<T> && avnd::float_processor<T>) struct needs_storage<
-    double, T> : std::true_type
+  requires(!avnd::double_processor<T> && avnd::float_processor<T>)
+struct needs_storage<double, T> : std::true_type
 {
   using needed_storage_t = float;
 };
@@ -67,10 +69,7 @@ using buffer_type = std::conditional_t<
     dummy>;
 
 template <typename T, typename Tick>
-requires requires(Tick t)
-{
-  t.frames();
-}
+  requires requires(Tick t) { t.frames(); }
 auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_data)
 {
   // Nice little C++20 goodie: remove_cvref_t
@@ -114,10 +113,7 @@ inline constexpr auto get_frames(std::integral auto v)
 }
 
 template <typename Tick>
-requires requires(Tick t)
-{
-  t.frames();
-}
+  requires requires(Tick t) { t.frames(); }
 inline constexpr auto get_frames(const Tick& v)
 {
   return v.frames();
@@ -141,10 +137,7 @@ get_tick_or_frames(avnd::effect_container<T>& implementation, std::integral auto
   }
 }
 template <typename T, typename Tick>
-requires requires(Tick t)
-{
-  t.frames();
-}
+  requires requires(Tick t) { t.frames(); }
 inline constexpr auto
 get_tick_or_frames(avnd::effect_container<T>& implementation, const Tick& v)
 {

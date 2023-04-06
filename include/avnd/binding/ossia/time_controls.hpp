@@ -22,9 +22,8 @@ struct time_control_input_storage
 };
 
 template <typename T>
-requires(
-    avnd::time_control_input_introspection<T>::size
-    > 0) struct time_control_input_storage<T>
+  requires(avnd::time_control_input_introspection<T>::size > 0)
+struct time_control_input_storage<T>
 {
   using hdl_tuple = avnd::filter_and_apply<
       time_control_state_type, avnd::time_control_input_introspection, T>;

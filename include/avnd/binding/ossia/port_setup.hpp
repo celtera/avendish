@@ -172,7 +172,7 @@ struct setup_value_port
   template <typename T>
   ossia::domain range_to_domain()
   {
-    if constexpr(avnd::has_range<T> && requires { avnd::get_range<T>().values;})
+    if constexpr(avnd::has_range<T> && requires { avnd::get_range<T>().values; })
     {
       constexpr auto dom = avnd::get_range<T>();
       if constexpr(requires { std::string_view{dom.values[0].first}; })
@@ -201,13 +201,13 @@ struct setup_value_port
   }
 
   template <typename Field>
-  static constexpr void setup_port_is_event(ossia::value_port& port) noexcept {
+  static constexpr void setup_port_is_event(ossia::value_port& port) noexcept
+  {
     if constexpr(requires { bool(Field::event); })
       port.is_event = Field::event;
     else
       port.is_event = true;
   }
-
 
   template <avnd::int_parameter Field>
   void setup(ossia::value_port& port)

@@ -71,8 +71,8 @@ struct oscquery_mapper
   }
 
   template <avnd::parameter Field>
-  requires(!avnd::enum_parameter<Field>) void setup_control(
-      Field& field, ossia::net::parameter_base& param)
+    requires(!avnd::enum_parameter<Field>)
+  void setup_control(Field& field, ossia::net::parameter_base& param)
   {
     param.set_value_type(type_for_arg<decltype(Field::value)>());
 

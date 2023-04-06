@@ -10,25 +10,12 @@ namespace avnd
 {
 /// Widget reflection ///
 template <typename C>
-concept has_widget = requires
-{
-  std::is_enum_v<typename C::widget>;
-};
+concept has_widget = requires { std::is_enum_v<typename C::widget>; };
 
 /// Range reflection ///
 template <typename C>
-concept has_range = requires
-{
-  C::range();
-}
-|| requires
-{
-  sizeof(C::range);
-}
-|| requires
-{
-  sizeof(typename C::range);
-};
+concept has_range = requires { C::range(); } || requires { sizeof(C::range); }
+                    || requires { sizeof(typename C::range); };
 
 template <avnd::has_range T>
 consteval auto get_range()
@@ -143,31 +130,20 @@ consteval auto get_enum_choices()
  * Used to define how UI sliders behave.
  */
 template <typename T>
-concept mapper = requires(T t)
-{
-  // From linear to eased domain
-  {
-    t.map(0.)
-    } -> std::convertible_to<double>;
-  // From eased domain to linear domain
-  {
-    t.unmap(0.)
-    } -> std::convertible_to<double>;
-};
+concept mapper = requires(T t) {
+                   // From linear to eased domain
+                   {
+                     t.map(0.)
+                     } -> std::convertible_to<double>;
+                   // From eased domain to linear domain
+                   {
+                     t.unmap(0.)
+                     } -> std::convertible_to<double>;
+                 };
 
 template <typename C>
-concept has_mapper = requires
-{
-  C::mapper();
-}
-|| requires
-{
-  sizeof(C::mapper);
-}
-|| requires
-{
-  sizeof(typename C::mapper);
-};
+concept has_mapper = requires { C::mapper(); } || requires { sizeof(C::mapper); }
+                     || requires { sizeof(typename C::mapper); };
 
 // Used to define how UI sliders behave.
 template <avnd::has_mapper T>

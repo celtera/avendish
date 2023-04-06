@@ -33,14 +33,14 @@ concept aggregate_argument = std::is_aggregate_v<std::decay_t<T>>;
 namespace detail
 {
 template <class T>
-requires(aggregate_argument<T>&& avnd::has_recursive_groups<T>) constexpr AVND_INLINE
-    auto tie_as_tuple(T& val)
+  requires(aggregate_argument<T> && avnd::has_recursive_groups<T>)
+constexpr AVND_INLINE auto tie_as_tuple(T& val)
 {
   return pfr_recursive::detail::tie_as_tuple(val);
 }
 template <class T>
-requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>) constexpr AVND_INLINE
-    auto tie_as_tuple(T& val)
+  requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>)
+constexpr AVND_INLINE auto tie_as_tuple(T& val)
 {
   return pfr_simple::detail::tie_as_tuple(val);
 }
@@ -50,7 +50,8 @@ requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>) constexpr AVND
 template <typename T>
 struct pfr_impl_helper;
 template <typename T>
-requires(aggregate_argument<T>&& avnd::has_recursive_groups<T>) struct pfr_impl_helper<T>
+  requires(aggregate_argument<T> && avnd::has_recursive_groups<T>)
+struct pfr_impl_helper<T>
 {
   using as_typelist = pfr_recursive::as_typelist<T>;
   using tuple_size = pfr_recursive::tuple_size<T>;
@@ -58,8 +59,8 @@ requires(aggregate_argument<T>&& avnd::has_recursive_groups<T>) struct pfr_impl_
   using tuple_element_t = pfr_recursive::tuple_element_t<N, T>;
 };
 template <typename T>
-requires(
-    aggregate_argument<T> && !avnd::has_recursive_groups<T>) struct pfr_impl_helper<T>
+  requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>)
+struct pfr_impl_helper<T>
 {
   using as_typelist = pfr_simple::as_typelist<T>;
   using tuple_size = pfr_simple::tuple_size<T>;
@@ -73,24 +74,23 @@ template <typename T>
 inline constexpr void* tuple_size_v{};
 
 template <typename T>
-requires(aggregate_argument<std::decay_t<T>>&&
-             avnd::has_recursive_groups<T>) inline constexpr size_t
-    tuple_size_v<T> = pfr_recursive::tuple_size<T>::value;
+  requires(aggregate_argument<std::decay_t<T>> && avnd::has_recursive_groups<T>)
+inline constexpr size_t tuple_size_v<T> = pfr_recursive::tuple_size<T>::value;
 
 template <typename T>
-requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>) inline constexpr size_t
-    tuple_size_v<T> = pfr_simple::tuple_size<T>::value;
+  requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>)
+inline constexpr size_t tuple_size_v<T> = pfr_simple::tuple_size<T>::value;
 
 template <std::size_t N, typename T>
-requires(aggregate_argument<T>&& avnd::has_recursive_groups<T>) constexpr AVND_INLINE
-    auto& get(T&& v)
+  requires(aggregate_argument<T> && avnd::has_recursive_groups<T>)
+constexpr AVND_INLINE auto& get(T&& v)
 {
   return pfr_recursive::get<N>(std::forward<T>(v));
 }
 
 template <std::size_t N, typename T>
-requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>) constexpr AVND_INLINE
-    auto& get(T&& v)
+  requires(aggregate_argument<T> && !avnd::has_recursive_groups<T>)
+constexpr AVND_INLINE auto& get(T&& v)
 {
   return pfr_simple::get<N>(std::forward<T>(v));
 }

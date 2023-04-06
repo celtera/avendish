@@ -66,9 +66,8 @@ struct spectrum_complex_bus_input_storage
 // Field:
 // struct { T* amplitude; T* phase; } spectrum;
 template <typename T>
-requires(
-    avnd::spectrum_split_channel_input_introspection<T>::size
-    > 0) struct spectrum_split_channel_input_storage<T>
+  requires(avnd::spectrum_split_channel_input_introspection<T>::size > 0)
+struct spectrum_split_channel_input_storage<T>
 {
   using sc_in = avnd::spectrum_split_channel_input_introspection<T>;
 
@@ -101,9 +100,8 @@ requires(
 // Field:
 // struct { T** amplitude; T** phase; } spectrum;
 template <typename T>
-requires(
-    avnd::spectrum_split_bus_input_introspection<T>::size
-    > 0) struct spectrum_split_bus_input_storage<T>
+  requires(avnd::spectrum_split_bus_input_introspection<T>::size > 0)
+struct spectrum_split_bus_input_storage<T>
 {
   using sc_in = avnd::spectrum_split_bus_input_introspection<T>;
 
@@ -140,9 +138,8 @@ requires(
 };
 
 template <typename T>
-requires(
-    avnd::spectrum_complex_channel_input_introspection<T>::size
-    > 0) struct spectrum_complex_channel_input_storage<T>
+  requires(avnd::spectrum_complex_channel_input_introspection<T>::size > 0)
+struct spectrum_complex_channel_input_storage<T>
 {
   using sc_in = avnd::spectrum_complex_channel_input_introspection<T>;
 
@@ -174,9 +171,8 @@ requires(
 // Field:
 // struct { T** amplitude; T** phase; } spectrum;
 template <typename T>
-requires(
-    avnd::spectrum_complex_bus_input_introspection<T>::size
-    > 0) struct spectrum_complex_bus_input_storage<T>
+  requires(avnd::spectrum_complex_bus_input_introspection<T>::size > 0)
+struct spectrum_complex_bus_input_storage<T>
 {
   using sc_in = avnd::spectrum_complex_bus_input_introspection<T>;
 

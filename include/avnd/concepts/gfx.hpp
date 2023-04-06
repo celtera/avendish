@@ -9,49 +9,34 @@ namespace avnd
 {
 
 template <typename T>
-concept cpu_texture = requires(T t)
-{
-  t.bytes;
-  t.width;
-  t.height;
-  t.changed;
-  typename T::format;
-};
+concept cpu_texture = requires(T t) {
+                        t.bytes;
+                        t.width;
+                        t.height;
+                        t.changed;
+                        typename T::format;
+                      };
 
 template <typename T>
-concept cpu_texture_port = requires(T t)
-{
-  t.texture;
-}
-&&cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
+concept cpu_texture_port
+    = requires(T t) { t.texture; }
+      && cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
 
 template <typename T>
-concept sampler_port = requires(T t)
-{
-  T::sampler();
-};
+concept sampler_port = requires(T t) { T::sampler(); };
 
 template <typename T>
-concept image_port = requires(T t)
-{
-  T::image();
-};
+concept image_port = requires(T t) { T::image(); };
 
 template <typename T>
-concept attachment_port = requires
-{
-  T::attachment();
-};
+concept attachment_port = requires { T::attachment(); };
 
 template <typename T>
 concept texture_port
     = cpu_texture_port<T> || sampler_port<T> || attachment_port<T> || image_port<T>;
 
 template <typename T>
-concept uniform_port = requires
-{
-  T::uniform();
-};
+concept uniform_port = requires { T::uniform(); };
 
 template <typename T>
 concept static_geometry_type = requires(T t)
@@ -74,14 +59,11 @@ concept dynamic_geometry_type = requires(T t)
 &&(
     requires(T t) { t.vertices; } || requires(T t) { t.indices; });
 template <typename T>
-concept geometry_port =
-       static_geometry_type<T>
-    || dynamic_geometry_type<T>
-    || static_geometry_type<decltype(T::mesh)>
-    || dynamic_geometry_type<decltype(T::mesh)>
-    || static_geometry_type<typename decltype(T::mesh)::value_type>
-    || dynamic_geometry_type<typename decltype(T::mesh)::value_type>
-;
+concept geometry_port = static_geometry_type<T> || dynamic_geometry_type<T>
+                        || static_geometry_type<decltype(T::mesh)>
+                        || dynamic_geometry_type<decltype(T::mesh)>
+                        || static_geometry_type<typename decltype(T::mesh)::value_type>
+                        || dynamic_geometry_type<typename decltype(T::mesh)::value_type>;
 }
 
 /*

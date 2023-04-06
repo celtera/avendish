@@ -12,22 +12,20 @@ namespace avnd
 {
 
 template <typename T>
-concept midi_event = requires(T t)
-{
-  std::begin(t.bytes);
-  std::end(t.bytes);
-  {
-    t.bytes[0] = 0
-    } -> std::convertible_to<unsigned char>;
-};
+concept midi_event = requires(T t) {
+                       std::begin(t.bytes);
+                       std::end(t.bytes);
+                       {
+                         t.bytes[0] = 0
+                         } -> std::convertible_to<unsigned char>;
+                     };
 
 template <typename T>
-concept midifile = file<T> && requires(T t)
-{
-  {
-    t.tracks[0][0]
-    } -> midi_event;
-};
+concept midifile = file<T> && requires(T t) {
+                                {
+                                  t.tracks[0][0]
+                                  } -> midi_event;
+                              };
 
 template <typename T>
 concept midifile_port = midifile<std::decay_t<decltype(std::declval<T>().midifile)>>;

@@ -6,15 +6,9 @@ namespace avnd
 {
 
 template <typename T>
-concept port_can_process = requires(T t)
-{
-  T::process({});
-};
+concept port_can_process = requires(T t) { T::process({}); };
 
 template <typename T>
-concept has_worker = requires(T t)
-{
-  t.worker.request = {};
-};
+concept has_worker = requires(T t) { t.worker.request = {}; };
 
 }

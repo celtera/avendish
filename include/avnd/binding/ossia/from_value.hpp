@@ -43,7 +43,8 @@ struct is_vector_ish : std::false_type
 {
 };
 template <avnd::vector_ish T>
-requires(!avnd::string_ish<T>) struct is_vector_ish<T> : std::true_type
+  requires(!avnd::string_ish<T>)
+struct is_vector_ish<T> : std::true_type
 {
 };
 
@@ -73,7 +74,8 @@ struct predicate_vector : std::false_type
 };
 
 template <template <typename...> typename Pred, typename T>
-requires Pred<typename T::value_type>::value struct predicate_vector<Pred, T>
+  requires Pred<typename T::value_type>::value
+struct predicate_vector<Pred, T>
     : std::integral_constant<bool, Pred<typename T::value_type>::value>
 {
   using value_type = std::conditional_t<
@@ -87,7 +89,8 @@ struct predicate_map : std::false_type
 };
 
 template <template <typename...> typename Pred, typename T>
-requires Pred<typename T::mapped_type>::value struct predicate_map<Pred, T>
+  requires Pred<typename T::mapped_type>::value
+struct predicate_map<Pred, T>
     : std::integral_constant<bool, Pred<typename T::mapped_type>::value>
 {
   using value_type = std::conditional_t<
@@ -99,49 +102,31 @@ template <typename T>
 using is_float = std::is_same<float, T>;
 // FIXME find better ways
 template <typename T>
-using is_vec2f = std::integral_constant < bool,
-      requires(T t)
-{
-  T{0.f, 0.f};
-}
-&&sizeof(T) == 2 * sizeof(float) > ;
+using is_vec2f = std::integral_constant<bool, requires(T t) {
+                                                T{0.f, 0.f};
+                                              } && sizeof(T) == 2 * sizeof(float)>;
 template <typename T>
-using is_vec3f = std::integral_constant < bool,
-      requires(T t)
-{
-  T{0.f, 0.f, 0.f};
-}
-&&sizeof(T) == 3 * sizeof(float) > ;
+using is_vec3f = std::integral_constant<bool, requires(T t) {
+                                                T{0.f, 0.f, 0.f};
+                                              } && sizeof(T) == 3 * sizeof(float)>;
 template <typename T>
-using is_vec4f = std::integral_constant < bool,
-      requires(T t)
-{
-  T{0.f, 0.f, 0.f, 0.f};
-}
-&&sizeof(T) == 4 * sizeof(float) > ;
+using is_vec4f = std::integral_constant<bool, requires(T t) {
+                                                T{0.f, 0.f, 0.f, 0.f};
+                                              } && sizeof(T) == 4 * sizeof(float)>;
 template <typename T>
 using is_vecNf = std::integral_constant<bool, avnd::vector_v_strict<T, float>>;
 template <typename T>
-using is_vec2d = std::integral_constant < bool,
-      requires(T t)
-{
-  T{0., 0.};
-}
-&&sizeof(T) == 2 * sizeof(double) > ;
+using is_vec2d = std::integral_constant<bool, requires(T t) {
+                                                T{0., 0.};
+                                              } && sizeof(T) == 2 * sizeof(double)>;
 template <typename T>
-using is_vec3d = std::integral_constant < bool,
-      requires(T t)
-{
-  T{0., 0., 0.};
-}
-&&sizeof(T) == 3 * sizeof(double) > ;
+using is_vec3d = std::integral_constant<bool, requires(T t) {
+                                                T{0., 0., 0.};
+                                              } && sizeof(T) == 3 * sizeof(double)>;
 template <typename T>
-using is_vec4d = std::integral_constant < bool,
-      requires(T t)
-{
-  T{0., 0., 0., 0.};
-}
-&&sizeof(T) == 4 * sizeof(double) > ;
+using is_vec4d = std::integral_constant<bool, requires(T t) {
+                                                T{0., 0., 0., 0.};
+                                              } && sizeof(T) == 4 * sizeof(double)>;
 template <typename T>
 using is_vecNd = std::integral_constant<bool, avnd::vector_v_strict<T, double>>;
 template <typename T>
@@ -218,61 +203,61 @@ struct is_vector_v_ish<std::string> : std::false_type
 };
 
 template <typename T>
-requires avnd::vector_v_ish<T, float>
+  requires avnd::vector_v_ish<T, float>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = float;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, double>
+  requires avnd::vector_v_ish<T, double>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = double;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, int8_t>
+  requires avnd::vector_v_ish<T, int8_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = int8_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, int16_t>
+  requires avnd::vector_v_ish<T, int16_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = int16_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, int32_t>
+  requires avnd::vector_v_ish<T, int32_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = int32_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, int64_t>
+  requires avnd::vector_v_ish<T, int64_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = int64_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, uint8_t>
+  requires avnd::vector_v_ish<T, uint8_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = uint8_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, uint16_t>
+  requires avnd::vector_v_ish<T, uint16_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = uint16_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, uint32_t>
+  requires avnd::vector_v_ish<T, uint32_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = uint32_t;
 };
 template <typename T>
-requires avnd::vector_v_ish<T, uint64_t>
+  requires avnd::vector_v_ish<T, uint64_t>
 struct is_vector_v_ish<T> : std::true_type
 {
   using value_type = uint64_t;
@@ -348,8 +333,8 @@ struct from_ossia_value_impl
   }
 
   template <typename F>
-  requires std::is_aggregate_v<F>
-  bool operator()(const ossia::value& src, F& dst)
+    requires std::is_aggregate_v<F> bool
+  operator()(const ossia::value& src, F& dst)
   {
     constexpr int sz = boost::pfr::tuple_size_v<F>;
     if constexpr(vecf_compatible<F>())
@@ -384,21 +369,24 @@ struct from_ossia_value_impl
   }
 
   template <typename F>
-  requires(avnd::optional_ish<F>) bool operator()(const ossia::value& src, F& dst)
+    requires(avnd::optional_ish<F>) bool
+  operator()(const ossia::value& src, F& dst)
   {
     dst = F{std::in_place};
     return true;
   }
 
   template <typename F>
-  requires(std::is_integral_v<F>) bool operator()(const ossia::value& src, F& f)
+    requires(std::is_integral_v<F>) bool
+  operator()(const ossia::value& src, F& f)
   {
     f = ossia::convert<int>(src);
     return true;
   }
 
   template <typename F>
-  requires(std::is_floating_point_v<F>) bool operator()(const ossia::value& src, F& f)
+    requires(std::is_floating_point_v<F>) bool
+  operator()(const ossia::value& src, F& f)
   {
     f = ossia::convert<float>(src);
     return true;
@@ -639,8 +627,8 @@ struct from_ossia_value_impl
   }
 
   template <template <typename...> typename T, typename... Args>
-  requires avnd::variant_ish<T<Args...>>
-  bool operator()(const ossia::value& src, T<Args...>& f)
+    requires avnd::variant_ish<T<Args...>> bool
+  operator()(const ossia::value& src, T<Args...>& f)
   {
     using sz = boost::mp11::mp_size<T<Args...>>;
     using namespace boost::mp11;
@@ -800,7 +788,8 @@ struct from_ossia_value_impl
   }
 
   template <avnd::vector_ish T>
-  requires(!avnd::string_ish<T>) bool operator()(const ossia::value& src, T& f)
+    requires(!avnd::string_ish<T>) bool
+  operator()(const ossia::value& src, T& f)
   {
     switch(src.get_type())
     {
@@ -934,16 +923,16 @@ struct from_ossia_value_impl
   template <
       template <typename, std::size_t, typename...> typename T, typename Val,
       std::size_t N>
-  requires avnd::array_ish<T<Val, N>, N> &&(!avnd::string_ish<T<Val, N>>)&&(
-      !avnd::vector_ish<T<Val, N>>)bool
+    requires avnd::array_ish<T<Val, N>, N>
+             && (!avnd::string_ish<T<Val, N>>) && (!avnd::vector_ish<T<Val, N>>)bool
   operator()(const ossia::value& src, T<Val, N>& f)
   {
     return from_array<N>(src, f);
   }
 
   template <template <std::size_t, typename...> typename T, std::size_t N>
-  requires avnd::array_ish<T<N>, N> &&(!avnd::string_ish<T<N>>)&&(
-      !avnd::vector_ish<T<N>>)&&(!avnd::bitset_ish<T<N>>)bool
+    requires avnd::array_ish<T<N>, N> && (!avnd::string_ish<T<N>>)
+             && (!avnd::vector_ish<T<N>>) && (!avnd::bitset_ish<T<N>>)bool
   operator()(const ossia::value& src, T<N>& f)
   {
     return from_array<N>(src, f);
@@ -1212,7 +1201,8 @@ inline bool from_ossia_value(const ossia::value& src, const char*& dst)
   }
 }
 template <avnd::vector_ish T>
-requires(!avnd::string_ish<T>) bool from_ossia_value(const ossia::value& src, T& dst)
+  requires(!avnd::string_ish<T>) bool
+from_ossia_value(const ossia::value& src, T& dst)
 {
   return from_ossia_value_impl{}(src, dst);
 }
@@ -1220,16 +1210,15 @@ requires(!avnd::string_ish<T>) bool from_ossia_value(const ossia::value& src, T&
 template <
     template <typename, std::size_t, typename...> typename T, typename Val,
     std::size_t N>
-requires avnd::array_ish<T<Val, N>, N> &&(
-    !avnd::string_ish<
-        T<Val, N>>)bool from_ossia_value(const ossia::value& src, T<Val, N>& dst)
+  requires avnd::array_ish<T<Val, N>, N> && (!avnd::string_ish<T<Val, N>>)bool
+from_ossia_value(const ossia::value& src, T<Val, N>& dst)
 {
   return from_ossia_value_impl{}(src, dst);
 }
 
 template <template <std::size_t, typename...> typename T, std::size_t N>
-requires avnd::array_ish<T<N>, N> &&(!avnd::string_ish<T<N>>)bool from_ossia_value(
-    const ossia::value& src, T<N>& dst)
+  requires avnd::array_ish<T<N>, N> && (!avnd::string_ish<T<N>>)bool
+from_ossia_value(const ossia::value& src, T<N>& dst)
 {
   return from_ossia_value_impl{}(src, dst);
 }

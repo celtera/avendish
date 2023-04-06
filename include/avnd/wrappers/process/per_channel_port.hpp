@@ -11,11 +11,10 @@ namespace avnd
  * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.
  */
 template <typename T>
-requires(
-    avnd::poly_per_channel_port_processor<
-        double,
-        T> || avnd::poly_per_channel_port_processor<float, T>) struct process_adapter<T>
-    : audio_buffer_storage<T>
+  requires(
+      avnd::poly_per_channel_port_processor<double, T>
+      || avnd::poly_per_channel_port_processor<float, T>)
+struct process_adapter<T> : audio_buffer_storage<T>
 {
   using i_info = avnd::audio_channel_input_introspection<T>;
   using o_info = avnd::audio_channel_output_introspection<T>;

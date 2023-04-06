@@ -106,7 +106,8 @@ struct ubitset
 };
 
 template <typename T>
-requires(is_pod_v<T>) struct optionalize_all<T>
+  requires(is_pod_v<T>)
+struct optionalize_all<T>
 {
   static constexpr std::size_t member_count = avnd::pfr::tuple_size_v<T>;
   T m_storage;

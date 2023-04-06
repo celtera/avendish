@@ -47,7 +47,8 @@ struct Controls
 };
 
 template <typename T>
-requires(avnd::parameter_input_introspection<T>::size > 0) struct Controls<T>
+  requires(avnd::parameter_input_introspection<T>::size > 0)
+struct Controls<T>
 {
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;

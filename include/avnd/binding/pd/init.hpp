@@ -63,12 +63,11 @@ struct init_arguments
 
     // Check if all arguments passed are convertible to the expected
     // type of the method:
-    const bool can_apply_args = [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<Args...>, std::index_sequence<I...>) constexpr
-    {
+    const bool can_apply_args
+        = [&]<typename... Args, std::size_t... I>(
+              boost::mp11::mp_list<Args...>, std::index_sequence<I...>) constexpr {
       return (compatible<Args>(argv[I].a_type) && ...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts>());
 
     if(!can_apply_args)
     {
@@ -140,12 +139,11 @@ struct init_arguments
 
     // Check if all arguments passed are convertible to the expected
     // type of the method (we expect that the first argument is a T&:
-    const bool can_apply_args = [&]<typename... Args, std::size_t... I>(
-        boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>) constexpr
-    {
+    const bool can_apply_args
+        = [&]<typename... Args, std::size_t... I>(
+              boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>) constexpr {
       return (compatible<Args>(argv[I].a_type) && ...);
-    }
-    (arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
+    }(arg_list_t{}, std::make_index_sequence<arg_counts - 1>());
 
     if(!can_apply_args)
     {

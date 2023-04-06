@@ -86,8 +86,8 @@ struct value_writer
   T& self;
 
   template <avnd::parameter Field, std::size_t Idx>
-  requires(!avnd::sample_accurate_parameter<Field>) void
-  operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
+    requires(!avnd::sample_accurate_parameter<Field>)
+  void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     value_to_pd(port, ctrl.value);
   }

@@ -8,14 +8,13 @@
 namespace avnd
 {
 template <typename T>
-concept message_bus = requires(T t, typename T::ui ui, typename T::ui::bus bus)
-{
-  t.send_message({});
-  t.process_message({});
+concept message_bus = requires(T t, typename T::ui ui, typename T::ui::bus bus) {
+                        t.send_message({});
+                        t.process_message({});
 
-  bus.init(ui);
-  bus.process_message(ui, {});
-  bus.send_message({});
-};
+                        bus.init(ui);
+                        bus.process_message(ui, {});
+                        bus.send_message({});
+                      };
 
 }

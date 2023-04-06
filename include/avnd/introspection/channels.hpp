@@ -78,11 +78,10 @@ consteval int count_output_channels_in_busses() noexcept
 template <typename T>
 concept implicit_io_busses = (audio_bus_input_introspection<T>::size > 0
                               || audio_bus_output_introspection<T>::size > 0)
-                             && requires
-{
-  count_input_channels_in_busses<T>();
-  count_output_channels_in_busses<T>();
-};
+                             && requires {
+                                  count_input_channels_in_busses<T>();
+                                  count_output_channels_in_busses<T>();
+                                };
 
 /// Input channels introspection
 template <typename T>
@@ -206,8 +205,8 @@ struct bus_introspection
 
 // float operator()(float in);
 template <typename T>
-requires mono_per_sample_arg_processor<float, T> || mono_per_sample_arg_processor<
-    double, T>
+  requires mono_per_sample_arg_processor<float, T>
+           || mono_per_sample_arg_processor<double, T>
 struct bus_introspection<T>
 {
   static constexpr const auto input_busses = 1;
@@ -216,8 +215,8 @@ struct bus_introspection<T>
 
 // void operator()(float* in, float* out);
 template <typename T>
-requires mono_per_channel_arg_processor<float, T> || mono_per_channel_arg_processor<
-    double, T>
+  requires mono_per_channel_arg_processor<float, T>
+           || mono_per_channel_arg_processor<double, T>
 struct bus_introspection<T>
 {
   static constexpr const auto input_busses = 1;
@@ -226,7 +225,8 @@ struct bus_introspection<T>
 
 // void operator()(float** in, float** out);
 template <typename T>
-requires polyphonic_arg_audio_effect<float, T> || polyphonic_arg_audio_effect<double, T>
+  requires polyphonic_arg_audio_effect<float, T>
+           || polyphonic_arg_audio_effect<double, T>
 struct bus_introspection<T>
 {
   static constexpr const auto input_busses = 1;
@@ -234,10 +234,11 @@ struct bus_introspection<T>
 };
 
 template <typename T>
-requires(sample_input_port_count<float, T> != 0)
-    || (sample_output_port_count<float, T> != 0)
-    || (sample_input_port_count<double, T> != 0)
-    || (sample_output_port_count<double, T> != 0) struct bus_introspection<T>
+  requires(sample_input_port_count<float, T> != 0)
+          || (sample_output_port_count<float, T> != 0)
+          || (sample_input_port_count<double, T> != 0)
+          || (sample_output_port_count<double, T> != 0)
+struct bus_introspection<T>
 {
   // TODO group them as busses instead ?
   static constexpr const auto input_busses
@@ -247,25 +248,27 @@ requires(sample_input_port_count<float, T> != 0)
 };
 
 template <typename T>
-requires(mono_sample_array_input_port_count<float, T> != 0)
-    || (mono_sample_array_output_port_count<float, T> != 0)
-    || (mono_sample_array_input_port_count<double, T> != 0)
-    || (mono_sample_array_output_port_count<double, T> != 0) struct bus_introspection<T>
+  requires(mono_sample_array_input_port_count<float, T> != 0)
+          || (mono_sample_array_output_port_count<float, T> != 0)
+          || (mono_sample_array_input_port_count<double, T> != 0)
+          || (mono_sample_array_output_port_count<double, T> != 0)
+struct bus_introspection<T>
 {
   // TODO group them as busses instead ?
   static constexpr const auto input_busses
-      = mono_sample_array_input_port_count<
-            float, T> + mono_sample_array_input_port_count<double, T>;
+      = mono_sample_array_input_port_count<float, T>
+        + mono_sample_array_input_port_count<double, T>;
   static constexpr const auto output_busses
-      = mono_sample_array_output_port_count<
-            float, T> + mono_sample_array_output_port_count<double, T>;
+      = mono_sample_array_output_port_count<float, T>
+        + mono_sample_array_output_port_count<double, T>;
 };
 
 template <typename T>
-requires(poly_sample_array_input_port_count<float, T> != 0)
-    || (poly_sample_array_output_port_count<float, T> != 0)
-    || (poly_sample_array_input_port_count<double, T> != 0)
-    || (poly_sample_array_output_port_count<double, T> != 0) struct bus_introspection<T>
+  requires(poly_sample_array_input_port_count<float, T> != 0)
+          || (poly_sample_array_output_port_count<float, T> != 0)
+          || (poly_sample_array_input_port_count<double, T> != 0)
+          || (poly_sample_array_output_port_count<double, T> != 0)
+struct bus_introspection<T>
 {
   static constexpr const auto input_busses = audio_bus_input_introspection<T>::size;
   static constexpr const auto output_busses = audio_bus_input_introspection<T>::size;

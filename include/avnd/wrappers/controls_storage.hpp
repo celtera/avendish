@@ -30,9 +30,8 @@ struct linear_timed_param_input_storage
 };
 
 template <typename T>
-requires(
-    linear_timed_parameter_input_introspection<T>::size
-    > 0) struct linear_timed_param_input_storage<T>
+  requires(linear_timed_parameter_input_introspection<T>::size > 0)
+struct linear_timed_param_input_storage<T>
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
@@ -50,9 +49,8 @@ struct span_timed_param_input_storage
 };
 
 template <typename T>
-requires(
-    span_timed_parameter_input_introspection<T>::size
-    > 0) struct span_timed_param_input_storage<T>
+  requires(span_timed_parameter_input_introspection<T>::size > 0)
+struct span_timed_param_input_storage<T>
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
@@ -70,9 +68,8 @@ struct linear_timed_param_output_storage
 };
 
 template <typename T>
-requires(
-    linear_timed_parameter_output_introspection<T>::size
-    > 0) struct linear_timed_param_output_storage<T>
+  requires(linear_timed_parameter_output_introspection<T>::size > 0)
+struct linear_timed_param_output_storage<T>
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<
@@ -90,9 +87,8 @@ struct span_timed_param_output_storage
 };
 
 template <typename T>
-requires(
-    span_timed_parameter_output_introspection<T>::size
-    > 0) struct span_timed_param_output_storage<T>
+  requires(span_timed_parameter_output_introspection<T>::size > 0)
+struct span_timed_param_output_storage<T>
 {
   // std::tuple< std::optional<float>, my_optional<int> >
   using tuple = filter_and_apply<

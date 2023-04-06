@@ -31,14 +31,14 @@ template <typename Field>
 struct soundfile_handle_type;
 
 template <typename Field>
-requires std::is_convertible_v < soundfile_channel_type<Field>,
-const float* > struct soundfile_handle_type<Field> : ossia::audio_handle
+  requires std::is_convertible_v<soundfile_channel_type<Field>, const float*>
+struct soundfile_handle_type<Field> : ossia::audio_handle
 {
 };
 
 template <typename Field>
-requires std::is_convertible_v < soundfile_channel_type<Field>,
-const double* > struct soundfile_handle_type<Field> : audio_data_t<double>
+  requires std::is_convertible_v<soundfile_channel_type<Field>, const double*>
+struct soundfile_handle_type<Field> : audio_data_t<double>
 {
 };
 
@@ -48,8 +48,8 @@ struct soundfile_input_storage
 };
 
 template <typename T>
-requires(
-    avnd::soundfile_input_introspection<T>::size > 0) struct soundfile_input_storage<T>
+  requires(avnd::soundfile_input_introspection<T>::size > 0)
+struct soundfile_input_storage<T>
 {
   // std::tuple< float*, double* >
   using ptr_tuple = avnd::filter_and_apply<
@@ -189,8 +189,8 @@ struct midifile_input_storage
 };
 
 template <typename T>
-requires(
-    avnd::midifile_input_introspection<T>::size > 0) struct midifile_input_storage<T>
+  requires(avnd::midifile_input_introspection<T>::size > 0)
+struct midifile_input_storage<T>
 {
   using hdl_tuple = avnd::filter_and_apply<
       midifile_handle_type, avnd::midifile_input_introspection, T>;
@@ -316,8 +316,8 @@ struct raw_file_input_storage
 };
 
 template <typename T>
-requires(
-    avnd::raw_file_input_introspection<T>::size > 0) struct raw_file_input_storage<T>
+  requires(avnd::raw_file_input_introspection<T>::size > 0)
+struct raw_file_input_storage<T>
 {
   using hdl_tuple = avnd::filter_and_apply<
       raw_file_handle_type, avnd::raw_file_input_introspection, T>;

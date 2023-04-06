@@ -32,9 +32,9 @@ using view_callback_message_type = typename view_callback_function_type<
     std::remove_pointer_t<std::decay_t<decltype(Field{}.call.function)>>>::type;
 
 template <typename T>
-requires(
-    avnd::view_callback_introspection<typename avnd::outputs_type<T>::type>::size
-    > 0) struct callback_storage_views<T>
+  requires(
+      avnd::view_callback_introspection<typename avnd::outputs_type<T>::type>::size > 0)
+struct callback_storage_views<T>
 {
   using tuple = filter_and_apply<
       view_callback_message_type, view_callback_introspection,

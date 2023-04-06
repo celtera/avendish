@@ -118,8 +118,8 @@ struct effect_container
 };
 
 template <typename T>
-requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>) struct
-    effect_container<T>
+  requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>)
+struct effect_container<T>
 {
   using type = T;
   enum
@@ -158,8 +158,8 @@ requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>) st
 };
 
 template <typename T>
-requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) struct
-    effect_container<T>
+  requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>)
+struct effect_container<T>
 {
   using type = T;
   enum
@@ -212,7 +212,8 @@ requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>) str
 };
 
 template <avnd::monophonic_audio_processor T>
-requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>) struct effect_container<T>
+  requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>)
+struct effect_container<T>
 {
   using type = T;
   enum
@@ -256,7 +257,7 @@ requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>) struct effect_contain
 };
 
 template <avnd::monophonic_audio_processor T>
-requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
+  requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
 struct effect_container<T>
 {
   using type = T;
@@ -310,7 +311,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
+  requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
@@ -361,7 +362,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
+  requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
 struct effect_container<T>
 {
   using type = T;
@@ -420,7 +421,8 @@ struct effect_container<T>
   }
 };
 template <avnd::monophonic_audio_processor T>
-requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>) struct effect_container<T>
+  requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>)
+struct effect_container<T>
 {
   using type = T;
   enum

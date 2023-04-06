@@ -10,11 +10,10 @@ namespace avnd
 
 // MIDI messages
 template <typename T>
-concept midi_message = requires(T t)
-{
-  t.bytes;
-  t.timestamp;
-};
+concept midi_message = requires(T t) {
+                         t.bytes;
+                         t.timestamp;
+                       };
 
 template <typename T>
 concept dynamic_midi_message = midi_message<T> && vector_ish<decltype(T::bytes)>;

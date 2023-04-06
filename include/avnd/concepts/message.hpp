@@ -17,66 +17,54 @@ namespace avnd
  * etc..
  */
 template <typename T>
-concept stateless_message = requires
-{
-  typename avnd::function_reflection<T::func()>::return_type;
-};
+concept stateless_message
+    = requires { typename avnd::function_reflection<T::func()>::return_type; };
 
 /***
  * auto func() { return [] { ... }; }
  */
 template <typename T>
-concept stateful_message = requires
-{
-  typename avnd::function_reflection_o<decltype(T::func())>::return_type;
-};
+concept stateful_message
+    = requires {
+        typename avnd::function_reflection_o<decltype(T::func())>::return_type;
+      };
 
 /***
  * std::function<void(...)> func() { return ...; }
  */
 template <typename T>
-concept stdfunc_message = requires
-{
-  typename avnd::function_reflection_t<decltype(T::func())>::return_type;
-};
+concept stdfunc_message
+    = requires {
+        typename avnd::function_reflection_t<decltype(T::func())>::return_type;
+      };
 
 /***
  * void operator()(...) { }
  */
 template <typename T>
-concept function_object_message = requires
-{
-  typename avnd::function_reflection<&T::operator()>::return_type;
-};
+concept function_object_message
+    = requires { typename avnd::function_reflection<&T::operator()>::return_type; };
 
 template <typename Node, typename T>
-concept variadic_function_object_message = requires(T t)
-{
-  t(std::vector<int>{});
-}
-|| requires(Node n, T t)
-{
-  t(n, std::vector<int>{});
-};
+concept variadic_function_object_message
+    = requires(T t) { t(std::vector<int>{}); }
+      || requires(Node n, T t) { t(n, std::vector<int>{}); };
 
 template <typename T>
-concept reflectable_message = stateless_message<T> || stateful_message<
-    T> || stdfunc_message<T> || function_object_message<T>;
+concept reflectable_message = stateless_message<T> || stateful_message<T>
+                              || stdfunc_message<T> || function_object_message<T>;
 
 template <typename T>
-concept message = reflectable_message<T> && requires(T t)
-{
-  {
-    t.name()
-    } -> string_ish;
-};
+concept message = reflectable_message<T> && requires(T t) {
+                                              {
+                                                t.name()
+                                                } -> string_ish;
+                                            };
 
 template <typename T, typename N>
-concept unreflectable_message = (!reflectable_message<T>)&&requires(T t)
-{
-  t.name();
-}
-&&(requires(T t) { t.func(); } || variadic_function_object_message<N, T>);
+concept unreflectable_message
+    = (!reflectable_message<T>) && requires(T t) { t.name(); }
+      && (requires(T t) { t.func(); } || variadic_function_object_message<N, T>);
 
 type_or_value_qualification(messages)
 type_or_value_reflection(messages)

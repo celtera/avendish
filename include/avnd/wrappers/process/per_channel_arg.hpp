@@ -11,10 +11,9 @@ namespace avnd
  * Mono processors with e.g. void operator()(float* in, float* out,...);
  */
 template <typename T>
-requires(
-    avnd::mono_per_channel_arg_processor<
-        double,
-        T> || avnd::mono_per_channel_arg_processor<float, T>)
+  requires(
+      avnd::mono_per_channel_arg_processor<double, T>
+      || avnd::mono_per_channel_arg_processor<float, T>)
 struct process_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
@@ -25,11 +24,9 @@ struct process_adapter<T>
   template <typename FP>
   void process_channel(FP* in, FP* out, T& fx, auto& ins, auto& outs, auto&& tick)
   {
-    if_possible(fx(in, out, tick))
-    else if_possible(fx(in, out, ins, tick))
-    else if_possible(fx(in, out, outs, tick))
-    else if_possible(fx(in, out, ins, outs, tick))
-    else static_assert(std::is_void_v<FP>, "Cannot call processor");
+    if_possible(fx(in, out, tick)) else if_possible(fx(in, out, ins, tick)) else if_possible(fx(in, out, outs, tick)) else if_possible(
+        fx(in, out, ins, outs,
+           tick)) else static_assert(std::is_void_v<FP>, "Cannot call processor");
   }
 
   template <std::floating_point FP>
@@ -50,7 +47,8 @@ struct process_adapter<T>
     {
       auto& [impl, ins, outs] = *effects_it;
 
-      process_channel(in[c], out[c], impl, ins, outs, get_tick_or_frames(implementation, tick));
+      process_channel(
+          in[c], out[c], impl, ins, outs, get_tick_or_frames(implementation, tick));
     }
   }
 };
