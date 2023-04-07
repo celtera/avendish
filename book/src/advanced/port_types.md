@@ -276,7 +276,7 @@ This is mostly equivalent to messages and callbacks, but with a value-based inst
 
 ## Advanced types
 
-### 2D position: xy
+### 2D / 3D position: xy / xyz
 
 > Supported bindings: ossia
 
@@ -312,8 +312,9 @@ struct Foo {
   struct {
     std::vector<float> c; 
     std::string d;
-  };
-  std::array<bool, 4>;
+  } x; 
+  std::array<bool, 4> e;
+  std::map<std::string, int> f; 
 };
 ```
 
@@ -328,5 +329,42 @@ This is so far only supported in ossia, and will not preserve names, but be tran
     (list)[ c0, c1, c2, ... ]
   , (string)"d"
   ]
+, (list)[true, false, false, true]
+, (map){"foo": 123, "bar": 456}
 ]
 ```
+
+It is possible to specify field names in an aggregate manually, in order to have the sub-object be detected as a map and not a list:
+
+
+```cpp
+struct rect { float x{}, y{}, w{}, h{}; };
+
+struct detected_object
+{
+  std::string name;
+  rect geometry;
+  float probability{};
+
+  halp_field_names(name, geometry, probability);
+  // This macro expands to: 
+  // static constexpr auto field_names()
+  // { return std::array<std::string_view, 3>{"name", "geometry", "probability"}; }
+};
+```
+
+This maps to:
+
+```cpp
+(map) {
+   name: "foo"
+ , geometry: (list) [3, 4, 120, 356]
+ , probability: 0.95
+}
+```
+
+# Helper type
+
+To create a port ithout having to declare a struct, you can directly use: 
+
+`halp::val_port<"My port", std::string> my_port;`.
