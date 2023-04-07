@@ -130,8 +130,11 @@ struct process_adapter<T> : audio_buffer_storage<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      const auto& tick)
+      const auto& tick, auto&&... params)
   {
+    // Process the various parameters
+    process_smooth(implementation, params...);
+
     // Note: here we have a redundant check. This is to make sure that we always check the case
     // where we won't have to do a conversion first.
     if constexpr(avnd::monophonic_port_audio_effect<FP, T>)

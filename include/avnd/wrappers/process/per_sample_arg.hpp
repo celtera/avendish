@@ -58,7 +58,7 @@ struct process_adapter<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      const auto& tick)
+      const auto& tick, auto&&... params)
   {
     const int input_channels = in.size();
     const int output_channels = out.size();
@@ -83,6 +83,9 @@ struct process_adapter<T>
       {
         input_buf[c] = in[c][i];
       }
+
+      // Process the various parameters
+      process_smooth(implementation, params...);
 
       // Write the output channels
       // C++20: we're using our coroutine here !

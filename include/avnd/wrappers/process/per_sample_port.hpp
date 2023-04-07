@@ -33,7 +33,8 @@ struct process_adapter<T>
     });
 
     // Execute
-    fx(ins, outs, tick);
+    if_possible(ref.effect(ref.inputs, ref.outputs, tick)) else if_possible(
+        ref.effect(tick));
 
     // Read back the output the input
     FP out;
@@ -51,7 +52,7 @@ struct process_adapter<T>
         ins, [in]<typename Field>(Field& field) { if_possible(field.sample = in); });
 
     // Execute
-    fx(ins, outs);
+    if_possible(ref.effect(ref.inputs, ref.outputs)) else if_possible(ref.effect());
 
     // Read back the output
     FP out;
@@ -63,7 +64,7 @@ struct process_adapter<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      const auto& tick)
+      const auto& tick, auto&&... params)
   {
     const int input_channels = in.size();
     const int output_channels = out.size();
@@ -88,6 +89,9 @@ struct process_adapter<T>
       {
         input_buf[c] = in[c][i];
       }
+
+      // Process the various parameters
+      process_smooth(implementation, params...);
 
       // Write the output channels
       // C++20: we're using our coroutine here !
@@ -155,7 +159,7 @@ struct process_adapter<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      const auto& tick)
+      const auto& tick, auto&&... params)
   {
     auto& fx = implementation.effect;
     auto& ins = implementation.inputs();
@@ -179,6 +183,9 @@ struct process_adapter<T>
           }
         });
       }
+
+      // Process the various parameters
+      process_smooth(implementation, params...);
 
       // Process
       if constexpr(avnd::has_tick<T>)

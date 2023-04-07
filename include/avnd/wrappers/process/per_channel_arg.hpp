@@ -32,8 +32,11 @@ struct process_adapter<T>
   template <std::floating_point FP>
   void process(
       avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
-      const auto& tick)
+      const auto& tick, auto&&... params)
   {
+    // Process the various parameters
+    process_smooth(implementation, params...);
+
     const int input_channels = in.size();
     const int output_channels = out.size();
     assert(input_channels == output_channels);

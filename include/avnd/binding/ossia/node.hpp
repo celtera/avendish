@@ -366,7 +366,16 @@ public:
     this->audio_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
     this->soundfiles.init(this->impl);
-    this->smooth.init(this->impl, sample_rate);
+
+    if constexpr(avnd::sample_arg_processor<T> || avnd::sample_port_processor<T>)
+    {
+      this->smooth.init(this->impl, sample_rate);
+    }
+    else
+    {
+      // FIXME buffer_size can be variable: to be precise, we have to compute the ratio on each frame
+      this->smooth.init(this->impl, sample_rate / buffer_size);
+    }
 
     // constexpr const int total_input_channels = avnd::input_channels<T>(-1);
     // constexpr const int total_output_channels = avnd::output_channels<T>(-1);
@@ -749,13 +758,21 @@ public:
 
   auto make_controls_in_tuple()
   {
-    return avnd::control_input_introspection<T>::filter_tuple(
-        avnd::get_inputs<T>(this->impl), [](auto& field) { return field.value; });
+    // We only care about the inputs of the first one, since they're all the same
+    for(auto& state : this->impl.full_state())
+    {
+      return avnd::control_input_introspection<T>::filter_tuple(
+          state.inputs, [](auto& field) { return field.value; });
+    }
   }
   auto make_controls_out_tuple()
   {
-    return avnd::control_output_introspection<T>::filter_tuple(
-        avnd::get_outputs<T>(this->impl), [](auto& field) { return field.value; });
+    // Note that this does not yet make a lot of sens for polyphonic effects
+    for(auto& state : this->impl.full_state())
+    {
+      return avnd::control_output_introspection<T>::filter_tuple(
+          state.outputs, [](auto& field) { return field.value; });
+    }
   }
 
   void finish_run()

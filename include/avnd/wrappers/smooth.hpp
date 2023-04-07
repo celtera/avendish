@@ -53,7 +53,7 @@ struct smooth_storage : smooth_param_storage<T>
   {
     if constexpr(smooth_in::size > 0)
     {
-      const auto ratio = -2. * avnd::pi / (0.0001f * sample_rate);
+      const auto ratio = -2. * avnd::pi / (1e-3f * sample_rate);
 
       auto init_smooth = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
@@ -88,7 +88,6 @@ struct smooth_storage : smooth_param_storage<T>
             = storage.target_value
               - storage.smooth_rate * (storage.target_value - storage.current_value);
         field.value = storage.current_value;
-        qDebug() << storage.current_value << storage.target_value;
       };
       smooth_in::for_all_n(avnd::get_inputs(t), process_smooth);
     }

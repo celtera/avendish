@@ -174,7 +174,8 @@ public:
     // Run
     this->processor.process(
         this->impl, avnd::span<double*>{const_cast<double**>(audio_ins), init_audio_ins},
-        avnd::span<double*>{audio_outs, init_audio_outs}, tick_info{tk, st, frames});
+        avnd::span<double*>{audio_outs, init_audio_outs}, tick_info{tk, st, frames},
+        this->smooth);
 
     this->finish_run();
   }

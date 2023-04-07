@@ -9,6 +9,7 @@
 #include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_execution.hpp>
+#include <avnd/wrappers/smooth.hpp>
 
 #include <concepts>
 #include <cstdint>
@@ -19,6 +20,35 @@
 
 namespace avnd
 {
+
+template <typename T>
+void process_smooth(avnd::effect_container<T>& implementation)
+{
+}
+template <typename T>
+void process_smooth(avnd::effect_container<T>& implementation, smooth_storage<T>& smooth)
+{
+  smooth.smooth_all(implementation);
+}
+
+template <typename T>
+void process_smooth(avnd::effect_container<T>& implementation, auto& p)
+{
+}
+
+template <typename T>
+void process_smooth(
+    avnd::effect_container<T>& implementation, smooth_storage<T>& smooth,
+    auto&&... params)
+{
+  process_smooth(implementation, smooth);
+}
+
+template <typename T>
+void process_smooth(avnd::effect_container<T>& implementation, auto& p, auto&&... params)
+{
+  process_smooth(implementation, params...);
+}
 
 template <typename Fp>
 struct zero_storage

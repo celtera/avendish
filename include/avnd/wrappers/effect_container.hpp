@@ -398,7 +398,7 @@ struct effect_container<T>
   {
     for(T& e : effect)
     {
-      ref r{e.effect, e.effect.inputs, e.effect.outputs};
+      ref r{e, e.inputs, e.outputs};
       co_yield r;
     }
   }
