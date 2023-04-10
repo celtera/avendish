@@ -35,9 +35,12 @@ knob,
 lineedit,
 choices, enumeration
 combobox, list
-xy,
-color,
-hbargraph, vbargraph, bargraph
+xy, xy_spinbox,
+xyz, xyz_spinbox,
+color, 
+time_chooser,
+hbargraph, vbargraph, bargraph,
+range
 ```
 
 This kind of widget definition is here to enable host DAWs to automatically generate appropriate UIs automatically.

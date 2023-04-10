@@ -59,7 +59,8 @@ public:
     }
   }
 };
-class SmoothGain
+
+class SmoothGainPerSample
 {
 public:
   halp_meta(name, "Smooth Gain")

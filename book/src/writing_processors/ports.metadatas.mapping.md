@@ -51,5 +51,7 @@ struct : halp::hslider_f32<"foobar", halp::range{20., 20000., 100.}> {
 The complete list is provided in `#include <halp/mappers.hpp>`:
 
 ```cpp
+// #include: <halp/mappers.hpp>
+
 {{ #include ../../../include/halp/mappers.hpp }}
 ```
