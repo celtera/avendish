@@ -811,9 +811,12 @@ knob,
 lineedit,
 choices, enumeration
 combobox, list
-xy,
-color,
-hbargraph, vbargraph, bargraph
+xy, xy_spinbox,
+xyz, xyz_spinbox,
+color, 
+time_chooser,
+hbargraph, vbargraph, bargraph,
+range
 </code></pre>
 <p>This kind of widget definition is here to enable host DAWs to automatically generate appropriate UIs automatically.</p>
 <p>A further chapter will present how to create entirely custom painted UIs and widgets.</p>
@@ -859,7 +862,9 @@ how the UI controls shall behave:</p>
 } foobar;
 </code></pre>
 <p>The complete list is provided in <code>#include &lt;halp/mappers.hpp&gt;</code>:</p>
-<pre><code class="language-cpp">#pragma once
+<pre><code class="language-cpp">// #include: &lt;halp/mappers.hpp&gt;
+
+#pragma once
 
 #include &lt;cmath&gt;
 
@@ -901,10 +906,13 @@ struct inverse_mapper
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>It is common to require controls to be smoothed over time, in order to prevent clicks and pops in the sound.</p>
-<p>Avendish allows this, by defining a simple <code>smooth_ratio</code> which specifies over how many milliseconds the control changes must be smoothed.</p>
+<p>Avendish allows this, by defining a simple <code>smoother</code> struct which specifies over how many milliseconds the control changes must be smoothed.</p>
 <pre><code class="language-cpp">struct {
   static consteval auto name() { return &quot;foobar&quot;; }
-  static consteval auto smooth_ratio() { return 100.; }
+
+  struct smoother {
+    float milliseconds = 10.;
+  };
 
   struct range {
     float min = 20.;
@@ -914,6 +922,135 @@ struct inverse_mapper
 
   float value{};
 } foobar;
+</code></pre>
+<p>It is also possible to get precise control over the smoothing ratio, depending on the control update rate (sample rate or buffer rate).</p>
+<h1 id="helpers"><a class="header" href="#helpers">Helpers</a></h1>
+<p>Helper types are provided: </p>
+<pre><code class="language-cpp">// #include: &lt;halp/smoothers.hpp&gt;
+
+#pragma once
+
+#include &lt;cmath&gt;
+
+namespace halp
+{
+static const constexpr double pi = 3.141592653589793238462643383279502884;
+
+// A basic smooth specification
+template &lt;int T&gt;
+struct milliseconds_smooth
+{
+  static constexpr float milliseconds {T};
+
+  // Alternative:
+  // static constexpr std::chrono::milliseconds duration{T};
+};
+
+// Same thing but explicit control over the smoothing
+// ratio
+template &lt;int T&gt;
+struct exp_smooth
+{
+  static constexpr auto ratio(double sample_rate) noexcept
+  {
+    return std::exp(-2. * pi / (T * 1e-3 * sample_rate));
+  }
+};
+
+}
+</code></pre>
+<h1 id="usage-example"><a class="header" href="#usage-example">Usage example</a></h1>
+<p>These examples smooth the gain control parameter, either over a buffer in the first case, or for each sample in the second case.</p>
+<pre><code class="language-cpp">#pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include &lt;halp/audio.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/meta.hpp&gt;
+#include &lt;halp/smoothers.hpp&gt;
+
+#include &lt;vector&gt;
+
+namespace examples::helpers
+{
+/**
+ * Smooth gain
+ */
+class SmoothGainPoly
+{
+public:
+  halp_meta(name, &quot;Smooth Gain&quot;)
+  halp_meta(c_name, &quot;avnd_helpers_smooth_gain&quot;)
+  halp_meta(uuid, &quot;032e1734-f84a-4eb2-9d14-01fc3dea4c14&quot;)
+
+  using setup = halp::setup;
+  using tick = halp::tick;
+
+  struct
+  {
+    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
+    struct : halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    {
+      struct smoother
+      {
+        float milliseconds = 20.;
+      };
+    } gain;
+  } inputs;
+
+  struct
+  {
+    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
+  } outputs;
+
+  void prepare(halp::setup info) { }
+
+  // Do our processing for N samples
+  void operator()(halp::tick t)
+  {
+    // Process the input buffer
+    for(int i = 0; i &lt; inputs.audio.channels; i++)
+    {
+      auto* in = inputs.audio[i];
+      auto* out = outputs.audio[i];
+
+      for(int j = 0; j &lt; t.frames; j++)
+      {
+        out[j] = inputs.gain * in[j];
+      }
+    }
+  }
+};
+
+class SmoothGainPerSample
+{
+public:
+  halp_meta(name, &quot;Smooth Gain&quot;)
+  halp_meta(c_name, &quot;avnd_helpers_smooth_gain&quot;)
+  halp_meta(uuid, &quot;032e1734-f84a-4eb2-9d14-01fc3dea4c14&quot;)
+
+  struct inputs
+  {
+    halp::audio_sample&lt;&quot;Input&quot;, double&gt; audio;
+    struct : halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    {
+      using smoother = halp::milliseconds_smooth&lt;20&gt;;
+    } gain;
+  };
+
+  struct outputs
+  {
+    halp::audio_sample&lt;&quot;Output&quot;, double&gt; audio;
+  };
+
+  // Do our processing for N samples
+  void operator()(const inputs&amp; inputs, outputs&amp; outputs)
+  {
+    outputs.audio.sample = inputs.audio.sample * inputs.gain;
+  }
+};
+}
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="widget-helpers"><a class="header" href="#widget-helpers">Widget helpers</a></h1>
 <blockquote>
@@ -1147,7 +1284,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
   }
 };
 </code></pre>
-<h2 id="helpers"><a class="header" href="#helpers">Helpers</a></h2>
+<h2 id="helpers-1"><a class="header" href="#helpers-1">Helpers</a></h2>
 <p><code>halp</code> provides helper types for these common cases: </p>
 <pre><code class="language-cpp">halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
 halp::audio_channel&lt;&quot;B&quot;, double&gt; audio;
@@ -1806,7 +1943,7 @@ struct
   std::vector&lt;msg&gt; midi_messages;
 } midi_port;
 </code></pre>
-<h2 id="helpers-1"><a class="header" href="#helpers-1">Helpers</a></h2>
+<h2 id="helpers-2"><a class="header" href="#helpers-2">Helpers</a></h2>
 <p>The library provides helper types which are a good compromise between these two solutions, as they are based on <code>boost::container::small_vector</code>: for small numbers of MIDI messages, there will be no memory allocation, but pathological cases (an host sending a thousand MIDI messages in a single tick) can still be handled without loosing messages. </p>
 <p>The type is very simple:</p>
 <pre><code class="language-cpp">halp::midi_bus&lt;&quot;In&quot;&gt; midi;
@@ -1944,7 +2081,7 @@ Any feedback on this is welcome.</p>
 <p>Due to the large cost of uploading a texture, <code>changed</code> is used to indicate both to the plug-in author that input textures have been touched,and for the plug-in author to indicate to the external environment that the output has changed and must be re-uploaded to the GPU.</p>
 <h2 id="gpu-processing"><a class="header" href="#gpu-processing">GPU processing</a></h2>
 <p>Check the <a href="writing_processors/../gpu/draw.html">Writing GPU Processors</a> chapter of this book!</p>
-<h2 id="helpers-2"><a class="header" href="#helpers-2">Helpers</a></h2>
+<h2 id="helpers-3"><a class="header" href="#helpers-3">Helpers</a></h2>
 <p>A few types are provided:</p>
 <ul>
 <li><code>halp::rgba_texture</code></li>
@@ -2964,7 +3101,7 @@ static constexpr auto height() { return 50; }
 <p>The syntax without helpers currently needs some repeating as C++ does not yet allow <code>auto</code> as member fields, otherwise it'd just be:</p>
 <pre><code class="language-cpp">auto int_widget = &amp;ins::foo;
 </code></pre>
-<h1 id="helpers-3"><a class="header" href="#helpers-3">Helpers</a></h1>
+<h1 id="helpers-4"><a class="header" href="#helpers-4">Helpers</a></h1>
 <p>Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API and reduce repetitions:</p>
 <h2 id="widget-helpers-1"><a class="header" href="#widget-helpers-1">Widget helpers</a></h2>
 <pre><code class="language-cpp">halp::label l1{
@@ -3706,7 +3843,7 @@ stays constant for at least the entire duration of a tick.</p>
   std::span&lt;timestamped_value&gt; values;
 </code></pre>
 <p>This is the most efficient storage if you expect to receive few values (and also the most &quot;my device has extremely little RAM&quot;-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
-<h1 id="helpers-4"><a class="header" href="#helpers-4">Helpers</a></h1>
+<h1 id="helpers-5"><a class="header" href="#helpers-5">Helpers</a></h1>
 <p>A single helper is provided for now: <code>halp::accurate&lt;T&gt;</code>.</p>
 <p>It can be used like this to wrap an existing control type to add it a sample-accurate storage buffer:</p>
 <pre><code>halp::accurate&lt;halp::val_port&lt;&quot;Out&quot;, float&gt;&gt; my_port;
