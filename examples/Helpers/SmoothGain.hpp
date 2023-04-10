@@ -28,7 +28,10 @@ public:
     halp::dynamic_audio_bus<"Input", double> audio;
     struct : halp::hslider_f32<"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}>
     {
-      static constexpr float smooth_ratio() { return 10.800; }
+      struct smoother
+      {
+        float milliseconds = 20.;
+      };
     } gain;
   } inputs;
 
@@ -67,7 +70,13 @@ public:
     halp::audio_sample<"Input", double> audio;
     struct : halp::hslider_f32<"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}>
     {
-      static constexpr float smooth_ratio() { return 10.800; }
+      struct smoother
+      {
+        float ratio(float sample_rate) noexcept
+        {
+          return std::exp(-2. * 3.14159 / (20. * 1e-3 * sample_rate));
+        }
+      };
     } gain;
   };
 

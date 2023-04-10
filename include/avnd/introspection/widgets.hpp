@@ -36,6 +36,30 @@ consteval auto get_range(const T&)
   return get_range<T>();
 }
 
+/// smooth reflection ///
+template <typename C>
+concept has_smooth = requires { C::smooth(); } || requires { sizeof(C::smooth); }
+                     || requires { sizeof(typename C::smooth); };
+
+template <avnd::has_smooth T>
+consteval auto get_smooth()
+{
+  if constexpr(requires { sizeof(typename T::smooth); })
+    return typename T::smooth{};
+  else if constexpr(requires { T::smooth(); })
+    return T::smooth();
+  else if constexpr(requires { sizeof(decltype(T::smooth)); })
+    return T::smooth;
+  else
+    return T::there_is_no_smooth_here;
+}
+
+template <typename T>
+consteval auto get_smooth(const T&)
+{
+  return get_smooth<T>();
+}
+
 template <std::size_t N>
 static constexpr std::array<std::string_view, N>
 to_string_view_array(const char* const (&a)[N])

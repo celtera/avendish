@@ -59,8 +59,17 @@ struct smooth_storage : smooth_param_storage<T>
       {
         auto& buf = tpl::get<Idx>(this->smoothed_inputs);
 
-        static_assert(M::smooth_ratio() > 0.);
-        buf.smooth_rate = std::exp(ratio / M::smooth_ratio());
+        constexpr auto smooth = avnd::get_smooth<M>();
+
+        if constexpr(requires { smooth.ratio(0.); })
+        {
+          buf.smooth_rate = smooth.ratio(sample_rate);
+        }
+        else
+        {
+          static_assert(smooth.milliseconds > 0.);
+          buf.smooth_rate = std::exp(ratio / M::smooth_ratio());
+        }
       };
       smooth_in::for_all_n(avnd::get_inputs(t), init_smooth);
     }

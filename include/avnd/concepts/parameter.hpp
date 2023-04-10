@@ -239,7 +239,6 @@ concept dynamic_sample_accurate_parameter
  * Parameters that want to be smoothed (range is needed)
  */
 template <typename T>
-concept smooth_parameter
-    = parameter<T> && has_range<T> && requires(T t) { t.smooth_ratio(); };
+concept smooth_parameter = parameter<T> && has_range<T> && has_smooth<T>;
 
 }
