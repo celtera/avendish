@@ -5,6 +5,7 @@
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
+#include <halp/smoothers.hpp>
 
 #include <vector>
 
@@ -70,13 +71,7 @@ public:
     halp::audio_sample<"Input", double> audio;
     struct : halp::hslider_f32<"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}>
     {
-      struct smoother
-      {
-        float ratio(float sample_rate) noexcept
-        {
-          return std::exp(-2. * 3.14159 / (20. * 1e-3 * sample_rate));
-        }
-      };
+      using smoother = halp::milliseconds_smooth<20>;
     } gain;
   };
 

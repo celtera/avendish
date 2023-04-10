@@ -65,6 +65,11 @@ struct smooth_storage : smooth_param_storage<T>
         {
           buf.smooth_rate = smooth.ratio(sample_rate);
         }
+        else if constexpr(requires { smooth.duration; })
+        {
+          static_assert(smooth.duration > std::chrono::milliseconds(0));
+          buf.smooth_rate = std::exp(ratio / std::chrono::duration_cast<std::chrono::milliseconds>(smooth.duration).count());
+        }
         else
         {
           static_assert(smooth.milliseconds > 0.);
