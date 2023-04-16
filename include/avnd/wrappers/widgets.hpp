@@ -174,6 +174,14 @@ consteval auto get_widget()
       return range_slider_reflection<float>{slider_orientation::horizontal};
     }
   }
+  else if constexpr(requires { T::widget::xyz_spinbox; })
+  {
+    return widget_reflection<float>{widget_type::xyz_spinbox};
+  }
+  else if constexpr(requires { T::widget::xy_spinbox; })
+  {
+    return widget_reflection<float>{widget_type::xy_spinbox};
+  }
   else if constexpr(requires { T::widget::spinbox; })
   {
     if constexpr(requires { T::widget::xyz; })

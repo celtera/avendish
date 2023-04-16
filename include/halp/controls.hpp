@@ -42,7 +42,7 @@ struct val_port
 };
 
 template <static_string lit, typename T>
-requires std::is_trivial_v<T>
+  requires std::is_trivial_v<T>
 struct val_port<lit, T>
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
@@ -553,7 +553,7 @@ struct xy_spinboxes_t
     return std::string_view{lit.value};
   }
 
-  value_type value = {setup.init, setup.init, setup.init};
+  value_type value = {setup.init, setup.init};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
