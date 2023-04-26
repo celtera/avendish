@@ -1,7 +1,6 @@
 #pragma once
 #include <avnd/binding/ossia/from_value.hpp>
 #include <avnd/binding/ossia/geometry.hpp>
-#include <avnd/binding/ossia/ossia_to_curve.hpp>
 #include <avnd/binding/ossia/window_functions.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/fft.hpp>
@@ -308,22 +307,6 @@ struct process_before_run
     self.raw_file_load_request(*str, Idx);
   }
 
-  template <avnd::curve_port Field, std::size_t Idx>
-  void operator()(
-      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
-  {
-    auto& dat = port.data.get_data();
-    if(dat.empty())
-      return;
-
-    auto& back = dat.back();
-    auto segments = back.value.template target<std::vector<ossia::value>>();
-    if(!segments)
-      return;
-
-    convert_to_curve{}(ctrl, *segments);
-  }
-
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void
   operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
@@ -403,12 +386,6 @@ struct process_before_run
       Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     ctrl.midi_messages.clear();
-  }
-
-  template <avnd::curve_port Field, std::size_t Idx>
-  void operator()(
-      Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
-  {
   }
 
   template <typename Field, std::size_t Idx>

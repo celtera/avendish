@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/binding/ossia/value.hpp>
 #include <avnd/common/struct_reflection.hpp>
+#include <avnd/concepts/curve.hpp>
 #include <avnd/concepts/parameter.hpp>
 #include <ossia/network/value/value.hpp>
 
@@ -41,7 +42,7 @@ struct to_ossia_value_impl
   }
 
   template <typename F>
-    requires std::is_aggregate_v<F>
+    requires(std::is_aggregate_v<F> && !avnd::vector_ish<F>)
   void operator()(const F& f)
   {
     constexpr int fields = boost::pfr::tuple_size_v<F>;
@@ -266,6 +267,13 @@ ossia::value to_ossia_value_rec(T&& v)
   return val;
 }
 
+template <avnd::curve T>
+ossia::value to_ossia_value(const T& v)
+{
+  // TODO
+  return {};
+}
+
 template <typename T>
 ossia::value to_ossia_value(const T& v)
 {
@@ -392,7 +400,7 @@ ossia::value to_ossia_value(const avnd::map_ish auto& v)
 }
 
 template <avnd::vector_ish T>
-  requires(!avnd::string_ish<T>)
+  requires(!avnd::string_ish<T> && !avnd::curve<T>)
 ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);

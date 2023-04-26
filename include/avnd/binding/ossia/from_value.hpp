@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/binding/ossia/ossia_to_curve.hpp>
 #include <avnd/binding/ossia/value.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/parameter.hpp>
@@ -1356,6 +1357,16 @@ inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
     // choosen element in the combobox so we just have to unpack it:
     from_ossia_value(src, dst);
   }
+}
+
+template <avnd::curve_port Field, typename Val>
+inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
+{
+  auto segments = src.template target<std::vector<ossia::value>>();
+  if(!segments)
+    return;
+
+  convert_to_curve{}(dst, *segments);
 }
 
 }

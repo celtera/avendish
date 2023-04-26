@@ -35,6 +35,12 @@ struct power_curve : std::vector<power_curve_segment>
         this->begin(), this->end(), position,
         [](float v, const value_type& segt) noexcept { return v < segt.start.x; });
 
+    if(it == this->end())
+    {
+      auto& segment = this->back();
+      return segment.end.y; // FIXME with a pow function?
+    }
+
     if(it != this->begin())
       --it;
 
@@ -83,8 +89,16 @@ struct custom_curve : std::vector<custom_curve_segment>
         this->begin(), this->end(), position,
         [](float v, const value_type& segt) noexcept { return v < segt.start; });
 
+    if(it == this->end())
+    {
+      auto& segment = this->back();
+      return segment.function(segment.end);
+    }
+
     if(it != this->begin())
+    {
       --it;
+    }
 
     auto& segment = *it;
     if(segment.end - segment.start < 1e-8f)
@@ -99,4 +113,27 @@ struct custom_curve : std::vector<custom_curve_segment>
   }
 };
 
+template <static_string lit, typename Curve = halp::custom_curve>
+struct curve_port
+{
+  enum widget
+  {
+    curve
+  };
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  Curve value;
+  operator Curve&() noexcept { return value; }
+  operator const Curve&() const noexcept { return value; }
+  auto& operator=(Curve&& t) noexcept
+  {
+    value = std::move(t);
+    return *this;
+  }
+  auto& operator=(const Curve& t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
 }

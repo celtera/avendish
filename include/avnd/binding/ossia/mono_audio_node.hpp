@@ -109,4 +109,56 @@ public:
   }
 };
 
+template <mono_generator T>
+class safe_node<T> : public safe_node_base<T, safe_node<T>>
+{
+public:
+  [[no_unique_address]] avnd::process_adapter<T> processor;
+
+  using safe_node_base<T, safe_node<T>>::safe_node_base;
+
+  static constexpr bool scan_audio_input_channels() { return false; }
+
+  ossia::audio_outlet& audio_outlet()
+  {
+    if constexpr(requires { this->audio_ports.out; })
+    {
+      return this->audio_ports.out;
+    }
+    else
+    {
+      using audio_outs
+          = avnd::audio_port_introspection<typename avnd::outputs_type<T>::type>;
+      static_assert(audio_outs::size == 1);
+      constexpr int index_of_audio_output = audio_outs::template unmap<0>();
+      return tuplet::get<index_of_audio_output>(this->ossia_outlets.ports);
+    }
+  }
+
+  OSSIA_MAXIMUM_INLINE
+  void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
+  {
+    // FIXME start isn't handled
+    auto [start, frames] = st.timings(tk);
+
+    if(!this->prepare_run(tk, start, frames))
+    {
+      this->finish_run();
+      return;
+    }
+
+    ossia::audio_port& audio_out = *this->audio_outlet();
+    this->set_channels(audio_out, 1);
+
+    // Initialize audio ports
+    double* audio_outs[1] = {audio_out.channel(0).data()};
+
+    // Run
+    this->processor.process(
+        this->impl, avnd::span<double*>{}, avnd::span<double*>{audio_outs, 1},
+        tick_info{tk, st, frames}, this->smooth);
+
+    this->finish_run();
+  }
+};
 }

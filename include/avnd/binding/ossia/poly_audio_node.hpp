@@ -5,7 +5,7 @@ namespace oscr
 
 template <typename T>
   requires(!(
-      real_mono_processor<float, T> || real_mono_processor<double, T>
+      real_good_mono_processor<T> || mono_generator<T>
       || ossia_compatible_audio_processor<T> || ossia_compatible_nonaudio_processor<T>))
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {

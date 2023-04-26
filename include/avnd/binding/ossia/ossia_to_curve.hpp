@@ -24,6 +24,13 @@ struct convert_to_curve
           y = &v;
       }
     }
+    else if(auto arr = point.target<ossia::vec2f>())
+    {
+      T t{};
+      t.x = (*arr)[0];
+      t.y = (*arr)[1];
+      return t;
+    }
     else if(auto arr = point.target<std::vector<ossia::value>>())
     {
       if(arr->size() == 2)
@@ -52,8 +59,7 @@ struct convert_to_curve
 
   void to_map(auto& res, float starty, float endy, const ossia::value& map)
   {
-    auto str = map.target<std::string>();
-    if(str)
+    if(auto str = map.target<std::string>())
       ossia::make_easing(res, *str, starty, endy);
     else if(auto power = map.target<float>())
       res = [starty, endy,
@@ -185,8 +191,8 @@ struct convert_to_curve
     return t;
   }
 
-  template <avnd::curve_port T>
-  void operator()(T& field, const std::vector<ossia::value>& segments)
+  template <avnd::curve T>
+  void operator()(T& curve, const std::vector<ossia::value>& segments)
   {
     // Possibilities:
     // {
@@ -197,9 +203,9 @@ struct convert_to_curve
     //   OR power:  1.3
     //   OR nothing
     // }
-    using curve_type = decltype(field.curve);
+    using curve_type = T;
     using segment_type = typename curve_type::value_type;
-    field.curve.clear();
+    curve.clear();
     for(auto& segment : segments)
     {
       const ossia::value* start{};
@@ -239,14 +245,14 @@ struct convert_to_curve
       }
 
       if(auto s = make_segment<segment_type>(*start, *end, map))
-        field.curve.push_back(std::move(*s));
+        curve.push_back(std::move(*s));
       else
         goto error;
     }
     return;
 
   error:
-    field.curve.clear();
+    curve.clear();
     return;
   }
 };

@@ -909,6 +909,10 @@ concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;
 
 template <typename T>
+concept mono_generator = avnd::monophonic_single_port_generator<float, T>
+                         || avnd::monophonic_single_port_generator<double, T>;
+
+template <typename T>
 concept ossia_compatible_nonaudio_processor
     = !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>);
 
