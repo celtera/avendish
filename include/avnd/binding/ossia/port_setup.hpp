@@ -50,6 +50,11 @@ struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
+template <typename N, avnd::curve_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::value_inlet;
+};
 template <typename N, avnd::message T>
 struct get_ossia_inlet_type<N, T>
 {
@@ -82,6 +87,11 @@ template <typename N, avnd::midi_port T>
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::midi_outlet;
+};
+template <typename N, avnd::curve_port T>
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::value_outlet;
 };
 template <typename N, avnd::texture_port T>
 struct get_ossia_outlet_type<N, T>

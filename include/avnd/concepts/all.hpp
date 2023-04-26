@@ -6,6 +6,7 @@
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/callback.hpp>
 #include <avnd/concepts/channels.hpp>
+#include <avnd/concepts/curve.hpp>
 #include <avnd/concepts/fft.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/gfx.hpp>

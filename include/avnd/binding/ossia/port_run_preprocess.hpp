@@ -1,6 +1,8 @@
 #pragma once
 #include <avnd/binding/ossia/from_value.hpp>
 #include <avnd/binding/ossia/geometry.hpp>
+#include <avnd/binding/ossia/ossia_to_curve.hpp>
+#include <avnd/binding/ossia/window_functions.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/fft.hpp>
 #include <avnd/concepts/soundfile.hpp>
@@ -14,65 +16,11 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/detail/math.hpp>
+#include <ossia/editor/curve/curve_segment/easing.hpp>
 #include <ossia/network/value/format_value.hpp>
 
 namespace oscr
 {
-struct hanning_window
-{
-  template <typename T>
-  void operator()(const T* in, T* out, int size)
-  {
-    const T norm = 0.5 / size;
-    const auto factor = ossia::two_pi / (size - 1);
-    for(int i = 0; i < size; ++i)
-    {
-      out[i] = in[i] * norm * (1. - std::cos(factor * i));
-    }
-  }
-};
-
-struct hamming_window
-{
-  template <typename T>
-  void operator()(const T* in, T* out, int size)
-  {
-    constexpr T a0 = 25. / 46.;
-    constexpr T a1 = 21. / 46.;
-
-    const T norm = 1. / size;
-    const auto factor = ossia::two_pi / (size - 1);
-    for(int i = 0; i < size; ++i)
-    {
-      out[i] = in[i] * norm * (a0 - a1 * std::cos(factor * i));
-    }
-  }
-};
-
-struct apply_window
-{
-  template <typename Field, typename T>
-  void operator()(Field& f, const T* in, T* out, int frames) noexcept
-  {
-    if constexpr(requires { Field::window::hanning; })
-    {
-      hanning_window{}(in, out, frames);
-    }
-    else if constexpr(requires { Field::window::hamming; })
-    {
-      hamming_window{}(in, out, frames);
-    }
-    else
-    {
-      const T mult = 1. / frames;
-      for(int i = 0; i < frames; ++i)
-      {
-        out[i] = mult * in[i];
-      }
-    }
-  }
-};
-
 template <typename Field, std::size_t Idx>
 inline void update_value(
     auto& node, auto& obj, Field& field, const ossia::value& src, auto& dst,
@@ -360,6 +308,22 @@ struct process_before_run
     self.raw_file_load_request(*str, Idx);
   }
 
+  template <avnd::curve_port Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    auto& dat = port.data.get_data();
+    if(dat.empty())
+      return;
+
+    auto& back = dat.back();
+    auto segments = back.value.template target<std::vector<ossia::value>>();
+    if(!segments)
+      return;
+
+    convert_to_curve{}(ctrl, *segments);
+  }
+
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void
   operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
@@ -439,6 +403,12 @@ struct process_before_run
       Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     ctrl.midi_messages.clear();
+  }
+
+  template <avnd::curve_port Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
   }
 
   template <typename Field, std::size_t Idx>

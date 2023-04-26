@@ -83,6 +83,11 @@ struct gpu_image_output_introspection
 };
 
 template <typename T>
+struct curve_output_introspection : curve_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct audio_bus_output_introspection
     : audio_bus_introspection<typename outputs_type<T>::type>
 {
