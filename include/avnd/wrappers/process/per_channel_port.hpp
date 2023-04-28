@@ -31,6 +31,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
       }
       else
       {
+#if AVND_ENABLE_SAFE_BUFFER_STORAGE
         auto& b = this->zero_storage_for(sample_type{});
         if constexpr(Input)
         {
@@ -40,6 +41,9 @@ struct process_adapter<T> : audio_buffer_storage<T>
         {
           bus.channel = b.zeros_out.data();
         }
+#else
+        bus.channel = nullptr;
+#endif
       }
       k++;
       // FIXME for variable channels, we have to set them beforehand !!

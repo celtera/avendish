@@ -40,7 +40,7 @@ namespace std
 template<>
 struct hash <examples::Aggregate>
 {
-   std::size_t operator()(const examples::Aggregate& a)
+   std::size_t operator()(const examples::Aggregate& a) const noexcept
    {
      return a.sub1;
    }

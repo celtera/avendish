@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-
+// #define AVND_ENABLE_SAFE_BUFFER_STORAGE 1
 namespace avnd
 {
 
@@ -90,15 +90,21 @@ struct audio_buffer_storage
   [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_output_f;
   [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_input_d;
   [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_output_d;
+
+#if AVND_ENABLE_SAFE_BUFFER_STORAGE
   [[no_unique_address]] zero_storage<float> m_zero_storage_f;
   [[no_unique_address]] zero_storage<double> m_zero_storage_d;
+#endif
 
   auto& input_buffer_for(float) { return m_dsp_buffer_input_f; }
   auto& input_buffer_for(double) { return m_dsp_buffer_input_d; }
   auto& output_buffer_for(float) { return m_dsp_buffer_output_f; }
   auto& output_buffer_for(double) { return m_dsp_buffer_output_d; }
+
+#if AVND_ENABLE_SAFE_BUFFER_STORAGE
   auto& zero_storage_for(float) { return m_zero_storage_f; }
   auto& zero_storage_for(double) { return m_zero_storage_d; }
+#endif
 
   template <std::floating_point SrcFP>
   void allocate_buffers(process_setup setup, SrcFP f)
@@ -114,6 +120,7 @@ struct audio_buffer_storage
           .resize(setup.frames_per_buffer * setup.output_channels);
     }
 
+#if AVND_ENABLE_SAFE_BUFFER_STORAGE
     // Let's play it safe for the cases where the host does not supply
     // enough buffers
     auto& floats = zero_storage_for(float{});
@@ -139,6 +146,7 @@ struct audio_buffer_storage
       floats.zero_pointers_out[i] = floats.zeros_out.data();
       doubles.zero_pointers_out[i] = doubles.zeros_out.data();
     }
+#endif
   }
 };
 }

@@ -118,6 +118,7 @@ struct SimpleAudioEffect : vintage::Effect
 
     // Setup buffers for eventual float <-> double conversion
     // We always do so for float, as the plug-in API requires the existence of this
+
     processor.allocate_buffers(setup_info, float{});
     if constexpr(avnd::double_processor<T>)
       processor.allocate_buffers(setup_info, double{});
