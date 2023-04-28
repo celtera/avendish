@@ -7,6 +7,7 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/avnd.hpp>
+#include <chrono>
 #include <boost/math/constants/constants.hpp>
 #include <boost/mp11.hpp>
 namespace avnd
