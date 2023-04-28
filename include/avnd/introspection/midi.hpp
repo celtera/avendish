@@ -127,7 +127,7 @@ struct midi_storage
 
   void clear_outputs(avnd::effect_container<T>& t)
   {
-    if constexpr(midi_in_info::size > 0)
+    if constexpr(midi_out_info::size > 0)
     {
       auto clearer = [this](auto&& port) { this->do_clear(port); };
 
