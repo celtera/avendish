@@ -10,7 +10,7 @@
 #include <cstring>
 #include <span>
 
-#if __has_include(<fmt/format.h>)
+#if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
 #include <fmt/format.h>
 #else
 #include <cstdlib>
@@ -58,7 +58,7 @@ bool display_control(const T& value, char* cstr, std::size_t len)
   {
     using val_type = std::decay_t<decltype(value)>;
 
-#if __has_include(<fmt/format.h>)
+#if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
     if constexpr(std::floating_point<val_type>)
     {
       *fmt::format_to_n(cstr, len, "{:.2f}", value).out = '\0';

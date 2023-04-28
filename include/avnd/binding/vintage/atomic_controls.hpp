@@ -8,7 +8,7 @@
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
-#if __has_include(<fmt/format.h>)
+#if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
 #include <fmt/format.h>
 #else
 #include <cstdlib>

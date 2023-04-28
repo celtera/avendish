@@ -35,7 +35,7 @@ struct power_curve : std::vector<power_curve_segment>
         this->begin(), this->end(), position,
         [](float v, const value_type& segt) noexcept { return v < segt.start.x; });
 
-    if(it == this->end())
+    if(position > 1.0f)
     {
       auto& segment = this->back();
       return segment.end.y; // FIXME with a pow function?
@@ -89,7 +89,7 @@ struct custom_curve : std::vector<custom_curve_segment>
         this->begin(), this->end(), position,
         [](float v, const value_type& segt) noexcept { return v < segt.start; });
 
-    if(it == this->end())
+    if(position > 1.0f)
     {
       auto& segment = this->back();
       return segment.function(segment.end);

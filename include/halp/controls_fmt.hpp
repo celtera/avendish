@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/controls.hpp>
-#if __has_include(<fmt/format.h>)
+#if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 

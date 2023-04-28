@@ -4,7 +4,7 @@
 
 #include <avnd/concepts/logger.hpp>
 
-#if __has_include(<fmt/printf.h>)
+#if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #else
