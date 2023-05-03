@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/coroutines.hpp>
+#include <avnd/concepts/generic.hpp>
 
 #include <array>
 #include <string>
@@ -206,7 +207,15 @@ template <typename T>
   {
     return T::version;
   }
-  else
+  else if constexpr(requires {
+                      {
+                        T::version()
+                        } -> avnd::string_ish;
+                    } || requires {
+             {
+               std::declval<T>().version
+               } -> avnd::string_ish;
+           })
   {
     auto str = avnd::get_version<T>();
     if(str.empty())
@@ -219,6 +228,10 @@ template <typename T>
       return 0;
 
     return ret;
+  }
+  else
+  {
+    return 1;
   }
 }
 template <typename T, char Sep>

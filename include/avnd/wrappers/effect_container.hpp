@@ -108,10 +108,9 @@ struct effect_container
     decltype(std::declval<effect_container>().outputs())& outputs;
   };
 
-  member_iterator<ref> full_state()
+  std::array<ref, 1> full_state() noexcept
   {
-    ref r{effect, this->inputs(), this->outputs()};
-    co_yield r;
+    return {ref{effect, this->inputs(), this->outputs()}};
   }
 
   member_iterator<T> effects() { co_yield effect; }
@@ -150,11 +149,7 @@ struct effect_container<T>
     [[no_unique_address]] dummy outputs;
   };
 
-  member_iterator<ref> full_state()
-  {
-    ref r{effect, {}, {}};
-    co_yield r;
-  }
+  std::array<ref, 1> full_state() noexcept { return {ref{effect, {}, {}}}; }
 };
 
 template <typename T>

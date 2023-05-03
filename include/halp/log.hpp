@@ -8,7 +8,7 @@
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #else
-#include <iostream>
+#include <cstdio>
 #endif
 
 namespace halp
@@ -61,12 +61,21 @@ struct basic_logger
 #else
 struct basic_logger
 {
+  static void do_print(int64_t x) { fprintf(stderr, "%ld", x); }
+  static void do_print(double x) { fprintf(stderr, "%f", x); }
+  static void do_print(std::string_view x)
+  {
+    fprintf(stderr, "%.*s", (int)x.size(), x.data());
+  }
+  static void do_print(bool x) { fprintf(stderr, "%s", x ? "true" : "false"); }
+  static void do_print(const auto& other) { fprintf(stderr, "??"); }
+
   using logger_type = basic_logger;
   template <typename... T>
   static void log(T&&... args) noexcept
   {
-    ((std::cout << args), ...);
-    std::cout << std::endl;
+    (do_print(args), ...);
+    fprintf(stderr, "\n");
   }
 
   template <typename... T>
