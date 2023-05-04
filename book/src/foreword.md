@@ -51,7 +51,7 @@ if one wants, the exact same thing can be written without any macro or pre-exist
 struct MyProcessor {
   // Define generic metadata
   halp_meta(name, "Gain");
-  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(author, "Professional DSP Development, Ltd.");
   halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   // Define the inputs of our processor
