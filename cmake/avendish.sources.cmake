@@ -130,7 +130,6 @@ function(avnd_target_setup AVND_FX_TARGET)
     target_compile_options(
         ${AVND_FX_TARGET}
         PUBLIC
-          -fcoroutines-ts
           -stdlib=libc++
           # -flto
           -fno-stack-protector
@@ -148,6 +147,14 @@ function(avnd_target_setup AVND_FX_TARGET)
       #     -fvirtual-function-elimination
       # )
     endif()
+
+    if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS_EQUAL 15.0)
+      target_compile_options(
+        ${AVND_FX_TARGET}
+        PUBLIC
+          -fcoroutines-ts
+      )
+      endif()
   endif()
 
   if(TARGET fmt::fmt)

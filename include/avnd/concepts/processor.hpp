@@ -58,9 +58,7 @@ concept poly_array_port_based
        || poly_sample_array_output_port_count<FP, T> > 0);
 
 template <typename FP, typename T>
-concept effect_is_sane = requires(T t)
-{
-  (sample_port_based<
+concept effect_is_sane = (sample_port_based<
        FP,
        T> && !(mono_array_port_based<FP, T> || poly_array_port_based<FP, T>))
       || (mono_array_port_based<
@@ -72,7 +70,7 @@ concept effect_is_sane = requires(T t)
       || (!sample_port_based<
               FP,
               T> && !poly_array_port_based<FP, T> && !mono_array_port_based<FP, T>);
-};
+;
 
 /// Definition of what is an audio effect ///
 template <typename FP, typename T>

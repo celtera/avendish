@@ -111,7 +111,7 @@ struct callback_storage : callback_storage_views<T>
         // we get "proper" types as arguments to the lambda function which allows
         // us to make it work with unary operator+ which transforms the lambda into a function pointer
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !(defined(__GNUC_MINOR__) && __GNUC__ == 13 && __GNUC_MINOR__ == 1)
         cb.call.function =
             []<template <typename...> typename L, typename... Args>(L<void*, Args...>) {
           // this is what actually goes in cb.call.function:
