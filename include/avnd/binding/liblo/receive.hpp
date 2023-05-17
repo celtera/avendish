@@ -17,6 +17,8 @@
 #include <iostream>
 #include <span>
 #include <string>
+#include <variant>
+#include <memory>
 
 namespace osc
 {
@@ -304,11 +306,13 @@ struct liblo_recv_binding
   }
 
   // Generic aggregate case
-  template <typename V>
-  void apply(auto& field, V& value, std::string_view types, std::span<lo_arg*> args)
+  /*
+  template <typename F, typename V>
+  void apply(F& field, V& value, std::string_view types, std::span<lo_arg*> args)
   {
     // TODO
   }
+*/
 
   void dispatch(std::string_view path, std::string_view types, std::span<lo_arg*> args)
   {

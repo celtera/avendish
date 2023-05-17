@@ -46,6 +46,7 @@ void test0()
 
 void test1()
 {
+#if(!defined(__GNUC__) || __GNUC_MAJOR__ == 13)
   using T = examples::AllPortsTypes;
   auto obj1 = std::make_shared<T>();
   auto server = osc::liblo_recv_binding<T>(obj1, "5677", "/foo");
@@ -64,6 +65,7 @@ void test1()
   // The server applied clamping given the parameter values
 
   lo_address_free(addr);
+#endif
 }
 
 int main()
