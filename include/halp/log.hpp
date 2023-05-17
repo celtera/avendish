@@ -4,6 +4,10 @@
 
 #include <avnd/concepts/logger.hpp>
 
+#include <cinttypes>
+#include <string_view>
+#include <utility>
+
 #if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
 #include <fmt/format.h>
 #include <fmt/printf.h>
@@ -61,7 +65,7 @@ struct basic_logger
 #else
 struct basic_logger
 {
-  static void do_print(int64_t x) { fprintf(stderr, "%ld", x); }
+  static void do_print(int64_t x) { fprintf(stderr, "%" PRId64, x); }
   static void do_print(double x) { fprintf(stderr, "%f", x); }
   static void do_print(std::string_view x)
   {
