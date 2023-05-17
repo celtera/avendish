@@ -73,6 +73,7 @@ static constexpr int closest_value_index(const auto& value)
 template <avnd::parameter_with_values_range T>
 static constexpr auto range_value(int index) -> std::decay_t<decltype(T::value)>
 {
+  using value_type = std::decay_t<decltype(T::value)>;
   constexpr auto range = avnd::get_range<T>();
 
   assert(index >= 0);
@@ -85,6 +86,10 @@ static constexpr auto range_value(int index) -> std::decay_t<decltype(T::value)>
   else if constexpr(requires(T ctl) { ctl.value = range.values[0]; })
   {
     return range.values[index];
+  }
+  else if constexpr(std::is_enum_v<value_type>)
+  {
+    return static_cast<value_type>(index);
   }
   else
   {
