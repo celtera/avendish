@@ -276,7 +276,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     int k = 0;
     o_info::for_all(ports, [&](auto& bus) {
       const int channels = avnd::get_channels(bus);
-      if(k + channels <= buffers.size())
+      if(k + channels <= buffers.size() && bus.samples)
       {
         for(int c = 0; c < channels; c++)
           std::copy_n(bus.samples[c], n, buffers[k + c]);
