@@ -222,6 +222,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
   {
     bool done = false;
     int k = 0;
+    int port_k = 0;
+    constexpr int port_n = Info::size;
     Info::for_all(ports, [&]<typename Port>(Port& bus) {
       // If we consumed all the available input channels we
       // set the remainder to null
@@ -231,34 +233,40 @@ struct process_adapter<T> : audio_buffer_storage<T>
         return;
       }
 
-      using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
+      const auto copy_dynamic = [&] {
+          const int channels = avnd::get_channels(bus);
+
+          if(k + channels <= buffers.size())
+          {
+              auto buffer = buffers.data() + k;
+              bus.samples = const_cast<decltype(bus.samples)>(buffer);
+          }
+          else
+          {
+              assign_zero_storage<Input>(bus);
+              done = true;
+          }
+          k += channels;
+          port_k++;
+          // FIXME for variable channels, we have to set them beforehand !!
+      };
+
       if constexpr(avnd::dynamic_poly_audio_port<Port>)
       {
-        // If we encounter a dynamically assignable bus, we assign
-        // all the remaining channels to it
-        auto buffer = buffers.data() + k;
-        bus.samples = const_cast<decltype(bus.samples)>(buffer);
-        bus.channels = buffers.size() - k;
-        k = buffers.size();
-        done = true;
-      }
-      else
-      {
-        const int channels = avnd::get_channels(bus);
-
-        if(k + channels <= buffers.size())
+        if(port_k == port_n - 1)
         {
+          // If we encounter a dynamically assignable bus, we assign
+          // all the remaining channels to it
           auto buffer = buffers.data() + k;
           bus.samples = const_cast<decltype(bus.samples)>(buffer);
-        }
-        else
-        {
-          assign_zero_storage<Input>(bus);
+          bus.channels = buffers.size() - k;
+          k = buffers.size();
           done = true;
+          return;
         }
-        k += channels;
-        // FIXME for variable channels, we have to set them beforehand !!
       }
+
+      copy_dynamic();
     });
   }
 
@@ -267,7 +275,6 @@ struct process_adapter<T> : audio_buffer_storage<T>
   {
     int k = 0;
     o_info::for_all(ports, [&](auto& bus) {
-      using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
       const int channels = avnd::get_channels(bus);
       if(k + channels <= buffers.size())
       {
