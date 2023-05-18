@@ -194,39 +194,70 @@ struct process_adapter<T> : audio_buffer_storage<T>
   using i_info = avnd::audio_bus_input_introspection<T>;
   using o_info = avnd::audio_bus_output_introspection<T>;
 
+  template<bool Input>
+  void assign_zero_storage(auto& bus)
+  {
+#if AVND_ENABLE_SAFE_BUFFER_STORAGE
+    using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
+    auto& b = this->zero_storage_for(sample_type{});
+    if constexpr(Input)
+    {
+      auto buffer = b.zero_pointers_in.data();
+      bus.samples = const_cast<decltype(bus.samples)>(buffer);
+    }
+    else
+    {
+      auto buffer = b.zero_pointers_out.data();
+      bus.samples = const_cast<decltype(bus.samples)>(buffer);
+    }
+#else
+    bus.samples = nullptr;
+#endif
+
+    if_possible(bus.channels = 0);
+  }
   template <typename Info, bool Input, typename Ports>
   void initialize_busses(Ports& ports, auto buffers)
   {
+    bool done = false;
     int k = 0;
     Info::for_all(ports, [&](auto& bus) {
-      using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
-      const int channels = avnd::get_channels(bus);
-
-      if(k + channels <= buffers.size())
+      // If we consumed all the available input channels we
+      // set the remainder to null
+      if(done)
       {
+        assign_zero_storage<Input>(bus);
+        return;
+      }
+
+      using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
+      if constexpr(requires { bus.channels = 0; })
+      {
+        // If we encounter a dynamically assignable bus, we assign
+        // all the remaining channels to it
         auto buffer = buffers.data() + k;
         bus.samples = const_cast<decltype(bus.samples)>(buffer);
+        bus.channels = buffers.size() - k;
+        k = buffers.size();
+        done = true;
       }
       else
       {
-#if AVND_ENABLE_SAFE_BUFFER_STORAGE
-        auto& b = this->zero_storage_for(sample_type{});
-        if constexpr(Input)
+        const int channels = avnd::get_channels(bus);
+
+        if(k + channels <= buffers.size())
         {
-          auto buffer = b.zero_pointers_in.data();
+          auto buffer = buffers.data() + k;
           bus.samples = const_cast<decltype(bus.samples)>(buffer);
         }
         else
         {
-          auto buffer = b.zero_pointers_out.data();
-          bus.samples = const_cast<decltype(bus.samples)>(buffer);
+          assign_zero_storage<Input>(bus);
+          done = true;
         }
-#else
-        bus.samples = nullptr;
-#endif
+        k += channels;
+        // FIXME for variable channels, we have to set them beforehand !!
       }
-      k += channels;
-      // FIXME for variable channels, we have to set them beforehand !!
     });
   }
 
