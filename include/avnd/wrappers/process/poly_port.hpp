@@ -216,12 +216,13 @@ struct process_adapter<T> : audio_buffer_storage<T>
 
     if_possible(bus.channels = 0);
   }
+
   template <typename Info, bool Input, typename Ports>
   void initialize_busses(Ports& ports, auto buffers)
   {
     bool done = false;
     int k = 0;
-    Info::for_all(ports, [&](auto& bus) {
+    Info::for_all(ports, [&]<typename Port>(Port& bus) {
       // If we consumed all the available input channels we
       // set the remainder to null
       if(done)
@@ -231,7 +232,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
       }
 
       using sample_type = std::decay_t<decltype(bus.samples[0][0])>;
-      if constexpr(requires { bus.channels = 0; })
+      if constexpr(avnd::dynamic_poly_audio_port<Port>)
       {
         // If we encounter a dynamically assignable bus, we assign
         // all the remaining channels to it
