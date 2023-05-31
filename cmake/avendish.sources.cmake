@@ -1,7 +1,6 @@
 add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
-target_compile_definitions(Avendish PUBLIC -DFMT_HEADER_ONLY=1)
 
 if(MSVC)
   target_compile_options(Avendish PUBLIC /std:c++latest)
@@ -102,6 +101,7 @@ if(AVENDISH_INCLUDE_SOURCE_ONLY)
 endif()
 
 function(avnd_target_setup AVND_FX_TARGET)
+  target_compile_definitions(${AVND_FX_TARGET} PUBLIC -DFMT_HEADER_ONLY=1)
   target_compile_features(
       ${AVND_FX_TARGET}
       PUBLIC

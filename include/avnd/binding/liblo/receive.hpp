@@ -320,7 +320,7 @@ struct liblo_recv_binding
       return;
 
     avnd::input_introspection<T>::for_all(
-        avnd::get_inputs(*object), [=]<typename F>(F& field) {
+        avnd::get_inputs(*object), [this, path, types, args]<typename F>(F& field) {
           if(is_path(field, path))
           {
             apply(field, field.value, types, args);

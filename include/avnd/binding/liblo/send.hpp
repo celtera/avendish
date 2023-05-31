@@ -106,13 +106,13 @@ public:
   template <avnd::tuple_ish V>
   void add(V& c, lo_message msg)
   {
-    std::apply([=](auto&&... args) { (add(args, msg), ...); }, c);
+    std::apply([this, msg](auto&&... args) { (add(args, msg), ...); }, c);
   }
 
   template <avnd::variant_ish V>
   void add(V& c, lo_message msg)
   {
-    visit([=](auto& arg) { add(arg, msg); }, c);
+    visit([this, msg](auto& arg) { add(arg, msg); }, c);
   }
 
   template <typename V>

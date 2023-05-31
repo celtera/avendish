@@ -3,6 +3,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/concepts_polyfill.hpp>
+#include <avnd/introspection/range.hpp>
+#include <avnd/introspection/widgets.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 #include <cmath>
 

@@ -2,63 +2,18 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/introspection/mapper.hpp>
+#include <avnd/introspection/range.hpp>
+#include <avnd/introspection/smooth.hpp>
+
 #include <array>
 #include <string_view>
 #include <type_traits>
 
 namespace avnd
 {
-/// Widget reflection ///
-template <typename C>
-concept has_widget = requires { std::is_enum_v<typename C::widget>; };
 
-/// Range reflection ///
-template <typename C>
-concept has_range = requires { C::range(); } || requires { sizeof(C::range); }
-                    || requires { sizeof(typename C::range); };
-
-template <avnd::has_range T>
-consteval auto get_range()
-{
-  if constexpr(requires { sizeof(typename T::range); })
-    return typename T::range{};
-  else if constexpr(requires { T::range(); })
-    return T::range();
-  else if constexpr(requires { sizeof(decltype(T::range)); })
-    return T::range;
-  else
-    return T::there_is_no_range_here;
-}
-
-template <typename T>
-consteval auto get_range(const T&)
-{
-  return get_range<T>();
-}
-
-/// smooth reflection ///
-template <typename C>
-concept has_smooth = requires { C::smooth(); } || requires { sizeof(C::smooth); }
-                     || requires { sizeof(typename C::smooth); };
-
-template <avnd::has_smooth T>
-consteval auto get_smooth()
-{
-  if constexpr(requires { sizeof(typename T::smooth); })
-    return typename T::smooth{};
-  else if constexpr(requires { T::smooth(); })
-    return T::smooth();
-  else if constexpr(requires { sizeof(decltype(T::smooth)); })
-    return T::smooth;
-  else
-    return T::there_is_no_smooth_here;
-}
-
-template <typename T>
-consteval auto get_smooth(const T&)
-{
-  return get_smooth<T>();
-}
+// Utilities for mapping enums
 
 template <std::size_t N>
 static constexpr std::array<std::string_view, N>
@@ -148,52 +103,4 @@ consteval auto get_enum_choices()
     return std::array<std::string_view, 0>{};
   }
 }
-
-/// Mapper reflection ////
-/**
- * Used to define how UI sliders behave.
- */
-template <typename T>
-concept mapper = requires(T t) {
-                   // From linear to eased domain
-                   {
-                     t.map(0.)
-                     } -> std::convertible_to<double>;
-                   // From eased domain to linear domain
-                   {
-                     t.unmap(0.)
-                     } -> std::convertible_to<double>;
-                 };
-
-template <typename C>
-concept has_mapper = requires { C::mapper(); } || requires { sizeof(C::mapper); }
-                     || requires { sizeof(typename C::mapper); };
-
-// Used to define how UI sliders behave.
-template <avnd::has_mapper T>
-consteval auto get_mapper()
-{
-  if constexpr(requires { sizeof(typename T::mapper); })
-  {
-    static_assert(mapper<typename T::mapper>);
-    return typename T::mapper{};
-  }
-  else if constexpr(requires { T::mapper(); })
-  {
-    static_assert(mapper<std::decay_t<decltype(T::mapper())>>);
-    return T::mapper();
-  }
-  else if constexpr(requires { sizeof(decltype(T::mapper)); })
-  {
-    static_assert(mapper<std::decay_t<decltype(T::mapper)>>);
-    return T::mapper;
-  }
-}
-
-template <typename T>
-consteval auto get_mapper(const T&)
-{
-  return get_mapper<T>();
-}
-
 }

@@ -4,7 +4,10 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/concepts/generic.hpp>
-#include <avnd/wrappers/widgets.hpp>
+#include <avnd/concepts/mapper.hpp>
+#include <avnd/concepts/range.hpp>
+#include <avnd/concepts/smooth.hpp>
+#include <avnd/concepts/widget.hpp>
 
 #include <string>
 
@@ -17,6 +20,16 @@ namespace avnd
  *   float value;
  * };
  */
+
+#define AVND_REQUIREMENT_ON_MEMBER(Field, Member, Requirement) \
+  (                                                            \
+      requires { Field::Member().Requirement; }                \
+      || requires { (typename Field::Member){}.Requirement; }  \
+      || requires { Field::Member.Requirement; })
+#define AVND_CONCEPT_CHECK_ON_MEMBER(Concept, Field, Member, Requirement) \
+  (Concept<decltype(Field::Member().Requirement)>                         \
+   || Concept<decltype(Field::Member.Requirement)>                        \
+   || Concept<decltype((typename Field::Member){}.Requirement)>)
 
 // Concepts related to inputs / outputs
 template <typename T>
@@ -35,7 +48,7 @@ concept enum_parameter = std::is_enum_v<std::decay_t<decltype(T::value)>>;
 template <typename Field>
 concept enum_ish_parameter
     = avnd::enum_parameter<Field>
-      || (avnd::has_range<Field> && requires { avnd::get_range<Field>().values[0]; });
+      || (avnd::has_range<Field> && AVND_REQUIREMENT_ON_MEMBER(Field, range, values[0]));
 
 template <typename T>
 concept float_parameter = requires(T t) {
@@ -76,17 +89,18 @@ template <typename T>
 concept rgb_parameter = rgb_value<decltype(T::value)>;
 
 template <typename C>
-concept parameter_with_minmax_range = requires {
-                                        avnd::get_range<C>().min;
-                                        avnd::get_range<C>().max;
-                                        avnd::get_range<C>().init;
-                                      };
+concept parameter_with_minmax_range = AVND_REQUIREMENT_ON_MEMBER(C, range, min)
+                                      && AVND_REQUIREMENT_ON_MEMBER(C, range, max)
+                                      && AVND_REQUIREMENT_ON_MEMBER(C, range, init);
+
+template <typename C>
+concept integer_or_enum
+    = std::integral<std::decay_t<C>> || std::is_enum_v<std::decay_t<C>>;
 
 template <typename C>
 concept parameter_with_values_range
-    = requires { avnd::get_range<C>().values[0]; }
-      && (std::integral<std::decay_t<decltype(avnd::get_range<C>().init)>>
-          || std::is_enum_v<std::decay_t<decltype(avnd::get_range<C>().init)>>);
+    = AVND_REQUIREMENT_ON_MEMBER(C, range, values[0])
+      && AVND_CONCEPT_CHECK_ON_MEMBER(integer_or_enum, C, range, init);
 
 // Used for defining process which take programs in some lang as input
 template <typename T>
