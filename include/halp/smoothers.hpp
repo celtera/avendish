@@ -10,7 +10,7 @@ static const constexpr double pi = 3.141592653589793238462643383279502884;
 template <int T>
 struct milliseconds_smooth
 {
-  static constexpr float milliseconds {T};
+  static constexpr float milliseconds{T};
 
   // Alternative:
   // static constexpr std::chrono::milliseconds duration{T};

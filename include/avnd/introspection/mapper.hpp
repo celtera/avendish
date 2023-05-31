@@ -11,27 +11,27 @@ namespace avnd
 template <avnd::has_mapper T>
 consteval auto get_mapper()
 {
-    if constexpr(requires { sizeof(typename T::mapper); })
-    {
-        static_assert(mapper<typename T::mapper>);
-        return typename T::mapper{};
-    }
-    else if constexpr(requires { T::mapper(); })
-    {
-        static_assert(mapper<std::decay_t<decltype(T::mapper())>>);
-        return T::mapper();
-    }
-    else if constexpr(requires { sizeof(decltype(T::mapper)); })
-    {
-        static_assert(mapper<std::decay_t<decltype(T::mapper)>>);
-        return T::mapper;
-    }
+  if constexpr(requires { sizeof(typename T::mapper); })
+  {
+    static_assert(mapper<typename T::mapper>);
+    return typename T::mapper{};
+  }
+  else if constexpr(requires { T::mapper(); })
+  {
+    static_assert(mapper<std::decay_t<decltype(T::mapper())>>);
+    return T::mapper();
+  }
+  else if constexpr(requires { sizeof(decltype(T::mapper)); })
+  {
+    static_assert(mapper<std::decay_t<decltype(T::mapper)>>);
+    return T::mapper;
+  }
 }
 
 template <typename T>
 consteval auto get_mapper(const T&)
 {
-    return get_mapper<T>();
+  return get_mapper<T>();
 }
 
 }

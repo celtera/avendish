@@ -7,9 +7,10 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/avnd.hpp>
-#include <chrono>
 #include <boost/math/constants/constants.hpp>
 #include <boost/mp11.hpp>
+
+#include <chrono>
 namespace avnd
 {
 // Field: struct { float smoothing_ratio(); T value; }
@@ -69,7 +70,10 @@ struct smooth_storage : smooth_param_storage<T>
         else if constexpr(requires { smooth.duration; })
         {
           static_assert(smooth.duration > std::chrono::milliseconds(0));
-          buf.smooth_rate = std::exp(ratio / std::chrono::duration_cast<std::chrono::milliseconds>(smooth.duration).count());
+          buf.smooth_rate = std::exp(
+              ratio
+              / std::chrono::duration_cast<std::chrono::milliseconds>(smooth.duration)
+                    .count());
         }
         else
         {

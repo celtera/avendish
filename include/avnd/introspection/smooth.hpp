@@ -10,20 +10,20 @@ namespace avnd
 template <avnd::has_smooth T>
 consteval auto get_smooth()
 {
-    if constexpr(requires { sizeof(typename T::smooth); })
-        return typename T::smooth{};
-    else if constexpr(requires { T::smooth(); })
-        return T::smooth();
-    else if constexpr(requires { sizeof(decltype(T::smooth)); })
-        return T::smooth;
-    else
-        return T::there_is_no_smooth_here;
+  if constexpr(requires { sizeof(typename T::smooth); })
+    return typename T::smooth{};
+  else if constexpr(requires { T::smooth(); })
+    return T::smooth();
+  else if constexpr(requires { sizeof(decltype(T::smooth)); })
+    return T::smooth;
+  else
+    return T::there_is_no_smooth_here;
 }
 
 template <typename T>
 consteval auto get_smooth(const T&)
 {
-    return get_smooth<T>();
+  return get_smooth<T>();
 }
 
 }

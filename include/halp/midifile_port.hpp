@@ -47,7 +47,14 @@ struct midifile_port
 {
   using midifile_view_type = midifile_view<Event>;
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-  static clang_buggy_consteval auto filters() { enum { midi }; return midi; }
+  static clang_buggy_consteval auto filters()
+  {
+    enum
+    {
+      midi
+    };
+    return midi;
+  }
 
   HALP_INLINE_FLATTEN operator midifile_view_type&() noexcept { return midifile; }
   HALP_INLINE_FLATTEN operator const midifile_view_type&() const noexcept

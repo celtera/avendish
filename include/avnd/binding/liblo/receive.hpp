@@ -15,10 +15,10 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <span>
 #include <string>
 #include <variant>
-#include <memory>
 
 namespace osc
 {

@@ -5,11 +5,11 @@
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/span_polyfill.hpp>
 #include <boost/container/small_vector.hpp>
+#include <cmath>
 #include <halp/inline.hpp>
 #include <halp/static_string.hpp>
 
 #include <cstdint>
-#include <cmath>
 #include <functional>
 #include <string_view>
 namespace halp
@@ -172,7 +172,11 @@ struct tick_musical
   int frames{};
 
   double tempo = 120.;
-  struct { int num; int denom; } signature;
+  struct
+  {
+    int num;
+    int denom;
+  } signature;
   int64_t position_in_frames{};
   double position_in_nanoseconds{};
   double start_position_in_quarters{};
@@ -184,7 +188,6 @@ struct tick_musical
   // Position of the last bar relative to end in quarter notes
   double bar_at_end{};
 
-
   // If the division falls in the current tick, returns the corresponding frames
   [[nodiscard]] boost::container::small_vector<std::pair<int, int>, 8>
   get_quantification_date(double div) const noexcept
@@ -193,7 +196,7 @@ struct tick_musical
     double start_in_bar = start_position_in_quarters - bar_at_start;
     double end_in_bar = end_position_in_quarters - bar_at_start;
 
-    auto pos_to_frame = [this] (double in_bar) {
+    auto pos_to_frame = [this](double in_bar) {
       double start = start_position_in_quarters;
       double musical_pos = in_bar + bar_at_start;
       double end = end_position_in_quarters;

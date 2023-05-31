@@ -9,25 +9,31 @@ namespace gpp
 {
 
 /// Quick way to define the pipeline layout
-#define gpp_attribute(loc, n, type, ...)            \
-  struct                                            \
-  {                                                 \
-    halp_meta(name, #n);                            \
-    halp_flag(__VA_ARGS__);                         \
-    static constexpr int location() { return loc; } \
-    using data_type = type;                         \
-    data_type data;                                 \
+#define gpp_attribute(loc, n, type, ...) \
+  struct                                 \
+  {                                      \
+    halp_meta(name, #n);                 \
+    halp_flag(__VA_ARGS__);              \
+    static constexpr int location()      \
+    {                                    \
+      return loc;                        \
+    }                                    \
+    using data_type = type;              \
+    data_type data;                      \
   }
 
-#define gpp_compute(loc, buffer_n, n, type, ...)    \
-  struct                                            \
-  {                                                 \
-    halp_meta(name, #n);                            \
-    halp_meta(buffer_name, #buffer_n);              \
-    halp_flag(__VA_ARGS__);                         \
-    static constexpr int location() { return loc; } \
-    using data_type = type;                         \
-    data_type data;                                 \
+#define gpp_compute(loc, buffer_n, n, type, ...) \
+  struct                                         \
+  {                                              \
+    halp_meta(name, #n);                         \
+    halp_meta(buffer_name, #buffer_n);           \
+    halp_flag(__VA_ARGS__);                      \
+    static constexpr int location()              \
+    {                                            \
+      return loc;                                \
+    }                                            \
+    using data_type = type;                      \
+    data_type data;                              \
   }
 
 // And some common types predefined for the most common use cases

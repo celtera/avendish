@@ -21,7 +21,6 @@ struct midi_note_msg
   int64_t timestamp{};
 };
 
-
 template <static_string lit, typename MessageType = midi_msg>
 struct midi_bus
 {

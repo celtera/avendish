@@ -14,27 +14,23 @@ struct gamma_domain
     onDomainChange(v);
   }
 
-  double spu() const noexcept
-  {
-    return sample_rate;
-  }
+  double spu() const noexcept { return sample_rate; }
 
-  double ups() const noexcept
-  {
-    return 1. / sample_rate;
-  }
+  double ups() const noexcept { return 1. / sample_rate; }
 
   static constexpr auto domain() noexcept
   {
-      struct Dom {
-          struct Impl {
-          static constexpr bool hasBeenSet() { return true; }
-          } impl;
-          auto operator->() const noexcept { return &impl; }
+    struct Dom
+    {
+      struct Impl
+      {
+        static constexpr bool hasBeenSet() { return true; }
+      } impl;
+      auto operator->() const noexcept { return &impl; }
 
-          constexpr operator bool() { return true; }
-      } dom;
-      return dom;
+      constexpr operator bool() { return true; }
+    } dom;
+    return dom;
   }
 
   virtual ~gamma_domain() = default;

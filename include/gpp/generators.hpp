@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/coroutines.hpp>
+
 #include <utility>
 
 // std::generator is not implemented yet, so polyfill it more or less

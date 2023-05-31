@@ -215,7 +215,8 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) const noexcept>
+template <
+    typename T, typename R, typename... Args, R (T::*member)(Args...) const noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -229,7 +230,8 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) volatile noexcept>
+template <
+    typename T, typename R, typename... Args, R (T::*member)(Args...) volatile noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -257,7 +259,7 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) && noexcept>
+template <typename T, typename R, typename... Args, R (T::*member)(Args...)&& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -271,7 +273,8 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = true;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) const& noexcept>
+template <
+    typename T, typename R, typename... Args, R (T::*member)(Args...) const& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -285,7 +288,8 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) const&& noexcept>
+template <
+    typename T, typename R, typename... Args, R (T::*member)(Args...) const&& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -299,7 +303,8 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = true;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) volatile& noexcept>
+template <
+    typename T, typename R, typename... Args, R (T::*member)(Args...) volatile& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -313,7 +318,9 @@ struct function_reflection<member>
   static constexpr const bool is_rvalue_reference = false;
 };
 
-template <typename T, typename R, typename... Args, R (T::*member)(Args...) volatile&& noexcept>
+template <
+    typename T, typename R, typename... Args,
+    R (T::*member)(Args...) volatile&& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -328,7 +335,8 @@ struct function_reflection<member>
 };
 
 template <
-    typename T, typename R, typename... Args, R (T::*member)(Args...) const volatile& noexcept>
+    typename T, typename R, typename... Args,
+    R (T::*member)(Args...) const volatile& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
@@ -343,7 +351,8 @@ struct function_reflection<member>
 };
 
 template <
-    typename T, typename R, typename... Args, R (T::*member)(Args...) const volatile&& noexcept>
+    typename T, typename R, typename... Args,
+    R (T::*member)(Args...) const volatile&& noexcept>
 struct function_reflection<member>
 {
   using arguments = boost::mp11::mp_list<Args...>;
