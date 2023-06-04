@@ -47,9 +47,23 @@ struct callback_storage_views<T>
 /**
  * Used to allocate the data for the callbacks when necessary
  */
+
 template <typename T>
 struct callback_storage : callback_storage_views<T>
 {
+  template <typename stored_type, typename... Args>
+  static auto helper2(void* self, Args... args)
+  {
+    return (*reinterpret_cast<stored_type*>(self))(args...);
+  }
+
+  template <typename stored_type, template <typename...> typename L, typename... Args>
+  static constexpr auto helper(L<void*, Args...>) noexcept
+  {
+    // this is what actually goes in cb.call.function:
+    return &helper2<stored_type, Args...>;
+  }
+
   void wrap_callbacks(avnd::effect_container<T>& effect, auto callback_handler)
   {
     using outputs_t = typename avnd::outputs_type<T>::type;
@@ -111,18 +125,8 @@ struct callback_storage : callback_storage_views<T>
         // we get "proper" types as arguments to the lambda function which allows
         // us to make it work with unary operator+ which transforms the lambda into a function pointer
 
-#if !defined(_MSC_VER) \
-    && !(defined(__GNUC_MINOR__) && __GNUC__ == 13 && __GNUC_MINOR__ == 1)
-        cb.call.function =
-            []<template <typename...> typename L, typename... Args>(L<void*, Args...>) {
-          // this is what actually goes in cb.call.function:
-          return +[](void* self, Args... args) {
-            (*reinterpret_cast<stored_type*>(self))(args...);
-          };
-        }(args{}); // < note that the top-level lambda is immediately invoked here !
-
+        cb.call.function = helper<stored_type>(args{});
         cb.call.context = &buf;
-#endif
       };
 
       avnd::view_callback_introspection<outputs_t>::for_all_n2(

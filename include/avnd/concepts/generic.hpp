@@ -188,15 +188,16 @@ concept enum_ish = std::is_enum_v<std::decay_t<T>>;
  * Used for instance for inputs and outputs introspection.
  * C++2y: we'd like to have the token "inputs" itself be generic
  */
-#define type_or_value_qualification(Name)                                         \
-  template <typename T>                                                           \
-  concept Name##_is_value = requires(T t) { decltype(std::decay_t<T>::Name){}; }; \
-                                                                                  \
-  template <typename T>                                                           \
-  concept Name##_is_type                                                          \
-      = requires(T t) { !std::is_void_v<typename std::decay_t<T>::Name>; };       \
-                                                                                  \
-  template <typename T>                                                           \
+#define type_or_value_qualification(Name)                                        \
+  template <typename T>                                                          \
+  concept Name##_is_value = requires(T t) { decltype(std::decay_t<T>::Name){}; } \
+                            || requires(T t) { &std::declval<T&>().Name; };      \
+                                                                                 \
+  template <typename T>                                                          \
+  concept Name##_is_type                                                         \
+      = requires(T t) { !std::is_void_v<typename std::decay_t<T>::Name>; };      \
+                                                                                 \
+  template <typename T>                                                          \
   concept has_##Name = Name##_is_type<T> || Name##_is_value<T>;
 
 /**
