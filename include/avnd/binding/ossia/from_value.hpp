@@ -431,7 +431,7 @@ struct from_ossia_value_impl
   }
 
 #define CHECK_PREDICATE(Pred)                              \
-  using index = boost::mp11::mp_find_if<T<Args...>, Pred>; \
+  typedef boost::mp11::mp_find_if<T<Args...>, Pred> index; \
   (!std::is_same_v<index, sz>)
 
 #define APPLY_VEC_PREDICATE                                 \
