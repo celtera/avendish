@@ -60,9 +60,9 @@ struct MidiScaler
         {
           try
           {
-            std::istrstream s{
-                (char*)this->file.bytes.data(),
-                (std::streamsize)this->file.bytes.size()};
+            std::istrstream s(
+                (const char*)this->file.bytes.data(),
+                (std::streamsize)this->file.bytes.size());
             self.scale = Tunings::readSCLStream(s);
           }
           catch(...)
@@ -90,9 +90,9 @@ struct MidiScaler
         {
           try
           {
-            std::istrstream s{
-                (char*)this->file.bytes.data(),
-                (std::streamsize)this->file.bytes.size()};
+            std::istrstream s(
+                (const char*)this->file.bytes.data(),
+                (std::streamsize)this->file.bytes.size());
             self.mapping = Tunings::readKBMStream(s);
           }
           catch(...)
