@@ -21,15 +21,31 @@ namespace avnd
  * };
  */
 
+#if defined(_MSC_VER)
+
+#define AVND_REQUIREMENT_ON_MEMBER(Field, Member, Requirement) \
+  (                                                            \
+      requires { Field::Member().Requirement; }                \
+      || requires { std::declval<Field::Member>().Requirement; }  \
+      || requires { Field::Member.Requirement; })
+
+#define AVND_CONCEPT_CHECK_ON_MEMBER(Concept, Field, Member, Requirement) \
+  (Concept<decltype(Field::Member().Requirement)>                         \
+   || Concept<decltype(Field::Member.Requirement)>                        \
+   || Concept<decltype(std::declval<Field::Member>().Requirement)>)
+#else
+
 #define AVND_REQUIREMENT_ON_MEMBER(Field, Member, Requirement) \
   (                                                            \
       requires { Field::Member().Requirement; }                \
       || requires { (typename Field::Member){}.Requirement; }  \
       || requires { Field::Member.Requirement; })
+
 #define AVND_CONCEPT_CHECK_ON_MEMBER(Concept, Field, Member, Requirement) \
   (Concept<decltype(Field::Member().Requirement)>                         \
    || Concept<decltype(Field::Member.Requirement)>                        \
    || Concept<decltype((typename Field::Member){}.Requirement)>)
+#endif
 
 // Concepts related to inputs / outputs
 template <typename T>

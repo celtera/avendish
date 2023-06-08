@@ -7,6 +7,13 @@
 #include <type_traits>
 #include <version>
 
+#if defined(min)
+#undef min
+#endif
+#if defined(max)
+#undef max
+#endif
+
 #if defined(_LIBCPP_CONCEPTS)
 #if(__cpp_lib_concepts < 202002L)
 // Taken from libstdc++, and as such follows libstdc++ license
