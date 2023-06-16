@@ -95,6 +95,12 @@ struct fields_introspection
 #endif
     }
   }
+
+  template <std::size_t N>
+  static inline constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
+  {
+    return pfr::get<N>(unfiltered_fields);
+  }
 };
 
 /**

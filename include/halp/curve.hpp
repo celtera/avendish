@@ -1,9 +1,16 @@
 #pragma once
+#include <halp/static_string.hpp>
+
 #if __has_include(<smallfun_trivial.hpp>)
 #include <smallfun_trivial.hpp>
 #else
 #include <functional>
 #endif
+
+#include <cmath>
+
+#include <algorithm>
+#include <vector>
 
 namespace halp
 {

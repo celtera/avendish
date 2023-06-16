@@ -3,30 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <boost/container/vector.hpp>
+#include <halp/value_types.hpp>
 
 namespace halp
 {
-
-struct r_color
-{
-  uint8_t r;
-};
-
-struct rgba_color
-{
-  uint8_t r, g, b, a;
-};
-
-struct rgba32f_color
-{
-  float r, g, b, a;
-};
-
-struct rgb_color
-{
-  uint8_t r, g, b;
-};
-
 struct r8_texture
 {
   using uninitialized_bytes = boost::container::vector<unsigned char>;

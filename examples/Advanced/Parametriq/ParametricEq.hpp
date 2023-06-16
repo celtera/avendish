@@ -12,10 +12,9 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
-
-#include <string_view>
 
 namespace examples
 {

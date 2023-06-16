@@ -4,6 +4,7 @@
 
 #include <halp/static_string.hpp>
 
+#include <cassert>
 #include <cinttypes>
 #include <string_view>
 
@@ -18,14 +19,15 @@ struct basic_callback<R(Args...)>
 {
   using type = R(Args...);
   using func_t = R (*)(void*, Args...);
-  func_t function;
-  void* context;
+  func_t function{};
+  void* context{};
 
   operator bool() const noexcept { return function; }
 
   template <typename... T>
   R operator()(T&&... args) const noexcept
   {
+    assert(function);
     return function(context, static_cast<T&&>(args)...);
   }
 };
@@ -39,6 +41,7 @@ struct callback
   template <typename... T>
   void operator()(T&&... args) const noexcept
   {
+    assert(call.function);
     return call.function(call.context, static_cast<T&&>(args)...);
   }
 };
@@ -56,6 +59,7 @@ struct timed_callback
   template <typename... T>
   void operator()(T&&... args) const noexcept
   {
+    assert(call.function);
     return call.function(call.context, static_cast<T&&>(args)...);
   }
 };
