@@ -84,7 +84,7 @@ struct fields_introspection
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& ppl = pfr::detail::tie_as_tuple(fields);
         // TODO compare with || logical-or fold ?
-        (void)((Index == n && (func(pfr::get<Index>(ppl)), true)) || ...);
+        (void)((Index == n && (func(get<Index>(ppl)), true)) || ...);
           }(indices_n{});
 #else
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
