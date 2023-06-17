@@ -101,7 +101,7 @@ struct Controls<T>
     using type = typename inputs_info_t::template nth_element<Index>;
 
     auto& source = this->parameters;
-    auto& port = inputs_info_t::template get<Index>(sink);
+    auto& port = inputs_info_t::template field<Index>(sink);
 
     if constexpr(requires { avnd::map_control_from_01<type>(0.f); })
       port.value = avnd::map_control_from_01<type>(

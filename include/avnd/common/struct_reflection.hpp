@@ -84,7 +84,7 @@ struct fields_introspection
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& ppl = pfr::detail::tie_as_tuple(fields);
         // TODO compare with || logical-or fold ?
-        (void)((Index == n && (func(get<Index>(ppl)), true)) || ...);
+        (void)((Index == n && (func(pfr::get<Index>(ppl)), true)) || ...);
           }(indices_n{});
 #else
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
@@ -97,7 +97,7 @@ struct fields_introspection
   }
 
   template <std::size_t N>
-  static inline constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
+  static inline constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
     return pfr::get<N>(unfiltered_fields);
   }
@@ -225,7 +225,7 @@ struct predicate_introspection
 #endif
 
   template <std::size_t N>
-  static constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
+  static constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
     return pfr::get<index_map[N]>(unfiltered_fields);
   }
@@ -452,7 +452,7 @@ struct predicate_introspection<avnd::dummy, P>
   using nth_element = void;
 
   template <std::size_t N>
-  static constexpr void get(avnd::dummy unfiltered_fields) noexcept
+  static constexpr void field(avnd::dummy unfiltered_fields) noexcept
   {
   }
 

@@ -491,7 +491,7 @@ public:
       {
         // Replace the value in the field
         auto& field
-            = avnd::control_input_introspection<T>::template get<N>(state.inputs);
+            = avnd::control_input_introspection<T>::template field<N>(state.inputs);
 
         // OPTIMIZEME we're loosing a few allocations here that should be gc'd
         field.value = new_value;
@@ -503,7 +503,7 @@ public:
     {
       // Replace the value in the field
       auto& field
-          = avnd::control_input_introspection<T>::template get<N>(this->impl.inputs());
+          = avnd::control_input_introspection<T>::template field<N>(this->impl.inputs());
 
       std::swap(field.value, new_value);
 

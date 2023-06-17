@@ -27,8 +27,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
     const auto n = get_frames(tick);
 
     // Here we get the first audio port declared
-    auto& in_port = i_info::template get<0>(ins);
-    auto& out_port = o_info::template get<0>(outs);
+    auto& in_port = i_info::template field<0>(ins);
+    auto& out_port = o_info::template field<0>(outs);
 
     // Inputs may be double** or const double**
     using input_fp_type = std::remove_reference_t<decltype(**in_port.samples)>;
@@ -123,7 +123,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
     const auto n = get_frames(tick);
 
     // Here we get the first audio port declared
-    auto& in_port = i_info::template get<0>(ins);
+    auto& in_port = i_info::template field<0>(ins);
 
     // Inputs may be double** or const double**
     using input_fp_type = std::remove_reference_t<decltype(**in_port.samples)>;
@@ -194,7 +194,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
   using i_info = avnd::audio_bus_input_introspection<T>;
   using o_info = avnd::audio_bus_output_introspection<T>;
 
-  template<bool Input>
+  template <bool Input>
   void assign_zero_storage(auto& bus)
   {
 #if AVND_ENABLE_SAFE_BUFFER_STORAGE
@@ -234,21 +234,21 @@ struct process_adapter<T> : audio_buffer_storage<T>
       }
 
       const auto copy_dynamic = [&] {
-          const int channels = avnd::get_channels(bus);
+        const int channels = avnd::get_channels(bus);
 
-          if(k + channels <= buffers.size())
-          {
-              auto buffer = buffers.data() + k;
-              bus.samples = const_cast<decltype(bus.samples)>(buffer);
-          }
-          else
-          {
-              assign_zero_storage<Input>(bus);
-              done = true;
-          }
-          k += channels;
-          port_k++;
-          // FIXME for variable channels, we have to set them beforehand !!
+        if(k + channels <= buffers.size())
+        {
+          auto buffer = buffers.data() + k;
+          bus.samples = const_cast<decltype(bus.samples)>(buffer);
+        }
+        else
+        {
+          assign_zero_storage<Input>(bus);
+          done = true;
+        }
+        k += channels;
+        port_k++;
+        // FIXME for variable channels, we have to set them beforehand !!
       };
 
       if constexpr(avnd::dynamic_poly_audio_port<Port>)
