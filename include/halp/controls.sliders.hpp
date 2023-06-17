@@ -43,7 +43,7 @@ struct slider_t
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  T value = setup.init;
+  T value = T(setup.init);
 
   operator T&() noexcept { return value; }
   operator const T&() const noexcept { return value; }
