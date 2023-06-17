@@ -213,37 +213,37 @@ template <static_string lit>
 using maintained_button = maintained_button_t<lit>;
 
 #if !HALP_GCC10_SLIDERS_WORKAROUND
-template <static_string lit, range setup = range{.min = 0.001, .max = 5., .init = 0.25}>
+template <static_string lit, auto setup = range{.min = 0.001, .max = 5., .init = 0.25}>
 using time_chooser = time_chooser_t<float, lit, setup>;
 
 template <static_string lit, range_slider_range setup = range_slider_range{}>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
 #else
 
-template <static_string lit, range setup = range{}>
+template <static_string lit, auto setup = range{}>
 using time_chooser = time_chooser_t<float, lit, setup>;
 
 template <static_string lit, range_slider_range setup = default_range<float>>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
 #endif
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using xy_spinboxes_f32 = halp::xy_spinboxes_t<float, lit, setup>;
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using hbargraph_f32 = halp::hbargraph_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using hbargraph_i32 = halp::hbargraph_t<int, lit, setup>;
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using vbargraph_f32 = halp::vbargraph_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 
 }
