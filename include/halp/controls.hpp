@@ -171,18 +171,18 @@ struct toggle_t : slider_t<T, lit, setup>
   };
 };
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using hslider_f32 = halp::hslider_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using hslider_i32 = halp::hslider_t<int, lit, setup>;
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using vslider_f32 = halp::vslider_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using vslider_i32 = halp::vslider_t<int, lit, setup>;
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using spinbox_f32 = halp::spinbox_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using spinbox_i32 = halp::spinbox_t<int, lit, setup>;
 
 template <static_string lit>
@@ -193,10 +193,10 @@ using lineedit = lineedit_t<lit, setup>;
 
 template <static_string lit, auto setup = default_range<float>>
 using knob_f32 = halp::knob_t<float, lit, setup>;
-template <static_string lit, irange setup = default_irange<int>>
+template <static_string lit, auto setup = default_irange<int>>
 using knob_i32 = halp::knob_t<int, lit, setup>;
 
-template <static_string lit, irange setup = default_irange<int>>
+template <static_string lit, auto setup = default_irange<int>>
 using iknob_f32 = halp::knob_t<float, lit, setup>;
 
 // template <static_string lit, long double min, long double max, long double init>

@@ -3,6 +3,7 @@
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
+
 #include <string_view>
 #include <type_traits>
 
@@ -11,14 +12,14 @@ namespace halp
 template <typename T>
 struct range_t
 {
-    constexpr range_t() = default;
-    constexpr range_t(const range_t&) = default;
-    constexpr range_t(range_t&&) = default;
-    constexpr range_t& operator=(const range_t&) = default;
-    constexpr range_t& operator=(range_t&&) = default;
-    constexpr explicit range_t(auto&&...) { }
+  constexpr range_t() = default;
+  constexpr range_t(const range_t&) = default;
+  constexpr range_t(range_t&&) = default;
+  constexpr range_t& operator=(const range_t&) = default;
+  constexpr range_t& operator=(range_t&&) = default;
+  constexpr explicit range_t(auto&&...) { }
 
-    static constexpr auto to_range() noexcept { return range_t{}; }
+  static constexpr auto to_range() noexcept { return range_t{}; }
 };
 using range = range_t<long double>;
 using irange = range_t<int>;
@@ -36,28 +37,27 @@ using init_range_t = range_t<T>;
 template <typename T, static_string lit, auto setup>
 struct slider_t
 {
-    static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-    T value{};
+  T value{};
 
-    operator T&() noexcept { return value; }
-    operator const T&() const noexcept { return value; }
-    auto& operator=(T t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  operator T&() noexcept { return value; }
+  operator const T&() const noexcept { return value; }
+  auto& operator=(T t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
-
 
 /// Time chooser ///
 template <typename T, static_string lit, auto setup>
 struct time_chooser_t : slider_t<T, lit, setup>
 {
-    enum widget
-    {
-        time_chooser
-    };
+  enum widget
+  {
+    time_chooser
+  };
 };
 
 /// Toggle ///
@@ -69,72 +69,72 @@ inline constexpr auto default_toggle = toggle_setup{};
 template <typename T, static_string lit, auto setup>
 struct xy_pad_t
 {
-    using value_type = xy_type<T>;
-    enum widget
-    {
-        xy
-    };
-    static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  using value_type = xy_type<T>;
+  enum widget
+  {
+    xy
+  };
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-    value_type value = {};
+  value_type value = {};
 
-    operator value_type&() noexcept { return value; }
-    operator const value_type&() const noexcept { return value; }
-    auto& operator=(value_type t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
 
 template <typename T, static_string lit, auto setup>
 struct xy_spinboxes_t
 {
-    using value_type = xy_type<T>;
-    enum widget
-    {
-        xy_spinbox,
-        spinbox
-    };
-    static clang_buggy_consteval auto name() noexcept
-    {
-        return std::string_view{lit.value};
-    }
+  using value_type = xy_type<T>;
+  enum widget
+  {
+    xy_spinbox,
+    spinbox
+  };
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
 
-    value_type value = {};
+  value_type value = {};
 
-    operator value_type&() noexcept { return value; }
-    operator const value_type&() const noexcept { return value; }
-    auto& operator=(value_type t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
 
 template <typename T, static_string lit, auto setup>
 struct xyz_spinboxes_t
 {
-    using value_type = xyz_type<T>;
-    enum widget
-    {
-        xyz,
-        spinbox
-    };
-    static clang_buggy_consteval auto name() noexcept
-    {
-        return std::string_view{lit.value};
-    }
+  using value_type = xyz_type<T>;
+  enum widget
+  {
+    xyz,
+    spinbox
+  };
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
 
-    value_type value = {};
+  value_type value = {};
 
-    operator value_type&() noexcept { return value; }
-    operator const value_type&() const noexcept { return value; }
-    auto& operator=(value_type t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
 
 /// 1D range ///
@@ -144,25 +144,25 @@ using range_slider_range = range_t<T>;
 template <typename T, static_string lit, auto setup>
 struct range_slider_t
 {
-    using value_type = range_slider_value<T>;
-    enum widget
-    {
-        hrange_slider
-    };
-    static clang_buggy_consteval auto name() noexcept
-    {
-        return std::string_view{lit.value};
-    }
+  using value_type = range_slider_value<T>;
+  enum widget
+  {
+    hrange_slider
+  };
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
 
-    value_type value{};
+  value_type value{};
 
-    operator value_type&() noexcept { return value; }
-    operator const value_type&() const noexcept { return value; }
-    auto& operator=(value_type t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
 
 /// RGBA color ///
@@ -171,22 +171,22 @@ using color_init = init_range_t<color_type>;
 template <static_string lit, auto setup>
 struct color_chooser
 {
-    using value_type = color_type;
-    enum widget
-    {
-        color
-    };
-    static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  using value_type = color_type;
+  enum widget
+  {
+    color
+  };
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-    value_type value{};
+  value_type value{};
 
-    operator value_type&() noexcept { return value; }
-    operator const value_type&() const noexcept { return value; }
-    auto& operator=(value_type t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
 
 }

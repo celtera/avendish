@@ -3,6 +3,7 @@
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
+
 #include <string_view>
 #include <type_traits>
 namespace halp
@@ -11,33 +12,33 @@ namespace halp
 template <typename Enum, static_string lit>
 struct enum_t
 {
-    enum widget
+  enum widget
+  {
+    enumeration,
+    list,
+    combobox
+  };
+
+  static clang_buggy_consteval auto range()
+  {
+    struct enum_setup
     {
-        enumeration,
-        list,
-        combobox
+      Enum init{};
     };
 
-    static clang_buggy_consteval auto range()
-    {
-        struct enum_setup
-        {
-            Enum init{};
-        };
+    return enum_setup{};
+  }
 
-        return enum_setup{};
-    }
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-    static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-    Enum value{};
-    operator Enum&() noexcept { return value; }
-    operator const Enum&() const noexcept { return value; }
-    auto& operator=(Enum t) noexcept
-    {
-        value = t;
-        return *this;
-    }
+  Enum value{};
+  operator Enum&() noexcept { return value; }
+  operator const Enum&() const noexcept { return value; }
+  auto& operator=(Enum t) noexcept
+  {
+    value = t;
+    return *this;
+  }
 };
 
 /* the science isn't there yet...
@@ -71,8 +72,6 @@ struct combobox_t
   auto& operator=(value_type t) noexcept { value = t; return *this; }
 };
 */
-
-
 
 // Helpers for defining an enumeration without repeating the enumerated members
 #define HALP_NUM_ARGS_(                                                               \
