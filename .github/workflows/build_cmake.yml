@@ -23,7 +23,7 @@ jobs:
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
-              dependencies: "cinst ninja",
+              dependencies: "choco install -y ninja",
               sdk: "/c/ossia-sdk",
             }
           - {
@@ -64,7 +64,7 @@ jobs:
             }
           - {
               name: "macOS",
-              os: macos-12,
+              os: macos-latest,
               common_flags: "",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
