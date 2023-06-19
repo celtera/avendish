@@ -6,6 +6,7 @@
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
+#include <halp/soundfile_port.hpp>
 
 namespace test_1
 {

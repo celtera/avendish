@@ -2,6 +2,7 @@
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
+#include <halp/soundfile_port.hpp>
 #include <kfr/dft.hpp>
 #include <kfr/dft/convolution.hpp>
 #include <kfr/kfr.h>

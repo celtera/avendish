@@ -48,6 +48,8 @@ And some more advanced features:
  - Handles [audio](https://celtera.github.io/avendish/writing_processors/audio.html), [image](https://celtera.github.io/avendish/writing_processors/images.html) or even purely async [message-based](https://celtera.github.io/avendish/writing_processors/messages.html) processors: it's not only for making audio plug-ins :-).
  - [Automatic polyphony](https://celtera.github.io/avendish/writing_processors/audio.polyphonic.html) when it is meaningful with optimized storage for the inputs.
  - Support for injecting features at compile time such as [FFT](https://celtera.github.io/avendish/advanced/fft.html) implementations.
+
+## Design 
 Unlike many other reflection solutions in C++, this library has two properties:
 
  - It is entirely non-intrusive. The effects do not even need to include a single header. All the types are introspected from the content of the provided classes ; this library embraces protocols / traits / typeclass-based design mainly thanks to C++ concepts.
@@ -58,7 +60,7 @@ Unlike many other reflection solutions in C++, this library has two properties:
  - It is entirely done at compile-time through pure C++ mechanisms. No external code generator / scanner à la Qt's moc is used, no forked version of libclang is necessary, etc etc. Instead, it expects types to conform to various concepts corresponding to common multi-media use-cases.
    - As far as it's possible there is zero run-time cost over the equivalent C code. Everything that can be allocated statically, is. There is no run-time mapping of parameters to string, enums, etc. outside of what the host APIs do require.
 
-The current catch is that types being introspected must be aggregates. This is not a very hard restriction in practice and allows for plenty of useful things.
+The current catch is that types being introspected must be [aggregates](https://en.cppreference.com/w/cpp/language/aggregate_initialization). This is not a very hard restriction in practice and allows for plenty of useful things.
 
 The API is not as clean as it could be - the end-goal would be to have the meta-class and compile-time programming papers merged in the C++ standard in order to remove the remaining little boilerplate there is and open the use-cases & lift various dumb restrictions:
 

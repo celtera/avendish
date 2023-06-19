@@ -23,10 +23,10 @@ namespace avnd
 
 #if defined(_MSC_VER)
 
-#define AVND_REQUIREMENT_ON_MEMBER(Field, Member, Requirement) \
-  (                                                            \
-      requires { Field::Member().Requirement; }                \
-      || requires { std::declval<Field::Member>().Requirement; }  \
+#define AVND_REQUIREMENT_ON_MEMBER(Field, Member, Requirement)   \
+  (                                                              \
+      requires { Field::Member().Requirement; }                  \
+      || requires { std::declval<Field::Member>().Requirement; } \
       || requires { Field::Member.Requirement; })
 
 #define AVND_CONCEPT_CHECK_ON_MEMBER(Concept, Field, Member, Requirement) \

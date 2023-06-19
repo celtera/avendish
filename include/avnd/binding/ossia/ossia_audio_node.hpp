@@ -53,7 +53,7 @@ public:
       if constexpr(in_busses::size > 0)
       {
         auto& inputs = this->impl.inputs();
-        auto& mimicked_port = in_busses::template get<0>(inputs);
+        auto& mimicked_port = in_busses::template field<0>(inputs);
         if constexpr(requires { mimicked_port.channels(); })
         {
           field.channels = mimicked_port.channels();

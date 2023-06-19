@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+// clang-format off
 namespace examples
 {
 struct Addition
@@ -12,24 +13,16 @@ struct Addition
 
   struct
   {
-    struct
-    {
-      float value;
-    } a;
-    struct
-    {
-      float value;
-    } b;
+    struct { float value; } a;
+    struct { float value; } b;
   } inputs;
 
   struct
   {
-    struct
-    {
-      float value;
-    } out;
+    struct { float value; } out;
   } outputs;
 
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }
 };
 }
+// clang-format on

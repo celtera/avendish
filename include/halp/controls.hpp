@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <boost/predef.h>
 #include <halp/inline.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
@@ -11,349 +12,23 @@
 #include <optional>
 #include <span>
 #include <string>
-#include <string_view>
-#include <type_traits>
+
+#include <halp/controls.basic.hpp>
+#include <halp/controls.buttons.hpp>
+#include <halp/controls.enums.hpp>
+
+#if(!BOOST_COMP_GNUC || (BOOST_COMP_GNUC >= 12)) && !defined(ESP8266)
+#include <halp/controls.sliders.hpp>
+#else
+#define HALP_GCC10_SLIDERS_WORKAROUND 1
+#include <halp/controls.sliders.gcc10.hpp>
+#endif
 
 namespace halp
 {
-struct dummy_range
-{
-};
-template <static_string lit, typename T>
-struct val_port
-{
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(const T& t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-  auto& operator=(T&& t) noexcept
-  {
-    value = std::move(t);
-    return *this;
-  }
-
-  // Running value (last value before the tick started)
-  T value{};
-};
-
-template <static_string lit, typename T>
-  requires std::is_trivial_v<T>
-struct val_port<lit, T>
-{
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(T t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-
-  // Running value (last value before the tick started)
-  T value{};
-};
-
-template <typename T>
-struct range_t
-{
-  T min, max, init;
-};
-using range = range_t<long double>;
-using irange = range_t<int>;
-template <typename T>
-inline constexpr auto default_range = range{0., 1., 0.5};
-template <>
-inline constexpr auto default_range<int> = range{0., 127., 64.};
-template <typename T>
-inline constexpr auto default_irange = irange{0, 127, 64};
-
-template <typename T>
-struct init_range_t
-{
-  T init;
-};
-using init_range = init_range_t<long double>;
-
-/// Sliders ///
-template <typename T, static_string lit, range setup>
-struct slider_t
-{
-  struct range
-  {
-    const T min = T(setup.min);
-    const T max = T(setup.max);
-    const T init = T(setup.init);
-  };
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  T value = setup.init;
-
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(T t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <typename T, static_string lit, range setup>
-struct hslider_t : slider_t<T, lit, setup>
-{
-  enum widget
-  {
-    hslider,
-    slider
-  };
-};
-
-template <typename T, static_string lit, range setup>
-struct vslider_t : slider_t<T, lit, setup>
-{
-  enum widget
-  {
-    vslider,
-    slider
-  };
-};
-
-template <static_string lit, range setup = default_range<float>>
-using hslider_f32 = halp::hslider_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
-using hslider_i32 = halp::hslider_t<int, lit, setup>;
-
-template <static_string lit, range setup = default_range<float>>
-using vslider_f32 = halp::vslider_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
-using vslider_i32 = halp::vslider_t<int, lit, setup>;
-
-/// Spinbox ///
-
-template <typename T, static_string lit, range setup>
-struct spinbox_t : slider_t<T, lit, setup>
-{
-  enum widget
-  {
-    spinbox
-  };
-};
-
-template <static_string lit, range setup = default_range<float>>
-using spinbox_f32 = halp::spinbox_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
-using spinbox_i32 = halp::spinbox_t<int, lit, setup>;
-
-/// Knob ///
-
-template <typename T, static_string lit, auto setup>
-struct knob_t
-{
-  enum widget
-  {
-    knob
-  };
-
-  struct range
-  {
-    const T min = T(setup.min);
-    const T max = T(setup.max);
-    const T init = T(setup.init);
-  };
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  T value = setup.init;
-
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(T t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, auto setup = default_range<float>>
-using knob_f32 = halp::knob_t<float, lit, setup>;
-template <static_string lit, irange setup = default_irange<int>>
-using knob_i32 = halp::knob_t<int, lit, setup>;
-
-// For the case where we want a "float value;" but an integer widget
-template <typename T, static_string lit, auto setup>
-struct iknob_t
-{
-  enum widget
-  {
-    iknob
-  };
-
-  struct range
-  {
-    const T min = T(setup.min);
-    const T max = T(setup.max);
-    const T init = T(setup.init);
-  };
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  T value = setup.init;
-
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(T t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, irange setup = default_irange<int>>
-using iknob_f32 = halp::knob_t<float, lit, setup>;
-
-// template <static_string lit, long double min, long double max, long double init>
-// using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
-
-/// Time chooser ///
-struct ratio
-{
-  int num{1}, denom{1};
-};
-template <typename T, static_string lit, range setup>
-struct time_chooser_t
-{
-  enum widget
-  {
-    time_chooser
-  };
-
-  struct range
-  {
-    const T min = T(setup.min);
-    const T max = T(setup.max);
-    const T init = T(setup.init);
-  };
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  T value = setup.init;
-
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(T t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, range setup = range{.min = 0.001, .max = 5., .init = 0.25}>
-using time_chooser = time_chooser_t<float, lit, setup>;
-
-/// Toggle ///
-
-struct toggle_setup
-{
-  const bool min = false;
-  const bool max = true;
-  bool init;
-  clang_buggy_consteval range to_range() const noexcept
-  {
-    return range{0., 1., init ? 1. : 0.};
-  }
-};
-
-template <static_string lit, typename T, auto setup>
-struct toggle_t
-{
-  enum widget
-  {
-    toggle,
-    checkbox
-  };
-
-  struct range
-  {
-    const T min = T(setup.min);
-    const T max = T(setup.max);
-    const T init = T(setup.init);
-  };
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  T value = setup.init;
-
-  operator T&() noexcept { return value; }
-  operator const T&() const noexcept { return value; }
-  auto& operator=(T t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-// Necessary because we have that "toggle" enum member..
-template <static_string lit, toggle_setup setup = toggle_setup{false}>
-using toggle = toggle_t<lit, bool, setup>;
-
-template <static_string lit, toggle_setup setup = toggle_setup{false}>
-using toggle_f32 = toggle_t<lit, float, setup.to_range()>;
-
+/// Basic widgets ///
 /// Button ///
-struct impulse
-{
-};
-template <static_string lit>
-struct maintained_button_t
-{
-  enum widget
-  {
-    button,
-    pushbutton
-  };
-  using range = dummy_range;
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  bool value = false;
-  operator bool&() noexcept { return value; }
-  operator const bool&() const noexcept { return value; }
-  auto& operator=(bool t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit>
-using maintained_button = maintained_button_t<lit>;
-
-struct impulse_type
-{
-};
-template <static_string lit>
-struct impulse_button_t
-{
-  enum widget
-  {
-    bang,
-    impulse
-  };
-  using range = impulse_type;
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  std::optional<impulse_type> value;
-  operator bool() const noexcept { return bool(value); }
-};
-
-template <static_string lit>
-using impulse_button = impulse_button_t<lit>;
 
 /// LineEdit ///
 struct lineedit_setup
@@ -401,289 +76,10 @@ struct lineedit_t
     return *this;
   }
 };
-template <static_string lit, static_string setup>
-using lineedit = lineedit_t<lit, setup>;
 
-/// ComboBox / Enum ///
-
-template <typename Enum, static_string lit>
-struct enum_t
-{
-  enum widget
-  {
-    enumeration,
-    list,
-    combobox
-  };
-
-  static clang_buggy_consteval auto range()
-  {
-    struct enum_setup
-    {
-      Enum init{};
-    };
-
-    return enum_setup{};
-  }
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  Enum value{};
-  operator Enum&() noexcept { return value; }
-  operator const Enum&() const noexcept { return value; }
-  auto& operator=(Enum t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-// { { "foo", 1.5 },  { "bar", 4.0 } }
-template <typename T>
-struct combo_pair
-{
-  std::string_view first;
-  T second;
-};
-
-/* the science isn't there yet...
-template<typename T>
-using combo_init = combo_pair<T>[];
-
-template <static_string lit, typename ValueType, combo_init in, int idx>
-struct combobox_t
-{
-  using value_type = ValueType;
-  enum widget
-  {
-    enumeration,
-    list,
-    combobox
-  };
-
-  static clang_buggy_consteval auto range()
-  {
-    struct {
-      combo_pair<ValueType> init[std::size(in)];
-    } a{in};
-    return a;
-  }
-
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  value_type value{};
-  operator value_type&() noexcept { return value; }
-  operator const value_type&() const noexcept { return value; }
-  auto& operator=(value_type t) noexcept { value = t; return *this; }
-};
-*/
-
-/// XY position ///
-
-template <typename T>
-struct xy_type
-{
-  T x, y;
-
-  constexpr xy_type& operator=(T single) noexcept
-  {
-    x = single;
-    y = single;
-    return *this;
-  }
-};
-
-template <typename T, static_string lit, range setup>
-struct xy_pad_t
-{
-  using value_type = xy_type<T>;
-  enum widget
-  {
-    xy
-  };
-  static clang_buggy_consteval auto range()
-  {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  value_type value = {setup.init, setup.init};
-
-  operator value_type&() noexcept { return value; }
-  operator const value_type&() const noexcept { return value; }
-  auto& operator=(value_type t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, range setup = default_range<float>>
-using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
-
-template <typename T>
-struct xyz_type
-{
-  T x, y, z;
-
-  constexpr xyz_type& operator=(T single) noexcept
-  {
-    x = single;
-    y = single;
-    z = single;
-    return *this;
-  }
-};
-
-template <typename T, static_string lit, range setup>
-struct xy_spinboxes_t
-{
-  using value_type = xy_type<T>;
-  enum widget
-  {
-    xy_spinbox,
-    spinbox
-  };
-  static clang_buggy_consteval auto range() noexcept
-  {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
-  static clang_buggy_consteval auto name() noexcept
-  {
-    return std::string_view{lit.value};
-  }
-
-  value_type value = {setup.init, setup.init};
-
-  operator value_type&() noexcept { return value; }
-  operator const value_type&() const noexcept { return value; }
-  auto& operator=(value_type t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, range setup = default_range<float>>
-using xy_spinboxes_f32 = halp::xy_spinboxes_t<float, lit, setup>;
-
-template <typename T, static_string lit, range setup>
-struct xyz_spinboxes_t
-{
-  using value_type = xyz_type<T>;
-  enum widget
-  {
-    xyz,
-    spinbox
-  };
-  static clang_buggy_consteval auto range() noexcept
-  {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
-  static clang_buggy_consteval auto name() noexcept
-  {
-    return std::string_view{lit.value};
-  }
-
-  value_type value = {setup.init, setup.init, setup.init};
-
-  operator value_type&() noexcept { return value; }
-  operator const value_type&() const noexcept { return value; }
-  auto& operator=(value_type t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, range setup = default_range<float>>
-using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;
-
-/// 1D range ///
-template <typename T>
-struct range_slider_value
-{
-  T start, end;
-};
-
-struct range_slider_range
-{
-  double min{0.}, max{1.};
-  range_slider_value<double> init{0.25, 0.75};
-};
-
-template <typename T, static_string lit, range_slider_range setup>
-struct range_slider_t
-{
-  using value_type = range_slider_value<T>;
-  enum widget
-  {
-    hrange_slider
-  };
-  static clang_buggy_consteval auto range() noexcept { return setup; }
-  static clang_buggy_consteval auto name() noexcept
-  {
-    return std::string_view{lit.value};
-  }
-
-  value_type value{setup.init.start, setup.init.end};
-
-  operator value_type&() noexcept { return value; }
-  operator const value_type&() const noexcept { return value; }
-  auto& operator=(value_type t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
-template <static_string lit, range_slider_range setup = range_slider_range{}>
-using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
-
-/// RGBA color ///
-struct color_type
-{
-  float r, g, b, a;
-  constexpr color_type& operator=(float single) noexcept
-  {
-    r = single;
-    g = single;
-    b = single;
-    a = single;
-    return *this;
-  }
-};
-
-using color_init = init_range_t<color_type>;
-
-template <static_string lit, color_init setup = color_init{.init = {1., 1., 1., 1.}}>
-struct color_chooser
-{
-  using value_type = color_type;
-  enum widget
-  {
-    color
-  };
-  static clang_buggy_consteval auto range()
-  {
-    return init_range_t<value_type>{.init = value_type(setup.init)};
-  }
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-
-  value_type value = setup.init;
-
-  operator value_type&() noexcept { return value; }
-  operator const value_type&() const noexcept { return value; }
-  auto& operator=(value_type t) noexcept
-  {
-    value = t;
-    return *this;
-  }
-};
-
+// Useful typedefs
 /// Bargraph ///
-
-template <typename T, static_string lit, range setup>
+template <typename T, static_string lit, auto setup>
 struct hbargraph_t : slider_t<T, lit, setup>
 {
   enum widget
@@ -698,7 +94,7 @@ struct hbargraph_t : slider_t<T, lit, setup>
   }
 };
 
-template <typename T, static_string lit, range setup>
+template <typename T, static_string lit, auto setup>
 struct vbargraph_t : slider_t<T, lit, setup>
 {
   enum widget
@@ -713,209 +109,144 @@ struct vbargraph_t : slider_t<T, lit, setup>
   }
 };
 
-template <static_string lit, range setup = default_range<float>>
+/// Slider ///
+template <typename T, static_string lit, auto setup>
+struct hslider_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    hslider,
+    slider
+  };
+};
+
+template <typename T, static_string lit, auto setup>
+struct vslider_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    vslider,
+    slider
+  };
+};
+
+/// Spinbox ///
+template <typename T, static_string lit, auto setup>
+struct spinbox_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    spinbox
+  };
+};
+
+/// Knob ///
+template <typename T, static_string lit, auto setup>
+struct knob_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    knob
+  };
+};
+
+// For the case where we want a "float value;" but an integer widget
+template <typename T, static_string lit, auto setup>
+struct iknob_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    iknob
+  };
+};
+
+/// Toggle ///
+template <typename T, static_string lit, auto setup>
+struct toggle_t : slider_t<T, lit, setup>
+{
+  enum widget
+  {
+    toggle,
+    checkbox
+  };
+};
+
+template <static_string lit, auto setup = default_range<float>>
+using hslider_f32 = halp::hslider_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<int>>
+using hslider_i32 = halp::hslider_t<int, lit, setup>;
+
+template <static_string lit, auto setup = default_range<float>>
+using vslider_f32 = halp::vslider_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<int>>
+using vslider_i32 = halp::vslider_t<int, lit, setup>;
+template <static_string lit, auto setup = default_range<float>>
+using spinbox_f32 = halp::spinbox_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<int>>
+using spinbox_i32 = halp::spinbox_t<int, lit, setup>;
+
+template <static_string lit>
+using impulse_button = impulse_button_t<lit>;
+
+template <static_string lit, static_string setup>
+using lineedit = lineedit_t<lit, setup>;
+
+template <static_string lit, auto setup = default_range<float>>
+using knob_f32 = halp::knob_t<float, lit, setup>;
+template <static_string lit, auto setup = default_irange<int>>
+using knob_i32 = halp::knob_t<int, lit, setup>;
+
+template <static_string lit, auto setup = default_irange<int>>
+using iknob_f32 = halp::knob_t<float, lit, setup>;
+
+// template <static_string lit, long double min, long double max, long double init>
+// using knob = halp::knob_t<float, lit, halp::range{min, max, init}>;
+
+// Necessary because we have that "toggle" enum member..
+template <static_string lit, toggle_setup setup = default_toggle>
+using toggle = toggle_t<bool, lit, setup>;
+
+template <static_string lit, toggle_setup setup = default_toggle>
+using toggle_f32 = toggle_t<float, lit, setup.to_range()>;
+
+template <static_string lit>
+using maintained_button = maintained_button_t<lit>;
+
+#if !HALP_GCC10_SLIDERS_WORKAROUND
+template <static_string lit, auto setup = range{.min = 0.001, .max = 5., .init = 0.25}>
+using time_chooser = time_chooser_t<float, lit, setup>;
+
+template <static_string lit, range_slider_range setup = range_slider_range{}>
+using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
+#else
+
+template <static_string lit, auto setup = range{}>
+using time_chooser = time_chooser_t<float, lit, setup>;
+
+template <static_string lit, range_slider_range setup = default_range<float>>
+using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
+#endif
+
+template <static_string lit, auto setup = default_range<float>>
+using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
+
+template <static_string lit, auto setup = default_range<float>>
+using xy_spinboxes_f32 = halp::xy_spinboxes_t<float, lit, setup>;
+
+template <static_string lit, auto setup = default_range<float>>
+using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;
+
+template <static_string lit, auto setup = default_range<float>>
 using hbargraph_f32 = halp::hbargraph_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using hbargraph_i32 = halp::hbargraph_t<int, lit, setup>;
 
-template <static_string lit, range setup = default_range<float>>
+template <static_string lit, auto setup = default_range<float>>
 using vbargraph_f32 = halp::vbargraph_t<float, lit, setup>;
-template <static_string lit, range setup = default_range<int>>
+template <static_string lit, auto setup = default_range<int>>
 using vbargraph_i32 = halp::vbargraph_t<int, lit, setup>;
 
-template <typename T>
-struct soundfile_view
-{
-  const T** data{};
-  int64_t frames{};
-  int32_t channels{};
-  int32_t rate{};
-
-  // std::fs::path would be great but limits to macOS 10.15+
-  std::string_view filename;
-};
-
-template <halp::static_string lit, typename T = float>
-struct soundfile_port
-{
-  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
-  static clang_buggy_consteval auto filters()
-  {
-    enum
-    {
-      audio
-    };
-    return audio;
-  }
-
-  HALP_INLINE_FLATTEN operator soundfile_view<T>&() noexcept { return soundfile; }
-  HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept
-  {
-    return soundfile;
-  }
-  HALP_INLINE_FLATTEN operator bool() const noexcept
-  {
-    return soundfile.data && soundfile.channels > 0 && soundfile.frames > 0;
-  }
-
-  HALP_INLINE_FLATTEN std::span<const T> channel(int channel) const noexcept
-  {
-    return std::span(soundfile.data[channel], soundfile.frames);
-  }
-  [[nodiscard]] HALP_INLINE_FLATTEN int channels() const noexcept
-  {
-    return soundfile.channels;
-  }
-  [[nodiscard]] HALP_INLINE_FLATTEN int64_t frames() const noexcept
-  {
-    return soundfile.frames;
-  }
-
-  HALP_INLINE_FLATTEN const T* operator[](int channel) const noexcept
-  {
-    return soundfile.data[channel];
-  }
-
-  soundfile_view<T> soundfile;
-};
-
 }
-
-// Helpers for defining an enumeration without repeating the enumerated members
-#define HALP_NUM_ARGS_(                                                               \
-    _35, _34, _33, _32, _31, _30, _29, _28, _27, _26, _25, _24, _23, _22, _21, _20,   \
-    _19, _18, _17, _16, _15, _14, _13, _12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, \
-    _1, N, ...)                                                                       \
-  N
-#define HALP_NUM_ARGS(...)                                                             \
-  HALP_NUM_ARGS_(                                                                      \
-      __VA_ARGS__, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, \
-      18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define HALP_FOREACH(MACRO, ...) \
-  HALP_FOREACH_(HALP_NUM_ARGS(__VA_ARGS__), MACRO, __VA_ARGS__)
-#define HALP_FOREACH_(N, M, ...) HALP_FOREACH__(N, M, __VA_ARGS__)
-#define HALP_FOREACH__(N, M, ...) HALP_FOREACH_##N(M, __VA_ARGS__)
-#define HALP_FOREACH_1(M, A) M(A)
-#define HALP_FOREACH_2(M, A, ...) M(A) HALP_FOREACH_1(M, __VA_ARGS__)
-#define HALP_FOREACH_3(M, A, ...) M(A) HALP_FOREACH_2(M, __VA_ARGS__)
-#define HALP_FOREACH_4(M, A, ...) M(A) HALP_FOREACH_3(M, __VA_ARGS__)
-#define HALP_FOREACH_5(M, A, ...) M(A) HALP_FOREACH_4(M, __VA_ARGS__)
-#define HALP_FOREACH_6(M, A, ...) M(A) HALP_FOREACH_5(M, __VA_ARGS__)
-#define HALP_FOREACH_7(M, A, ...) M(A) HALP_FOREACH_6(M, __VA_ARGS__)
-#define HALP_FOREACH_8(M, A, ...) M(A) HALP_FOREACH_7(M, __VA_ARGS__)
-#define HALP_FOREACH_9(M, A, ...) M(A) HALP_FOREACH_8(M, __VA_ARGS__)
-#define HALP_FOREACH_10(M, A, ...) M(A) HALP_FOREACH_9(M, __VA_ARGS__)
-#define HALP_FOREACH_11(M, A, ...) M(A) HALP_FOREACH_10(M, __VA_ARGS__)
-#define HALP_FOREACH_12(M, A, ...) M(A) HALP_FOREACH_11(M, __VA_ARGS__)
-#define HALP_FOREACH_13(M, A, ...) M(A) HALP_FOREACH_12(M, __VA_ARGS__)
-#define HALP_FOREACH_14(M, A, ...) M(A) HALP_FOREACH_13(M, __VA_ARGS__)
-#define HALP_FOREACH_15(M, A, ...) M(A) HALP_FOREACH_14(M, __VA_ARGS__)
-#define HALP_FOREACH_16(M, A, ...) M(A) HALP_FOREACH_15(M, __VA_ARGS__)
-#define HALP_FOREACH_17(M, A, ...) M(A) HALP_FOREACH_16(M, __VA_ARGS__)
-#define HALP_FOREACH_18(M, A, ...) M(A) HALP_FOREACH_17(M, __VA_ARGS__)
-#define HALP_FOREACH_19(M, A, ...) M(A) HALP_FOREACH_18(M, __VA_ARGS__)
-#define HALP_FOREACH_20(M, A, ...) M(A) HALP_FOREACH_19(M, __VA_ARGS__)
-#define HALP_FOREACH_21(M, A, ...) M(A) HALP_FOREACH_20(M, __VA_ARGS__)
-#define HALP_FOREACH_22(M, A, ...) M(A) HALP_FOREACH_21(M, __VA_ARGS__)
-#define HALP_FOREACH_23(M, A, ...) M(A) HALP_FOREACH_22(M, __VA_ARGS__)
-#define HALP_FOREACH_24(M, A, ...) M(A) HALP_FOREACH_23(M, __VA_ARGS__)
-#define HALP_FOREACH_25(M, A, ...) M(A) HALP_FOREACH_24(M, __VA_ARGS__)
-#define HALP_FOREACH_26(M, A, ...) M(A) HALP_FOREACH_25(M, __VA_ARGS__)
-#define HALP_FOREACH_27(M, A, ...) M(A) HALP_FOREACH_26(M, __VA_ARGS__)
-#define HALP_FOREACH_28(M, A, ...) M(A) HALP_FOREACH_27(M, __VA_ARGS__)
-#define HALP_FOREACH_29(M, A, ...) M(A) HALP_FOREACH_28(M, __VA_ARGS__)
-#define HALP_FOREACH_30(M, A, ...) M(A) HALP_FOREACH_29(M, __VA_ARGS__)
-#define HALP_FOREACH_31(M, A, ...) M(A) HALP_FOREACH_30(M, __VA_ARGS__)
-#define HALP_FOREACH_32(M, A, ...) M(A) HALP_FOREACH_31(M, __VA_ARGS__)
-#define HALP_FOREACH_33(M, A, ...) M(A) HALP_FOREACH_32(M, __VA_ARGS__)
-#define HALP_FOREACH_34(M, A, ...) M(A) HALP_FOREACH_33(M, __VA_ARGS__)
-#define HALP_FOREACH_35(M, A, ...) M(A) HALP_FOREACH_34(M, __VA_ARGS__)
-#define HALP_STRINGIFY_(X) #X
-#define HALP_STRINGIFY(X) HALP_STRINGIFY_(X)
-#define HALP_STRINGIFY_ALL(...) HALP_FOREACH(HALP_STRINGIFY, __VA_ARGS__)
-
-#define HALP_COMMA(X) X,
-#define HALP_COMMA_STRINGIFY(X) HALP_COMMA(HALP_STRINGIFY(X))
-
-#define HALP_STRING_LITERAL_ARRAY(...) HALP_FOREACH(HALP_COMMA_STRINGIFY, __VA_ARGS__)
-
-#define HALP_ENUM_ARRAY_ELEMENT(X) HALP_COMMA({HALP_COMMA_STRINGIFY(X) X})
-#define HALP_STRING_LITERAL_ENUM_ARRAY(...) \
-  HALP_FOREACH(HALP_ENUM_ARRAY_ELEMENT, __VA_ARGS__)
-
-#define halp__enum(Name, default_v, ...)                 \
-  static clang_buggy_consteval auto name()               \
-  {                                                      \
-    return Name;                                         \
-  }                                                      \
-  enum enum_type                                         \
-  {                                                      \
-    __VA_ARGS__                                          \
-  } value;                                               \
-                                                         \
-  enum widget                                            \
-  {                                                      \
-    enumeration,                                         \
-    list,                                                \
-    combobox                                             \
-  };                                                     \
-                                                         \
-  struct range                                           \
-  {                                                      \
-    std::string_view values[HALP_NUM_ARGS(__VA_ARGS__)]{ \
-        HALP_STRING_LITERAL_ARRAY(__VA_ARGS__)};         \
-    enum_type init = default_v;                          \
-  };                                                     \
-                                                         \
-  operator enum_type&() noexcept                         \
-  {                                                      \
-    return value;                                        \
-  }                                                      \
-  operator const enum_type&() const noexcept             \
-  {                                                      \
-    return value;                                        \
-  }                                                      \
-  auto& operator=(enum_type t) noexcept                  \
-  {                                                      \
-    value = t;                                           \
-    return *this;                                        \
-  }
-
-#define halp__enum_combobox(Name, default_v, ...)                              \
-  static clang_buggy_consteval auto name()                                     \
-  {                                                                            \
-    return Name;                                                               \
-  }                                                                            \
-  enum enum_type                                                               \
-  {                                                                            \
-    __VA_ARGS__                                                                \
-  } value;                                                                     \
-                                                                               \
-  enum widget                                                                  \
-  {                                                                            \
-    combobox                                                                   \
-  };                                                                           \
-                                                                               \
-  struct range                                                                 \
-  {                                                                            \
-    std::pair<std::string_view, enum_type> values[HALP_NUM_ARGS(__VA_ARGS__)]{ \
-        HALP_STRING_LITERAL_ENUM_ARRAY(__VA_ARGS__)};                          \
-    enum_type init = default_v;                                                \
-  };                                                                           \
-                                                                               \
-  operator enum_type&() noexcept                                               \
-  {                                                                            \
-    return value;                                                              \
-  }                                                                            \
-  operator const enum_type&() const noexcept                                   \
-  {                                                                            \
-    return value;                                                              \
-  }                                                                            \
-  auto& operator=(enum_type t) noexcept                                        \
-  {                                                                            \
-    value = t;                                                                 \
-    return *this;                                                              \
-  }
 
 #define halp_field_names(...)                                                    \
   static constexpr auto field_names()                                            \

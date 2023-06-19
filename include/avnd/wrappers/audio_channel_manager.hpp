@@ -344,7 +344,7 @@ struct audio_channel_manager<T>
     {
       // First check if we should match the first audio output to the first audio input
       auto& outputs = avnd::get_outputs(processor);
-      auto& first = out_refl::template get<0>(outputs);
+      auto& first = out_refl::template field<0>(outputs);
       using first_type = std::decay_t<decltype(first)>;
       if constexpr(
           avnd::dynamic_poly_audio_port<first_type>

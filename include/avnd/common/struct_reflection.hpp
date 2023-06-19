@@ -95,6 +95,12 @@ struct fields_introspection
 #endif
     }
   }
+
+  template <std::size_t N>
+  static inline constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
+  {
+    return pfr::get<N>(unfiltered_fields);
+  }
 };
 
 /**
@@ -219,7 +225,7 @@ struct predicate_introspection
 #endif
 
   template <std::size_t N>
-  static constexpr auto get(type& unfiltered_fields) noexcept -> decltype(auto)
+  static constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
     return pfr::get<index_map[N]>(unfiltered_fields);
   }
@@ -446,7 +452,7 @@ struct predicate_introspection<avnd::dummy, P>
   using nth_element = void;
 
   template <std::size_t N>
-  static constexpr void get(avnd::dummy unfiltered_fields) noexcept
+  static constexpr void field(avnd::dummy unfiltered_fields) noexcept
   {
   }
 
