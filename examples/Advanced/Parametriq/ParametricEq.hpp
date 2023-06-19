@@ -394,22 +394,22 @@ struct ParametricEq
 
       struct UIBand
       {
-        constexpr UIBand(
-            decltype(&ins::band1) bd, decltype(&ins::toggle1) tog,
-            decltype(&ins::order1) ord, decltype(&ins::cutoffFreq1) cutoffFreq,
-            decltype(&ins::centerFreq1) centerFreq,
-            decltype(&ins::freqBandWidth1) freqBdWidth, decltype(&ins::gain1) gn,
-            decltype(&ins::passbandRipple1) ripple)
-            : bandWidget{bd}
-            , toggleWidget{tog}
-            , orderWidget{ord}
-            , cutofffreqWidget{cutoffFreq}
-            , centerfreqWidget{centerFreq}
-            , bandWidthWidget{freqBdWidth}
-            , gainWidget{gn}
-            , rippleWidget{ripple}
-        {
-        }
+        // constexpr UIBand(
+        //     decltype(&ins::band1) bd, decltype(&ins::toggle1) tog,
+        //     decltype(&ins::order1) ord, decltype(&ins::cutoffFreq1) cutoffFreq,
+        //     decltype(&ins::centerFreq1) centerFreq,
+        //     decltype(&ins::freqBandWidth1) freqBdWidth, decltype(&ins::gain1) gn,
+        //     decltype(&ins::passbandRipple1) ripple)
+        //     : bandWidget{bd}
+        //     , toggleWidget{tog}
+        //     , orderWidget{ord}
+        //     , cutofffreqWidget{cutoffFreq}
+        //     , centerfreqWidget{centerFreq}
+        //     , bandWidthWidget{freqBdWidth}
+        //     , gainWidget{gn}
+        //     , rippleWidget{ripple}
+        // {
+        // }
 
         static constexpr auto width() { return controlsWidth / filtersNb; }
         static constexpr auto height() { return controlsHeight; }
