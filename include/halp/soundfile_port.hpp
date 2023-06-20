@@ -5,6 +5,7 @@
 
 #include <cinttypes>
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 namespace halp
@@ -35,6 +36,7 @@ struct soundfile_port
   }
 
   HALP_INLINE_FLATTEN operator soundfile_view<T>&() noexcept { return soundfile; }
+
   HALP_INLINE_FLATTEN operator const soundfile_view<T>&() const noexcept
   {
     return soundfile;
@@ -48,10 +50,12 @@ struct soundfile_port
   {
     return std::span(soundfile.data[channel], soundfile.frames);
   }
+
   [[nodiscard]] HALP_INLINE_FLATTEN int channels() const noexcept
   {
     return soundfile.channels;
   }
+
   [[nodiscard]] HALP_INLINE_FLATTEN int64_t frames() const noexcept
   {
     return soundfile.frames;
