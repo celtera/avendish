@@ -1,6 +1,8 @@
 #pragma once
 #include "Math.hpp"
 
+#include <optional>
+
 namespace avnd::blocks
 {
 

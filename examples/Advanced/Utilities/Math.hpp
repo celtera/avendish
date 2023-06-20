@@ -407,4 +407,12 @@ struct Clamp : Triop
   { outputs.a.value = std::clamp(inputs.a.value, inputs.b.value, inputs.c.value); }
 };
 
+struct Copy : Unop {
+  static consteval auto name() { return "Copy"; }
+  static consteval auto c_name() { return "copy"; }
+  static consteval auto uuid() { return "53640965-92d1-4627-a5a4-bcd503a41f91"; }
+
+  void operator()()
+  { outputs.a.value = inputs.a.value; }
+};
 }

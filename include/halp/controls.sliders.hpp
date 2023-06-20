@@ -190,13 +190,9 @@ struct range_slider_range
 };
 
 template <typename T, static_string lit, range_slider_range setup>
-struct range_slider_t
+struct range_editor_t
 {
   using value_type = range_slider_value<T>;
-  enum widget
-  {
-    hrange_slider
-  };
   static clang_buggy_consteval auto range() noexcept { return setup; }
   static clang_buggy_consteval auto name() noexcept
   {
@@ -214,6 +210,23 @@ struct range_slider_t
   }
 };
 
+template <typename T, static_string lit, range_slider_range setup>
+struct range_slider_t : range_editor_t<T, lit, setup>
+{
+  enum widget
+  {
+    hrange_slider
+  };
+};
+
+template <typename T, static_string lit, range_slider_range setup>
+struct range_spinbox_t : range_editor_t<T, lit, setup>
+{
+  enum widget
+  {
+    range_spinbox
+  };
+};
 /// RGBA color ///
 
 using color_init = init_range_t<color_type>;

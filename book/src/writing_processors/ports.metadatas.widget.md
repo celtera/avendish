@@ -40,7 +40,7 @@ xyz, xyz_spinbox,
 color, 
 time_chooser,
 hbargraph, vbargraph, bargraph,
-range
+range_slider, range_spinbox
 ```
 
 This kind of widget definition is here to enable host DAWs to automatically generate appropriate UIs automatically.

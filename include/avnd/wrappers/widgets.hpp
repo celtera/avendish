@@ -36,7 +36,8 @@ enum class widget_type
   color,
   time_chooser,
   bargraph,
-  range
+  range_slider,
+  range_spinbox
 };
 
 enum class slider_orientation
@@ -72,9 +73,10 @@ template <typename T>
 struct range_slider_reflection
 {
   using value_type = T;
-  static constexpr widget_type widget = widget_type::range;
+  static constexpr widget_type widget = widget_type::range_slider;
   slider_orientation orientation{slider_orientation::horizontal};
 };
+
 template <typename T>
 struct bargraph_reflection
 {
@@ -154,24 +156,38 @@ consteval auto get_widget()
   }
   else if constexpr(requires { T::widget::vrange_slider; })
   {
-    if constexpr(std::is_integral_v<value_type>)
+    using element_value_type = std::decay_t<decltype(value_type{}.start)>;
+    if constexpr(std::is_integral_v<element_value_type>)
     {
       return range_slider_reflection<int>{slider_orientation::vertical};
     }
-    else if constexpr(std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<element_value_type>)
     {
       return range_slider_reflection<float>{slider_orientation::vertical};
     }
   }
   else if constexpr(requires { T::widget::range_slider; })
   {
-    if constexpr(std::is_integral_v<value_type>)
+    using element_value_type = std::decay_t<decltype(value_type{}.start)>;
+    if constexpr(std::is_integral_v<element_value_type>)
     {
       return range_slider_reflection<int>{slider_orientation::horizontal};
     }
-    else if constexpr(std::is_floating_point_v<value_type>)
+    else if constexpr(std::is_floating_point_v<element_value_type>)
     {
       return range_slider_reflection<float>{slider_orientation::horizontal};
+    }
+  }
+  else if constexpr(requires { T::widget::range_spinbox; })
+  {
+    using element_value_type = std::decay_t<decltype(value_type{}.start)>;
+    if constexpr(std::is_integral_v<element_value_type>)
+    {
+      return widget_reflection<int>{widget_type::range_spinbox};
+    }
+    else if constexpr(std::is_floating_point_v<element_value_type>)
+    {
+      return widget_reflection<float>{widget_type::range_spinbox};
     }
   }
   else if constexpr(requires { T::widget::xyz_spinbox; })

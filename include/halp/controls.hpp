@@ -218,6 +218,9 @@ using time_chooser = time_chooser_t<float, lit, setup>;
 
 template <static_string lit, range_slider_range setup = range_slider_range{}>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
+
+template <static_string lit, range_slider_range setup = range_slider_range{}>
+using range_spinbox_f32 = halp::range_spinbox_t<float, lit, setup>;
 #else
 
 template <static_string lit, auto setup = range{}>
@@ -225,6 +228,9 @@ using time_chooser = time_chooser_t<float, lit, setup>;
 
 template <static_string lit, range_slider_range setup = default_range<float>>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
+
+template <static_string lit, range_slider_range setup = default_range<float>>
+using range_spinbox_f32 = halp::range_spinbox_t<float, lit, setup>;
 #endif
 
 template <static_string lit, auto setup = default_range<float>>

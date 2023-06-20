@@ -6,6 +6,7 @@
 #include <halp/controls.hpp>
 #include <halp/curve.hpp>
 #include <halp/meta.hpp>
+#include <halp/smoothers.hpp>
 
 namespace ao
 {
@@ -22,7 +23,10 @@ public:
   struct
   {
     halp::curve_port<"Curve"> curve;
-    halp::spinbox_f32<"Frequency", halp::range{1, 20000, 1000}> frequency;
+    struct : halp::spinbox_f32<"Frequency", halp::range{1, 20000, 1000}>
+    {
+      using smoother = halp::milliseconds_smooth<20>;
+    } frequency;
   } inputs;
 
   struct
