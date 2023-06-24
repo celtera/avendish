@@ -10,7 +10,13 @@
 
 namespace ao
 {
-struct Automation
+struct AutomationTick
+{
+  int frames{};
+  float relative_position{};
+};
+template <typename CurveType>
+struct AutomationBase
 {
 public:
   halp_meta(name, "Automation")
@@ -22,7 +28,7 @@ public:
 
   struct
   {
-    halp::curve_port<"Curve"> curve;
+    halp::curve_port<"Curve", CurveType> curve;
   } inputs;
 
   struct
@@ -30,14 +36,20 @@ public:
     halp::val_port<"Out", double> value;
   } outputs;
 
-  struct tick
-  {
-    int frames{};
-    float relative_position{};
-  };
+  using tick = AutomationTick;
   void operator()(tick pos) noexcept
   {
     outputs.value = inputs.curve.value.value_at(pos.relative_position);
   }
+};
+
+struct Automation : AutomationBase<halp::custom_curve>
+{
+};
+struct PowerAutomation : AutomationBase<halp::power_curve>
+{
+};
+struct LinearAutomation : AutomationBase<halp::linear_curve>
+{
 };
 }

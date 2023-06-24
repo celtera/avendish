@@ -15,6 +15,21 @@
 namespace halp
 {
 
+struct linear_curve_segment
+{
+  struct
+  {
+    float x{}, y{};
+  } start;
+
+  struct
+  {
+    float x{}, y{};
+  } end;
+
+  constexpr auto operator()(auto x) const noexcept { return x; }
+};
+
 struct power_curve_segment
 {
   struct
@@ -28,9 +43,12 @@ struct power_curve_segment
   } end;
 
   float gamma{1.0};
+
+  auto operator()(auto x) const noexcept { return std::pow(x, gamma); }
 };
 
-struct power_curve : std::vector<power_curve_segment>
+template <typename Segment>
+struct fixed_function_mapping_curve : std::vector<Segment>
 {
   float value_at(float position)
   {
@@ -40,7 +58,7 @@ struct power_curve : std::vector<power_curve_segment>
 
     auto it = std::upper_bound(
         this->begin(), this->end(), position,
-        [](float v, const value_type& segt) noexcept { return v < segt.start.x; });
+        [](float v, const Segment& segt) noexcept { return v < segt.start.x; });
 
     if(position > 1.0f)
     {
@@ -60,7 +78,7 @@ struct power_curve : std::vector<power_curve_segment>
     const float spos = (position - segment.start.x) / (segment.end.x - segment.start.x);
 
     // 3. Apply the mapping function (in [0; 1] -> [0; 1])
-    const float smap = std::pow(spos, segment.gamma);
+    const float smap = segment(spos);
 
     // 4. Scale the result into the y axis
     const float sval = segment.start.y + smap * (segment.end.y - segment.start.y);
@@ -68,6 +86,9 @@ struct power_curve : std::vector<power_curve_segment>
     return sval;
   }
 };
+
+using linear_curve = fixed_function_mapping_curve<linear_curve_segment>;
+using power_curve = fixed_function_mapping_curve<power_curve_segment>;
 
 struct custom_curve_segment
 {
