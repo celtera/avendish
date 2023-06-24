@@ -47,6 +47,9 @@ template <typename T>
 concept control_layout = (T::layout() == decltype(T::layout())::control)
                          || (T::layout == decltype(T::layout)::control);
 template <typename T>
+concept custom_control_layout = (T::layout() == decltype(T::layout())::custom_control)
+                                || (T::layout == decltype(T::layout)::custom_control);
+template <typename T>
 concept custom_layout = (T::layout() == decltype(T::layout())::custom)
                         || (T::layout == decltype(T::layout)::custom);
 

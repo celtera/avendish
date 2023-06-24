@@ -24,3 +24,20 @@
 #else
 #define HALP_RESTRICT __restrict__
 #endif
+
+#include <type_traits>
+namespace halp
+{
+// Extracts the type of x in &Class::x
+template <typename T>
+struct member_type_extractor;
+
+template <typename C, typename T>
+struct member_type_extractor<T C::*>
+{
+  using type = T;
+};
+
+template <typename T>
+using member_type_t = typename member_type_extractor<std::remove_cvref_t<T>>::type;
+}
