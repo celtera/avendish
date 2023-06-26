@@ -400,13 +400,16 @@ struct setup_variable_audio_ports
   Exec_T& self;
   Obj_T& impl;
 
+  using in_refl = avnd::audio_bus_input_introspection<Obj_T>;
+  using out_refl = avnd::audio_bus_output_introspection<Obj_T>;
+
   template <avnd::variable_poly_audio_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
   {
     ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
-      s.channels.set_input_channels(s.impl, 0, x);
+      s.channels.set_input_channels(s.impl, in_refl::template unmap<Idx>(), x);
     };
   }
 
@@ -416,7 +419,7 @@ struct setup_variable_audio_ports
   {
     ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
-      s.channels.set_output_channels(s.impl, 0, x);
+      s.channels.set_output_channels(s.impl, out_refl::template unmap<Idx>(), x);
     };
   }
 
