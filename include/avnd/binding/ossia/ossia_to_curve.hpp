@@ -3,6 +3,7 @@
 #include <ossia/editor/curve/curve_segment/easing.hpp>
 #include <ossia/editor/curve/curve_segment/easing_helpers.hpp>
 #include <ossia/network/value/value.hpp>
+#include <ossia/network/value/value_conversion.hpp>
 
 #include <optional>
 namespace oscr

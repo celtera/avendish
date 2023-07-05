@@ -285,7 +285,7 @@ struct Ui
         }
         static constexpr auto scale() { return 0.8; }
 
-        decltype(&ins::float_ctl) control = &ins::float_ctl;
+        decltype(&ins::float_ctl) model = &ins::float_ctl;
       } float_widget;
 
       const char* l1 = "A";

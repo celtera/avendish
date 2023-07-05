@@ -99,10 +99,15 @@ struct custom_item_base
 };
 
 template <typename T, auto F>
-struct custom_item
-    : T
-    , custom_item_base<T>
+struct custom_item : T
 {
+  halp_meta(layout, layouts::custom)
+  using item_type = T;
+
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+
   decltype(F) model = F;
 };
 

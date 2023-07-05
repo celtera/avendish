@@ -12,6 +12,9 @@
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 
+#if __has_include(<magic_enum.hpp>)
+#include <magic_enum.hpp>
+#endif
 namespace examples
 {
 
@@ -172,7 +175,15 @@ struct ControlGallery
     avnd::for_each_field_ref(inputs, []<typename Control>(const Control& input) {
       {
         auto val = input.values.begin()->second;
-        fmt::print("changed: {} {}", Control::name(), val);
+        if constexpr(std::is_enum_v<decltype(val)>) {
+#if __has_include(<magic_enum.hpp>)
+          fmt::print("changed: {} {}", Control::name(), magic_enum::enum_name(val));
+#else
+          fmt::print("changed: {} {}", Control::name(), std::to_underlying(val));
+#endif
+        } else {
+          fmt::print("changed: {} {}", Control::name(), val);
+        }
       }
     });
   }

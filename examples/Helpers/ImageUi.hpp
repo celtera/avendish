@@ -128,8 +128,8 @@ struct AdvancedUi
     halp_meta(height, 200)
     halp_meta(font, "Inconsolata")
 
-    halp::custom_item<custom_slider, &ins::float_ctl> widget{{.x = 190, .y = 170}};
-    halp::custom_item_base<custom_anim> anim{.x = 90, .y = -50};
+    halp::custom_item<custom_slider, &ins::float_ctl> widget{.x = 190, .y = 170};
+    halp::custom_actions_item<custom_anim> anim{.x = 90, .y = -50};
   };
 };
 }

@@ -3,6 +3,7 @@
 #include <avnd/binding/ossia/value.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <avnd/introspection/range.hpp>
 #include <boost/mp11/algorithm.hpp>
 #include <ossia/network/value/value_conversion.hpp>
 
