@@ -165,7 +165,7 @@ struct range_slider_t
   }
 };
 template <typename T, static_string lit, auto setup>
-struct range_spinbox_t  = range_slider_t<T, lit, setup>;
+using range_spinbox_t = range_slider_t<T, lit, setup>;
 
 /// RGBA color ///
 using color_init = init_range_t<color_type>;
