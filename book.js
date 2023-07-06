@@ -551,6 +551,13 @@ function playground_text(playground, hidden = true) {
             firstContact = null;
         }
     }, { passive: true });
+
+    // Scroll sidebar to current active section
+    var activeSection = document.getElementById("sidebar").querySelector(".active");
+    if (activeSection) {
+        // https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
+        activeSection.scrollIntoView({ block: 'center' });
+    }
 })();
 
 (function chapterNavigation() {
@@ -669,14 +676,13 @@ function playground_text(playground, hidden = true) {
         }, { passive: true });
     })();
     (function controllBorder() {
-        function updateBorder() {
+        menu.classList.remove('bordered');
+        document.addEventListener('scroll', function () {
             if (menu.offsetTop === 0) {
                 menu.classList.remove('bordered');
             } else {
                 menu.classList.add('bordered');
             }
-        }
-        updateBorder();
-        document.addEventListener('scroll', updateBorder, { passive: true });
+        }, { passive: true });
     })();
 })();
