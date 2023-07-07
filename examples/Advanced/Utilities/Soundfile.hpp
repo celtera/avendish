@@ -44,7 +44,6 @@ public:
   {
     if(!inputs.sound)
     {
-      qDebug() << "outputs.audio.channels << inputs.sound.channels()";
       return;
     }
 
