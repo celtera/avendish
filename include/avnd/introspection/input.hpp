@@ -41,6 +41,12 @@ struct time_control_input_introspection
 };
 
 template <typename T>
+struct span_parameter_input_introspection
+    : span_parameter_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct linear_timed_parameter_input_introspection
     : linear_timed_parameter_introspection<typename inputs_type<T>::type>
 {

@@ -199,6 +199,19 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
+  void operator()(const avnd::span_value auto& f)
+  {
+    std::vector<ossia::value> v;
+    v.resize(f.size());
+    std::size_t i = 0;
+    for(auto& set_element : f)
+    {
+      to_ossia_value_impl{v[i]}(set_element);
+      i++;
+    }
+    val = std::move(v);
+  }
+
   template <avnd::map_ish T>
   void operator()(const T& f)
   {
@@ -398,6 +411,10 @@ ossia::value to_ossia_value(const avnd::map_ish auto& v)
 {
   return to_ossia_value_rec(v);
 }
+ossia::value to_ossia_value(const avnd::span_value auto& v)
+{
+  return to_ossia_value_rec(v);
+}
 
 template <avnd::vector_ish T>
   requires(!avnd::string_ish<T> && !avnd::curve<T>)
@@ -405,6 +422,7 @@ ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);
 }
+
 ossia::value to_ossia_value(const oscr::type_wrapper auto& v)
 {
   auto& [obj] = v;

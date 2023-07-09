@@ -6,6 +6,7 @@
 #include <avnd/wrappers/widgets.hpp>
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
+#include <ossia/network/common/extended_types.hpp>
 #include <ossia/network/dataspace/dataspace_visitors.hpp>
 #include <tuplet/tuple.hpp>
 
@@ -274,6 +275,15 @@ struct setup_value_port
     port.type = ossia::rgba_u{};
     port.domain = {};
   }
+
+  template <avnd::span_parameter Field>
+  void setup(ossia::value_port& port)
+  {
+    setup_port_is_event<Field>(port);
+    port.type = ossia::list_type();
+    port.domain = this->range_to_domain<Field>();
+  }
+
   template <typename Field>
   void setup(ossia::value_port& port)
   {

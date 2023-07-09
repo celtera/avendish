@@ -57,6 +57,11 @@ struct time_control_introspection : predicate_introspection<T, is_time_control_t
 };
 
 template <typename Field>
+using is_span_parameter_t = boost::mp11::mp_bool<span_parameter<Field>>;
+template <typename T>
+using span_parameter_introspection = predicate_introspection<T, is_span_parameter_t>;
+
+template <typename Field>
 using is_linear_timed_parameter_t
     = boost::mp11::mp_bool<linear_sample_accurate_parameter<Field>>;
 template <typename T>

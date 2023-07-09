@@ -189,6 +189,25 @@ concept value_port = parameter<T> && !
 control<T>;
 
 /**
+ * Here T is a e.g. std::span<T>
+ */
+template <typename T>
+concept span_value
+    = requires(T t) {
+        begin(t);
+        end(t);
+        t.extent;
+        t.data();
+        t.size();
+      } && std::is_constructible_v<T, typename T::value_type*, std::size_t> && std::is_trivially_copy_constructible_v<T>;
+template <typename T>
+concept span_parameter = parameter<T> && span_value<std::decay_t<decltype(T::value)>>;
+template <typename T>
+concept span_control = span_parameter<T> && control<T>;
+template <typename T>
+concept span_value_port = span_parameter<T> && value_port<T>;
+
+/**
  * Timed values are used for sample-accurate ports.
  * That is, ports where the time (sample) at which the value
  * happened is known.
@@ -212,13 +231,12 @@ concept linear_timed_values = std::is_pointer_v<T> && requires(T t) { *(t[0]); }
  * };
  */
 template <typename T>
-concept span_timed_values
-    = requires(T t) {
-        {
-          T::value_type::frame
-          } -> avnd::int_ish;
-        T::value_type::value;
-      } && std::is_constructible_v<T, typename T::value_type*, std::size_t> && std::is_trivially_copy_constructible_v<T>;
+concept span_timed_values = span_value<T> && requires(T t) {
+                                               {
+                                                 T::value_type::frame
+                                                 } -> avnd::int_ish;
+                                               T::value_type::value;
+                                             };
 
 /**
  * Here T is a e.g. std::map<int, float> and manages its own allocations

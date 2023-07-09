@@ -75,7 +75,7 @@ struct process_before_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field>)
+    requires(!avnd::sample_accurate_parameter<Field> && !avnd::span_parameter<Field>)
   void operator()(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
@@ -249,6 +249,39 @@ struct process_before_run
   {
   }
 
+  template <avnd::span_parameter Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
+  {
+    auto& dat = port.data.get_data();
+    if(dat.empty())
+      return;
+
+    auto& back = dat.back();
+    auto src_vec = back.value.template target<std::vector<ossia::value>>();
+    if(!src_vec)
+      return;
+
+    using span_in = avnd::span_parameter_input_introspection<Obj_T>;
+    using T = typename decltype(Field::value)::value_type;
+    constexpr auto field_idx
+        = span_in::template field_index_to_index(avnd::field_index<Idx>{});
+    auto& dest_vec = get<field_idx>(self.control_buffers.span_inputs);
+    dest_vec.resize(src_vec->size());
+
+    for(std::size_t i = 0; i < src_vec->size(); i++)
+    {
+      self.from_ossia_value(ctrl, (*src_vec)[i], dest_vec[i], idx);
+    }
+
+    ctrl.value = dest_vec;
+
+    if constexpr(requires { ctrl.update(impl); })
+    {
+      ctrl.update(impl);
+    }
+  }
+
   template <typename Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::geometry_inlet& port, avnd::field_index<Idx>) const noexcept
@@ -291,6 +324,7 @@ struct process_before_run
 
     self.midifile_load_request(*str, Idx);
   }
+
   template <avnd::raw_file_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx>) const noexcept

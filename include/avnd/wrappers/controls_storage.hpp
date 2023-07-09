@@ -10,6 +10,12 @@
 #include <boost/mp11.hpp>
 namespace avnd
 {
+// Field:
+//   struct { std::span<T> value; }
+// This gives us: std::vector<T>
+template <typename Field>
+using span_param_values_type = typename decltype(Field::value)::value_type;
+
 // Field: struct { std::optional<float>* values; }
 // This gives us: std::optional<float>
 template <typename Field>
@@ -23,6 +29,25 @@ using linear_timed_param_values_type
 // This gives us: timed_values
 template <typename Field>
 using span_timed_param_values_type = typename decltype(Field::values)::value_type;
+
+template <typename T>
+struct span_param_input_storage
+{
+};
+
+template <typename T>
+  requires(span_parameter_input_introspection<T>::size > 0)
+struct span_param_input_storage<T>
+{
+  // std::tuple< float, int >
+  using tuple
+      = filter_and_apply<span_param_values_type, span_parameter_input_introspection, T>;
+
+  // std::tuple< std::vector<float>, std::vector<int> >
+  using vectors = boost::mp11::mp_transform<std::vector, tuple>;
+
+  [[no_unique_address]] vectors span_inputs;
+};
 
 template <typename T>
 struct linear_timed_param_input_storage
@@ -59,7 +84,7 @@ struct span_timed_param_input_storage<T>
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors span_inputs;
+  [[no_unique_address]] vectors span_timed_inputs;
 };
 
 template <typename T>
@@ -106,13 +131,15 @@ struct span_timed_param_output_storage<T>
  */
 template <typename T>
 struct control_storage
-    : linear_timed_param_input_storage<T>
+    : span_param_input_storage<T>
+    , linear_timed_param_input_storage<T>
     , linear_timed_param_output_storage<T>
     , span_timed_param_input_storage<T>
     , span_timed_param_output_storage<T>
 {
+  using span_in = span_parameter_input_introspection<T>;
   using lin_in = linear_timed_parameter_input_introspection<T>;
-  using span_in = span_timed_parameter_input_introspection<T>;
+  using span_timed_in = span_timed_parameter_input_introspection<T>;
   using dyn_in = dynamic_timed_parameter_input_introspection<T>;
   using lin_out = linear_timed_parameter_output_introspection<T>;
   using span_out = span_timed_parameter_output_introspection<T>;
@@ -146,12 +173,12 @@ struct control_storage
       lin_out::for_all_n(avnd::get_outputs(t), init_raw_out);
     }
 
-    if constexpr(span_in::size > 0)
+    if constexpr(span_timed_in::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
         // Get the matching buffer in our storage, a std::vector<timed_value>
-        auto& buf = tpl::get<Idx>(this->span_inputs);
+        auto& buf = tpl::get<Idx>(this->span_timed_inputs);
 
         // Allocate enough space for the new buffer size
         buf.reserve(buffer_size);
@@ -159,7 +186,7 @@ struct control_storage
         // Assign the pointer to the std::span<timed_value> values; member in the port
         port.values = {buf.data(), std::size_t(0)};
       };
-      span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
+      span_timed_in::for_all_n(avnd::get_inputs(t), init_raw_in);
     }
     if constexpr(span_out::size > 0)
     {
@@ -183,6 +210,16 @@ struct control_storage
 
   void clear_inputs(avnd::effect_container<T>& t)
   {
+    if constexpr(span_in::size > 0)
+    {
+      auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
+      {
+        auto& buf = tpl::get<Idx>(this->span_inputs);
+        buf.resize(0);
+      };
+      span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
+    }
+
     if constexpr(lin_in::size > 0)
     {
       auto clear_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
@@ -194,14 +231,14 @@ struct control_storage
       lin_in::for_all_n(avnd::get_inputs(t), clear_raw_in);
     }
 
-    if constexpr(span_in::size > 0)
+    if constexpr(span_timed_in::size > 0)
     {
       auto init_raw_in = [&]<auto Idx, typename M>(M & port, avnd::predicate_index<Idx>)
       {
-        auto& buf = tpl::get<Idx>(this->span_inputs);
+        auto& buf = tpl::get<Idx>(this->span_timed_inputs);
         buf.resize(0);
       };
-      span_in::for_all_n(avnd::get_inputs(t), init_raw_in);
+      span_timed_in::for_all_n(avnd::get_inputs(t), init_raw_in);
     }
 
     auto init_dyn = [&](auto&& port) { port.values.clear(); };
