@@ -179,7 +179,7 @@ struct ControlGallery
 #if __has_include(<magic_enum.hpp>)
           fmt::print("changed: {} {}", Control::name(), magic_enum::enum_name(val));
 #else
-          fmt::print("changed: {} {}", Control::name(), std::to_underlying(val));
+          fmt::print("changed: {} {}", Control::name(), static_cast<std::underlying_type_t<decltype(val)>>(val));
 #endif
         } else {
           fmt::print("changed: {} {}", Control::name(), val);
