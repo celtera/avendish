@@ -123,7 +123,7 @@ struct MidiScroller
       // notes off for everyone
       for(auto [pitch, vel] : current_notes)
       {
-        auto m = libremidi::message::note_off(1, pitch, vel);
+        auto m = libremidi::channel_events::note_off(1, pitch, vel);
         outputs.midi.midi_messages.emplace_back(
             halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
       }
@@ -139,7 +139,7 @@ struct MidiScroller
       {
         if(!new_notes.contains({pitch, vel}))
         {
-          auto m = libremidi::message::note_off(1, pitch, vel);
+          auto m = libremidi::channel_events::note_off(1, pitch, vel);
           outputs.midi.midi_messages.emplace_back(
               halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
         }
@@ -148,7 +148,7 @@ struct MidiScroller
       {
         if(!current_notes.contains({pitch, vel}))
         {
-          auto m = libremidi::message::note_on(1, pitch, vel);
+          auto m = libremidi::channel_events::note_on(1, pitch, vel);
           outputs.midi.midi_messages.emplace_back(
               halp::midi_msg{{m.bytes[0], m.bytes[1], m.bytes[2]}, 0});
         }

@@ -165,7 +165,6 @@ struct soundfile_storage : soundfile_input_storage<T>
 };
 }
 
-#include <libremidi/libremidi.hpp>
 #include <libremidi/reader.hpp>
 namespace oscr
 {

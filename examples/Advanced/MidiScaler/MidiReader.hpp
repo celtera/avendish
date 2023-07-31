@@ -66,7 +66,7 @@ struct MidiFileReader
         auto& c = played_notes[i];
         for(uint8_t note : c)
         {
-          auto ev = libremidi::message::note_off(i + 1, note, 0);
+          auto ev = libremidi::channel_events::note_off(i + 1, note, 0);
           outputs.midi.midi_messages.emplace_back(halp::midi_msg{{ev.bytes[0], ev.bytes[1], ev.bytes[2]}, 0});
         }
       }

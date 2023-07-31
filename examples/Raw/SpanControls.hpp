@@ -15,7 +15,7 @@ struct SpanControls
 {
   static consteval auto name() { return "Span example"; }
   static consteval auto c_name() { return "avnd_span"; }
-  static consteval auto uuid() { return "e6c34e9e-fc66-44d4-8798-dd3cd67b7fb2"; }
+  static consteval auto uuid() { return "c701fea2-be38-4759-944a-cd4745162ffe"; }
 
   struct inputs_t
   {

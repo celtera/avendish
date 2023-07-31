@@ -11,7 +11,6 @@
 #include <halp/midifile_port.hpp>
 #include <libremidi/message.hpp>
 
-
 namespace mtk
 {
 /**
@@ -27,16 +26,22 @@ struct MidiFilter
   struct
   {
     halp::midi_bus<"MIDI messages"> midi;
-    struct { halp__enum("Filter type", CC, CC, PitchBend, AfterTouch, PolyPressure); } filter;
-    struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}> {
+    struct
+    {
+      halp__enum("Filter type", CC, CC, PitchBend, AfterTouch, PolyPressure);
+    } filter;
+    struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}>
+    {
       halp_meta(description, "Channel (0 = ALL)")
     } channel;
-    struct : halp::spinbox_i32<"Index", halp::range{0, 128, 1}> {
+    struct : halp::spinbox_i32<"Index", halp::range{0, 128, 1}>
+    {
       halp_meta(description, "Filter (0 = ALL)")
     } index;
   } inputs;
 
-  struct {
+  struct
+  {
     halp::midi_bus<"MIDI messages"> midi;
     halp::val_port<"Raw Output", int> raw;
     halp::val_port<"Normalized", float> normalized;
@@ -47,7 +52,7 @@ struct MidiFilter
   {
     for(auto& msg : inputs.midi)
     {
-      libremidi::message m{{msg.bytes.begin(), msg.bytes.end()}, (double)msg.timestamp};
+      libremidi::message m({msg.bytes.begin(), msg.bytes.end()}, msg.timestamp);
       if(inputs.channel != 0 && m.get_channel() == inputs.channel)
         continue;
 
