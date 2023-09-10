@@ -59,12 +59,25 @@ function(avnd_make_max)
     PRIVATE
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_max.cpp"
       "${MAXSDK_MAX_INCLUDE_DIR}/common/commonsyms.c"
+
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/all.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_iterator.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/audio_processor.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/configure.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/init.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/inputs.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/message_processor.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/messages.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/outputs.hpp"
   )
 
   target_compile_definitions(
     ${AVND_FX_TARGET}
     PRIVATE
       AVND_MAXMSP=1
+      MAXAPI_USE_MSCRT=1
   )
 
   target_include_directories(${AVND_FX_TARGET} PRIVATE
@@ -83,13 +96,13 @@ function(avnd_make_max)
     find_library(MAXSDK_API_LIBRARY NAMES MaxAPI HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
     find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudioAPI HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
 
-    target_compile_definitions(${AVND_FX_TARGET} PRIVATE MAC_VERSION)
+    target_compile_definitions(${AVND_FX_TARGET} PUBLIC MAC_VERSION)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE True)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE_EXTENSION "mxo")
     target_link_libraries(${AVND_FX_TARGET} PRIVATE -Wl,-undefined,dynamic_lookup)
     file(COPY "${AVND_SOURCE_DIR}/include/avnd/binding/max/resources/PkgInfo" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/)
   elseif(WIN32)
-    target_compile_definitions(${AVND_FX_TARGET} PRIVATE WIN_VERSION _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(${AVND_FX_TARGET} PUBLIC WIN_VERSION _CRT_SECURE_NO_WARNINGS)
     if("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
         set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe64")
         find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}/x64")
@@ -115,16 +128,3 @@ endfunction()
 add_library(Avendish_max INTERFACE)
 target_link_libraries(Avendish_max INTERFACE Avendish)
 add_library(Avendish::Avendish_max ALIAS Avendish_max)
-
-target_sources(Avendish PRIVATE
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_iterator.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/audio_processor.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/configure.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/init.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/message_processor.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/inputs.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/messages.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/outputs.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"
-)

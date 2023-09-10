@@ -202,11 +202,15 @@ struct init_arguments
   static void call(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using namespace std;
-    if constexpr(requires { avnd::type_list<decltype(T::initialize)>; })
+    if constexpr(requires { avnd::type_list<decltype(T::initialize)>; } && avnd::type_list<decltype(T::initialize)>)
     {
       if constexpr(avnd::type_list<decltype(T::initialize)>)
       {
         call_overloaded(implementation, name, argc, argv);
+      }
+      else
+      {
+        static_assert(std::is_same_v<T, void>);
       }
     }
     else if constexpr(requires { decltype(&T::initialize){}; })

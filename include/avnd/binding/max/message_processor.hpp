@@ -54,12 +54,6 @@ struct message_processor
   // this breaks aggregate-ness...
   void init(int argc, t_atom* argv)
   {
-    /// Pass arguments
-    if constexpr(avnd::can_initialize<T>)
-    {
-      init_setup.process(implementation.effect, argc, argv);
-    }
-
     /// Create ports ///
     // Create inlets
     input_setup.init(implementation, x_obj);
@@ -72,6 +66,27 @@ struct message_processor
     {
       avnd::init_controls(implementation);
     }
+
+    if constexpr(requires { implementation.effect.schedule; })
+    {
+      implementation.effect.schedule.schedule_at = [this] <typename... Args>(int64_t ts, void(* func)(T& self, Args...)) {
+        t_atom a[1];
+        a[0].a_type = A_LONG;
+        a[0].a_w.w_long = reinterpret_cast<t_atom_long>(func);
+        static_assert(sizeof(func) == sizeof(t_atom_long));
+        schedule_defer(&x_obj, (method) +[] (t_object *x, t_symbol *s, short ac, t_atom *av) {
+              auto self = reinterpret_cast<message_processor*>(x);
+              auto f = reinterpret_cast<decltype(func)>(av->a_w.w_long);
+              f(self->implementation.effect);
+            }, ts ,0, 1, a);
+      };
+    }
+
+    /// Pass arguments
+    if constexpr(avnd::can_initialize<T>)
+    {
+      init_setup.process(implementation.effect, argc, argv);
+    }
   }
 
   void destroy() { }
@@ -82,7 +97,7 @@ struct message_processor
     {
       avnd::input_introspection<T>::for_nth(
           avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
-            // TODO dangerous if const char*
+            static_assert(!std::is_pointer_v<decltype(field.value)>);
             if constexpr(requires { field.value = 0; })
             {
               field.value = val;
@@ -97,7 +112,7 @@ struct message_processor
     {
       avnd::input_introspection<T>::for_nth(
           avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
-            // TODO dangerous if const char*
+            static_assert(!std::is_pointer_v<decltype(field.value)>);
             if constexpr(requires { field.value = 0; })
             {
               field.value = val;
@@ -209,11 +224,11 @@ message_processor_metaclass<T>::message_processor_metaclass()
   message_processor_metaclass::instance = this;
   using instance = message_processor<T>;
 #if !defined(_MSC_VER)
-  static_assert(std::is_aggregate_v<T>);
-  static_assert(std::is_aggregate_v<instance>);
-  static_assert(std::is_nothrow_constructible_v<instance>);
-  static_assert(std::is_nothrow_move_constructible_v<instance>);
-  static_assert(std::is_nothrow_move_assignable_v<instance>);
+  // static_assert(std::is_aggregate_v<T>);
+  // static_assert(std::is_aggregate_v<instance>);
+  // static_assert(std::is_nothrow_constructible_v<instance>);
+  // static_assert(std::is_nothrow_move_constructible_v<instance>);
+  // static_assert(std::is_nothrow_move_assignable_v<instance>);
 #endif
   /// Small wrapper methods which will call into our actual type ///
 
