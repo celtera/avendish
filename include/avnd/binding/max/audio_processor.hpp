@@ -262,10 +262,15 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
+    t_object tmp;
+    memcpy(&tmp, ptr, sizeof(t_object));
 
     // Initializes the rest
     auto obj = reinterpret_cast<instance*>(ptr);
     new(obj) instance;
+
+    memcpy(&obj->x_obj, &tmp, sizeof(t_object));
+
     obj->init(argc, argv);
     return obj;
   };

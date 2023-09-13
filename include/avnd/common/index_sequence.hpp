@@ -59,7 +59,7 @@ static constexpr auto integer_sequence_to_inverse_array(std::integer_sequence<T,
 {
   if constexpr(sizeof...(N) > 0)
   {
-    constexpr int max = std::max({N...});
+    constexpr int max = (std::max)({N...});
     std::array<T, max + 1> ret{};
     int k = 0;
     for(T val : {N...})

@@ -10,6 +10,11 @@
 namespace max
 {
 
+template <typename Field>
+using is_explicit_parameter_t = boost::mp11::mp_bool<avnd::parameter<Field> && !avnd::attribute_port<Field>>;
+template<typename T>
+using explicit_parameter_input_introspection = avnd::predicate_introspection<typename avnd::inputs_type<T>::type, is_explicit_parameter_t>;
+
 template <typename T>
 struct inputs
 {
@@ -17,10 +22,10 @@ struct inputs
 };
 
 template <typename T>
-  requires(avnd::parameter_input_introspection<T>::size > 0)
+  requires(explicit_parameter_input_introspection<T>::size > 0)
 struct inputs<T>
 {
-  using refl = avnd::parameter_input_introspection<T>;
+  using refl = explicit_parameter_input_introspection<T>;
   // TODO free them
   static constexpr int proxy_count = refl::size - 1;
 

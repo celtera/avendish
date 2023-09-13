@@ -7,6 +7,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <map>
 
 namespace examples
 {

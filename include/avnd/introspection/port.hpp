@@ -207,6 +207,12 @@ using is_curve_t = boost::mp11::mp_bool<curve_port<Field>>;
 template <typename T>
 using curve_introspection = predicate_introspection<T, is_curve_t>;
 
+// Attributes
+template <typename Field>
+using is_attribute_t = boost::mp11::mp_bool<attribute_port<Field>>;
+template <typename T>
+using attribute_introspection = predicate_introspection<T, is_attribute_t>;
+
 // FFT
 template <typename Field>
 using is_spectrum_split_channel_port_t

@@ -158,6 +158,12 @@ struct curve_input_introspection : curve_introspection<typename inputs_type<T>::
 };
 
 template <typename T>
+struct attribute_input_introspection : attribute_introspection<typename inputs_type<T>::type>
+{
+};
+
+
+template <typename T>
 struct spectrum_split_channel_input_introspection
     : spectrum_split_channel_port_introspection<typename inputs_type<T>::type>
 {

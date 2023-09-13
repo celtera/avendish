@@ -47,6 +47,7 @@ struct Callback
     {
       static consteval auto name() { return "bang"; }
       halp::basic_callback<void(float)> call;
+      static_assert(avnd::function_view_ish<decltype(call)>);
     } bang;
 
     // Using std::function or similar should also work without issues:
@@ -56,6 +57,7 @@ struct Callback
     {
       static consteval auto name() { return "bong"; }
       std::function<void(float)> call;
+      static_assert(avnd::function_ish<decltype(call)>);
     } bong;
 
     // TODO: std::function_ref.

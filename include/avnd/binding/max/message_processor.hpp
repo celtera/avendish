@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/max/attributes_setup.hpp>
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/inputs.hpp>
@@ -67,7 +68,7 @@ struct message_processor
       avnd::init_controls(implementation);
     }
 
-    if constexpr(requires { implementation.effect.schedule; })
+    if constexpr(avnd::has_schedule<T>)
     {
       implementation.effect.schedule.schedule_at = [this] <typename... Args>(int64_t ts, void(* func)(T& self, Args...)) {
         t_atom a[1];
@@ -78,7 +79,7 @@ struct message_processor
               auto self = reinterpret_cast<message_processor*>(x);
               auto f = reinterpret_cast<decltype(func)>(av->a_w.w_long);
               f(self->implementation.effect);
-            }, ts ,0, 1, a);
+            }, (long)ts, 0, 1, a);
       };
     }
 
@@ -95,12 +96,17 @@ struct message_processor
   {
     if constexpr(avnd::has_inputs<T>)
     {
-      avnd::input_introspection<T>::for_nth(
-          avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
-            static_assert(!std::is_pointer_v<decltype(field.value)>);
+      auto& obj = this->implementation.effect;
+      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
+          avnd::get_inputs<T>(implementation), inlet, [&obj, val](auto& field) {
             if constexpr(requires { field.value = 0; })
             {
+              static_assert(!std::is_pointer_v<decltype(field.value)>);
               field.value = val;
+              if constexpr(requires { field.update(obj); })
+              {
+                field.update(obj);
+              }
             }
           });
     }
@@ -110,12 +116,17 @@ struct message_processor
   {
     if constexpr(avnd::has_inputs<T>)
     {
-      avnd::input_introspection<T>::for_nth(
-          avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
-            static_assert(!std::is_pointer_v<decltype(field.value)>);
+      auto& obj = this->implementation.effect;
+      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
+          avnd::get_inputs<T>(implementation), inlet, [&obj, val](auto& field) {
             if constexpr(requires { field.value = 0; })
             {
+              static_assert(!std::is_pointer_v<decltype(field.value)>);
               field.value = val;
+              if constexpr(requires { field.update(obj); })
+              {
+                field.update(obj);
+              }
             }
           });
     }
@@ -125,12 +136,17 @@ struct message_processor
   {
     if constexpr(avnd::has_inputs<T>)
     {
-      avnd::input_introspection<T>::for_nth(
-          avnd::get_inputs<T>(implementation), inlet, [val](auto& field) {
-            // TODO dangerous if const char*
+      auto& obj = this->implementation.effect;
+      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
+          avnd::get_inputs<T>(implementation), inlet, [&obj, val](auto& field) {
             if constexpr(requires { field.value = "str"; })
             {
+              static_assert(!std::is_pointer_v<decltype(field.value)>);
               field.value = val->s_name;
+              if constexpr(requires { field.update(obj); })
+              {
+                field.update(obj);
+              }
             }
           });
     }
@@ -140,23 +156,16 @@ struct message_processor
   {
     if constexpr(avnd::has_inputs<T>)
     {
-      switch(argv[0].a_type)
-      {
-        case A_LONG:
-          process_inlet_control(inlet, argv[0].a_w.w_long);
-          break;
-
-        case A_FLOAT:
-          process_inlet_control(inlet, argv[0].a_w.w_float);
-          break;
-
-        case A_SYM:
-          process_inlet_control(inlet, argv[0].a_w.w_sym);
-          break;
-
-        default:
-          break;
-      }
+      auto& obj = this->implementation.effect;
+      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
+          avnd::get_inputs<T>(implementation), inlet, [&obj, argc, argv](auto& field) {
+        if(from_atoms{argc, argv}(field.value)) {
+          if constexpr(requires { field.update(obj); })
+          {
+            field.update(obj);
+          }
+        }
+      });
     }
   }
 
@@ -174,6 +183,7 @@ struct message_processor
   void process(V value)
   {
     const int inlet = proxy_getinlet(&x_obj);
+
     // Process the control
     process_inlet_control(inlet, value);
 
@@ -236,10 +246,15 @@ message_processor_metaclass<T>::message_processor_metaclass()
   constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
+    t_object tmp;
+    memcpy(&tmp, ptr, sizeof(t_object));
 
     // Initializes the rest
     auto obj = reinterpret_cast<instance*>(ptr);
     new(obj) instance;
+
+    memcpy(&obj->x_obj, &tmp, sizeof(t_object));
+
     obj->init(argc, argv);
     return obj;
   };
@@ -279,13 +294,11 @@ message_processor_metaclass<T>::message_processor_metaclass()
   class_addmethod(g_class, (method)obj_process_bang, "bang", A_NOTHING, 0);
   class_addmethod(g_class, (method)obj_process, "anything", A_GIMME, 0);
 
+  using attrs = avnd::attribute_input_introspection<T>;
+
+  attrs::for_all(attribute_register<instance, T>{g_class});
+
   class_register(CLASS_BOX, g_class);
 }
 
 }
-
-#define PD_DEFINE_EFFECT(EffectCName, EffectMainClass)                        \
-  extern "C" AVND_EXPORTED_SYMBOL void EffectCName##_setup()                  \
-  {                                                                           \
-    static const pd::message_processor_metaclass<EffectMainClass> instance{}; \
-  }

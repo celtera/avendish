@@ -61,16 +61,20 @@ function(avnd_make_max)
       "${MAXSDK_MAX_INCLUDE_DIR}/common/commonsyms.c"
 
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/all.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/attributes_setup.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_helpers.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_iterator.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/audio_processor.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/configure.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/from_atoms.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/init.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/inputs.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/message_processor.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/messages.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/outputs.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/to_atoms.hpp"
   )
 
   target_compile_definitions(

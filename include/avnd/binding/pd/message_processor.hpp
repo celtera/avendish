@@ -225,9 +225,3 @@ message_processor_metaclass<T>::message_processor_metaclass()
 }
 
 }
-
-#define PD_DEFINE_EFFECT(EffectCName, EffectMainClass)                        \
-  extern "C" AVND_EXPORTED_SYMBOL void EffectCName##_setup()                  \
-  {                                                                           \
-    static const pd::message_processor_metaclass<EffectMainClass> instance{}; \
-  }
