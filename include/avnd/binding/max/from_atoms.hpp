@@ -2,7 +2,11 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/aggregates.hpp>
+#if !defined(__cpp_lib_to_chars)
+#include <boost/lexical_cast.hpp>
+#else
 #include <charconv>
+#endif
 #include <string>
 #include <ext.h>
 
@@ -35,12 +39,20 @@ struct from_atom
         if(sym && sym->s_name)
         {
           double vv{};
+          #if defined(__cpp_lib_to_chars)
           auto [_, ec] = std::from_chars(sym->s_name, sym->s_name + strlen(sym->s_name), vv);
           if(ec == std::errc{})
           {
             v = vv;
             return true;
           }
+          #else
+          if(boost::conversion::try_lexical_convert(str, vv))
+          {
+            v = vv;
+            return true;
+          }
+          #endif
         }
         return false;
       }
