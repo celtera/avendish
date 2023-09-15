@@ -12,9 +12,6 @@
 
 #include <string_view>
 
-struct t_inlet;
-struct t_outlet;
-
 namespace max
 {
 static constexpr bool valid_char_for_name(char c)

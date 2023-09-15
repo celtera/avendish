@@ -47,6 +47,7 @@ struct from_atom
             return true;
           }
           #else
+          std::string_view str{sym->s_name, sym->s_name + strlen(sym->s_name)};
           if(boost::conversion::try_lexical_convert(str, vv))
           {
             v = vv;

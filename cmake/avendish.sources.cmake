@@ -3,7 +3,17 @@ add_library(Avendish::Avendish ALIAS Avendish)
 
 
 if(MSVC)
-  target_compile_options(Avendish PUBLIC /std:c++latest)
+  target_compile_options(Avendish
+      PUBLIC
+       -std:c++latest
+       -Zi
+       "-permissive-"
+       "-Zc:__cplusplus"
+       "-Zc:enumTypes"
+       "-Zc:inline"
+       "-Zc:preprocessor"
+       "-Zc:templateScope"
+       -wd4244)
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
 endif()
 

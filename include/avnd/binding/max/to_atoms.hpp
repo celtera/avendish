@@ -225,8 +225,7 @@ struct to_atoms
   {
     if(auto atoms = allocate(1, ac, av); !atoms.empty())
     {
-      const t_symbol* sym = gensym(v.data());
-      atom_setsym(&atoms[0], sym);
+      atom_setsym(&atoms[0], gensym(v.data()));
       return MAX_ERR_NONE;
     }
     return MAX_ERR_OUT_OF_MEM;

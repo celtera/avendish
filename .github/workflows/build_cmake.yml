@@ -74,14 +74,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Checkout dependencies
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ossia/score
           submodules: "recursive"
           path: score
+
+      - name: Checkout Max SDK
+        uses: actions/checkout@v3
+        with:
+          repository: jcelerier/max-sdk-base
+          submodules: "recursive"
+          path: max-sdk-base
 
       - name: Install dependencies
         shell: bash
@@ -110,13 +117,14 @@ jobs:
             export PATH=${{ matrix.config.path }}:$PATH
           fi
 
+          export MAX_SDK=$PWD/../max-sdk-base
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
 
           cmake .. \
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
-            -DAVND_MAXSDK_PATH=$SDK_3RDPARTY/libossia/3rdparty/max-sdk \
+            -DAVND_MAXSDK_PATH=$MAX_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             ${{ matrix.config.common_flags }} \
@@ -145,13 +153,14 @@ jobs:
             export PATH=${{ matrix.config.path }}:$PATH
           fi
 
+          export MAX_SDK=$PWD/../max-sdk-base
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
 
           cmake .. \
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
-            -DAVND_MAXSDK_PATH=$SDK_3RDPARTY/libossia/3rdparty/max-sdk \
+            -DAVND_MAXSDK_PATH=$MAX_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src;$SDK_3RDPARTY/libossia/3rdparty/pybind11" \
             ${{ matrix.config.common_flags }} \

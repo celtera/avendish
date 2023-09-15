@@ -6,8 +6,13 @@ if(NOT AVND_MAXSDK_PATH)
   return()
 endif()
 
-set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/max-includes")
-set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/msp-includes")
+if(EXISTS "${AVND_MAXSDK_PATH}/source/c74support/max-includes")
+  set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/max-includes")
+  set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/msp-includes")
+elseif(EXISTS "${AVND_MAXSDK_PATH}/c74support/max-includes")
+  set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/max-includes")
+  set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/msp-includes")
+endif()
 
 if(APPLE)
   find_library(MAXSDK_API_LIBRARY NAMES MaxAPI HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
@@ -82,6 +87,7 @@ function(avnd_make_max)
     PRIVATE
       AVND_MAXMSP=1
       MAXAPI_USE_MSCRT=1
+      C74_USE_STRICT_TYPES=1
   )
 
   target_include_directories(${AVND_FX_TARGET} PRIVATE
