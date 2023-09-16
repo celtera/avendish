@@ -144,7 +144,8 @@ struct outputs
           });
 
       out_k = N;
-      for(auto name : std::ranges::reverse_view(names)) {
+      for(auto it = names.crbegin(); it != names.crend(); ++it) {
+        const auto& name = *it;
         outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));
       }
 

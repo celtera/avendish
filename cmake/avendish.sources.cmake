@@ -1,7 +1,6 @@
 add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
-
 if(MSVC)
   target_compile_options(Avendish
       PUBLIC

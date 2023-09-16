@@ -47,7 +47,7 @@ struct from_atom
             return true;
           }
           #else
-          std::string_view str{sym->s_name, sym->s_name + strlen(sym->s_name)};
+          std::string_view str{sym->s_name, strlen(sym->s_name)};
           if(boost::conversion::try_lexical_convert(str, vv))
           {
             v = vv;
@@ -94,7 +94,7 @@ struct from_atoms
     requires std::is_enum_v<T>
   bool operator()(T& v) const noexcept
   {
-    auto r = std::to_underlying(v);
+    auto r = static_cast<std::underlying_type_t<T>>(v);
     auto res = from_atom{av[0]}(r);
     if(res)
       v = static_cast<T>(r);
