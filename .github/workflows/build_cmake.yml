@@ -73,7 +73,7 @@ jobs:
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
               sdk: "/opt/ossia-sdk-x86_64",
-              pre_build: "xcode-select -s /Applications/Xcode_15.0.app"
+              pre_build: "sudo xcode-select -s /Applications/Xcode_15.0.app"
             }
 
     steps:
