@@ -16,7 +16,6 @@
 
 namespace stv3
 {
-
 template <typename T>
 class Controller final
     : public stv3::ControllerCommon
@@ -109,7 +108,7 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        if_possible(res = avnd::map_control_from_01_to_fp<C>(valueNormalized));
+        assign_if_assignable(res, avnd::map_control_from_01_to_fp<C>(valueNormalized));
       });
     }
     return res;
@@ -122,7 +121,7 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        if_possible(res = avnd::map_control_from_fp_to_01<C>(plainValue));
+        assign_if_assignable(res, avnd::map_control_from_fp_to_01<C>(plainValue));
       });
     }
     return res;
@@ -135,7 +134,7 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        if_possible(res = avnd::map_control_to_01(field));
+        assign_if_assignable(res, avnd::map_control_to_01(field));
       });
     }
     return res;
@@ -149,7 +148,7 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        if_possible(field.value = avnd::map_control_from_01<C>(value));
+        assign_if_assignable(field.value, avnd::map_control_from_01<C>(value));
       });
     }
 
@@ -171,10 +170,13 @@ public:
     {
       bool ok = inputs_info_t::for_all_unless(
           this->inputs_mirror, [&]<typename C>(C& field) -> bool {
+
             double param = 0.f;
             if(streamer.readDouble(param) == false)
               return false;
-            if_possible(field.value = avnd::map_control_from_01<C>(param));
+
+            assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
+
             return true;
           });
 

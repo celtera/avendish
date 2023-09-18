@@ -26,6 +26,21 @@ namespace avnd
   }                                \
   ()
 
+#if defined(_MSC_VER)
+#define assign_if_assignable(dst, src)                             \
+  do                                                               \
+    if constexpr(requires { src; })                                \
+    {                                                              \
+      using val_type = std::add_lvalue_reference_t<decltype(dst)>; \
+      using ret_type = decltype(src);                              \
+      if constexpr(std::is_assignable_v<val_type, ret_type>)       \
+        dst = src;                                                 \
+    }                                                              \
+  while(0)
+#else
+#define assign_if_assignable(dst, src) if_possible(dst = src);
+#endif
+
 // Very generic concepts
 template <typename T>
 concept vector_ish = requires(T t) {
