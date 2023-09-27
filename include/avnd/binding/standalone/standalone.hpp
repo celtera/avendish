@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #if __has_include(<ossia/detail/config.hpp>)
+#include <avnd/binding/standalone/audio.hpp>
 #if __has_include(<ossia/protocols/oscquery/oscquery_server_asio.hpp>)
 #define AVND_STANDALONE_OSCQUERY 1
 #include <avnd/binding/standalone/oscquery_mapper.hpp>

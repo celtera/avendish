@@ -132,7 +132,7 @@ concept mono_per_sample_arg_processor
           || std::is_invocable_r_v<FP, T, FP, const typename T::inputs&, typename T::outputs&, const typename T::tick&>);
 
 template <typename FP, typename T>
-concept mono_per_sample_port_invocations =
+concept per_sample_port_invocations =
     (std::is_invocable_r_v<void, T>
   || std::is_invocable_r_v<void, T, const typename T::inputs&>
   || std::is_invocable_r_v<void, T, typename T::outputs&>
@@ -146,13 +146,13 @@ template <typename FP, typename T>
 concept mono_per_sample_port_processor
     = (sample_input_port_count<FP, T> == 1)
    && (sample_output_port_count<FP, T> == 1)
-   && mono_per_sample_port_invocations<FP, T>;
+   && per_sample_port_invocations<FP, T>;
 template <typename FP, typename T>
 concept poly_per_sample_port_processor =
     ((sample_input_port_count<FP, T> > 1)
      || (sample_output_port_count<FP, T> > 1)
      || (sample_input_port_count<FP, T> != sample_output_port_count<FP, T>))
-    && mono_per_sample_port_invocations<FP, T>;
+    && per_sample_port_invocations<FP, T>;
 
 /*
 template <typename T>

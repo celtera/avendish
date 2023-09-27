@@ -8,7 +8,6 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 #include <avnd/wrappers/widgets.hpp>
-#include <ossia/audio/audio_engine.hpp>
 #include <ossia/detail/config.hpp>
 #include <ossia/detail/timer.hpp>
 #include <ossia/network/base/node_functions.hpp>
@@ -36,38 +35,15 @@ struct oscquery_mapper
   std::shared_ptr<ossia::net::network_context> m_context;
   ossia::net::generic_device m_dev;
 
-  oscquery_mapper(avnd::effect_container<T>& object)
+  explicit oscquery_mapper(avnd::effect_container<T>& object, int osc_port, int ws_port)
       : object{object}
       , m_context{std::make_shared<ossia::net::network_context>()}
       , m_dev{
             std::make_unique<ossia::oscquery_asio::oscquery_server_protocol>(
-                m_context, 1234, 5678),
+                m_context, osc_port, ws_port),
             "my_device"}
   {
     create_ports();
-    /*
-    // Create a few float parameters
-    std::vector<ossia::net::parameter_base*> my_params;
-    for(int i = 0; i < 10; i++)
-    {
-      auto& node = find_or_create_node(m_dev, "/tes t/ fo o." + std::to_string(i));
-      auto param = node.create_parameter(ossia::val_type::FLOAT);
-      param->push_value(0.1 + 0.01 * i);
-
-      my_params.push_back(param);
-    }
-
-    using namespace std::chrono_literals;
-    ossia::timer timer{m_context->context};
-    timer.set_delay(100ms);
-    timer.start([&] {
-      for(auto param : my_params)
-      {
-        const auto v = param->value().get<float>();
-        param->push_value(3.7f * v * (1.f - v));
-      }
-    });
-    */
   }
 
   template <avnd::parameter Field>
@@ -164,17 +140,17 @@ struct oscquery_mapper
 
     else if constexpr(std::is_same_v<Arg, bool>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
-             || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
+             || type == ossia::val_type::BOOL;
     else if constexpr(std::is_same_v<Arg, char>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
-             || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
+             || type == ossia::val_type::BOOL;
 
     else if constexpr(std::floating_point<Arg>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
-             || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
+             || type == ossia::val_type::BOOL;
     else if constexpr(std::integral<Arg>)
       return type == ossia::val_type::FLOAT || type == ossia::val_type::INT
-             || type == ossia::val_type::CHAR || type == ossia::val_type::BOOL;
+             || type == ossia::val_type::BOOL;
 
     return false;
   }
@@ -232,7 +208,7 @@ struct oscquery_mapper
     }
     else if constexpr(std::is_same_v<arg_t, const char*>)
     {
-      call_message_impl<f>(ossia::convert<std::string>(in));
+      call_message_impl<f>(ossia::convert<std::string>(in).c_str());
     }
     else if constexpr(std::is_same_v<arg_t, std::string>)
     {
@@ -271,7 +247,7 @@ struct oscquery_mapper
     }
     else if constexpr(std::is_same_v<arg_t, const char*>)
     {
-      f(object.effect, ossia::convert<std::string>(in));
+      f(object.effect, ossia::convert<std::string>(in).c_str());
     }
     else if constexpr(std::is_same_v<arg_t, std::string>)
     {

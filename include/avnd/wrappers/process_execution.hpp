@@ -107,6 +107,44 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
   }
 }
 
+template <typename T, typename Tick>
+  requires requires(Tick t) { t.frames = 1; }
+auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_data)
+{
+  // Nice little C++20 goodie: remove_cvref_t
+  // unused in the end using tick_setup_t = std::remove_cvref_t<avnd::second_argument<&T::operator()>>;
+  if constexpr(has_tick<T>)
+  {
+    using tick_t = typename T::tick;
+    static_assert(std::is_aggregate_v<tick_t>);
+
+    tick_t t{};
+    if_possible(t.frames = tick_data.frames);
+    if_possible(t.relative_position = tick_data.relative_position);
+    if_possible(t.parent_duration = tick_data.parent_duration);
+    if_possible(t.speed = tick_data.speed);
+    if_possible(t.tempo = tick_data.tempo);
+    if constexpr(
+        requires { t.signature; } && requires { tick_data.signature; })
+    {
+      auto [num, denom] = tick_data.signature;
+      t.signature = {num, denom};
+    }
+    if_possible(t.position_in_frames = tick_data.position_in_frames);
+    if_possible(t.position_in_seconds = tick_data.position_in_seconds);
+    if_possible(t.position_in_nanoseconds = tick_data.position_in_nanoseconds);
+    if_possible(t.start_position_in_quarters = tick_data.start_position_in_quarters);
+    if_possible(t.end_position_in_quarters = tick_data.end_position_in_quarters);
+
+    // Position of the last bar relative to start in quarter notes
+    if_possible(t.bar_at_start = tick_data.bar_at_start);
+
+    // Position of the last bar relative to end in quarter notes
+    if_possible(t.bar_at_end = tick_data.bar_at_end);
+
+    return t;
+  }
+}
 inline constexpr auto get_frames(std::integral auto v)
 {
   return v;
@@ -117,6 +155,13 @@ template <typename Tick>
 inline constexpr auto get_frames(const Tick& v)
 {
   return v.frames();
+}
+
+template <typename Tick>
+  requires requires(Tick t) { t.frames = 1; }
+inline constexpr auto get_frames(const Tick& v)
+{
+  return v.frames;
 }
 
 template <typename T>
@@ -136,6 +181,18 @@ get_tick_or_frames(avnd::effect_container<T>& implementation, std::integral auto
     return v;
   }
 }
+
+template <typename T, typename Tick>
+  requires requires(Tick t) { t.frames = 1; }
+inline constexpr auto
+get_tick_or_frames(avnd::effect_container<T>& implementation, const Tick& v)
+{
+  if constexpr(avnd::has_tick<T>)
+    return current_tick(implementation, v);
+  else
+    return v.frames;
+}
+
 template <typename T, typename Tick>
   requires requires(Tick t) { t.frames(); }
 inline constexpr auto

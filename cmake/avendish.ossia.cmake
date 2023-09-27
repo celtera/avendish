@@ -1,7 +1,8 @@
 find_package(ossia QUIET)
 find_package(SDL2 QUIET)
 
-if(NOT TARGET ossia::ossia)
+if(1)
+#if(NOT TARGET ossia::ossia)
   message(STATUS "libossia not found, skipping bindings...")
 
   function(avnd_make_ossia)

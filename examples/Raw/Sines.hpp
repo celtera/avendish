@@ -4,6 +4,7 @@
 
 #include <cmath>
 
+#include <numbers>
 #include <ratio>
 #include <vector>
 
@@ -96,10 +97,10 @@ struct Sine
   void operator()(const inputs& inputs, outputs& outputs)
   {
     const double phi[4] = {
-        2 * 3.14 * inputs.f1.value / setup.rate,
-        2 * 3.14 * inputs.f2.value / setup.rate,
-        2 * 3.14 * inputs.f3.value / setup.rate,
-        2 * 3.14 * inputs.f4.value / setup.rate,
+        2. * std::numbers::pi * inputs.f1.value / setup.rate,
+        2. * std::numbers::pi * inputs.f2.value / setup.rate,
+        2. * std::numbers::pi * inputs.f3.value / setup.rate,
+        2. * std::numbers::pi * inputs.f4.value / setup.rate,
     };
     outputs.audio.sample = 0.;
     for(int i = 0; i < 4; i++)

@@ -109,7 +109,7 @@ function(avnd_make_standalone)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
-  target_sources(Avendish PRIVATE
+  target_sources("${AVND_FX_TARGET}" PRIVATE
     "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/audio.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/configure.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/standalone.hpp"
@@ -139,6 +139,7 @@ function(avnd_make_standalone)
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
+      ${AVENDISH_SOURCES}
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_standalone.cpp"
   )
 
@@ -167,7 +168,7 @@ function(avnd_make_standalone)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
-  target_sources(Avendish PRIVATE
+  target_sources(${AVND_FX_TARGET} PRIVATE
     "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/audio.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/configure.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/binding/standalone/standalone.hpp"

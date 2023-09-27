@@ -78,6 +78,13 @@ avnd_make_object(
   C_NAME avnd_init
   )
 
+avnd_make_all(
+  TARGET Sines
+  MAIN_FILE examples/Raw/Sines.hpp
+  MAIN_CLASS examples::Sine
+  C_NAME avnd_sines
+)
+
 avnd_make_object(
   TARGET Callback
   MAIN_FILE examples/Raw/Callback.hpp

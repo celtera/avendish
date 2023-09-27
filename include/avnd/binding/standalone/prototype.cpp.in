@@ -1,11 +1,19 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
+#include <avnd/binding/standalone/configure.hpp>
+#include <avnd/binding/standalone/standalone.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/effect_container.hpp>
+
 #include <@AVND_MAIN_FILE@>
 
-#include <avnd/wrappers/effect_container.hpp>
-#include <avnd/binding/standalone/standalone.hpp>
-#include <avnd/binding/standalone/configure.hpp>
+#if AVND_STANDALONE_QML
+#include <QCommandLineOption>
+#include <QCommandLineParser>
+#endif
 
+// clang-format off
 using type = decltype(avnd::configure<standalone::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
 
 void run_ui(auto& object)
 {
@@ -28,32 +36,97 @@ void run_ui(auto& object)
   }
 #endif
 }
+
 int main(int argc, char** argv)
 {
-  // Create the object
-  avnd::effect_container< type > object;
-
-#if 0
-  // Create an oscquery interface to it.
-  standalone::oscquery_mapper< type > oscq{object};
-
-  std::thread t{[&] { oscq.run(); }};
-#endif
+  int in_channels = 2.;
+  int out_channels = 2.;
+  int buffer_size = 256.;
+  int sample_rate = 48000.;
+  int osc_port = 1234;
+  int ws_port = 5678;
 
 #if AVND_STANDALONE_QML
   qputenv("QML_DISABLE_DISTANCEFIELD", "1");
-  qputenv("QT_SCALE_FACTOR", "2");
+  qputenv("QT_SCALE_FACTOR", "1");
   qputenv("QT_ASSUME_STDERR_HAS_CONSOLE", "1");
   qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", "Dark");
 
+  QCoreApplication::setApplicationName(
+      QString::fromStdString(std::string(avnd::get_name<type>())));
+  QCoreApplication::setApplicationVersion(
+      QString::fromStdString(std::string(avnd::get_version<type>())));
+  QCoreApplication::setOrganizationName(
+      QString::fromStdString(std::string(avnd::get_author<type>())));
   QGuiApplication app(argc, argv);
+
+  {
+    QCommandLineParser parser;
+    parser.addHelpOption();
+    parser.addVersionOption();
+    auto opt_in_channels = (QCommandLineOption{
+        {"i", "inputs"},
+        QCoreApplication::translate("main", "Default input <channels>."),
+        QCoreApplication::translate("main", "channels")});
+    parser.addOption(opt_in_channels);
+    auto opt_out_channels = (QCommandLineOption{
+        {"o", "outputs"},
+        QCoreApplication::translate("main", "Default output <channels>."),
+        QCoreApplication::translate("main", "channels")});
+    parser.addOption(opt_out_channels);
+    auto opt_bs = (QCommandLineOption{
+        {"b", "buffer-size"},
+        QCoreApplication::translate("main", "Buffer <size> in samples."),
+        QCoreApplication::translate("main", "size")});
+    parser.addOption(opt_bs);
+    auto opt_rate = (QCommandLineOption{
+        {"r", "rate"},
+        QCoreApplication::translate("main", "Sample <rate>."),
+        QCoreApplication::translate("main", "rate")});
+    parser.addOption(opt_rate);
+    auto opt_osc = (QCommandLineOption{
+        {"u", "udp"},
+        QCoreApplication::translate("main", "OSCQuery <port> over UDP."),
+        QCoreApplication::translate("main", "port")});
+    parser.addOption(opt_osc);
+    auto opt_ws = (QCommandLineOption{
+        {"w", "ws"},
+        QCoreApplication::translate("main", "OSCQuery <port> over WebSockets."),
+        QCoreApplication::translate("main", "port")});
+    parser.addOption(opt_ws);
+    parser.process(app);
+    if(parser.isSet(opt_in_channels))
+      in_channels = parser.value(opt_in_channels).toInt();
+    if(parser.isSet(opt_out_channels))
+      out_channels = parser.value(opt_out_channels).toInt();
+    if(parser.isSet(opt_bs))
+      buffer_size = parser.value(opt_bs).toInt();
+    if(parser.isSet(opt_rate))
+      sample_rate = parser.value(opt_rate).toInt();
+    if(parser.isSet(opt_osc))
+      osc_port = parser.value(opt_osc).toInt();
+    if(parser.isSet(opt_ws))
+      ws_port = parser.value(opt_ws).toInt();
+  }
 #endif
+
+  // Create the object
+  avnd::effect_container<type> object;
+
+  avnd::init_controls(object);
+
+  // Create an audio processor
+  standalone::audio_mapper<type> audio{
+      object, in_channels, out_channels, buffer_size, sample_rate};
+
+  // Create an oscquery interface to it.
+  standalone::oscquery_mapper<type> oscq{object, osc_port, ws_port};
+
+  std::thread t{[&] { oscq.run(); }};
 
   run_ui(object);
 
-#if 0
   oscq.stop();
   t.join();
-#endif
 }
