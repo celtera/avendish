@@ -46,6 +46,7 @@ function(avnd_make_vst3)
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
+      "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vst3.cpp"
   )
 

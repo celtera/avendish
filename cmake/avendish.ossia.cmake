@@ -53,6 +53,7 @@ function(avnd_make_ossia)
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
+      "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_ossia.cpp"
   )
 

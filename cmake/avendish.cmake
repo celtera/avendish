@@ -143,7 +143,7 @@ function(avnd_register)
     target_compile_definitions(Avendish PRIVATE "${AVND_COMPILE_DEFINITIONS}")
   endif()
   if(AVND_LINK_LIBRARIES)
-    target_link_libraries(Avendish PRIVATE "${AVND_LINK_LIBRARIES}")
+      target_link_libraries(Avendish PRIVATE "${AVND_LINK_LIBRARIES}")
   endif()
 endfunction()
 

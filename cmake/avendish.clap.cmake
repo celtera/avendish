@@ -46,6 +46,7 @@ function(avnd_make_clap)
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
+      "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_clap.cpp"
   )
 
