@@ -4,6 +4,8 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 
+#include <thread>
+
 #include <@AVND_MAIN_FILE@>
 
 #if AVND_STANDALONE_QML
