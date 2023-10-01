@@ -58,10 +58,11 @@ struct audio_mapper
 
   void operator()(const ossia::audio_tick_state& st)
   {
-    audio_tick tick = {.frames = (int)st.frames};
-    int n = avnd::get_frames(tick);
-    auto ins = avnd::span<float*>{const_cast<float**>(st.inputs), (std::size_t)st.n_in};
-    auto outs = avnd::span<float*>{st.outputs, (std::size_t)st.n_out};
+    const audio_tick tick = {.frames = (int)st.frames};
+    const int n = avnd::get_frames(tick);
+    const auto ins
+        = avnd::span<float*>{const_cast<float**>(st.inputs), (std::size_t)st.n_in};
+    const auto outs = avnd::span<float*>{st.outputs, (std::size_t)st.n_out};
     this->processor.process(object, ins, outs, tick);
   }
 

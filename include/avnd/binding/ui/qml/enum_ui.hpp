@@ -18,6 +18,7 @@ ColumnLayout {{
       Layout.alignment: Qt.AlignHCenter
       Layout.maximumWidth: 80
       Layout.minimumWidth: 80
+      color: "black"
     }}
     Layout.maximumHeight: 100
     Layout.maximumWidth: 100

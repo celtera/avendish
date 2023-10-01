@@ -118,6 +118,8 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/gpp/layout.hpp"
 )
 
+add_library(avnd_dummy_lib OBJECT "${AVND_SOURCE_DIR}/src/dummy.cpp")
+
 include(avendish.disableexceptions)
 include(avendish.sources)
 
@@ -134,16 +136,20 @@ include(avendish.example)
 
 # Used for getting completion in IDEs...
 function(avnd_register)
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;COMPILE_OPTIONS;COMPILE_DEFINITIONS;LINK_LIBRARIES" "" ${ARGN})
-  target_sources(Avendish PRIVATE "${AVND_MAIN_FILE}")
-  if(AVND_COMPILE_OPTIONS)
-    target_compile_options(Avendish PRIVATE "${AVND_COMPILE_OPTIONS}")
-  endif()
-  if(AVND_COMPILE_DEFINITIONS)
-    target_compile_definitions(Avendish PRIVATE "${AVND_COMPILE_DEFINITIONS}")
-  endif()
-  if(AVND_LINK_LIBRARIES)
-      target_link_libraries(Avendish PRIVATE "${AVND_LINK_LIBRARIES}")
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "COMPILE_OPTIONS;COMPILE_DEFINITIONS;LINK_LIBRARIES" ${ARGN})
+  if(NOT TARGET "${AVND_TARGET}")
+    add_library("${AVND_TARGET}" STATIC $<TARGET_OBJECTS:avnd_dummy_lib>)
+
+    target_sources("${AVND_TARGET}" PRIVATE "${AVND_MAIN_FILE}")
+    if(AVND_COMPILE_OPTIONS)
+      target_compile_options("${AVND_TARGET}" PUBLIC "${AVND_COMPILE_OPTIONS}")
+    endif()
+    if(AVND_COMPILE_DEFINITIONS)
+      target_compile_definitions("${AVND_TARGET}" PUBLIC "${AVND_COMPILE_DEFINITIONS}")
+    endif()
+    if(AVND_LINK_LIBRARIES)
+      target_link_libraries("${AVND_TARGET}" PUBLIC "${AVND_LINK_LIBRARIES}")
+    endif()
   endif()
 endfunction()
 

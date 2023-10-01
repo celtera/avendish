@@ -3,11 +3,11 @@ if(CMAKE_SYSTEM_NAME MATCHES "WAS.*")
   endfunction()
   return()
 endif()
-find_package(ossia QUIET)
+find_package(ossia)
 find_package(GLEW QUIET)
 find_package(glfw3 QUIET)
 find_package(OpenGL QUIET)
-if(NOT TARGET Qt5::Quick)
+if(NOT TARGET Qt::Quick)
   if(NOT ((TARGET GLEW::GLEW) AND (TARGET glfw) AND (TARGET OpenGL::GL)))
     function(avnd_make_standalone)
     endfunction()
@@ -23,9 +23,9 @@ target_precompile_headers(Avendish_standalone_pch
     include/avnd/prefix.hpp
 )
 
-if(TARGET Qt5::Quick)
+if(TARGET Qt::Quick)
   target_link_libraries(Avendish_standalone_pch PRIVATE
-    Qt5::Quick
+    Qt::Quick
   )
 
   target_precompile_headers(Avendish_standalone_pch
@@ -48,7 +48,7 @@ endif()
 
 avnd_common_setup("" "Avendish_standalone_pch")
 
-if(TARGET Qt5::Quick)
+if(TARGET Qt::Quick)
 function(avnd_make_standalone)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS" "" ${ARGN})
 
@@ -90,11 +90,11 @@ function(avnd_make_standalone)
     )
   endif()
 
-  if(TARGET Qt5::Quick)
+  if(TARGET Qt::Quick)
     target_link_libraries(
       ${AVND_FX_TARGET}
       PUBLIC
-        Qt5::Quick
+        Qt::Quick
     )
   endif()
 

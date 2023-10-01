@@ -203,12 +203,15 @@ static_assert(std::is_same_v<FI2_AB::fields, avnd::typelist<TwoAB::A, TwoAB::B>>
 static_assert(FI0::index_map == std::array<std::size_t, 0>{});
 
 static_assert(FI1_N::index_map == std::array<std::size_t, 0>{});
+
+#if !defined(_GLIBCXX_DEBUG)
 static_assert(FI1_A::index_map == std::array<int, 1>{0});
 
 static_assert(FI2_N::index_map == std::array<std::size_t, 0>{});
 static_assert(FI2_A::index_map == std::array<int, 1>{0});
 static_assert(FI2_B::index_map == std::array<int, 1>{1});
 static_assert(FI2_AB::index_map == std::array<int, 2>{0, 1});
+#endif
 
 // Test ::size
 static_assert(FI0::size == 0);

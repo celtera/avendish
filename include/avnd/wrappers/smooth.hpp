@@ -8,6 +8,7 @@
 #include <avnd/introspection/port.hpp>
 #include <avnd/introspection/smooth.hpp>
 #include <avnd/wrappers/avnd.hpp>
+#include <cmath>
 
 #include <chrono>
 namespace avnd

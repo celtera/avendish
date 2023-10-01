@@ -1,5 +1,5 @@
-find_package(Qt5 5.15 COMPONENTS Core Gui Qml Quick)
-if(NOT TARGET Qt5::Core)
+find_package(Qt6 6.4 COMPONENTS Core Gui Qml Quick)
+if(NOT TARGET Qt::Core)
   return()
 endif()
 

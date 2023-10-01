@@ -19,7 +19,7 @@ endif()
 target_sources(Avendish
   PUBLIC
     ${AVENDISH_SOURCES}
-    "${AVND_SOURCE_DIR}/src/dummy.cpp"
+    $<TARGET_OBJECTS:avnd_dummy_lib>
 )
 
 if(AVENDISH_INCLUDE_SOURCE_ONLY)
