@@ -125,14 +125,13 @@ int main(int argc, char** argv)
 
   // Create an oscquery interface to it.
   standalone::oscquery_mapper<type> oscq{object, osc_port, ws_port};
-#endif
-
   std::thread t{[&] { oscq.run(); }};
+#endif
 
   run_ui(object);
 
 #if __has_include(<ossia/detail/config.hpp>)
   oscq.stop();
-#endif
   t.join();
+#endif
 }
