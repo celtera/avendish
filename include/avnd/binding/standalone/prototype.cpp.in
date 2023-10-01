@@ -117,16 +117,20 @@ int main(int argc, char** argv)
   avnd::init_controls(object);
 
   // Create an audio processor
+#if __has_include(<ossia/detail/config.hpp>)
   standalone::audio_mapper<type> audio{
       object, in_channels, out_channels, buffer_size, sample_rate};
 
   // Create an oscquery interface to it.
   standalone::oscquery_mapper<type> oscq{object, osc_port, ws_port};
+#endif
 
   std::thread t{[&] { oscq.run(); }};
 
   run_ui(object);
 
+#if __has_include(<ossia/detail/config.hpp>)
   oscq.stop();
+#endif
   t.join();
 }
