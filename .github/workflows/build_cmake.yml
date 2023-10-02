@@ -106,11 +106,6 @@ jobs:
           chmod +x ./fetch-sdk.sh
           ./fetch-sdk.sh
 
-      - uses: maxim-lobanov/setup-xcode@v1
-        if: matrix.config.name == 'macOS'
-        with:
-          xcode-version: latest-stable
-
       - name: Build debug
         shell: bash
         run: |

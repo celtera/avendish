@@ -10,6 +10,31 @@ namespace pd
 {
 
 template <typename T>
+  requires std::is_arithmetic_v<T>
+inline void value_to_pd(t_atom& atom, T v) noexcept
+{
+  atom = {.a_type = A_FLOAT, .a_w = {.w_float = (t_float)v}};
+}
+
+inline void value_to_pd(t_atom& atom, bool v) noexcept
+{
+  atom = {.a_type = A_FLOAT, .a_w = {.w_float = v ? 1.0f : 0.0f}};
+}
+inline void value_to_pd(t_atom& atom, const char* v) noexcept
+{
+  atom = {.a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(v)}};
+}
+inline void value_to_pd(t_atom& atom, std::string_view v) noexcept
+{
+  atom = {.a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(v.data())}};
+}
+inline void value_to_pd(t_atom& atom, const std::string& v) noexcept
+{
+  atom = {.a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(v.c_str())}};
+}
+
+template <typename T>
+  requires std::is_aggregate_v<T>
 void value_to_pd(t_outlet* outlet, T v)
 {
   constexpr int sz = avnd::pfr::tuple_size_v<T>;
@@ -51,15 +76,102 @@ void value_to_pd(t_outlet* outlet, T v)
   }
 }
 
-inline void value_to_pd(t_outlet* outlet, int v) noexcept
+template <typename T>
+  requires avnd::vector_ish<T>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  static thread_local std::vector<t_atom> atoms;
+  const int N = v.size();
+  atoms.clear();
+  atoms.resize(N);
+
+  for(int i = 0; i < N; i++)
+  {
+    value_to_pd(atoms[i], v[i]);
+  }
+  outlet_list(outlet, &s_list, v.size(), atoms.data());
+}
+
+template <typename T, std::size_t N>
+  requires avnd::array_ish<T, N>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  std::array<t_atom, N> atoms;
+
+  for(int i = 0; i < N; i++)
+  {
+    value_to_pd(atoms[i], v[i]);
+  }
+
+  outlet_list(outlet, &s_list, v.size(), atoms.data());
+}
+
+template <typename T>
+  requires avnd::set_ish<T>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  static thread_local std::vector<t_atom> atoms;
+  const int N = v.size();
+  atoms.clear();
+  atoms.resize(N);
+
+  int i = 0;
+  for(auto& element : v)
+  {
+    value_to_pd(atoms[i++], element);
+  }
+  outlet_list(outlet, &s_list, v.size(), atoms.data());
+}
+
+template <typename T>
+  requires avnd::map_ish<T>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  static thread_local std::vector<t_atom> atoms;
+  const int N = v.size();
+  atoms.clear();
+  atoms.resize(2 * N);
+
+  int i = 0;
+  for(auto& [key, value] : v)
+  {
+    value_to_pd(atoms[i++], key);
+    value_to_pd(atoms[i++], value);
+  }
+  outlet_list(outlet, &s_list, v.size(), atoms.data());
+}
+
+template <typename T>
+  requires avnd::variant_ish<T>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  using namespace std;
+  visit(v, [&](const auto& element) { value_to_pd(outlet, element); });
+}
+
+template <typename T>
+  requires avnd::pair_ish<T>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  t_atom atoms[2];
+
+  value_to_pd(atoms[0], v.first);
+  value_to_pd(atoms[1], v.second);
+}
+
+template <typename T>
+  requires avnd::optional_ish<T>
+void value_to_pd(t_outlet* outlet, const T& v)
+{
+  if(v)
+    value_to_pd(outlet, *v);
+}
+
+inline void value_to_pd(t_outlet* outlet, std::integral auto v) noexcept
 {
   outlet_float(outlet, v);
 }
-inline void value_to_pd(t_outlet* outlet, float v) noexcept
-{
-  outlet_float(outlet, v);
-}
-inline void value_to_pd(t_outlet* outlet, double v) noexcept
+inline void value_to_pd(t_outlet* outlet, std::floating_point auto v) noexcept
 {
   outlet_float(outlet, v);
 }
@@ -135,69 +247,21 @@ struct value_writer
 template <typename T>
 struct outputs
 {
-  template <avnd::function_view_ish call_type>
-  static void init_func_view(call_type& call, t_outlet& outlet)
+  template <typename R, typename... Args, template <typename...> typename F>
+  static void init_func_view(F<R(Args...)>& call, t_outlet& outlet)
   {
-    using func_t = typename call_type::type;
-    using refl = avnd::function_reflection_t<func_t>;
-
     call.context = &outlet;
-    call.function = nullptr;
-    if constexpr(refl::count == 0)
-    {
-      call.function = [](void* ptr) {
-        t_outlet* p = static_cast<t_outlet*>(ptr);
-        outlet_bang(p);
-      };
-    }
-    else if constexpr(refl::count == 1)
-    {
-      if constexpr(std::is_same_v<func_t, void(float)>)
-      {
-        call.function = [](void* ptr, float f) {
-          t_outlet* p = static_cast<t_outlet*>(ptr);
-          outlet_float(p, f);
-        };
-      }
-      else if constexpr(std::is_same_v<func_t, void(const char*)>)
-      {
-        call.function = [](void* ptr, const char* f) {
-          t_outlet* p = static_cast<t_outlet*>(ptr);
-          outlet_symbol(p, gensym(f));
-        };
-      }
-    }
-    else
-    {
-      AVND_STATIC_TODO(call_type);
-    }
+    call.function = [](void* ptr, Args... args) {
+      t_outlet* p = static_cast<t_outlet*>(ptr);
+      value_to_pd(p, std::forward<Args>(args)...);
+    };
   }
 
   template <typename R, typename... Args, template <typename...> typename F>
   static void init_func(F<R(Args...)>& call, t_outlet& outlet)
   {
-    using func_t = R(Args...);
-    using refl = avnd::function_reflection_t<func_t>;
-
-    if constexpr(refl::count == 0)
-    {
-      call = [&outlet] { outlet_bang(&outlet); };
-    }
-    else if constexpr(refl::count == 1)
-    {
-      if constexpr(std::is_same_v<func_t, void(float)>)
-      {
-        call = [&outlet](float f) { outlet_float(&outlet, f); };
-      }
-      else if constexpr(std::is_same_v<func_t, void(const char*)>)
-      {
-        call = [&outlet](const char* f) { outlet_symbol(&outlet, gensym(f)); };
-      }
-    }
-    else
-    {
-      AVND_STATIC_TODO(F<R(Args...)>);
-    }
+    call
+        = [&outlet](Args... args) { value_to_pd(&outlet, std::forward<Args>(args)...); };
   }
 
   template <avnd::callback C>
@@ -251,5 +315,4 @@ struct outputs
 
   std::array<t_outlet*, avnd::output_introspection<T>::size> outlets;
 };
-
 }
