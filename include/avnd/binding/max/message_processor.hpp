@@ -70,7 +70,8 @@ struct message_processor
 
     if constexpr(avnd::has_schedule<T>)
     {
-      implementation.effect.schedule.schedule_at = [this] <typename... Args>(int64_t ts, void(* func)(T& self, Args...)) {
+      implementation.effect.schedule.schedule_at
+          = [this](int64_t ts, void (*func)(T& self)) {
         t_atom a[1];
         a[0].a_type = A_LONG;
         a[0].a_w.w_long = reinterpret_cast<t_atom_long>(func);
@@ -82,6 +83,8 @@ struct message_processor
             }, (long)ts, 0, 1, a);
       };
     }
+
+    avnd::prepare(implementation, {});
 
     /// Pass arguments
     if constexpr(avnd::can_initialize<T>)

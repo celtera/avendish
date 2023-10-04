@@ -12,6 +12,7 @@
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_storage.hpp>
+#include <boost/lockfree/queue.hpp>
 #include <cmath>
 #include <m_pd.h>
 
@@ -57,18 +58,21 @@ struct message_processor
 
   [[no_unique_address]] avnd::control_storage<T> control_buffers;
 
+  t_clock* m_clock{};
+  using sched_func = void (*)(T&);
+  struct sched_event
+  {
+    sched_func func;
+    t_clock* clock;
+  };
+
+  boost::lockfree::queue<sched_event> funcs{1024};
   static constexpr const int buffer_size = 1; // Used for control storage
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
   void init(int argc, t_atom* argv)
   {
-    /// Pass arguments
-    if constexpr(avnd::can_initialize<T>)
-    {
-      init_setup.process(implementation.effect, argc, argv);
-    }
-
     /// Create ports ///
     // Create inlets
     input_setup.init(implementation, x_obj);
@@ -79,12 +83,36 @@ struct message_processor
     // Reserve space for controls
     this->control_buffers.reserve_space(implementation, 16);
 
-    avnd::prepare(implementation, {});
-
     /// Initialize controls
     if constexpr(avnd::has_inputs<T>)
     {
       avnd::init_controls(implementation);
+    }
+
+    if constexpr(avnd::has_schedule<T>)
+    {
+      implementation.effect.schedule.schedule_at = [this](int64_t ts, sched_func func) {
+        auto tick = +[](message_processor* x) {
+          sched_event ev;
+          if(x->funcs.pop(ev))
+          {
+            ev.func(x->implementation.effect);
+            clock_free(ev.clock);
+          }
+        };
+
+        auto clk = clock_new(&this->x_obj, (t_method)tick);
+        clock_set(clk, 0.f);
+        funcs.push(sched_event{func, clk});
+      };
+    }
+
+    avnd::prepare(implementation, {});
+
+    /// Pass arguments
+    if constexpr(avnd::can_initialize<T>)
+    {
+      init_setup.process(implementation.effect, argc, argv);
     }
   }
 
