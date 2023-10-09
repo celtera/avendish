@@ -22,10 +22,6 @@ elseif(WIN32)
   else()
     find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}/x64")
   endif()
-else()
-  # add_library(MaxAPI INTERFACE)
-  # add_library(MaxJitAPI INTERFACE)
-  # set(MAXSDK_API_LIBRARY MaxAPI)
 endif()
 
 file(READ "${MAXSDK_MAX_INCLUDE_DIR}/c74_linker_flags.txt" MAXSDK_LINKER_FLAGS)
@@ -36,6 +32,7 @@ set(MAXSDK_MSP_INCLUDE_DIR  "${MAXSDK_MSP_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_M
 set(MAXSDK_API_LIBRARY  "${MAXSDK_API_LIBRARY}" CACHE INTERNAL "MAXSDK_API_LIBRARY")
 set(MAXSDK_LINKER_FLAGS  "${MAXSDK_LINKER_FLAGS}" CACHE INTERNAL "MAXSDK_LINKER_FLAGS")
 
+# Commonsyms from max
 add_library(maxmsp_commonsyms STATIC
     "${MAXSDK_MAX_INCLUDE_DIR}/common/commonsyms.c"
 )
@@ -43,7 +40,7 @@ target_compile_definitions(
   maxmsp_commonsyms
   PRIVATE
     AVND_MAXMSP=1
-    MAXAPI_USE_MSCRT=1
+    $<$<BOOL:${WIN32}>:MAXAPI_USE_MSCRT=1>
     C74_USE_STRICT_TYPES=1
 )
 
@@ -51,6 +48,16 @@ target_include_directories(maxmsp_commonsyms PRIVATE
     "${MAXSDK_MAX_INCLUDE_DIR}"
     "${MAXSDK_MSP_INCLUDE_DIR}"
 )
+
+# We only want to export this on Mac
+if(APPLE)
+  file(CONFIGURE
+    OUTPUT "${CMAKE_BINARY_DIR}/maxmsp-symbols.txt"
+    CONTENT "_ext_main\n"
+    NEWLINE_STYLE LF
+  )
+endif()
+
 function(avnd_make_max)
   if(NOT MAXSDK_MAX_INCLUDE_DIR)
     return()
@@ -110,7 +117,7 @@ function(avnd_make_max)
     ${AVND_FX_TARGET}
     PRIVATE
       AVND_MAXMSP=1
-      MAXAPI_USE_MSCRT=1
+      $<$<BOOL:${WIN32}>:MAXAPI_USE_MSCRT=1>
       C74_USE_STRICT_TYPES=1
   )
 
@@ -131,8 +138,11 @@ function(avnd_make_max)
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC MAC_VERSION)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE True)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE_EXTENSION "mxo")
-    target_link_libraries(${AVND_FX_TARGET} PUBLIC ${MAXSDK_LINKER_FLAGS}  -Wl,-U,_class_dspinit -Wl,-U,_dsp_add64  -Wl,-U,_z_dsp_setup )
-    file(COPY "${AVND_SOURCE_DIR}/include/avnd/binding/max/resources/PkgInfo" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/)
+    target_link_libraries(${AVND_FX_TARGET} PUBLIC ${MAXSDK_LINKER_FLAGS} -Wl,-U,_class_dspinit -Wl,-U,_dsp_add64  -Wl,-U,_z_dsp_setup)
+    file(COPY "${AVND_SOURCE_DIR}/include/avnd/binding/max/resources/PkgInfo" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/")
+
+    # We only export ext_main to prevent conflicts in e.g. Max4Live.
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE "-Wl,-exported_symbols_list,'${CMAKE_CURRENT_BINARY_DIR}/maxmsp-symbols.txt'")
   elseif(WIN32)
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC WIN_VERSION _CRT_SECURE_NO_WARNINGS)
     if("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
@@ -145,14 +155,8 @@ function(avnd_make_max)
         find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
     endif()
     target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY})
+    # FIXME only export ext_main here too
   endif()
-
-
-  # We only export ext_main to prevent conflicts in e.g. Max4Live.
-  #if(APPLE)
-  #  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${AVND_C_NAME}-symbols.txt" "_ext_main\n")
-  #  target_link_libraries(${AVND_FX_TARGET} PRIVATE "-Wl,-s,-exported_symbols_list,'${CMAKE_CURRENT_BINARY_DIR}/${AVND_C_NAME}-symbols.txt'")
-  #endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
@@ -201,7 +205,6 @@ function(avnd_create_max_package)
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_pkg}/externals/"
       )
     else()
-
       set_target_properties(${_external} PROPERTIES
           BUILD_WITH_INSTALL_RPATH 1
           INSTALL_NAME_DIR "@rpath"
@@ -229,8 +232,8 @@ function(avnd_create_max_package)
       endif()
 
       add_custom_command(TARGET ${_external} POST_BUILD
-          COMMAND echo "=== copying to ${_pkg}/externals/ ==="
-          COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:${_external}>" "${_pkg}/externals/"
+          COMMAND echo "=== copying $<TARGET_BUNDLE_DIR_NAME:${_external}> to ${_pkg}/externals/ ==="
+          COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:${_external}>" "${_pkg}/externals/$<TARGET_BUNDLE_DIR_NAME:${_external}>"
       )
     endif()
   endforeach()
