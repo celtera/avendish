@@ -13,16 +13,18 @@ inline t_symbol* get_atoms_sym() noexcept
 {
   return USESYM(atom);
 }
-template<std::integral>
+template<std::integral T>
 inline t_symbol* get_atoms_sym() noexcept
 {
   return USESYM(long);
 }
+/*
 template<>
 inline t_symbol* get_atoms_sym<bool>() noexcept
 {
   return USESYM(long);
 }
+*/
 template<>
 inline t_symbol* get_atoms_sym<float>() noexcept
 {
