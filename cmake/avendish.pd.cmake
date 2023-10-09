@@ -1,22 +1,21 @@
 find_path(PD_HEADER NAMES m_pd.h)
+if(NOT PD_HEADER)
+  message(STATUS "PureData header not found, skipping bindings...")
+  function(avnd_make_pd)
+  endfunction()
+
+  return()
+endif()
 
 if(WIN32)
   find_library(PD_LIB NAMES pd)
   if(NOT PD_LIB)
-    message(STATUS "PureData not found, skipping bindings...")
+    message(STATUS "PureData library not found, skipping bindings...")
     function(avnd_make_pd)
     endfunction()
 
     return()
   endif()
-endif()
-
-if(NOT PD_HEADER)
-  message(STATUS "PureData not found, skipping bindings...")
-  function(avnd_make_pd)
-  endfunction()
-
-  return()
 endif()
 
 # Define a PCH
