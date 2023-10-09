@@ -204,6 +204,7 @@ function(avnd_create_max_package)
   foreach(_external ${AVND_EXTERNALS})
     if(WIN32)
       add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/externals/"
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_pkg}/externals/"
       )
     else()
