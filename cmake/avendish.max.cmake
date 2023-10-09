@@ -160,3 +160,86 @@ endfunction()
 add_library(Avendish_max INTERFACE)
 target_link_libraries(Avendish_max INTERFACE Avendish)
 add_library(Avendish::Avendish_max ALIAS Avendish_max)
+
+
+### Utilities
+
+function(avnd_create_max_package)
+  cmake_parse_arguments(AVND
+      "CODESIGN;NOTARIZE;INSTALL"
+      "NAME;SOURCE_PATH;PACKAGE_ROOT;KEYCHAIN_FILE;KEYCHAIN_PASSWORD;CODESIGN_ENTITLEMENTS;CODESIGN_IDENTITY;NOTARIZE_TEAM;NOTARIZE_EMAIL;NOTARIZE_PASSWORD"
+      "EXTERNALS;SUPPORT"
+      ${ARGN})
+
+  if(APPLE)
+    if(NOT AVND_KEYCHAIN_FILE OR NOT AVND_KEYCHAIN_PASSWORD OR NOT AVND_CODESIGN_ENTITLEMENTS OR NOT AVND_CODESIGN_IDENTITY)
+      message(STATUS "Disabling codesigning as the required avnd_create_max_package arguments are not set.")
+    endif()
+    if(NOT AVND_NOTARIZE_TEAM OR NOT AVND_NOTARIZE_EMAIL OR NOT AVND_NOTARIZE_PASSWORD)
+      message(STATUS "Disabling notarization as the required avnd_create_max_package arguments are not set.")
+    endif()
+  endif()
+
+  set(_pkg_target "${AVND_NAME}_max_package")
+  add_custom_target(${_pkg_target} ALL
+    DEPENDS ${AVND_EXTERNALS}
+   )
+
+  # Copy the package base
+  set(_pkg "${AVND_PACKAGE_ROOT}/${AVND_NAME}")
+  file(GLOB _pkg_content
+       LIST_DIRECTORIES true
+       "${AVND_SOURCE_PATH}/*")
+  foreach(f ${_pkg_content})
+    file(COPY "${f}" DESTINATION "${_pkg}/")
+  endforeach()
+
+  # Copy the externals
+  foreach(_external ${AVND_EXTERNALS})
+    if(WIN32)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_pkg}/externals/"
+      )
+    else()
+
+      set_target_properties(${_external} PROPERTIES
+          BUILD_WITH_INSTALL_RPATH 1
+          INSTALL_NAME_DIR "@rpath"
+          BUILD_RPATH "@loader_path/../../../../support"
+          INSTALL_RPATH "@loader_path/../../../../support"
+      )
+
+      if(AVND_CODESIGN)
+        add_custom_command(TARGET ${_external} POST_BUILD
+          COMMAND echo "=== codesign ==="
+          COMMAND security unlock-keychain -p "${AVND_KEYCHAIN_PASSWORD}" "${AVND_KEYCHAIN_FILE}"
+          COMMAND xcrun codesign --entitlements "${AVND_CODESIGN_ENTITLEMENTS}" --force --timestamp "--options=runtime" --sign "${AVND_CODESIGN_IDENTITY}" "$<TARGET_BUNDLE_DIR:${_external}>"
+        )
+
+        if(AVND_NOTARIZE)
+          add_custom_command(TARGET ${_external} POST_BUILD
+            COMMAND echo "=== notarize ==="
+            COMMAND ${CMAKE_COMMAND} -E tar cf "$<TARGET_BUNDLE_DIR:${_external}>.zip" "--format=zip" "$<TARGET_BUNDLE_DIR:${_external}>"
+            COMMAND xcrun notarytool submit "$<TARGET_BUNDLE_DIR:${_external}>.zip" --team-id "${AVND_NOTARIZE_TEAM}" --apple-id "${AVND_NOTARIZE_EMAIL}" --password "${AVND_NOTARIZE_PASSWORD}" --progress --wait
+
+            COMMAND echo "=== staple ==="
+            COMMAND xcrun stapler staple "$<TARGET_BUNDLE_DIR:${_external}>"
+          )
+        endif()
+      endif()
+
+      add_custom_command(TARGET ${_external} POST_BUILD
+          COMMAND echo "=== copying to ${_pkg}/externals/ ==="
+          COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:${_external}>" "${_pkg}/externals/"
+      )
+    endif()
+  endforeach()
+
+  # Copy the support files
+  foreach(_support ${AVND_SUPPORT})
+    add_custom_command(TARGET ${_pkg_target} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/support/"
+      COMMAND ${CMAKE_COMMAND} -E copy "${_support}" "${_pkg}/support/"
+    )
+  endforeach()
+endfunction()
