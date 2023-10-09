@@ -400,30 +400,37 @@ struct Component final
         break;
       }
       case Event::kDataEvent: {
+        [[maybe_unused]]
         auto& e = event.data;
         break;
       }
       case Event::kPolyPressureEvent: {
+        [[maybe_unused]]
         auto& e = event.polyPressure;
         break;
       }
       case Event::kNoteExpressionValueEvent: {
+        [[maybe_unused]]
         auto& e = event.noteExpressionValue;
         break;
       }
       case Event::kNoteExpressionTextEvent: {
+        [[maybe_unused]]
         auto& e = event.noteExpressionText;
         break;
       }
       case Event::kChordEvent: {
+        [[maybe_unused]]
         auto& e = event.chord;
         break;
       }
       case Event::kScaleEvent: {
+        [[maybe_unused]]
         auto& e = event.scale;
         break;
       }
       case Event::kLegacyMIDICCOutEvent: {
+        [[maybe_unused]]
         auto& e = event.midiCCOut;
         break;
       }

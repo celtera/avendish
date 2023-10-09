@@ -14,6 +14,17 @@ if(MSVC)
        "-Zc:templateScope"
        -wd4244)
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
+elseif(APPLE)
+  target_compile_options(Avendish
+    PUBLIC
+      -Wno-c99-extensions
+      -Wno-global-constructors
+      -Wno-extra-semi
+      -Wno-exit-time-destructors
+      -Wno-cast-function-type
+      -Wno-unused-template
+      -Wno-unused-local-typedef
+  )
 endif()
 
 target_sources(Avendish

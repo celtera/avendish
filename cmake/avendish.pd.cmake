@@ -53,6 +53,10 @@ function(avnd_make_pd)
     NEWLINE_STYLE LF
   )
 
+  if(APPLE)
+    set_source_files_properties("${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_pd.cpp" PROPERTIES COMPILE_FLAGS -Wno-unreachable-code)
+  endif()
+
   set(AVND_FX_TARGET "${AVND_TARGET}_pd")
   add_library(${AVND_FX_TARGET} MODULE)
 

@@ -151,7 +151,7 @@ struct outputs
 
       out_k = 0;
       avnd::output_introspection<T>::for_all(
-          avnd::get_outputs<T>(implementation), [this, &out_k, &x_obj](auto& ctl) {
+          avnd::get_outputs<T>(implementation), [this, &out_k](auto& ctl) {
             this->setup(ctl, *outlets[out_k]);
             out_k++;
           });

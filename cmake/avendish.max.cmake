@@ -28,12 +28,31 @@ else()
   # set(MAXSDK_API_LIBRARY MaxAPI)
 endif()
 
+file(READ "${MAXSDK_MAX_INCLUDE_DIR}/c74_linker_flags.txt" MAXSDK_LINKER_FLAGS)
+string(STRIP "${MAXSDK_LINKER_FLAGS}" MAXSDK_LINKER_FLAGS)
+
 set(MAXSDK_MAX_INCLUDE_DIR  "${MAXSDK_MAX_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_MAX_INCLUDE_DIR")
 set(MAXSDK_MSP_INCLUDE_DIR  "${MAXSDK_MSP_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_MSP_INCLUDE_DIR")
 set(MAXSDK_API_LIBRARY  "${MAXSDK_API_LIBRARY}" CACHE INTERNAL "MAXSDK_API_LIBRARY")
+set(MAXSDK_LINKER_FLAGS  "${MAXSDK_LINKER_FLAGS}" CACHE INTERNAL "MAXSDK_LINKER_FLAGS")
 
+add_library(maxmsp_commonsyms STATIC
+    "${MAXSDK_MAX_INCLUDE_DIR}/common/commonsyms.c"
+)
+target_compile_definitions(
+  maxmsp_commonsyms
+  PRIVATE
+    AVND_MAXMSP=1
+    MAXAPI_USE_MSCRT=1
+    C74_USE_STRICT_TYPES=1
+)
+
+target_include_directories(maxmsp_commonsyms PRIVATE
+    "${MAXSDK_MAX_INCLUDE_DIR}"
+    "${MAXSDK_MSP_INCLUDE_DIR}"
+)
 function(avnd_make_max)
-  if(NOT MAXSDK_API_LIBRARY)
+  if(NOT MAXSDK_MAX_INCLUDE_DIR)
     return()
   endif()
 
@@ -48,6 +67,10 @@ function(avnd_make_max)
     NEWLINE_STYLE LF
   )
 
+  if(APPLE)
+    set_source_files_properties("${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_max.cpp" PROPERTIES COMPILE_FLAGS -Wno-unreachable-code)
+  endif()
+
   set(AVND_FX_TARGET "${AVND_TARGET}_max")
   add_library(${AVND_FX_TARGET} MODULE)
 
@@ -57,6 +80,7 @@ function(avnd_make_max)
       OUTPUT_NAME "${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY max
       RUNTIME_OUTPUT_DIRECTORY max
+      MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
   )
 
   target_sources(
@@ -64,7 +88,6 @@ function(avnd_make_max)
     PRIVATE
       "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_max.cpp"
-      "${MAXSDK_MAX_INCLUDE_DIR}/common/commonsyms.c"
 
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/all.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/attributes_setup.hpp"
@@ -101,16 +124,14 @@ function(avnd_make_max)
     PUBLIC
       Avendish::Avendish_max
       DisableExceptions
+      maxmsp_commonsyms
   )
 
   if(APPLE)
-    find_library(MAXSDK_API_LIBRARY NAMES MaxAPI HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
-    find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudioAPI HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
-
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC MAC_VERSION)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE True)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE_EXTENSION "mxo")
-    target_link_libraries(${AVND_FX_TARGET} PRIVATE -Wl,-undefined,dynamic_lookup)
+    target_link_libraries(${AVND_FX_TARGET} PUBLIC ${MAXSDK_LINKER_FLAGS}  -Wl,-U,_class_dspinit -Wl,-U,_dsp_add64  -Wl,-U,_z_dsp_setup )
     file(COPY "${AVND_SOURCE_DIR}/include/avnd/binding/max/resources/PkgInfo" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/)
   elseif(WIN32)
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC WIN_VERSION _CRT_SECURE_NO_WARNINGS)
@@ -123,9 +144,9 @@ function(avnd_make_max)
         find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
         find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
     endif()
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY})
   endif()
 
-  target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY})
 
   # We only export ext_main to prevent conflicts in e.g. Max4Live.
   #if(APPLE)

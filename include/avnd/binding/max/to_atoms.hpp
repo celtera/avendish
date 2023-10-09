@@ -191,7 +191,7 @@ struct to_atoms
     }
     else {
       *ac = n_atoms;
-      *av = (t_atom *)getbytes(sizeof(t_atom) * (*ac));
+      *av = reinterpret_cast<t_atom *>(getbytes(sizeof(t_atom) * (*ac)));
       if (!(*av)) {
         *ac = 0;
         return {};

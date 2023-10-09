@@ -24,7 +24,6 @@ struct process_adapter<T> : audio_buffer_storage<T>
   {
     int k = 0;
     Info::for_all(ports, [&](auto& bus) {
-      using sample_type = std::decay_t<decltype(bus.channel[0])>;
       if(k + 1 <= buffers.size())
       {
         bus.channel = const_cast<decltype(bus.channel)>(buffers[k]);
@@ -32,6 +31,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
       else
       {
 #if AVND_ENABLE_SAFE_BUFFER_STORAGE
+        using sample_type = std::decay_t<decltype(bus.channel[0])>;
         auto& b = this->zero_storage_for(sample_type{});
         if constexpr(Input)
         {

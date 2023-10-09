@@ -366,7 +366,7 @@ struct audio_channel_manager<T>
               i++;
               return;
             }
-            mimick_output(inputs, out, i);
+            this->mimick_output(inputs, out, i);
             i++;
           });
         }
@@ -376,7 +376,7 @@ struct audio_channel_manager<T>
         auto& inputs = avnd::get_inputs(processor);
         int i = 0;
         out_refl::for_all(outputs, [this, &inputs, &i](auto& out) {
-          mimick_output(inputs, out, i);
+          this->mimick_output(inputs, out, i);
           i++;
         });
       }

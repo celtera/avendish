@@ -232,8 +232,6 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    static const constexpr int input_audio_busses
-        = avnd::bus_introspection<T>::input_busses;
     if(index == 0)
     {
       info.channelCount = avnd::input_channels<T>(2);
@@ -249,9 +247,6 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
-    static const constexpr int output_audio_busses
-        = avnd::bus_introspection<T>::output_busses;
-
     if(index == 0)
     {
       info.channelCount = avnd::output_channels<T>(2);

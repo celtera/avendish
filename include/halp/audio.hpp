@@ -207,7 +207,7 @@ struct tick_musical
     };
     double cur = start_in_bar;
     double q = std::floor(start_in_bar / div);
-    if(cur == q * div)
+    if(std::abs(cur - q * div) < 1e-9)
     {
       // Add it: we're on 0 or the correct thing
       frames.emplace_back(pos_to_frame(cur), q);
