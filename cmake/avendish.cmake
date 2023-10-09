@@ -184,3 +184,15 @@ function(avnd_make_all)
   avnd_make_object(${ARGV})
   avnd_make_audioplug(${ARGV})
 endfunction()
+
+function(avnd_make)
+  avnd_register(${ARGV})
+
+  cmake_parse_arguments(AVND "" "BACKENDS" ${ARGN})
+
+  foreach(backend ${AVND_BACKENDS})
+    string(STRIP "${backend}" backend)
+    string(TOLOWER "${backend}" backend)
+    cmake_language(CALL "avnd_make_${backend}" ${ARGV})
+  endforeach()
+endfunction()
