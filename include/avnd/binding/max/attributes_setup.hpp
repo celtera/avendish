@@ -56,19 +56,25 @@ struct attribute_register
     {
       static constexpr auto get = &attribute_register::getter<I>;
       static constexpr auto set = &attribute_register::setter<I>;
-      auto attr = attribute_new(name.data(), sym, 0, (method)get, (method)set);
+      std::string_view attr_name;
+      if constexpr(avnd::has_c_name<F>)
+        attr_name = avnd::get_c_name<F>();
+      else
+        attr_name = name;
+
+      auto attr = attribute_new(attr_name.data(), sym, 0, (method)get, (method)set);
       class_addattr(c, attr);
-      CLASS_ATTR_LABEL(c, name.data(), 0, name.data());
+      CLASS_ATTR_LABEL(c, attr_name.data(), 0, name.data());
 
       if(static constexpr auto style = get_atoms_style<F>(); strlen(style) > 0)
-        CLASS_ATTR_STYLE(c, name.data(), 0, style);
+        CLASS_ATTR_STYLE(c, attr_name.data(), 0, style);
 
       if constexpr(avnd::parameter_with_minmax_range<V>)
       {
         static constexpr auto range = avnd::get_range<V>();
-        CLASS_ATTR_FILTER_CLIP(c, name.data(), range.min, range.max);
+        CLASS_ATTR_FILTER_CLIP(c, attr_name.data(), range.min, range.max);
         const auto init = std::to_string(range.init);
-        CLASS_ATTR_DEFAULT(c, name.data(), 0, init.c_str());
+        CLASS_ATTR_DEFAULT(c, attr_name.data(), 0, init.c_str());
       }
 
       // TODO:
