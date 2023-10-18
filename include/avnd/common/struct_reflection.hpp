@@ -101,6 +101,44 @@ struct fields_introspection
   {
     return pfr::get<N>(unfiltered_fields);
   }
+
+  // Will stop if an error is encountered (func should return bool)
+  static constexpr bool for_all_unless(type& unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr(size > 0)
+    {
+      auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
+        return func(pfr::get<Index>(unfiltered_fields));
+      };
+      return [stack_size_helper]<typename K, K... Index>(
+                 std::integer_sequence<K, Index...>) {
+        return (stack_size_helper.template operator()<Index>() && ...);
+      }(indices_n{});
+    }
+    else
+    {
+      return true;
+    }
+  }
+
+  // Will stop if a call to func() returns true
+  static constexpr bool for_all_until(type& unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr(size > 0)
+    {
+      auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
+        return func(pfr::get<Index>(unfiltered_fields));
+      };
+      return [stack_size_helper]<typename K, K... Index>(
+                 std::integer_sequence<K, Index...>) {
+        return (stack_size_helper.template operator()<Index>() || ...);
+      }(indices_n{});
+    }
+    else
+    {
+      return false;
+    }
+  }
 };
 
 /**
@@ -378,6 +416,25 @@ struct predicate_introspection
     }
   }
 
+  // Will stop if a call to func() returns true
+  static constexpr bool for_all_until(type& unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr(size > 0)
+    {
+      auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
+        return func(pfr::get<Index>(unfiltered_fields));
+      };
+      return [stack_size_helper]<typename K, K... Index>(
+                 std::integer_sequence<K, Index...>) {
+        return (stack_size_helper.template operator()<Index>() || ...);
+      }(indices_n{});
+    }
+    else
+    {
+      return false;
+    }
+  }
+
   template <typename U>
   static constexpr bool
   for_all_unless(member_iterator<U> unfiltered_fields, auto&& func) noexcept
@@ -385,6 +442,21 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       AVND_ERROR(U, "Cannot use for_all_unless when there are multiple instances");
+      return false;
+    }
+    else
+    {
+      return true;
+    }
+  }
+
+  template <typename U>
+  static constexpr bool
+  for_all_until(member_iterator<U> unfiltered_fields, auto&& func) noexcept
+  {
+    if constexpr(size > 0)
+    {
+      AVND_ERROR(U, "Cannot use for_all_until when there are multiple instances");
       return false;
     }
     else
@@ -431,9 +503,11 @@ struct fields_introspection<avnd::dummy>
   static constexpr void for_all_n(auto&& func) noexcept { }
   static constexpr void for_nth(int n, auto&& func) noexcept { }
   static constexpr void for_all_unless(auto&& func) noexcept { }
+  static constexpr void for_all_until(auto&& func) noexcept { }
   static constexpr void for_all(avnd::dummy fields, auto&& func) noexcept { }
   static constexpr void for_nth(avnd::dummy fields, int n, auto&& func) noexcept { }
   static constexpr void for_all_unless(avnd::dummy fields, auto&& func) noexcept { }
+  static constexpr void for_all_until(avnd::dummy fields, auto&& func) noexcept { }
 };
 
 template <template <typename...> typename P>

@@ -10,6 +10,8 @@
 namespace pd
 {
 
+// FIXME implement attribute support
+// -> semi-manual way in halp::attributes but we could also have an automatic way...
 template <typename T>
 struct init_arguments
 {
@@ -25,24 +27,31 @@ struct init_arguments
   static void call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     // TODO std::vector<variant<float, string>>
+    AVND_STATIC_TODO(T);
   }
 
   static void call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     // TODO avnd::span<variant<float, string>>
+    AVND_STATIC_TODO(T);
   }
 
   static void
   call_coroutine(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    auto iterator = make_atom_iterator(argc, argv);
-
     if constexpr(requires { implementation.initialize(make_atom_iterator(argc, argv)); })
+    {
       return implementation.initialize(make_atom_iterator(argc, argv));
-    else if constexpr(requires { implementation.initialize(implementation, iterator); })
-      return implementation.initialize(implementation, iterator);
+    }
     else
-      AVND_STATIC_TODO(T);
+    {
+      auto iterator = make_atom_iterator(argc, argv);
+
+      if constexpr(requires { implementation.initialize(implementation, iterator); })
+        return implementation.initialize(implementation, iterator);
+      else
+        AVND_STATIC_TODO(T);
+    }
   }
 
   static void
@@ -209,6 +218,14 @@ struct init_arguments
       if constexpr(avnd::type_list<decltype(T::initialize)>)
       {
         call_overloaded(implementation, name, argc, argv);
+      }
+      else if constexpr(requires { decltype(&T::initialize){}; })
+      {
+        call_simple(implementation, name, argc, argv);
+      }
+      else
+      {
+        call_template(implementation, name, argc, argv);
       }
     }
     else if constexpr(requires { decltype(&T::initialize){}; })

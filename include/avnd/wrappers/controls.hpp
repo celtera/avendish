@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/for_nth.hpp>
+#include <avnd/concepts/init.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/ranges.hpp>
 #include <avnd/wrappers/widgets.hpp>

@@ -35,14 +35,19 @@ struct init_arguments
   static void
   call_coroutine(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    auto iterator = make_atom_iterator(argc, argv);
-
     if constexpr(requires { implementation.initialize(make_atom_iterator(argc, argv)); })
+    {
       return implementation.initialize(make_atom_iterator(argc, argv));
-    else if constexpr(requires { implementation.initialize(implementation, iterator); })
-      return implementation.initialize(implementation, iterator);
+    }
     else
-      AVND_STATIC_TODO(T);
+    {
+      auto iterator = make_atom_iterator(argc, argv);
+
+      if constexpr(requires { implementation.initialize(implementation, iterator); })
+        return implementation.initialize(implementation, iterator);
+      else
+        AVND_STATIC_TODO(T);
+    }
   }
 
   static void
