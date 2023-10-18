@@ -156,8 +156,11 @@ void parse_attributes(T& object, auto& init_arguments)
 
   } vis{object, init_arguments.begin(), init_arguments.end()};
 
+
   for(;;)
   {
+    if(vis.begin == vis.end)
+      return;
     if(!std::visit(vis, *vis.begin++))
     {
       break;

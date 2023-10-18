@@ -13,10 +13,34 @@
 
 namespace max
 {
-template <typename Processor, typename T>
-struct attribute_register
+template<typename F>
+constexpr std::string_view attribute_name()
 {
+  if constexpr(avnd::has_c_name<F>)
+    return avnd::get_c_name<F>();
+  else
+    return avnd::get_name<F>();
+}
+
+template <typename Processor, typename T>
+struct attribute_register;
+
+template <typename Processor, typename T>
+  requires(avnd::attribute_input_introspection<T>::size == 0)
+struct attribute_register<Processor, T>
+{
+  void operator()(auto&&) const noexcept { }
+};
+
+template <typename Processor, typename T>
+  requires (avnd::attribute_input_introspection<T>::size > 0)
+struct attribute_register<Processor, T>
+{
+  using attrs = avnd::attribute_input_introspection<T>;
+  static constexpr int num_attributes = attrs::size;
+
   t_class* c{};
+  std::array<t_object*, num_attributes>& attributes;
 
   template<std::size_t I>
   static t_max_err getter(Processor* x, void*, long* ac, t_atom** av)
@@ -28,7 +52,7 @@ struct attribute_register
   }
 
   template<std::size_t I>
-  static t_max_err setter(Processor *x, void *attr, long ac, t_atom *av)
+  static t_max_err setter(Processor *x, void*, long ac, t_atom *av)
   {
     if (ac && av) {
       auto& obj = x->implementation.effect;
@@ -44,27 +68,23 @@ struct attribute_register
       }
     }
     return MAX_ERR_NONE;
-  };
+  }
 
   template<std::size_t I, typename F>
   void operator()(avnd::field_reflection<I, F>) {
     using V = decltype(F::value);
-    static constexpr auto name = avnd::get_name<F>();
 
-    t_symbol* sym = get_atoms_sym<V>();
-    if(sym)
+    if(t_symbol* sym = get_atoms_sym<V>())
     {
+      static constexpr auto attr_idx = attrs::template unmap<I>();
+      static constexpr auto attr_name = attribute_name<F>();
+      static constexpr auto label = avnd::get_name<F>();
       static constexpr auto get = &attribute_register::getter<I>;
       static constexpr auto set = &attribute_register::setter<I>;
-      std::string_view attr_name;
-      if constexpr(avnd::has_c_name<F>)
-        attr_name = avnd::get_c_name<F>();
-      else
-        attr_name = name;
-
       auto attr = attribute_new(attr_name.data(), sym, 0, (method)get, (method)set);
+      attributes[attr_idx] = attr;
       class_addattr(c, attr);
-      CLASS_ATTR_LABEL(c, attr_name.data(), 0, name.data());
+      CLASS_ATTR_LABEL(c, attr_name.data(), 0, label.data());
 
       if(static constexpr auto style = get_atoms_style<F>(); strlen(style) > 0)
         CLASS_ATTR_STYLE(c, attr_name.data(), 0, style);
@@ -91,4 +111,38 @@ struct attribute_register
   }
 };
 
+template <typename Processor, typename T>
+struct attribute_object_register;
+
+template <typename Processor, typename T>
+  requires(avnd::attribute_input_introspection<T>::size == 0)
+struct attribute_object_register<Processor, T>
+{
+  void operator()(auto&&) const noexcept { }
+};
+
+template <typename Processor, typename T>
+  requires (avnd::attribute_input_introspection<T>::size > 0)
+struct attribute_object_register<Processor, T>
+{
+  using attrs = avnd::attribute_input_introspection<T>;
+  static constexpr int num_attributes = attrs::size;
+
+  t_object* o{};
+
+  template<typename F, std::size_t I>
+  void operator()(F& field, avnd::predicate_index<I>)
+  {
+    static constexpr auto attr_name = attribute_name<F>();
+
+    if constexpr(std::is_arithmetic_v<decltype(F::value)>)
+    {
+      object_attr_setlong(o, gensym(attr_name.data()), field.value);
+    }
+    else if constexpr(avnd::string_ish<decltype(F::value)>)
+    {
+      object_attr_setsym(o, gensym(attr_name.data()), gensym(field.value.data()));
+    }
+  }
+};
 }

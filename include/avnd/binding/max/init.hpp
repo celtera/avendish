@@ -6,6 +6,8 @@
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/object.hpp>
+#include <boost/container/small_vector.hpp>
+#include <variant>
 
 namespace max
 {
@@ -22,15 +24,28 @@ struct init_arguments
       return f();
   }
 
-  static void call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
+  static auto call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    // TODO std::vector<variant<float, string>>
+    boost::container::small_vector<std::variant<float, std::string_view>, 64> ctor;
+
+    for(int i = 0; i < argc; i++)
+    {
+      if(argv[i].a_type == A_FLOAT)
+        ctor.emplace_back((float)argv[i].a_w.w_float);
+      else if(argv[i].a_type == A_LONG)
+        ctor.emplace_back((float)argv[i].a_w.w_long); // FIXME
+      else if(argv[i].a_type == A_SYM)
+        ctor.emplace_back(std::string_view(argv[i].a_w.w_sym->s_name));
+    }
+
+    return implementation.initialize(ctor);
   }
 
-  static void call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
+  static auto call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    // TODO avnd::span<variant<float, string>>
+    return call_vec(implementation, name, argc, argv);
   }
+
 
   static void
   call_coroutine(T& implementation, std::string_view name, int argc, t_atom* argv)

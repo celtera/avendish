@@ -29,6 +29,10 @@ struct message_processor_metaclass
   static inline t_class* g_class{};
   static inline message_processor_metaclass* instance{};
 
+  using attrs = avnd::attribute_input_introspection<T>;
+  static constexpr int num_attributes = attrs::size;
+  static inline std::array<t_object*, num_attributes> attributes;
+
   static t_symbol* symbol_from_name();
   message_processor_metaclass();
 };
@@ -46,10 +50,6 @@ struct message_processor
   [[no_unique_address]] inputs<T> input_setup;
 
   [[no_unique_address]] outputs<T> output_setup;
-
-  [[no_unique_address]] init_arguments<T> init_setup;
-
-  [[no_unique_address]] messages<T> messages_setup;
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
@@ -89,7 +89,14 @@ struct message_processor
     /// Pass arguments
     if constexpr(avnd::can_initialize<T>)
     {
-      init_setup.process(implementation.effect, argc, argv);
+      init_arguments<T>{}.process(implementation.effect, argc, argv);
+    }
+
+    if constexpr(avnd::attribute_input_introspection<T>::size > 0)
+    {
+      avnd::attribute_input_introspection<T>::for_all_n(
+          avnd::get_inputs(implementation.effect),
+          attribute_object_register<message_processor, T>{ &x_obj });
     }
   }
 
@@ -198,7 +205,7 @@ struct message_processor
     const int inlet = proxy_getinlet(&x_obj);
 
     // First try to process messages handled explicitely in the object
-    if(inlet == 0 && messages_setup.process_messages(implementation, s, argc, argv))
+    if(inlet == 0 && messages<T>{}.process_messages(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
@@ -299,9 +306,10 @@ message_processor_metaclass<T>::message_processor_metaclass()
 
   using attrs = avnd::attribute_input_introspection<T>;
 
-  attrs::for_all(attribute_register<instance, T>{g_class});
+  attrs::for_all(attribute_register<instance, T>{g_class, attributes});
 
   class_register(CLASS_BOX, g_class);
 }
 
 }
+
