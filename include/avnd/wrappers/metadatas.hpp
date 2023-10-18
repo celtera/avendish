@@ -16,27 +16,43 @@
 
 namespace avnd
 {
-#define define_get_property(PropName, Type, Default)   \
-  template <typename T>                                \
-  constexpr Type get_##PropName()                      \
-  {                                                    \
-    if constexpr(requires { Type{T::PropName()}; })    \
-      return T::PropName();                            \
-    else if constexpr(requires { Type{T::PropName}; }) \
-      return T::PropName;                              \
-    else                                               \
-      return Default;                                  \
-  }                                                    \
-                                                       \
-  template <typename T>                                \
-  constexpr Type get_##PropName(const T&)              \
-  {                                                    \
-    return get_##PropName<T>();                        \
-  }                                                    \
-                                                       \
-  template <typename T>                                \
-  concept has_##PropName                               \
-      = requires { Type{T::PropName()}; } || requires { Type{T::PropName}; };
+#define define_get_property(PropName, Type, Default)      \
+  template <typename T>                                   \
+  constexpr Type get_##PropName()                         \
+  {                                                       \
+    if constexpr(requires { Type{T::PropName()}; })       \
+      return T::PropName();                               \
+    else if constexpr(requires { Type{T::PropName}; })    \
+      return T::PropName;                                 \
+    else                                                  \
+      return Default;                                     \
+  }                                                       \
+                                                          \
+  template <typename T>                                   \
+  constexpr Type get_##PropName(const T& t)               \
+  {                                                       \
+    if consteval                                          \
+    {                                                     \
+      return get_##PropName<T>();                         \
+    }                                                     \
+    else                                                  \
+    {                                                     \
+      if constexpr(requires { Type{T::PropName()}; })     \
+        return T::PropName();                             \
+      else if constexpr(requires { Type{T::PropName}; })  \
+        return T::PropName;                               \
+      else if constexpr(requires { Type{t.PropName()}; }) \
+        return t.PropName();                              \
+      else if constexpr(requires { Type{t.PropName}; })   \
+        return t.PropName;                                \
+      else                                                \
+        return get_##PropName<T>();                       \
+    }                                                     \
+  }                                                       \
+                                                          \
+  template <typename T>                                   \
+  concept has_##PropName                                  \
+      = requires(T t) { Type{t.PropName()}; } || requires(T t) { Type{t.PropName}; };
 
 #if __has_include(<boost/core/demangle.hpp>) && !defined(BOOST_NO_RTTI)
 template <typename T>
