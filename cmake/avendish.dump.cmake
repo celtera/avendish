@@ -1,4 +1,5 @@
 get_cmake_property (multi_config GENERATOR_IS_MULTI_CONFIG)
+set(multi_config "${multi_config}" CACHE INTERNAL "")
 file(GENERATE
     OUTPUT "$<IF:${multi_config},$<CONFIG>/,>maxref_template.xml"
     INPUT ${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml)
@@ -26,7 +27,6 @@ function(avnd_make_dump)
   set_target_properties(
     ${AVND_FX_TARGET}
     PROPERTIES
-      # OUTPUT_NAME "py${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY dump
       RUNTIME_OUTPUT_DIRECTORY dump
   )
@@ -41,7 +41,7 @@ function(avnd_make_dump)
   target_link_libraries(
     ${AVND_FX_TARGET}
     PRIVATE
-      Avendish::Avendish_dump
+      Avendish::Avendish_dump nlohmann_json::nlohmann_json
   )
 
   add_custom_command(
@@ -49,6 +49,14 @@ function(avnd_make_dump)
       COMMAND ${AVND_FX_TARGET} "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
       POST_BUILD
   )
+  add_custom_command(
+    OUTPUT  "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
+    COMMAND ${AVND_FX_TARGET} "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
+  )
+  set_target_properties(${AVND_TARGET} PROPERTIES
+    AVND_DUMP_PATH "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
+  )
+
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
 

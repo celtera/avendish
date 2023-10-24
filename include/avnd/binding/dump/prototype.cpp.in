@@ -16,8 +16,7 @@ struct config
 #include <@AVND_MAIN_FILE@>
 int main(int argc, char** argv)
 {
-  assert(argc > 1);
   using type = decltype(avnd::configure<dump::config, @AVND_MAIN_CLASS@>())::type;
-  dump_cbor::dump<type>(argv[1]);
+  dump_cbor::dump<type>(argc > 1 ? argv[1] : std::string_view{});
 }
 // clang-format on

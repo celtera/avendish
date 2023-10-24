@@ -135,6 +135,7 @@ include(avendish.clap)
 include(avendish.ossia)
 include(avendish.standalone)
 include(avendish.example)
+include(avendish.tools)
 
 # Used for getting completion in IDEs...
 function(avnd_register)
@@ -192,7 +193,7 @@ endfunction()
 function(avnd_make)
   avnd_register(${ARGV})
 
-  cmake_parse_arguments(AVND "" "BACKENDS" ${ARGN})
+  cmake_parse_arguments(AVND "" "" "BACKENDS" ${ARGN})
 
   foreach(backend ${AVND_BACKENDS})
     string(STRIP "${backend}" backend)

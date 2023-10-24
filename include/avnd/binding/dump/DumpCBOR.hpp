@@ -52,8 +52,8 @@ void print_metadatas(nlohmann::json& j)
       avnd::prop_email, avnd::prop_manual_url, avnd::prop_support_url,
       avnd::prop_description>;
 
-  auto test = [&j](auto& args) {
-    if constexpr(args.template has<T>())
+  auto test = [&j]<typename Arg>(Arg& args) {
+    if constexpr(Arg::template has<T>())
       j[args.name()] = args.template get<T>();
   };
   std::apply([&](auto&&... args) { (test(args), ...); }, all_properties{});
@@ -545,9 +545,14 @@ void dump(std::string_view path)
 
   auto res = obj.dump(1);
 
-  std::cout << res << std::endl;
-
-  std::ofstream outf(path.data(), std::ios::binary);
-  outf << res << std::endl;
+  if(path.empty())
+  {
+    std::cout << res << std::endl;
+  }
+  else
+  {
+    std::ofstream outf(path.data(), std::ios::binary);
+    outf << res << std::endl;
+  }
 }
 }

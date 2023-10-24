@@ -101,13 +101,15 @@ int main(int argc, char** argv)
     return "";
   });
 
-  if(argc == 2)
+
+  if(argc == 3)
   {
-    std::cout << env.render_file_with_json_file("./maxref_template.xml", argv[1])
+    std::cout << env.render_file_with_json_file(argv[1], argv[2])
               << std::endl;
   }
   else
+    if(argc == 4)
   {
-    env.write_with_json_file("./maxref_template.xml", argv[1], argv[2]);
+    env.write_with_json_file(argv[1], argv[2], argv[3]);
   }
 }

@@ -149,16 +149,29 @@ function(avnd_make_max)
         set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe64")
         find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}/x64")
         find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}/x64")
+        find_library(MAXSDK_MSP_LIBRARY NAMES jitlib.lib HINTS "${MAXSDK_JIT_INCLUDE_DIR}/x64")
     else()
         set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe")
         find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
         find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
+        find_library(MAXSDK_MSP_LIBRARY NAMES jitlib.lib HINTS "${MAXSDK_JIT_INCLUDE_DIR}")
     endif()
     target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY})
     # FIXME only export ext_main here too
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+
+  if(TARGET json_to_maxref)
+    get_target_property(_dump_path ${AVND_TARGET} AVND_DUMP_PATH)
+    if(_dump_path)
+      add_custom_command(
+          TARGET ${AVND_FX_TARGET}
+          COMMAND json_to_maxref "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml" "${_dump_path}" "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.maxref.xml"
+          POST_BUILD
+      )
+    endif()
+  endif()
 endfunction()
 
 add_library(Avendish_max INTERFACE)
