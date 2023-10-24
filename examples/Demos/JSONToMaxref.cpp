@@ -1,7 +1,7 @@
 #include <inja/inja.hpp>
 #include <nlohmann/json.hpp>
 
-std::string match_type(std::string_view tp)
+static std::string match_type(std::string_view tp)
 {
   if(tp == "float" || tp == "double")
     return "float";
@@ -100,24 +100,14 @@ int main(int argc, char** argv)
       return it->get<std::string>();
     return "";
   });
-  // Or directly read a template file
 
-  std::ifstream f(argv[1]);
-  auto data = json::parse(f);
-
-  Template temp = env.parse_template("./maxref_template.xml");
-  std::string result = env.render(temp, data); // "Hello world!"
-
-  std::cout << result << std::endl;
-  return 0;
-  data["name"] = "Inja";
-  // std::string result = env.render(temp, data); // "Hello Inja!"
-
-  // Or read the template file (and/or the json file) directly from the environment
-  result = env.render_file("./templates/greeting.txt", data);
-  result = env.render_file_with_json_file("./templates/greeting.txt", "./data.json");
-
-  // Or write a rendered template file
-  env.write(temp, data, "./result.txt");
-  env.write_with_json_file("./templates/greeting.txt", "./data.json", "./result.txt");
+  if(argc == 2)
+  {
+    std::cout << env.render_file_with_json_file("./maxref_template.xml", argv[1])
+              << std::endl;
+  }
+  else
+  {
+    env.write_with_json_file("./maxref_template.xml", argv[1], argv[2]);
+  }
 }
