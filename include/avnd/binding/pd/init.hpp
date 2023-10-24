@@ -238,7 +238,7 @@ struct init_arguments
     }
   }
 
-  void process(T& implementation, int argc, t_atom* argv)
+  static void process(T& implementation, int argc, t_atom* argv)
   {
     call(implementation, "<initialize>", argc, argv);
   }

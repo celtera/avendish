@@ -1,4 +1,11 @@
 
+avnd_make_object(
+  TARGET Construct
+  MAIN_FILE examples/Raw/Construct.hpp
+  MAIN_CLASS examples::Construct
+  C_NAME avnd_construct
+)
+
 avnd_make_all(
   TARGET Minimal
   MAIN_FILE examples/Raw/Minimal.hpp
@@ -291,9 +298,8 @@ avnd_make_object(
 
 
 # Demo: dump all the known metadata.
-
-add_executable(demo_dump examples/Demos/Dump.cpp)
-target_link_libraries(demo_dump PRIVATE Avendish)
+add_executable(json_to_maxref examples/Demos/JSONToMaxref.cpp)
+target_link_libraries(json_to_maxref PRIVATE Avendish pantor::inja)
 
 # Demo: generate matching pd help patches
 add_executable(generate_pd_help examples/Demos/GeneratePdHelp.cpp)

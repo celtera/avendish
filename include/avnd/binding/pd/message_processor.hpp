@@ -1,7 +1,9 @@
 #pragma once
+#include <iostream>
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/pd/construct.hpp>
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/binding/pd/init.hpp>
 #include <avnd/binding/pd/inputs.hpp>

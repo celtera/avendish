@@ -49,6 +49,50 @@ enum class slider_orientation
 template <typename T>
 struct widget_reflection
 {
+  constexpr auto name()
+  {
+    switch(widget)
+    {
+      case widget_type::bang:
+        return "bang";
+      case widget_type::button:
+        return "button";
+      case widget_type::toggle:
+        return "toggle";
+      case widget_type::slider:
+        return "slider";
+      case widget_type::spinbox:
+        return "spinbox";
+      case widget_type::knob:
+        return "knob";
+      case widget_type::iknob:
+        return "iknob";
+      case widget_type::lineedit:
+        return "lineedit";
+      case widget_type::combobox:
+        return "combobox";
+      case widget_type::choices:
+        return "choices";
+      case widget_type::xy:
+        return "xy";
+      case widget_type::xy_spinbox:
+        return "xy_spinbox";
+      case widget_type::xyz:
+        return "xyz";
+      case widget_type::xyz_spinbox:
+        return "xyz_spinbox";
+      case widget_type::color:
+        return "color";
+      case widget_type::time_chooser:
+        return "time_chooser";
+      case widget_type::bargraph:
+        return "bargraph";
+      case widget_type::range_slider:
+        return "range_slider";
+      case widget_type::range_spinbox:
+        return "range_spinbox";
+    }
+  }
   using value_type = T;
   widget_type widget{widget_type::slider};
 };
@@ -56,6 +100,7 @@ struct widget_reflection
 template <typename T>
 struct slider_reflection
 {
+  static constexpr auto name() { return "slider"; }
   using value_type = T;
   static constexpr widget_type widget = widget_type::slider;
   slider_orientation orientation{slider_orientation::horizontal};
@@ -64,6 +109,7 @@ struct slider_reflection
 template <typename T>
 struct time_chooser_reflection
 {
+  static constexpr auto name() { return "time_chooser"; }
   using value_type = T;
   static constexpr widget_type widget = widget_type::time_chooser;
   slider_orientation orientation{slider_orientation::horizontal};
@@ -72,6 +118,7 @@ struct time_chooser_reflection
 template <typename T>
 struct range_slider_reflection
 {
+  static constexpr auto name() { return "range_slider"; }
   using value_type = T;
   static constexpr widget_type widget = widget_type::range_slider;
   slider_orientation orientation{slider_orientation::horizontal};
@@ -80,6 +127,7 @@ struct range_slider_reflection
 template <typename T>
 struct bargraph_reflection
 {
+  static constexpr auto name() { return "bargraph"; }
   using value_type = T;
   static constexpr widget_type widget = widget_type::bargraph;
   slider_orientation orientation{slider_orientation::horizontal};

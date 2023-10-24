@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object
+  name="{{metadatas.c_name}}"
+  {% if existsIn(metadatas, "module") %} module="{{metadatas.module}}" {% endif %}
+  {% if existsIn(metadatas, "category") %} category="{{metadatas.category}}" {% endif %}
+  >
+
+  <digest>{{ make_digest(metadatas) }}</digest>
+  <description>{{ make_description(metadatas) }}</description>
+
+  <metadatalist>
+    {% if existsIn(metadatas, "author") %}
+      <metadata name="author">{{metadatas.author}}</metadata>
+    {% endif %}
+
+    {% if existsIn(metadatas, "tags") %}
+    {% for tag in metadatas.tags %}
+      <metadata name="tag">{{ tag }}</metadata>
+    {% endfor %}
+    {% endif %}
+  </metadatalist>
+
+  <inletlist>
+    {% set inlet_count=0 %}
+    {% if exists("inputs") %}
+    {% for port in inputs %}
+    {% if not tag(port, "class_attribute") %}
+    {% set inlet_count=inlet_count+1 %}
+    <inlet id="{{ inlet_count }}" name="{{ port_name(port) }}" type="{{ port_type(port) }}">
+      <digest>{{ make_digest(port) }}</digest>
+      <description>{{ make_description(port) }}</description>
+    </inlet>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+  </inletlist>
+
+  <outletlist>
+  {% set outlet_count=0 %}
+  {% if exists("outputs") %}
+  {% for port in outputs %}
+  {% set outlet_count=outlet_count+1 %}
+    <outlet id="{{ outlet_count }}" name="{{ port_name(port) }}" type="{{ port_type(port) }}">
+      <digest>{{ make_digest(port) }}</digest>
+      <description>{{ make_description(port) }}</description>
+    </outlet>
+  {% endfor %}
+  {% endif %}
+  </outletlist>
+
+  <methodlist>
+  {% if exists("messages") %}
+  {% for port in messages %}
+    <method name="{{ port_name(port) }}">
+      <arglist>
+      {% if existsIn(port, "arguments") %}
+      {% for arg in port.arguments %}
+        <arg name="argument {{ loop.index1 }}" type="{{ arg_type(arg) }}" optional="1"/>
+      {% endfor %}
+      {% endif %}
+      </arglist>
+      <digest>{{ make_digest(port) }}</digest>
+      <description>{{ make_description(port) }}</description>
+    </method>
+  {% endfor %}
+  {% endif %}
+  </methodlist>
+
+  <attributelist>
+  {% if exists("inputs") %}
+  {% for port in inputs %}
+  {% if tag(port, "class_attribute") %}
+    <attribute name="{{ port_name(port) }}" get="1" set="1" type="atom" size="1">
+      <digest>{{ make_digest(port) }}</digest>
+      <description>{{ make_description(port) }}</description>
+    </attribute>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+  </attributelist>
+
+  <seealsolist>
+  </seealsolist>
+</c74object>

@@ -120,10 +120,12 @@ set(AVENDISH_SOURCES
 
 add_library(avnd_dummy_lib OBJECT "${AVND_SOURCE_DIR}/src/dummy.cpp")
 
+include(avendish.dependencies)
 include(avendish.disableexceptions)
 include(avendish.sources)
 
 include(avendish.ui.qt)
+include(avendish.dump)
 include(avendish.max)
 include(avendish.pd)
 include(avendish.python)
@@ -158,6 +160,7 @@ endfunction()
 function(avnd_make_object)
   avnd_register(${ARGV})
 
+  avnd_make_dump(${ARGV})
   avnd_make_ossia(${ARGV})
   avnd_make_python(${ARGV})
   avnd_make_pd(${ARGV})
@@ -170,6 +173,7 @@ endfunction()
 function(avnd_make_audioplug)
   avnd_register(${ARGV})
 
+  avnd_make_dump(${ARGV})
   avnd_make_ossia(${ARGV})
   avnd_make_vintage(${ARGV})
   avnd_make_clap(${ARGV})

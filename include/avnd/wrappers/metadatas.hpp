@@ -16,43 +16,66 @@
 
 namespace avnd
 {
-#define define_get_property(PropName, Type, Default)      \
-  template <typename T>                                   \
-  constexpr Type get_##PropName()                         \
-  {                                                       \
-    if constexpr(requires { Type{T::PropName()}; })       \
-      return T::PropName();                               \
-    else if constexpr(requires { Type{T::PropName}; })    \
-      return T::PropName;                                 \
-    else                                                  \
-      return Default;                                     \
-  }                                                       \
-                                                          \
-  template <typename T>                                   \
-  constexpr Type get_##PropName(const T& t)               \
-  {                                                       \
-    if consteval                                          \
-    {                                                     \
-      return get_##PropName<T>();                         \
-    }                                                     \
-    else                                                  \
-    {                                                     \
-      if constexpr(requires { Type{T::PropName()}; })     \
-        return T::PropName();                             \
-      else if constexpr(requires { Type{T::PropName}; })  \
-        return T::PropName;                               \
-      else if constexpr(requires { Type{t.PropName()}; }) \
-        return t.PropName();                              \
-      else if constexpr(requires { Type{t.PropName}; })   \
-        return t.PropName;                                \
-      else                                                \
-        return get_##PropName<T>();                       \
-    }                                                     \
-  }                                                       \
-                                                          \
-  template <typename T>                                   \
-  concept has_##PropName                                  \
-      = requires(T t) { Type{t.PropName()}; } || requires(T t) { Type{t.PropName}; };
+#define define_get_property(PropName, Type, Default)                                  \
+  template <typename T>                                                               \
+  constexpr Type get_##PropName()                                                     \
+  {                                                                                   \
+    if constexpr(requires { Type{T::PropName()}; })                                   \
+      return T::PropName();                                                           \
+    else if constexpr(requires { Type{T::PropName}; })                                \
+      return T::PropName;                                                             \
+    else                                                                              \
+      return Default;                                                                 \
+  }                                                                                   \
+                                                                                      \
+  template <typename T>                                                               \
+  constexpr Type get_##PropName(const T& t)                                           \
+  {                                                                                   \
+    if consteval                                                                      \
+    {                                                                                 \
+      return get_##PropName<T>();                                                     \
+    }                                                                                 \
+    else                                                                              \
+    {                                                                                 \
+      if constexpr(requires { Type{T::PropName()}; })                                 \
+        return T::PropName();                                                         \
+      else if constexpr(requires { Type{T::PropName}; })                              \
+        return T::PropName;                                                           \
+      else if constexpr(requires { Type{t.PropName()}; })                             \
+        return t.PropName();                                                          \
+      else if constexpr(requires { Type{t.PropName}; })                               \
+        return t.PropName;                                                            \
+      else                                                                            \
+        return get_##PropName<T>();                                                   \
+    }                                                                                 \
+  }                                                                                   \
+                                                                                      \
+  template <typename T>                                                               \
+  concept has_##PropName                                                              \
+      = requires(T t) { Type{t.PropName()}; } || requires(T t) { Type{t.PropName}; }; \
+                                                                                      \
+  struct prop_##PropName                                                              \
+  {                                                                                   \
+    template <typename T>                                                             \
+    static constexpr bool has() noexcept                                              \
+    {                                                                                 \
+      return has_##PropName<T>;                                                       \
+    }                                                                                 \
+                                                                                      \
+    static constexpr std::string_view name() noexcept                                 \
+    {                                                                                 \
+      return #PropName;                                                               \
+    }                                                                                 \
+                                                                                      \
+    template <typename T>                                                             \
+    static constexpr Type get()                                                       \
+    {                                                                                 \
+      if constexpr(has_##PropName<T>)                                                 \
+        return get_##PropName<T>();                                                   \
+      else                                                                            \
+        return Default;                                                               \
+    }                                                                                 \
+  };
 
 #if __has_include(<boost/core/demangle.hpp>) && !defined(BOOST_NO_RTTI)
 template <typename T>
@@ -92,6 +115,8 @@ define_get_property(email, std::string_view, "(email)")
 define_get_property(manual_url, std::string_view, "(manual_url)")
 define_get_property(support_url, std::string_view, "(support_url)")
 define_get_property(description, std::string_view, "(description)")
+define_get_property(short_description, std::string_view, "(module)")
+define_get_property(module, std::string_view, "(module)")
 
 // FIXME: C++23: constexpr ?
 std::string array_to_string(auto& authors)

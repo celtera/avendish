@@ -13,6 +13,7 @@
 #include <avnd/concepts/file_port.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/gfx.hpp>
+#include <avnd/concepts/init.hpp>
 #include <avnd/concepts/layout.hpp>
 #include <avnd/concepts/logger.hpp>
 #include <avnd/concepts/mapper.hpp>

@@ -1,3 +1,6 @@
+#pragma once
+
+#if __has_include(<fmt/format.h>)
 #include <avnd/concepts/object.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/input.hpp>
@@ -6,21 +9,13 @@
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
-#include <examples/Helpers/Controls.hpp>
-#include <examples/Ports/Essentia/stats/Entropy.hpp>
-#include <examples/Raw/Callback.hpp>
-#include <examples/Raw/Init.hpp>
-#include <examples/Raw/Lowpass.hpp>
-#include <examples/Raw/Messages.hpp>
-
-#include <examples/Ports/VB/vb.fourses_tilde.hpp>
-
-#if __has_include(<fmt/format.h>)
 #include <boost/core/demangle.hpp>
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include <fmt/ranges.h>
 
+namespace dump_text
+{
 template <typename T>
 void print_metadatas()
 {
@@ -342,11 +337,4 @@ void dump()
 
   print_callbacks<Processor>();
 }
-
-int main()
-{
-  dump<vb_ports::fourses_tilde<halp::basic_logger>>();
 }
-#else
-int main() { }
-#endif

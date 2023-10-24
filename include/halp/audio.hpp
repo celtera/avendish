@@ -35,6 +35,7 @@ template <static_string Name, typename FP, static_string Desc = "">
 struct audio_channel
 {
   static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 
   FP* channel;
 
@@ -82,6 +83,7 @@ template <static_string Name, typename FP, static_string Desc = "">
 struct audio_spectrum_channel
 {
   static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 
   FP* channel{};
 

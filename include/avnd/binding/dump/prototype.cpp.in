@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <avnd/binding/dump/DumpCBOR.hpp>
+#include <avnd/wrappers/configure.hpp>
+#include <halp/log.hpp>
+
+namespace dump
+{
+struct config
+{
+  using logger_type = halp::basic_logger;
+};
+}
+
+#include <@AVND_MAIN_FILE@>
+int main(int argc, char** argv)
+{
+  assert(argc > 1);
+  using type = decltype(avnd::configure<dump::config, @AVND_MAIN_CLASS@>())::type;
+  dump_cbor::dump<type>(argv[1]);
+}
+// clang-format on
