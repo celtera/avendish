@@ -88,6 +88,7 @@ function(avnd_make_max)
       LIBRARY_OUTPUT_DIRECTORY max
       RUNTIME_OUTPUT_DIRECTORY max
       MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+      AVND_C_NAME "${AVND_C_NAME}"
   )
 
   target_sources(
@@ -167,7 +168,7 @@ function(avnd_make_max)
     if(_dump_path)
       add_custom_command(
           TARGET ${AVND_FX_TARGET}
-          COMMAND json_to_maxref "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml" "${_dump_path}" "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.maxref.xml"
+          COMMAND json_to_maxref "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml" "${_dump_path}" "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml"
           POST_BUILD
       )
     endif()
@@ -230,11 +231,12 @@ function(avnd_create_max_package)
     endif()
 
     set(_external_path $<PATH:GET_PARENT_PATH,${_external_bin}>)
+    get_target_property(_c_name ${_external} AVND_C_NAME)
 
     # Copy the doc
     add_custom_command(TARGET ${_external} POST_BUILD
-      COMMAND echo "=== copy doc ==="
-      COMMAND ${CMAKE_COMMAND} -E copy "${_external_path}/*.maxref.xml" "${_pkg}/docs/refpages/"
+      COMMAND echo "=== copy doc === ${_external_path}/${_c_name}.maxref.xml"
+      COMMAND ${CMAKE_COMMAND} -E copy "${_external_path}/${_c_name}.maxref.xml" "${_pkg}/docs/refpages/"
     )
 
     # Copy the external (fairly platform-specific)
