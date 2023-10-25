@@ -213,12 +213,34 @@ function(avnd_create_max_package)
     file(COPY "${f}" DESTINATION "${_pkg}/")
   endforeach()
 
+  # Create useful directories
+
   # Copy the externals
   foreach(_external ${AVND_EXTERNALS})
+    add_custom_command(TARGET "${_external}" POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/externals/"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/docs/"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/docs/refpages"
+    )
+
+    if(WIN32)
+      set(_external_bin "$<TARGET_FILE:${_external}>")
+    else()
+      set(_external_bin "$<TARGET_BUNDLE_DIR:${_external}>")
+    endif()
+
+    set(_external_path $<PATH:GET_PARENT_PATH,${_external_bin}>)
+
+    # Copy the doc
+    add_custom_command(TARGET ${_external} POST_BUILD
+      COMMAND echo "=== copy doc ==="
+      COMMAND ${CMAKE_COMMAND} -E copy "${_external_path}/*.maxref.xml" "${_pkg}/docs/refpages/"
+    )
+
+    # Copy the external (fairly platform-specific)
     if(WIN32)
       add_custom_command(TARGET ${_external} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/externals/"
-        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_pkg}/externals/"
+        COMMAND ${CMAKE_COMMAND} -E copy "${_external_bin}" "${_pkg}/externals/"
       )
     else()
       set_target_properties(${_external} PROPERTIES
@@ -232,27 +254,28 @@ function(avnd_create_max_package)
         add_custom_command(TARGET ${_external} POST_BUILD
           COMMAND echo "=== codesign ==="
           COMMAND security unlock-keychain -p "${AVND_KEYCHAIN_PASSWORD}" "${AVND_KEYCHAIN_FILE}"
-          COMMAND xcrun codesign --entitlements "${AVND_CODESIGN_ENTITLEMENTS}" --force --timestamp "--options=runtime" --sign "${AVND_CODESIGN_IDENTITY}" "$<TARGET_BUNDLE_DIR:${_external}>"
+          COMMAND xcrun codesign --entitlements "${AVND_CODESIGN_ENTITLEMENTS}" --force --timestamp "--options=runtime" --sign "${AVND_CODESIGN_IDENTITY}" "${_external_bin}"
         )
 
         if(AVND_NOTARIZE)
           add_custom_command(TARGET ${_external} POST_BUILD
             COMMAND echo "=== notarize ==="
-            COMMAND ${CMAKE_COMMAND} -E tar cf "$<TARGET_BUNDLE_DIR:${_external}>.zip" "--format=zip" "$<TARGET_BUNDLE_DIR:${_external}>"
-            COMMAND xcrun notarytool submit "$<TARGET_BUNDLE_DIR:${_external}>.zip" --team-id "${AVND_NOTARIZE_TEAM}" --apple-id "${AVND_NOTARIZE_EMAIL}" --password "${AVND_NOTARIZE_PASSWORD}" --progress --wait
+            COMMAND ${CMAKE_COMMAND} -E tar cf "${_external_bin}.zip" "--format=zip" "${_external_bin}"
+            COMMAND xcrun notarytool submit "${_external_bin}.zip" --team-id "${AVND_NOTARIZE_TEAM}" --apple-id "${AVND_NOTARIZE_EMAIL}" --password "${AVND_NOTARIZE_PASSWORD}" --progress --wait
 
             COMMAND echo "=== staple ==="
-            COMMAND xcrun stapler staple "$<TARGET_BUNDLE_DIR:${_external}>"
+            COMMAND xcrun stapler staple "${_external_bin}"
           )
         endif()
       endif()
 
       add_custom_command(TARGET ${_external} POST_BUILD
           COMMAND echo "=== copying $<TARGET_BUNDLE_DIR_NAME:${_external}> to ${_pkg}/externals/ ==="
-          COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:${_external}>" "${_pkg}/externals/$<TARGET_BUNDLE_DIR_NAME:${_external}>"
+          COMMAND ${CMAKE_COMMAND} -E copy_directory "${_external_bin}" "${_pkg}/externals/$<TARGET_BUNDLE_DIR_NAME:${_external}>"
       )
     endif()
   endforeach()
+
 
   # Copy the support files
   foreach(_support ${AVND_SUPPORT})
