@@ -164,12 +164,20 @@ function(avnd_make_max)
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
   if(TARGET json_to_maxref)
+    message(STATUS "json_to_maxref found")
     get_target_property(_dump_path ${AVND_TARGET} AVND_DUMP_PATH)
     if(_dump_path)
+      message(STATUS "_dump_path: ${_dump_path}")
+      set(_maxref_template "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml")
+      set(_maxref_destination "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml")
       add_custom_command(
           TARGET ${AVND_FX_TARGET}
-          COMMAND json_to_maxref "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml" "${_dump_path}" "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml"
+          COMMAND json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
           POST_BUILD
+      )
+      set_target_properties(${AVND_FX_TARGET}
+        PROPERTIES
+          AVND_MAX_MAXREF_XML "${_maxref_destination}"
       )
     endif()
   endif()
@@ -232,12 +240,16 @@ function(avnd_create_max_package)
 
     set(_external_path $<PATH:GET_PARENT_PATH,${_external_bin}>)
     get_target_property(_c_name ${_external} AVND_C_NAME)
+    get_target_property(_maxref_xml ${_external} AVND_MAX_MAXREF_XML)
 
     # Copy the doc
-    add_custom_command(TARGET ${_external} POST_BUILD
-      COMMAND echo "=== copy doc === ${_external_path}/${_c_name}.maxref.xml"
-      COMMAND ${CMAKE_COMMAND} -E copy "${_external_path}/${_c_name}.maxref.xml" "${_pkg}/docs/refpages/"
-    )
+    if(_maxref_xml)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND echo "=== copy doc === ${_maxref_xml}"
+        COMMAND ${CMAKE_COMMAND} -E copy "${_maxref_xml}" "${_pkg}/docs/refpages/"
+      )
+    endif()
+
 
     # Copy the external (fairly platform-specific)
     if(WIN32)
