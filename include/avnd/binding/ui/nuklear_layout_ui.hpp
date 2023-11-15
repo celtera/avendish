@@ -7,6 +7,7 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/layout.hpp>
 #include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/range.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 namespace nkl
 {

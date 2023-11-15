@@ -16,6 +16,12 @@
 
 namespace avnd
 {
+#if __cpp_if_consteval >= 202106L
+#define AVND_IF_CONSTEVAL consteval
+#else
+#define AVND_IF_CONSTEVAL (std::is_constant_evaluated())
+#endif
+
 #define define_get_property(PropName, Type, Default)                                  \
   template <typename T>                                                               \
   constexpr Type get_##PropName()                                                     \
@@ -31,7 +37,7 @@ namespace avnd
   template <typename T>                                                               \
   constexpr Type get_##PropName(const T& t)                                           \
   {                                                                                   \
-    if consteval                                                                      \
+    if AVND_IF_CONSTEVAL                                                              \
     {                                                                                 \
       return get_##PropName<T>();                                                     \
     }                                                                                 \
@@ -235,7 +241,7 @@ template <typename T>
   if constexpr(requires {
                  {
                    T::version()
-                   } -> std::integral;
+                 } -> std::integral;
                })
   {
     return T::version();
@@ -243,7 +249,7 @@ template <typename T>
   else if constexpr(requires {
                       {
                         std::declval<T>().version
-                        } -> std::integral;
+                      } -> std::integral;
                     })
   {
     return T::version;

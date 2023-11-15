@@ -471,35 +471,39 @@ void print_arguments(refl, nlohmann::json& obj)
 template <typename Processor, typename type>
 void print_message(nlohmann::json& obj)
 {
-  if constexpr(requires(Processor p, std::vector<std::variant<float, std::string>> v) {
-                 type::func()(p, v);
-               })
+  using refl_type = decltype(avnd::message_function_reflection<type>());
+  if constexpr(!std::is_same_v<refl_type, void>)
   {
-    obj["type"] = "type-generic";
+    if constexpr(requires(Processor p, std::vector<std::variant<float, std::string>> v) {
+                   type::func()(p, v);
+                 })
+    {
+      obj["type"] = "type-generic";
+    }
+    else
+    {
+      if constexpr(avnd::stateless_message<type>)
+      {
+        if constexpr(std::is_member_function_pointer_v<decltype(type::func())>)
+          obj["type"] = "member-function-pointer";
+        else
+          obj["type"] = "free-function";
+      }
+      else if constexpr(avnd::stateful_message<type>)
+      {
+        obj["type"] = "returns-function-object";
+      }
+      else if constexpr(avnd::stdfunc_message<type>)
+      {
+        obj["type"] = "std::function";
+      }
+      else if constexpr(avnd::function_object_message<type>)
+      {
+        obj["type"] = "function-object";
+      }
+    }
+    print_arguments(avnd::message_function_reflection<type>(), obj);
   }
-  else
-  {
-    if constexpr(avnd::stateless_message<type>)
-    {
-      if constexpr(std::is_member_function_pointer_v<decltype(type::func())>)
-        obj["type"] = "member-function-pointer";
-      else
-        obj["type"] = "free-function";
-    }
-    else if constexpr(avnd::stateful_message<type>)
-    {
-      obj["type"] = "returns-function-object";
-    }
-    else if constexpr(avnd::stdfunc_message<type>)
-    {
-      obj["type"] = "std::function";
-    }
-    else if constexpr(avnd::function_object_message<type>)
-    {
-      obj["type"] = "function-object";
-    }
-  }
-  print_arguments(avnd::message_function_reflection<type>(), obj);
 }
 
 template <typename Processor>
