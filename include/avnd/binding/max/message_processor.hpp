@@ -306,7 +306,8 @@ message_processor_metaclass<T>::message_processor_metaclass()
 
   using attrs = avnd::attribute_input_introspection<T>;
 
-  attrs::for_all(attribute_register<instance, T>{g_class, attributes});
+  if constexpr(attrs::size > 0)
+    attrs::for_all(attribute_register<instance, T>{g_class, attributes});
 
   class_register(CLASS_BOX, g_class);
 }
