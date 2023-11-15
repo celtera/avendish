@@ -12,6 +12,7 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
+#include <variant>
 #include <iostream>
 #include <tuple>
 
@@ -233,7 +234,7 @@ void print_callback(nlohmann::json& obj)
 
   using function_type = decltype(type::call);
   using refl = avnd::function_reflection_t<std::decay_t<function_type>>;
-  using args = refl::arguments;
+  using args = typename refl::arguments;
 
   nlohmann::json::array_t arr;
   auto add = [&arr]<typename A>(A&& a) { arr.push_back(value_type(a)); };
