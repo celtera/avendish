@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/common/tag.hpp>
 
 /**
  * This file defines a nifty set of utilities: AVND_ENUM_MATCHER and AVND_TAG_MATCHER.
@@ -173,8 +174,3 @@
     }                                                                              \
     return defaultvalue;                                                           \
   };
-
-// Sadly no way to do this without a macro...
-#define AVND_DEFINE_TAG(Tag) \
-  template <typename T>      \
-  concept tag_##Tag = requires { T::Tag; } || requires { sizeof(typename T::Tag*); };

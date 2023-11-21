@@ -62,5 +62,8 @@ concept painter = requires(T t) {
 
                     //            cx, cy, radius
                     t.draw_circle(0., 0., 20.);
+
+                    //           x, y, w, h, bytes, img_w, img_h
+                    t.draw_bytes(0., 0., 0., 0., nullptr, 0, 0);
                   };
 }
