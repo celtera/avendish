@@ -15,7 +15,7 @@ struct TextureDisplay
   static constexpr double width() { return 200.; }
   static constexpr double height() { return 200.; }
 
-  void paint(avnd::painter auto ctx)
+  void paint(auto ctx)
   {
     if(m_w <= 0 || m_h <= 0)
       return;
