@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/functional/hash.hpp>
+#include <chrono>
 #include <halp/controls.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
