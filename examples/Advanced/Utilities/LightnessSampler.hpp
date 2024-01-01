@@ -6,6 +6,7 @@
 #include <halp/meta.hpp>
 #include <halp/texture.hpp>
 
+#include <chrono>
 namespace vo
 {
 // Graphical item which will display the texture
