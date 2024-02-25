@@ -180,7 +180,7 @@
 <p>File ports are currently only supported with the ossia binding.</p>
 <p>They allow to specify that we want the content of a file.
 The host will take care of loading, mmaping, converting, etc... the file in the relevant format - as far as possible outside of DSP / processing threads.</p>
-<p>Every file port should at least conform to the very basic following concept: </p>
+<p>Every file port should at least conform to the very basic following concept:</p>
 <pre><code class="language-cpp">template &lt;typename T&gt;
 concept file = requires(T t) {
   t.filename;
@@ -204,21 +204,21 @@ concept file_port = requires(T t) {
 Note that this has an obvious performance cost as the host must check regularly for changes: do not overdo it!</p>
 <h3 id="file-filters"><a class="header" href="#file-filters">File filters</a></h3>
 <p>File ports should prompt the host to open a file chooser.
-One is generally only interested in a specific file type. 
-This can be specified in the following ways: </p>
+One is generally only interested in a specific file type.
+This can be specified in the following ways:</p>
 <h4 id="general-file-filters"><a class="header" href="#general-file-filters">General file filters</a></h4>
 <p>Here, the filter is a string of either of the following formats:</p>
-<pre><code>&quot;*.jpg *.jpeg&quot;
-&quot;JPEG Images (*.jpg *.jpeg)&quot;
+<pre><code>"*.jpg *.jpeg"
+"JPEG Images (*.jpg *.jpeg)"
 </code></pre>
 <pre><code class="language-cpp">struct my_file_port : ... {
   // Currently implemented:
   // Any audio file that can be loaded by the host
-  static consteval auto filters() { return &quot;CSV files (*.csv)&quot;; }
+  static consteval auto filters() { return "CSV files (*.csv)"; }
 };
 </code></pre>
 <h4 id="domain-specific-file-filters"><a class="header" href="#domain-specific-file-filters">Domain-specific file filters</a></h4>
-<p>This is for the case where you want a general kind of media and don't care specifically about the extension: 
+<p>This is for the case where you want a general kind of media and don't care specifically about the extension:
 for instance, for audio files you could have .wav, .aiff, .mp3, etc etc ; it is pointless to try to specify a whole list.
 Instead, the host knows which audio file formats it is able to load and should just be able to show its own audio-specific file chooser.</p>
 <pre><code class="language-cpp">struct my_file_port : ... {

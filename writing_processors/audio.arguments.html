@@ -179,7 +179,7 @@
 </blockquote>
 <p>In addition of the global set-up step, one may require per-process-step arguments.
 Most common needs are for instance the current tempo, etc.</p>
-<p>The infrastructure put in place for this is very similar to the one previously mentioned for 
+<p>The infrastructure put in place for this is very similar to the one previously mentioned for
 the setup step.</p>
 <p>The way it is done is simply by passing it as the last argument of the processing <code>operator()</code> function.</p>
 <p>If there is such a type, it will contain at least the frames.</p>
@@ -209,13 +209,13 @@ the setup step.</p>
   // And also the double-taking versions, not duplicated here :-)
 };
 </code></pre>
-<p>The currently supported members are: </p>
+<p>The currently supported members are:</p>
 <ul>
 <li><code>frames</code>: the buffer size</li>
 </ul>
-<p>The plan is to introduce: </p>
+<p>The plan is to introduce:</p>
 <ul>
-<li><code>tempo</code> and all things relative to musicality, e.g. current bar, etc. 
+<li><code>tempo</code> and all things relative to musicality, e.g. current bar, etc.
 <ul>
 <li>But first we have to define it in a proper way, which is compatible with VST, CLAP, etc.</li>
 </ul>

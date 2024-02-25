@@ -186,7 +186,7 @@
 </code></pre>
 <p>By default, this will do nothing: we have to fill it. <code>ui</code> will be the top-level widget.
 Child widgets can be added simply by defining struct members.
-Containers are defined by adding a <code>layout()</code> function which returns an enum value, which may 
+Containers are defined by adding a <code>layout()</code> function which returns an enum value, which may
 currently be any of the following names:</p>
 <pre><code>hbox,
 vbox,
@@ -205,7 +205,7 @@ custom
   static constexpr auto layout() { enum { hbox } d{}; return d; }
   struct {
     static constexpr auto layout() { enum { vbox } d{}; return d; }
-    const char* text = &quot;text&quot;;
+    const char* text = "text";
     decltype(&amp;ins::int_ctl) int_widget = &amp;ins::int_ctl;
   } widgets;
 
@@ -215,7 +215,7 @@ custom
     static constexpr auto height() { return 20; }
   } a_spacing;
 
-  const char* text = &quot;text2&quot;;
+  const char* text = "text2";
 };
 </code></pre>
 <p>This defines, conceptually, the following layout:</p>
@@ -239,15 +239,15 @@ custom
 static constexpr auto columns() { return 3; }
 </code></pre>
 <p>If <code>columns()</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows()</code> is defined.</p>
-<p>That is, given: </p>
+<p>That is, given:</p>
 <pre><code class="language-cpp">struct {
   static constexpr auto layout() { enum { grid } d{}; return d; }
   static constexpr auto columns() { return 3; }
-  const char* text1 = &quot;A&quot;;
-  const char* text2 = &quot;B&quot;;
-  const char* text3 = &quot;C&quot;;
-  const char* text4 = &quot;D&quot;;
-  const char* text5 = &quot;E&quot;;
+  const char* text1 = "A";
+  const char* text2 = "B";
+  const char* text3 = "C";
+  const char* text4 = "D";
+  const char* text5 = "E";
 } a_grid;
 </code></pre>
 <p>The layout will be:</p>
@@ -270,15 +270,15 @@ Each children item should have a <code>name()</code> property which will be show
   static constexpr auto layout() { enum { tabs } d{}; return d; }
   struct {
     static constexpr auto layout() { enum { hbox } d{}; return d; }
-    static constexpr auto name() { return &quot;First tab&quot;; }
-    const char* text1 = &quot;A&quot;;
-    const char* text2 = &quot;B&quot;;
+    static constexpr auto name() { return "First tab"; }
+    const char* text1 = "A";
+    const char* text2 = "B";
   } a_hbox;
   struct {
     static constexpr auto layout() { enum { hbox } d{}; return d; }
-    static constexpr auto name() { return &quot;Second tab&quot;; }
-    const char* text3 = &quot;C&quot;;
-    const char* text4 = &quot;D&quot;;
+    static constexpr auto name() { return "Second tab"; }
+    const char* text3 = "C";
+    const char* text4 = "D";
   } a_vbox;
 } a_tabs;
 </code></pre>
@@ -295,30 +295,30 @@ lighter
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
 </code></pre>
 <h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
-<p>In &quot;group&quot; or &quot;container&quot; layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
+<p>In "group" or "container" layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
 <pre><code class="language-cpp">static constexpr auto x() { return 20; }
 static constexpr auto y() { return 20; }
 </code></pre>
 <h3 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h3>
-<p>Containers can be given an explicit (device independent) pixel size with </p>
+<p>Containers can be given an explicit (device independent) pixel size with</p>
 <pre><code class="language-cpp">static constexpr auto width() { return 100; }
 static constexpr auto height() { return 50; }
 </code></pre>
 <p>Otherwise, things will be made to fit in a best-effort way.</p>
 <h2 id="items"><a class="header" href="#items">Items</a></h2>
 <h2 id="text-labels"><a class="header" href="#text-labels">Text labels</a></h2>
-<p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient. </p>
+<p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient.</p>
 <h2 id="controls"><a class="header" href="#controls">Controls</a></h2>
-<p>One can add a control (either input or output) simply by adding a member pointer to it: </p>
+<p>One can add a control (either input or output) simply by adding a member pointer to it:</p>
 <pre><code class="language-cpp">struct MyProcessor {
   struct ins {
-    halp::hslider_f32&lt;&quot;Foo&quot;&gt; foo;
+    halp::hslider_f32&lt;"Foo"&gt; foo;
   } inputs;
 
   struct ui
   {
     static constexpr auto layout() { enum { hbox } d{}; return d; }
-    const char* text = &quot;text&quot;;
+    const char* text = "text";
     decltype(&amp;ins::foo) int_widget = &amp;ins::foo;
   };
 };
@@ -330,7 +330,7 @@ static constexpr auto height() { return 50; }
 <p>Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API and reduce repetitions:</p>
 <h2 id="widget-helpers"><a class="header" href="#widget-helpers">Widget helpers</a></h2>
 <pre><code class="language-cpp">halp::label l1{
-    .text = &quot;some long foo&quot;
+    .text = "some long foo"
   , .x = 100
   , .y = 25
 };
@@ -347,12 +347,12 @@ halp::item&lt;&amp;ins::foo&gt; widget{
  using enum halp::colors;
  using enum halp::layouts;
  
- halp_meta(name, &quot;Main&quot;)
+ halp_meta(name, "Main")
  halp_meta(layout, hbox)
  halp_meta(background, mid)
 
  struct {
-   halp_meta(name, &quot;Widget&quot;)
+   halp_meta(name, "Widget")
    halp_meta(layout, vbox)
    halp_meta(background, dark)
    halp::item&lt;&amp;ins::int_ctl&gt; widget;

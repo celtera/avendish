@@ -174,7 +174,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="midi-synth-example"><a class="header" href="#midi-synth-example">MIDI synth example</a></h1>
-<p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries: </p>
+<p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries:</p>
 <ul>
 <li><a href="https://github.com/jcelerier/libremidi"><code>libremidi</code></a> provides an useful <code>enum</code> of common MIDI messages types.</li>
 <li><a href="https://github.com/ossia/libossia"><code>libossia</code></a> provides frequency &lt;-&gt; MIDI note and gain &lt;-&gt; MIDI velocity conversion operations.</li>
@@ -198,24 +198,24 @@ namespace examples
  */
 struct Synth
 {
-  halp_meta(name, &quot;My example synth&quot;);
-  halp_meta(c_name, &quot;synth_123&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;);
-  halp_meta(description, &quot;A demo synth&quot;);
-  halp_meta(uuid, &quot;93eb0f78-3d97-4273-8a11-3df5714d66dc&quot;);
+  halp_meta(name, "My example synth");
+  halp_meta(c_name, "synth_123");
+  halp_meta(category, "Demo");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "A demo synth");
+  halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
 
   struct
   {
     /** MIDI input: simply a list of timestamped messages.
      * Timestamp are in samples, 0 is the first sample.
      */
-    halp::midi_bus&lt;&quot;In&quot;&gt; midi;
+    halp::midi_bus&lt;"In"&gt; midi;
   } inputs;
 
   struct
   {
-    halp::fixed_audio_bus&lt;&quot;Out&quot;, double, 2&gt; audio;
+    halp::fixed_audio_bus&lt;"Out", double, 2&gt; audio;
   } outputs;
 
   struct conf

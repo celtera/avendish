@@ -177,30 +177,30 @@
 <blockquote>
 <p>Supported bindings: depending on the underlying data type</p>
 </blockquote>
-<p>To simplify the common use case of defining a port such as &quot;slider with a range&quot;, a set of common helper types is provided.</p>
+<p>To simplify the common use case of defining a port such as "slider with a range", a set of common helper types is provided.</p>
 <p>Here is our example, now as refined as it can be ; almost no character is superfluous or needlessly repeated except the names of controls:</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;halp/controls.hpp&gt;
 
 struct MyProcessor
 {
-  halp_meta(name, &quot;Addition&quot;)
+  halp_meta(name, "Addition")
 
   struct
   {
-    halp::hslider_f32&lt;&quot;a&quot;, halp::range{.min = -10, .max = 10, .init = 0}&gt; a;
-    halp::knob_f32&lt;&quot;b&quot; , halp::range{.min = -1, .max = 1, .init = 0}&gt; b;
+    halp::hslider_f32&lt;"a", halp::range{.min = -10, .max = 10, .init = 0}&gt; a;
+    halp::knob_f32&lt;"b" , halp::range{.min = -1, .max = 1, .init = 0}&gt; b;
   } inputs;
 
   struct
   {
-    halp::hbargraph_f32&lt;&quot;out&quot;, halp::range{.min = -11, .max = 11, .init = 0}&gt; out;
+    halp::hbargraph_f32&lt;"out", halp::range{.min = -11, .max = 11, .init = 0}&gt; out;
   } outputs;
 
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<p>This is how an environment such as <em>ossia score</em> renders it: </p>
+<p>This is how an environment such as <em>ossia score</em> renders it:</p>
 <p><img src="images/addition-score.gif" alt="Addition" /></p>
 <p>Note that even with our helper types, the following holds:</p>
 <pre><code class="language-cpp">static_assert(sizeof(MyProcessor) == 3 * sizeof(float));

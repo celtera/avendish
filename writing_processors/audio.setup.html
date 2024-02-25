@@ -183,7 +183,7 @@
     ...
 }
 </code></pre>
-<p><code>some_type</code> can be a custom type with the following allowed fields: </p>
+<p><code>some_type</code> can be a custom type with the following allowed fields:</p>
 <ul>
 <li><code>rate</code>: will be filled with the sample rate.</li>
 <li><code>frames</code>: will be filled with the maximum frame (buffer) size.</li>
@@ -225,7 +225,7 @@ void prepare(setup_c info) {
 }
 </code></pre>
 <h2 id="helper-library"><a class="header" href="#helper-library">Helper library</a></h2>
-<p><code>halp</code> provides the <code>halp::setup</code> which covers the most usual use cases: </p>
+<p><code>halp</code> provides the <code>halp::setup</code> which covers the most usual use cases:</p>
 <pre><code class="language-cpp">void prepare(halp::setup info) {
   info.rate; // etc...
 }
@@ -242,7 +242,7 @@ if constexpr(requires (T t) { t.frames = 123; })
 if constexpr(requires (T t) { t.rate = 44100; })
   t.rate = ... the sample-rate reported by the DAW ...;
 </code></pre>
-<p>This way, only the cost of the variables that are actually used by the algorithm is ever incurred, which is of course not super important but a good reference implementation for this way of doing for other parts of the system where it matters more. </p>
+<p>This way, only the cost of the variables that are actually used by the algorithm is ever incurred, which is of course not super important but a good reference implementation for this way of doing for other parts of the system where it matters more.</p>
 
                     </main>
 

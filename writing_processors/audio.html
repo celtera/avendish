@@ -177,13 +177,13 @@
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
 </blockquote>
-<p>The processors we wrote until now only processed &quot;control&quot; values.</p>
+<p>The processors we wrote until now only processed "control" values.</p>
 <p>As a convention, those are values that change infrequently, relative to the audio rate: every few milliseconds, as opposed to every few dozen microseconds for individual audio samples.</p>
 <h2 id="argument-based-processors"><a class="header" href="#argument-based-processors">Argument-based processors</a></h2>
-<p>Let's see how one can write a simple audio filter in Avendish: </p>
+<p>Let's see how one can write a simple audio filter in Avendish:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
 
   float operator()(float input) 
   {
@@ -195,7 +195,7 @@
 <p>Maybe you are used to writing processors that operate with buffers of samples. Fear not, here is another valid Avendish audio processor, which should reassure most readers:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   static consteval auto input_channels() { return 2; }
   static consteval auto output_channels() { return 2; }
 
@@ -214,7 +214,7 @@
 <p>The middle-ground of a processor that processes a single channel is also possible (and so is the possibility to use floats or doubles for the definition of the processor):</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
 
   void operator()(float* inputs, float* outputs, int frames)
   {
@@ -233,7 +233,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <li>Sample-wise</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;In&quot;; }
+  static consteval auto name() { return "In"; }
   float sample{};
 };
 </code></pre>
@@ -241,7 +241,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <li>Channel-wise</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;Out&quot;; }
+  static consteval auto name() { return "Out"; }
   float* channel{};
 };
 </code></pre>
@@ -249,16 +249,16 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <li>Bus-wise, with a fixed channel count. Here, bindings will ensure that there are always as many channels allocated.</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;Ins&quot;; }
+  static consteval auto name() { return "Ins"; }
   static constexpr int channels() { return 2; }
   float** samples{}; // At some point this should be renamed bus...
 };
 </code></pre>
 <ul>
-<li>Bus-wise, with a modifiable channel count. Here, bindings will put exactly as many channels as the end-user of the software requested ; this count will be contained in <code>channels</code>. </li>
+<li>Bus-wise, with a modifiable channel count. Here, bindings will put exactly as many channels as the end-user of the software requested ; this count will be contained in <code>channels</code>.</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;Outs&quot;; }
+  static consteval auto name() { return "Outs"; }
   int channels = 0;
   double** samples{}; // At some point this should be renamed bus...
 };
@@ -267,18 +267,18 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <p>An astute reader may wonder why one could not fix a channel count by doing <code>const int channels = 2;</code> instead of <code>int channels() { return 2; };</code>. Sadly, this would make our types non-assignable, which makes things harder. It would also use bytes for each instance of the processor. A viable middle-ground could be <code>static constexpr int channels = 2;</code> but C++ does not allow static variables in unnamed types, thus this does not leave a lot of choice.</p>
 </blockquote>
 <h2 id="process-function-for-ports"><a class="header" href="#process-function-for-ports">Process function for ports</a></h2>
-<p>For ports-based processor, the process function takes the number of frames as argument. Here is a complete, bare example of a gain processor. </p>
+<p>For ports-based processor, the process function takes the number of frames as argument. Here is a complete, bare example of a gain processor.</p>
 <pre><code class="language-cpp">struct Gain {
-  static constexpr auto name() { return &quot;Gain&quot;; }
+  static constexpr auto name() { return "Gain"; }
   struct {
     struct {
-      static constexpr auto name() { return &quot;Input&quot;; }
+      static constexpr auto name() { return "Input"; }
       const double** samples;
       int channels;
     } audio;
 
     struct {
-      static constexpr auto name() { return &quot;Gain&quot;; }
+      static constexpr auto name() { return "Gain"; }
       struct range {
         const float min = 0.;
         const float max = 1.;
@@ -291,7 +291,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 
   struct {
     struct {
-      static constexpr auto name() { return &quot;Output&quot;; }
+      static constexpr auto name() { return "Output"; }
       double** samples;
       int channels;
     } audio;
@@ -308,11 +308,11 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 };
 </code></pre>
 <h2 id="helpers"><a class="header" href="#helpers">Helpers</a></h2>
-<p><code>halp</code> provides helper types for these common cases: </p>
-<pre><code class="language-cpp">halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
-halp::audio_channel&lt;&quot;B&quot;, double&gt; audio;
-halp::fixed_audio_bus&lt;&quot;C&quot;, double, 2&gt; audio;
-halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
+<p><code>halp</code> provides helper types for these common cases:</p>
+<pre><code class="language-cpp">halp::audio_sample&lt;"A", double&gt; audio;
+halp::audio_channel&lt;"B", double&gt; audio;
+halp::fixed_audio_bus&lt;"C", double, 2&gt; audio;
+halp::dynamic_audio_bus&lt;"D", double&gt; audio;
 </code></pre>
 <blockquote>
 <p>Important: it is not possible to mix different types of audio ports in a single processor: audio sample and audio bus operate necessarily on different time-scales that are impossible to combine in a single function. Technically, it would be possible to combine audio channels and audio buses, but for the sake of simplicity this is currently forbidden.</p>
@@ -323,14 +323,14 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 <h2 id="gain-processor-helpers-version"><a class="header" href="#gain-processor-helpers-version">Gain processor, helpers version</a></h2>
 <p>The exact same example as above, just shorter to write :)</p>
 <pre><code class="language-cpp">struct Gain {
-  static constexpr auto name() { return &quot;Gain&quot;; }
+  static constexpr auto name() { return "Gain"; }
   struct {
-    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
-    halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{0., 1., 0.5}&gt; gain;
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    halp::hslider_f32&lt;"Gain", halp::range{0., 1., 0.5}&gt; gain;
   } inputs;
 
   struct {
-    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
   } outputs;
   
   void operator()(int N) {
@@ -345,18 +345,18 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 };
 </code></pre>
 <h2 id="further-work"><a class="header" href="#further-work">Further work</a></h2>
-<p>We currently have the following matrix of possible forms of audio ports: </p>
+<p>We currently have the following matrix of possible forms of audio ports:</p>
 <div class="table-wrapper"><table><thead><tr><th></th><th>1 channel</th><th>N channels</th></tr></thead><tbody>
 <tr><td>1 frame</td><td><code>float sample;</code></td><td><code>???</code></td></tr>
 <tr><td>N frames</td><td><code>float* channel;</code></td><td><code>float** samples;</code></td></tr>
 </tbody></table>
 </div>
-<p>For the N channels / 1 frame case, one could imagine for instance: </p>
+<p>For the N channels / 1 frame case, one could imagine for instance:</p>
 <pre><code class="language-cpp">struct {
   float bus[2]; // Fixed channels case
 }
 </code></pre>
-<p>or </p>
+<p>or</p>
 <pre><code class="language-cpp">struct {
   float* bus; // Dynamic channels case
 }

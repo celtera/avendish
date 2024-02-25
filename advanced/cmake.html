@@ -174,7 +174,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="configuration-with-cmake"><a class="header" href="#configuration-with-cmake">Configuration with CMake</a></h1>
-<p>So far, the &quot;building&quot; side of things has been left under the carpet.</p>
+<p>So far, the "building" side of things has been left under the carpet.</p>
 <p>It is actually not very complicated.</p>
 <p>We have:</p>
 <ul>
@@ -182,7 +182,7 @@
 <li>A binding for which we want to build this processor, for instance a Python or VST3 binding.</li>
 </ul>
 <p>What CMake does is that it generates a small <code>.cpp</code> file that combines both.</p>
-<p>Here is for instance how it is done for Python: </p>
+<p>Here is for instance how it is done for Python:</p>
 <pre><code class="language-cpp">/* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include &lt;@AVND_MAIN_FILE@&gt;
@@ -195,9 +195,9 @@ PYBIND11_MODULE(py@AVND_C_NAME@, m)
   static const python::processor&lt; type &gt; instance{m};
 }
 </code></pre>
-<p>Here, <code>AVND_MAIN_FILE</code>, <code>AVND_C_NAME</code> and <code>AVND_MAIN_CLASS</code> are options that are passed to CMake. 
+<p>Here, <code>AVND_MAIN_FILE</code>, <code>AVND_C_NAME</code> and <code>AVND_MAIN_CLASS</code> are options that are passed to CMake.
 For an actual processor though, it's likely that you would have to write your own entrypoint.</p>
-<p>Here is the Clap entrypoint, which is fairly similar: </p>
+<p>Here is the Clap entrypoint, which is fairly similar:</p>
 <pre><code class="language-cpp">/* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include &lt;@AVND_MAIN_FILE@&gt;
@@ -260,7 +260,7 @@ etc...
 )
 </code></pre>
 <h2 id="doing-it-by-hand"><a class="header" href="#doing-it-by-hand">Doing it by hand</a></h2>
-<p>This is not very hard: Avendish is a header-only library, so you just have to add the <code>avendish/include</code> folder to your include path, 
+<p>This is not very hard: Avendish is a header-only library, so you just have to add the <code>avendish/include</code> folder to your include path,
 and the <code>-std=c++20</code> flag to your build-system.</p>
 <blockquote>
 <p>Depending on your compiler, you may also need to add flags such as <code>-fconcepts</code> (GCC &lt;= 9) ; <code>-fcoroutines</code> (GCC &lt;= 11) ; <code>-fcoroutines-ts</code> (Clang &lt;= 14).</p>
@@ -273,8 +273,8 @@ and the <code>-std=c++20</code> flag to your build-system.</p>
 </blockquote>
 <p>Finally, we have to wrap our class with the binding.</p>
 <pre><code class="language-cpp">// Defines struct MyProcessor { ... };
-#include &quot;MyProcessor.hpp&quot;
-#include &quot;MyBinding.hpp&quot;
+#include "MyProcessor.hpp"
+#include "MyBinding.hpp"
 // Set up those typedefs to provide services to plug-ins which need it
 struct my_config {
    using logger_type = ...;

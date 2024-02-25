@@ -231,11 +231,11 @@ There are multiple ways to implement them.</p>
 <pre><code class="language-cpp">template&lt;typename T&gt;
 using my_pair = std::pair&lt;std::string_view, T&gt;;
 struct {
-  halp_meta(name, &quot;Enum 1&quot;);
+  halp_meta(name, "Enum 1");
   enum widget { combobox };
 
   struct range {
-    my_pair&lt;float&gt; values[3]{{&quot;Foo&quot;, -10.f}, {&quot;Bar&quot;, 5.f}, {&quot;Baz&quot;, 10.f}};
+    my_pair&lt;float&gt; values[3]{{"Foo", -10.f}, {"Bar", 5.f}, {"Baz", 10.f}};
     int init{1}; // == Bar
   };
 
@@ -257,11 +257,11 @@ as needed.</p>
 <h3 id="enumerating-with-only-string"><a class="header" href="#enumerating-with-only-string">Enumerating with only string</a></h3>
 <p>Consider the following port:</p>
 <pre><code class="language-cpp">struct {
-  halp_meta(name, &quot;Enum 2&quot;);
+  halp_meta(name, "Enum 2");
   enum widget { enumeration };
 
   struct range {
-    std::string_view values[4]{&quot;Roses&quot;, &quot;Red&quot;, &quot;Violets&quot;, &quot;Blue&quot;};
+    std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
     int init{1}; // Red
   };
 
@@ -273,11 +273,11 @@ one from the range::values array ; these strings live in static memory
 so there is no need to duplicate them in an <code>std::string</code>.</p>
 <p>It is also possible to use an <code>int</code> for the port value:</p>
 <pre><code class="language-cpp">struct {
-  halp_meta(name, &quot;Enum 3&quot;);
+  halp_meta(name, "Enum 3");
   enum widget { enumeration };
 
   struct range {
-    std::string_view values[4]{&quot;Roses&quot;, &quot;Red&quot;, &quot;Violets&quot;, &quot;Blue&quot;};
+    std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
     int init{1}; // Red
   };
 
@@ -289,12 +289,12 @@ so there is no need to duplicate them in an <code>std::string</code>.</p>
 <p>Finally, we can also use actual enums.</p>
 <pre><code class="language-cpp">enum my_enum { A, B, C };
 struct {
-  halp_meta(name, &quot;Enum 3&quot;);
+  halp_meta(name, "Enum 3");
   enum widget { enumeration };
 
   struct range
   {
-    std::string_view values[3]{&quot;A&quot;, &quot;B&quot;, &quot;C&quot;};
+    std::string_view values[3]{"A", "B", "C"};
     my_enum init = my_enum::B;
   };
 
@@ -309,9 +309,9 @@ struct {
 <code>enum { A, B, C };</code> will work.</p>
 </blockquote>
 <p>An helper is provided, which is sadly a macro as we cannot do proper enum reflection yet:</p>
-<pre><code class="language-cpp">halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole) my_port;
+<pre><code class="language-cpp">halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole) my_port;
 </code></pre>
-<p>declares a port named &quot;Simple Enum&quot;. The default value will be &quot;Peg&quot;, the 4 enumerators are Square, Peg, Round, Hole.</p>
+<p>declares a port named "Simple Enum". The default value will be "Peg", the 4 enumerators are Square, Peg, Round, Hole.</p>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
 <blockquote>
 <p>Supported bindings: ossia</p>
@@ -347,7 +347,7 @@ concept vector_ish = requires(T t)
 } my_port;
 </code></pre>
 <h3 id="c-arrays"><a class="header" href="#c-arrays">C arrays</a></h3>
-<p>C arrays aren't supported due to limitations in the reflection capabilities of C++: </p>
+<p>C arrays aren't supported due to limitations in the reflection capabilities of C++:</p>
 <pre><code class="language-cpp">struct {
   int value[2]; // Won't work
 } my_port;
@@ -376,7 +376,7 @@ concept vector_ish = requires(T t)
   std::optional&lt;int&gt; value;
 } my_port;
 </code></pre>
-<p>This is used to give message semantics to the port: optionals are reset before execution of the current 
+<p>This is used to give message semantics to the port: optionals are reset before execution of the current
 tick, both for inputs and outputs. If an input is set, it means that a message was received for this tick.
 If the processor sets the output, a message will be sent outwards.</p>
 <p>This is mostly equivalent to messages and callbacks, but with a value-based instead of function-based API
@@ -404,7 +404,7 @@ If the processor sets the output, a message will be sent outwards.</p>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>Aggregates are <em>somewhat</em> supported: that is, one can define </p>
+<p>Aggregates are <em>somewhat</em> supported: that is, one can define</p>
 <pre><code class="language-cpp">struct Foo {
   int a, b;
   struct {
@@ -422,10 +422,10 @@ This is so far only supported in ossia, and will not preserve names, but be tran
 , (int)b
 , (list) [ 
     (list)[ c0, c1, c2, ... ]
-  , (string)&quot;d&quot;
+  , (string)"d"
   ]
 , (list)[true, false, false, true]
-, (map){&quot;foo&quot;: 123, &quot;bar&quot;: 456}
+, (map){"foo": 123, "bar": 456}
 ]
 </code></pre>
 <p>It is possible to specify field names in an aggregate manually, in order to have the sub-object be detected as a map and not a list:</p>
@@ -440,19 +440,19 @@ struct detected_object
   halp_field_names(name, geometry, probability);
   // This macro expands to: 
   // static constexpr auto field_names()
-  // { return std::array&lt;std::string_view, 3&gt;{&quot;name&quot;, &quot;geometry&quot;, &quot;probability&quot;}; }
+  // { return std::array&lt;std::string_view, 3&gt;{"name", "geometry", "probability"}; }
 };
 </code></pre>
 <p>This maps to:</p>
 <pre><code class="language-cpp">(map) {
-   name: &quot;foo&quot;
+   name: "foo"
  , geometry: (list) [3, 4, 120, 356]
  , probability: 0.95
 }
 </code></pre>
 <h1 id="helper-type"><a class="header" href="#helper-type">Helper type</a></h1>
-<p>To create a port ithout having to declare a struct, you can directly use: </p>
-<p><code>halp::val_port&lt;&quot;My port&quot;, std::string&gt; my_port;</code>.</p>
+<p>To create a port ithout having to declare a struct, you can directly use:</p>
+<p><code>halp::val_port&lt;"My port", std::string&gt; my_port;</code>.</p>
 
                     </main>
 

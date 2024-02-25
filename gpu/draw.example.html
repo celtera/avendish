@@ -193,8 +193,8 @@ namespace examples
 
 struct GpuFilterExample
 {
-  halp_meta(name, &quot;Helpers GPU pipeline&quot;);
-  halp_meta(uuid, &quot;ebe6f07a-5e7f-4cf8-bd2b-e5dc3e22a1f9&quot;);
+  halp_meta(name, "Helpers GPU pipeline");
+  halp_meta(uuid, "ebe6f07a-5e7f-4cf8-bd2b-e5dc3e22a1f9");
 
   // Define the layout of our pipeline in C++ simply through the structure of a struct
   static constexpr struct layout
@@ -232,16 +232,16 @@ struct GpuFilterExample
     {
       struct custom_ubo
       {
-        halp_meta(name, &quot;custom&quot;);
+        halp_meta(name, "custom");
         halp_flags(std140, ubo);
 
         static constexpr int binding() { return 0; }
 
-        gpp::uniform&lt;&quot;foo&quot;, float[2]&gt; pad;
-        gpp::uniform&lt;&quot;bar&quot;, float&gt; slider;
+        gpp::uniform&lt;"foo", float[2]&gt; pad;
+        gpp::uniform&lt;"bar", float&gt; slider;
       } ubo;
 
-      gpp::sampler&lt;&quot;tex&quot;, 1&gt; texture_input;
+      gpp::sampler&lt;"tex", 1&gt; texture_input;
     } bindings;
   } lay{};
   using bindings = decltype(layout::bindings);
@@ -250,37 +250,37 @@ struct GpuFilterExample
   struct
   {
     // If samplers &amp; buffers are referenced here the GPU side of things
-    // will be automatically allocated as they are expect to come from &quot;outside&quot;
-    gpp::uniform_control_port&lt;halp::hslider_f32&lt;&quot;Alpha&quot;&gt;, &amp;uniforms::slider&gt; bright;
+    // will be automatically allocated as they are expect to come from "outside"
+    gpp::uniform_control_port&lt;halp::hslider_f32&lt;"Alpha"&gt;, &amp;uniforms::slider&gt; bright;
 
     // It's also possible to have purely CPU-side controls to manage e.g. texture sizes, etc...
-    halp::hslider_f32&lt;&quot;Other&quot;&gt; other;
+    halp::hslider_f32&lt;"Other"&gt; other;
   } inputs;
 
   struct
   {
-    gpp::color_attachment_port&lt;&quot;Main out&quot;, &amp;layout::fragment_output::col&gt; fragColor;
+    gpp::color_attachment_port&lt;"Main out", &amp;layout::fragment_output::col&gt; fragColor;
   } outputs;
 
   std::string_view vertex()
   {
-    return R&quot;_(
+    return R"_(
 void main()
 {
   texcoord = v_texcoord;
   gl_Position = vec4(v_position.x / 3., v_position.y / 3, 0.0, 1.);
 }
-)_&quot;;
+)_";
   }
 
   std::string_view fragment()
   {
-    return R&quot;_(
+    return R"_(
 void main()
 {
   fragColor = vec4(texture(tex, texcoord.xy * foo).rgb, bar) ;
 }
-)_&quot;;
+)_";
   }
 
   gpp::co_update update()

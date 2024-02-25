@@ -175,7 +175,7 @@
                     <main>
                         <h1 id="type-predicates-and-introspection"><a class="header" href="#type-predicates-and-introspection">Type predicates and introspection</a></h1>
 <p>The core enabler of Avendish is the ability to filter struct definitions according to predicates.</p>
-<p>That is, given: </p>
+<p>That is, given:</p>
 <pre><code class="language-cpp">struct Foo {
   int16_t x;
   float y;
@@ -205,8 +205,8 @@ fields_instrospection&lt;T&gt;::for_all(
 });
 </code></pre>
 <h3 id="doing-something-for-the-nth-member-of-a-struct-without-an-instance"><a class="header" href="#doing-something-for-the-nth-member-of-a-struct-without-an-instance">Doing something for the Nth member of a struct without an instance</a></h3>
-<p>This function lifts a run-time index into a compile-time value. 
-This is useful for instance for mapping a run-time parameter id coming from a DAW, 
+<p>This function lifts a run-time index into a compile-time value.
+This is useful for instance for mapping a run-time parameter id coming from a DAW,
 into a field, such as when a parameter changes.</p>
 <pre><code class="language-cpp">fields_instrospection&lt;T&gt;::for_nth(
     index,
@@ -232,18 +232,18 @@ avnd::index_in_struct(foo, &amp;Foo::z) == 2;
 </code></pre>
 <h2 id="predicate-introspection"><a class="header" href="#predicate-introspection">Predicate introspection</a></h2>
 <p>The type <code>predicate_introspection&lt;T, Pred&gt;</code> allows similar operations on a filtered subset of the struct members.</p>
-<p>For instance, given the predicate: </p>
+<p>For instance, given the predicate:</p>
 <pre><code class="language-cpp">template&lt;typename Field&gt;
 using is_int&lt;Field&gt; = std::integral_constant&lt;bool, std::is_integral_v&lt;Field&gt;&gt;;
 </code></pre>
-<p>then </p>
+<p>then</p>
 <pre><code class="language-cpp">using ints = predicate_introspection&lt;Foo, is_int&gt;;
 </code></pre>
-<p>will allow to query all the <code>int16_t</code> and <code>int32_t</code> members of the struct. 
+<p>will allow to query all the <code>int16_t</code> and <code>int32_t</code> members of the struct.
 This example is assumed for all the cases below.</p>
-<p><code>predicate_introspection&lt;Foo, is_int&gt;</code> will work within this referential: indices will refer to 
-these types. That is, the element 0 will be <code>int16_t</code> and element 1 will be <code>int32_t</code>. 
-Multiple methods are provided to go from and to indices in the complete struct, to indices in the filtered version: </p>
+<p><code>predicate_introspection&lt;Foo, is_int&gt;</code> will work within this referential: indices will refer to
+these types. That is, the element 0 will be <code>int16_t</code> and element 1 will be <code>int32_t</code>.
+Multiple methods are provided to go from and to indices in the complete struct, to indices in the filtered version:</p>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td>member</td><td>x</td><td>y</td><td>z</td><td>txt</td></tr>
 <tr><td>field index</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
@@ -292,7 +292,7 @@ bool ok = predicate_instrospection&lt;T, P&gt;::for_all_unless(
 });
 </code></pre>
 <h3 id="doing-something-for-the-nth-member-of-a-struct-without-an-instance-1"><a class="header" href="#doing-something-for-the-nth-member-of-a-struct-without-an-instance-1">Doing something for the Nth member of a struct without an instance</a></h3>
-<p>Two cases are possible depending on whether one has an index in the struct, 
+<p>Two cases are possible depending on whether one has an index in the struct,
 or an index in the filtered part of it:</p>
 <pre><code class="language-cpp">predicate_instrospection&lt;T, P&gt;::for_nth_raw(
     field_index,

@@ -183,18 +183,18 @@
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;a&quot;; } 
+      static consteval auto name() { return "a"; } 
       void update(MyProcessor&amp; proc) { /* called when 'a.value' changes */ }
 
       float value; 
     } a;
     struct { 
-      static consteval auto name() { return &quot;b&quot;; } 
+      static consteval auto name() { return "b"; } 
       void update(MyProcessor&amp; proc) { /* called when 'b.value' changes */ }
 
       float value; 
@@ -204,7 +204,7 @@
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;out&quot;; } 
+      static consteval auto name() { return "out"; } 
       float value; 
     } out;
   } outputs;
@@ -213,26 +213,26 @@
 };
 </code></pre>
 <h2 id="usage-with-helpers"><a class="header" href="#usage-with-helpers">Usage with helpers</a></h2>
-<p>To add an update method to an helper, simply inherit from them: </p>
+<p>To add an update method to an helper, simply inherit from them:</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;halp/controls.hpp&gt;
 
 struct MyProcessor
 {
-  halp_meta(name, &quot;Addition&quot;)
+  halp_meta(name, "Addition")
 
   struct
   {
-    struct : halp::val_port&lt;&quot;a&quot;, float&gt; { 
+    struct : halp::val_port&lt;"a", float&gt; { 
       void update(MyProcessor&amp; proc) { /* called when 'a.value' changes */ }
     } a;
 
-    halp::val_port&lt;&quot;b&quot;, float&gt; b;
+    halp::val_port&lt;"b", float&gt; b;
   } inputs;
 
   struct
   {
-    halp::val_port&lt;&quot;out&quot;, float&gt; out;
+    halp::val_port&lt;"out", float&gt; out;
   } outputs;
 
   void operator()() { outputs.out = inputs.a + inputs.b; }

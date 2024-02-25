@@ -182,21 +182,21 @@
 <pre><code class="language-cpp">struct MyProcessor {
   struct messages {
     struct {
-      static consteval auto name() { return &quot;dump&quot;; }
+      static consteval auto name() { return "dump"; }
       void operator()(MyProcessor&amp; p, double arg1, std::string_view arg2) {
-        std::cout &lt;&lt; arg1 &lt;&lt; &quot;;&quot; &lt;&lt; arg2 &lt;&lt; &quot;\n&quot;;
+        std::cout &lt;&lt; arg1 &lt;&lt; ";" &lt;&lt; arg2 &lt;&lt; "\n";
       }
     } my_message;
   };
 };
 </code></pre>
 <p>Note that the <code>messages</code> are stored in a structure named <code>messages</code>. It could also be the name of the value, but this would likely use at least a few bytes per instance which would be wasted as messages are not supposed to have states themselves.</p>
-<p>Messages are of course only meaningful in environments which support them. 
+<p>Messages are of course only meaningful in environments which support them.
 One argument messages are equivalent to parameters.
 If there is more than one argument, not all host systems may be able to handle them ; for instance, it does not make much sense for VST3 plug-ins. On the other hand, programming language bindings or systems such as Max and PureData have no problem with them.</p>
 <h2 id="passing-existing-functions"><a class="header" href="#passing-existing-functions">Passing existing functions</a></h2>
 <p>The following syntaxes are also possible:</p>
-<pre><code class="language-cpp">void free_function() { printf(&quot;Free function\n&quot;); }
+<pre><code class="language-cpp">void free_function() { printf("Free function\n"); }
 
 struct MyProcessor {
   void my_member(int x);
@@ -204,23 +204,23 @@ struct MyProcessor {
   struct messages {
     // Using a pointer-to-member function
     struct {
-      static consteval auto name() { return &quot;member&quot;; }
+      static consteval auto name() { return "member"; }
       static consteval auto func() { return &amp;MyProcessor::my_member; }
     } member;
 
     // Using a lambda-function
     struct
     {
-      static consteval auto name() { return &quot;lambda_function&quot;; }
+      static consteval auto name() { return "lambda_function"; }
       static consteval auto func() {
-        return [] { printf(&quot;lambda\n&quot;); };
+        return [] { printf("lambda\n"); };
       }
     } lambda;
 
     // Using a free function
     struct
     {
-      static consteval auto name() { return &quot;function&quot;; }
+      static consteval auto name() { return "function"; }
       static consteval auto func() { return free_function; }
     } freefunc;
   };
@@ -231,14 +231,14 @@ struct MyProcessor {
 <p>Messages are type-checked: in the first example above, for instance, PureData will return an error for the message <code>[dump foo bar&gt;</code>. For the message <code>[dump 0.1 bar&gt;</code> things will however work out just fine :-)</p>
 <h2 id="arbitrary-inputs"><a class="header" href="#arbitrary-inputs">Arbitrary inputs</a></h2>
 <p>It may be necessary to have messages that accept an arbitrary number of inputs.
-Here is how: </p>
+Here is how:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;args&quot;; }
+  static consteval auto name() { return "args"; }
   void operator()(MyProcessor&amp; p, std::ranges::input_range auto range) {
     for(const std::variant&amp; argument : range) {
       // Print the argument whatever the content
       // (a library such as fmt can do that directly)
-      std::visit([](auto&amp; e) { std::cout &lt;&lt; e &lt;&lt; &quot;\n&quot;; }, argument);
+      std::visit([](auto&amp; e) { std::cout &lt;&lt; e &lt;&lt; "\n"; }, argument);
 
       // Try to do something useful with it - here the types depend on what the binding give us. So far only Max and Pd support that so the only possible types are floats, doubles and std::string_view
       if(std::get_if&lt;double&gt;(argument)) { ... }

@@ -203,17 +203,17 @@ Any feedback on this is welcome.</p>
 <p>A few types are provided:</p>
 <ul>
 <li><code>halp::rgba_texture</code></li>
-<li><code>halp::texture_input&lt;&quot;Name&quot;&gt;</code> provides methods to get an RGBA pixel: </li>
+<li><code>halp::texture_input&lt;"Name"&gt;</code> provides methods to get an RGBA pixel:</li>
 </ul>
 <pre><code class="language-cpp">auto [r,g,b,a] = tex.get(10, 20);
 </code></pre>
 <ul>
-<li><code>halp::texture_output&lt;&quot;Name&quot;&gt;</code> provides methods to set a RGBA pixel: </li>
+<li><code>halp::texture_output&lt;"Name"&gt;</code> provides methods to set a RGBA pixel:</li>
 </ul>
 <pre><code class="language-cpp">tex.set(10, 20, {.r = 10, .g = 100, .b = 34, .a = 255});
 tex.set(10, 20, 10, 100, 34, 255);
 </code></pre>
-<p>as well as useful method to initialize and mark the texture ready for upload: </p>
+<p>as well as useful method to initialize and mark the texture ready for upload:</p>
 <pre><code class="language-cpp">// Call this in the constructor or before processing starts
 tex.create(100, 100);
 

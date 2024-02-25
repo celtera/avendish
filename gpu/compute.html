@@ -198,12 +198,12 @@ struct GpuComputeExample
 {
   // halp_meta is a short hand for defining a static function:
   // #define halp_meta(name, val) static constexpr auto name() return { val; }
-  halp_meta(name, &quot;Average color&quot;);
-  halp_meta(uuid, &quot;03bce361-a2ca-4959-95b4-6aac3b6c07b5&quot;);
-  halp_meta(category, &quot;Visuals/Computer Vision&quot;)
-  halp_meta(c_name, &quot;average_color&quot;)
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;)
-  halp_meta(description, &quot;Extract the average color of an input video feed&quot;)
+  halp_meta(name, "Average color");
+  halp_meta(uuid, "03bce361-a2ca-4959-95b4-6aac3b6c07b5");
+  halp_meta(category, "Visuals/Computer Vision")
+  halp_meta(c_name, "average_color")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Extract the average color of an input video feed")
 
   static constexpr int downscale = 16;
 
@@ -220,29 +220,29 @@ struct GpuComputeExample
       // Each binding is a struct member
       struct
       {
-        halp_meta(name, &quot;my_buf&quot;);
+        halp_meta(name, "my_buf");
         halp_meta(binding, 0);
         halp_flags(std140, buffer, load, store);
 
         using color = float[4];
-        gpp::uniform&lt;&quot;result&quot;, color*&gt; values;
+        gpp::uniform&lt;"result", color*&gt; values;
       } my_buf;
 
       // Define the members of our ubos
       struct custom_ubo
       {
-        halp_meta(name, &quot;custom&quot;);
+        halp_meta(name, "custom");
         halp_meta(binding, 1);
         halp_flags(std140, ubo);
 
-        gpp::uniform&lt;&quot;width&quot;, int&gt; width;
-        gpp::uniform&lt;&quot;height&quot;, int&gt; height;
+        gpp::uniform&lt;"width", int&gt; width;
+        gpp::uniform&lt;"height", int&gt; height;
       } ubo;
 
       struct
       {
-        halp_meta(name, &quot;img&quot;)
-        halp_meta(format, &quot;rgba32f&quot;)
+        halp_meta(name, "img")
+        halp_meta(format, "rgba32f")
         halp_meta(binding, 2);
         halp_flags(image2D, readonly);
       } image;
@@ -257,14 +257,14 @@ struct GpuComputeExample
   struct
   {
     // Here we use some helper types in the usual fashion
-    gpp::image_input_port&lt;&quot;Image&quot;, &amp;bindings::image&gt; tex;
+    gpp::image_input_port&lt;"Image", &amp;bindings::image&gt; tex;
 
     gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Width&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::width&gt;
+        halp::hslider_i32&lt;"Width", halp::range{1, 1000, 100}&gt;, &amp;uniforms::width&gt;
         width;
 
     gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Height&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::height&gt;
+        halp::hslider_i32&lt;"Height", halp::range{1, 1000, 100}&gt;, &amp;uniforms::height&gt;
         height;
   } inputs;
 
@@ -273,14 +273,14 @@ struct GpuComputeExample
   {
     struct
     {
-      halp_meta(name, &quot;color&quot;)
+      halp_meta(name, "color")
       float value[4];
     } color_out;
   } outputs;
 
   std::string_view compute()
   {
-    return R&quot;_(
+    return R"_(
 void main()
 {
   // Note: the algorithm is most likely wrong as I know FUCK ALL
@@ -308,7 +308,7 @@ void main()
     result[gl_GlobalInvocationID.y * gl_WorkGroupSize.x + gl_GlobalInvocationID.x] = color;
   }
 }
-)_&quot;;
+)_";
   }
 
   // Allocate and update buffers

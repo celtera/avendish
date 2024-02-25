@@ -177,16 +177,16 @@
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>It is relatively common to require to perform some long-running work in a separate thread: 
+<p>It is relatively common to require to perform some long-running work in a separate thread:
 processing samples, etc.</p>
 <p>Avendish provides two APIs for doing this: a general one, and a simpler one for the specific case of pre-processing
 the data of a port (for instance when a file is loaded).</p>
 <p>The general idea is that the processor code sends a request to the worker with some data.
-The host processes the request in a thread. This returns a function which is then called back 
+The host processes the request in a thread. This returns a function which is then called back
 onto the processor, to update its state with the result of the computations.</p>
 <h2 id="general-worker-api-usage"><a class="header" href="#general-worker-api-usage">General worker API Usage</a></h2>
 <p>In the main class, define a <code>worker</code> struct/instance ; the arguments can be anything.
-Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple 
+Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple
 behaviours one can use a std::variant of potential requests.</p>
 <pre><code class="language-cpp">struct MyObject
 {
@@ -195,7 +195,7 @@ behaviours one can use a std::variant of potential requests.</p>
     // Called from DSP thread
     std::function&lt;void(int, std::string)&gt; request;
 
-    // &quot;work&quot; is called from a worker thread
+    // "work" is called from a worker thread
     static std::function&lt;void(MyObject&amp;)&gt; work(int, std::string);
 
     // The std::function object returned by work is called from the DSP thread
@@ -206,14 +206,14 @@ behaviours one can use a std::variant of potential requests.</p>
 <pre><code class="language-cpp">// 1. Within the DSP thread:
 void operator()(...) {
   if(something_happened) {
-    this-&gt;worker.request(123, &quot;foo&quot;);
+    this-&gt;worker.request(123, "foo");
   }
 }
 
 // 2. Implement the worker::work function:
 std::function&lt;void(MyObject&amp;)&gt; MyObject::worker::work(int x, std::string foo)
 {
-  // 3. Implement the &quot;threaded&quot; work part:
+  // 3. Implement the "threaded" work part:
   // This is executed in a separate worker thread, slow operations can be done here 
   // safely.
 
@@ -230,7 +230,7 @@ std::function&lt;void(MyObject&amp;)&gt; MyObject::worker::work(int x, std::stri
   };
 }
 </code></pre>
-<p>The astute reader will have noticed a fairly bad performance issue in the function above: we 
+<p>The astute reader will have noticed a fairly bad performance issue in the function above: we
 are copying the entire string in the DSP thread! This is very bad.</p>
 <p>How can that be improved?</p>
 <pre><code class="language-cpp">// Sadly does not do anything as the object inside the lambda is const by default, 
@@ -255,7 +255,7 @@ return [str = std::move(foo)] (MyObject&amp; obj) mutable {
 </code></pre>
 <p>A complete example is available here: <a href="https://github.com/ossia/score-addon-threedim/blob/main/Threedim/StructureSynth.hpp">https://github.com/ossia/score-addon-threedim/blob/main/Threedim/StructureSynth.hpp</a></p>
 <h2 id="simple-threaded-port-processing-api-usage"><a class="header" href="#simple-threaded-port-processing-api-usage">Simple threaded port-processing API usage</a></h2>
-<p>This API is a &quot;simplified&quot; version of the above one for the common case of wanting 
+<p>This API is a "simplified" version of the above one for the common case of wanting
 to pre-process some data which was loaded from the hard drive.</p>
 <p>It is accessed by adding the following to a port:</p>
 <pre><code class="language-cpp">struct : my_file_port {

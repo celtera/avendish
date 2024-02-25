@@ -178,12 +178,12 @@
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>It is pretty common for audio analysis tasks to need access to the audio spectrum.</p>
-<p>However, this causes a dramatic situation at the ecosystem level: every plug-in ships with its own FFT 
-implementation, which at best duplicates code for no good reason, and at worse may cause complex 
+<p>However, this causes a dramatic situation at the ecosystem level: every plug-in ships with its own FFT
+implementation, which at best duplicates code for no good reason, and at worse may cause complex
 issues for FFT libraries which rely on global state shared across the process, such as FFTW.</p>
-<p>With the declarative approach of Avendish, however, we can make it so that the plug-in does not 
-directly depend on an FFT implementation: it just requests that a port gets its spectrum computed, and it happens 
-automatically outside of the plug-in's code. This allows hosts such as <a href="https://ossia.io">ossia score</a> to provide 
+<p>With the declarative approach of Avendish, however, we can make it so that the plug-in does not
+directly depend on an FFT implementation: it just requests that a port gets its spectrum computed, and it happens
+automatically outside of the plug-in's code. This allows hosts such as <a href="https://ossia.io">ossia score</a> to provide
 their own FFT implementation which will be shared across all Avendish plug-ins, which is strictly better for performance
 and memory usage.</p>
 <h2 id="making-an-fft-port"><a class="header" href="#making-an-fft-port">Making an FFT port</a></h2>
@@ -206,7 +206,7 @@ and memory usage.</p>
   int channels{};
 } my_audio_input;
 </code></pre>
-<p>to get a deinterleaved view of the amplitude &amp; phase: </p>
+<p>to get a deinterleaved view of the amplitude &amp; phase:</p>
 <pre><code class="language-cpp">spectrum.amplitude[0][4]; // The amplitude of the bin at index 4 for channel 0
 spectrum.phase[1][2]; // The phase of the bin at index 2 for channel 1
 </code></pre>
@@ -226,11 +226,11 @@ spectrum.phase[1][2]; // The phase of the bin at index 2 for channel 1
 <p>Using complex numbers allows to use the C++ standard math library functions for complex numbers: <code>std::norm</code>, <code>std::proj</code>...</p>
 <p>Note that the length of the spectrum arrays is always <code>N / 2 + 1</code>, N being the current frame size. Note also that the FFT is normalized - the input is divided by the amount of samples.</p>
 <blockquote>
-<p>WIP: an important upcoming feature is the ability to make configurable buffered processors, so that 
+<p>WIP: an important upcoming feature is the ability to make configurable buffered processors, so that
 one can choose for instance to observe the spectrum over 1024 frames. Right now this has to be handled internally by the plug-in.</p>
 </blockquote>
 <h3 id="windowing"><a class="header" href="#windowing">Windowing</a></h3>
-<p>A window function can be applied by defining an </p>
+<p>A window function can be applied by defining an</p>
 <pre><code class="language-cpp">enum window { &lt;name of the window&gt; };
 </code></pre>
 <p>Supported names currently are <code>hanning</code>, <code>hamming</code>. If there is none, there will be no windowing (technically, a rectangular window). The helper types described below use an Hanning window.</p>
@@ -239,9 +239,9 @@ one can choose for instance to observe the spectrum over 1024 frames. Right now 
 </blockquote>
 <h2 id="helper-types"><a class="header" href="#helper-types">Helper types</a></h2>
 <p>These three types are provided. They give separated amplitude / phase arrays.</p>
-<pre><code class="language-cpp">halp::dynamic_audio_spectrum_bus&lt;&quot;A&quot;, double&gt; a_bus_port;
-halp::fixed_audio_spectrum_bus&lt;&quot;B&quot;, double, 2&gt; a_stereo_port;
-halp::audio_spectrum_channel&lt;&quot;C&quot;, double&gt; a_channel_port;
+<pre><code class="language-cpp">halp::dynamic_audio_spectrum_bus&lt;"A", double&gt; a_bus_port;
+halp::fixed_audio_spectrum_bus&lt;"B", double, 2&gt; a_stereo_port;
+halp::audio_spectrum_channel&lt;"C", double&gt; a_channel_port;
 </code></pre>
 <h2 id="accessing-a-fft-object-globally"><a class="header" href="#accessing-a-fft-object-globally">Accessing a FFT object globally</a></h2>
 <p>See <a href="../advanced/fft.html">the section about feature injection</a> to see how a plug-in can be injected with an FFT object which allows to control precisely how the FFT is done.</p>
@@ -262,9 +262,9 @@ namespace examples::helpers
  */
 struct PeakBandFFTPort
 {
-  halp_meta(name, &quot;Peak band (FFT port)&quot;)
-  halp_meta(c_name, &quot;avnd_peak_band_fft_port&quot;)
-  halp_meta(uuid, &quot;143f5cb8-d0b1-44de-a1a4-ccd5315192fa&quot;)
+  halp_meta(name, "Peak band (FFT port)")
+  halp_meta(c_name, "avnd_peak_band_fft_port")
+  halp_meta(uuid, "143f5cb8-d0b1-44de-a1a4-ccd5315192fa")
 
   // TODO implement user-controllable buffering to allow various fft sizes...
   int buffer_size = 1024;
@@ -273,12 +273,12 @@ struct PeakBandFFTPort
   {
     // Here the host will fill audio.spectrum with a windowed FFT.
     // Option A (an helper type is provided)
-    halp::audio_spectrum_channel&lt;&quot;In&quot;, double&gt; audio;
+    halp::audio_spectrum_channel&lt;"In", double&gt; audio;
 
     // Option B with the raw spectrum ; no window is defined.
     struct
     {
-      halp_meta(name, &quot;In 2&quot;);
+      halp_meta(name, "In 2");
 
       double* channel{};
       // complex numbers... using value_type = double[2] is also ok
@@ -291,11 +291,11 @@ struct PeakBandFFTPort
 
   struct
   {
-    halp::val_port&lt;&quot;Peak&quot;, double&gt; peak;
-    halp::val_port&lt;&quot;Band&quot;, int&gt; band;
+    halp::val_port&lt;"Peak", double&gt; peak;
+    halp::val_port&lt;"Band", int&gt; band;
 
-    halp::val_port&lt;&quot;Peak 2&quot;, double&gt; peak_2;
-    halp::val_port&lt;&quot;Band 2&quot;, int&gt; band_2;
+    halp::val_port&lt;"Peak 2", double&gt; peak_2;
+    halp::val_port&lt;"Band 2", int&gt; band_2;
   } outputs;
 
   void operator()(int frames)

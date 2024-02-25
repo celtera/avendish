@@ -182,8 +182,8 @@
 <pre><code class="language-cpp">// Our inputs
 struct
 {
-  halp::hslider_f32&lt;&quot;Preamp&quot;&gt; preamp;
-  halp::hslider_f32&lt;&quot;Volume&quot;&gt; volume;
+  halp::hslider_f32&lt;"Preamp"&gt; preamp;
+  halp::hslider_f32&lt;"Volume"&gt; volume;
 } inputs;
 
 // We define the type of our programs, like in the other cases
@@ -197,8 +197,8 @@ struct program {
 // Note: it's an array instead of a function because
 // it's apparently hard to deduce N in array&lt;..., N&gt;, unlike in C arrays.
 static constexpr const program programs[]{
-    {.name{&quot;Low gain&quot;}, .parameters{.preamp = {0.3}, .volume = {0.6}}},
-    {.name{&quot;Hi gain&quot;},  .parameters{.preamp = {1.0}, .volume = {1.0}}},
+    {.name{"Low gain"}, .parameters{.preamp = {0.3}, .volume = {0.6}}},
+    {.name{"Hi gain"},  .parameters{.preamp = {1.0}, .volume = {1.0}}},
 };
 </code></pre>
 

@@ -180,7 +180,7 @@
 <p>It is common to require controls to be smoothed over time, in order to prevent clicks and pops in the sound.</p>
 <p>Avendish allows this, by defining a simple <code>smoother</code> struct which specifies over how many milliseconds the control changes must be smoothed.</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;foobar&quot;; }
+  static consteval auto name() { return "foobar"; }
 
   struct smoother {
     float milliseconds = 10.;
@@ -197,7 +197,7 @@
 </code></pre>
 <p>It is also possible to get precise control over the smoothing ratio, depending on the control update rate (sample rate or buffer rate).</p>
 <h1 id="helpers"><a class="header" href="#helpers">Helpers</a></h1>
-<p>Helper types are provided: </p>
+<p>Helper types are provided:</p>
 <pre><code class="language-cpp">// #include: &lt;halp/smoothers.hpp&gt;
 
 #pragma once
@@ -252,17 +252,17 @@ namespace examples::helpers
 class SmoothGainPoly
 {
 public:
-  halp_meta(name, &quot;Smooth Gain&quot;)
-  halp_meta(c_name, &quot;avnd_helpers_smooth_gain&quot;)
-  halp_meta(uuid, &quot;032e1734-f84a-4eb2-9d14-01fc3dea4c14&quot;)
+  halp_meta(name, "Smooth Gain")
+  halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   using setup = halp::setup;
   using tick = halp::tick;
 
   struct
   {
-    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
-    struct : halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
     {
       struct smoother
       {
@@ -273,7 +273,7 @@ public:
 
   struct
   {
-    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
   } outputs;
 
   void prepare(halp::setup info) { }
@@ -298,14 +298,14 @@ public:
 class SmoothGainPerSample
 {
 public:
-  halp_meta(name, &quot;Smooth Gain&quot;)
-  halp_meta(c_name, &quot;avnd_helpers_smooth_gain&quot;)
-  halp_meta(uuid, &quot;032e1734-f84a-4eb2-9d14-01fc3dea4c14&quot;)
+  halp_meta(name, "Smooth Gain")
+  halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   struct inputs
   {
-    halp::audio_sample&lt;&quot;Input&quot;, double&gt; audio;
-    struct : halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    halp::audio_sample&lt;"Input", double&gt; audio;
+    struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
     {
       using smoother = halp::milliseconds_smooth&lt;20&gt;;
     } gain;
@@ -313,7 +313,7 @@ public:
 
   struct outputs
   {
-    halp::audio_sample&lt;&quot;Output&quot;, double&gt; audio;
+    halp::audio_sample&lt;"Output", double&gt; audio;
   };
 
   // Do our processing for N samples

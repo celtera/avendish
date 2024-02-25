@@ -175,7 +175,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="making-media-objects-with-avendish"><a class="header" href="#making-media-objects-with-avendish">Making media objects with <a href="https://github.com/celtera/avendish">Avendish</a></a></h1>
-<p>This book is two things: a tutorial for the usage of <a href="https://github.com/celtera/avendish">Avendish</a>, intertwined with 
+<p>This book is two things: a tutorial for the usage of <a href="https://github.com/celtera/avendish">Avendish</a>, intertwined with
 an explanation of the concepts and implementation.</p>
 <p>Avendish aims to enable media objects / processors authors to write the processor in the most natural way possible, and then to map this to host softwares or languages with so-called zero-cost abstraction.</p>
 <blockquote>
@@ -184,7 +184,7 @@ an explanation of the concepts and implementation.</p>
 <p>The library is borne from:</p>
 <ul>
 <li>
-<p>The necessity to reduce duplication among media processors in C++. </p>
+<p>The necessity to reduce duplication among media processors in C++.</p>
 </li>
 <li>
 <p>Allowing to express the quintessence of a given media processor.</p>
@@ -197,10 +197,10 @@ an explanation of the concepts and implementation.</p>
 </ul>
 </li>
 <li>
-<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their &quot;canonic&quot; form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
+<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their "canonic" form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
 </li>
 </ul>
-<p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-) </p>
+<p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-)</p>
 <p>In contrast, Avendish processors can be written in a way that does not depend on <em>any</em> existing library, not even the standard C or C++ libraries, which makes them trivially portable to such platforms. The only required thing is a C++ compiler, really!</p>
 <p>Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a <code>string</code> output port in a VST plug-in), in other cases just because by lack of time, but it's on the roadmap! In general features are prototyped implemented in the <a href="https://ossia.io">ossia score</a> back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.</p>
 <h1 id="why-c"><a class="header" href="#why-c">Why C++</a></h1>
@@ -220,38 +220,38 @@ an explanation of the concepts and implementation.</p>
 if one wants, the exact same thing can be written without any macro or pre-existing type ; it is just a tad more verbose.</p>
 <pre><code class="language-cpp">struct MyProcessor {
   // Define generic metadata
-  halp_meta(name, &quot;Gain&quot;);
-  halp_meta(author, &quot;Professional DSP Development, Ltd.&quot;);
-  halp_meta(uuid, &quot;3183d03e-9228-4d50-98e0-e7601dd16a2e&quot;);
+  halp_meta(name, "Gain");
+  halp_meta(author, "Professional DSP Development, Ltd.");
+  halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   // Define the inputs of our processor
   struct ins {
-    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
-    halp::knob_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1.}&gt; gain;
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    halp::knob_f32&lt;"Gain", halp::range{.min = 0., .max = 1.}&gt; gain;
   } inputs;
 
   // Define the outputs of our processor
   struct outs {
-    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
-    halp::hbargraph_f32&lt;&quot;Measure&quot;, halp::range{-1., 1., 0.}&gt; measure;
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
+    halp::hbargraph_f32&lt;"Measure", halp::range{-1., 1., 0.}&gt; measure;
   } outputs;
 
   // Define an optional UI layout
   struct ui {
     using enum halp::colors;
     using enum halp::layouts;
-    halp_meta(name, &quot;Main&quot;)
+    halp_meta(name, "Main")
     halp_meta(layout, hbox)
     halp_meta(background, mid)
 
     struct {
-      halp_meta(name, &quot;Widget&quot;)
+      halp_meta(name, "Widget")
       halp_meta(layout, vbox)
       halp_meta(background, dark)
 
-      const char* label = &quot;Hello !&quot;;
+      const char* label = "Hello !";
       halp::item&lt;&amp;ins::gain&gt; widget;
-      const char* label2 = &quot;Gain control!&quot;;
+      const char* label2 = "Gain control!";
     } widgets;
 
     halp::spacing spc{.width = 20, .height = 20};
@@ -286,15 +286,15 @@ if one wants, the exact same thing can be written without any macro or pre-exist
 <p>Here is a minimal, self-contained definition of an Avendish processor:</p>
 <pre><code class="language-cpp">import std;
 
-[[name: &quot;Hello World&quot;]]
+[[name: "Hello World"]]
 export struct MyProcessor
 {
   void operator()() { 
-    std::print(&quot;Henlo\n&quot;);
+    std::print("Henlo\n");
   }
 };
 </code></pre>
-<p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those, 
+<p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those,
 and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope !</p>
 <h1 id="getting-started-for-good"><a class="header" href="#getting-started-for-good">Getting started, for good</a></h1>
 <p>Here is a minimal, self-contained definition of an Avendish processor, which works on 2022 compilers:</p>
@@ -303,18 +303,18 @@ and where modules and <code>std::print</code> work consistently across all compi
 
 struct MyProcessor
 {
-  static consteval auto name() { return &quot;Hello World&quot;; }
+  static consteval auto name() { return "Hello World"; }
 
   void operator()() { 
-    printf(&quot;Henlo\n&quot;);
+    printf("Henlo\n");
   }
 };
 </code></pre>
-<p>Yes, it's not much. You may even already have some in your codebase without even being aware of it ! </p>
-<p>Now, you may be used to the usual APIs for making audio plug-ins and start wondering about all the things you are used too and that are missing here: </p>
+<p>Yes, it's not much. You may even already have some in your codebase without even being aware of it !</p>
+<p>Now, you may be used to the usual APIs for making audio plug-ins and start wondering about all the things you are used too and that are missing here:</p>
 <ul>
 <li>Inheritance or shelving function pointers in a C struct.</li>
-<li>Libraries: defining an Avendish processor does not in itself require including anything. 
+<li>Libraries: defining an Avendish processor does not in itself require including anything.
 A central point of the system is that everything can be defined through bare C++ constructs, without requiring the user to import types from a library. A library of helpers is nonetheless provided, to simplify some repetitive cases, but is in no way mandatory ; if anything, I encourage anyone to try to make different helper APIs that fit different coding styles.</li>
 <li>Functions to process audio such as</li>
 </ul>
@@ -339,18 +339,18 @@ struct MyProcessor
   // - consteval is used to enforce that the function can be called at compile-time, 
   //   which may enable optimizations in the backends that will generate plug-ins.
   // - auto because it does not matter much here, we know that this is a string :-)
-  static consteval auto name() { return &quot;Hello World&quot;; }
+  static consteval auto name() { return "Hello World"; }
 
   // This line declares a special function that will allow our processor to be executed as follows: 
   // 
   // MyProcessor the_processor;
   // the_processor();
   //
-  // ^ the second line will call the &quot;operator()&quot; function.
+  // ^ the second line will call the "operator()" function.
   void operator()() 
   { 
     // This one should hopefully be obvious :-)
-    printf(&quot;Henlo\n&quot;);
+    printf("Henlo\n");
   }
 };
 </code></pre>
@@ -358,7 +358,7 @@ struct MyProcessor
 <h2 id="environment-set-up"><a class="header" href="#environment-set-up">Environment set-up</a></h2>
 <p>Before anything, we need a C++ compiler. The recommandation is to use Clang (at least clang-13). GCC 11 also works with some limitations. Visual Studio is sadly still not competent enough.</p>
 <ul>
-<li>On Windows, through <a href="https://github.com/mstorsjo/llvm-mingw/releases/tag/20220323">llvm-mingw</a>. </li>
+<li>On Windows, through <a href="https://github.com/mstorsjo/llvm-mingw/releases/tag/20220323">llvm-mingw</a>.</li>
 <li>On Mac, through Xcode.</li>
 <li>On Linux, through your distribution packages.</li>
 </ul>
@@ -379,7 +379,7 @@ struct MyProcessor
 $ pacboy -S cmake:p ninja:p toolchain:p boost:p
 </code></pre>
 <h3 id="install-backend-specific-dependencies"><a class="header" href="#install-backend-specific-dependencies">Install backend-specific dependencies</a></h3>
-<p>The APIs and SDK that you wish to create plug-ins / bindings for must also be available: </p>
+<p>The APIs and SDK that you wish to create plug-ins / bindings for must also be available:</p>
 <ul>
 <li>PureData: needs the PureData API.
 <ul>
@@ -422,7 +422,7 @@ $ ninja # or make -j8
 </code></pre>
 <p>This should produce various binaries in the build folder: for instance, a PureData object (in <code>build/pd</code>), a Python one (in <code>build/python</code>, etc.).</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="running-the-template-in-python"><a class="header" href="#running-the-template-in-python">Running the template in Python</a></h1>
-<p>Once the processor is built, we can for instance run it in Python: </p>
+<p>Once the processor is built, we can for instance run it in Python:</p>
 <p>Let's try to run our processor through the Python bindings:</p>
 <pre><code class="language-bash">$ cd build/python
 
@@ -438,7 +438,7 @@ $ python
 Henlo
 </code></pre>
 <h1 id="running-the-template-in-puredata"><a class="header" href="#running-the-template-in-puredata">Running the template in PureData</a></h1>
-<p>Similarly, one can run the template in PureData: </p>
+<p>Similarly, one can run the template in PureData:</p>
 <pre><code class="language-bash">$ cd build/pd
 
 # Check that our processor was built correctly
@@ -450,7 +450,7 @@ $ pd -lib my_processor
 </code></pre>
 <p>Make the following patch:</p>
 <p><img src="getting_started/../images/getting_started/pd-hello-world.png" alt="Hello PureData" /></p>
-<p>When sending a bang, the terminal in which PureData was launched should also print &quot;Henlo&quot;.
+<p>When sending a bang, the terminal in which PureData was launched should also print "Henlo".
 We'll see in a later chapter how to print on Pd's own console instead.</p>
 <h1 id="running-in-daws"><a class="header" href="#running-in-daws">Running in DAWs</a></h1>
 <p>We could, but so far our object is not really an object that makes sense in a DAW: it does not process audio in any way. We'll see in further chapters how to make audio objects.</p>
@@ -466,7 +466,7 @@ We'll see in a later chapter how to print on Pd's own console instead.</p>
 <p>Here is the code of a simple processor, which computes the sum of two numbers.</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
@@ -485,7 +485,7 @@ We'll see in a later chapter how to print on Pd's own console instead.</p>
 <p>Compiling and running this yields for instance a PureData object which can be used like this:</p>
 <p><img src="writing_processors/images/addition.png" alt="Addition" /></p>
 <p>Note that the object respects the usual semantics of PureData: sending a message to the leftmost inlet will trigger the computation. Sending a message to the other inlets will store the value internally but won't trigger the actual computation.</p>
-<p>For some objects, other semantics may make sense: creating an alternative binding to PureData which would implement another behaviour, such as triggering the computation only on &quot;bang&quot; messages, or on any input on any inlet, would be a relatively easy task.</p>
+<p>For some objects, other semantics may make sense: creating an alternative binding to PureData which would implement another behaviour, such as triggering the computation only on "bang" messages, or on any input on any inlet, would be a relatively easy task.</p>
 <p>Let's try in Python:</p>
 <pre><code class="language-py">&gt;&gt;&gt; import pymy_processor
 &gt;&gt;&gt; proc = pymy_processor.Addition()
@@ -496,19 +496,19 @@ We'll see in a later chapter how to print on Pd's own console instead.</p>
 &gt;&gt;&gt; p.output_0
 579.0
 </code></pre>
-<p>Here the semantics follow usual &quot;object&quot; ones. You set some state on the object and call methods on it, which may change this state. </p>
+<p>Here the semantics follow usual "object" ones. You set some state on the object and call methods on it, which may change this state.</p>
 <blockquote>
 <p>One could also make a binding that implements functional semantics, by passing the state of the processor as an immutable object instead. Python is already slow enough, though :p</p>
 </blockquote>
 <h2 id="syntax-explanation"><a class="header" href="#syntax-explanation">Syntax explanation</a></h2>
-<p>Some readers may be surprised by the following syntax: </p>
+<p>Some readers may be surprised by the following syntax:</p>
 <pre><code class="language-cpp">struct { float value; } a;
 </code></pre>
-<p>What it does is declare a variable <code>a</code> whose type is an <em>unnamed</em> structure. 
-Note that this is a distinct concept from <em>anonymous</em> structures: </p>
+<p>What it does is declare a variable <code>a</code> whose type is an <em>unnamed</em> structure.
+Note that this is a distinct concept from <em>anonymous</em> structures:</p>
 <pre><code class="language-cpp">struct { float value; };
 </code></pre>
-<p>which are legal in C but not in C++ (although most relevant compilers accept them), and are mostly useful for implementing unions: </p>
+<p>which are legal in C but not in C++ (although most relevant compilers accept them), and are mostly useful for implementing unions:</p>
 <pre><code class="language-cpp">union vec3 {
   struct { float x, y, z; };
   struct { float r, g, b; };
@@ -520,10 +520,10 @@ v.g = 2.0;
 </code></pre>
 <p>Motivation for using unnamed structures in Avendish is explained afterwards.</p>
 <h2 id="naming-things"><a class="header" href="#naming-things">Naming things</a></h2>
-<p>In an ideal world, what we would have loved is writing the following code: </p>
+<p>In an ideal world, what we would have loved is writing the following code:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
@@ -539,19 +539,19 @@ v.g = 2.0;
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<p>and have our Python processor expose us variables named <code>a</code>, <code>b</code> and <code>out</code>. Sadly, without reflection on names, this is not possible yet. Thus, in the meantime we use structs to embed metadata relative to the ports: </p>
+<p>and have our Python processor expose us variables named <code>a</code>, <code>b</code> and <code>out</code>. Sadly, without reflection on names, this is not possible yet. Thus, in the meantime we use structs to embed metadata relative to the ports:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;a&quot;; } 
+      static consteval auto name() { return "a"; } 
       float value; 
     } a;
     struct { 
-      static consteval auto name() { return &quot;b&quot;; } 
+      static consteval auto name() { return "b"; } 
       float value; 
     } b;
   } inputs;
@@ -559,7 +559,7 @@ v.g = 2.0;
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;out&quot;; } 
+      static consteval auto name() { return "out"; } 
       float value; 
     } out;
   } outputs;
@@ -567,7 +567,7 @@ v.g = 2.0;
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }
 };
 </code></pre>
-<p>Now our Python example is cleaner to use: </p>
+<p>Now our Python example is cleaner to use:</p>
 <pre><code class="language-py">&gt;&gt;&gt; import pymy_processor
 &gt;&gt;&gt; proc = pymy_processor.Addition()
 &gt;&gt;&gt; proc.process()
@@ -580,14 +580,14 @@ v.g = 2.0;
 <div style="break-before: page; page-break-before: always;"></div><h1 id="refactoring"><a class="header" href="#refactoring">Refactoring</a></h1>
 <p>One can see how writing:</p>
 <pre><code class="language-cpp">struct { 
-  static consteval auto name() { return &quot;foobar&quot;; } 
+  static consteval auto name() { return "foobar"; } 
   float value; 
 } foobar;
 </code></pre>
-<p>for 200 controls would get boring quick. In addition, the implementation of our processing function is not as clean as we'd want: in an ideal world, it would be just: </p>
+<p>for 200 controls would get boring quick. In addition, the implementation of our processing function is not as clean as we'd want: in an ideal world, it would be just:</p>
 <pre><code class="language-cpp">void operator()() { outputs.out = inputs.a + inputs.b; }
 </code></pre>
-<p>Thankfully, we can introduce our own custom abstractions without breaking anything: the only thing that matters is that they follow the &quot;shape&quot; of what a parameter is.</p>
+<p>Thankfully, we can introduce our own custom abstractions without breaking anything: the only thing that matters is that they follow the "shape" of what a parameter is.</p>
 <p>This shape is defined (as a first approximation) as follows:</p>
 <pre><code class="language-cpp">template&lt;typename T&gt;
 concept parameter = requires (T t) { t.value = {}; };
@@ -597,7 +597,7 @@ concept parameter = requires (T t) { t.value = {}; };
 <li>It has a member called <code>value</code>.</li>
 <li>This member is assignable with some default value.</li>
 </ul>
-<p>For instance: </p>
+<p>For instance:</p>
 <pre><code class="language-cpp">struct bad_1 {
   const int value;
 }; 
@@ -611,7 +611,7 @@ class bad_3 {
 }; 
 </code></pre>
 <p>are all invalid parameters.</p>
-<p>This can be ensured easily by <a href="https://gcc.godbolt.org/z/c9Ko4ssM8">asking the compiler</a>: </p>
+<p>This can be ensured easily by <a href="https://gcc.godbolt.org/z/c9Ko4ssM8">asking the compiler</a>:</p>
 <pre><code class="language-cpp">static_assert(!parameter&lt;bad_1&gt;);
 static_assert(!parameter&lt;bad_2&gt;);
 static_assert(!parameter&lt;bad_3&gt;);
@@ -632,7 +632,7 @@ struct good_2 {
 template&lt;typename T&gt;
 struct assignable {
   T&amp; operator=(T x) { 
-    printf(&quot;I changed !&quot;);
+    printf("I changed !");
     this-&gt;v = x;
     return this-&gt;v;
   }
@@ -644,7 +644,7 @@ class good_3 {
     assignable&lt;double&gt; value;
 }; 
 </code></pre>
-<p>This can be ensured again by <a href="https://gcc.godbolt.org/z/P7aET4q3z">asking the compiler</a>: </p>
+<p>This can be ensured again by <a href="https://gcc.godbolt.org/z/P7aET4q3z">asking the compiler</a>:</p>
 <pre><code class="language-cpp">static_assert(parameter&lt;good_1&gt;);
 static_assert(parameter&lt;good_2&gt;);
 static_assert(parameter&lt;good_3&gt;);
@@ -658,14 +658,14 @@ static_assert(parameter&lt;good_3&gt;);
 struct MyProcessor
 {
   // halp_meta(A, B) expands to static consteval auto A() { return B; }
-  halp_meta(name, &quot;Addition&quot;)
+  halp_meta(name, "Addition")
 
   // In a perfect world one would just define attributes on the struct instead...
   //
-  //   [[name: &quot;Addition&quot;]] 
+  //   [[name: "Addition"]] 
   //   struct MyProcessor { ... };
   //
-  // or more realistically, `static constexpr auto name = &quot;foo&quot;;` 
+  // or more realistically, `static constexpr auto name = "foo";` 
   // which would be an acceptable compromise.
 
   struct
@@ -674,19 +674,19 @@ struct MyProcessor
     // - a member value of type float
     // - the name() metadata method
     // - helper operators to allow easy assignment and use of the value.
-    halp::val_port&lt;&quot;a&quot;, float&gt; a;
-    halp::val_port&lt;&quot;b&quot;, float&gt; b;
+    halp::val_port&lt;"a", float&gt; a;
+    halp::val_port&lt;"b", float&gt; b;
   } inputs;
 
   struct
   {
-    halp::val_port&lt;&quot;out&quot;, float&gt; out;
+    halp::val_port&lt;"out", float&gt; out;
   } outputs;
 
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<p>If one really does not like templates, the following macro could be defined instead to make custom ports: </p>
+<p>If one really does not like templates, the following macro could be defined instead to make custom ports:</p>
 <pre><code class="language-cpp">#define my_value_port(Name, Type)                  \
   struct {                                         \
     static consteval auto name() { return #Name; } \
@@ -715,7 +715,7 @@ my_value_port(b, std::string)
 </blockquote>
 <p>Here is how one can define a port with such a range:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;foobar&quot;; } 
+  static consteval auto name() { return "foobar"; } 
 
   struct range {
     float min = -1.;
@@ -726,9 +726,9 @@ my_value_port(b, std::string)
   float value{};
 } foobar;
 </code></pre>
-<p>Here is another version which will be picked up too: </p>
+<p>Here is another version which will be picked up too:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;foobar&quot;; } 
+  static consteval auto name() { return "foobar"; } 
   static consteval auto range() {
     struct { 
       float min = -1.;
@@ -743,9 +743,9 @@ my_value_port(b, std::string)
 </code></pre>
 <p>More generally, in most cases, Avendish will try to make sense of the things the author declares, whether they are types, variables or functions. This is not implemented entirely consistently yet, but it is a goal of the library in order to enable various coding styles and as much freedom of expression as possible for the media processor developer.</p>
 <h2 id="keeping-metadata-static"><a class="header" href="#keeping-metadata-static">Keeping metadata static</a></h2>
-<p>Note that we should still be careful in our struct definitions to not declare normal member variables for common metadata, which would take valuable memory and mess with our cache lines. This reduces performance for no good reason: imagine instantiating 10000 &quot;processor&quot; objects, you do not want each processor to carry the overhead of storing the range as a member variable, such as this: </p>
+<p>Note that we should still be careful in our struct definitions to not declare normal member variables for common metadata, which would take valuable memory and mess with our cache lines. This reduces performance for no good reason: imagine instantiating 10000 "processor" objects, you do not want each processor to carry the overhead of storing the range as a member variable, such as this:</p>
 <pre><code class="language-cpp">struct {
-  const char* name = &quot;foobar&quot;;
+  const char* name = "foobar";
 
   struct {
     float min = -1.;
@@ -760,20 +760,20 @@ my_value_port(b, std::string)
 static_assert(sizeof(foobar) == 4 * sizeof(float) + sizeof(const char*));
 // sizeof(foobar) == 24 on 64-bit systems
 
-// While in the previous cases, the &quot;name&quot; and &quot;range&quot; information is stored in a static space in the binary ; its cost is paid only once:
+// While in the previous cases, the "name" and "range" information is stored in a static space in the binary ; its cost is paid only once:
 static_assert(sizeof(foobar) == sizeof(float));
 // sizeof(foobar) == 4
 </code></pre>
 <h2 id="testing-on-a-processor"><a class="header" href="#testing-on-a-processor">Testing on a processor</a></h2>
-<p>If we modify our example processor this way: </p>
+<p>If we modify our example processor this way:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;a&quot;; } 
+      static consteval auto name() { return "a"; } 
       struct range {
         float min = -10.;
         float max = 10.;
@@ -782,7 +782,7 @@ static_assert(sizeof(foobar) == sizeof(float));
       float value; 
     } a;
     struct { 
-      static consteval auto name() { return &quot;b&quot;; } 
+      static consteval auto name() { return "b"; } 
       struct range {
         float min = -1.;
         float max = 1.;
@@ -795,7 +795,7 @@ static_assert(sizeof(foobar) == sizeof(float));
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;out&quot;; } 
+      static consteval auto name() { return "out"; } 
       float value; 
     } out;
   } outputs;
@@ -804,8 +804,8 @@ static_assert(sizeof(foobar) == sizeof(float));
 };
 </code></pre>
 <p>then some backends will start to be able to do interesting things, like showing relevant UI widgets, or clamping the inputs / outputs.</p>
-<p>This is not possible in all back-ends, sadly. Consider for instance PureData: the way one adds a port is by passing a pointer to a floating-point value to Pd, which will write directly the inbound value at the memory address: there is no point at which we could plug-in to perform clamping of the value. </p>
-<p>Two alternatives would be possible in this case: </p>
+<p>This is not possible in all back-ends, sadly. Consider for instance PureData: the way one adds a port is by passing a pointer to a floating-point value to Pd, which will write directly the inbound value at the memory address: there is no point at which we could plug-in to perform clamping of the value.</p>
+<p>Two alternatives would be possible in this case:</p>
 <ul>
 <li>Change the back-end to instead expect all messages on the first inlet, as those can be captured. This would certainly yield lower performance as one now would have to pass a symbol indicating the parameter so that the object knows to which port the input should map.</li>
 <li>Implement an abstraction layer which would duplicate the parameters with their clamped version, and perform the clamping on all parameters whenever the process function gets called. This would however be hurtful in terms of performance and memory use.</li>
@@ -815,10 +815,10 @@ static_assert(sizeof(foobar) == sizeof(float));
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>Avendish can recognize a few names that will indicate that a widget of a certain type must be created.</p>
-<p>For instance: </p>
+<p>For instance:</p>
 <pre><code class="language-cpp">struct {
   enum { knob };
-  static consteval auto name() { return &quot;foobar&quot;; } 
+  static consteval auto name() { return "foobar"; } 
 
   struct range {
     float min = -1.;
@@ -830,7 +830,7 @@ static_assert(sizeof(foobar) == sizeof(float));
 } foobar;
 </code></pre>
 <p>Simply adding the enum definition in the struct will allow the bindings to detect it at compile-time, and instantiate an appropriate UI control.</p>
-<p>The following widget names are currently recognized: </p>
+<p>The following widget names are currently recognized:</p>
 <pre><code>bang, impulse
 button, pushbutton
 toggle, checkbox,
@@ -858,7 +858,7 @@ for instance for adjusting frequencies, as the human hear is more sensitive to a
 <p>We can define custom mapping functions as part of the control, which will define
 how the UI controls shall behave:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;foobar&quot;; }
+  static consteval auto name() { return "foobar"; }
 
   struct mapper {
     static float map(float x) { return std::pow(x, 10.); }
@@ -886,7 +886,7 @@ how the UI controls shall behave:</p>
 <p>Note that for now, mappings are only supported for floating-point sliders and knobs, in ossia.</p>
 <h2 id="with-helpers"><a class="header" href="#with-helpers">With helpers</a></h2>
 <p>A few pre-made mappings are provided: the above could be rewritten as:</p>
-<pre><code class="language-cpp">struct : halp::hslider_f32&lt;&quot;foobar&quot;, halp::range{20., 20000., 100.}&gt; {
+<pre><code class="language-cpp">struct : halp::hslider_f32&lt;"foobar", halp::range{20., 20000., 100.}&gt; {
   using mapper = halp::pow_mapper&lt;10&gt;;
 } foobar;
 </code></pre>
@@ -937,7 +937,7 @@ struct inverse_mapper
 <p>It is common to require controls to be smoothed over time, in order to prevent clicks and pops in the sound.</p>
 <p>Avendish allows this, by defining a simple <code>smoother</code> struct which specifies over how many milliseconds the control changes must be smoothed.</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;foobar&quot;; }
+  static consteval auto name() { return "foobar"; }
 
   struct smoother {
     float milliseconds = 10.;
@@ -954,7 +954,7 @@ struct inverse_mapper
 </code></pre>
 <p>It is also possible to get precise control over the smoothing ratio, depending on the control update rate (sample rate or buffer rate).</p>
 <h1 id="helpers"><a class="header" href="#helpers">Helpers</a></h1>
-<p>Helper types are provided: </p>
+<p>Helper types are provided:</p>
 <pre><code class="language-cpp">// #include: &lt;halp/smoothers.hpp&gt;
 
 #pragma once
@@ -1009,17 +1009,17 @@ namespace examples::helpers
 class SmoothGainPoly
 {
 public:
-  halp_meta(name, &quot;Smooth Gain&quot;)
-  halp_meta(c_name, &quot;avnd_helpers_smooth_gain&quot;)
-  halp_meta(uuid, &quot;032e1734-f84a-4eb2-9d14-01fc3dea4c14&quot;)
+  halp_meta(name, "Smooth Gain")
+  halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   using setup = halp::setup;
   using tick = halp::tick;
 
   struct
   {
-    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
-    struct : halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
     {
       struct smoother
       {
@@ -1030,7 +1030,7 @@ public:
 
   struct
   {
-    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
   } outputs;
 
   void prepare(halp::setup info) { }
@@ -1055,14 +1055,14 @@ public:
 class SmoothGainPerSample
 {
 public:
-  halp_meta(name, &quot;Smooth Gain&quot;)
-  halp_meta(c_name, &quot;avnd_helpers_smooth_gain&quot;)
-  halp_meta(uuid, &quot;032e1734-f84a-4eb2-9d14-01fc3dea4c14&quot;)
+  halp_meta(name, "Smooth Gain")
+  halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   struct inputs
   {
-    halp::audio_sample&lt;&quot;Input&quot;, double&gt; audio;
-    struct : halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    halp::audio_sample&lt;"Input", double&gt; audio;
+    struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
     {
       using smoother = halp::milliseconds_smooth&lt;20&gt;;
     } gain;
@@ -1070,7 +1070,7 @@ public:
 
   struct outputs
   {
-    halp::audio_sample&lt;&quot;Output&quot;, double&gt; audio;
+    halp::audio_sample&lt;"Output", double&gt; audio;
   };
 
   // Do our processing for N samples
@@ -1085,30 +1085,30 @@ public:
 <blockquote>
 <p>Supported bindings: depending on the underlying data type</p>
 </blockquote>
-<p>To simplify the common use case of defining a port such as &quot;slider with a range&quot;, a set of common helper types is provided.</p>
+<p>To simplify the common use case of defining a port such as "slider with a range", a set of common helper types is provided.</p>
 <p>Here is our example, now as refined as it can be ; almost no character is superfluous or needlessly repeated except the names of controls:</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;halp/controls.hpp&gt;
 
 struct MyProcessor
 {
-  halp_meta(name, &quot;Addition&quot;)
+  halp_meta(name, "Addition")
 
   struct
   {
-    halp::hslider_f32&lt;&quot;a&quot;, halp::range{.min = -10, .max = 10, .init = 0}&gt; a;
-    halp::knob_f32&lt;&quot;b&quot; , halp::range{.min = -1, .max = 1, .init = 0}&gt; b;
+    halp::hslider_f32&lt;"a", halp::range{.min = -10, .max = 10, .init = 0}&gt; a;
+    halp::knob_f32&lt;"b" , halp::range{.min = -1, .max = 1, .init = 0}&gt; b;
   } inputs;
 
   struct
   {
-    halp::hbargraph_f32&lt;&quot;out&quot;, halp::range{.min = -11, .max = 11, .init = 0}&gt; out;
+    halp::hbargraph_f32&lt;"out", halp::range{.min = -11, .max = 11, .init = 0}&gt; out;
   } outputs;
 
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<p>This is how an environment such as <em>ossia score</em> renders it: </p>
+<p>This is how an environment such as <em>ossia score</em> renders it:</p>
 <p><img src="writing_processors/images/addition-score.gif" alt="Addition" /></p>
 <p>Note that even with our helper types, the following holds:</p>
 <pre><code class="language-cpp">static_assert(sizeof(MyProcessor) == 3 * sizeof(float));
@@ -1124,18 +1124,18 @@ struct MyProcessor
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;a&quot;; } 
+      static consteval auto name() { return "a"; } 
       void update(MyProcessor&amp; proc) { /* called when 'a.value' changes */ }
 
       float value; 
     } a;
     struct { 
-      static consteval auto name() { return &quot;b&quot;; } 
+      static consteval auto name() { return "b"; } 
       void update(MyProcessor&amp; proc) { /* called when 'b.value' changes */ }
 
       float value; 
@@ -1145,7 +1145,7 @@ struct MyProcessor
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;out&quot;; } 
+      static consteval auto name() { return "out"; } 
       float value; 
     } out;
   } outputs;
@@ -1154,26 +1154,26 @@ struct MyProcessor
 };
 </code></pre>
 <h2 id="usage-with-helpers"><a class="header" href="#usage-with-helpers">Usage with helpers</a></h2>
-<p>To add an update method to an helper, simply inherit from them: </p>
+<p>To add an update method to an helper, simply inherit from them:</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;halp/controls.hpp&gt;
 
 struct MyProcessor
 {
-  halp_meta(name, &quot;Addition&quot;)
+  halp_meta(name, "Addition")
 
   struct
   {
-    struct : halp::val_port&lt;&quot;a&quot;, float&gt; { 
+    struct : halp::val_port&lt;"a", float&gt; { 
       void update(MyProcessor&amp; proc) { /* called when 'a.value' changes */ }
     } a;
 
-    halp::val_port&lt;&quot;b&quot;, float&gt; b;
+    halp::val_port&lt;"b", float&gt; b;
   } inputs;
 
   struct
   {
-    halp::val_port&lt;&quot;out&quot;, float&gt; out;
+    halp::val_port&lt;"out", float&gt; out;
   } outputs;
 
   void operator()() { outputs.out = inputs.a + inputs.b; }
@@ -1183,13 +1183,13 @@ struct MyProcessor
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
 </blockquote>
-<p>The processors we wrote until now only processed &quot;control&quot; values.</p>
+<p>The processors we wrote until now only processed "control" values.</p>
 <p>As a convention, those are values that change infrequently, relative to the audio rate: every few milliseconds, as opposed to every few dozen microseconds for individual audio samples.</p>
 <h2 id="argument-based-processors"><a class="header" href="#argument-based-processors">Argument-based processors</a></h2>
-<p>Let's see how one can write a simple audio filter in Avendish: </p>
+<p>Let's see how one can write a simple audio filter in Avendish:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
 
   float operator()(float input) 
   {
@@ -1201,7 +1201,7 @@ struct MyProcessor
 <p>Maybe you are used to writing processors that operate with buffers of samples. Fear not, here is another valid Avendish audio processor, which should reassure most readers:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   static consteval auto input_channels() { return 2; }
   static consteval auto output_channels() { return 2; }
 
@@ -1220,7 +1220,7 @@ struct MyProcessor
 <p>The middle-ground of a processor that processes a single channel is also possible (and so is the possibility to use floats or doubles for the definition of the processor):</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
 
   void operator()(float* inputs, float* outputs, int frames)
   {
@@ -1239,7 +1239,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <li>Sample-wise</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;In&quot;; }
+  static consteval auto name() { return "In"; }
   float sample{};
 };
 </code></pre>
@@ -1247,7 +1247,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <li>Channel-wise</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;Out&quot;; }
+  static consteval auto name() { return "Out"; }
   float* channel{};
 };
 </code></pre>
@@ -1255,16 +1255,16 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <li>Bus-wise, with a fixed channel count. Here, bindings will ensure that there are always as many channels allocated.</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;Ins&quot;; }
+  static consteval auto name() { return "Ins"; }
   static constexpr int channels() { return 2; }
   float** samples{}; // At some point this should be renamed bus...
 };
 </code></pre>
 <ul>
-<li>Bus-wise, with a modifiable channel count. Here, bindings will put exactly as many channels as the end-user of the software requested ; this count will be contained in <code>channels</code>. </li>
+<li>Bus-wise, with a modifiable channel count. Here, bindings will put exactly as many channels as the end-user of the software requested ; this count will be contained in <code>channels</code>.</li>
 </ul>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;Outs&quot;; }
+  static consteval auto name() { return "Outs"; }
   int channels = 0;
   double** samples{}; // At some point this should be renamed bus...
 };
@@ -1273,18 +1273,18 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 <p>An astute reader may wonder why one could not fix a channel count by doing <code>const int channels = 2;</code> instead of <code>int channels() { return 2; };</code>. Sadly, this would make our types non-assignable, which makes things harder. It would also use bytes for each instance of the processor. A viable middle-ground could be <code>static constexpr int channels = 2;</code> but C++ does not allow static variables in unnamed types, thus this does not leave a lot of choice.</p>
 </blockquote>
 <h2 id="process-function-for-ports"><a class="header" href="#process-function-for-ports">Process function for ports</a></h2>
-<p>For ports-based processor, the process function takes the number of frames as argument. Here is a complete, bare example of a gain processor. </p>
+<p>For ports-based processor, the process function takes the number of frames as argument. Here is a complete, bare example of a gain processor.</p>
 <pre><code class="language-cpp">struct Gain {
-  static constexpr auto name() { return &quot;Gain&quot;; }
+  static constexpr auto name() { return "Gain"; }
   struct {
     struct {
-      static constexpr auto name() { return &quot;Input&quot;; }
+      static constexpr auto name() { return "Input"; }
       const double** samples;
       int channels;
     } audio;
 
     struct {
-      static constexpr auto name() { return &quot;Gain&quot;; }
+      static constexpr auto name() { return "Gain"; }
       struct range {
         const float min = 0.;
         const float max = 1.;
@@ -1297,7 +1297,7 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 
   struct {
     struct {
-      static constexpr auto name() { return &quot;Output&quot;; }
+      static constexpr auto name() { return "Output"; }
       double** samples;
       int channels;
     } audio;
@@ -1314,11 +1314,11 @@ For more advanced systems, with side-chains and such, it is preferable to use pr
 };
 </code></pre>
 <h2 id="helpers-1"><a class="header" href="#helpers-1">Helpers</a></h2>
-<p><code>halp</code> provides helper types for these common cases: </p>
-<pre><code class="language-cpp">halp::audio_sample&lt;&quot;A&quot;, double&gt; audio;
-halp::audio_channel&lt;&quot;B&quot;, double&gt; audio;
-halp::fixed_audio_bus&lt;&quot;C&quot;, double, 2&gt; audio;
-halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
+<p><code>halp</code> provides helper types for these common cases:</p>
+<pre><code class="language-cpp">halp::audio_sample&lt;"A", double&gt; audio;
+halp::audio_channel&lt;"B", double&gt; audio;
+halp::fixed_audio_bus&lt;"C", double, 2&gt; audio;
+halp::dynamic_audio_bus&lt;"D", double&gt; audio;
 </code></pre>
 <blockquote>
 <p>Important: it is not possible to mix different types of audio ports in a single processor: audio sample and audio bus operate necessarily on different time-scales that are impossible to combine in a single function. Technically, it would be possible to combine audio channels and audio buses, but for the sake of simplicity this is currently forbidden.</p>
@@ -1329,14 +1329,14 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 <h2 id="gain-processor-helpers-version"><a class="header" href="#gain-processor-helpers-version">Gain processor, helpers version</a></h2>
 <p>The exact same example as above, just shorter to write :)</p>
 <pre><code class="language-cpp">struct Gain {
-  static constexpr auto name() { return &quot;Gain&quot;; }
+  static constexpr auto name() { return "Gain"; }
   struct {
-    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
-    halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{0., 1., 0.5}&gt; gain;
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    halp::hslider_f32&lt;"Gain", halp::range{0., 1., 0.5}&gt; gain;
   } inputs;
 
   struct {
-    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
   } outputs;
   
   void operator()(int N) {
@@ -1351,18 +1351,18 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 };
 </code></pre>
 <h2 id="further-work"><a class="header" href="#further-work">Further work</a></h2>
-<p>We currently have the following matrix of possible forms of audio ports: </p>
+<p>We currently have the following matrix of possible forms of audio ports:</p>
 <div class="table-wrapper"><table><thead><tr><th></th><th>1 channel</th><th>N channels</th></tr></thead><tbody>
 <tr><td>1 frame</td><td><code>float sample;</code></td><td><code>???</code></td></tr>
 <tr><td>N frames</td><td><code>float* channel;</code></td><td><code>float** samples;</code></td></tr>
 </tbody></table>
 </div>
-<p>For the N channels / 1 frame case, one could imagine for instance: </p>
+<p>For the N channels / 1 frame case, one could imagine for instance:</p>
 <pre><code class="language-cpp">struct {
   float bus[2]; // Fixed channels case
 }
 </code></pre>
-<p>or </p>
+<p>or</p>
 <pre><code class="language-cpp">struct {
   float* bus; // Dynamic channels case
 }
@@ -1372,7 +1372,7 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max</p>
 </blockquote>
-<p>There are three special cases: </p>
+<p>There are three special cases:</p>
 <ol>
 <li>Processors with one sample input and one sample output.</li>
 <li>Processors with one channel input and one channel output.</li>
@@ -1384,7 +1384,7 @@ halp::dynamic_audio_bus&lt;&quot;D&quot;, double&gt; audio;
 <p>Let's consider the following processor:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   struct {
     struct { float value; } gain;
   } inputs;
@@ -1399,7 +1399,7 @@ private:
   double accumulator{};
 };
 </code></pre>
-<p>We have three different values involved: </p>
+<p>We have three different values involved:</p>
 <ul>
 <li><code>input</code> is the audio sample that is to be processed.</li>
 <li><code>inputs.gain.value</code> is an external control which increases or decreases the distortion.</li>
@@ -1410,10 +1410,10 @@ private:
 <li>We cannot call <code>operator()</code> of a single instance on multiple channels, as the internal state must stay independent of the channels.</li>
 <li>But now the inputs are duplicated for all instances. If we want to implement a filter bank with thousands of duplicated processors in parallel, this would be a huge waste of memory if they all depend on the same <code>gain</code> value.</li>
 </ul>
-<p>Thus, it is recommended in this case to use the following form: </p>
+<p>Thus, it is recommended in this case to use the following form:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   struct inputs {
       struct { float value; } gain;
   };
@@ -1430,16 +1430,16 @@ private:
 };
 </code></pre>
 <p>Here, Avendish will instantiate a single <code>inputs</code> array, which will be shared across all polyphony voices, which will likely use less memory and be more performant in case of large amount of parameters &amp; voices.</p>
-<p>Here is what I would term the &quot;canonic&quot; of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:</p>
+<p>Here is what I would term the "canonic" of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   struct inputs {
-    halp::audio_sample&lt;&quot;In&quot;, double&gt; audio;
-    halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0, .max = 100, .init = 1}&gt; gain;
+    halp::audio_sample&lt;"In", double&gt; audio;
+    halp::hslider_f32&lt;"Gain", halp::range{.min = 0, .max = 100, .init = 1}&gt; gain;
   };
   struct outputs { 
-    halp::audio_sample&lt;&quot;Out&quot;, double&gt; audio;
+    halp::audio_sample&lt;"Out", double&gt; audio;
   };
 
   void operator()(const inputs&amp; ins, outputs&amp; outs) 
@@ -1463,7 +1463,7 @@ private:
     ...
 }
 </code></pre>
-<p><code>some_type</code> can be a custom type with the following allowed fields: </p>
+<p><code>some_type</code> can be a custom type with the following allowed fields:</p>
 <ul>
 <li><code>rate</code>: will be filled with the sample rate.</li>
 <li><code>frames</code>: will be filled with the maximum frame (buffer) size.</li>
@@ -1505,7 +1505,7 @@ void prepare(setup_c info) {
 }
 </code></pre>
 <h2 id="helper-library"><a class="header" href="#helper-library">Helper library</a></h2>
-<p><code>halp</code> provides the <code>halp::setup</code> which covers the most usual use cases: </p>
+<p><code>halp</code> provides the <code>halp::setup</code> which covers the most usual use cases:</p>
 <pre><code class="language-cpp">void prepare(halp::setup info) {
   info.rate; // etc...
 }
@@ -1522,14 +1522,14 @@ if constexpr(requires (T t) { t.frames = 123; })
 if constexpr(requires (T t) { t.rate = 44100; })
   t.rate = ... the sample-rate reported by the DAW ...;
 </code></pre>
-<p>This way, only the cost of the variables that are actually used by the algorithm is ever incurred, which is of course not super important but a good reference implementation for this way of doing for other parts of the system where it matters more. </p>
+<p>This way, only the cost of the variables that are actually used by the algorithm is ever incurred, which is of course not super important but a good reference implementation for this way of doing for other parts of the system where it matters more.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="audio-arguments"><a class="header" href="#audio-arguments">Audio arguments</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
 </blockquote>
 <p>In addition of the global set-up step, one may require per-process-step arguments.
 Most common needs are for instance the current tempo, etc.</p>
-<p>The infrastructure put in place for this is very similar to the one previously mentioned for 
+<p>The infrastructure put in place for this is very similar to the one previously mentioned for
 the setup step.</p>
 <p>The way it is done is simply by passing it as the last argument of the processing <code>operator()</code> function.</p>
 <p>If there is such a type, it will contain at least the frames.</p>
@@ -1559,13 +1559,13 @@ the setup step.</p>
   // And also the double-taking versions, not duplicated here :-)
 };
 </code></pre>
-<p>The currently supported members are: </p>
+<p>The currently supported members are:</p>
 <ul>
 <li><code>frames</code>: the buffer size</li>
 </ul>
-<p>The plan is to introduce: </p>
+<p>The plan is to introduce:</p>
 <ul>
-<li><code>tempo</code> and all things relative to musicality, e.g. current bar, etc. 
+<li><code>tempo</code> and all things relative to musicality, e.g. current bar, etc.
 <ul>
 <li>But first we have to define it in a proper way, which is compatible with VST, CLAP, etc.</li>
 </ul>
@@ -1578,12 +1578,12 @@ the setup step.</p>
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>It is pretty common for audio analysis tasks to need access to the audio spectrum.</p>
-<p>However, this causes a dramatic situation at the ecosystem level: every plug-in ships with its own FFT 
-implementation, which at best duplicates code for no good reason, and at worse may cause complex 
+<p>However, this causes a dramatic situation at the ecosystem level: every plug-in ships with its own FFT
+implementation, which at best duplicates code for no good reason, and at worse may cause complex
 issues for FFT libraries which rely on global state shared across the process, such as FFTW.</p>
-<p>With the declarative approach of Avendish, however, we can make it so that the plug-in does not 
-directly depend on an FFT implementation: it just requests that a port gets its spectrum computed, and it happens 
-automatically outside of the plug-in's code. This allows hosts such as <a href="https://ossia.io">ossia score</a> to provide 
+<p>With the declarative approach of Avendish, however, we can make it so that the plug-in does not
+directly depend on an FFT implementation: it just requests that a port gets its spectrum computed, and it happens
+automatically outside of the plug-in's code. This allows hosts such as <a href="https://ossia.io">ossia score</a> to provide
 their own FFT implementation which will be shared across all Avendish plug-ins, which is strictly better for performance
 and memory usage.</p>
 <h2 id="making-an-fft-port"><a class="header" href="#making-an-fft-port">Making an FFT port</a></h2>
@@ -1606,7 +1606,7 @@ and memory usage.</p>
   int channels{};
 } my_audio_input;
 </code></pre>
-<p>to get a deinterleaved view of the amplitude &amp; phase: </p>
+<p>to get a deinterleaved view of the amplitude &amp; phase:</p>
 <pre><code class="language-cpp">spectrum.amplitude[0][4]; // The amplitude of the bin at index 4 for channel 0
 spectrum.phase[1][2]; // The phase of the bin at index 2 for channel 1
 </code></pre>
@@ -1626,11 +1626,11 @@ spectrum.phase[1][2]; // The phase of the bin at index 2 for channel 1
 <p>Using complex numbers allows to use the C++ standard math library functions for complex numbers: <code>std::norm</code>, <code>std::proj</code>...</p>
 <p>Note that the length of the spectrum arrays is always <code>N / 2 + 1</code>, N being the current frame size. Note also that the FFT is normalized - the input is divided by the amount of samples.</p>
 <blockquote>
-<p>WIP: an important upcoming feature is the ability to make configurable buffered processors, so that 
+<p>WIP: an important upcoming feature is the ability to make configurable buffered processors, so that
 one can choose for instance to observe the spectrum over 1024 frames. Right now this has to be handled internally by the plug-in.</p>
 </blockquote>
 <h3 id="windowing"><a class="header" href="#windowing">Windowing</a></h3>
-<p>A window function can be applied by defining an </p>
+<p>A window function can be applied by defining an</p>
 <pre><code class="language-cpp">enum window { &lt;name of the window&gt; };
 </code></pre>
 <p>Supported names currently are <code>hanning</code>, <code>hamming</code>. If there is none, there will be no windowing (technically, a rectangular window). The helper types described below use an Hanning window.</p>
@@ -1639,9 +1639,9 @@ one can choose for instance to observe the spectrum over 1024 frames. Right now 
 </blockquote>
 <h2 id="helper-types"><a class="header" href="#helper-types">Helper types</a></h2>
 <p>These three types are provided. They give separated amplitude / phase arrays.</p>
-<pre><code class="language-cpp">halp::dynamic_audio_spectrum_bus&lt;&quot;A&quot;, double&gt; a_bus_port;
-halp::fixed_audio_spectrum_bus&lt;&quot;B&quot;, double, 2&gt; a_stereo_port;
-halp::audio_spectrum_channel&lt;&quot;C&quot;, double&gt; a_channel_port;
+<pre><code class="language-cpp">halp::dynamic_audio_spectrum_bus&lt;"A", double&gt; a_bus_port;
+halp::fixed_audio_spectrum_bus&lt;"B", double, 2&gt; a_stereo_port;
+halp::audio_spectrum_channel&lt;"C", double&gt; a_channel_port;
 </code></pre>
 <h2 id="accessing-a-fft-object-globally"><a class="header" href="#accessing-a-fft-object-globally">Accessing a FFT object globally</a></h2>
 <p>See <a href="writing_processors/../advanced/fft.html">the section about feature injection</a> to see how a plug-in can be injected with an FFT object which allows to control precisely how the FFT is done.</p>
@@ -1662,9 +1662,9 @@ namespace examples::helpers
  */
 struct PeakBandFFTPort
 {
-  halp_meta(name, &quot;Peak band (FFT port)&quot;)
-  halp_meta(c_name, &quot;avnd_peak_band_fft_port&quot;)
-  halp_meta(uuid, &quot;143f5cb8-d0b1-44de-a1a4-ccd5315192fa&quot;)
+  halp_meta(name, "Peak band (FFT port)")
+  halp_meta(c_name, "avnd_peak_band_fft_port")
+  halp_meta(uuid, "143f5cb8-d0b1-44de-a1a4-ccd5315192fa")
 
   // TODO implement user-controllable buffering to allow various fft sizes...
   int buffer_size = 1024;
@@ -1673,12 +1673,12 @@ struct PeakBandFFTPort
   {
     // Here the host will fill audio.spectrum with a windowed FFT.
     // Option A (an helper type is provided)
-    halp::audio_spectrum_channel&lt;&quot;In&quot;, double&gt; audio;
+    halp::audio_spectrum_channel&lt;"In", double&gt; audio;
 
     // Option B with the raw spectrum ; no window is defined.
     struct
     {
-      halp_meta(name, &quot;In 2&quot;);
+      halp_meta(name, "In 2");
 
       double* channel{};
       // complex numbers... using value_type = double[2] is also ok
@@ -1691,11 +1691,11 @@ struct PeakBandFFTPort
 
   struct
   {
-    halp::val_port&lt;&quot;Peak&quot;, double&gt; peak;
-    halp::val_port&lt;&quot;Band&quot;, int&gt; band;
+    halp::val_port&lt;"Peak", double&gt; peak;
+    halp::val_port&lt;"Band", int&gt; band;
 
-    halp::val_port&lt;&quot;Peak 2&quot;, double&gt; peak_2;
-    halp::val_port&lt;&quot;Band 2&quot;, int&gt; band_2;
+    halp::val_port&lt;"Peak 2", double&gt; peak_2;
+    halp::val_port&lt;"Band 2", int&gt; band_2;
   } outputs;
 
   void operator()(int frames)
@@ -1753,21 +1753,21 @@ struct PeakBandFFTPort
 <pre><code class="language-cpp">struct MyProcessor {
   struct messages {
     struct {
-      static consteval auto name() { return &quot;dump&quot;; }
+      static consteval auto name() { return "dump"; }
       void operator()(MyProcessor&amp; p, double arg1, std::string_view arg2) {
-        std::cout &lt;&lt; arg1 &lt;&lt; &quot;;&quot; &lt;&lt; arg2 &lt;&lt; &quot;\n&quot;;
+        std::cout &lt;&lt; arg1 &lt;&lt; ";" &lt;&lt; arg2 &lt;&lt; "\n";
       }
     } my_message;
   };
 };
 </code></pre>
 <p>Note that the <code>messages</code> are stored in a structure named <code>messages</code>. It could also be the name of the value, but this would likely use at least a few bytes per instance which would be wasted as messages are not supposed to have states themselves.</p>
-<p>Messages are of course only meaningful in environments which support them. 
+<p>Messages are of course only meaningful in environments which support them.
 One argument messages are equivalent to parameters.
 If there is more than one argument, not all host systems may be able to handle them ; for instance, it does not make much sense for VST3 plug-ins. On the other hand, programming language bindings or systems such as Max and PureData have no problem with them.</p>
 <h2 id="passing-existing-functions"><a class="header" href="#passing-existing-functions">Passing existing functions</a></h2>
 <p>The following syntaxes are also possible:</p>
-<pre><code class="language-cpp">void free_function() { printf(&quot;Free function\n&quot;); }
+<pre><code class="language-cpp">void free_function() { printf("Free function\n"); }
 
 struct MyProcessor {
   void my_member(int x);
@@ -1775,23 +1775,23 @@ struct MyProcessor {
   struct messages {
     // Using a pointer-to-member function
     struct {
-      static consteval auto name() { return &quot;member&quot;; }
+      static consteval auto name() { return "member"; }
       static consteval auto func() { return &amp;MyProcessor::my_member; }
     } member;
 
     // Using a lambda-function
     struct
     {
-      static consteval auto name() { return &quot;lambda_function&quot;; }
+      static consteval auto name() { return "lambda_function"; }
       static consteval auto func() {
-        return [] { printf(&quot;lambda\n&quot;); };
+        return [] { printf("lambda\n"); };
       }
     } lambda;
 
     // Using a free function
     struct
     {
-      static consteval auto name() { return &quot;function&quot;; }
+      static consteval auto name() { return "function"; }
       static consteval auto func() { return free_function; }
     } freefunc;
   };
@@ -1802,14 +1802,14 @@ struct MyProcessor {
 <p>Messages are type-checked: in the first example above, for instance, PureData will return an error for the message <code>[dump foo bar&gt;</code>. For the message <code>[dump 0.1 bar&gt;</code> things will however work out just fine :-)</p>
 <h2 id="arbitrary-inputs"><a class="header" href="#arbitrary-inputs">Arbitrary inputs</a></h2>
 <p>It may be necessary to have messages that accept an arbitrary number of inputs.
-Here is how: </p>
+Here is how:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;args&quot;; }
+  static consteval auto name() { return "args"; }
   void operator()(MyProcessor&amp; p, std::ranges::input_range auto range) {
     for(const std::variant&amp; argument : range) {
       // Print the argument whatever the content
       // (a library such as fmt can do that directly)
-      std::visit([](auto&amp; e) { std::cout &lt;&lt; e &lt;&lt; &quot;\n&quot;; }, argument);
+      std::visit([](auto&amp; e) { std::cout &lt;&lt; e &lt;&lt; "\n"; }, argument);
 
       // Try to do something useful with it - here the types depend on what the binding give us. So far only Max and Pd support that so the only possible types are floats, doubles and std::string_view
       if(std::get_if&lt;double&gt;(argument)) { ... }
@@ -1854,17 +1854,17 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 <h2 id="defining-a-callback-with-stdfunction"><a class="header" href="#defining-a-callback-with-stdfunction">Defining a callback with std::function</a></h2>
 <p>This is a first possibility, which is pretty simple:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;bong&quot;; }
+  static consteval auto name() { return "bong"; }
   std::function&lt;void(float)&gt; call;
 }; 
 </code></pre>
-<p>The bindings will make sure that a function is present in <code>call</code>, so that our code can call it: </p>
+<p>The bindings will make sure that a function is present in <code>call</code>, so that our code can call it:</p>
 <pre><code class="language-cpp">struct MyProcessor {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
 
   struct {
     struct {
-      static consteval auto name() { return &quot;overload&quot;; }
+      static consteval auto name() { return "overload"; }
       std::function&lt;void(float)&gt; call;
     } overload; 
   } outputs;
@@ -1879,16 +1879,16 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 };
 </code></pre>
 <p>However, we also want to be able to live without std:: types ; in particular, std::function is a quite complex beast which does type-erasure, potential dynamic memory allocations, and may not be available on all platforms.</p>
-<p>Thus, it is also possible to define callbacks with a simple pair of function-pointer &amp; context: </p>
+<p>Thus, it is also possible to define callbacks with a simple pair of function-pointer &amp; context:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;overload&quot;; }
+  static consteval auto name() { return "overload"; }
   struct {       
     void (*function)(void*, float);
     void* context;
   } call;
 } overload;
 </code></pre>
-<p>The bindings will fill the function and function pointer, so that one can call them: </p>
+<p>The bindings will fill the function and function pointer, so that one can call them:</p>
 <pre><code class="language-cpp">float operator()(float input) 
 {
   if(input &gt; 1.0)
@@ -1901,7 +1901,7 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 </code></pre>
 <p>Of course, this is fairly verbose: thankfully, helpers are provided to make this as simple as <code>std::function</code> but without the overhead (until <code>std::function_view</code> gets implemented):</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;overload&quot;; }
+  static consteval auto name() { return "overload"; }
   halp::basic_callback&lt;void(float)&gt; call;
 } overload;
 </code></pre>
@@ -1910,17 +1910,17 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 <p>Supported bindings: Max, Pd</p>
 </blockquote>
 <p>Some media systems provide a way for objects to be passed initialization arguments.</p>
-<p>Avendish supports this with a special &quot;initialize&quot; method. Ultimately, I'd like to be able to simply use C++ constructors for this, but haven't managed to yet.</p>
-<p>Here's an example: </p>
+<p>Avendish supports this with a special "initialize" method. Ultimately, I'd like to be able to simply use C++ constructors for this, but haven't managed to yet.</p>
+<p>Here's an example:</p>
 <pre><code class="language-cpp">struct MyProcessor {
 void initialize(float a, std::string_view b)
 {
-  std::cout &lt;&lt; a &lt;&lt; &quot; ; &quot; &lt;&lt; b &lt;&lt; std::endl;
+  std::cout &lt;&lt; a &lt;&lt; " ; " &lt;&lt; b &lt;&lt; std::endl;
 }
 ...
 };
 </code></pre>
-<p>Max and Pd will report an error if the object is not initialized correctly, e.g. like this: </p>
+<p>Max and Pd will report an error if the object is not initialized correctly, e.g. like this:</p>
 <pre><code>[my_processor 1.0 foo]  // OK
 [my_processor foo 1.0]  // Not OK
 [my_processor] // Not OK
@@ -1935,7 +1935,7 @@ void initialize(float a, std::string_view b)
 <p>Here is how one specifies unsafe MIDI ports:</p>
 <pre><code class="language-cpp">struct
 {
-  static consteval auto name() { return &quot;MIDI&quot;; }
+  static consteval auto name() { return "MIDI"; }
   struct
   {
     uint8_t bytes[3]{};
@@ -1953,12 +1953,12 @@ struct midi_message {
 
 struct
 {
-  static consteval auto name() { return &quot;MIDI&quot;; }
+  static consteval auto name() { return "MIDI"; }
   midi_message* midi_messages{};
   std::size_t size{};
 } midi_port;
 </code></pre>
-<p>Here, Avendish bindings will allocate a large enough buffer to store MIDI messages ; this is mainly to enable writing dynamic-allocation-free backends where such a buffer may be allocated statically. </p>
+<p>Here, Avendish bindings will allocate a large enough buffer to store MIDI messages ; this is mainly to enable writing dynamic-allocation-free backends where such a buffer may be allocated statically.</p>
 <p>It is also possible to do this if you don't expect to run your code on Arduinos:</p>
 <pre><code class="language-cpp">struct
 {
@@ -1973,12 +1973,12 @@ struct
 } midi_port;
 </code></pre>
 <h2 id="helpers-2"><a class="header" href="#helpers-2">Helpers</a></h2>
-<p>The library provides helper types which are a good compromise between these two solutions, as they are based on <code>boost::container::small_vector</code>: for small numbers of MIDI messages, there will be no memory allocation, but pathological cases (an host sending a thousand MIDI messages in a single tick) can still be handled without loosing messages. </p>
+<p>The library provides helper types which are a good compromise between these two solutions, as they are based on <code>boost::container::small_vector</code>: for small numbers of MIDI messages, there will be no memory allocation, but pathological cases (an host sending a thousand MIDI messages in a single tick) can still be handled without loosing messages.</p>
 <p>The type is very simple:</p>
-<pre><code class="language-cpp">halp::midi_bus&lt;&quot;In&quot;&gt; midi;
+<pre><code class="language-cpp">halp::midi_bus&lt;"In"&gt; midi;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="midi-synth-example"><a class="header" href="#midi-synth-example">MIDI synth example</a></h1>
-<p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries: </p>
+<p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries:</p>
 <ul>
 <li><a href="https://github.com/jcelerier/libremidi"><code>libremidi</code></a> provides an useful <code>enum</code> of common MIDI messages types.</li>
 <li><a href="https://github.com/ossia/libossia"><code>libossia</code></a> provides frequency &lt;-&gt; MIDI note and gain &lt;-&gt; MIDI velocity conversion operations.</li>
@@ -2002,24 +2002,24 @@ namespace examples
  */
 struct Synth
 {
-  halp_meta(name, &quot;My example synth&quot;);
-  halp_meta(c_name, &quot;synth_123&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;);
-  halp_meta(description, &quot;A demo synth&quot;);
-  halp_meta(uuid, &quot;93eb0f78-3d97-4273-8a11-3df5714d66dc&quot;);
+  halp_meta(name, "My example synth");
+  halp_meta(c_name, "synth_123");
+  halp_meta(category, "Demo");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "A demo synth");
+  halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
 
   struct
   {
     /** MIDI input: simply a list of timestamped messages.
      * Timestamp are in samples, 0 is the first sample.
      */
-    halp::midi_bus&lt;&quot;In&quot;&gt; midi;
+    halp::midi_bus&lt;"In"&gt; midi;
   } inputs;
 
   struct
   {
-    halp::fixed_audio_bus&lt;&quot;Out&quot;, double, 2&gt; audio;
+    halp::fixed_audio_bus&lt;"Out", double, 2&gt; audio;
   } outputs;
 
   struct conf
@@ -2114,17 +2114,17 @@ Any feedback on this is welcome.</p>
 <p>A few types are provided:</p>
 <ul>
 <li><code>halp::rgba_texture</code></li>
-<li><code>halp::texture_input&lt;&quot;Name&quot;&gt;</code> provides methods to get an RGBA pixel: </li>
+<li><code>halp::texture_input&lt;"Name"&gt;</code> provides methods to get an RGBA pixel:</li>
 </ul>
 <pre><code class="language-cpp">auto [r,g,b,a] = tex.get(10, 20);
 </code></pre>
 <ul>
-<li><code>halp::texture_output&lt;&quot;Name&quot;&gt;</code> provides methods to set a RGBA pixel: </li>
+<li><code>halp::texture_output&lt;"Name"&gt;</code> provides methods to set a RGBA pixel:</li>
 </ul>
 <pre><code class="language-cpp">tex.set(10, 20, {.r = 10, .g = 100, .b = 34, .a = 255});
 tex.set(10, 20, 10, 100, 34, 255);
 </code></pre>
-<p>as well as useful method to initialize and mark the texture ready for upload: </p>
+<p>as well as useful method to initialize and mark the texture ready for upload:</p>
 <pre><code class="language-cpp">// Call this in the constructor or before processing starts
 tex.create(100, 100);
 
@@ -2145,21 +2145,21 @@ namespace examples
 {
 struct TextureFilterExample
 {
-  halp_meta(name, &quot;My example texture filter&quot;);
-  halp_meta(c_name, &quot;texture_filt&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;);
-  halp_meta(description, &quot;Example texture filter&quot;);
-  halp_meta(uuid, &quot;3183d03e-9228-4d50-98e0-e7601dd16a2e&quot;);
+  halp_meta(name, "My example texture filter");
+  halp_meta(c_name, "texture_filt");
+  halp_meta(category, "Demo");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "Example texture filter");
+  halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   struct
   {
-    halp::texture_input&lt;&quot;In&quot;&gt; image;
+    halp::texture_input&lt;"In"&gt; image;
   } inputs;
 
   struct
   {
-    halp::texture_output&lt;&quot;Out&quot;&gt; image;
+    halp::texture_output&lt;"Out"&gt; image;
   } outputs;
 
   // Some initialization can be done in the constructor.
@@ -2216,11 +2216,11 @@ struct TextureFilterExample
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
-<p>So far the main metadata we saw for our processor is its name: </p>
-<pre><code class="language-cpp">static consteval auto name() { return &quot;Foo&quot;; }
+<p>So far the main metadata we saw for our processor is its name:</p>
+<pre><code class="language-cpp">static consteval auto name() { return "Foo"; }
 </code></pre>
 <p>Or with the helper macro:</p>
-<pre><code class="language-cpp">halp_meta(name, &quot;Foo&quot;)
+<pre><code class="language-cpp">halp_meta(name, "Foo")
 </code></pre>
 <p>There are a few more useful metadatas that can be used and which will be used depending on whether the bindings support exposing them.
 Here is a list in order of importance; it is recommended that strings are used for all of these and that they are filled as much as possible.</p>
@@ -2232,7 +2232,7 @@ Here is a list in order of importance; it is recommended that strings are used f
 <li><code>vendor</code>: who distributes the plug-in.</li>
 <li><code>product</code>: product name if the plug-in is part of a larger product.</li>
 <li><code>version</code>: a version string, ideally convertible to an integer as some older APIs expect integer versions.</li>
-<li><code>category</code>: a category for the plug-in. &quot;Audio&quot;, &quot;Synth&quot;, &quot;Distortion&quot;, &quot;Chorus&quot;... there's no standard, but one can check for instance the names used <a href="https://lv2plug.in/ns/lv2core">in LV2</a> or the list mentioned by <a href="https://distrho.github.io/DPF/group__PluginMacros.html">DISTRHO</a>.</li>
+<li><code>category</code>: a category for the plug-in. "Audio", "Synth", "Distortion", "Chorus"... there's no standard, but one can check for instance the names used <a href="https://lv2plug.in/ns/lv2core">in LV2</a> or the list mentioned by <a href="https://distrho.github.io/DPF/group__PluginMacros.html">DISTRHO</a>.</li>
 <li><code>copyright</code>: <code>(c) the plug-in authors 2022-xxxx</code></li>
 <li><code>license</code>: an <a href="https://spdx.org/licenses/">SPDX identifier</a> for the license or a link towards a license document</li>
 <li><code>url</code>: URL for the plug-in if any.</li>
@@ -2298,11 +2298,11 @@ There are multiple ways to implement them.</p>
 <pre><code class="language-cpp">template&lt;typename T&gt;
 using my_pair = std::pair&lt;std::string_view, T&gt;;
 struct {
-  halp_meta(name, &quot;Enum 1&quot;);
+  halp_meta(name, "Enum 1");
   enum widget { combobox };
 
   struct range {
-    my_pair&lt;float&gt; values[3]{{&quot;Foo&quot;, -10.f}, {&quot;Bar&quot;, 5.f}, {&quot;Baz&quot;, 10.f}};
+    my_pair&lt;float&gt; values[3]{{"Foo", -10.f}, {"Bar", 5.f}, {"Baz", 10.f}};
     int init{1}; // == Bar
   };
 
@@ -2324,11 +2324,11 @@ as needed.</p>
 <h3 id="enumerating-with-only-string"><a class="header" href="#enumerating-with-only-string">Enumerating with only string</a></h3>
 <p>Consider the following port:</p>
 <pre><code class="language-cpp">struct {
-  halp_meta(name, &quot;Enum 2&quot;);
+  halp_meta(name, "Enum 2");
   enum widget { enumeration };
 
   struct range {
-    std::string_view values[4]{&quot;Roses&quot;, &quot;Red&quot;, &quot;Violets&quot;, &quot;Blue&quot;};
+    std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
     int init{1}; // Red
   };
 
@@ -2340,11 +2340,11 @@ one from the range::values array ; these strings live in static memory
 so there is no need to duplicate them in an <code>std::string</code>.</p>
 <p>It is also possible to use an <code>int</code> for the port value:</p>
 <pre><code class="language-cpp">struct {
-  halp_meta(name, &quot;Enum 3&quot;);
+  halp_meta(name, "Enum 3");
   enum widget { enumeration };
 
   struct range {
-    std::string_view values[4]{&quot;Roses&quot;, &quot;Red&quot;, &quot;Violets&quot;, &quot;Blue&quot;};
+    std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
     int init{1}; // Red
   };
 
@@ -2356,12 +2356,12 @@ so there is no need to duplicate them in an <code>std::string</code>.</p>
 <p>Finally, we can also use actual enums.</p>
 <pre><code class="language-cpp">enum my_enum { A, B, C };
 struct {
-  halp_meta(name, &quot;Enum 3&quot;);
+  halp_meta(name, "Enum 3");
   enum widget { enumeration };
 
   struct range
   {
-    std::string_view values[3]{&quot;A&quot;, &quot;B&quot;, &quot;C&quot;};
+    std::string_view values[3]{"A", "B", "C"};
     my_enum init = my_enum::B;
   };
 
@@ -2376,9 +2376,9 @@ struct {
 <code>enum { A, B, C };</code> will work.</p>
 </blockquote>
 <p>An helper is provided, which is sadly a macro as we cannot do proper enum reflection yet:</p>
-<pre><code class="language-cpp">halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole) my_port;
+<pre><code class="language-cpp">halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole) my_port;
 </code></pre>
-<p>declares a port named &quot;Simple Enum&quot;. The default value will be &quot;Peg&quot;, the 4 enumerators are Square, Peg, Round, Hole.</p>
+<p>declares a port named "Simple Enum". The default value will be "Peg", the 4 enumerators are Square, Peg, Round, Hole.</p>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
 <blockquote>
 <p>Supported bindings: ossia</p>
@@ -2414,7 +2414,7 @@ concept vector_ish = requires(T t)
 } my_port;
 </code></pre>
 <h3 id="c-arrays"><a class="header" href="#c-arrays">C arrays</a></h3>
-<p>C arrays aren't supported due to limitations in the reflection capabilities of C++: </p>
+<p>C arrays aren't supported due to limitations in the reflection capabilities of C++:</p>
 <pre><code class="language-cpp">struct {
   int value[2]; // Won't work
 } my_port;
@@ -2443,7 +2443,7 @@ concept vector_ish = requires(T t)
   std::optional&lt;int&gt; value;
 } my_port;
 </code></pre>
-<p>This is used to give message semantics to the port: optionals are reset before execution of the current 
+<p>This is used to give message semantics to the port: optionals are reset before execution of the current
 tick, both for inputs and outputs. If an input is set, it means that a message was received for this tick.
 If the processor sets the output, a message will be sent outwards.</p>
 <p>This is mostly equivalent to messages and callbacks, but with a value-based instead of function-based API
@@ -2471,7 +2471,7 @@ If the processor sets the output, a message will be sent outwards.</p>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>Aggregates are <em>somewhat</em> supported: that is, one can define </p>
+<p>Aggregates are <em>somewhat</em> supported: that is, one can define</p>
 <pre><code class="language-cpp">struct Foo {
   int a, b;
   struct {
@@ -2489,10 +2489,10 @@ This is so far only supported in ossia, and will not preserve names, but be tran
 , (int)b
 , (list) [ 
     (list)[ c0, c1, c2, ... ]
-  , (string)&quot;d&quot;
+  , (string)"d"
   ]
 , (list)[true, false, false, true]
-, (map){&quot;foo&quot;: 123, &quot;bar&quot;: 456}
+, (map){"foo": 123, "bar": 456}
 ]
 </code></pre>
 <p>It is possible to specify field names in an aggregate manually, in order to have the sub-object be detected as a map and not a list:</p>
@@ -2507,19 +2507,19 @@ struct detected_object
   halp_field_names(name, geometry, probability);
   // This macro expands to: 
   // static constexpr auto field_names()
-  // { return std::array&lt;std::string_view, 3&gt;{&quot;name&quot;, &quot;geometry&quot;, &quot;probability&quot;}; }
+  // { return std::array&lt;std::string_view, 3&gt;{"name", "geometry", "probability"}; }
 };
 </code></pre>
 <p>This maps to:</p>
 <pre><code class="language-cpp">(map) {
-   name: &quot;foo&quot;
+   name: "foo"
  , geometry: (list) [3, 4, 120, 356]
  , probability: 0.95
 }
 </code></pre>
 <h1 id="helper-type"><a class="header" href="#helper-type">Helper type</a></h1>
-<p>To create a port ithout having to declare a struct, you can directly use: </p>
-<p><code>halp::val_port&lt;&quot;My port&quot;, std::string&gt; my_port;</code>.</p>
+<p>To create a port ithout having to declare a struct, you can directly use:</p>
+<p><code>halp::val_port&lt;"My port", std::string&gt; my_port;</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="example-2"><a class="header" href="#example-2">Example</a></h1>
 <p>This example shows the various helper types that provide simple definitions matching the supported port types saw before.</p>
 <pre><code class="language-cpp">#pragma once
@@ -2544,54 +2544,54 @@ namespace examples
 
 struct ControlGallery
 {
-  halp_meta(name, &quot;Control gallery&quot;);
-  halp_meta(c_name, &quot;control_gallery&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;&lt;AUTHOR&gt;&quot;);
-  halp_meta(description, &quot;&lt;DESCRIPTION&gt;&quot;);
-  halp_meta(uuid, &quot;a9b0e2c6-61e9-45df-a75d-27abf7fb43d7&quot;);
+  halp_meta(name, "Control gallery");
+  halp_meta(c_name, "control_gallery");
+  halp_meta(category, "Demo");
+  halp_meta(author, "&lt;AUTHOR&gt;");
+  halp_meta(description, "&lt;DESCRIPTION&gt;");
+  halp_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
   struct
   {
     //! Buttons are level-triggers: true as long as the button is pressed
-    halp::accurate&lt;halp::maintained_button&lt;&quot;Press me ! (Button)&quot;&gt;&gt; button;
+    halp::accurate&lt;halp::maintained_button&lt;"Press me ! (Button)"&gt;&gt; button;
 
     //! In contrast, impulses are edge-triggers: there is only a value at the moment of the click.
-    halp::accurate&lt;halp::impulse_button&lt;&quot;Press me ! (Impulse)&quot;&gt;&gt; impulse_button;
+    halp::accurate&lt;halp::impulse_button&lt;"Press me ! (Impulse)"&gt;&gt; impulse_button;
 
     //! Common widgets
-    halp::accurate&lt;halp::hslider_f32&lt;&quot;Float slider&quot;, halp::range{0., 1., 0.5}&gt;&gt;
+    halp::accurate&lt;halp::hslider_f32&lt;"Float slider", halp::range{0., 1., 0.5}&gt;&gt;
         float_slider;
-    halp::accurate&lt;halp::knob_f32&lt;&quot;Float knob&quot;, halp::range{0., 1., 0.5}&gt;&gt; float_knob;
+    halp::accurate&lt;halp::knob_f32&lt;"Float knob", halp::range{0., 1., 0.5}&gt;&gt; float_knob;
     //// // FIXME
     //// struct {
-    ////   // FIXME meta_control(Control::LogFloatSlider, &quot;Float slider (log)&quot;, 0., 1., 0.5);
+    ////   // FIXME meta_control(Control::LogFloatSlider, "Float slider (log)", 0., 1., 0.5);
     ////   ossia::timed_vec&lt;float&gt; values{};
     //// } log_float_slider;
     ////
 
 #if defined(__clang__) || defined(_MSC_VER)
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104720
-    halp::accurate&lt;halp::hslider_i32&lt;&quot;Int slider&quot;, halp::range{0., 1000., 10.}&gt;&gt;
+    halp::accurate&lt;halp::hslider_i32&lt;"Int slider", halp::range{0., 1000., 10.}&gt;&gt;
         int_slider;
-    halp::accurate&lt;halp::spinbox_i32&lt;&quot;Int spinbox&quot;, halp::range{0, 1000, 10}&gt;&gt;
+    halp::accurate&lt;halp::spinbox_i32&lt;"Int spinbox", halp::range{0, 1000, 10}&gt;&gt;
         int_spinbox;
 #endif
 
     //! Will look like a checkbox
-    halp::accurate&lt;halp::toggle&lt;&quot;Toggle&quot;, halp::toggle_setup{.init = true}&gt;&gt; toggle;
+    halp::accurate&lt;halp::toggle&lt;"Toggle", halp::toggle_setup{.init = true}&gt;&gt; toggle;
 
     //! Same, but allows to choose what is displayed.
-    // FIXME halp::accurate&lt;halp::chooser_toggle&lt;&quot;Toggle&quot;, {&quot;Falsey&quot;, &quot;Truey&quot;}, false&gt;&gt; chooser_toggle;
+    // FIXME halp::accurate&lt;halp::chooser_toggle&lt;"Toggle", {"Falsey", "Truey"}, false&gt;&gt; chooser_toggle;
 
     //! Allows to edit some text.
-    halp::accurate&lt;halp::lineedit&lt;&quot;Line edit&quot;, &quot;Henlo&quot;&gt;&gt; lineedit;
+    halp::accurate&lt;halp::lineedit&lt;"Line edit", "Henlo"&gt;&gt; lineedit;
 
     //! First member of the pair is the text, second is the value.
     //! Defining comboboxes and enumerations is a tiny bit more complicated
     struct : halp::sample_accurate_values&lt;halp::combo_pair&lt;float&gt;&gt;
     {
-      halp_meta(name, &quot;Combo box&quot;);
+      halp_meta(name, "Combo box");
       enum widget
       {
         combobox
@@ -2599,7 +2599,7 @@ struct ControlGallery
 
       struct range
       {
-        halp::combo_pair&lt;float&gt; values[3]{{&quot;Foo&quot;, -10.f}, {&quot;Bar&quot;, 5.f}, {&quot;Baz&quot;, 10.f}};
+        halp::combo_pair&lt;float&gt; values[3]{{"Foo", -10.f}, {"Bar", 5.f}, {"Baz", 10.f}};
         int init{1}; // Bar
       };
 
@@ -2609,7 +2609,7 @@ struct ControlGallery
     //! Here value will be the string
     struct : halp::sample_accurate_values&lt;std::string_view&gt;
     {
-      halp_meta(name, &quot;Enum 2&quot;);
+      halp_meta(name, "Enum 2");
       enum widget
       {
         enumeration
@@ -2617,7 +2617,7 @@ struct ControlGallery
 
       struct range
       {
-        std::string_view values[4]{&quot;Roses&quot;, &quot;Red&quot;, &quot;Violets&quot;, &quot;Blue&quot;};
+        std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
         int init{1}; // Red
       };
 
@@ -2629,7 +2629,7 @@ struct ControlGallery
     //! is below:
     struct : halp::sample_accurate_values&lt;int&gt;
     {
-      halp_meta(name, &quot;Enum 3&quot;);
+      halp_meta(name, "Enum 3");
       enum widget
       {
         enumeration
@@ -2637,7 +2637,7 @@ struct ControlGallery
 
       struct range
       {
-        std::string_view values[4]{&quot;Roses 2&quot;, &quot;Red 2&quot;, &quot;Violets 2&quot;, &quot;Blue 2&quot;};
+        std::string_view values[4]{"Roses 2", "Red 2", "Violets 2", "Blue 2"};
         int init{1}; // Red
       };
 
@@ -2648,9 +2648,9 @@ struct ControlGallery
     /// //! Same as Enum but won't reject strings that are not part of the list.
     /// struct {
     ///   static const constexpr std::array&lt;const char*, 3&gt; choices() {
-    ///     return {&quot;Square&quot;, &quot;Sine&quot;, &quot;Triangle&quot;};
+    ///     return {"Square", "Sine", "Triangle"};
     ///   };
-    ///   // FIXME meta_control(Control::UnvalidatedEnum, &quot;Unchecked enum&quot;, 1, choices());
+    ///   // FIXME meta_control(Control::UnvalidatedEnum, "Unchecked enum", 1, choices());
     ///   ossia::timed_vec&lt;std::string&gt; values{};
     /// } unvalidated_enumeration;
 
@@ -2668,21 +2668,21 @@ struct ControlGallery
     //! OSC messages can use either the int index or the string.
     struct enum_t
     {
-      halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole)
+      halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole)
     };
     halp::accurate&lt;enum_t&gt; simpler_enumeration;
 
     struct combobox_t
     {
-      halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange)
+      halp__enum_combobox("Color", Blue, Red, Green, Teal, Blue, Black, Orange)
     };
     halp::accurate&lt;combobox_t&gt; simpler_enumeration_in_a_combobox;
 
     //! Crosshair XY chooser
-    halp::accurate&lt;halp::xy_pad_f32&lt;&quot;XY&quot;, halp::range{-5.f, 5.f, 0.f}&gt;&gt; position;
+    halp::accurate&lt;halp::xy_pad_f32&lt;"XY", halp::range{-5.f, 5.f, 0.f}&gt;&gt; position;
 
     //! Color chooser. Colors are in 8-bit RGBA by default.
-    halp::accurate&lt;halp::color_chooser&lt;&quot;Color&quot;&gt;&gt; color;
+    halp::accurate&lt;halp::color_chooser&lt;"Color"&gt;&gt; color;
 
   } inputs;
 
@@ -2701,12 +2701,12 @@ struct ControlGallery
         auto val = input.values.begin()-&gt;second;
         if constexpr(std::is_enum_v&lt;decltype(val)&gt;) {
 #if __has_include(&lt;magic_enum.hpp&gt;)
-          fmt::print(&quot;changed: {} {}&quot;, Control::name(), magic_enum::enum_name(val));
+          fmt::print("changed: {} {}", Control::name(), magic_enum::enum_name(val));
 #else
-          fmt::print(&quot;changed: {} {}&quot;, Control::name(), static_cast&lt;std::underlying_type_t&lt;decltype(val)&gt;&gt;(val));
+          fmt::print("changed: {} {}", Control::name(), static_cast&lt;std::underlying_type_t&lt;decltype(val)&gt;&gt;(val));
 #endif
         } else {
-          fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
+          fmt::print("changed: {} {}", Control::name(), val);
         }
       }
     });
@@ -2722,7 +2722,7 @@ struct ControlGallery
 <p>File ports are currently only supported with the ossia binding.</p>
 <p>They allow to specify that we want the content of a file.
 The host will take care of loading, mmaping, converting, etc... the file in the relevant format - as far as possible outside of DSP / processing threads.</p>
-<p>Every file port should at least conform to the very basic following concept: </p>
+<p>Every file port should at least conform to the very basic following concept:</p>
 <pre><code class="language-cpp">template &lt;typename T&gt;
 concept file = requires(T t) {
   t.filename;
@@ -2746,21 +2746,21 @@ concept file_port = requires(T t) {
 Note that this has an obvious performance cost as the host must check regularly for changes: do not overdo it!</p>
 <h3 id="file-filters"><a class="header" href="#file-filters">File filters</a></h3>
 <p>File ports should prompt the host to open a file chooser.
-One is generally only interested in a specific file type. 
-This can be specified in the following ways: </p>
+One is generally only interested in a specific file type.
+This can be specified in the following ways:</p>
 <h4 id="general-file-filters"><a class="header" href="#general-file-filters">General file filters</a></h4>
 <p>Here, the filter is a string of either of the following formats:</p>
-<pre><code>&quot;*.jpg *.jpeg&quot;
-&quot;JPEG Images (*.jpg *.jpeg)&quot;
+<pre><code>"*.jpg *.jpeg"
+"JPEG Images (*.jpg *.jpeg)"
 </code></pre>
 <pre><code class="language-cpp">struct my_file_port : ... {
   // Currently implemented:
   // Any audio file that can be loaded by the host
-  static consteval auto filters() { return &quot;CSV files (*.csv)&quot;; }
+  static consteval auto filters() { return "CSV files (*.csv)"; }
 };
 </code></pre>
 <h4 id="domain-specific-file-filters"><a class="header" href="#domain-specific-file-filters">Domain-specific file filters</a></h4>
-<p>This is for the case where you want a general kind of media and don't care specifically about the extension: 
+<p>This is for the case where you want a general kind of media and don't care specifically about the extension:
 for instance, for audio files you could have .wav, .aiff, .mp3, etc etc ; it is pointless to try to specify a whole list.
 Instead, the host knows which audio file formats it is able to load and should just be able to show its own audio-specific file chooser.</p>
 <pre><code class="language-cpp">struct my_file_port : ... {
@@ -2786,7 +2786,7 @@ Instead, the host knows which audio file formats it is able to load and should j
 <p>A soundfile input port looks like this:</p>
 <pre><code class="language-cpp">struct
 {
-  static consteval auto name() { return &quot;My soundfile&quot;}
+  static consteval auto name() { return "My soundfile"}
   struct {
     const float** data{}; // The audio channels
     int64_t frames{}; // How many samples are there in a channel
@@ -2797,7 +2797,7 @@ Instead, the host knows which audio file formats it is able to load and should j
 </code></pre>
 <p>A helper type is provided:</p>
 <pre><code class="language-cpp">struct {
-  halp::soundfile_port&lt;&quot;My soundfile&quot;&gt; snd;
+  halp::soundfile_port&lt;"My soundfile"&gt; snd;
 } inputs;
 
 void operator()(int frames) {
@@ -2817,13 +2817,13 @@ void operator()(int frames) {
 }
 </code></pre>
 <p>It allows choosing the sample format in which the samples are loaded:</p>
-<pre><code class="language-cpp">halp::soundfile_port&lt;&quot;My soundfile&quot;, float&gt; snd_float;
-halp::soundfile_port&lt;&quot;My soundfile&quot;, double&gt; snd_double;
+<pre><code class="language-cpp">halp::soundfile_port&lt;"My soundfile", float&gt; snd_float;
+halp::soundfile_port&lt;"My soundfile", double&gt; snd_double;
 </code></pre>
 <h2 id="callback"><a class="header" href="#callback">Callback</a></h2>
 <p>Like other ports, it is possible to get an update callback, by implementing an <code>update</code> method ;
 the simplest way is to make an empty struct which inherits from <code>halp::soundfile</code></p>
-<pre><code class="language-cpp">struct : halp::soundfile_port&lt;&quot;My soundfile&quot;&gt; {
+<pre><code class="language-cpp">struct : halp::soundfile_port&lt;"My soundfile"&gt; {
   void update(MyObject&amp; obj) {
     // This code is called whenever the soundfile has been changed by the user
   }
@@ -2856,7 +2856,7 @@ the simplest way is to make an empty struct which inherits from <code>halp::soun
 
 struct
 {
-  static consteval auto name() { return &quot;My midifile&quot;}
+  static consteval auto name() { return "My midifile"}
   struct {
     // Can be any vector-ish container, but must support push_back
     std::vector&lt;std::vector&lt;midi_event&gt;&gt; tracks; 
@@ -2889,13 +2889,13 @@ struct simple_midi_track_event
 struct {
   // Default event type is simple_midi_track_event for performance and compile times, 
   // but it can be changed through the template arguments
-  halp::midifile_port&lt;&quot;My midifile&quot;, midi_track_event&gt; snd;
+  halp::midifile_port&lt;"My midifile", midi_track_event&gt; snd;
 } inputs;
 </code></pre>
 <h2 id="callback-1"><a class="header" href="#callback-1">Callback</a></h2>
 <p>Like other ports, it is possible to get an update callback, by implementing an <code>update</code> method ;
 the simplest way is to make an empty struct which inherits from <code>halp::midifile_port</code></p>
-<pre><code class="language-cpp">struct : halp::midifile_port&lt;&quot;My midifile&quot;&gt; {
+<pre><code class="language-cpp">struct : halp::midifile_port&lt;"My midifile"&gt; {
   void update(MyObject&amp; obj) {
     // This code is called whenever the midifile has been changed by the user
   }
@@ -2912,7 +2912,7 @@ The file is memory-mapped.</p>
 <p>A file input port can be defined like this:</p>
 <pre><code class="language-cpp">struct
 {
-  static consteval auto name() { return &quot;My file&quot;}
+  static consteval auto name() { return "My file"}
   struct {
     // The file data. 
     // Only requirement for the type is that it can be assigned {data, size}.
@@ -2934,14 +2934,14 @@ The file is memory-mapped.</p>
 </code></pre>
 <p>A helper type is provided:</p>
 <pre><code class="language-cpp">struct {
-  halp::file_port&lt;&quot;My file&quot;&gt; snd;
+  halp::file_port&lt;"My file"&gt; snd;
 } inputs;
 </code></pre>
 <h2 id="callback-2"><a class="header" href="#callback-2">Callback</a></h2>
 <p>Like other ports, it is possible to get an update callback, by implementing an <code>update</code> method ;
 the simplest way is to make an empty struct which inherits from <code>halp::file_port</code></p>
 <pre><code class="language-cpp">// text_file_view (the default) has the text flag, and mmap_file_view has the mmap flag.
-struct : halp::file_port&lt;&quot;My file&quot;, mmap_file_view&gt; {
+struct : halp::file_port&lt;"My file", mmap_file_view&gt; {
   void update(MyObject&amp; obj) {
     // This code is called whenever the file has been changed by the user
   }
@@ -2951,22 +2951,22 @@ struct : halp::file_port&lt;&quot;My file&quot;, mmap_file_view&gt; {
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>For live-coding and similar purposes, it is common to embed a domain-specific programming language 
+<p>For live-coding and similar purposes, it is common to embed a domain-specific programming language
 into a host environment: Faust, math expression languages, Javascript, Lisp, etc...</p>
-<p>If one adds the <code>language</code> metadata to a string port, then the port will be recognized 
-as a programming language code input: hosts are encouraged to show some relevant text editor for code 
+<p>If one adds the <code>language</code> metadata to a string port, then the port will be recognized
+as a programming language code input: hosts are encouraged to show some relevant text editor for code
 instead of a simple line edit.</p>
 <h2 id="example-3"><a class="header" href="#example-3">Example</a></h2>
-<pre><code class="language-cpp">struct : halp::lineedit&lt;&quot;Program&quot;, &quot;&quot;&gt;
+<pre><code class="language-cpp">struct : halp::lineedit&lt;"Program", ""&gt;
 {
-  halp_meta(language, &quot;INTERCAL&quot;)
+  halp_meta(language, "INTERCAL")
 } program;
 </code></pre>
 <p>should show up as a code editor with support for <a href="https://en.wikipedia.org/wiki/INTERCAL">INTERCAL</a> programs.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-user-interfaces"><a class="header" href="#creating-user-interfaces">Creating user interfaces</a></h1>
 <p>We have seen so far that we can specify widgets for our controls. Multiple back-ends may render these widgets in various ways.
 This is already a good start for making user interfaces, but most media systems generally have more specific user interface needs.</p>
-<p>Avendish allows three levels of UI definition: </p>
+<p>Avendish allows three levels of UI definition:</p>
 <ol>
 <li>Automatic: nothing to do, all the widgets corresponding to inputs and outputs of the processor will be generated automatically in a list. This is not pretty but sufficient for many simple cases. For instance, here is how some Avendish plug-ins render in <em>ossia score</em>.</li>
 </ol>
@@ -3001,7 +3001,7 @@ This is already a good start for making user interfaces, but most media systems 
 </code></pre>
 <p>By default, this will do nothing: we have to fill it. <code>ui</code> will be the top-level widget.
 Child widgets can be added simply by defining struct members.
-Containers are defined by adding a <code>layout()</code> function which returns an enum value, which may 
+Containers are defined by adding a <code>layout()</code> function which returns an enum value, which may
 currently be any of the following names:</p>
 <pre><code>hbox,
 vbox,
@@ -3020,7 +3020,7 @@ custom
   static constexpr auto layout() { enum { hbox } d{}; return d; }
   struct {
     static constexpr auto layout() { enum { vbox } d{}; return d; }
-    const char* text = &quot;text&quot;;
+    const char* text = "text";
     decltype(&amp;ins::int_ctl) int_widget = &amp;ins::int_ctl;
   } widgets;
 
@@ -3030,7 +3030,7 @@ custom
     static constexpr auto height() { return 20; }
   } a_spacing;
 
-  const char* text = &quot;text2&quot;;
+  const char* text = "text2";
 };
 </code></pre>
 <p>This defines, conceptually, the following layout:</p>
@@ -3054,15 +3054,15 @@ custom
 static constexpr auto columns() { return 3; }
 </code></pre>
 <p>If <code>columns()</code> is defined, children widget will be laid out in the first row until the column count is reached, then in the second row, etc. until there are no more children items, and conversely if <code>rows()</code> is defined.</p>
-<p>That is, given: </p>
+<p>That is, given:</p>
 <pre><code class="language-cpp">struct {
   static constexpr auto layout() { enum { grid } d{}; return d; }
   static constexpr auto columns() { return 3; }
-  const char* text1 = &quot;A&quot;;
-  const char* text2 = &quot;B&quot;;
-  const char* text3 = &quot;C&quot;;
-  const char* text4 = &quot;D&quot;;
-  const char* text5 = &quot;E&quot;;
+  const char* text1 = "A";
+  const char* text2 = "B";
+  const char* text3 = "C";
+  const char* text4 = "D";
+  const char* text5 = "E";
 } a_grid;
 </code></pre>
 <p>The layout will be:</p>
@@ -3085,15 +3085,15 @@ Each children item should have a <code>name()</code> property which will be show
   static constexpr auto layout() { enum { tabs } d{}; return d; }
   struct {
     static constexpr auto layout() { enum { hbox } d{}; return d; }
-    static constexpr auto name() { return &quot;First tab&quot;; }
-    const char* text1 = &quot;A&quot;;
-    const char* text2 = &quot;B&quot;;
+    static constexpr auto name() { return "First tab"; }
+    const char* text1 = "A";
+    const char* text2 = "B";
   } a_hbox;
   struct {
     static constexpr auto layout() { enum { hbox } d{}; return d; }
-    static constexpr auto name() { return &quot;Second tab&quot;; }
-    const char* text3 = &quot;C&quot;;
-    const char* text4 = &quot;D&quot;;
+    static constexpr auto name() { return "Second tab"; }
+    const char* text3 = "C";
+    const char* text4 = "D";
   } a_vbox;
 } a_tabs;
 </code></pre>
@@ -3110,30 +3110,30 @@ lighter
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
 </code></pre>
 <h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
-<p>In &quot;group&quot; or &quot;container&quot; layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
+<p>In "group" or "container" layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
 <pre><code class="language-cpp">static constexpr auto x() { return 20; }
 static constexpr auto y() { return 20; }
 </code></pre>
 <h3 id="explicit-sizing"><a class="header" href="#explicit-sizing">Explicit sizing</a></h3>
-<p>Containers can be given an explicit (device independent) pixel size with </p>
+<p>Containers can be given an explicit (device independent) pixel size with</p>
 <pre><code class="language-cpp">static constexpr auto width() { return 100; }
 static constexpr auto height() { return 50; }
 </code></pre>
 <p>Otherwise, things will be made to fit in a best-effort way.</p>
 <h2 id="items"><a class="header" href="#items">Items</a></h2>
 <h2 id="text-labels"><a class="header" href="#text-labels">Text labels</a></h2>
-<p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient. </p>
+<p>The simplest item is the text label: simply adding a <code>const char*</code> member is sufficient.</p>
 <h2 id="controls"><a class="header" href="#controls">Controls</a></h2>
-<p>One can add a control (either input or output) simply by adding a member pointer to it: </p>
+<p>One can add a control (either input or output) simply by adding a member pointer to it:</p>
 <pre><code class="language-cpp">struct MyProcessor {
   struct ins {
-    halp::hslider_f32&lt;&quot;Foo&quot;&gt; foo;
+    halp::hslider_f32&lt;"Foo"&gt; foo;
   } inputs;
 
   struct ui
   {
     static constexpr auto layout() { enum { hbox } d{}; return d; }
-    const char* text = &quot;text&quot;;
+    const char* text = "text";
     decltype(&amp;ins::foo) int_widget = &amp;ins::foo;
   };
 };
@@ -3145,7 +3145,7 @@ static constexpr auto height() { return 50; }
 <p>Helpers simplify common tasks ; here, C++20 designated-initializers allow us to have a very pretty API and reduce repetitions:</p>
 <h2 id="widget-helpers-1"><a class="header" href="#widget-helpers-1">Widget helpers</a></h2>
 <pre><code class="language-cpp">halp::label l1{
-    .text = &quot;some long foo&quot;
+    .text = "some long foo"
   , .x = 100
   , .y = 25
 };
@@ -3162,12 +3162,12 @@ halp::item&lt;&amp;ins::foo&gt; widget{
  using enum halp::colors;
  using enum halp::layouts;
  
- halp_meta(name, &quot;Main&quot;)
+ halp_meta(name, "Main")
  halp_meta(layout, hbox)
  halp_meta(background, mid)
 
  struct {
-   halp_meta(name, &quot;Widget&quot;)
+   halp_meta(name, "Widget")
    halp_meta(layout, vbox)
    halp_meta(background, dark)
    halp::item&lt;&amp;ins::int_ctl&gt; widget;
@@ -3231,7 +3231,7 @@ halp::item&lt;&amp;ins::foo&gt; widget{
   double rot{};
 };
 </code></pre>
-<p>This produces the small squares animation here: </p>
+<p>This produces the small squares animation here:</p>
 <p><img src="advanced/images/ui-image.gif" alt="Basic UI" /></p>
 <h2 id="interactive-items-for-controlling-single-ports"><a class="header" href="#interactive-items-for-controlling-single-ports">Interactive items for controlling single ports</a></h2>
 <p>This is <em>even more</em> experimental :)</p>
@@ -3372,11 +3372,11 @@ concept painter = requires(T t) {
                     t.set_fill_color({255, 255, 255, 127});
 
                     // Text:
-                    t.set_font(&quot;Comic Sans&quot;);
+                    t.set_font("Comic Sans");
                     t.set_font_size(10.0); // In points
 
                     //          x , y , text
-                    t.draw_text(0., 0., &quot;Hello World&quot;);
+                    t.draw_text(0., 0., "Hello World");
 
                     // Drawing
                     //          x1, y1, x2 , y2
@@ -3389,7 +3389,7 @@ concept painter = requires(T t) {
                     t.draw_rounded_rect(0., 0., 10., 10., 5.);
 
                     //            x , y , filename
-                    t.draw_pixmap(0., 0., &quot;pixmap&quot;);
+                    t.draw_pixmap(0., 0., "pixmap");
 
                     //             x , y , w  , h
                     t.draw_ellipse(0., 0., 10., 10.);
@@ -3406,13 +3406,13 @@ concept painter = requires(T t) {
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>Some UIs may have more complicated logic that cannot just be represented through 
-widgets changing single controls: pressing a button may trigger the loading of a file, 
+<p>Some UIs may have more complicated logic that cannot just be represented through
+widgets changing single controls: pressing a button may trigger the loading of a file,
 the entire reconfiguration of the UI, etc.</p>
-<p>Thus, the engine may have to be notified of such changes happening in the UI. The way this is 
+<p>Thus, the engine may have to be notified of such changes happening in the UI. The way this is
 generally done is through thread-safe queues exchanging messages.</p>
-<p>An experimental implementation of this has been done in <em>ossia score</em>. 
-Here is a skeleton for how to write such a plug-in: </p>
+<p>An experimental implementation of this has been done in <em>ossia score</em>.
+Here is a skeleton for how to write such a plug-in:</p>
 <pre><code class="language-cpp">using message_to_ui = ...;
 using message_to_engine = ...;
 
@@ -3455,12 +3455,12 @@ struct MyProcessor {
   };
 }
 </code></pre>
-<p>Note that <code>message_to_ui</code> and <code>message_to_engine</code> can be any simple type: </p>
+<p>Note that <code>message_to_ui</code> and <code>message_to_engine</code> can be any simple type:</p>
 <ul>
 <li>Ints, floats, strings, etc.</li>
 <li><code>std::vector</code></li>
 <li><code>std::variant</code></li>
-<li>Any combination and nesting of those in an aggregate struct. </li>
+<li>Any combination and nesting of those in an aggregate struct.</li>
 </ul>
 <p>For example, the following type will automatically be serialized &amp; deserialized:</p>
 <pre><code class="language-cpp">struct ui_to_processor {
@@ -3511,7 +3511,7 @@ struct custom_button
 
     ctx.set_fill_color({0, 0, 0, 255});
     ctx.begin_path();
-    ctx.draw_text(20., 20., fmt::format(&quot;{}&quot;, press_count));
+    ctx.draw_text(20., 20., fmt::format("{}", press_count));
     ctx.fill();
   }
 
@@ -3557,9 +3557,9 @@ struct custom_button
  */
 struct MessageBusUi
 {
-  static consteval auto name() { return &quot;MessageBusUi example&quot;; }
-  static consteval auto c_name() { return &quot;avnd_mbus_ui&quot;; }
-  static consteval auto uuid() { return &quot;4ed8e7fd-a1fa-40a7-bbbe-13ee50044248&quot;; }
+  static consteval auto name() { return "MessageBusUi example"; }
+  static consteval auto c_name() { return "avnd_mbus_ui"; }
+  static consteval auto uuid() { return "4ed8e7fd-a1fa-40a7-bbbe-13ee50044248"; }
 
   struct
   {
@@ -3599,7 +3599,7 @@ struct MessageBusUi
   // 1. Receive a message on the processing thread from the UI
   void process_message(const ui_to_processor&amp; msg)
   {
-    fprintf(stderr, &quot;Got message in processing thread !\n&quot;);
+    fprintf(stderr, "Got message in processing thread !\n");
     send_message(processor_to_ui{.bar = 1.0, .baz{3, 4}});
   }
 
@@ -3630,16 +3630,16 @@ struct MessageBusUi
       void init(ui&amp; ui)
       {
         ui.foo.button.on_pressed = [&amp;] {
-          fprintf(stderr, &quot;Sending message from UI thread !\n&quot;);
+          fprintf(stderr, "Sending message from UI thread !\n");
           this-&gt;send_message(
-              ui_to_processor{.foo = 123, .bar = &quot;hiii&quot;, .x = 0.5f, .y = {1, 3, 5}});
+              ui_to_processor{.foo = 123, .bar = "hiii", .x = 0.5f, .y = {1, 3, 5}});
         };
       }
 
       // 4. Receive a message on the UI thread from the processing thread
       static void process_message(ui&amp; self, processor_to_ui msg)
       {
-        fprintf(stderr, &quot;Got message in ui thread ! %d %d\n&quot;, msg.baz.x, msg.baz.y);
+        fprintf(stderr, "Got message in ui thread ! %d %d\n", msg.baz.x, msg.baz.y);
         self.foo.button.press_count++;
       }
 
@@ -3655,11 +3655,11 @@ struct MessageBusUi
 <p>Supported bindings: all</p>
 </blockquote>
 <p>Many processors may require some kind of common, cross-cutting algorithm or system for their proper operation.</p>
-<p>Processors can optionally declare a template argument, which will contain the implementations of these &quot;cross-cutting concerns&quot; supported by the backend.</p>
-<p>For now, there are two: </p>
+<p>Processors can optionally declare a template argument, which will contain the implementations of these "cross-cutting concerns" supported by the backend.</p>
+<p>For now, there are two:</p>
 <ul>
 <li>A logging system</li>
-<li>An 1D FFT </li>
+<li>An 1D FFT</li>
 </ul>
 <pre><code class="language-cpp">template&lt;typename Conf&gt;
 // Get a compile error if the bindings cannot provide the thing.
@@ -3675,7 +3675,7 @@ struct MyProcessor {
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
-<p>The API is modeled after <a href="https://github.com/gabime/spdlog">spdlog</a> and expects the <a href="https://github.com/fmtlib/fmt">fmt</a> syntax: </p>
+<p>The API is modeled after <a href="https://github.com/gabime/spdlog">spdlog</a> and expects the <a href="https://github.com/fmtlib/fmt">fmt</a> syntax:</p>
 <pre><code class="language-cpp">#pragma once
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
@@ -3695,17 +3695,17 @@ namespace examples::helpers
 template &lt;typename C&gt;
 requires
     // Here we pass template arguments as a primitive form of dependency injection.
-    // Out effect is saying: &quot;I want to be passed configured with a type
-    // holding a &quot;logger_type&quot; typedef
+    // Out effect is saying: "I want to be passed configured with a type
+    // holding a "logger_type" typedef
     // which will be something matching the logger concept.
     halp::has_logger&lt;C&gt;
 struct Logger
 {
   // halp_meta is simply a macro that expands to a consteval function.
   // Hopefully C++ would use a similar syntax for reflexion.
-  halp_meta(name, &quot;Helpers&quot;)
-  halp_meta(c_name, &quot;avnd_helpers_logger&quot;)
-  halp_meta(uuid, &quot;3a646521-48f4-429b-a2b1-d67beb0d65cf&quot;)
+  halp_meta(name, "Helpers")
+  halp_meta(c_name, "avnd_helpers_logger")
+  halp_meta(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
 
   // We store our logger in the class to make things simpler.
   // no_unique_address makes sure that it stays a zero-memory-cost abstraction
@@ -3716,17 +3716,17 @@ struct Logger
   // Ideally metaclasses would make that obsolete.
   void example(float x)
   {
-    logger.trace(&quot;example: {}&quot;, x);
-    logger.info(&quot;example: {}&quot;, x);
-    logger.debug(&quot;example: {}&quot;, x);
-    logger.warn(&quot;example: {}&quot;, x);
-    logger.error(&quot;example: {}&quot;, x);
-    logger.critical(&quot;example: {}&quot;, x);
+    logger.trace("example: {}", x);
+    logger.info("example: {}", x);
+    logger.debug("example: {}", x);
+    logger.warn("example: {}", x);
+    logger.error("example: {}", x);
+    logger.critical("example: {}", x);
   }
 
   struct
   {
-    halp::func_ref&lt;&quot;member&quot;, &amp;Logger&lt;C&gt;::example&gt; my_message;
+    halp::func_ref&lt;"member", &amp;Logger&lt;C&gt;::example&gt; my_message;
   } messages;
 };
 }
@@ -3764,24 +3764,24 @@ namespace examples::helpers
 template &lt;halp::has_fft_1d&lt;double&gt; C&gt;
 struct PeakBand
 {
-  halp_meta(name, &quot;Peak band&quot;)
-  halp_meta(c_name, &quot;avnd_peak_band&quot;)
-  halp_meta(uuid, &quot;5610b62e-ef1f-4a34-abe0-e57816bc44c2&quot;)
+  halp_meta(name, "Peak band")
+  halp_meta(c_name, "avnd_peak_band")
+  halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
 
   struct
   {
-    halp::audio_channel&lt;&quot;In&quot;, double&gt; audio;
+    halp::audio_channel&lt;"In", double&gt; audio;
   } inputs;
 
   struct
   {
-    halp::val_port&lt;&quot;Peak&quot;, double&gt; peak;
-    halp::val_port&lt;&quot;Band&quot;, int&gt; band;
+    halp::val_port&lt;"Peak", double&gt; peak;
+    halp::val_port&lt;"Band", int&gt; band;
   } outputs;
 
   // Instantiate the FFT provided by the configuration.
   // Syntax is a bit ugly as we are already in a template
-  // causing the need for the &quot;::template &quot; thing ; in C++23
+  // causing the need for the "::template " thing ; in C++23
   // it should be possible to omit typename.
   using fft_type = typename C::template fft_type&lt;double&gt;;
   fft_type fft;
@@ -3828,8 +3828,8 @@ struct PeakBand
 <pre><code class="language-cpp">// Our inputs
 struct
 {
-  halp::hslider_f32&lt;&quot;Preamp&quot;&gt; preamp;
-  halp::hslider_f32&lt;&quot;Volume&quot;&gt; volume;
+  halp::hslider_f32&lt;"Preamp"&gt; preamp;
+  halp::hslider_f32&lt;"Volume"&gt; volume;
 } inputs;
 
 // We define the type of our programs, like in the other cases
@@ -3843,34 +3843,34 @@ struct program {
 // Note: it's an array instead of a function because
 // it's apparently hard to deduce N in array&lt;..., N&gt;, unlike in C arrays.
 static constexpr const program programs[]{
-    {.name{&quot;Low gain&quot;}, .parameters{.preamp = {0.3}, .volume = {0.6}}},
-    {.name{&quot;Hi gain&quot;},  .parameters{.preamp = {1.0}, .volume = {1.0}}},
+    {.name{"Low gain"}, .parameters{.preamp = {0.3}, .volume = {0.6}}},
+    {.name{"Hi gain"},  .parameters{.preamp = {1.0}, .volume = {1.0}}},
 };
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sample-accurate-processing"><a class="header" href="#sample-accurate-processing">Sample-accurate processing</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>So far, we saw that control ports / parameters would have a single <code>value</code> member, which as one can expects, 
+<p>So far, we saw that control ports / parameters would have a single <code>value</code> member, which as one can expects,
 stays constant for at least the entire duration of a tick.</p>
 <p>However, some hosts (such as <a href="https://ossia.io">ossia score</a>) are able to give precise timestamps to control values.</p>
 <p>If an algorithm supports this level of precision, it can be expressed by extending value ports in the following way:</p>
 <pre><code class="language-cpp">struct { 
-  static consteval auto name() { return &quot;Control&quot;; } 
+  static consteval auto name() { return "Control"; } 
 
   /* a value_map type */ values;
   float value; 
 } control;
 </code></pre>
 <ul>
-<li><code>value</code> will always carry the &quot;running&quot; value at the beginning of the tick, like before.</li>
-<li><code>values</code> is a type which should be API-wise more-or-less compatible with <code>std::map&lt;int, type_of_value&gt;</code>. </li>
+<li><code>value</code> will always carry the "running" value at the beginning of the tick, like before.</li>
+<li><code>values</code> is a type which should be API-wise more-or-less compatible with <code>std::map&lt;int, type_of_value&gt;</code>.</li>
 </ul>
 <p>For every message received in the tick, <code>values</code> will be set (which means that they can also be empty if no message at all was received on that port).</p>
 <p>There are actually three options for implementing <code>values</code>.</p>
 <ul>
 <li>
-<p>Option A: <code>std::map&lt;int, float&gt; values</code>: the simplest case. Can be slow. A helper which uses <code>boost::small_flat_map</code> is provided: it provides neat performance and won't allocate unless the port is spammed. </p>
+<p>Option A: <code>std::map&lt;int, float&gt; values</code>: the simplest case. Can be slow. A helper which uses <code>boost::small_flat_map</code> is provided: it provides neat performance and won't allocate unless the port is spammed.</p>
 </li>
 <li>
 <p>Option B: <code>std::optional&lt;float&gt;* values;</code>: here, a <code>std::optional&lt;float&gt;</code> array of the same length than audio channels will be allocated. Indexing is the same than for audio samples.</p>
@@ -3885,12 +3885,12 @@ stays constant for at least the entire duration of a tick.</p>
  };
   std::span&lt;timestamped_value&gt; values;
 </code></pre>
-<p>This is the most efficient storage if you expect to receive few values (and also the most &quot;my device has extremely little RAM&quot;-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
+<p>This is the most efficient storage if you expect to receive few values (and also the most "my device has extremely little RAM"-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
 <h1 id="helpers-5"><a class="header" href="#helpers-5">Helpers</a></h1>
 <p>A single helper is provided for now: <code>halp::accurate&lt;T&gt;</code>.</p>
 <p>It can be used like this to wrap an existing control type to add it a sample-accurate storage buffer:</p>
-<pre><code>halp::accurate&lt;halp::val_port&lt;&quot;Out&quot;, float&gt;&gt; my_port;
-halp::accurate&lt;halp::knob_i32&lt;&quot;Blah&quot;, int&gt;&gt; my_widget;
+<pre><code>halp::accurate&lt;halp::val_port&lt;"Out", float&gt;&gt; my_port;
+halp::accurate&lt;halp::knob_i32&lt;"Blah", int&gt;&gt; my_widget;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sample-accurate-processing-example"><a class="header" href="#sample-accurate-processing-example">Sample-accurate processing example</a></h1>
 <pre><code class="language-cpp">#pragma once
@@ -3906,24 +3906,24 @@ namespace examples
 {
 struct SampleAccurateFilterExample
 {
-  halp_meta(name, &quot;My sample-accurate filter&quot;);
-  halp_meta(c_name, &quot;sample_acc_filt&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;&lt;AUTHOR&gt;&quot;);
-  halp_meta(description, &quot;&lt;DESCRIPTION&gt;&quot;);
-  halp_meta(uuid, &quot;43818edd-63de-458b-a6a5-08033cefc051&quot;);
+  halp_meta(name, "My sample-accurate filter");
+  halp_meta(c_name, "sample_acc_filt");
+  halp_meta(category, "Demo");
+  halp_meta(author, "&lt;AUTHOR&gt;");
+  halp_meta(description, "&lt;DESCRIPTION&gt;");
+  halp_meta(uuid, "43818edd-63de-458b-a6a5-08033cefc051");
 
   /**
    * Here we define an input and an output pair.
    */
   struct
   {
-    halp::accurate&lt;halp::val_port&lt;&quot;In&quot;, float&gt;&gt; value;
+    halp::accurate&lt;halp::val_port&lt;"In", float&gt;&gt; value;
   } inputs;
 
   struct
   {
-    halp::accurate&lt;halp::val_port&lt;&quot;Out&quot;, float&gt;&gt; value;
+    halp::accurate&lt;halp::val_port&lt;"Out", float&gt;&gt; value;
   } outputs;
 
   void operator()()
@@ -3945,25 +3945,25 @@ struct SampleAccurateFilterExample
 <p>For instance, consider the following case:</p>
 <pre><code class="language-cpp">struct
 {
-  halp::audio_input_bus&lt;&quot;Main Input&quot;&gt; audio;
+  halp::audio_input_bus&lt;"Main Input"&gt; audio;
 } inputs;
 
 struct
 {
-  halp::audio_output_bus&lt;&quot;Output&quot;&gt; audio;
+  halp::audio_output_bus&lt;"Output"&gt; audio;
 } outputs;
 </code></pre>
 <p>Here, everything is fine: the host can send 1, 2, ... channels to the input, and Avendish will make sure that the audio output matches that.</p>
-<p>Now imagine that we add another bus: </p>
+<p>Now imagine that we add another bus:</p>
 <pre><code class="language-cpp">struct ins
 {
-  halp::audio_input_bus&lt;&quot;Main Input&quot;&gt; audio;
-  halp::audio_input_bus&lt;&quot;Sidechain&quot;&gt; sidechain;
+  halp::audio_input_bus&lt;"Main Input"&gt; audio;
+  halp::audio_input_bus&lt;"Sidechain"&gt; sidechain;
 } inputs;
 
 struct outs
 {
-  halp::audio_output_bus&lt;&quot;Output&quot;&gt; audio;
+  halp::audio_output_bus&lt;"Output"&gt; audio;
 } outputs;
 </code></pre>
 <p>Even if for us, humans, it is reasonable to assume that there will be as many output channels, as there are in the main input, it is not something that a computer can assume that easily.</p>
@@ -3972,32 +3972,32 @@ struct outs
 <pre><code class="language-cpp">static constexpr auto mimick_channel = &amp;ins::audio;
 </code></pre>
 <p>Taking the member function pointer to an input will allow Avendish to match the channel count at run-time.</p>
-<p>An helper is provided: for instance, in the above case, it would give: </p>
+<p>An helper is provided: for instance, in the above case, it would give:</p>
 <pre><code class="language-cpp">struct ins
 {
-  halp::audio_input_bus&lt;&quot;Main Input&quot;&gt; audio;
-  halp::audio_input_bus&lt;&quot;Sidechain&quot;&gt; sidechain;
+  halp::audio_input_bus&lt;"Main Input"&gt; audio;
+  halp::audio_input_bus&lt;"Sidechain"&gt; sidechain;
 } inputs;
 
 struct outs
 {
-  halp::mimic_audio_bus&lt;&quot;Output&quot;, &amp;ins::audio&gt; audio;
+  halp::mimic_audio_bus&lt;"Output", &amp;ins::audio&gt; audio;
 } outputs;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="workers"><a class="header" href="#workers">Workers</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>It is relatively common to require to perform some long-running work in a separate thread: 
+<p>It is relatively common to require to perform some long-running work in a separate thread:
 processing samples, etc.</p>
 <p>Avendish provides two APIs for doing this: a general one, and a simpler one for the specific case of pre-processing
 the data of a port (for instance when a file is loaded).</p>
 <p>The general idea is that the processor code sends a request to the worker with some data.
-The host processes the request in a thread. This returns a function which is then called back 
+The host processes the request in a thread. This returns a function which is then called back
 onto the processor, to update its state with the result of the computations.</p>
 <h2 id="general-worker-api-usage"><a class="header" href="#general-worker-api-usage">General worker API Usage</a></h2>
 <p>In the main class, define a <code>worker</code> struct/instance ; the arguments can be anything.
-Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple 
+Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple
 behaviours one can use a std::variant of potential requests.</p>
 <pre><code class="language-cpp">struct MyObject
 {
@@ -4006,7 +4006,7 @@ behaviours one can use a std::variant of potential requests.</p>
     // Called from DSP thread
     std::function&lt;void(int, std::string)&gt; request;
 
-    // &quot;work&quot; is called from a worker thread
+    // "work" is called from a worker thread
     static std::function&lt;void(MyObject&amp;)&gt; work(int, std::string);
 
     // The std::function object returned by work is called from the DSP thread
@@ -4017,14 +4017,14 @@ behaviours one can use a std::variant of potential requests.</p>
 <pre><code class="language-cpp">// 1. Within the DSP thread:
 void operator()(...) {
   if(something_happened) {
-    this-&gt;worker.request(123, &quot;foo&quot;);
+    this-&gt;worker.request(123, "foo");
   }
 }
 
 // 2. Implement the worker::work function:
 std::function&lt;void(MyObject&amp;)&gt; MyObject::worker::work(int x, std::string foo)
 {
-  // 3. Implement the &quot;threaded&quot; work part:
+  // 3. Implement the "threaded" work part:
   // This is executed in a separate worker thread, slow operations can be done here 
   // safely.
 
@@ -4041,7 +4041,7 @@ std::function&lt;void(MyObject&amp;)&gt; MyObject::worker::work(int x, std::stri
   };
 }
 </code></pre>
-<p>The astute reader will have noticed a fairly bad performance issue in the function above: we 
+<p>The astute reader will have noticed a fairly bad performance issue in the function above: we
 are copying the entire string in the DSP thread! This is very bad.</p>
 <p>How can that be improved?</p>
 <pre><code class="language-cpp">// Sadly does not do anything as the object inside the lambda is const by default, 
@@ -4066,7 +4066,7 @@ return [str = std::move(foo)] (MyObject&amp; obj) mutable {
 </code></pre>
 <p>A complete example is available here: <a href="https://github.com/ossia/score-addon-threedim/blob/main/Threedim/StructureSynth.hpp">https://github.com/ossia/score-addon-threedim/blob/main/Threedim/StructureSynth.hpp</a></p>
 <h2 id="simple-threaded-port-processing-api-usage"><a class="header" href="#simple-threaded-port-processing-api-usage">Simple threaded port-processing API usage</a></h2>
-<p>This API is a &quot;simplified&quot; version of the above one for the common case of wanting 
+<p>This API is a "simplified" version of the above one for the common case of wanting
 to pre-process some data which was loaded from the hard drive.</p>
 <p>It is accessed by adding the following to a port:</p>
 <pre><code class="language-cpp">struct : my_file_port {
@@ -4085,7 +4085,7 @@ to pre-process some data which was loaded from the hard drive.</p>
 </code></pre>
 <p>A complete example is available here: <a href="https://github.com/ossia/score-addon-threedim/blob/main/Threedim/ObjLoader.hpp">https://github.com/ossia/score-addon-threedim/blob/main/Threedim/ObjLoader.hpp</a></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configuration-with-cmake"><a class="header" href="#configuration-with-cmake">Configuration with CMake</a></h1>
-<p>So far, the &quot;building&quot; side of things has been left under the carpet.</p>
+<p>So far, the "building" side of things has been left under the carpet.</p>
 <p>It is actually not very complicated.</p>
 <p>We have:</p>
 <ul>
@@ -4093,7 +4093,7 @@ to pre-process some data which was loaded from the hard drive.</p>
 <li>A binding for which we want to build this processor, for instance a Python or VST3 binding.</li>
 </ul>
 <p>What CMake does is that it generates a small <code>.cpp</code> file that combines both.</p>
-<p>Here is for instance how it is done for Python: </p>
+<p>Here is for instance how it is done for Python:</p>
 <pre><code class="language-cpp">/* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include &lt;@AVND_MAIN_FILE@&gt;
@@ -4106,9 +4106,9 @@ PYBIND11_MODULE(py@AVND_C_NAME@, m)
   static const python::processor&lt; type &gt; instance{m};
 }
 </code></pre>
-<p>Here, <code>AVND_MAIN_FILE</code>, <code>AVND_C_NAME</code> and <code>AVND_MAIN_CLASS</code> are options that are passed to CMake. 
+<p>Here, <code>AVND_MAIN_FILE</code>, <code>AVND_C_NAME</code> and <code>AVND_MAIN_CLASS</code> are options that are passed to CMake.
 For an actual processor though, it's likely that you would have to write your own entrypoint.</p>
-<p>Here is the Clap entrypoint, which is fairly similar: </p>
+<p>Here is the Clap entrypoint, which is fairly similar:</p>
 <pre><code class="language-cpp">/* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include &lt;@AVND_MAIN_FILE@&gt;
@@ -4171,7 +4171,7 @@ etc...
 )
 </code></pre>
 <h2 id="doing-it-by-hand"><a class="header" href="#doing-it-by-hand">Doing it by hand</a></h2>
-<p>This is not very hard: Avendish is a header-only library, so you just have to add the <code>avendish/include</code> folder to your include path, 
+<p>This is not very hard: Avendish is a header-only library, so you just have to add the <code>avendish/include</code> folder to your include path,
 and the <code>-std=c++20</code> flag to your build-system.</p>
 <blockquote>
 <p>Depending on your compiler, you may also need to add flags such as <code>-fconcepts</code> (GCC &lt;= 9) ; <code>-fcoroutines</code> (GCC &lt;= 11) ; <code>-fcoroutines-ts</code> (Clang &lt;= 14).</p>
@@ -4184,8 +4184,8 @@ and the <code>-std=c++20</code> flag to your build-system.</p>
 </blockquote>
 <p>Finally, we have to wrap our class with the binding.</p>
 <pre><code class="language-cpp">// Defines struct MyProcessor { ... };
-#include &quot;MyProcessor.hpp&quot;
-#include &quot;MyBinding.hpp&quot;
+#include "MyProcessor.hpp"
+#include "MyBinding.hpp"
 // Set up those typedefs to provide services to plug-ins which need it
 struct my_config {
    using logger_type = ...;
@@ -4205,9 +4205,9 @@ int main()
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of &quot;modern GPU pipeline&quot;, 
+<p>The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of "modern GPU pipeline",
 in order to define API-independent GPU-based objects.</p>
-<p>Here are some useful readings to get an idea of the problem space: </p>
+<p>Here are some useful readings to get an idea of the problem space:</p>
 <ul>
 <li><a href="https://alain.xyz/blog/comparison-of-modern-graphics-apis">https://alain.xyz/blog/comparison-of-modern-graphics-apis</a></li>
 <li><a href="https://www.qt.io/blog/qt-quick-on-vulkan-metal-direct3d">https://www.qt.io/blog/qt-quick-on-vulkan-metal-direct3d</a></li>
@@ -4215,11 +4215,11 @@ in order to define API-independent GPU-based objects.</p>
 <li><a href="https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/">https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/</a></li>
 <li><a href="https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/">https://www.o3de.org/docs/atom-guide/dev-guide/rhi/</a></li>
 </ul>
-<p>What we are trying to do is define a declarative RHI (see Qt RHI, NVRHI, Unreal RHI, etc.): we do not want to call any API function 
-in order to preserve independence of the written nodes from the underlyling API: stating that one needs to allocate and upload a buffer prior to executing 
-a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code 
+<p>What we are trying to do is define a declarative RHI (see Qt RHI, NVRHI, Unreal RHI, etc.): we do not want to call any API function
+in order to preserve independence of the written nodes from the underlyling API: stating that one needs to allocate and upload a buffer prior to executing
+a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code
 should be defined in terms of its absolute minimal requirements in order to enable it to work on the widest range of systems possible.</p>
-<p>Just like we have done so far, we provide &quot;helper types&quot; which are entirely optional but can reduce wrist strain :-)
+<p>Just like we have done so far, we provide "helper types" which are entirely optional but can reduce wrist strain :-)
 Bindings have zero dependency on any of the helper types and namespaces (<code>halp</code>, <code>gpp</code>) shown here -- everything depends on the shape of things.</p>
 <h2 id="why-are-we-doing-this"><a class="header" href="#why-are-we-doing-this">Why are we doing this</a></h2>
 <p>To reduce code duplication across projects which define visual plug-ins for media software:</p>
@@ -4230,7 +4230,7 @@ Bindings have zero dependency on any of the helper types and namespaces (<code>h
 <li>Max <a href="https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_jit_ob3dqs.html">jit.gl and OB3D objects</a></li>
 <li>etc...</li>
 </ul>
-<p>which are all about the same thing: processing a fixed set of input and output data on the GPU and exposing this as a data flow node 
+<p>which are all about the same thing: processing a fixed set of input and output data on the GPU and exposing this as a data flow node
 with cute UI controls to the user.</p>
 <h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
 <ul>
@@ -4239,7 +4239,7 @@ with cute UI controls to the user.</p>
 </ul>
 <h2 id="defining-a-primitive-pipeline-ontology"><a class="header" href="#defining-a-primitive-pipeline-ontology">Defining a primitive pipeline ontology</a></h2>
 <p>A GPU pipeline carries much more information than the average audio object, as GPUs are pretty configurable and specialized systems, with various possible qualifications on their inputs and outputs that are unfamiliar to the programmer accustomed to working with a CPU.</p>
-<p>The core of a GPU pipeline is the program that will run on it: a shader. Shaders are in themselves very similar to data-flow objects: they define inputs (often the mesh data, textures, and parameters to control the rendering) and outputs (often the color). </p>
+<p>The core of a GPU pipeline is the program that will run on it: a shader. Shaders are in themselves very similar to data-flow objects: they define inputs (often the mesh data, textures, and parameters to control the rendering) and outputs (often the color).</p>
 <p>The pipeline may have multiple stages: most commonly and in an extremely broad and inaccurate way, the vertex stage positions triangles in the GPU API's coordinate system, and the fragment stage renders these triangles.</p>
 <p>The pipeline has a layout: it is the definition of its inputs and outputs. For instance, such a layout may be:</p>
 <ul>
@@ -4293,8 +4293,8 @@ void main()
   v_color = color;
 }
 </code></pre>
-<p>Once this is done, the outputs of this stage are passed to the fragment shader, which 
-will end up computing the color that is to be shown on screen: </p>
+<p>Once this is done, the outputs of this stage are passed to the fragment shader, which
+will end up computing the color that is to be shown on screen:</p>
 <pre><code class="language-glsl">// Input of the fragment shader ; must be the same name, types and locations
 // than the output of the vertex shader
 layout(location = 0) in vec3 v_color;
@@ -4322,7 +4322,7 @@ void main() {
 }
 </code></pre>
 <p>The main problem is ensuring that the pipeline's layout as used from the C++ code matches the pipeline's layout as declared in the shader ; as every time there is an information duplication in a system, there is the possibility for errors there.</p>
-<p>Here, we have duplication: </p>
+<p>Here, we have duplication:</p>
 <ul>
 <li>Between the outputs of the vertex and the input of the fragment - some drivers and APIs are lenient regarding errors here, others are not.</li>
 <li>In the C++ side, which must have some way to tell the GPU:
@@ -4391,7 +4391,7 @@ void main() {
 <p>is defined through the following C++ code:</p>
 <pre><code class="language-cpp">struct {
   // Name of the variable in the shader
-  static constexpr auto name() { return &quot;v_pos&quot;; }
+  static constexpr auto name() { return "v_pos"; }
 
   // Location
   static constexpr int location() { return 1; }
@@ -4417,7 +4417,7 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 <pre><code class="language-cpp">struct bindings {
   struct { 
     // Name of the variable in the shader
-    static constexpr auto name() { return &quot;my_tex&quot;; }
+    static constexpr auto name() { return "my_tex"; }
   
     // Location
     static constexpr int binding() { return 2; }
@@ -4429,7 +4429,7 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 </code></pre>
 <p>or the helper version:</p>
 <pre><code class="language-cpp">struct bindings {
-  gpp::sampler&lt;&quot;my_tex&quot;, 2&gt;  my_sampler;
+  gpp::sampler&lt;"my_tex", 2&gt;  my_sampler;
 };
 </code></pre>
 <h2 id="defining-uniform-buffers"><a class="header" href="#defining-uniform-buffers">Defining uniform buffers</a></h2>
@@ -4441,18 +4441,18 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 <p>is defined as follows:</p>
 <pre><code class="language-cpp">struct bindings {
   struct custom_ubo {
-    static constexpr auto name() { return &quot;my_params&quot;; }
+    static constexpr auto name() { return "my_params"; }
     static constexpr int binding() { return 2; }
     enum { std140, ubo };
   
     struct {
-      static constexpr auto name() { return &quot;coords&quot;; }
+      static constexpr auto name() { return "coords"; }
       float value[2];
     } coords;
   
     struct
     {
-      static constexpr auto name() { return &quot;foo&quot;; }
+      static constexpr auto name() { return "foo"; }
       float value;
     } foo;
   } ubo;
@@ -4461,17 +4461,17 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 <p>And can be refactored a bit to:</p>
 <pre><code class="language-cpp">struct bindings {
   struct {
-    halp_meta(name, &quot;my_params&quot;);
+    halp_meta(name, "my_params");
     halp_meta(binding, 2);
     halp_flags(std140, ubo);
   
-    gpp::uniform&lt;&quot;coords&quot;, float[2]&gt; coords;
-    gpp::uniform&lt;&quot;foo&quot;, float&gt; foo;
+    gpp::uniform&lt;"coords", float[2]&gt; coords;
+    gpp::uniform&lt;"foo", float&gt; foo;
   } ubo;
 };
 </code></pre>
 <p>Note that this is only used as a way to enable us to synthesize the UBO layout in the shader.
-In particular, depending on the types used, the GLSL variable packing rules are sometimes different than the C++ ones, 
+In particular, depending on the types used, the GLSL variable packing rules are sometimes different than the C++ ones,
 thus we cannot just send this struct as-is to GPU memory. Maybe when metaclasses happen one will be able to write something
 akin to:</p>
 <pre><code class="language-cpp">std140_struct { ... } ubo;
@@ -4487,7 +4487,7 @@ Contributions welcome !</p>
 <p>In general, programming for the GPU involves some level of calling into a graphics API: OpenGL, Vulkan, Metal, or various abstractions on top of them such as the Qt, Unreal, etc... RHIs, libraries such as BGFX, etc.</p>
 <p>Like every non-declarative code, this has the sad side-effect of tying you to said library ; it's pretty hard to migrate to, say, Qt's RHI to pure OpenGL or BGFX.
 Here, we propose a method that aims to keep the algorithms reusable by having them state their needs without making any API calls.</p>
-<p>The API comes with three optional methods that can be implemented in your processor to control behaviour for now: </p>
+<p>The API comes with three optional methods that can be implemented in your processor to control behaviour for now:</p>
 <pre><code class="language-cpp">// Allocates ressources and sends data from the CPU to the GPU.
 // This method *must* be implemented if there are uniforms or samplers that 
 // aren't bound to ports (and the pipeline wouldn't be very useful otherwise)
@@ -4535,7 +4535,7 @@ gpp::co_update update()
 }
 </code></pre>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
-<p>Note that there isn't any direct API call here. Instead, we return user-defined structs: 
+<p>Note that there isn't any direct API call here. Instead, we return user-defined structs:
 for instance, <code>texture_allocation</code> is simply defined like this:</p>
 <pre><code class="language-cpp">struct texture_allocation
 {
@@ -4592,13 +4592,13 @@ using co_update = gpp::generator&lt;update_action, update_handle&gt;;
 </code></pre>
 <p>Where <code>gpp::generator</code> is a type similar to <code>std::generator</code> which is not available yet in C++20 but will be in C++23.</p>
 <h2 id="benefits-of-the-approach"><a class="header" href="#benefits-of-the-approach">Benefits of the approach</a></h2>
-<p>This has interesting benefits besides the separation of concern which is achieved: </p>
+<p>This has interesting benefits besides the separation of concern which is achieved:</p>
 <ol>
 <li>It allows to restrict what kind of call can be done in which function.
-For instance, the Qt RHI forbids uploading data during a draw operation: the coroutine type for <code>draw</code> does not contain 
+For instance, the Qt RHI forbids uploading data during a draw operation: the coroutine type for <code>draw</code> does not contain
 the update commands, which allows to enforce this at compile-time. Yay C++ :-)</li>
 </ol>
-<p>A node which only ever uploads textures could optimize a little bit by defining instead: </p>
+<p>A node which only ever uploads textures could optimize a little bit by defining instead:</p>
 <pre><code class="language-cpp">using update_action = std::variant&lt;texture_allocation, texture_upload, texture_release&gt;;
 using update_handle = std::variant&lt;std::monostate, texture_handle&gt;;
 
@@ -4612,7 +4612,7 @@ using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 <p>This gives some amount of named-parameter-ness for GPU API calls which is also a good way to reduce bugs :-)</p>
 </li>
 <li>
-<p>As no &quot;library&quot; functions are called, the possibility to have ODR issues due to multiple function definitions is less likely, and can trivially be solved by wrapping the entirety of the user-provided code and command definitions in a custom namespace as the namespaces do not matter at all.</p>
+<p>As no "library" functions are called, the possibility to have ODR issues due to multiple function definitions is less likely, and can trivially be solved by wrapping the entirety of the user-provided code and command definitions in a custom namespace as the namespaces do not matter at all.</p>
 </li>
 </ol>
 <h1 id="how-does-it-work-"><a class="header" href="#how-does-it-work-">How does it work ??</a></h1>
@@ -4654,7 +4654,7 @@ using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>Sometimes only very simple fragment shaders are needed.</p>
-<p>In this case, one can omit all the functions and most of the pipeline layout, 
+<p>In this case, one can omit all the functions and most of the pipeline layout,
 and only define for instance an UBO, samplers and a fragment shader.</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;gpp/commands.hpp&gt;
@@ -4667,12 +4667,12 @@ namespace examples
 {
 struct GpuSolidColorExample
 {
-  halp_meta(name, &quot;Solid color&quot;);
-  halp_meta(uuid, &quot;c9a5fd8e-b66e-41ff-8feb-bca2cdab4990&quot;);
-  halp_meta(category, &quot;Visuals&quot;)
-  halp_meta(c_name, &quot;solid_color&quot;)
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;)
-  halp_meta(description, &quot;Render a solid color&quot;)
+  halp_meta(name, "Solid color");
+  halp_meta(uuid, "c9a5fd8e-b66e-41ff-8feb-bca2cdab4990");
+  halp_meta(category, "Visuals")
+  halp_meta(c_name, "solid_color")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Render a solid color")
 
   struct layout
   {
@@ -4693,11 +4693,11 @@ struct GpuSolidColorExample
     {
       struct custom_ubo
       {
-        halp_meta(name, &quot;custom&quot;);
+        halp_meta(name, "custom");
         halp_meta(binding, 0);
         halp_flags(std140, ubo);
 
-        gpp::uniform&lt;&quot;color&quot;, float[4]&gt; col;
+        gpp::uniform&lt;"color", float[4]&gt; col;
       } ubo;
     };
   };
@@ -4706,24 +4706,24 @@ struct GpuSolidColorExample
   {
     // Make this uniform visible as a port
     gpp::uniform_control_port&lt;
-        halp::color_chooser&lt;&quot;Color&quot;&gt;, &amp;layout::bindings::custom_ubo::col&gt;
+        halp::color_chooser&lt;"Color"&gt;, &amp;layout::bindings::custom_ubo::col&gt;
         color;
   } inputs;
 
   struct
   {
     // Make an output port from the fragment output
-    gpp::color_attachment_port&lt;&quot;Color output&quot;, &amp;layout::fragment_output&gt; out;
+    gpp::color_attachment_port&lt;"Color output", &amp;layout::fragment_output&gt; out;
   } outputs;
 
   // Trivial fragment shader
   std::string_view fragment()
   {
-    return R&quot;_(
+    return R"_(
 void main() {
   fragColor = color;
 }
-)_&quot;;
+)_";
   }
 };
 }
@@ -4748,8 +4748,8 @@ namespace examples
 
 struct GpuFilterExample
 {
-  halp_meta(name, &quot;Helpers GPU pipeline&quot;);
-  halp_meta(uuid, &quot;ebe6f07a-5e7f-4cf8-bd2b-e5dc3e22a1f9&quot;);
+  halp_meta(name, "Helpers GPU pipeline");
+  halp_meta(uuid, "ebe6f07a-5e7f-4cf8-bd2b-e5dc3e22a1f9");
 
   // Define the layout of our pipeline in C++ simply through the structure of a struct
   static constexpr struct layout
@@ -4787,16 +4787,16 @@ struct GpuFilterExample
     {
       struct custom_ubo
       {
-        halp_meta(name, &quot;custom&quot;);
+        halp_meta(name, "custom");
         halp_flags(std140, ubo);
 
         static constexpr int binding() { return 0; }
 
-        gpp::uniform&lt;&quot;foo&quot;, float[2]&gt; pad;
-        gpp::uniform&lt;&quot;bar&quot;, float&gt; slider;
+        gpp::uniform&lt;"foo", float[2]&gt; pad;
+        gpp::uniform&lt;"bar", float&gt; slider;
       } ubo;
 
-      gpp::sampler&lt;&quot;tex&quot;, 1&gt; texture_input;
+      gpp::sampler&lt;"tex", 1&gt; texture_input;
     } bindings;
   } lay{};
   using bindings = decltype(layout::bindings);
@@ -4805,37 +4805,37 @@ struct GpuFilterExample
   struct
   {
     // If samplers &amp; buffers are referenced here the GPU side of things
-    // will be automatically allocated as they are expect to come from &quot;outside&quot;
-    gpp::uniform_control_port&lt;halp::hslider_f32&lt;&quot;Alpha&quot;&gt;, &amp;uniforms::slider&gt; bright;
+    // will be automatically allocated as they are expect to come from "outside"
+    gpp::uniform_control_port&lt;halp::hslider_f32&lt;"Alpha"&gt;, &amp;uniforms::slider&gt; bright;
 
     // It's also possible to have purely CPU-side controls to manage e.g. texture sizes, etc...
-    halp::hslider_f32&lt;&quot;Other&quot;&gt; other;
+    halp::hslider_f32&lt;"Other"&gt; other;
   } inputs;
 
   struct
   {
-    gpp::color_attachment_port&lt;&quot;Main out&quot;, &amp;layout::fragment_output::col&gt; fragColor;
+    gpp::color_attachment_port&lt;"Main out", &amp;layout::fragment_output::col&gt; fragColor;
   } outputs;
 
   std::string_view vertex()
   {
-    return R&quot;_(
+    return R"_(
 void main()
 {
   texcoord = v_texcoord;
   gl_Position = vec4(v_position.x / 3., v_position.y / 3, 0.0, 1.);
 }
-)_&quot;;
+)_";
   }
 
   std::string_view fragment()
   {
-    return R&quot;_(
+    return R"_(
 void main()
 {
   fragColor = vec4(texture(tex, texcoord.xy * foo).rgb, bar) ;
 }
-)_&quot;;
+)_";
   }
 
   gpp::co_update update()
@@ -4910,12 +4910,12 @@ struct GpuComputeExample
 {
   // halp_meta is a short hand for defining a static function:
   // #define halp_meta(name, val) static constexpr auto name() return { val; }
-  halp_meta(name, &quot;Average color&quot;);
-  halp_meta(uuid, &quot;03bce361-a2ca-4959-95b4-6aac3b6c07b5&quot;);
-  halp_meta(category, &quot;Visuals/Computer Vision&quot;)
-  halp_meta(c_name, &quot;average_color&quot;)
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;)
-  halp_meta(description, &quot;Extract the average color of an input video feed&quot;)
+  halp_meta(name, "Average color");
+  halp_meta(uuid, "03bce361-a2ca-4959-95b4-6aac3b6c07b5");
+  halp_meta(category, "Visuals/Computer Vision")
+  halp_meta(c_name, "average_color")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Extract the average color of an input video feed")
 
   static constexpr int downscale = 16;
 
@@ -4932,29 +4932,29 @@ struct GpuComputeExample
       // Each binding is a struct member
       struct
       {
-        halp_meta(name, &quot;my_buf&quot;);
+        halp_meta(name, "my_buf");
         halp_meta(binding, 0);
         halp_flags(std140, buffer, load, store);
 
         using color = float[4];
-        gpp::uniform&lt;&quot;result&quot;, color*&gt; values;
+        gpp::uniform&lt;"result", color*&gt; values;
       } my_buf;
 
       // Define the members of our ubos
       struct custom_ubo
       {
-        halp_meta(name, &quot;custom&quot;);
+        halp_meta(name, "custom");
         halp_meta(binding, 1);
         halp_flags(std140, ubo);
 
-        gpp::uniform&lt;&quot;width&quot;, int&gt; width;
-        gpp::uniform&lt;&quot;height&quot;, int&gt; height;
+        gpp::uniform&lt;"width", int&gt; width;
+        gpp::uniform&lt;"height", int&gt; height;
       } ubo;
 
       struct
       {
-        halp_meta(name, &quot;img&quot;)
-        halp_meta(format, &quot;rgba32f&quot;)
+        halp_meta(name, "img")
+        halp_meta(format, "rgba32f")
         halp_meta(binding, 2);
         halp_flags(image2D, readonly);
       } image;
@@ -4969,14 +4969,14 @@ struct GpuComputeExample
   struct
   {
     // Here we use some helper types in the usual fashion
-    gpp::image_input_port&lt;&quot;Image&quot;, &amp;bindings::image&gt; tex;
+    gpp::image_input_port&lt;"Image", &amp;bindings::image&gt; tex;
 
     gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Width&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::width&gt;
+        halp::hslider_i32&lt;"Width", halp::range{1, 1000, 100}&gt;, &amp;uniforms::width&gt;
         width;
 
     gpp::uniform_control_port&lt;
-        halp::hslider_i32&lt;&quot;Height&quot;, halp::range{1, 1000, 100}&gt;, &amp;uniforms::height&gt;
+        halp::hslider_i32&lt;"Height", halp::range{1, 1000, 100}&gt;, &amp;uniforms::height&gt;
         height;
   } inputs;
 
@@ -4985,14 +4985,14 @@ struct GpuComputeExample
   {
     struct
     {
-      halp_meta(name, &quot;color&quot;)
+      halp_meta(name, "color")
       float value[4];
     } color_out;
   } outputs;
 
   std::string_view compute()
   {
-    return R&quot;_(
+    return R"_(
 void main()
 {
   // Note: the algorithm is most likely wrong as I know FUCK ALL
@@ -5020,7 +5020,7 @@ void main()
     result[gl_GlobalInvocationID.y * gl_WorkGroupSize.x + gl_GlobalInvocationID.x] = color;
   }
 }
-)_&quot;;
+)_";
   }
 
   // Allocate and update buffers
@@ -5125,7 +5125,7 @@ private:
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="type-predicates-and-introspection"><a class="header" href="#type-predicates-and-introspection">Type predicates and introspection</a></h1>
 <p>The core enabler of Avendish is the ability to filter struct definitions according to predicates.</p>
-<p>That is, given: </p>
+<p>That is, given:</p>
 <pre><code class="language-cpp">struct Foo {
   int16_t x;
   float y;
@@ -5155,8 +5155,8 @@ fields_instrospection&lt;T&gt;::for_all(
 });
 </code></pre>
 <h3 id="doing-something-for-the-nth-member-of-a-struct-without-an-instance"><a class="header" href="#doing-something-for-the-nth-member-of-a-struct-without-an-instance">Doing something for the Nth member of a struct without an instance</a></h3>
-<p>This function lifts a run-time index into a compile-time value. 
-This is useful for instance for mapping a run-time parameter id coming from a DAW, 
+<p>This function lifts a run-time index into a compile-time value.
+This is useful for instance for mapping a run-time parameter id coming from a DAW,
 into a field, such as when a parameter changes.</p>
 <pre><code class="language-cpp">fields_instrospection&lt;T&gt;::for_nth(
     index,
@@ -5182,18 +5182,18 @@ avnd::index_in_struct(foo, &amp;Foo::z) == 2;
 </code></pre>
 <h2 id="predicate-introspection"><a class="header" href="#predicate-introspection">Predicate introspection</a></h2>
 <p>The type <code>predicate_introspection&lt;T, Pred&gt;</code> allows similar operations on a filtered subset of the struct members.</p>
-<p>For instance, given the predicate: </p>
+<p>For instance, given the predicate:</p>
 <pre><code class="language-cpp">template&lt;typename Field&gt;
 using is_int&lt;Field&gt; = std::integral_constant&lt;bool, std::is_integral_v&lt;Field&gt;&gt;;
 </code></pre>
-<p>then </p>
+<p>then</p>
 <pre><code class="language-cpp">using ints = predicate_introspection&lt;Foo, is_int&gt;;
 </code></pre>
-<p>will allow to query all the <code>int16_t</code> and <code>int32_t</code> members of the struct. 
+<p>will allow to query all the <code>int16_t</code> and <code>int32_t</code> members of the struct.
 This example is assumed for all the cases below.</p>
-<p><code>predicate_introspection&lt;Foo, is_int&gt;</code> will work within this referential: indices will refer to 
-these types. That is, the element 0 will be <code>int16_t</code> and element 1 will be <code>int32_t</code>. 
-Multiple methods are provided to go from and to indices in the complete struct, to indices in the filtered version: </p>
+<p><code>predicate_introspection&lt;Foo, is_int&gt;</code> will work within this referential: indices will refer to
+these types. That is, the element 0 will be <code>int16_t</code> and element 1 will be <code>int32_t</code>.
+Multiple methods are provided to go from and to indices in the complete struct, to indices in the filtered version:</p>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td>member</td><td>x</td><td>y</td><td>z</td><td>txt</td></tr>
 <tr><td>field index</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
@@ -5242,7 +5242,7 @@ bool ok = predicate_instrospection&lt;T, P&gt;::for_all_unless(
 });
 </code></pre>
 <h3 id="doing-something-for-the-nth-member-of-a-struct-without-an-instance-1"><a class="header" href="#doing-something-for-the-nth-member-of-a-struct-without-an-instance-1">Doing something for the Nth member of a struct without an instance</a></h3>
-<p>Two cases are possible depending on whether one has an index in the struct, 
+<p>Two cases are possible depending on whether one has an index in the struct,
 or an index in the filtered part of it:</p>
 <pre><code class="language-cpp">predicate_instrospection&lt;T, P&gt;::for_nth_raw(
     field_index,

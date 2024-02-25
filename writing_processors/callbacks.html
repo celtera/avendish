@@ -183,17 +183,17 @@
 <h2 id="defining-a-callback-with-stdfunction"><a class="header" href="#defining-a-callback-with-stdfunction">Defining a callback with std::function</a></h2>
 <p>This is a first possibility, which is pretty simple:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;bong&quot;; }
+  static consteval auto name() { return "bong"; }
   std::function&lt;void(float)&gt; call;
 }; 
 </code></pre>
-<p>The bindings will make sure that a function is present in <code>call</code>, so that our code can call it: </p>
+<p>The bindings will make sure that a function is present in <code>call</code>, so that our code can call it:</p>
 <pre><code class="language-cpp">struct MyProcessor {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
 
   struct {
     struct {
-      static consteval auto name() { return &quot;overload&quot;; }
+      static consteval auto name() { return "overload"; }
       std::function&lt;void(float)&gt; call;
     } overload; 
   } outputs;
@@ -208,16 +208,16 @@
 };
 </code></pre>
 <p>However, we also want to be able to live without std:: types ; in particular, std::function is a quite complex beast which does type-erasure, potential dynamic memory allocations, and may not be available on all platforms.</p>
-<p>Thus, it is also possible to define callbacks with a simple pair of function-pointer &amp; context: </p>
+<p>Thus, it is also possible to define callbacks with a simple pair of function-pointer &amp; context:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;overload&quot;; }
+  static consteval auto name() { return "overload"; }
   struct {       
     void (*function)(void*, float);
     void* context;
   } call;
 } overload;
 </code></pre>
-<p>The bindings will fill the function and function pointer, so that one can call them: </p>
+<p>The bindings will fill the function and function pointer, so that one can call them:</p>
 <pre><code class="language-cpp">float operator()(float input) 
 {
   if(input &gt; 1.0)
@@ -230,7 +230,7 @@
 </code></pre>
 <p>Of course, this is fairly verbose: thankfully, helpers are provided to make this as simple as <code>std::function</code> but without the overhead (until <code>std::function_view</code> gets implemented):</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;overload&quot;; }
+  static consteval auto name() { return "overload"; }
   halp::basic_callback&lt;void(float)&gt; call;
 } overload;
 </code></pre>

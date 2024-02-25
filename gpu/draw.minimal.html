@@ -178,7 +178,7 @@
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>Sometimes only very simple fragment shaders are needed.</p>
-<p>In this case, one can omit all the functions and most of the pipeline layout, 
+<p>In this case, one can omit all the functions and most of the pipeline layout,
 and only define for instance an UBO, samplers and a fragment shader.</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;gpp/commands.hpp&gt;
@@ -191,12 +191,12 @@ namespace examples
 {
 struct GpuSolidColorExample
 {
-  halp_meta(name, &quot;Solid color&quot;);
-  halp_meta(uuid, &quot;c9a5fd8e-b66e-41ff-8feb-bca2cdab4990&quot;);
-  halp_meta(category, &quot;Visuals&quot;)
-  halp_meta(c_name, &quot;solid_color&quot;)
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;)
-  halp_meta(description, &quot;Render a solid color&quot;)
+  halp_meta(name, "Solid color");
+  halp_meta(uuid, "c9a5fd8e-b66e-41ff-8feb-bca2cdab4990");
+  halp_meta(category, "Visuals")
+  halp_meta(c_name, "solid_color")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Render a solid color")
 
   struct layout
   {
@@ -217,11 +217,11 @@ struct GpuSolidColorExample
     {
       struct custom_ubo
       {
-        halp_meta(name, &quot;custom&quot;);
+        halp_meta(name, "custom");
         halp_meta(binding, 0);
         halp_flags(std140, ubo);
 
-        gpp::uniform&lt;&quot;color&quot;, float[4]&gt; col;
+        gpp::uniform&lt;"color", float[4]&gt; col;
       } ubo;
     };
   };
@@ -230,24 +230,24 @@ struct GpuSolidColorExample
   {
     // Make this uniform visible as a port
     gpp::uniform_control_port&lt;
-        halp::color_chooser&lt;&quot;Color&quot;&gt;, &amp;layout::bindings::custom_ubo::col&gt;
+        halp::color_chooser&lt;"Color"&gt;, &amp;layout::bindings::custom_ubo::col&gt;
         color;
   } inputs;
 
   struct
   {
     // Make an output port from the fragment output
-    gpp::color_attachment_port&lt;&quot;Color output&quot;, &amp;layout::fragment_output&gt; out;
+    gpp::color_attachment_port&lt;"Color output", &amp;layout::fragment_output&gt; out;
   } outputs;
 
   // Trivial fragment shader
   std::string_view fragment()
   {
-    return R&quot;_(
+    return R"_(
 void main() {
   fragColor = color;
 }
-)_&quot;;
+)_";
   }
 };
 }

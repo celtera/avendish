@@ -174,7 +174,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="making-media-objects-with-avendish"><a class="header" href="#making-media-objects-with-avendish">Making media objects with <a href="https://github.com/celtera/avendish">Avendish</a></a></h1>
-<p>This book is two things: a tutorial for the usage of <a href="https://github.com/celtera/avendish">Avendish</a>, intertwined with 
+<p>This book is two things: a tutorial for the usage of <a href="https://github.com/celtera/avendish">Avendish</a>, intertwined with
 an explanation of the concepts and implementation.</p>
 <p>Avendish aims to enable media objects / processors authors to write the processor in the most natural way possible, and then to map this to host softwares or languages with so-called zero-cost abstraction.</p>
 <blockquote>
@@ -183,7 +183,7 @@ an explanation of the concepts and implementation.</p>
 <p>The library is borne from:</p>
 <ul>
 <li>
-<p>The necessity to reduce duplication among media processors in C++. </p>
+<p>The necessity to reduce duplication among media processors in C++.</p>
 </li>
 <li>
 <p>Allowing to express the quintessence of a given media processor.</p>
@@ -196,10 +196,10 @@ an explanation of the concepts and implementation.</p>
 </ul>
 </li>
 <li>
-<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their &quot;canonic&quot; form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
+<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their "canonic" form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
 </li>
 </ul>
-<p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-) </p>
+<p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-)</p>
 <p>In contrast, Avendish processors can be written in a way that does not depend on <em>any</em> existing library, not even the standard C or C++ libraries, which makes them trivially portable to such platforms. The only required thing is a C++ compiler, really!</p>
 <p>Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a <code>string</code> output port in a VST plug-in), in other cases just because by lack of time, but it's on the roadmap! In general features are prototyped implemented in the <a href="https://ossia.io">ossia score</a> back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.</p>
 <h1 id="why-c"><a class="header" href="#why-c">Why C++</a></h1>
@@ -219,38 +219,38 @@ an explanation of the concepts and implementation.</p>
 if one wants, the exact same thing can be written without any macro or pre-existing type ; it is just a tad more verbose.</p>
 <pre><code class="language-cpp">struct MyProcessor {
   // Define generic metadata
-  halp_meta(name, &quot;Gain&quot;);
-  halp_meta(author, &quot;Professional DSP Development, Ltd.&quot;);
-  halp_meta(uuid, &quot;3183d03e-9228-4d50-98e0-e7601dd16a2e&quot;);
+  halp_meta(name, "Gain");
+  halp_meta(author, "Professional DSP Development, Ltd.");
+  halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   // Define the inputs of our processor
   struct ins {
-    halp::dynamic_audio_bus&lt;&quot;Input&quot;, double&gt; audio;
-    halp::knob_f32&lt;&quot;Gain&quot;, halp::range{.min = 0., .max = 1.}&gt; gain;
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    halp::knob_f32&lt;"Gain", halp::range{.min = 0., .max = 1.}&gt; gain;
   } inputs;
 
   // Define the outputs of our processor
   struct outs {
-    halp::dynamic_audio_bus&lt;&quot;Output&quot;, double&gt; audio;
-    halp::hbargraph_f32&lt;&quot;Measure&quot;, halp::range{-1., 1., 0.}&gt; measure;
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
+    halp::hbargraph_f32&lt;"Measure", halp::range{-1., 1., 0.}&gt; measure;
   } outputs;
 
   // Define an optional UI layout
   struct ui {
     using enum halp::colors;
     using enum halp::layouts;
-    halp_meta(name, &quot;Main&quot;)
+    halp_meta(name, "Main")
     halp_meta(layout, hbox)
     halp_meta(background, mid)
 
     struct {
-      halp_meta(name, &quot;Widget&quot;)
+      halp_meta(name, "Widget")
       halp_meta(layout, vbox)
       halp_meta(background, dark)
 
-      const char* label = &quot;Hello !&quot;;
+      const char* label = "Hello !";
       halp::item&lt;&amp;ins::gain&gt; widget;
-      const char* label2 = &quot;Gain control!&quot;;
+      const char* label2 = "Gain control!";
     } widgets;
 
     halp::spacing spc{.width = 20, .height = 20};

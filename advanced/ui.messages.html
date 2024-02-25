@@ -177,13 +177,13 @@
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>Some UIs may have more complicated logic that cannot just be represented through 
-widgets changing single controls: pressing a button may trigger the loading of a file, 
+<p>Some UIs may have more complicated logic that cannot just be represented through
+widgets changing single controls: pressing a button may trigger the loading of a file,
 the entire reconfiguration of the UI, etc.</p>
-<p>Thus, the engine may have to be notified of such changes happening in the UI. The way this is 
+<p>Thus, the engine may have to be notified of such changes happening in the UI. The way this is
 generally done is through thread-safe queues exchanging messages.</p>
-<p>An experimental implementation of this has been done in <em>ossia score</em>. 
-Here is a skeleton for how to write such a plug-in: </p>
+<p>An experimental implementation of this has been done in <em>ossia score</em>.
+Here is a skeleton for how to write such a plug-in:</p>
 <pre><code class="language-cpp">using message_to_ui = ...;
 using message_to_engine = ...;
 
@@ -226,12 +226,12 @@ struct MyProcessor {
   };
 }
 </code></pre>
-<p>Note that <code>message_to_ui</code> and <code>message_to_engine</code> can be any simple type: </p>
+<p>Note that <code>message_to_ui</code> and <code>message_to_engine</code> can be any simple type:</p>
 <ul>
 <li>Ints, floats, strings, etc.</li>
 <li><code>std::vector</code></li>
 <li><code>std::variant</code></li>
-<li>Any combination and nesting of those in an aggregate struct. </li>
+<li>Any combination and nesting of those in an aggregate struct.</li>
 </ul>
 <p>For example, the following type will automatically be serialized &amp; deserialized:</p>
 <pre><code class="language-cpp">struct ui_to_processor {

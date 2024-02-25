@@ -177,26 +177,26 @@
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>So far, we saw that control ports / parameters would have a single <code>value</code> member, which as one can expects, 
+<p>So far, we saw that control ports / parameters would have a single <code>value</code> member, which as one can expects,
 stays constant for at least the entire duration of a tick.</p>
 <p>However, some hosts (such as <a href="https://ossia.io">ossia score</a>) are able to give precise timestamps to control values.</p>
 <p>If an algorithm supports this level of precision, it can be expressed by extending value ports in the following way:</p>
 <pre><code class="language-cpp">struct { 
-  static consteval auto name() { return &quot;Control&quot;; } 
+  static consteval auto name() { return "Control"; } 
 
   /* a value_map type */ values;
   float value; 
 } control;
 </code></pre>
 <ul>
-<li><code>value</code> will always carry the &quot;running&quot; value at the beginning of the tick, like before.</li>
-<li><code>values</code> is a type which should be API-wise more-or-less compatible with <code>std::map&lt;int, type_of_value&gt;</code>. </li>
+<li><code>value</code> will always carry the "running" value at the beginning of the tick, like before.</li>
+<li><code>values</code> is a type which should be API-wise more-or-less compatible with <code>std::map&lt;int, type_of_value&gt;</code>.</li>
 </ul>
 <p>For every message received in the tick, <code>values</code> will be set (which means that they can also be empty if no message at all was received on that port).</p>
 <p>There are actually three options for implementing <code>values</code>.</p>
 <ul>
 <li>
-<p>Option A: <code>std::map&lt;int, float&gt; values</code>: the simplest case. Can be slow. A helper which uses <code>boost::small_flat_map</code> is provided: it provides neat performance and won't allocate unless the port is spammed. </p>
+<p>Option A: <code>std::map&lt;int, float&gt; values</code>: the simplest case. Can be slow. A helper which uses <code>boost::small_flat_map</code> is provided: it provides neat performance and won't allocate unless the port is spammed.</p>
 </li>
 <li>
 <p>Option B: <code>std::optional&lt;float&gt;* values;</code>: here, a <code>std::optional&lt;float&gt;</code> array of the same length than audio channels will be allocated. Indexing is the same than for audio samples.</p>
@@ -211,12 +211,12 @@ stays constant for at least the entire duration of a tick.</p>
  };
   std::span&lt;timestamped_value&gt; values;
 </code></pre>
-<p>This is the most efficient storage if you expect to receive few values (and also the most &quot;my device has extremely little RAM&quot;-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
+<p>This is the most efficient storage if you expect to receive few values (and also the most "my device has extremely little RAM"-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
 <h1 id="helpers"><a class="header" href="#helpers">Helpers</a></h1>
 <p>A single helper is provided for now: <code>halp::accurate&lt;T&gt;</code>.</p>
 <p>It can be used like this to wrap an existing control type to add it a sample-accurate storage buffer:</p>
-<pre><code>halp::accurate&lt;halp::val_port&lt;&quot;Out&quot;, float&gt;&gt; my_port;
-halp::accurate&lt;halp::knob_i32&lt;&quot;Blah&quot;, int&gt;&gt; my_widget;
+<pre><code>halp::accurate&lt;halp::val_port&lt;"Out", float&gt;&gt; my_port;
+halp::accurate&lt;halp::knob_i32&lt;"Blah", int&gt;&gt; my_widget;
 </code></pre>
 
                     </main>

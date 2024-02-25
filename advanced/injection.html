@@ -178,11 +178,11 @@
 <p>Supported bindings: all</p>
 </blockquote>
 <p>Many processors may require some kind of common, cross-cutting algorithm or system for their proper operation.</p>
-<p>Processors can optionally declare a template argument, which will contain the implementations of these &quot;cross-cutting concerns&quot; supported by the backend.</p>
-<p>For now, there are two: </p>
+<p>Processors can optionally declare a template argument, which will contain the implementations of these "cross-cutting concerns" supported by the backend.</p>
+<p>For now, there are two:</p>
 <ul>
 <li>A logging system</li>
-<li>An 1D FFT </li>
+<li>An 1D FFT</li>
 </ul>
 <pre><code class="language-cpp">template&lt;typename Conf&gt;
 // Get a compile error if the bindings cannot provide the thing.

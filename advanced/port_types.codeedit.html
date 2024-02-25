@@ -177,15 +177,15 @@
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>For live-coding and similar purposes, it is common to embed a domain-specific programming language 
+<p>For live-coding and similar purposes, it is common to embed a domain-specific programming language
 into a host environment: Faust, math expression languages, Javascript, Lisp, etc...</p>
-<p>If one adds the <code>language</code> metadata to a string port, then the port will be recognized 
-as a programming language code input: hosts are encouraged to show some relevant text editor for code 
+<p>If one adds the <code>language</code> metadata to a string port, then the port will be recognized
+as a programming language code input: hosts are encouraged to show some relevant text editor for code
 instead of a simple line edit.</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
-<pre><code class="language-cpp">struct : halp::lineedit&lt;&quot;Program&quot;, &quot;&quot;&gt;
+<pre><code class="language-cpp">struct : halp::lineedit&lt;"Program", ""&gt;
 {
-  halp_meta(language, &quot;INTERCAL&quot;)
+  halp_meta(language, "INTERCAL")
 } program;
 </code></pre>
 <p>should show up as a code editor with support for <a href="https://en.wikipedia.org/wiki/INTERCAL">INTERCAL</a> programs.</p>

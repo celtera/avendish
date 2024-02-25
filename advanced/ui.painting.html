@@ -229,7 +229,7 @@
   double rot{};
 };
 </code></pre>
-<p>This produces the small squares animation here: </p>
+<p>This produces the small squares animation here:</p>
 <p><img src="images/ui-image.gif" alt="Basic UI" /></p>
 <h2 id="interactive-items-for-controlling-single-ports"><a class="header" href="#interactive-items-for-controlling-single-ports">Interactive items for controlling single ports</a></h2>
 <p>This is <em>even more</em> experimental :)</p>
@@ -370,11 +370,11 @@ concept painter = requires(T t) {
                     t.set_fill_color({255, 255, 255, 127});
 
                     // Text:
-                    t.set_font(&quot;Comic Sans&quot;);
+                    t.set_font("Comic Sans");
                     t.set_font_size(10.0); // In points
 
                     //          x , y , text
-                    t.draw_text(0., 0., &quot;Hello World&quot;);
+                    t.draw_text(0., 0., "Hello World");
 
                     // Drawing
                     //          x1, y1, x2 , y2
@@ -387,7 +387,7 @@ concept painter = requires(T t) {
                     t.draw_rounded_rect(0., 0., 10., 10., 5.);
 
                     //            x , y , filename
-                    t.draw_pixmap(0., 0., &quot;pixmap&quot;);
+                    t.draw_pixmap(0., 0., "pixmap");
 
                     //             x , y , w  , h
                     t.draw_ellipse(0., 0., 10., 10.);

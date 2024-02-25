@@ -182,7 +182,7 @@ for instance for adjusting frequencies, as the human hear is more sensitive to a
 <p>We can define custom mapping functions as part of the control, which will define
 how the UI controls shall behave:</p>
 <pre><code class="language-cpp">struct {
-  static consteval auto name() { return &quot;foobar&quot;; }
+  static consteval auto name() { return "foobar"; }
 
   struct mapper {
     static float map(float x) { return std::pow(x, 10.); }
@@ -210,7 +210,7 @@ how the UI controls shall behave:</p>
 <p>Note that for now, mappings are only supported for floating-point sliders and knobs, in ossia.</p>
 <h2 id="with-helpers"><a class="header" href="#with-helpers">With helpers</a></h2>
 <p>A few pre-made mappings are provided: the above could be rewritten as:</p>
-<pre><code class="language-cpp">struct : halp::hslider_f32&lt;&quot;foobar&quot;, halp::range{20., 20000., 100.}&gt; {
+<pre><code class="language-cpp">struct : halp::hslider_f32&lt;"foobar", halp::range{20., 20000., 100.}&gt; {
   using mapper = halp::pow_mapper&lt;10&gt;;
 } foobar;
 </code></pre>

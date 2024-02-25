@@ -184,7 +184,7 @@ The file is memory-mapped.</p>
 <p>A file input port can be defined like this:</p>
 <pre><code class="language-cpp">struct
 {
-  static consteval auto name() { return &quot;My file&quot;}
+  static consteval auto name() { return "My file"}
   struct {
     // The file data. 
     // Only requirement for the type is that it can be assigned {data, size}.
@@ -206,14 +206,14 @@ The file is memory-mapped.</p>
 </code></pre>
 <p>A helper type is provided:</p>
 <pre><code class="language-cpp">struct {
-  halp::file_port&lt;&quot;My file&quot;&gt; snd;
+  halp::file_port&lt;"My file"&gt; snd;
 } inputs;
 </code></pre>
 <h2 id="callback"><a class="header" href="#callback">Callback</a></h2>
 <p>Like other ports, it is possible to get an update callback, by implementing an <code>update</code> method ;
 the simplest way is to make an empty struct which inherits from <code>halp::file_port</code></p>
 <pre><code class="language-cpp">// text_file_view (the default) has the text flag, and mmap_file_view has the mmap flag.
-struct : halp::file_port&lt;&quot;My file&quot;, mmap_file_view&gt; {
+struct : halp::file_port&lt;"My file", mmap_file_view&gt; {
   void update(MyObject&amp; obj) {
     // This code is called whenever the file has been changed by the user
   }

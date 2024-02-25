@@ -177,15 +177,15 @@
 <p>Here is a minimal, self-contained definition of an Avendish processor:</p>
 <pre><code class="language-cpp">import std;
 
-[[name: &quot;Hello World&quot;]]
+[[name: "Hello World"]]
 export struct MyProcessor
 {
   void operator()() { 
-    std::print(&quot;Henlo\n&quot;);
+    std::print("Henlo\n");
   }
 };
 </code></pre>
-<p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those, 
+<p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those,
 and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope !</p>
 <h1 id="getting-started-for-good"><a class="header" href="#getting-started-for-good">Getting started, for good</a></h1>
 <p>Here is a minimal, self-contained definition of an Avendish processor, which works on 2022 compilers:</p>
@@ -194,18 +194,18 @@ and where modules and <code>std::print</code> work consistently across all compi
 
 struct MyProcessor
 {
-  static consteval auto name() { return &quot;Hello World&quot;; }
+  static consteval auto name() { return "Hello World"; }
 
   void operator()() { 
-    printf(&quot;Henlo\n&quot;);
+    printf("Henlo\n");
   }
 };
 </code></pre>
-<p>Yes, it's not much. You may even already have some in your codebase without even being aware of it ! </p>
-<p>Now, you may be used to the usual APIs for making audio plug-ins and start wondering about all the things you are used too and that are missing here: </p>
+<p>Yes, it's not much. You may even already have some in your codebase without even being aware of it !</p>
+<p>Now, you may be used to the usual APIs for making audio plug-ins and start wondering about all the things you are used too and that are missing here:</p>
 <ul>
 <li>Inheritance or shelving function pointers in a C struct.</li>
-<li>Libraries: defining an Avendish processor does not in itself require including anything. 
+<li>Libraries: defining an Avendish processor does not in itself require including anything.
 A central point of the system is that everything can be defined through bare C++ constructs, without requiring the user to import types from a library. A library of helpers is nonetheless provided, to simplify some repetitive cases, but is in no way mandatory ; if anything, I encourage anyone to try to make different helper APIs that fit different coding styles.</li>
 <li>Functions to process audio such as</li>
 </ul>
@@ -230,18 +230,18 @@ struct MyProcessor
   // - consteval is used to enforce that the function can be called at compile-time, 
   //   which may enable optimizations in the backends that will generate plug-ins.
   // - auto because it does not matter much here, we know that this is a string :-)
-  static consteval auto name() { return &quot;Hello World&quot;; }
+  static consteval auto name() { return "Hello World"; }
 
   // This line declares a special function that will allow our processor to be executed as follows: 
   // 
   // MyProcessor the_processor;
   // the_processor();
   //
-  // ^ the second line will call the &quot;operator()&quot; function.
+  // ^ the second line will call the "operator()" function.
   void operator()() 
   { 
     // This one should hopefully be obvious :-)
-    printf(&quot;Henlo\n&quot;);
+    printf("Henlo\n");
   }
 };
 </code></pre>

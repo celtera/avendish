@@ -181,25 +181,25 @@
 <p>For instance, consider the following case:</p>
 <pre><code class="language-cpp">struct
 {
-  halp::audio_input_bus&lt;&quot;Main Input&quot;&gt; audio;
+  halp::audio_input_bus&lt;"Main Input"&gt; audio;
 } inputs;
 
 struct
 {
-  halp::audio_output_bus&lt;&quot;Output&quot;&gt; audio;
+  halp::audio_output_bus&lt;"Output"&gt; audio;
 } outputs;
 </code></pre>
 <p>Here, everything is fine: the host can send 1, 2, ... channels to the input, and Avendish will make sure that the audio output matches that.</p>
-<p>Now imagine that we add another bus: </p>
+<p>Now imagine that we add another bus:</p>
 <pre><code class="language-cpp">struct ins
 {
-  halp::audio_input_bus&lt;&quot;Main Input&quot;&gt; audio;
-  halp::audio_input_bus&lt;&quot;Sidechain&quot;&gt; sidechain;
+  halp::audio_input_bus&lt;"Main Input"&gt; audio;
+  halp::audio_input_bus&lt;"Sidechain"&gt; sidechain;
 } inputs;
 
 struct outs
 {
-  halp::audio_output_bus&lt;&quot;Output&quot;&gt; audio;
+  halp::audio_output_bus&lt;"Output"&gt; audio;
 } outputs;
 </code></pre>
 <p>Even if for us, humans, it is reasonable to assume that there will be as many output channels, as there are in the main input, it is not something that a computer can assume that easily.</p>
@@ -208,16 +208,16 @@ struct outs
 <pre><code class="language-cpp">static constexpr auto mimick_channel = &amp;ins::audio;
 </code></pre>
 <p>Taking the member function pointer to an input will allow Avendish to match the channel count at run-time.</p>
-<p>An helper is provided: for instance, in the above case, it would give: </p>
+<p>An helper is provided: for instance, in the above case, it would give:</p>
 <pre><code class="language-cpp">struct ins
 {
-  halp::audio_input_bus&lt;&quot;Main Input&quot;&gt; audio;
-  halp::audio_input_bus&lt;&quot;Sidechain&quot;&gt; sidechain;
+  halp::audio_input_bus&lt;"Main Input"&gt; audio;
+  halp::audio_input_bus&lt;"Sidechain"&gt; sidechain;
 } inputs;
 
 struct outs
 {
-  halp::mimic_audio_bus&lt;&quot;Output&quot;, &amp;ins::audio&gt; audio;
+  halp::mimic_audio_bus&lt;"Output", &amp;ins::audio&gt; audio;
 } outputs;
 </code></pre>
 

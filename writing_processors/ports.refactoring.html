@@ -176,14 +176,14 @@
                         <h1 id="refactoring"><a class="header" href="#refactoring">Refactoring</a></h1>
 <p>One can see how writing:</p>
 <pre><code class="language-cpp">struct { 
-  static consteval auto name() { return &quot;foobar&quot;; } 
+  static consteval auto name() { return "foobar"; } 
   float value; 
 } foobar;
 </code></pre>
-<p>for 200 controls would get boring quick. In addition, the implementation of our processing function is not as clean as we'd want: in an ideal world, it would be just: </p>
+<p>for 200 controls would get boring quick. In addition, the implementation of our processing function is not as clean as we'd want: in an ideal world, it would be just:</p>
 <pre><code class="language-cpp">void operator()() { outputs.out = inputs.a + inputs.b; }
 </code></pre>
-<p>Thankfully, we can introduce our own custom abstractions without breaking anything: the only thing that matters is that they follow the &quot;shape&quot; of what a parameter is.</p>
+<p>Thankfully, we can introduce our own custom abstractions without breaking anything: the only thing that matters is that they follow the "shape" of what a parameter is.</p>
 <p>This shape is defined (as a first approximation) as follows:</p>
 <pre><code class="language-cpp">template&lt;typename T&gt;
 concept parameter = requires (T t) { t.value = {}; };
@@ -193,7 +193,7 @@ concept parameter = requires (T t) { t.value = {}; };
 <li>It has a member called <code>value</code>.</li>
 <li>This member is assignable with some default value.</li>
 </ul>
-<p>For instance: </p>
+<p>For instance:</p>
 <pre><code class="language-cpp">struct bad_1 {
   const int value;
 }; 
@@ -207,7 +207,7 @@ class bad_3 {
 }; 
 </code></pre>
 <p>are all invalid parameters.</p>
-<p>This can be ensured easily by <a href="https://gcc.godbolt.org/z/c9Ko4ssM8">asking the compiler</a>: </p>
+<p>This can be ensured easily by <a href="https://gcc.godbolt.org/z/c9Ko4ssM8">asking the compiler</a>:</p>
 <pre><code class="language-cpp">static_assert(!parameter&lt;bad_1&gt;);
 static_assert(!parameter&lt;bad_2&gt;);
 static_assert(!parameter&lt;bad_3&gt;);
@@ -228,7 +228,7 @@ struct good_2 {
 template&lt;typename T&gt;
 struct assignable {
   T&amp; operator=(T x) { 
-    printf(&quot;I changed !&quot;);
+    printf("I changed !");
     this-&gt;v = x;
     return this-&gt;v;
   }
@@ -240,7 +240,7 @@ class good_3 {
     assignable&lt;double&gt; value;
 }; 
 </code></pre>
-<p>This can be ensured again by <a href="https://gcc.godbolt.org/z/P7aET4q3z">asking the compiler</a>: </p>
+<p>This can be ensured again by <a href="https://gcc.godbolt.org/z/P7aET4q3z">asking the compiler</a>:</p>
 <pre><code class="language-cpp">static_assert(parameter&lt;good_1&gt;);
 static_assert(parameter&lt;good_2&gt;);
 static_assert(parameter&lt;good_3&gt;);

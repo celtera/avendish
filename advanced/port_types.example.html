@@ -197,54 +197,54 @@ namespace examples
 
 struct ControlGallery
 {
-  halp_meta(name, &quot;Control gallery&quot;);
-  halp_meta(c_name, &quot;control_gallery&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;&lt;AUTHOR&gt;&quot;);
-  halp_meta(description, &quot;&lt;DESCRIPTION&gt;&quot;);
-  halp_meta(uuid, &quot;a9b0e2c6-61e9-45df-a75d-27abf7fb43d7&quot;);
+  halp_meta(name, "Control gallery");
+  halp_meta(c_name, "control_gallery");
+  halp_meta(category, "Demo");
+  halp_meta(author, "&lt;AUTHOR&gt;");
+  halp_meta(description, "&lt;DESCRIPTION&gt;");
+  halp_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
   struct
   {
     //! Buttons are level-triggers: true as long as the button is pressed
-    halp::accurate&lt;halp::maintained_button&lt;&quot;Press me ! (Button)&quot;&gt;&gt; button;
+    halp::accurate&lt;halp::maintained_button&lt;"Press me ! (Button)"&gt;&gt; button;
 
     //! In contrast, impulses are edge-triggers: there is only a value at the moment of the click.
-    halp::accurate&lt;halp::impulse_button&lt;&quot;Press me ! (Impulse)&quot;&gt;&gt; impulse_button;
+    halp::accurate&lt;halp::impulse_button&lt;"Press me ! (Impulse)"&gt;&gt; impulse_button;
 
     //! Common widgets
-    halp::accurate&lt;halp::hslider_f32&lt;&quot;Float slider&quot;, halp::range{0., 1., 0.5}&gt;&gt;
+    halp::accurate&lt;halp::hslider_f32&lt;"Float slider", halp::range{0., 1., 0.5}&gt;&gt;
         float_slider;
-    halp::accurate&lt;halp::knob_f32&lt;&quot;Float knob&quot;, halp::range{0., 1., 0.5}&gt;&gt; float_knob;
+    halp::accurate&lt;halp::knob_f32&lt;"Float knob", halp::range{0., 1., 0.5}&gt;&gt; float_knob;
     //// // FIXME
     //// struct {
-    ////   // FIXME meta_control(Control::LogFloatSlider, &quot;Float slider (log)&quot;, 0., 1., 0.5);
+    ////   // FIXME meta_control(Control::LogFloatSlider, "Float slider (log)", 0., 1., 0.5);
     ////   ossia::timed_vec&lt;float&gt; values{};
     //// } log_float_slider;
     ////
 
 #if defined(__clang__) || defined(_MSC_VER)
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104720
-    halp::accurate&lt;halp::hslider_i32&lt;&quot;Int slider&quot;, halp::range{0., 1000., 10.}&gt;&gt;
+    halp::accurate&lt;halp::hslider_i32&lt;"Int slider", halp::range{0., 1000., 10.}&gt;&gt;
         int_slider;
-    halp::accurate&lt;halp::spinbox_i32&lt;&quot;Int spinbox&quot;, halp::range{0, 1000, 10}&gt;&gt;
+    halp::accurate&lt;halp::spinbox_i32&lt;"Int spinbox", halp::range{0, 1000, 10}&gt;&gt;
         int_spinbox;
 #endif
 
     //! Will look like a checkbox
-    halp::accurate&lt;halp::toggle&lt;&quot;Toggle&quot;, halp::toggle_setup{.init = true}&gt;&gt; toggle;
+    halp::accurate&lt;halp::toggle&lt;"Toggle", halp::toggle_setup{.init = true}&gt;&gt; toggle;
 
     //! Same, but allows to choose what is displayed.
-    // FIXME halp::accurate&lt;halp::chooser_toggle&lt;&quot;Toggle&quot;, {&quot;Falsey&quot;, &quot;Truey&quot;}, false&gt;&gt; chooser_toggle;
+    // FIXME halp::accurate&lt;halp::chooser_toggle&lt;"Toggle", {"Falsey", "Truey"}, false&gt;&gt; chooser_toggle;
 
     //! Allows to edit some text.
-    halp::accurate&lt;halp::lineedit&lt;&quot;Line edit&quot;, &quot;Henlo&quot;&gt;&gt; lineedit;
+    halp::accurate&lt;halp::lineedit&lt;"Line edit", "Henlo"&gt;&gt; lineedit;
 
     //! First member of the pair is the text, second is the value.
     //! Defining comboboxes and enumerations is a tiny bit more complicated
     struct : halp::sample_accurate_values&lt;halp::combo_pair&lt;float&gt;&gt;
     {
-      halp_meta(name, &quot;Combo box&quot;);
+      halp_meta(name, "Combo box");
       enum widget
       {
         combobox
@@ -252,7 +252,7 @@ struct ControlGallery
 
       struct range
       {
-        halp::combo_pair&lt;float&gt; values[3]{{&quot;Foo&quot;, -10.f}, {&quot;Bar&quot;, 5.f}, {&quot;Baz&quot;, 10.f}};
+        halp::combo_pair&lt;float&gt; values[3]{{"Foo", -10.f}, {"Bar", 5.f}, {"Baz", 10.f}};
         int init{1}; // Bar
       };
 
@@ -262,7 +262,7 @@ struct ControlGallery
     //! Here value will be the string
     struct : halp::sample_accurate_values&lt;std::string_view&gt;
     {
-      halp_meta(name, &quot;Enum 2&quot;);
+      halp_meta(name, "Enum 2");
       enum widget
       {
         enumeration
@@ -270,7 +270,7 @@ struct ControlGallery
 
       struct range
       {
-        std::string_view values[4]{&quot;Roses&quot;, &quot;Red&quot;, &quot;Violets&quot;, &quot;Blue&quot;};
+        std::string_view values[4]{"Roses", "Red", "Violets", "Blue"};
         int init{1}; // Red
       };
 
@@ -282,7 +282,7 @@ struct ControlGallery
     //! is below:
     struct : halp::sample_accurate_values&lt;int&gt;
     {
-      halp_meta(name, &quot;Enum 3&quot;);
+      halp_meta(name, "Enum 3");
       enum widget
       {
         enumeration
@@ -290,7 +290,7 @@ struct ControlGallery
 
       struct range
       {
-        std::string_view values[4]{&quot;Roses 2&quot;, &quot;Red 2&quot;, &quot;Violets 2&quot;, &quot;Blue 2&quot;};
+        std::string_view values[4]{"Roses 2", "Red 2", "Violets 2", "Blue 2"};
         int init{1}; // Red
       };
 
@@ -301,9 +301,9 @@ struct ControlGallery
     /// //! Same as Enum but won't reject strings that are not part of the list.
     /// struct {
     ///   static const constexpr std::array&lt;const char*, 3&gt; choices() {
-    ///     return {&quot;Square&quot;, &quot;Sine&quot;, &quot;Triangle&quot;};
+    ///     return {"Square", "Sine", "Triangle"};
     ///   };
-    ///   // FIXME meta_control(Control::UnvalidatedEnum, &quot;Unchecked enum&quot;, 1, choices());
+    ///   // FIXME meta_control(Control::UnvalidatedEnum, "Unchecked enum", 1, choices());
     ///   ossia::timed_vec&lt;std::string&gt; values{};
     /// } unvalidated_enumeration;
 
@@ -321,21 +321,21 @@ struct ControlGallery
     //! OSC messages can use either the int index or the string.
     struct enum_t
     {
-      halp__enum(&quot;Simple Enum&quot;, Peg, Square, Peg, Round, Hole)
+      halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole)
     };
     halp::accurate&lt;enum_t&gt; simpler_enumeration;
 
     struct combobox_t
     {
-      halp__enum_combobox(&quot;Color&quot;, Blue, Red, Green, Teal, Blue, Black, Orange)
+      halp__enum_combobox("Color", Blue, Red, Green, Teal, Blue, Black, Orange)
     };
     halp::accurate&lt;combobox_t&gt; simpler_enumeration_in_a_combobox;
 
     //! Crosshair XY chooser
-    halp::accurate&lt;halp::xy_pad_f32&lt;&quot;XY&quot;, halp::range{-5.f, 5.f, 0.f}&gt;&gt; position;
+    halp::accurate&lt;halp::xy_pad_f32&lt;"XY", halp::range{-5.f, 5.f, 0.f}&gt;&gt; position;
 
     //! Color chooser. Colors are in 8-bit RGBA by default.
-    halp::accurate&lt;halp::color_chooser&lt;&quot;Color&quot;&gt;&gt; color;
+    halp::accurate&lt;halp::color_chooser&lt;"Color"&gt;&gt; color;
 
   } inputs;
 
@@ -354,12 +354,12 @@ struct ControlGallery
         auto val = input.values.begin()-&gt;second;
         if constexpr(std::is_enum_v&lt;decltype(val)&gt;) {
 #if __has_include(&lt;magic_enum.hpp&gt;)
-          fmt::print(&quot;changed: {} {}&quot;, Control::name(), magic_enum::enum_name(val));
+          fmt::print("changed: {} {}", Control::name(), magic_enum::enum_name(val));
 #else
-          fmt::print(&quot;changed: {} {}&quot;, Control::name(), static_cast&lt;std::underlying_type_t&lt;decltype(val)&gt;&gt;(val));
+          fmt::print("changed: {} {}", Control::name(), static_cast&lt;std::underlying_type_t&lt;decltype(val)&gt;&gt;(val));
 #endif
         } else {
-          fmt::print(&quot;changed: {} {}&quot;, Control::name(), val);
+          fmt::print("changed: {} {}", Control::name(), val);
         }
       }
     });

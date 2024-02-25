@@ -187,21 +187,21 @@ namespace examples
 {
 struct TextureFilterExample
 {
-  halp_meta(name, &quot;My example texture filter&quot;);
-  halp_meta(c_name, &quot;texture_filt&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;Jean-Michaël Celerier&quot;);
-  halp_meta(description, &quot;Example texture filter&quot;);
-  halp_meta(uuid, &quot;3183d03e-9228-4d50-98e0-e7601dd16a2e&quot;);
+  halp_meta(name, "My example texture filter");
+  halp_meta(c_name, "texture_filt");
+  halp_meta(category, "Demo");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "Example texture filter");
+  halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
 
   struct
   {
-    halp::texture_input&lt;&quot;In&quot;&gt; image;
+    halp::texture_input&lt;"In"&gt; image;
   } inputs;
 
   struct
   {
-    halp::texture_output&lt;&quot;Out&quot;&gt; image;
+    halp::texture_output&lt;"Out"&gt; image;
   } outputs;
 
   // Some initialization can be done in the constructor.

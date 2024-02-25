@@ -185,7 +185,7 @@
 <p>Here is the code of a simple processor, which computes the sum of two numbers.</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
@@ -204,7 +204,7 @@
 <p>Compiling and running this yields for instance a PureData object which can be used like this:</p>
 <p><img src="images/addition.png" alt="Addition" /></p>
 <p>Note that the object respects the usual semantics of PureData: sending a message to the leftmost inlet will trigger the computation. Sending a message to the other inlets will store the value internally but won't trigger the actual computation.</p>
-<p>For some objects, other semantics may make sense: creating an alternative binding to PureData which would implement another behaviour, such as triggering the computation only on &quot;bang&quot; messages, or on any input on any inlet, would be a relatively easy task.</p>
+<p>For some objects, other semantics may make sense: creating an alternative binding to PureData which would implement another behaviour, such as triggering the computation only on "bang" messages, or on any input on any inlet, would be a relatively easy task.</p>
 <p>Let's try in Python:</p>
 <pre><code class="language-py">&gt;&gt;&gt; import pymy_processor
 &gt;&gt;&gt; proc = pymy_processor.Addition()
@@ -215,19 +215,19 @@
 &gt;&gt;&gt; p.output_0
 579.0
 </code></pre>
-<p>Here the semantics follow usual &quot;object&quot; ones. You set some state on the object and call methods on it, which may change this state. </p>
+<p>Here the semantics follow usual "object" ones. You set some state on the object and call methods on it, which may change this state.</p>
 <blockquote>
 <p>One could also make a binding that implements functional semantics, by passing the state of the processor as an immutable object instead. Python is already slow enough, though :p</p>
 </blockquote>
 <h2 id="syntax-explanation"><a class="header" href="#syntax-explanation">Syntax explanation</a></h2>
-<p>Some readers may be surprised by the following syntax: </p>
+<p>Some readers may be surprised by the following syntax:</p>
 <pre><code class="language-cpp">struct { float value; } a;
 </code></pre>
-<p>What it does is declare a variable <code>a</code> whose type is an <em>unnamed</em> structure. 
-Note that this is a distinct concept from <em>anonymous</em> structures: </p>
+<p>What it does is declare a variable <code>a</code> whose type is an <em>unnamed</em> structure.
+Note that this is a distinct concept from <em>anonymous</em> structures:</p>
 <pre><code class="language-cpp">struct { float value; };
 </code></pre>
-<p>which are legal in C but not in C++ (although most relevant compilers accept them), and are mostly useful for implementing unions: </p>
+<p>which are legal in C but not in C++ (although most relevant compilers accept them), and are mostly useful for implementing unions:</p>
 <pre><code class="language-cpp">union vec3 {
   struct { float x, y, z; };
   struct { float r, g, b; };
@@ -239,10 +239,10 @@ v.g = 2.0;
 </code></pre>
 <p>Motivation for using unnamed structures in Avendish is explained afterwards.</p>
 <h2 id="naming-things"><a class="header" href="#naming-things">Naming things</a></h2>
-<p>In an ideal world, what we would have loved is writing the following code: </p>
+<p>In an ideal world, what we would have loved is writing the following code:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
@@ -258,19 +258,19 @@ v.g = 2.0;
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<p>and have our Python processor expose us variables named <code>a</code>, <code>b</code> and <code>out</code>. Sadly, without reflection on names, this is not possible yet. Thus, in the meantime we use structs to embed metadata relative to the ports: </p>
+<p>and have our Python processor expose us variables named <code>a</code>, <code>b</code> and <code>out</code>. Sadly, without reflection on names, this is not possible yet. Thus, in the meantime we use structs to embed metadata relative to the ports:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Addition&quot;; }
+  static consteval auto name() { return "Addition"; }
 
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;a&quot;; } 
+      static consteval auto name() { return "a"; } 
       float value; 
     } a;
     struct { 
-      static consteval auto name() { return &quot;b&quot;; } 
+      static consteval auto name() { return "b"; } 
       float value; 
     } b;
   } inputs;
@@ -278,7 +278,7 @@ v.g = 2.0;
   struct
   {
     struct { 
-      static consteval auto name() { return &quot;out&quot;; } 
+      static consteval auto name() { return "out"; } 
       float value; 
     } out;
   } outputs;
@@ -286,7 +286,7 @@ v.g = 2.0;
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }
 };
 </code></pre>
-<p>Now our Python example is cleaner to use: </p>
+<p>Now our Python example is cleaner to use:</p>
 <pre><code class="language-py">&gt;&gt;&gt; import pymy_processor
 &gt;&gt;&gt; proc = pymy_processor.Addition()
 &gt;&gt;&gt; proc.process()

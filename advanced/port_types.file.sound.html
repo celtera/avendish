@@ -183,7 +183,7 @@
 <p>A soundfile input port looks like this:</p>
 <pre><code class="language-cpp">struct
 {
-  static consteval auto name() { return &quot;My soundfile&quot;}
+  static consteval auto name() { return "My soundfile"}
   struct {
     const float** data{}; // The audio channels
     int64_t frames{}; // How many samples are there in a channel
@@ -194,7 +194,7 @@
 </code></pre>
 <p>A helper type is provided:</p>
 <pre><code class="language-cpp">struct {
-  halp::soundfile_port&lt;&quot;My soundfile&quot;&gt; snd;
+  halp::soundfile_port&lt;"My soundfile"&gt; snd;
 } inputs;
 
 void operator()(int frames) {
@@ -214,13 +214,13 @@ void operator()(int frames) {
 }
 </code></pre>
 <p>It allows choosing the sample format in which the samples are loaded:</p>
-<pre><code class="language-cpp">halp::soundfile_port&lt;&quot;My soundfile&quot;, float&gt; snd_float;
-halp::soundfile_port&lt;&quot;My soundfile&quot;, double&gt; snd_double;
+<pre><code class="language-cpp">halp::soundfile_port&lt;"My soundfile", float&gt; snd_float;
+halp::soundfile_port&lt;"My soundfile", double&gt; snd_double;
 </code></pre>
 <h2 id="callback"><a class="header" href="#callback">Callback</a></h2>
 <p>Like other ports, it is possible to get an update callback, by implementing an <code>update</code> method ;
 the simplest way is to make an empty struct which inherits from <code>halp::soundfile</code></p>
-<pre><code class="language-cpp">struct : halp::soundfile_port&lt;&quot;My soundfile&quot;&gt; {
+<pre><code class="language-cpp">struct : halp::soundfile_port&lt;"My soundfile"&gt; {
   void update(MyObject&amp; obj) {
     // This code is called whenever the soundfile has been changed by the user
   }

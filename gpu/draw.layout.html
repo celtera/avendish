@@ -229,7 +229,7 @@
 <p>is defined through the following C++ code:</p>
 <pre><code class="language-cpp">struct {
   // Name of the variable in the shader
-  static constexpr auto name() { return &quot;v_pos&quot;; }
+  static constexpr auto name() { return "v_pos"; }
 
   // Location
   static constexpr int location() { return 1; }
@@ -255,7 +255,7 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 <pre><code class="language-cpp">struct bindings {
   struct { 
     // Name of the variable in the shader
-    static constexpr auto name() { return &quot;my_tex&quot;; }
+    static constexpr auto name() { return "my_tex"; }
   
     // Location
     static constexpr int binding() { return 2; }
@@ -267,7 +267,7 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 </code></pre>
 <p>or the helper version:</p>
 <pre><code class="language-cpp">struct bindings {
-  gpp::sampler&lt;&quot;my_tex&quot;, 2&gt;  my_sampler;
+  gpp::sampler&lt;"my_tex", 2&gt;  my_sampler;
 };
 </code></pre>
 <h2 id="defining-uniform-buffers"><a class="header" href="#defining-uniform-buffers">Defining uniform buffers</a></h2>
@@ -279,18 +279,18 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 <p>is defined as follows:</p>
 <pre><code class="language-cpp">struct bindings {
   struct custom_ubo {
-    static constexpr auto name() { return &quot;my_params&quot;; }
+    static constexpr auto name() { return "my_params"; }
     static constexpr int binding() { return 2; }
     enum { std140, ubo };
   
     struct {
-      static constexpr auto name() { return &quot;coords&quot;; }
+      static constexpr auto name() { return "coords"; }
       float value[2];
     } coords;
   
     struct
     {
-      static constexpr auto name() { return &quot;foo&quot;; }
+      static constexpr auto name() { return "foo"; }
       float value;
     } foo;
   } ubo;
@@ -299,17 +299,17 @@ They are defined in the <code>bindings</code> section of the <code>layout</code>
 <p>And can be refactored a bit to:</p>
 <pre><code class="language-cpp">struct bindings {
   struct {
-    halp_meta(name, &quot;my_params&quot;);
+    halp_meta(name, "my_params");
     halp_meta(binding, 2);
     halp_flags(std140, ubo);
   
-    gpp::uniform&lt;&quot;coords&quot;, float[2]&gt; coords;
-    gpp::uniform&lt;&quot;foo&quot;, float&gt; foo;
+    gpp::uniform&lt;"coords", float[2]&gt; coords;
+    gpp::uniform&lt;"foo", float&gt; foo;
   } ubo;
 };
 </code></pre>
 <p>Note that this is only used as a way to enable us to synthesize the UBO layout in the shader.
-In particular, depending on the types used, the GLSL variable packing rules are sometimes different than the C++ ones, 
+In particular, depending on the types used, the GLSL variable packing rules are sometimes different than the C++ ones,
 thus we cannot just send this struct as-is to GPU memory. Maybe when metaclasses happen one will be able to write something
 akin to:</p>
 <pre><code class="language-cpp">std140_struct { ... } ubo;

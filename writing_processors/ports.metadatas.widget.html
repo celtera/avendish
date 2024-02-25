@@ -178,10 +178,10 @@
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>Avendish can recognize a few names that will indicate that a widget of a certain type must be created.</p>
-<p>For instance: </p>
+<p>For instance:</p>
 <pre><code class="language-cpp">struct {
   enum { knob };
-  static consteval auto name() { return &quot;foobar&quot;; } 
+  static consteval auto name() { return "foobar"; } 
 
   struct range {
     float min = -1.;
@@ -193,7 +193,7 @@
 } foobar;
 </code></pre>
 <p>Simply adding the enum definition in the struct will allow the bindings to detect it at compile-time, and instantiate an appropriate UI control.</p>
-<p>The following widget names are currently recognized: </p>
+<p>The following widget names are currently recognized:</p>
 <pre><code>bang, impulse
 button, pushbutton
 toggle, checkbox,

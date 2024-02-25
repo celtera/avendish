@@ -187,24 +187,24 @@ namespace examples
 {
 struct SampleAccurateFilterExample
 {
-  halp_meta(name, &quot;My sample-accurate filter&quot;);
-  halp_meta(c_name, &quot;sample_acc_filt&quot;);
-  halp_meta(category, &quot;Demo&quot;);
-  halp_meta(author, &quot;&lt;AUTHOR&gt;&quot;);
-  halp_meta(description, &quot;&lt;DESCRIPTION&gt;&quot;);
-  halp_meta(uuid, &quot;43818edd-63de-458b-a6a5-08033cefc051&quot;);
+  halp_meta(name, "My sample-accurate filter");
+  halp_meta(c_name, "sample_acc_filt");
+  halp_meta(category, "Demo");
+  halp_meta(author, "&lt;AUTHOR&gt;");
+  halp_meta(description, "&lt;DESCRIPTION&gt;");
+  halp_meta(uuid, "43818edd-63de-458b-a6a5-08033cefc051");
 
   /**
    * Here we define an input and an output pair.
    */
   struct
   {
-    halp::accurate&lt;halp::val_port&lt;&quot;In&quot;, float&gt;&gt; value;
+    halp::accurate&lt;halp::val_port&lt;"In", float&gt;&gt; value;
   } inputs;
 
   struct
   {
-    halp::accurate&lt;halp::val_port&lt;&quot;Out&quot;, float&gt;&gt; value;
+    halp::accurate&lt;halp::val_port&lt;"Out", float&gt;&gt; value;
   } outputs;
 
   void operator()()

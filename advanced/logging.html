@@ -177,7 +177,7 @@
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
-<p>The API is modeled after <a href="https://github.com/gabime/spdlog">spdlog</a> and expects the <a href="https://github.com/fmtlib/fmt">fmt</a> syntax: </p>
+<p>The API is modeled after <a href="https://github.com/gabime/spdlog">spdlog</a> and expects the <a href="https://github.com/fmtlib/fmt">fmt</a> syntax:</p>
 <pre><code class="language-cpp">#pragma once
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
@@ -197,17 +197,17 @@ namespace examples::helpers
 template &lt;typename C&gt;
 requires
     // Here we pass template arguments as a primitive form of dependency injection.
-    // Out effect is saying: &quot;I want to be passed configured with a type
-    // holding a &quot;logger_type&quot; typedef
+    // Out effect is saying: "I want to be passed configured with a type
+    // holding a "logger_type" typedef
     // which will be something matching the logger concept.
     halp::has_logger&lt;C&gt;
 struct Logger
 {
   // halp_meta is simply a macro that expands to a consteval function.
   // Hopefully C++ would use a similar syntax for reflexion.
-  halp_meta(name, &quot;Helpers&quot;)
-  halp_meta(c_name, &quot;avnd_helpers_logger&quot;)
-  halp_meta(uuid, &quot;3a646521-48f4-429b-a2b1-d67beb0d65cf&quot;)
+  halp_meta(name, "Helpers")
+  halp_meta(c_name, "avnd_helpers_logger")
+  halp_meta(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
 
   // We store our logger in the class to make things simpler.
   // no_unique_address makes sure that it stays a zero-memory-cost abstraction
@@ -218,17 +218,17 @@ struct Logger
   // Ideally metaclasses would make that obsolete.
   void example(float x)
   {
-    logger.trace(&quot;example: {}&quot;, x);
-    logger.info(&quot;example: {}&quot;, x);
-    logger.debug(&quot;example: {}&quot;, x);
-    logger.warn(&quot;example: {}&quot;, x);
-    logger.error(&quot;example: {}&quot;, x);
-    logger.critical(&quot;example: {}&quot;, x);
+    logger.trace("example: {}", x);
+    logger.info("example: {}", x);
+    logger.debug("example: {}", x);
+    logger.warn("example: {}", x);
+    logger.error("example: {}", x);
+    logger.critical("example: {}", x);
   }
 
   struct
   {
-    halp::func_ref&lt;&quot;member&quot;, &amp;Logger&lt;C&gt;::example&gt; my_message;
+    halp::func_ref&lt;"member", &amp;Logger&lt;C&gt;::example&gt; my_message;
   } messages;
 };
 }

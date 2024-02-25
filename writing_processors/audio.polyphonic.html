@@ -177,7 +177,7 @@
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max</p>
 </blockquote>
-<p>There are three special cases: </p>
+<p>There are three special cases:</p>
 <ol>
 <li>Processors with one sample input and one sample output.</li>
 <li>Processors with one channel input and one channel output.</li>
@@ -189,7 +189,7 @@
 <p>Let's consider the following processor:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   struct {
     struct { float value; } gain;
   } inputs;
@@ -204,7 +204,7 @@ private:
   double accumulator{};
 };
 </code></pre>
-<p>We have three different values involved: </p>
+<p>We have three different values involved:</p>
 <ul>
 <li><code>input</code> is the audio sample that is to be processed.</li>
 <li><code>inputs.gain.value</code> is an external control which increases or decreases the distortion.</li>
@@ -215,10 +215,10 @@ private:
 <li>We cannot call <code>operator()</code> of a single instance on multiple channels, as the internal state must stay independent of the channels.</li>
 <li>But now the inputs are duplicated for all instances. If we want to implement a filter bank with thousands of duplicated processors in parallel, this would be a huge waste of memory if they all depend on the same <code>gain</code> value.</li>
 </ul>
-<p>Thus, it is recommended in this case to use the following form: </p>
+<p>Thus, it is recommended in this case to use the following form:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   struct inputs {
       struct { float value; } gain;
   };
@@ -235,16 +235,16 @@ private:
 };
 </code></pre>
 <p>Here, Avendish will instantiate a single <code>inputs</code> array, which will be shared across all polyphony voices, which will likely use less memory and be more performant in case of large amount of parameters &amp; voices.</p>
-<p>Here is what I would term the &quot;canonic&quot; of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:</p>
+<p>Here is what I would term the "canonic" of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
-  static consteval auto name() { return &quot;Distortion&quot;; }
+  static consteval auto name() { return "Distortion"; }
   struct inputs {
-    halp::audio_sample&lt;&quot;In&quot;, double&gt; audio;
-    halp::hslider_f32&lt;&quot;Gain&quot;, halp::range{.min = 0, .max = 100, .init = 1}&gt; gain;
+    halp::audio_sample&lt;"In", double&gt; audio;
+    halp::hslider_f32&lt;"Gain", halp::range{.min = 0, .max = 100, .init = 1}&gt; gain;
   };
   struct outputs { 
-    halp::audio_sample&lt;&quot;Out&quot;, double&gt; audio;
+    halp::audio_sample&lt;"Out", double&gt; audio;
   };
 
   void operator()(const inputs&amp; ins, outputs&amp; outs) 

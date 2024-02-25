@@ -177,11 +177,11 @@
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
-<p>So far the main metadata we saw for our processor is its name: </p>
-<pre><code class="language-cpp">static consteval auto name() { return &quot;Foo&quot;; }
+<p>So far the main metadata we saw for our processor is its name:</p>
+<pre><code class="language-cpp">static consteval auto name() { return "Foo"; }
 </code></pre>
 <p>Or with the helper macro:</p>
-<pre><code class="language-cpp">halp_meta(name, &quot;Foo&quot;)
+<pre><code class="language-cpp">halp_meta(name, "Foo")
 </code></pre>
 <p>There are a few more useful metadatas that can be used and which will be used depending on whether the bindings support exposing them.
 Here is a list in order of importance; it is recommended that strings are used for all of these and that they are filled as much as possible.</p>
@@ -193,7 +193,7 @@ Here is a list in order of importance; it is recommended that strings are used f
 <li><code>vendor</code>: who distributes the plug-in.</li>
 <li><code>product</code>: product name if the plug-in is part of a larger product.</li>
 <li><code>version</code>: a version string, ideally convertible to an integer as some older APIs expect integer versions.</li>
-<li><code>category</code>: a category for the plug-in. &quot;Audio&quot;, &quot;Synth&quot;, &quot;Distortion&quot;, &quot;Chorus&quot;... there's no standard, but one can check for instance the names used <a href="https://lv2plug.in/ns/lv2core">in LV2</a> or the list mentioned by <a href="https://distrho.github.io/DPF/group__PluginMacros.html">DISTRHO</a>.</li>
+<li><code>category</code>: a category for the plug-in. "Audio", "Synth", "Distortion", "Chorus"... there's no standard, but one can check for instance the names used <a href="https://lv2plug.in/ns/lv2core">in LV2</a> or the list mentioned by <a href="https://distrho.github.io/DPF/group__PluginMacros.html">DISTRHO</a>.</li>
 <li><code>copyright</code>: <code>(c) the plug-in authors 2022-xxxx</code></li>
 <li><code>license</code>: an <a href="https://spdx.org/licenses/">SPDX identifier</a> for the license or a link towards a license document</li>
 <li><code>url</code>: URL for the plug-in if any.</li>

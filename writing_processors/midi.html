@@ -182,7 +182,7 @@
 <p>Here is how one specifies unsafe MIDI ports:</p>
 <pre><code class="language-cpp">struct
 {
-  static consteval auto name() { return &quot;MIDI&quot;; }
+  static consteval auto name() { return "MIDI"; }
   struct
   {
     uint8_t bytes[3]{};
@@ -200,12 +200,12 @@ struct midi_message {
 
 struct
 {
-  static consteval auto name() { return &quot;MIDI&quot;; }
+  static consteval auto name() { return "MIDI"; }
   midi_message* midi_messages{};
   std::size_t size{};
 } midi_port;
 </code></pre>
-<p>Here, Avendish bindings will allocate a large enough buffer to store MIDI messages ; this is mainly to enable writing dynamic-allocation-free backends where such a buffer may be allocated statically. </p>
+<p>Here, Avendish bindings will allocate a large enough buffer to store MIDI messages ; this is mainly to enable writing dynamic-allocation-free backends where such a buffer may be allocated statically.</p>
 <p>It is also possible to do this if you don't expect to run your code on Arduinos:</p>
 <pre><code class="language-cpp">struct
 {
@@ -220,9 +220,9 @@ struct
 } midi_port;
 </code></pre>
 <h2 id="helpers"><a class="header" href="#helpers">Helpers</a></h2>
-<p>The library provides helper types which are a good compromise between these two solutions, as they are based on <code>boost::container::small_vector</code>: for small numbers of MIDI messages, there will be no memory allocation, but pathological cases (an host sending a thousand MIDI messages in a single tick) can still be handled without loosing messages. </p>
+<p>The library provides helper types which are a good compromise between these two solutions, as they are based on <code>boost::container::small_vector</code>: for small numbers of MIDI messages, there will be no memory allocation, but pathological cases (an host sending a thousand MIDI messages in a single tick) can still be handled without loosing messages.</p>
 <p>The type is very simple:</p>
-<pre><code class="language-cpp">halp::midi_bus&lt;&quot;In&quot;&gt; midi;
+<pre><code class="language-cpp">halp::midi_bus&lt;"In"&gt; midi;
 </code></pre>
 
                     </main>

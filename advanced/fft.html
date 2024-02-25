@@ -203,24 +203,24 @@ namespace examples::helpers
 template &lt;halp::has_fft_1d&lt;double&gt; C&gt;
 struct PeakBand
 {
-  halp_meta(name, &quot;Peak band&quot;)
-  halp_meta(c_name, &quot;avnd_peak_band&quot;)
-  halp_meta(uuid, &quot;5610b62e-ef1f-4a34-abe0-e57816bc44c2&quot;)
+  halp_meta(name, "Peak band")
+  halp_meta(c_name, "avnd_peak_band")
+  halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
 
   struct
   {
-    halp::audio_channel&lt;&quot;In&quot;, double&gt; audio;
+    halp::audio_channel&lt;"In", double&gt; audio;
   } inputs;
 
   struct
   {
-    halp::val_port&lt;&quot;Peak&quot;, double&gt; peak;
-    halp::val_port&lt;&quot;Band&quot;, int&gt; band;
+    halp::val_port&lt;"Peak", double&gt; peak;
+    halp::val_port&lt;"Band", int&gt; band;
   } outputs;
 
   // Instantiate the FFT provided by the configuration.
   // Syntax is a bit ugly as we are already in a template
-  // causing the need for the &quot;::template &quot; thing ; in C++23
+  // causing the need for the "::template " thing ; in C++23
   // it should be possible to omit typename.
   using fft_type = typename C::template fft_type&lt;double&gt;;
   fft_type fft;
