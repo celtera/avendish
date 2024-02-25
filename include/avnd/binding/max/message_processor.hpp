@@ -236,6 +236,27 @@ struct message_processor
       }
     }
   }
+
+  void get_inlet_description(long index, char *dst)
+  {
+    avnd::input_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
+      if constexpr(avnd::has_description<typename Field::type>) {
+        auto str = avnd::get_description<typename Field::type>();
+        strcpy(dst, str.data());
+      }
+    });
+  }
+
+  void get_outlet_description(long index, char *dst)
+  {
+    avnd::output_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
+      if constexpr(avnd::has_description<typename Field::type>) {
+        auto str = avnd::get_description<typename Field::type>();
+        strcpy(dst, str.data());
+      }
+    });
+  }
+
 };
 
 template <typename T>
@@ -292,6 +313,18 @@ message_processor_metaclass<T>::message_processor_metaclass()
   constexpr auto obj_process_sym
       = +[](instance* obj, t_symbol* value) -> void { obj->process(value); };
 
+  constexpr auto obj_assist
+      = +[](instance* obj, void *b, long msg, long arg, char *dst) -> void {
+    switch(msg) {
+      case 1:
+        obj->get_inlet_description(arg, dst);
+        break;
+      default:
+        obj->get_outlet_description(arg, dst);
+        break;
+    }
+  };
+
   /// Class creation ///
   g_class = class_new(
       avnd::get_c_name<T>().data(), (method)obj_new, (method)obj_free,
@@ -303,6 +336,7 @@ message_processor_metaclass<T>::message_processor_metaclass()
   class_addmethod(g_class, (method)obj_process_sym, "symbol", A_SYM, 0);
   class_addmethod(g_class, (method)obj_process_bang, "bang", A_NOTHING, 0);
   class_addmethod(g_class, (method)obj_process, "anything", A_GIMME, 0);
+  class_addmethod(g_class, (method)obj_assist, "assist", A_CANT, 0);
 
   using attrs = avnd::attribute_input_introspection<T>;
 
