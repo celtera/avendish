@@ -9,9 +9,11 @@ endif()
 if(EXISTS "${AVND_MAXSDK_PATH}/source/c74support/max-includes")
   set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/max-includes")
   set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/msp-includes")
+  set(MAXSDK_JIT_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/c74support/jit-includes")
 elseif(EXISTS "${AVND_MAXSDK_PATH}/c74support/max-includes")
   set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/max-includes")
   set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/msp-includes")
+  set(MAXSDK_JIT_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/jit-includes")
 endif()
 
 if(APPLE)
@@ -29,6 +31,7 @@ string(STRIP "${MAXSDK_LINKER_FLAGS}" MAXSDK_LINKER_FLAGS)
 
 set(MAXSDK_MAX_INCLUDE_DIR  "${MAXSDK_MAX_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_MAX_INCLUDE_DIR")
 set(MAXSDK_MSP_INCLUDE_DIR  "${MAXSDK_MSP_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_MSP_INCLUDE_DIR")
+set(MAXSDK_JIT_INCLUDE_DIR  "${MAXSDK_JIT_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_JIT_INCLUDE_DIR")
 set(MAXSDK_API_LIBRARY  "${MAXSDK_API_LIBRARY}" CACHE INTERNAL "MAXSDK_API_LIBRARY")
 set(MAXSDK_LINKER_FLAGS  "${MAXSDK_LINKER_FLAGS}" CACHE INTERNAL "MAXSDK_LINKER_FLAGS")
 
@@ -47,6 +50,7 @@ target_compile_definitions(
 target_include_directories(maxmsp_commonsyms PRIVATE
     "${MAXSDK_MAX_INCLUDE_DIR}"
     "${MAXSDK_MSP_INCLUDE_DIR}"
+    "${MAXSDK_JIT_INCLUDE_DIR}"
 )
 
 # We only want to export this on Mac
@@ -125,6 +129,7 @@ function(avnd_make_max)
   target_include_directories(${AVND_FX_TARGET} PRIVATE
       "${MAXSDK_MAX_INCLUDE_DIR}"
       "${MAXSDK_MSP_INCLUDE_DIR}"
+      "${MAXSDK_JIT_INCLUDE_DIR}"
   )
 
   target_link_libraries(

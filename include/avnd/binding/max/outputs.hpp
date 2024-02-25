@@ -27,6 +27,10 @@ struct do_process_outlet
   {
     outlet_anything(p, gensym(v.data()), 0, nullptr);
   }
+  void operator()(const std::string& v) const noexcept
+  {
+    outlet_anything(p, gensym(v.data()), 0, nullptr);
+  }
 
   template<typename T>
     requires std::is_aggregate_v<T>
