@@ -594,10 +594,17 @@ void dump_message()
 
 #include <fstream>
 #include <iostream>
-int main()
+int main(int argc, char** argv)
 {
+  if(argc < 2)
   {
-    outfile = fopen("/tmp/build-debugmode-debugsyms-mold-shlib/pd/help.pd", "w");
+    fprintf(stderr, "Usage: generate_pd_help path/to/out_file.pd");
+    return 1;
+  }
+  auto path = argv[1];
+
+  {
+    outfile = fopen(path, "w");
 
     //using type = examples::Lowpass;
     using type = examples::helpers::Messages<halp::basic_logger>;
@@ -611,10 +618,6 @@ int main()
 
     fclose(outfile);
   }
-  ::sync();
-
-  system("cat /tmp/build-debugmode-debugsyms-mold-shlib/pd/help.pd");
-  system("pd /tmp/build-debugmode-debugsyms-mold-shlib/pd/help.pd");
 }
 #else
 int main() { }
