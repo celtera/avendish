@@ -33,6 +33,10 @@ struct to_list
   {
     atom_setsym(&atoms.emplace_back(), gensym(v.data()));
   }
+  void operator()(const std::string& v)  noexcept
+  {
+    atom_setsym(&atoms.emplace_back(), gensym(v.data()));
+  }
   void operator()(const avnd::variant_ish auto& f)  noexcept
   {
     visit(*this, f);
@@ -55,14 +59,6 @@ struct to_list
         f, [this](const auto& v) mutable{
           (*this)(v);
         });
-  }
-
-  void operator()(const avnd::vector_ish auto& f)  noexcept
-  {
-    atoms.reserve(atoms.size() + f.size());
-    for(auto& v : f) {
-      (*this)(v);
-    }
   }
 
   template<typename T, std::size_t N>
