@@ -54,17 +54,25 @@ struct attribute_register<Processor, T>
   template<std::size_t I>
   static t_max_err setter(Processor *x, void*, long ac, t_atom *av)
   {
+    auto& obj = x->implementation.effect;
+    auto& ins = avnd::get_inputs(obj);
+    auto& field = avnd::input_introspection<T>::template field<I>(ins);
     if (ac && av) {
-      auto& obj = x->implementation.effect;
-      auto& ins = avnd::get_inputs(obj);
-      auto& field = avnd::input_introspection<T>::template field<I>(ins);
-
       if(from_atoms{ac, av}(field.value))
       {
         if constexpr(requires { field.update(obj); })
         {
           field.update(obj);
         }
+      }
+    }
+    else
+    {
+      // attribute name without argument: unset it
+      field.value = {};
+      if constexpr(requires { field.update(obj); })
+      {
+        field.update(obj);
       }
     }
     return MAX_ERR_NONE;
