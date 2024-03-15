@@ -37,7 +37,8 @@ enum class widget_type
   time_chooser,
   bargraph,
   range_slider,
-  range_spinbox
+  range_spinbox,
+  multi_slider
 };
 
 enum class slider_orientation
@@ -91,6 +92,8 @@ struct widget_reflection
         return "range_slider";
       case widget_type::range_spinbox:
         return "range_spinbox";
+      case widget_type::multi_slider:
+        return "multi_slider";
     }
   }
   using value_type = T;
@@ -156,6 +159,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::time_chooser; })
   {
     return time_chooser_reflection<float>{slider_orientation::horizontal};
+  }
+  else if constexpr(requires { T::widget::multi_slider; })
+  {
+    return widget_reflection<std::vector<float>>{widget_type::multi_slider};
   }
   else if constexpr(requires { T::widget::hslider; })
   {
