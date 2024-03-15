@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/concepts/field_names.hpp>
 #include <avnd/binding/ossia/ossia_to_curve.hpp>
 #include <avnd/binding/ossia/value.hpp>
 #include <avnd/concepts/generic.hpp>
@@ -1300,9 +1301,14 @@ inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
 template <avnd::enum_ish_parameter Field, typename Val>
 struct enum_from_ossia_visitor
 {
+  Val operator()(const float& v) const noexcept
+  {
+    return (*this)(int(v));
+  }
+
   Val operator()(const int& v) const noexcept
   {
-    constexpr auto range = avnd::get_range<Field>();
+    static constexpr auto range = avnd::get_range<Field>();
     static_assert(std::size(range.values) > 0);
     if constexpr(requires(Val v) { v = range.values[0].second; })
     {
@@ -1323,9 +1329,10 @@ struct enum_from_ossia_visitor
       return static_cast<Val>(v);
     }
   }
+
   Val operator()(const std::string& v) const noexcept
   {
-    constexpr auto range = avnd::get_range<Field>();
+    static constexpr auto range = avnd::get_range<Field>();
     for(int i = 0; i < std::size(range.values); i++)
     {
       if constexpr(requires { v == range.values[i].first; })
@@ -1363,11 +1370,80 @@ inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
 template <avnd::curve_port Field, typename Val>
 inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
 {
+#if AVND_OSSIA_HAS_CURVE
   auto segments = src.template target<std::vector<ossia::value>>();
   if(!segments)
     return;
-
   convert_to_curve{}(dst, *segments);
+#endif
 }
 
+
+
+
+
+template <typename arg_t>
+static constexpr ossia::val_type type_for_arg()
+{
+  if constexpr(std::floating_point<arg_t>)
+  {
+    return ossia::val_type::FLOAT;
+  }
+  else if constexpr(std::integral<arg_t>)
+  {
+    return ossia::val_type::INT;
+  }
+  else if constexpr(std::is_same_v<arg_t, bool>)
+  {
+    return ossia::val_type::BOOL;
+  }
+  else if constexpr(std::is_same_v<arg_t, const char*>)
+  {
+    return ossia::val_type::STRING;
+  }
+  else if constexpr(std::is_same_v<arg_t, std::string_view>)
+  {
+    return ossia::val_type::STRING;
+  }
+  else if constexpr(std::is_same_v<arg_t, std::string>)
+  {
+    return ossia::val_type::STRING;
+  }
+  else if constexpr(std::is_same_v<arg_t, std::array<float, 2>>)
+  {
+    return ossia::val_type::VEC2F;
+  }
+  else if constexpr(std::is_same_v<arg_t, std::array<float, 3>>)
+  {
+    return ossia::val_type::VEC3F;
+  }
+  else if constexpr(std::is_same_v<arg_t, std::array<float, 4>>)
+  {
+    return ossia::val_type::VEC4F;
+  }
+  else if constexpr(avnd::vector_ish<arg_t> || avnd::set_ish<arg_t>)
+  {
+    return ossia::val_type::LIST;
+  }
+  else if constexpr(avnd::map_ish<arg_t>)
+  {
+    return ossia::val_type::LIST;
+  }
+  else if constexpr(avnd::variant_ish<arg_t>)
+  {
+    return ossia::val_type::LIST;
+  }
+  else if constexpr(avnd::optional_ish<arg_t>)
+  {
+    return ossia::val_type::LIST;
+  }
+  else if constexpr(std::is_aggregate_v<arg_t>)
+  {
+    if constexpr(avnd::has_field_names<arg_t>)
+      return ossia::val_type::MAP;
+    else
+      return ossia::val_type::LIST;
+  }
+  return ossia::val_type::IMPULSE;
+}
 }

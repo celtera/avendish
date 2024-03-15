@@ -60,10 +60,7 @@ struct attribute_register<Processor, T>
     if (ac && av) {
       if(from_atoms{ac, av}(field.value))
       {
-        if constexpr(requires { field.update(obj); })
-        {
-          field.update(obj);
-        }
+        if_possible(field.update(obj));
       }
     }
     else

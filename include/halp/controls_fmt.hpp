@@ -19,7 +19,7 @@ struct formatter<halp::combo_pair<T>>
   }
 
   template <typename FormatContext>
-  auto format(const halp::combo_pair<T>& number, FormatContext& ctx)
+  auto format(const halp::combo_pair<T>& number, FormatContext& ctx) const
   {
     return fmt::format_to(ctx.out(), "combo: {}->{}", number.first, number.second);
   }
@@ -35,7 +35,7 @@ struct formatter<halp::xy_type<T>>
   }
 
   template <typename FormatContext>
-  auto format(const halp::xy_type<T>& number, FormatContext& ctx)
+  auto format(const halp::xy_type<T>& number, FormatContext& ctx) const
   {
     return fmt::format_to(ctx.out(), "xy: {}, {}", number.x, number.y);
   }
@@ -51,7 +51,7 @@ struct formatter<halp::color_type>
   }
 
   template <typename FormatContext>
-  auto format(const halp::color_type& number, FormatContext& ctx)
+  auto format(const halp::color_type& number, FormatContext& ctx) const
   {
     return fmt::format_to(
         ctx.out(), "rgba: {}, {}, {}, {}", number.r, number.g, number.b, number.a);
@@ -68,7 +68,7 @@ struct formatter<halp::impulse_type>
   }
 
   template <typename FormatContext>
-  auto format(const halp::impulse_type& number, FormatContext& ctx)
+  auto format(const halp::impulse_type& number, FormatContext& ctx) const
   {
     return fmt::format_to(ctx.out(), "impulse");
   }
@@ -84,7 +84,7 @@ struct formatter<halp::range_slider_value<T>>
   }
 
   template <typename FormatContext>
-  auto format(const halp::range_slider_value<T>& number, FormatContext& ctx)
+  auto format(const halp::range_slider_value<T>& number, FormatContext& ctx) const
   {
     return fmt::format_to(ctx.out(), "range: {} -> {}", number.start, number.end);
   }

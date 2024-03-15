@@ -124,6 +124,13 @@ define_get_property(description, std::string_view, "(description)")
 define_get_property(short_description, std::string_view, "(module)")
 define_get_property(module, std::string_view, "(module)")
 
+template <typename T>
+constexpr std::string_view default_osc_path()
+{
+  return get_name<T>();
+}
+define_get_property(path, std::string_view, default_osc_path<T>())
+
 // FIXME: C++23: constexpr ?
 std::string array_to_string(auto& authors)
 {

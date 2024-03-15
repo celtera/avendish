@@ -27,10 +27,7 @@ inline void update_value(
 {
   if(node.from_ossia_value(field, src, dst, idx))
   {
-    if constexpr(requires { field.update(obj); })
-    {
-      field.update(obj);
-    }
+    if_possible(field.update(obj));
   }
 }
 
@@ -276,10 +273,7 @@ struct process_before_run
 
     ctrl.value = dest_vec;
 
-    if constexpr(requires { ctrl.update(impl); })
-    {
-      ctrl.update(impl);
-    }
+    if_possible(ctrl.update(impl));
   }
 
   template <typename Field, std::size_t Idx>

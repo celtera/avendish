@@ -1,5 +1,7 @@
 #pragma once
 #include <avnd/concepts/curve.hpp>
+#if __has_include(<ossia/editor/curve/curve_segment/easing.hpp>)
+#define AVND_OSSIA_HAS_CURVE 1
 #include <ossia/editor/curve/curve_segment/easing.hpp>
 #include <ossia/editor/curve/curve_segment/easing_helpers.hpp>
 #include <ossia/network/value/value.hpp>
@@ -259,3 +261,5 @@ struct convert_to_curve
 };
 
 }
+
+#endif
