@@ -9,7 +9,7 @@ set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 find_package(Boost QUIET REQUIRED)
 find_package(Threads QUIET)
 find_package(fmt QUIET)
-
+find_package(ossia QUIET)
 
 set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/concepts/all.hpp"

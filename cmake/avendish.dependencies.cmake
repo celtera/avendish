@@ -41,3 +41,20 @@ if(NOT TARGET pantor::inja)
   )
   FetchContent_MakeAvailable(pantor_inja)
 endif()
+
+if(APPLE)
+if(NOT TARGET jthread)
+FetchContent_Declare(
+  jthread
+  GIT_REPOSITORY "https://github.com/StirlingLabs/jthread"
+  GIT_TAG main
+  GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(jthread)
+endif()
+endif()
+
+
+if(NOT TARGET jthread)
+  add_library(jthread INTERFACE)
+endif()
