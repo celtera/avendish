@@ -2,18 +2,18 @@
 
 R"_(
 ColumnLayout {{
-    CheckBox {{
+    Switch {{
       id: control_{0}
       objectName: "control_{0}"
-      checkState: {1} ? Qt.Checked : Qt.Unchecked
-      text: "{2}"
-      Layout.maximumWidth: 200
-      Layout.maximumHeight: 40
-      onCheckStateChanged: _uiHandler.toggleChanged({0}, checkState == Qt.Checked)
+      checked: {1}
+      onCheckedChanged: _uiHandler.toggleChanged({0}, checked)
       Layout.alignment: Qt.AlignHCenter
     }}
-    Layout.maximumHeight: 40
-    Layout.maximumWidth: 220
+    Label {{
+      text: "{2}\n" + _uiHandler.toggleDisplay({0}, control_{0}.checked)
+      horizontalAlignment: Text.AlignHCenter
+      Layout.alignment: Qt.AlignHCenter
+    }}
     Layout.alignment: Qt.AlignVCenter
 }}
 )_"

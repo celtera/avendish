@@ -72,6 +72,23 @@ public:
 
     return res;
   }
+
+  QString toggle_display(int idx, bool value)
+  {
+    QString res;
+
+    avnd::parameter_input_introspection<T>::for_nth_raw(
+        avnd::get_inputs(implementation), idx, [&res, value]<typename C>(C& ctl) {
+          char buf[128] = {0};
+          if constexpr(requires { ctl.display(buf, value); })
+          {
+            ctl.display(buf, value);
+            res = QString::fromUtf8(buf);
+          }
+        });
+
+    return res;
+  }
 };
 
 template <typename T>
@@ -102,10 +119,10 @@ public:
 
     /// Here we generate a QML file content
     // The header
-    append(R"_(import QtQuick 2.15
-import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
-ApplicationWindow {{
+    append(R"_(import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+Window {{
   visible: true
   Item {{ objectName: "mainItem"; anchors.fill: parent
 
@@ -144,7 +161,7 @@ ApplicationWindow {{
     if constexpr(requires {
                    {
                      item
-                     } -> std::convertible_to<std::string_view>;
+                   } -> std::convertible_to<std::string_view>;
                  })
     {
       append(
@@ -268,6 +285,11 @@ ApplicationWindow {{
     toggle_control::changed(*this, idx, value);
   }
   W_SLOT(toggleChanged, (int, bool))
+  QString toggleDisplay(int idx, bool value) noexcept
+  {
+    return toggle_control::display(*this, idx, value);
+  }
+  W_SLOT(toggleDisplay, (int, bool))
 };
 }
 

@@ -17,7 +17,6 @@ ColumnLayout {{
       text: "{5}: " + _uiHandler.floatDisplay({0}, control_{0}.value)
       horizontalAlignment: Text.AlignHCenter
       Layout.alignment: Qt.AlignHCenter
-      color: "black"
     }}
     Layout.maximumHeight: 100
     Layout.alignment: Qt.AlignVCenter

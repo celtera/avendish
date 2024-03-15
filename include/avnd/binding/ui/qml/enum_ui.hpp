@@ -7,7 +7,7 @@ ColumnLayout {{
       objectName: "control_{0}"
       model: [ {1} ]
       currentIndex: {2}
-      Layout.maximumWidth: 80
+      Layout.maximumWidth: 100
       Layout.maximumHeight: 80
       onCurrentIndexChanged: _uiHandler.enumChanged({0}, currentIndex)
       Layout.alignment: Qt.AlignHCenter
@@ -18,7 +18,6 @@ ColumnLayout {{
       Layout.alignment: Qt.AlignHCenter
       Layout.maximumWidth: 80
       Layout.minimumWidth: 80
-      color: "black"
     }}
     Layout.maximumHeight: 100
     Layout.maximumWidth: 100

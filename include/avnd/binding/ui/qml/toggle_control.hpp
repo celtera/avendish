@@ -18,13 +18,24 @@ struct toggle_control
   {
     using T = typename Parent::type;
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(parent.implementation), idx, [value]<typename C>(C& ctl) {
-          if constexpr(avnd::enum_parameter<C>)
-            ctl.value = static_cast<decltype(C::value)>(value);
+        avnd::get_inputs(parent.implementation), idx,
+        [&parent, value]<typename C>(C& ctl) {
+      if constexpr(avnd::bool_parameter<C>)
+      {
+        ctl.value = static_cast<decltype(C::value)>(value);
+        if_possible(ctl.update(parent.implementation));
+      }
         });
   }
 
+  template <typename Parent>
+  QString display(Parent& parent, int idx, bool value)
+  {
+    return parent.toggle_display(idx, value);
+  }
+
   template <typename Parent, avnd::bool_parameter C>
+    requires(!avnd::enum_ish_parameter<C>)
   void create(Parent& parent, C& c, int control_k)
   {
     std::string_view name = value_if_possible(C::name(), else, "Control");

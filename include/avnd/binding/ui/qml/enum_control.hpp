@@ -18,13 +18,17 @@ struct enum_control
   {
     using T = typename Parent::type;
     avnd::parameter_input_introspection<T>::for_nth_raw(
-        avnd::get_inputs(parent.implementation), idx, [value]<typename C>(C& ctl) {
-          if constexpr(avnd::enum_parameter<C>)
-            ctl.value = static_cast<decltype(C::value)>(value);
+        avnd::get_inputs(parent.implementation), idx,
+        [&parent, value]<typename C>(C& ctl) {
+      if constexpr(avnd::enum_parameter<C>)
+      {
+        ctl.value = static_cast<decltype(C::value)>(value);
+        if_possible(ctl.update(parent.implementation));
+      }
         });
   }
 
-  template <typename Parent, avnd::enum_parameter C>
+  template <typename Parent, avnd::enum_ish_parameter C>
   void create(Parent& parent, C& c, int control_k)
   {
     std::string_view name = value_if_possible(C::name(), else, "Control");
@@ -32,12 +36,26 @@ struct enum_control
 
     // Concat enumerator texts
     std::string enumerators;
-    enumerators.reserve(16 * avnd::get_enum_choices_count<C>());
-    for(std::string_view e : avnd::get_enum_choices<C>())
+    if constexpr(avnd::enum_parameter<C>)
     {
-      enumerators += '"';
-      enumerators += e;
-      enumerators += "\", ";
+      enumerators.reserve(16 * avnd::get_enum_choices_count<C>());
+      for(std::string_view e : avnd::get_enum_choices<C>())
+      {
+        enumerators += '"';
+        enumerators += e;
+        enumerators += "\", ";
+      }
+    }
+    else
+    {
+      static constexpr auto range = avnd::get_range<C>();
+      enumerators.reserve(16 * std::size(range.values));
+      for(const auto& [key, value] : range.values)
+      {
+        enumerators += '"';
+        enumerators += key;
+        enumerators += "\", ";
+      }
     }
 
     // Remove last ,
