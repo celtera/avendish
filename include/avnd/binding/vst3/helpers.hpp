@@ -21,6 +21,7 @@ template <std::size_t M>
 auto setStr(TChar (&field)[M], std::wstring_view text)
 {
   std::copy_n(text.data(), text.size(), field);
+  field[text.size()] = 0;
 }
 #else
 #define u16 u""
@@ -28,6 +29,7 @@ template <std::size_t M>
 auto setStr(TChar (&field)[M], std::u16string_view text)
 {
   std::copy_n(text.data(), text.size(), field);
+  field[text.size()] = 0;
 }
 #endif
 
@@ -35,6 +37,7 @@ template <std::size_t M>
 auto setStr(TChar (&field)[M], std::string_view text)
 {
   avnd::utf8_to_utf16(text.data(), text.data() + text.size(), field);
+  field[text.size()] = 0;
 }
 
 inline Steinberg::tresult isProjectState(Steinberg::IBStream* state)
@@ -56,7 +59,7 @@ inline Steinberg::tresult isProjectState(Steinberg::IBStream* state)
        == kResultTrue)
     {
       UString128 tmp(string);
-      char ascii[128];
+      char ascii[128] = {};
       tmp.toAscii(ascii, 128);
       if(!strncmp(ascii, StateType::kProject, strlen(StateType::kProject)))
       {
