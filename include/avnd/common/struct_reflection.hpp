@@ -71,6 +71,21 @@ struct fields_introspection
 #endif
   }
 
+  template <typename F>
+  static constexpr void for_all_n(type& fields, F&& func) noexcept
+  {
+#if AVND_USE_BOOST_PFR
+    if constexpr(size > 0)
+    {
+      avnd::for_each_field_ref_n(fields, std::forward<F>(func));
+    }
+#else
+    // FIXME pass it the avnd::field_index<I>
+    auto&& [... elts] = fields;
+    (func(elts), ...);
+#endif
+  }
+
   static constexpr void for_nth(type& fields, int n, auto&& func) noexcept
   {
     // TODO maybe there is some dirty hack to do here with offsetof computations...
