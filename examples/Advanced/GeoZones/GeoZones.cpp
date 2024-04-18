@@ -10,10 +10,9 @@
 #include <QDebug>
 namespace co
 {
-static GeoZones::result
-pip(const GeoZones::zone& z, double latitude, double longitude, double blur)
+static result pip(const zone& z, double latitude, double longitude, double blur)
 {
-  auto pt = GeoZones::geom_point{latitude, longitude};
+  auto pt = geom_point{latitude, longitude};
   bool within = boost::geometry::within(pt, z.polygon);
   double distance_side = std::abs(boost::geometry::distance(pt, z.polygon));
   double distance_center = std::abs(boost::geometry::distance(pt, z.center));
@@ -22,7 +21,7 @@ pip(const GeoZones::zone& z, double latitude, double longitude, double blur)
                : std::clamp(
                    std::pow(1. / (1.0 + distance_center), 1e5 * (1. - blur)), 0., 1.);
 
-  return GeoZones::result{
+  return result{
       .to_side = (float)distance_side,
       .to_center = (float)distance_center,
       .influence = (float)influence};
@@ -106,6 +105,7 @@ void GeoZones::operator()()
   }
 
   outputs.zones.value = oscr::to_ossia_value(m_outputs);
+  send_message({pos_message{inputs.latitude, inputs.longitude}});
 }
 
 void GeoZones::loadZones()
@@ -179,6 +179,12 @@ void GeoZones::loadZones()
     boost::geometry::envelope(polys, box);
     m_bounding0 = box.min_corner();
     m_bounding1 = box.max_corner();
+
+    std::vector<std::vector<geom_point>> ptx;
+    ptx.reserve(m_zones.size());
+    for(auto& zz : m_zones)
+      ptx.push_back(zz.positions);
+    send_message({shape_message{m_bounding0, m_bounding1, std::move(ptx)}});
   }
   catch(...)
   {
