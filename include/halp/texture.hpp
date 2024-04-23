@@ -16,6 +16,11 @@ struct texture_input
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
+  struct rgba_row
+  {
+    unsigned char* bytes;
+  };
+
   rgba_color get(int x, int y) noexcept
   {
     assert(x >= 0 && x < texture.width);
@@ -28,7 +33,28 @@ struct texture_input
     return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
   }
 
+  rgba_color get(int x, rgba_row y) noexcept
+  {
+    assert(x >= 0 && x < texture.width);
+    const int byte_index = x * 4;
+    auto* pixel_ptr = y.bytes + byte_index;
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
+  }
+
+  rgba_row row(int y) noexcept
+  {
+    assert(y >= 0 && y < texture.height);
+    return {texture.bytes + y * texture.width * 4};
+  }
+
   rgba_texture texture;
+};
+
+template <static_string lit>
+struct fixed_texture_input : texture_input<lit>
+{
+  int request_width{1};
+  int request_height{1};
 };
 
 template <static_string lit>

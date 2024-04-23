@@ -13,6 +13,33 @@
 
 namespace avnd
 {
+template <typename F>
+static constexpr void init_controls(F& state)
+{
+  if constexpr(avnd::tag_skip_init<F>)
+  {
+    avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
+      if_possible(ctl.update(state.effect));
+    });
+  }
+  else
+  {
+    avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
+      if constexpr(avnd::has_range<T>)
+      {
+        constexpr auto c = avnd::get_range<T>();
+        // clang-format off
+        if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
+            else if_possible(ctl.value = c.values[c.init])   // For string enums
+            else if_possible(ctl.value = c.init);            // Default case
+        // clang-format on
+      }
+
+      if_possible(ctl.update(state.effect));
+    });
+  }
+}
+
 /**
  * @brief Used to set the initial value for controls when
  * the plug-in is first loaded.
@@ -20,35 +47,9 @@ namespace avnd
 template <typename F>
 static constexpr void init_controls(avnd::effect_container<F>& effect)
 {
-  if constexpr(avnd::tag_skip_init<F>)
+  for(auto& state : effect.full_state())
   {
-    // Used to call update on all the inputs of a plug-in to trigger initial callbacks
-    // when the plug-in is first loaded and does not want manual init.
-    for(auto& state : effect.full_state())
-    {
-      avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
-        if_possible(ctl.update(state.effect));
-      });
-    }
-  }
-  else
-  {
-    for(auto& state : effect.full_state())
-    {
-      avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
-        if constexpr(avnd::has_range<T>)
-        {
-          constexpr auto c = avnd::get_range<T>();
-          // clang-format off
-               if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
-          else if_possible(ctl.value = c.values[c.init])   // For string enums
-          else if_possible(ctl.value = c.init);            // Default case
-          // clang-format on
-        }
-
-        if_possible(ctl.update(state.effect));
-      });
-    }
+    init_controls(state);
   }
 }
 
