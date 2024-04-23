@@ -238,6 +238,8 @@ using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
 template <static_string lit, auto setup = default_range<float>>
 using xy_spinboxes_f32 = halp::xy_spinboxes_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<int>>
+using xy_spinboxes_i32 = halp::xy_spinboxes_t<int, lit, setup>;
 
 template <static_string lit, auto setup = default_range<float>>
 using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;
