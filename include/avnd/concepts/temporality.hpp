@@ -15,4 +15,9 @@ namespace avnd
  * Example: in ossia, this means that the processor can be assigned to a state.
  */
 AVND_DEFINE_TAG(single_exec)
+
+/**
+ * @brief process_exec tag: start() and stop() methods will be called.
+ */
+AVND_DEFINE_TAG(process_exec)
 }
