@@ -112,7 +112,7 @@ struct xy_pad_t
   }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  value_type value = {setup.init, setup.init};
+  value_type value = {T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -141,7 +141,7 @@ struct xy_spinboxes_t
     return std::string_view{lit.value};
   }
 
-  value_type value = {setup.init, setup.init};
+  value_type value = {T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -170,7 +170,7 @@ struct xyz_spinboxes_t
     return std::string_view{lit.value};
   }
 
-  value_type value = {setup.init, setup.init, setup.init};
+  value_type value = {T(setup.init), T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -199,7 +199,7 @@ struct range_editor_t
     return std::string_view{lit.value};
   }
 
-  value_type value{setup.init.start, setup.init.end};
+  value_type value{T(setup.init.start), T(setup.init.end)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
