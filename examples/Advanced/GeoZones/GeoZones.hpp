@@ -1,10 +1,13 @@
 #pragma once
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
+#include <boost/variant2.hpp>
 #include <halp/controls.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
+#include <ossia/detail/flat_map.hpp>
 #include <ossia/detail/flat_set.hpp>
+#include <ossia/network/value/value.hpp>
 namespace co
 {
 
@@ -39,7 +42,7 @@ struct zone_display
   static constexpr double width() { return 100.; }
   static constexpr double height() { return 100.; }
 
-  void paint(avnd::painter auto ctx)
+  void paint(auto ctx)
   {
     ctx.set_fill_color({255, 255, 255, 255});
     for(const auto& zone : zones)

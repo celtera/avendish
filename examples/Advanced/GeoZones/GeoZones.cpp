@@ -1,13 +1,14 @@
 #include "GeoZones.hpp"
 
+#include <avnd/binding/ossia/from_value.hpp>
+#include <avnd/binding/ossia/to_value.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/multi_polygon.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
+#include <ossia/detail/fmt.hpp>
 #include <ossia/detail/json.hpp>
-
-#include <QDebug>
 namespace co
 {
 static result pip(const zone& z, double latitude, double longitude, double blur)
