@@ -23,6 +23,8 @@ struct Poles
   halp_meta(uuid, "c01c06ed-2005-46d5-a47b-d9dbc947afea")
   struct
   {
+    halp::knob_f32<"Pos", halp::range{-1., 1., 0.}> pos;
+
     struct : halp::spinbox_i32<"Length", halp::range{1, 1000, 20}>
     {
       void update(Poles& self)
@@ -31,8 +33,6 @@ struct Poles
           self.outputs.a.value.reserve(value);
       }
     } length;
-
-    halp::knob_f32<"Pos", halp::range{-1., 1., 0.}> pos;
 
     struct : halp::knob_f32<"Sigma", halp::range{0.001, 1., 0.01}>
     {

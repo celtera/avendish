@@ -48,6 +48,7 @@ struct ValueDelay
   {
     delay.set_sample_rate(500);
     delay.maxDelay(100.);
+    rebuild();
   }
 
   void rebuild()
