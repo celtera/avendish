@@ -7,6 +7,7 @@
 #include <halp/log.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
+#include <boost/container/vector.hpp>
 
 namespace examples::helpers
 {
@@ -45,11 +46,13 @@ struct Poles
         }
       }
     } sigma;
+    
+    halp::knob_f32<"Range", halp::range{0., 1., 1.0}> mult;
   } inputs;
 
   struct
   {
-    halp::val_port<"Out", std::vector<float>> a;
+    halp::val_port<"Out", boost::container::vector<float>> a;
   } outputs;
 
   static double pdf(double x, double inv_sigma) noexcept
@@ -62,15 +65,15 @@ struct Poles
   {
     if(inputs.length.value < 0 || inputs.length.value > 1000)
       return;
+      
+    const float mult = inputs.mult.value;
+    auto& res = outputs.a.value;
+    res.resize(inputs.length + 1, boost::container::default_init);
 
-    std::vector<float>& res = outputs.a.value;
-    res.resize(inputs.length + 1);
-
-    std::string s;
     for(int k = 0; k <= inputs.length; k++)
     {
       const double i = 2. * k / inputs.length - 1.;
-      res[k] = pdf(i / 10. - inputs.pos, inv_sigma);
+      res[k] = mult * pdf(i / 10. - inputs.pos, inv_sigma);
     }
   }
   double inv_sigma{1.};

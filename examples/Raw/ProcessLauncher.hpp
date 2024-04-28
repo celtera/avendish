@@ -62,7 +62,9 @@ struct ProcessLauncher
         // Stop case
         if(cur)
         {
-          cur->terminate();
+          QMetaObject::invokeMethod(qApp, [cur] {
+			  cur->terminate();
+	   });
         }
         return [](ProcessLauncher& self) { self.process.reset(); };
       }
