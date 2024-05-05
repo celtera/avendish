@@ -162,6 +162,9 @@ struct soundfile_storage : soundfile_input_storage<T>
       }
     }
   }
+
+  // std::function<void(std::string& str, int idx)> release_request;
+  std::function<void(std::string& str, int idx)> load_request;
 };
 }
 

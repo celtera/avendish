@@ -851,22 +851,13 @@ public:
     return true;
   }
 
-  void soundfile_release_request(std::string& str, int idx)
-  {
-    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
-  }
-
-  void soundfile_load_request(std::string& str, int idx)
-  {
-    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
-  }
   void midifile_load_request(std::string& str, int idx)
   {
-    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
+    fprintf(stderr, "midifile_load_request %s:%d\n", str.c_str(), idx);
   }
   void raw_file_load_request(std::string& str, int idx)
   {
-    fprintf(stderr, "%s:%d\n", str.c_str(), idx);
+    fprintf(stderr, "raw_file_load_request %s:%d\n", str.c_str(), idx);
   }
 
   template <std::size_t N, std::size_t NField>

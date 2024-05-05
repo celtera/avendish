@@ -500,6 +500,28 @@ struct predicate_introspection
           }(indices_n{});
     }
   }
+  static constexpr void
+  for_nth_mapped_n2(type& unfiltered_fields, int n, auto&& func) noexcept
+  {
+    if constexpr(size > 0)
+    {
+      auto stack_size_helper
+          = [&]<std::size_t Index, std::size_t LocalIndex>() constexpr noexcept {
+        func(
+            pfr::get<Index>(unfiltered_fields), avnd::predicate_index<LocalIndex>{},
+            avnd::field_index<Index>{});
+      };
+
+      [stack_size_helper, k = index_map[n], &func,
+       &unfiltered_fields]<typename K, K... Index, size_t... LocalIndex>(
+          std::integer_sequence<K, Index...>,
+          std::integer_sequence<size_t, LocalIndex...>) {
+        (void)((Index == k
+                && (stack_size_helper.template operator()<Index, LocalIndex>(), true))
+               || ...);
+      }(indices_n{}, std::make_index_sequence<size>{});
+    }
+  }
 };
 
 template <>

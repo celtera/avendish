@@ -4,6 +4,7 @@
 
 #include <Gamma/Delay.h>
 #include <Gamma/ipl.h>
+#include <halp/audio.hpp>
 #include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/controls_fmt.hpp>

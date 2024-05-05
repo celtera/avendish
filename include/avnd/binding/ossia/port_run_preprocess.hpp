@@ -300,7 +300,7 @@ struct process_before_run
     if(!str)
       return;
 
-    self.soundfile_load_request(*str, Idx);
+    self.soundfiles.load_request(*str, Idx);
   }
 
   template <avnd::midifile_port Field, std::size_t Idx>
