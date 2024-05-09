@@ -1,7 +1,8 @@
 #include "AudioParticles.hpp"
 
 #include <score/tools/RecursiveWatch.hpp>
-
+#include <score/tools/Debug.hpp>
+#include <ossia/detail/algorithms.hpp>
 #include <QDirIterator>
 namespace ao
 {
