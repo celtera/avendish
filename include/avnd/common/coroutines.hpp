@@ -2,6 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cstdlib>
+
 #if AVND_DISABLE_COROUTINES == 0
 #if __has_include(<coroutine>)
 #include <coroutine>
