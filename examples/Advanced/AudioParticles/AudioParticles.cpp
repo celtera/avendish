@@ -71,11 +71,14 @@ void AudioParticles::operator()(const halp::tick_musical& t)
 
   for(auto& playhead : m_playheads)
   {
-    SCORE_ASSERT(m_sounds.size() > playhead.index);
+    if(m_sounds.size() <= playhead.index)
+      continue;
+
     auto& sound = m_sounds[playhead.index];
     int sound_frames = sound[0].size();
 
-    SCORE_ASSERT(outputs.audio.channels > playhead.channel);
+    if(outputs.audio.channels <= playhead.channel)
+      continue;
     auto channel = outputs.audio.channel(playhead.channel, t.frames);
 
     if(sound_frames - playhead.frame > t.frames)
@@ -91,7 +94,8 @@ void AudioParticles::operator()(const halp::tick_musical& t)
 
   ossia::remove_erase_if(m_playheads, [this](const auto& playhead) {
     auto& sound = m_sounds[playhead.index];
-    return playhead.frame >= sound[0].size();
+    return playhead.frame >= sound[0].size() || (m_sounds.size() <= playhead.index)
+           || (outputs.audio.channels <= playhead.channel);
   });
 }
 }
