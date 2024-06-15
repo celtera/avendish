@@ -7,6 +7,11 @@
 #include <rnd/random.hpp>
 
 #include <QFile>
+
+// Note: this example leverages a lot of built-in Qt & ossia score API features,
+// in particular to decode audio files on the fly.
+// It shouldn't be too hard to reimplement using separate APIs though :)
+
 namespace ao
 {
 class AudioParticles

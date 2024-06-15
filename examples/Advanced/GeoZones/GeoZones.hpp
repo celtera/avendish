@@ -134,6 +134,7 @@ struct GeoZones
     halp::item<&ins::zones> z;
     halp::item<&ins::latitude> lat;
     halp::item<&ins::longitude> lon;
+    halp::item<&ins::normalize> nrm;
     halp::item<&ins::blur> bl;
     halp::custom_actions_item<zone_display> anim;
 

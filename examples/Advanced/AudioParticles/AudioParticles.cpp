@@ -1,5 +1,7 @@
 #include "AudioParticles.hpp"
 
+#include <ossia/detail/algorithms.hpp>
+#include <score/tools/Debug.hpp>
 #include <score/tools/RecursiveWatch.hpp>
 #include <score/tools/Debug.hpp>
 #include <ossia/detail/algorithms.hpp>
@@ -13,6 +15,7 @@ void AudioParticles::prepare(halp::setup info)
   m_sounds.clear();
   m_sounds.reserve(1000);
 
+  // FIXME move to worker thread
   score::for_all_files(inputs.folder.value, [this](std::string_view v) {
     if(!v.ends_with(".wav"))
       return;
