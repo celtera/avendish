@@ -1064,7 +1064,7 @@ public:
     halp::audio_sample&lt;"Input", double&gt; audio;
     struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
     {
-      using smoother = halp::milliseconds_smooth&lt;20&gt;;
+      using smooth = halp::milliseconds_smooth&lt;20&gt;;
     } gain;
   };
 
