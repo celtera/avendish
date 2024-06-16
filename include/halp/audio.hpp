@@ -61,12 +61,9 @@ struct fixed_audio_bus
   }
 };
 
-template <static_string Name, typename FP, static_string Desc = "">
-struct dynamic_audio_bus
+template <typename FP>
+struct dynamic_audio_bus_base
 {
-  static consteval auto name() { return std::string_view{Name.value}; }
-  static consteval auto description() { return std::string_view{Desc.value}; }
-
   FP** samples{};
   int channels{};
 
@@ -77,6 +74,13 @@ struct dynamic_audio_bus
   {
     return {samples[i], frames};
   }
+};
+
+template <static_string Name, typename FP, static_string Desc = "">
+struct dynamic_audio_bus : dynamic_audio_bus_base<FP>
+{
+  static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
 };
 
 template <static_string Name, typename FP, static_string Desc = "">
