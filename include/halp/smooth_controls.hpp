@@ -1,0 +1,25 @@
+#pragma once
+#include <halp/controls.hpp>
+#include <halp/smoothers.hpp>
+
+namespace halp
+{
+template <typename T>
+struct smooth_control : T
+{
+  using smooth = halp::milliseconds_smooth<200>;
+};
+
+template <static_string lit, auto setup = default_range<float>>
+struct smooth_knob : halp::knob_t<float, lit, setup>
+{
+  using smooth = halp::milliseconds_smooth<200>;
+};
+
+template <static_string lit, auto setup = default_range<float>>
+struct smooth_slider : halp::slider_t<float, lit, setup>
+{
+  using smooth = halp::milliseconds_smooth<200>;
+};
+
+}

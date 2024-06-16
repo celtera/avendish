@@ -3,8 +3,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/audio.hpp>
-#include <halp/controls.hpp>
 #include <halp/meta.hpp>
+#include <halp/smooth_controls.hpp>
 #include <halp/soundfile_port.hpp>
 
 #include <numbers>
@@ -25,9 +25,9 @@ public:
   {
     halp::dynamic_audio_bus<"1", double> audio;
 
-    halp::knob_f32<"Gain"> gain;
-    halp::knob_f32<"L/R"> lr;
-    halp::knob_f32<"F/B"> fb;
+    halp::smooth_knob<"Gain", halp::range{0., 1., 0.}> gain;
+    halp::smooth_knob<"L/R", halp::range{-1., 1., 0.}> lr;
+    halp::smooth_knob<"F/B", halp::range{-1., 1., 0.}> fb;
   } inputs;
 
   struct

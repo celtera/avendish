@@ -25,7 +25,7 @@ public:
     halp::curve_port<"Curve"> curve;
     struct : halp::spinbox_f32<"Frequency", halp::range{1, 20000, 1000}>
     {
-      using smoother = halp::milliseconds_smooth<20>;
+      using smooth = halp::milliseconds_smooth<20>;
     } frequency;
   } inputs;
 

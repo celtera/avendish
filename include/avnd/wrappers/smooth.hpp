@@ -78,7 +78,7 @@ struct smooth_storage : smooth_param_storage<T>
         else
         {
           static_assert(smooth.milliseconds > 0.);
-          buf.smooth_rate = std::exp(ratio / M::smooth_ratio());
+          buf.smooth_rate = std::exp(ratio / smooth.milliseconds);
         }
       };
       smooth_in::for_all_n(avnd::get_inputs(t), init_smooth);

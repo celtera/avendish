@@ -2,11 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/introspection/smooth.hpp>
 #include <halp/audio.hpp>
-#include <halp/controls.hpp>
 #include <halp/meta.hpp>
+#include <halp/smooth_controls.hpp>
 #include <halp/soundfile_port.hpp>
-
 namespace ao
 {
 class MonoMix
@@ -30,14 +30,14 @@ public:
     halp::dynamic_audio_bus<"7", double> c6;
     halp::dynamic_audio_bus<"8", double> c7;
 
-    halp::knob_f32<"Gain 1"> g0;
-    halp::knob_f32<"Gain 2"> g1;
-    halp::knob_f32<"Gain 3"> g2;
-    halp::knob_f32<"Gain 4"> g3;
-    halp::knob_f32<"Gain 5"> g4;
-    halp::knob_f32<"Gain 6"> g5;
-    halp::knob_f32<"Gain 7"> g6;
-    halp::knob_f32<"Gain 8"> g7;
+    halp::smooth_knob<"Gain 1", halp::range{0., 1., 0.}> g0;
+    halp::smooth_knob<"Gain 2", halp::range{0., 1., 0.}> g1;
+    halp::smooth_knob<"Gain 3", halp::range{0., 1., 0.}> g2;
+    halp::smooth_knob<"Gain 4", halp::range{0., 1., 0.}> g3;
+    halp::smooth_knob<"Gain 5", halp::range{0., 1., 0.}> g4;
+    halp::smooth_knob<"Gain 6", halp::range{0., 1., 0.}> g5;
+    halp::smooth_knob<"Gain 7", halp::range{0., 1., 0.}> g6;
+    halp::smooth_knob<"Gain 8", halp::range{0., 1., 0.}> g7;
   } inputs;
 
   struct
