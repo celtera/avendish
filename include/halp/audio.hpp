@@ -57,7 +57,10 @@ struct fixed_audio_bus
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept
   {
-    return {samples[i], frames};
+    if(i < WantedChannels)
+      return {samples[i], frames};
+    else
+      return {};
   }
 };
 
@@ -72,7 +75,10 @@ struct dynamic_audio_bus_base
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept
   {
-    return {samples[i], frames};
+    if(i < channels)
+      return {samples[i], frames};
+    else
+      return {};
   }
 };
 
@@ -130,7 +136,10 @@ struct fixed_audio_spectrum_bus
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept
   {
-    return {samples[i], frames};
+    if(i < WantedChannels)
+      return {samples[i], frames};
+    else
+      return {};
   }
 };
 
@@ -158,7 +167,10 @@ struct dynamic_audio_spectrum_bus
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept
   {
-    return {samples[i], frames};
+    if(i < channels)
+      return {samples[i], frames};
+    else
+      return {};
   }
 };
 

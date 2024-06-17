@@ -2,11 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/introspection/smooth.hpp>
 #include <halp/audio.hpp>
 #include <halp/meta.hpp>
 #include <halp/smooth_controls.hpp>
-#include <halp/soundfile_port.hpp>
 namespace ao
 {
 class MonoMix

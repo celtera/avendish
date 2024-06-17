@@ -2,10 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/span_polyfill.hpp>
 #include <halp/audio.hpp>
 #include <halp/meta.hpp>
 #include <halp/smooth_controls.hpp>
-#include <halp/soundfile_port.hpp>
 
 #include <numbers>
 
@@ -28,6 +28,7 @@ public:
     halp::smooth_knob<"Gain", halp::range{0., 1., 0.}> gain;
     halp::smooth_knob<"L/R", halp::range{-1., 1., 0.}> lr;
     halp::smooth_knob<"F/B", halp::range{-1., 1., 0.}> fb;
+    halp::smooth_knob<"Pan law", halp::range{0., 1., 0.25}> pl;
   } inputs;
 
   struct
@@ -40,9 +41,10 @@ public:
 
   void operator()(const int frames)
   {
-    const auto in = inputs.audio.channel(0, frames);
-    if(in.empty())
+    if(inputs.audio.channels == 0)
       return;
+
+    const auto in = inputs.audio.channel(0, frames);
 
     const auto g = inputs.gain.value;
 
@@ -57,10 +59,11 @@ public:
       for(int j = 0; j < frames; j++)
         chan[j] = 0.;
 
-    const auto lr_c = std::cos(inputs.lr + 1.) * 0.25 * std::numbers::pi;
-    const auto lr_s = std::sin(inputs.lr + 1.) * 0.25 * std::numbers::pi;
-    const auto fb_c = std::cos(inputs.fb + 1.) * 0.25 * std::numbers::pi;
-    const auto fb_s = std::sin(inputs.fb + 1.) * 0.25 * std::numbers::pi;
+    const auto pl = inputs.pl.value;
+    const auto lr_c = std::cos((inputs.lr + 1.) * pl * std::numbers::pi);
+    const auto lr_s = std::sin((inputs.lr + 1.) * pl * std::numbers::pi);
+    const auto fb_c = std::cos((inputs.fb + 1.) * pl * std::numbers::pi);
+    const auto fb_s = std::sin((inputs.fb + 1.) * pl * std::numbers::pi);
 
 #pragma omp simd
     for(int i = 0; i < frames; i++)
