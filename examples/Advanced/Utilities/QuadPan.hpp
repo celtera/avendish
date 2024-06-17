@@ -23,12 +23,20 @@ public:
 
   struct
   {
-    halp::dynamic_audio_bus<"1", double> audio;
+    halp::dynamic_audio_bus<"Input", double> audio;
 
-    halp::smooth_knob<"Gain", halp::range{0., 1., 0.}> gain;
-    halp::smooth_knob<"L/R", halp::range{-1., 1., 0.}> lr;
-    halp::smooth_knob<"F/B", halp::range{-1., 1., 0.}> fb;
-    halp::smooth_knob<"Pan law", halp::range{0., 1., 0.25}> pl;
+    struct gain_knob : halp::smooth_knob<"Gain", halp::range{0., 1., 0.}>
+    {
+    } gain;
+    struct lr_knob : halp::smooth_knob<"L/R", halp::range{-1., 1., 0.}>
+    {
+    } lr;
+    struct fb_knob : halp::smooth_knob<"F/B", halp::range{-1., 1., 0.}>
+    {
+    } fb;
+    struct pan_knob : halp::smooth_knob<"Pan law", halp::range{0., 1., 0.25}>
+    {
+    } pl;
   } inputs;
 
   struct
