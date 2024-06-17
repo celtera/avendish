@@ -41,6 +41,9 @@ public:
   void operator()(const int frames)
   {
     const auto in = inputs.audio.channel(0, frames);
+    if(in.empty())
+      return;
+
     const auto g = inputs.gain.value;
 
     auto fl = outputs.fl.channel(0, frames);
