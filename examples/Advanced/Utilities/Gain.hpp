@@ -20,7 +20,7 @@ public:
 
   struct inputs
   {
-    halp::smooth_knob<"Gain", halp::range{0., 1., 0.}> gain;
+    halp::smooth_knob<"Gain", halp::range{0., 5., 0.}> gain;
   };
   double operator()(double input, const inputs& in) { return input * in.gain; }
 };
