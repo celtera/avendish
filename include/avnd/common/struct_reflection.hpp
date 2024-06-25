@@ -31,6 +31,9 @@ struct fields_introspection
   static constexpr auto size = pfr::tuple_size_v<type>;
   using indices_n = std::make_integer_sequence<int, size>;
 
+  template <std::size_t N>
+  using field_type = pfr::tuple_element_t<N, T>;
+
   static constexpr void for_all(auto&& func) noexcept
   {
     if constexpr(size > 0)

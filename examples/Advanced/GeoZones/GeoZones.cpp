@@ -106,7 +106,23 @@ void GeoZones::operator()()
   }
 
   outputs.zones.value = oscr::to_ossia_value(m_outputs);
-  send_message({pos_message{inputs.latitude, inputs.longitude}});
+  if(inputs.normalize)
+  {
+    send_message({pos_message{inputs.latitude, inputs.longitude}});
+  }
+  else
+  {
+    // put the inputs / outputs between 0 / 1
+
+    const float w = m_bounding1.x() - m_bounding0.x();
+    const float h = m_bounding1.y() - m_bounding0.y();
+    if(w > 0 && h > 0)
+    {
+      const float lat = (inputs.latitude - m_bounding0.x()) / w;
+      const float lon = (inputs.longitude - m_bounding0.y()) / h;
+      send_message({pos_message{lat, lon}});
+    }
+  }
 }
 
 void GeoZones::loadZones()
