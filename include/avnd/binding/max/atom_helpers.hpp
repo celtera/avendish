@@ -13,7 +13,8 @@ inline t_symbol* get_atoms_sym() noexcept
 {
   return USESYM(atom);
 }
-template<std::integral T>
+template <std::integral T>
+  requires(!std::is_same_v<T, char>)
 inline t_symbol* get_atoms_sym() noexcept
 {
   return USESYM(long);
