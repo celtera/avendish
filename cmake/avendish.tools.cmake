@@ -1,6 +1,9 @@
 
 # Demo: dump all the known metadata.
 add_executable(json_to_maxref examples/Demos/JSONToMaxref.cpp)
+if(NOT MSVC)
+  target_compile_options(json_to_maxref PRIVATE -std=c++20)
+endif()
 target_link_libraries(json_to_maxref PRIVATE nlohmann_json::nlohmann_json pantor::inja)
 
 # Demo: generate matching pd help patches
