@@ -2,7 +2,8 @@
 <?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
 
 <c74object
-  name="{{metadatas.c_name}}"
+  {% if not existsIn(metadatas, "c_name") %} module="{{metadatas.name}}" {% endif %}
+  {% if existsIn(metadatas, "c_name") %} module="{{metadatas.c_name}}" {% endif %}
   {% if existsIn(metadatas, "module") %} module="{{metadatas.module}}" {% endif %}
   {% if existsIn(metadatas, "category") %} category="{{metadatas.category}}" {% endif %}
   >
