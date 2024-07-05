@@ -123,6 +123,7 @@ jobs:
           ${{ matrix.config.pre_build }}
 
           cmake .. \
+            -DBUILD_TESTING=1 \
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
@@ -161,6 +162,7 @@ jobs:
           ${{ matrix.config.pre_build }}
 
           cmake .. \
+            -DBUILD_TESTING=1 \
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \

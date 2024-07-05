@@ -30,6 +30,7 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
 endif()
 
 if(NOT TARGET pantor::inja)
+  block()
   set(BUILD_TESTING 0)
   set(BUILD_BENCHMARK 0)
   set(INJA_USE_EMBEDDED_JSON 0)
@@ -40,4 +41,5 @@ if(NOT TARGET pantor::inja)
     GIT_PROGRESS true
   )
   FetchContent_MakeAvailable(pantor_inja)
+  endblock()
 endif()
