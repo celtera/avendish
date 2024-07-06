@@ -168,6 +168,7 @@ function(avnd_make_max)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
+  if(NOT WIN32)
   if(TARGET json_to_maxref)
     message(STATUS "json_to_maxref found")
     get_target_property(_dump_path ${AVND_TARGET} AVND_DUMP_PATH)
@@ -185,6 +186,7 @@ function(avnd_make_max)
           AVND_MAX_MAXREF_XML "${_maxref_destination}"
       )
     endif()
+  endif()
   endif()
 endfunction()
 
