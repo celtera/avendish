@@ -1,0 +1,97 @@
+name: CMake build
+
+on: push
+
+jobs:
+  mingw:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - { sys: mingw64, env: x86_64 }
+          - { sys: ucrt64,  env: ucrt-x86_64 }
+          - { sys: clang64, env: clang-x86_64 }
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Checkout Max SDK
+        uses: actions/checkout@v3
+        with:
+          repository: jcelerier/max-sdk-base
+          submodules: "recursive"
+          path: max-sdk-base
+
+      - name: Checkout dependencies
+        uses: actions/checkout@v3
+        with:
+          repository: ossia/score
+          submodules: "recursive"
+          path: score
+
+      - name: Setup msys2 and mingw-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{matrix.sys}}
+          update: true
+          pacboy: >-
+            cmake:p
+            ninja:p
+            toolchain:p
+            cppwinrt:p
+            boost:p
+
+      - name: Build debug
+        shell: msys2 {0}
+        run: |
+          mkdir build-debug
+          cd build-debug
+
+          export MAX_SDK=$PWD/../max-sdk-base
+          export SDK_3RDPARTY=$PWD/../score/3rdparty
+          export VERBOSE=1
+
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=1 \
+            -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
+            -DAVND_MAXSDK_PATH=$MAX_SDK \
+            -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
+            -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src"
+
+          cmake --build .
+
+      - name: Test debug
+        shell: msys2 {0}
+        run: |
+          cd build-debug
+          cmake --build . --target test
+
+      - name: Build release
+        shell: msys2 {0}
+        run: |
+          mkdir build-release
+          cd build-release
+
+          export MAX_SDK=$PWD/../max-sdk-base
+          export SDK_3RDPARTY=$PWD/../score/3rdparty
+          export VERBOSE=1
+
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=1 \
+            -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
+            -DAVND_MAXSDK_PATH=$MAX_SDK \
+            -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
+            -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src"
+
+          cmake --build .
+
+      - name: Test release
+        shell: msys2 {0}
+        run: |
+          cd build-release
+          cmake --build . --target test
+
