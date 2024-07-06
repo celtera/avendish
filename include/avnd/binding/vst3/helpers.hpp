@@ -16,7 +16,7 @@
 namespace stv3
 {
 #if defined(_WIN32)
-#define u16 L""
+#define u16_str L""
 template <std::size_t M>
 auto setStr(TChar (&field)[M], std::wstring_view text)
 {
@@ -24,7 +24,7 @@ auto setStr(TChar (&field)[M], std::wstring_view text)
   field[text.size()] = 0;
 }
 #else
-#define u16 u""
+#define u16_str u""
 template <std::size_t M>
 auto setStr(TChar (&field)[M], std::u16string_view text)
 {
