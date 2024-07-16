@@ -1,6 +1,9 @@
 #pragma once
+#include <cassert>
+#include <climits>
+#include <cstring>
 #include <iostream>
-#include <sstream>
+
 // ! this file ported from libc++ strstream, now sometimes removed
 //===----------------------------------------------------------------------===//
 //
