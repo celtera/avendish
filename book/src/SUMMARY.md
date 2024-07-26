@@ -66,6 +66,7 @@
 # Development
 - [Type predicates](./development/predicates.md)
 - [Flags](./development/flags.md)
+- [Implementing new concepts](./development/new_concepts.md)
 
 <!--
 # Reference
