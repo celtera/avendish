@@ -101,14 +101,18 @@ struct process_after_run
     write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
+  template <avnd::dynamic_ports_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, std::vector<ossia::value_outlet*>& port,
       avnd::field_index<Idx>) const noexcept
   {
     int N = port.size();
-
-    write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
+    assert(N == ctrl.ports.size());
+    for(int i = 0; i < N; i++)
+    {
+      write_value(
+          ctrl.ports[i], *port[i], ctrl.ports[i].value, 0, avnd::field_index<Idx>{});
+    }
   }
 
   template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>

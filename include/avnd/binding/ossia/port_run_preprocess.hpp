@@ -61,7 +61,7 @@ struct process_before_run
     }
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
+  template <avnd::dynamic_ports_port Field, std::size_t Idx>
   void init_value(
       Field& ctrl, std::vector<ossia::value_inlet*>& ports,
       avnd::field_index<Idx> idx) const noexcept
@@ -77,8 +77,7 @@ struct process_before_run
         auto& last = port.data.get_data().back().value;
 
         // FIXME check optional ports case
-        written |= self.from_ossia_value(ctrl, last, ctrl.ports[p], idx);
-        qDebug() << ossia::value_to_pretty_string(last) << p << ctrl.ports[p];
+        written |= self.from_ossia_value(ctrl.ports[p], last, ctrl.ports[p].value, idx);
 
         // FIXME
         // if constexpr(avnd::control<Field>)
@@ -108,7 +107,8 @@ struct process_before_run
   {
     init_value(ctrl, port, avnd::field_index<Idx>{});
   }
-  template <avnd::parameter Field, std::size_t Idx>
+
+  template <avnd::dynamic_ports_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, std::vector<ossia::value_inlet*>& port,
       avnd::field_index<Idx> idx) const noexcept
@@ -406,7 +406,7 @@ struct process_before_run
     }
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
+  template <avnd::dynamic_ports_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, std::vector<ossia::value_outlet*>& ports,
       avnd::field_index<Idx>) const noexcept
@@ -414,7 +414,7 @@ struct process_before_run
     ctrl.ports.resize(ports.size());
     for(auto& port_value : ctrl.ports)
     {
-      port_value = {};
+      port_value.value = {};
     }
   }
 

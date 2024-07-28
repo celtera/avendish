@@ -25,8 +25,13 @@ struct get_ossia_inlet_type<N, T>
 template <typename N, avnd::parameter T>
 struct get_ossia_inlet_type<N, T>
 {
-  using type = std::conditional_t<
-      avnd::dynamic_ports_port<T>, std::vector<ossia::value_inlet*>, ossia::value_inlet>;
+  using type = ossia::value_inlet;
+};
+template <typename N, avnd::dynamic_ports_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using base_type = typename decltype(T{}.ports)::value_type;
+  using type = std::vector<typename get_ossia_inlet_type<N, base_type>::type*>;
 };
 template <typename N, avnd::midi_port T>
 struct get_ossia_inlet_type<N, T>
@@ -79,9 +84,13 @@ struct get_ossia_outlet_type<N, T>
 template <typename N, avnd::parameter T>
 struct get_ossia_outlet_type<N, T>
 {
-  using type = std::conditional_t<
-      avnd::dynamic_ports_port<T>, std::vector<ossia::value_outlet*>,
-      ossia::value_outlet>;
+  using type = ossia::value_outlet;
+};
+template <typename N, avnd::dynamic_ports_port T>
+struct get_ossia_outlet_type<N, T>
+{
+  using base_type = typename decltype(T{}.ports)::value_type;
+  using type = std::vector<typename get_ossia_outlet_type<N, base_type>::type*>;
 };
 template <typename N, avnd::midi_port T>
 struct get_ossia_outlet_type<N, T>
