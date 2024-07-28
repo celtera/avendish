@@ -145,7 +145,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   // Handle message inputs
   if constexpr(avnd::messages_type<T>::size > 0)
   {
-    avnd::messages_introspection<T>::for_all([&](auto m) { func_inlets(m); });
+    avnd::messages_introspection<T>::for_all(
+        [&](auto m) { func_inlets(m, avnd::field_index<0>{}); });
   }
 
   if constexpr(avnd::has_inputs<T>)

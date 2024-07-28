@@ -14,6 +14,7 @@ namespace oscr
 {
 
 // Compile-time map of avnd concept to ossia port
+
 template <typename N, typename T>
 struct get_ossia_inlet_type;
 template <typename N, avnd::audio_port T>
@@ -24,7 +25,8 @@ struct get_ossia_inlet_type<N, T>
 template <typename N, avnd::parameter T>
 struct get_ossia_inlet_type<N, T>
 {
-  using type = ossia::value_inlet;
+  using type = std::conditional_t<
+      avnd::dynamic_ports_port<T>, std::vector<ossia::value_inlet*>, ossia::value_inlet>;
 };
 template <typename N, avnd::midi_port T>
 struct get_ossia_inlet_type<N, T>
@@ -77,7 +79,9 @@ struct get_ossia_outlet_type<N, T>
 template <typename N, avnd::parameter T>
 struct get_ossia_outlet_type<N, T>
 {
-  using type = ossia::value_outlet;
+  using type = std::conditional_t<
+      avnd::dynamic_ports_port<T>, std::vector<ossia::value_outlet*>,
+      ossia::value_outlet>;
 };
 template <typename N, avnd::midi_port T>
 struct get_ossia_outlet_type<N, T>
@@ -119,6 +123,7 @@ struct inlet_storage
   // typelist<a, b, c>
   using inputs_tuple = typename avnd::inputs_type<T>::tuple;
 
+  // inputs_getter<a> -> ossia::value_port
   template <typename Port>
   using inputs_getter = typename get_ossia_inlet_type<T, Port>::type;
 
@@ -321,6 +326,21 @@ struct setup_inlets
 
   template <std::size_t Idx, typename Field>
   void operator()(
+      avnd::field_reflection<Idx, Field> ctrl,
+      std::vector<ossia::value_inlet*>& port) const noexcept
+  {
+    int expected = self.dynamic_ports.num_in_ports(avnd::field_index<Idx>{});
+    while(port.size() < expected)
+      port.push_back(new ossia::value_inlet);
+    while(port.size() > expected)
+      port.erase(port.rbegin().base());
+
+    for(auto& p : port)
+      (*this)(ctrl, *p);
+  }
+
+  template <std::size_t Idx, typename Field>
+  void operator()(
       avnd::field_reflection<Idx, Field> ctrl, ossia::audio_inlet& port) const noexcept
   {
     inlets.push_back(std::addressof(port));
@@ -367,6 +387,22 @@ struct setup_outlets
         port->type = ossia::parse_dataspace(unit);
     }
   }
+
+  template <std::size_t Idx, typename Field>
+  void operator()(
+      avnd::field_reflection<Idx, Field> ctrl,
+      std::vector<ossia::value_outlet*>& port) const noexcept
+  {
+    int expected = self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{});
+    while(port.size() < expected)
+      port.push_back(new ossia::value_outlet);
+    while(port.size() > expected)
+      port.erase(port.rbegin().base());
+
+    for(auto& p : port)
+      (*this)(ctrl, *p);
+  }
+
   template <std::size_t Idx, avnd::callback Field>
   void operator()(
       avnd::field_reflection<Idx, Field> ctrl, ossia::value_outlet& port) const noexcept

@@ -52,5 +52,7 @@ concept custom_control_layout = (T::layout() == decltype(T::layout())::custom_co
 template <typename T>
 concept custom_layout = (T::layout() == decltype(T::layout())::custom)
                         || (T::layout == decltype(T::layout)::custom);
-
+template <typename T>
+concept dynamic_controls = (T::layout() == decltype(T::layout())::dynamic_controls)
+                           || (T::layout == decltype(T::layout)::dynamic_controls);
 }

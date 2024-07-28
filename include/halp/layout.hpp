@@ -25,7 +25,8 @@ enum class layouts
   control,
   widget,
   custom,
-  custom_control
+  custom_control,
+  multi_control
 };
 enum class colors
 {

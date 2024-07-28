@@ -71,6 +71,12 @@ struct smooth_parameter_input_introspection
 };
 
 template <typename T>
+struct dynamic_ports_input_introspection
+    : dynamic_ports_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct midi_input_introspection : midi_port_introspection<typename inputs_type<T>::type>
 {
 };

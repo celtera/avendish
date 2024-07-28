@@ -40,7 +40,6 @@ struct process_before_run
   int frames{};
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::control<Field>)
   void init_value(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
@@ -48,26 +47,57 @@ struct process_before_run
     {
       auto& last = port.data.get_data().back().value;
       update_value(self, impl, ctrl, last, ctrl.value, idx);
+
+      if constexpr(avnd::control<Field>)
+      {
+        // Get the index of the control in [0; N[
+        using type = typename Exec_T::processor_type;
+        using controls = avnd::control_input_introspection<type>;
+        constexpr int control_index = controls::field_index_to_index(idx);
+
+        // Mark the control as changed
+        self.control.inputs_set.set(control_index);
+      }
     }
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(avnd::control<Field>)
   void init_value(
-      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
+      Field& ctrl, std::vector<ossia::value_inlet*>& ports,
+      avnd::field_index<Idx> idx) const noexcept
   {
-    if(!port.data.get_data().empty())
+    bool written = ports.size() != ctrl.ports.size();
+    ctrl.ports.resize(ports.size());
+    int p = 0;
+    for(auto pport : ports)
     {
-      auto& last = port.data.get_data().back().value;
-      update_value(self, impl, ctrl, last, ctrl.value, idx);
+      auto& port = *pport;
+      if(!port.data.get_data().empty())
+      {
+        auto& last = port.data.get_data().back().value;
 
-      // Get the index of the control in [0; N[
-      using type = typename Exec_T::processor_type;
-      using controls = avnd::control_input_introspection<type>;
-      constexpr int control_index = controls::field_index_to_index(idx);
+        // FIXME check optional ports case
+        written |= self.from_ossia_value(ctrl, last, ctrl.ports[p], idx);
+        qDebug() << ossia::value_to_pretty_string(last) << p << ctrl.ports[p];
 
-      // Mark the control as changed
-      self.control.inputs_set.set(control_index);
+        // FIXME
+        // if constexpr(avnd::control<Field>)
+        // {
+        //   // Get the index of the control in [0; N[
+        //   using type = typename Exec_T::processor_type;
+        //   using controls = avnd::control_input_introspection<type>;
+        //   constexpr int control_index = controls::field_index_to_index(idx);
+
+        //   // Mark the control as changed
+        //   self.control.inputs_set.set(control_index);
+        // }
+      }
+      ++p;
+    }
+
+    if(written)
+    {
+      if_possible(ctrl.update(impl));
     }
   }
 
@@ -75,6 +105,13 @@ struct process_before_run
     requires(!avnd::sample_accurate_parameter<Field> && !avnd::span_parameter<Field>)
   void operator()(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
+  {
+    init_value(ctrl, port, avnd::field_index<Idx>{});
+  }
+  template <avnd::parameter Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::value_inlet*>& port,
+      avnd::field_index<Idx> idx) const noexcept
   {
     init_value(ctrl, port, avnd::field_index<Idx>{});
   }
@@ -369,6 +406,18 @@ struct process_before_run
     }
   }
 
+  template <avnd::parameter Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::value_outlet*>& ports,
+      avnd::field_index<Idx>) const noexcept
+  {
+    ctrl.ports.resize(ports.size());
+    for(auto& port_value : ctrl.ports)
+    {
+      port_value = {};
+    }
+  }
+
   template <avnd::control Field, std::size_t Idx>
     requires(!avnd::sample_accurate_control<Field>)
   void operator()(
@@ -377,6 +426,7 @@ struct process_before_run
     if constexpr(avnd::optional_ish<decltype(Field::value)>)
       ctrl.value = {};
   }
+
   template <avnd::value_port Field, std::size_t Idx>
     requires(!avnd::sample_accurate_value_port<Field>)
   void operator()(
@@ -385,6 +435,7 @@ struct process_before_run
     if constexpr(avnd::optional_ish<decltype(Field::value)>)
       ctrl.value = {};
   }
+
   template <avnd::sample_accurate_control Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept

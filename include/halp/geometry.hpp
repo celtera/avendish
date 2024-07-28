@@ -6,6 +6,12 @@
 namespace halp
 {
 
+template <typename T>
+struct rect2d
+{
+  T x{}, y{}, w{}, h{};
+};
+
 struct mesh
 {
   float transform[16]{};

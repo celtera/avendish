@@ -8,6 +8,7 @@
 #include <avnd/concepts/callback.hpp>
 #include <avnd/concepts/channels.hpp>
 #include <avnd/concepts/curve.hpp>
+#include <avnd/concepts/dynamic_ports.hpp>
 #include <avnd/concepts/fft.hpp>
 #include <avnd/concepts/field_names.hpp>
 #include <avnd/concepts/file_port.hpp>

@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/binding/ossia/configure.hpp>
+#include <avnd/binding/ossia/dynamic_ports.hpp>
 #include <avnd/binding/ossia/ffts.hpp>
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
@@ -324,6 +325,8 @@ public:
 
   [[no_unique_address]] controls_queue<T> control;
 
+  [[no_unique_address]] oscr::dynamic_ports_storage<T> dynamic_ports;
+
   using control_input_values_type
       = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
   using control_output_values_type
@@ -348,9 +351,6 @@ public:
   using midi_in_info = avnd::midi_input_introspection<T>;
   using midi_out_info = avnd::midi_output_introspection<T>;
 
-  static constexpr int total_input_ports = avnd::total_input_count<T>();
-  static constexpr int total_output_ports = avnd::total_output_count<T>();
-
   uint64_t instance{};
 
   safe_node_base(int buffer_size, double sample_rate, uint64_t uid)
@@ -359,9 +359,6 @@ public:
   {
     this->buffer_size = buffer_size;
     this->sample_rate = sample_rate;
-
-    this->m_inlets.reserve(total_input_ports + 1);
-    this->m_outlets.reserve(total_output_ports + 1);
 
     this->audio_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
@@ -514,6 +511,37 @@ public:
     this->control.inputs_set.set(N);
   }
 
+  template <typename Val, std::size_t N>
+  void control_updated_from_ui(Val&& new_value, int dynamic_port)
+  {
+    if constexpr(requires { avnd::effect_container<T>::multi_instance; })
+    {
+      for(const auto& state : this->impl.full_state())
+      {
+        // Replace the value in the field
+        auto& field
+            = avnd::control_input_introspection<T>::template field<N>(state.inputs);
+
+        // OPTIMIZEME we're loosing a few allocations here that should be gc'd
+        field.ports[dynamic_port] = new_value;
+
+        if_possible(field.update(state.effect));
+      }
+    }
+    else
+    {
+      // Replace the value in the field
+      auto& field
+          = avnd::control_input_introspection<T>::template field<N>(this->impl.inputs());
+
+      std::swap(field.ports[dynamic_port], new_value);
+
+      if_possible(field.update(this->impl.effect));
+    }
+
+    // Mark the control as changed
+    this->control.inputs_set.set(N);
+  }
   void audio_configuration_changed()
   {
     // qDebug() << "New Audio configuration: "
@@ -765,6 +793,7 @@ public:
           state.inputs, [](auto& field) { return field.value; });
     }
   }
+
   auto make_controls_out_tuple()
   {
     // Note that this does not yet make a lot of sens for polyphonic effects

@@ -30,6 +30,17 @@ struct process_after_run
 
   template <typename Field, std::size_t Idx>
   void operator()(
+      Field& ctrl, std::vector<ossia::value_inlet*>& port,
+      avnd::field_index<Idx>) const noexcept
+  {
+    for(auto& port_value : ctrl.ports)
+    {
+      if_possible(port_value.reset());
+    }
+  }
+
+  template <typename Field, std::size_t Idx>
+  void operator()(
       Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
@@ -87,6 +98,16 @@ struct process_after_run
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
+  }
+
+  template <avnd::parameter Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::value_outlet*>& port,
+      avnd::field_index<Idx>) const noexcept
+  {
+    int N = port.size();
+
     write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
   }
 

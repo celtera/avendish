@@ -818,9 +818,9 @@ struct MidiProgramName
 {
   int32_t thisProgramIndex{};
   char name[Constants::NameLen]{};
-  char midiProgram{-1};
-  char midiBankMsb{-1};
-  char midiBankLsb{-1};
+  char midiProgram = -1;
+  char midiBankMsb = -1;
+  char midiBankLsb = -1;
   char reserved{};
   int32_t parentCategoryIndex{-1};
   MidiProgramNameFlags flags{};

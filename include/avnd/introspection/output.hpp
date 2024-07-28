@@ -41,6 +41,12 @@ struct dynamic_timed_parameter_output_introspection
 };
 
 template <typename T>
+struct dynamic_ports_output_introspection
+    : dynamic_ports_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct midi_output_introspection
     : midi_port_introspection<typename outputs_type<T>::type>
 {

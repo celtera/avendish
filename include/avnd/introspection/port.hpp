@@ -88,6 +88,14 @@ template <typename T>
 using smooth_parameter_introspection = predicate_introspection<T, is_smooth_parameter_t>;
 
 template <typename Field>
+using is_dynamic_ports_port_t = boost::mp11::mp_bool<dynamic_ports_port<Field>>;
+template <typename T>
+struct dynamic_ports_port_introspection
+    : predicate_introspection<T, is_dynamic_ports_port_t>
+{
+};
+
+template <typename Field>
 using is_midi_port_t = boost::mp11::mp_bool<midi_port<Field>>;
 template <typename T>
 struct midi_port_introspection : predicate_introspection<T, is_midi_port_t>
