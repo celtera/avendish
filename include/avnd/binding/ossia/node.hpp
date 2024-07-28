@@ -514,16 +514,17 @@ public:
   template <typename Val, std::size_t N>
   void control_updated_from_ui(Val&& new_value, int dynamic_port)
   {
+    // FIXME how to combine dynamic_ports and control_input
     if constexpr(requires { avnd::effect_container<T>::multi_instance; })
     {
       for(const auto& state : this->impl.full_state())
       {
         // Replace the value in the field
-        auto& field
-            = avnd::control_input_introspection<T>::template field<N>(state.inputs);
+        auto& field = avnd::dynamic_ports_input_introspection<T>::template field<N>(
+            state.inputs);
 
         // OPTIMIZEME we're loosing a few allocations here that should be gc'd
-        field.ports[dynamic_port] = new_value;
+        field.ports[dynamic_port].value = new_value;
 
         if_possible(field.update(state.effect));
       }
@@ -531,10 +532,10 @@ public:
     else
     {
       // Replace the value in the field
-      auto& field
-          = avnd::control_input_introspection<T>::template field<N>(this->impl.inputs());
+      auto& field = avnd::dynamic_ports_input_introspection<T>::template field<N>(
+          this->impl.inputs());
 
-      std::swap(field.ports[dynamic_port], new_value);
+      std::swap(field.ports[dynamic_port].value, new_value);
 
       if_possible(field.update(this->impl.effect));
     }

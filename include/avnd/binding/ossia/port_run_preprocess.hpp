@@ -43,6 +43,7 @@ struct process_before_run
   void init_value(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
+    // FIXME ensure this is not called for a dynamic_ports
     if(!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
