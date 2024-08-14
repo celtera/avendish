@@ -7,6 +7,9 @@
 #include <halp/texture.hpp>
 
 #include <chrono>
+
+#include <halp/controls.enums.hpp>
+
 namespace vo
 {
 // Graphical item which will display the texture
@@ -54,6 +57,12 @@ public:
   {
     halp::fixed_texture_input<"In"> image{.request_width = 16, .request_height = 16};
     halp::xy_spinboxes_i32<"Size", halp::range{1, 64, 10}> size;
+    struct mode
+    {
+      halp__enum_combobox(
+          "Mode", Lightness, Lightness, Value, Saturation, Hue, HSV, HSL, Red, Green,
+          Blue, Alpha, RGB)
+    } mode;
   } inputs;
 
   struct
@@ -73,6 +82,45 @@ public:
       return y * (24.389f / 27.f);
     else
       return 0.01f * (std::cbrt(y) * 116.f - 16.f);
+  }
+
+  static std::array<double, 3> hsv(uint8_t r, uint8_t g, uint8_t b)
+  {
+    const double var_R = r / 255.f;
+    const double var_G = g / 255.f;
+    const double var_B = b / 255.f;
+
+    const auto var_Min = std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
+    const auto var_Max = std::max(std::max(var_R, var_G), var_B); // Max. value of RGB
+    const auto del_Max = var_Max - var_Min;                       // Delta RGB value
+
+    if(del_Max == 0.) // This is a gray, no chroma...
+    {
+      return {0., 0., (double)var_Max};
+    }
+    else // Chromatic data...
+    {
+      double H{};
+      auto S = del_Max / var_Max;
+      auto V = var_Max;
+
+      auto del_R = (((var_Max - var_R) / 6.) + (del_Max / 2.)) / del_Max;
+      auto del_G = (((var_Max - var_G) / 6.) + (del_Max / 2.)) / del_Max;
+      auto del_B = (((var_Max - var_B) / 6.) + (del_Max / 2.)) / del_Max;
+
+      if(var_R == var_Max)
+        H = del_B - del_G;
+      else if(var_G == var_Max)
+        H = (1. / 3.) + del_R - del_B;
+      else if(var_B == var_Max)
+        H = (2. / 3.) + del_G - del_R;
+
+      if(H < 0.)
+        H += 1.;
+      if(H > 1.)
+        H -= 1.;
+      return {H, S, V};
+    }
   }
 
   // Communication with UI
@@ -111,19 +159,110 @@ public:
     // Sample the texture
     auto& samples = outputs.samples.value;
     samples.clear();
-    samples.resize(in_tex.height * in_tex.width);
+
     int i = 0;
+    auto apply = [&](auto func) mutable {
 #pragma omp simd
-    for(int y = 0; y < in_tex.height; y++)
-    {
-      auto row = inputs.image.row(y);
-      for(int x = 0; x < in_tex.width; x++)
+      for(int y = 0; y < in_tex.height; y++)
       {
-        const auto [r, g, b, a] = inputs.image.get(x, row);
-        const auto lightness = linear_to_y(r / 255.f, g / 255.f, b / 255.f);
-        const auto perceptual_lightness = y_to_lstar(lightness);
-        samples[i] = perceptual_lightness;
-        i++;
+        auto row = inputs.image.row(y);
+        for(int x = 0; x < in_tex.width; x++)
+        {
+          const auto [r, g, b, a] = inputs.image.get(x, row);
+          func(r, g, b, a);
+        }
+      }
+    };
+
+    switch(inputs.mode.value)
+    {
+      case ins::mode::Lightness: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          const auto lightness = linear_to_y(r / 255.f, g / 255.f, b / 255.f);
+          const auto perceptual_lightness = y_to_lstar(lightness);
+          samples[i] = perceptual_lightness;
+          i++;
+        });
+        break;
+      }
+
+      case ins::mode::Value: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          auto [h, s, v] = hsv(r, g, b);
+          samples[i++] = v;
+        });
+        break;
+      }
+      case ins::mode::Hue: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          auto [h, s, v] = hsv(r, g, b);
+          samples[i++] = h;
+        });
+        break;
+      }
+      case ins::mode::Saturation: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          auto [h, s, v] = hsv(r, g, b);
+          samples[i++] = s;
+        });
+        break;
+      }
+      case ins::mode::HSL: {
+        samples.resize(in_tex.height * in_tex.width * 3);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          auto [h, s, v] = hsv(r, g, b);
+          samples[i++] = h;
+          samples[i++] = s;
+          const auto lightness = linear_to_y(r / 255.f, g / 255.f, b / 255.f);
+          const auto perceptual_lightness = y_to_lstar(lightness);
+          samples[i++] = perceptual_lightness;
+        });
+        break;
+      }
+
+      case ins::mode::HSV: {
+        samples.resize(in_tex.height * in_tex.width * 3);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          auto [h, s, v] = hsv(r, g, b);
+          samples[i++] = h;
+          samples[i++] = s;
+          samples[i++] = v;
+        });
+        break;
+      }
+
+      case ins::mode::Red: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) { samples[i++] = r; });
+        break;
+      }
+      case ins::mode::Green: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) { samples[i++] = g; });
+        break;
+      }
+      case ins::mode::Blue: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) { samples[i++] = b; });
+        break;
+      }
+      case ins::mode::Alpha: {
+        samples.resize(in_tex.height * in_tex.width);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) { samples[i++] = a; });
+        break;
+      }
+      case ins::mode::RGB: {
+        samples.resize(in_tex.height * in_tex.width * 3);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          samples[i++] = r;
+          samples[i++] = g;
+          samples[i++] = b;
+        });
+        break;
       }
     }
 
@@ -150,7 +289,7 @@ public:
     halp_meta(name, "Main")
     halp_meta(layout, halp::layouts::hbox)
     halp_meta(width, 64)
-    halp_meta(height, 64)
+    halp_meta(height, 80)
 
     struct bus
     {
@@ -161,7 +300,12 @@ public:
     };
 
     halp::custom_actions_item<LightnessComputerTextureDisplay> tex;
-    halp::control<&ins::size> size;
+    struct
+    {
+      halp_meta(layout, halp::layouts::vbox)
+      halp::control<&ins::size> size;
+      halp::control<&ins::mode> mode;
+    } controls;
   };
 };
 }
