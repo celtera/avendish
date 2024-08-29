@@ -413,6 +413,50 @@ struct from_ossia_value_impl
     return true;
   }
 
+  template <typename T1, typename T2>
+  bool operator()(const ossia::value& src, std::pair<T1, T2>& f)
+  {
+    if(auto vec = src.target<std::vector<ossia::value>>(); vec && vec->size() >= 2)
+    {
+      (*this)((*vec)[0], f.first);
+      (*this)((*vec)[1], f.second);
+      return true;
+    }
+    else
+    {
+      if(auto vec = ossia::convert<std::vector<ossia::value>>(src); vec.size() >= 2)
+      {
+        (*this)(vec[0], f.first);
+        (*this)(vec[1], f.second);
+      }
+      return false;
+    }
+  }
+
+  template <typename... T>
+  bool operator()(const ossia::value& src, std::tuple<T...>& f)
+  {
+    if(auto vec = src.target<std::vector<ossia::value>>();
+       vec && vec->size() >= sizeof...(T))
+    {
+      [this, vec, &f]<std::size_t... I>(std::index_sequence<I...>) {
+        ((*this)((*vec)[I], std::get<I>(f)), ...);
+      }(std::make_index_sequence<sizeof...(T)>{});
+      return true;
+    }
+    else
+    {
+      if(auto vec = ossia::convert<std::vector<ossia::value>>(src); vec.size() >= 2)
+      {
+        [this, vec, &f]<std::size_t... I>(std::index_sequence<I...>) {
+          ((*this)(vec[I], std::get<I>(f)), ...);
+        }(std::make_index_sequence<sizeof...(T)>{});
+        return true;
+      }
+      return false;
+    }
+  }
+
   template <
       template <typename> typename Pred, typename Internal,
       template <typename...> typename T, typename... Args>
