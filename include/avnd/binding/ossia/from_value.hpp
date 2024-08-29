@@ -1247,12 +1247,6 @@ inline bool from_ossia_value(const ossia::value& src, const char*& dst)
     return false;
   }
 }
-template <avnd::vector_ish T>
-  requires(!avnd::string_ish<T>) bool
-from_ossia_value(const ossia::value& src, T& dst)
-{
-  return from_ossia_value_impl{}(src, dst);
-}
 
 template <
     template <typename, std::size_t, typename...> typename T, typename Val,
@@ -1270,25 +1264,11 @@ from_ossia_value(const ossia::value& src, T<N>& dst)
   return from_ossia_value_impl{}(src, dst);
 }
 
-template <avnd::variant_ish T>
-bool from_ossia_value(const ossia::value& src, T& dst)
-{
-  return from_ossia_value_impl{}(src, dst);
-}
-
-template <avnd::set_ish T>
-bool from_ossia_value(const ossia::value& src, T& dst)
-{
-  return from_ossia_value_impl{}(src, dst);
-}
-
-template <avnd::map_ish T>
-bool from_ossia_value(const ossia::value& src, T& dst)
-{
-  return from_ossia_value_impl{}(src, dst);
-}
-
-template <avnd::bitset_ish T>
+template <typename T>
+  requires(
+      avnd::variant_ish<T> || avnd::set_ish<T> || avnd::map_ish<T> || avnd::bitset_ish<T>
+      || avnd::pair_ish<T> || avnd::tuple_ish<T>
+      || (avnd::vector_ish<T> && !avnd::string_ish<T>))
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   return from_ossia_value_impl{}(src, dst);
