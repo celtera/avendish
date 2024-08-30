@@ -647,6 +647,75 @@ public:
     return true;
   }
 
+  template <typename M, typename Args, std::size_t Idx>
+  std::optional<Args> value_to_argument_tuple(const ossia::value& val)
+  {
+    static constexpr std::size_t count = boost::mp11::mp_size<Args>{};
+
+    if constexpr(count == 0)
+    {
+      return std::tuple<>{};
+    }
+    else if constexpr(count == 1)
+    {
+      static constexpr M field;
+      typename boost::mp11::mp_front<Args> arg;
+      from_ossia_value(field, val, arg, avnd::field_index<Idx>{});
+      return std::make_tuple(arg);
+    }
+    else
+    {
+      static constexpr bool all_numbers
+          = boost::mp11::mp_all_of<Args, std::is_integral>{}
+            || boost::mp11::mp_all_of<Args, std::is_floating_point>{};
+      switch(val.get_type())
+      {
+        case ossia::val_type::VEC2F: {
+          if constexpr(count == 2 && all_numbers)
+          {
+            const auto& vec = *val.target<ossia::vec2f>();
+            return std::make_tuple(vec[0], vec[1]);
+          }
+          break;
+        }
+        case ossia::val_type::VEC3F:
+          if constexpr(count == 3 && all_numbers)
+          {
+            const auto& vec = *val.target<ossia::vec3f>();
+            return std::make_tuple(vec[0], vec[1], vec[2]);
+          }
+          break;
+        case ossia::val_type::VEC4F:
+          if constexpr(count == 4 && all_numbers)
+          {
+            const auto& vec = *val.target<ossia::vec4f>();
+            return std::make_tuple(vec[0], vec[1], vec[2], vec[3]);
+          }
+          break;
+        case ossia::val_type::LIST: {
+          static constexpr M field;
+          Args tuple;
+          const auto& vec = *val.target<std::vector<ossia::value>>();
+          if(vec.size() == count)
+          {
+            int i = 0; // FIXME doable at compile-time
+            std::apply([this, &vec, &i]<typename... Ts>(Ts&&... args) {
+              (from_ossia_value(field, vec[i++], args, avnd::field_index<Idx>{}), ...);
+            }, tuple);
+            return tuple;
+          }
+          break;
+        }
+        case ossia::val_type::MAP:
+          // FIXME
+          break;
+        default:
+          break;
+      }
+    }
+    return std::nullopt;
+  }
+
   template <auto Idx, typename M>
   void invoke_message(const ossia::value& val, avnd::field_reflection<Idx, M>)
   {
@@ -671,93 +740,60 @@ public:
             f();
         }
       }
-      else if constexpr(arg_count == 1)
+      else
       {
+        using namespace boost::mp11;
         if constexpr(std::is_same_v<avnd::first_message_argument<M>, T&>)
         {
-          for(auto& m : this->impl.effects())
+          using main_args = mp_pop_front<typename refl::arguments>;
+          using no_ref = mp_transform<std::remove_cvref_t, main_args>;
+          using args = mp_rename<no_ref, std::tuple>;
+
+          if(auto res = value_to_argument_tuple<M, args, Idx>(val))
           {
-            if constexpr(std::is_member_function_pointer_v<decltype(f)>)
+            for(auto& m : this->impl.effects())
             {
-              if constexpr(requires { M{}(m); })
-                M{}(m);
-              else if constexpr(requires { (m.*f)(m); })
-                (m.*f)(m);
+              std::apply([&]<typename... Ts>(Ts&&... args) {
+                if constexpr(std::is_member_function_pointer_v<decltype(f)>)
+                {
+                  if constexpr(requires { M{}(m, std::forward<Ts>(args)...); })
+                    M{}(m, std::forward<Ts>(args)...);
+                  else if constexpr(requires { (m.*f)(m, std::forward<Ts>(args)...); })
+                    (m.*f)(m, std::forward<Ts>(args)...);
+                }
+                else
+                {
+                  f(m, std::forward<Ts>(args)...);
+                }
+              }, *res);
             }
-            else
-              f(m);
           }
         }
         else
         {
-          constexpr M field;
-
-          using arg_type = std::decay_t<avnd::first_message_argument<M>>;
-          arg_type arg;
-          from_ossia_value(field, val, arg, avnd::field_index<Idx>{});
-
-          for(auto& m : this->impl.effects())
+          using main_args = typename refl::arguments;
+          using no_ref = mp_transform<std::remove_cvref_t, main_args>;
+          using args = mp_rename<no_ref, std::tuple>;
+          if(auto res = value_to_argument_tuple<M, args, Idx>(val))
           {
-            if constexpr(std::is_member_function_pointer_v<decltype(f)>)
+            for(auto& m : this->impl.effects())
             {
-              if constexpr(requires { M{}(arg); })
-                M{}(arg);
-              else if constexpr(requires { (m.*f)(arg); })
-                (m.*f)(arg);
-            }
-            else
-            {
-              f(arg);
+              std::apply([&]<typename... Ts>(Ts&&... args) {
+                if constexpr(std::is_member_function_pointer_v<decltype(f)>)
+                {
+                  if constexpr(requires { M{}(m, std::forward<Ts>(args)...); })
+                    M{}(std::forward<Ts>(args)...);
+                  else if constexpr(requires { (m.*f)(m, std::forward<Ts>(args)...); })
+                    (m.*f)(std::forward<Ts>(args)...);
+                }
+                else
+                {
+                  f(std::forward<Ts>(args)...);
+                }
+              }, *res);
             }
           }
-          /*
-          for (auto& m : this->impl.effects())
-          {
-            if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-            {
-              if constexpr(requires { M{}(m); })
-                M{}(m);
-              else if constexpr(requires { (m.*f)(m); })
-                (m.*f)(m);
-            }
-            else
-              f(m);
-          }*/
-          //   FIXME ! oscquery_mapper.hpp already has all this code
-          // using first_arg = boost::mp11::mp_first<typename refl::arguments>;
-          // const auto& v = ossia::convert<std::decay_t<first_arg>>(val);
-          // for(auto& m : this->impl.effects())
-          // {
-          //   if constexpr (std::is_member_function_pointer_v<decltype(f)>)
-          //     (m.*f)(v);
-          //   else
-          //     f(v);
-          // }
         }
-      }
-      else
-      {
-        if constexpr(arg_count == 2)
-        {
-          constexpr M field;
-          using arg_type = std::decay_t<avnd::second_message_argument<M>>;
-          arg_type arg;
-          from_ossia_value(field, val, arg, avnd::field_index<Idx>{});
-          for(auto& m : this->impl.effects())
-          {
-            if constexpr(std::is_member_function_pointer_v<decltype(f)>)
-            {
-              if constexpr(requires { M{}(m, arg); })
-                M{}(m, arg);
-              else if constexpr(requires { (m.*f)(m, arg); })
-                (m.*f)(m, arg);
-            }
-            else
-              f(m, arg);
-          }
-        }
-        // TODO use vecf, list, etc...
-        // FIXME
       }
     }
     else
