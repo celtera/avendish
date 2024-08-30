@@ -166,6 +166,8 @@ struct messages
     {
       bool ok = false;
       std::string_view symname = s->s_name;
+
+      // First try to locate explicit messages
       avnd::messages_introspection<T>::for_all(
           avnd::get_messages(implementation), [&]<typename M>(M& field) {
             if(ok)
@@ -175,6 +177,27 @@ struct messages
               ok = process_message(implementation.effect, field, symname, argc, argv);
             }
           });
+
+      // If that fails try to look for a sink message which accepts anything
+      if(!ok)
+      {
+        avnd::messages_introspection<T>::for_all(
+            avnd::get_messages(implementation), [&]<typename M>(M& field) {
+          if(ok)
+            return;
+          if(avnd::tag_process_any_message<M>)
+          {
+            static thread_local std::vector<t_atom> atoms;
+            atoms.clear();
+            atoms.resize(argc + 1);
+            atoms[0] = t_atom{.a_type = A_SYM, .a_w = std::bit_cast<word>(s)};
+            for(int i = 0; i < argc; i++)
+              atoms[i + 1] = *argv;
+            ok = process_message(
+                implementation.effect, field, symname, atoms.size(), atoms.data());
+          }
+        });
+      }
       return ok;
     }
     return false;

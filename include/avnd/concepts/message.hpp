@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
 #include <avnd/common/concepts_polyfill.hpp>
+#include <avnd/common/enums.hpp>
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/concepts/generic.hpp>
 
@@ -131,4 +132,12 @@ using second_message_argument
 template <typename M>
 using third_message_argument
     = boost::mp11::mp_third<typename message_reflection<M>::arguments>;
+
+/**
+ * This tag indicates that the message accepts any command
+ * and ignores its own message name.
+ */
+AVND_DEFINE_TAG(process_any_message)
+template <typename T>
+concept any_message_port = tag_process_any_message<T>;
 }

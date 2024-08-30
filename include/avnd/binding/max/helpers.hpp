@@ -88,10 +88,11 @@ static void process_generic_message(T& implementation, t_symbol* s)
 template <typename Arg>
 static constexpr bool compatible(short type)
 {
-  if constexpr(requires(Arg arg) { arg = 0.f; })
-    return type == A_FLOAT || type == A_LONG;
-  else if constexpr(requires(Arg arg) { arg = "str"; })
+  // NOTE! has to be in this order as std::string x = 0.f; builds...
+  if constexpr(requires(Arg arg) { arg = "str"; })
     return type == A_SYM;
+  else if constexpr(requires(Arg arg) { arg = 0.f; })
+    return type == A_FLOAT || type == A_LONG;
 
   return false;
 }
@@ -99,12 +100,13 @@ static constexpr bool compatible(short type)
 template <typename Arg>
 static Arg convert(t_atom& atom)
 {
-  if constexpr(std::floating_point<Arg>)
+  if constexpr(requires(Arg arg) { arg = "str"; })
+    return atom.a_w.w_sym->s_name;
+  else if constexpr(std::floating_point<Arg>)
     return atom.a_type == A_FLOAT ? atom.a_w.w_float : atom.a_w.w_long;
   else if constexpr(std::integral<Arg>)
     return atom.a_type == A_LONG ? atom.a_w.w_long : atom.a_w.w_float;
-  else if constexpr(requires(Arg arg) { arg = "str"; })
-    return atom.a_w.w_sym->s_name;
+
   else
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");
 }
