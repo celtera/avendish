@@ -168,10 +168,12 @@ struct controls_mirror
 template <typename T>
 struct controls_input_queue
 {
+  using i_tuple = std::tuple<>;
 };
 template <typename T>
 struct controls_output_queue
 {
+  using o_tuple = std::tuple<>;
 };
 template <typename T>
   requires(avnd::control_input_introspection<T>::size > 0)
@@ -821,7 +823,7 @@ public:
 
   void process_smooth() { this->smooth.smooth_all(this->impl); }
 
-  auto make_controls_in_tuple()
+  typename controls_input_queue<T>::i_tuple make_controls_in_tuple()
   {
     // We only care about the inputs of the first one, since they're all the same
     for(auto& state : this->impl.full_state())
@@ -829,9 +831,10 @@ public:
       return avnd::control_input_introspection<T>::filter_tuple(
           state.inputs, [](auto& field) { return field.value; });
     }
+    return {};
   }
 
-  auto make_controls_out_tuple()
+  typename controls_output_queue<T>::o_tuple make_controls_out_tuple()
   {
     // Note that this does not yet make a lot of sens for polyphonic effects
     for(auto& state : this->impl.full_state())
@@ -839,6 +842,7 @@ public:
       return avnd::control_output_introspection<T>::filter_tuple(
           state.outputs, [](auto& field) { return field.value; });
     }
+    return {};
   }
 
   void finish_run()
