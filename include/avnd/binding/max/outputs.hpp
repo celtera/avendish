@@ -4,7 +4,7 @@
 
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/to_atoms.hpp>
-
+#include <commonsyms.h>
 namespace max
 {
 struct do_process_outlet
@@ -82,6 +82,19 @@ struct do_process_outlet
     l(v);
     outlet_list(p, nullptr, l.atoms.size(), l.atoms.data());
     */
+  }
+  template <typename... Args>
+    requires(sizeof...(Args) > 1)
+  void operator()(Args&&... v) noexcept
+  {
+    std::array<t_atom, sizeof...(Args)> atoms;
+    static constexpr int N = sizeof...(Args);
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (set_atom{}(&atoms[I], v), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_list(p, nullptr, N, atoms.data());
   }
 };
 

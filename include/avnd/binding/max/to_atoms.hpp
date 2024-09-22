@@ -173,6 +173,27 @@ struct to_atoms_large
 
 };
 
+struct set_atom
+{
+  t_max_err operator()(t_atom* at, std::integral auto v) const noexcept
+  {
+    atom_setlong(at, v);
+    return MAX_ERR_NONE;
+  }
+
+  t_max_err operator()(t_atom* at, std::floating_point auto v) const noexcept
+  {
+    atom_setfloat(at, v);
+    return MAX_ERR_NONE;
+  }
+
+  t_max_err operator()(t_atom* at, std::string_view v) const noexcept
+  {
+    atom_setsym(at, gensym(v.data()));
+    return MAX_ERR_NONE;
+  }
+};
+
 struct to_atoms
 {
   long* ac{};
