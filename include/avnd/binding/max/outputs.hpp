@@ -72,7 +72,7 @@ struct do_process_outlet
   void operator()(const avnd::variant_ish auto& v) const noexcept
   {
     using namespace std;
-    visit([](const auto& val) { (*this)(val); }, v);
+    visit([this](const auto& val) { (*this)(val); }, v);
   }
 
   void operator()(const avnd::map_ish auto& v) const noexcept
