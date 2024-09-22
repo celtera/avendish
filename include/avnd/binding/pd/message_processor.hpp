@@ -128,13 +128,19 @@ struct message_processor
       case A_FLOAT: {
         // This is the float that is supposed to go inside the first inlet if any ?
         if constexpr(requires { port.value = 0.f; })
+        {
           avnd::apply_control(port, arg.a_w.w_float);
+          if_possible(port.update(implementation.effect));
+        }
         break;
       }
 
       case A_SYMBOL: {
         if constexpr(requires { port.value = "string"; })
+        {
           avnd::apply_control(port, arg.a_w.w_symbol->s_name);
+          if_possible(port.update(implementation.effect));
+        }
         break;
       }
 
@@ -189,6 +195,8 @@ struct message_processor
   {
     // First try to process messages handled explicitely in the object
     if(messages_setup.process_messages(implementation, s, argc, argv))
+      return;
+    if(input_setup.process_inputs(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour

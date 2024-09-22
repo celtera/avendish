@@ -107,6 +107,14 @@ avnd_make_object(
 )
 
 
+avnd_make_object(
+  TARGET CompleteMessageExample
+  MAIN_FILE examples/Complete/CompleteMessageExample.hpp
+  MAIN_CLASS examples::helpers::CompleteMessageExample
+  C_NAME avnd_complete_message_example
+)
+
+
 
 # This one does not really make sense as a Pd or Max object
 # (Pd has no notion of MIDI port)

@@ -91,10 +91,10 @@ static void process_generic_message(T& implementation, t_symbol* s)
 template <typename Arg>
 static constexpr bool compatible(t_atomtype type)
 {
-  if constexpr(requires(Arg arg) { arg = 0.f; })
-    return type == t_atomtype::A_FLOAT;
-  else if constexpr(requires(Arg arg) { arg = "str"; })
+  if constexpr(requires(Arg arg) { arg = "str"; })
     return type == t_atomtype::A_SYMBOL;
+  else if constexpr(requires(Arg arg) { arg = 0.f; })
+    return type == t_atomtype::A_FLOAT;
 
   return false;
 }
@@ -102,22 +102,12 @@ static constexpr bool compatible(t_atomtype type)
 template <typename Arg>
 static Arg convert(t_atom& atom)
 {
-  if constexpr(requires(Arg arg) { arg = 0.f; })
-    return atom.a_w.w_float;
-  else if constexpr(requires(Arg arg) { arg = "str"; })
+  if constexpr(requires(Arg arg) { arg = "str"; })
     return atom.a_w.w_symbol->s_name;
+  else if constexpr(requires(Arg arg) { arg = 0.f; })
+    return atom.a_w.w_float;
   else
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");
-}
-
-t_symbol* symbol_for_port(avnd::float_parameter auto& port)
-{
-  return &s_float;
-}
-
-t_symbol* symbol_for_port(avnd::string_parameter auto& port)
-{
-  return &s_symbol;
 }
 
 t_symbol* symbol_for_port(avnd::mono_audio_port auto& port)
@@ -130,9 +120,32 @@ t_symbol* symbol_for_port(avnd::poly_audio_port auto& port)
   return &s_signal;
 }
 
+t_symbol* symbol_for_port(avnd::parameter auto& port)
+{
+  using type = std::remove_cvref_t<decltype(port.value)>;
+  if constexpr(avnd::vector_ish<type>)
+    return &s_list;
+  else if constexpr(avnd::set_ish<type>)
+    return &s_list;
+  else if constexpr(avnd::map_ish<type>)
+    return &s_list;
+  else if constexpr(avnd::pair_ish<type>)
+    return &s_list;
+  else if constexpr(avnd::tuple_ish<type>)
+    return &s_list;
+  else if constexpr(avnd::span_ish<type>)
+    return &s_list;
+  else if constexpr(std::floating_point<type>)
+    return &s_float;
+  else if constexpr(std::integral<type>)
+    return &s_float;
+  else if constexpr(avnd::string_ish<type>)
+    return &s_symbol;
+  return &s_anything; // TODO is that correct ?
+}
+
 t_symbol* symbol_for_port(auto& port)
 {
   return &s_anything; // TODO is that correct ?
 }
-
 }

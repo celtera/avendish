@@ -192,6 +192,22 @@ inline void value_to_pd(t_outlet* outlet, const std::string& v) noexcept
   outlet_symbol(outlet, gensym(v.c_str()));
 }
 
+template <typename... Args>
+  requires(sizeof...(Args) > 1)
+inline void value_to_pd(t_outlet* outlet, Args&&... v) noexcept
+{
+  std::array<t_atom, sizeof...(Args)> atoms;
+  static constexpr int N = sizeof...(Args);
+
+  int i = 0;
+
+  [&]<std::size_t... I>(std::index_sequence<I...>) {
+    (value_to_pd(atoms[I], v), ...);
+  }(std::make_index_sequence<N>{});
+
+  outlet_list(outlet, &s_list, N, atoms.data());
+}
+
 template <typename T>
 struct value_writer
 {
@@ -213,7 +229,7 @@ struct value_writer
     using processor_type = typename T::processor_type;
     using lin_out = avnd::linear_timed_parameter_output_introspection<processor_type>;
     using indices = typename lin_out::indices_n;
-    constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
+    static constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
 
     auto& buffer = get<storage_index>(buffers);
 

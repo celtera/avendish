@@ -69,6 +69,12 @@ struct do_process_outlet
     outlet_list(p, nullptr, l.atoms.size(), l.atoms.data());
   }
 
+  void operator()(const avnd::variant_ish auto& v) const noexcept
+  {
+    using namespace std;
+    visit([](const auto& val) { (*this)(val); }, v);
+  }
+
   void operator()(const avnd::map_ish auto& v) const noexcept
   {
     /*

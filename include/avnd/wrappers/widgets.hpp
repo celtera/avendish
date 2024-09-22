@@ -94,6 +94,8 @@ struct widget_reflection
         return "range_spinbox";
       case widget_type::multi_slider:
         return "multi_slider";
+      default:
+        return "unknown";
     }
   }
   using value_type = T;

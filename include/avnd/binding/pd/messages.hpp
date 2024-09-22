@@ -175,19 +175,20 @@ struct messages
   static bool process_messages(
       avnd::effect_container<T>& implementation, t_symbol* s, int argc, t_atom* argv)
   {
+    // FIXME create static pointer tables instead
     if constexpr(avnd::has_messages<T>)
     {
       bool ok = false;
       std::string_view symname = s->s_name;
       avnd::messages_introspection<T>::for_all(
           avnd::get_messages(implementation), [&]<typename M>(M& field) {
-            if(ok)
-              return;
-            if(symname == M::name())
-            {
-              ok = process_message(implementation.effect, field, symname, argc, argv);
-            }
-          });
+        if(ok)
+          return;
+        if(symname == avnd::get_name<M>())
+        {
+          ok = process_message(implementation.effect, field, symname, argc, argv);
+        }
+      });
       return ok;
     }
     return false;
