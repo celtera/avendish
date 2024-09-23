@@ -6,7 +6,8 @@
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/object.hpp>
-#include <boost/container/small_vector.hpp>
+
+#include <string_view>
 #include <variant>
 
 namespace max
@@ -26,7 +27,9 @@ struct init_arguments
 
   static auto call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    boost::container::small_vector<std::variant<float, std::string_view>, 64> ctor;
+    static thread_local std::vector<std::variant<float, std::string_view>> ctor;
+    ctor.clear();
+    ctor.reserve(64);
 
     for(int i = 0; i < argc; i++)
     {
@@ -222,7 +225,11 @@ struct init_arguments
   static void call(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using namespace std;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-requires"
     if constexpr(requires { avnd::type_list<decltype(T::initialize)>; })
+#pragma GCC diagnostic pop
     {
       if constexpr(avnd::type_list<decltype(T::initialize)>)
       {
