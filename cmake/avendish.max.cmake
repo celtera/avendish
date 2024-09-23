@@ -181,10 +181,15 @@ function(avnd_make_max)
       set(_maxref_template "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml")
       set(_maxref_destination "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml")
       add_custom_command(
-          TARGET ${AVND_FX_TARGET}
           COMMAND json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
-          POST_BUILD
+          DEPENDS "${_dump_path}"
+          OUTPUT "${_maxref_destination}"
       )
+      add_custom_target(dump_maxref_${AVND_FX_TARGET} ALL
+          DEPENDS
+            "${_dump_file_path}"
+            ${AVND_FX_TARGET}
+        )
       set_target_properties(${AVND_FX_TARGET}
         PROPERTIES
           AVND_MAX_MAXREF_XML "${_maxref_destination}"
