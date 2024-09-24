@@ -105,13 +105,23 @@ constexpr std::string_view get_typeid_name()
 }
 #endif
 
+// Public-facing display name of objects, ports, etc.
 define_get_property(name, std::string_view, get_typeid_name<T>())
+
+// Name used for interoperability, message-passing, etc. No spaces or special characters except underscore.
 define_get_property(c_name, std::string_view, "(c name)")
+
+// Define an explicit optional symbol for messages in Max / Pd
+define_get_property(symbol, std::string_view, "(symbol)")
+
+// Uniquely identifies an object
+define_get_property(uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
+
+// Multiple common product metadatas
 define_get_property(vendor, std::string_view, "(vendor)")
 define_get_property(product, std::string_view, "(product)")
 define_get_property(version, std::string_view, "(version)")
 define_get_property(label, std::string_view, "(label)")
-define_get_property(uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
 define_get_property(short_label, std::string_view, "(short label)")
 define_get_property(category, std::string_view, "(category)")
 define_get_property(copyright, std::string_view, "(copyright)")
@@ -121,7 +131,7 @@ define_get_property(email, std::string_view, "(email)")
 define_get_property(manual_url, std::string_view, "(manual_url)")
 define_get_property(support_url, std::string_view, "(support_url)")
 define_get_property(description, std::string_view, "(description)")
-define_get_property(short_description, std::string_view, "(module)")
+define_get_property(short_description, std::string_view, "(short_description)")
 define_get_property(module, std::string_view, "(module)")
 
 template <typename T>

@@ -8,6 +8,7 @@
 #include <avnd/wrappers/metadatas.hpp>
 #include <m_pd.h>
 
+#include <string>
 #include <string_view>
 
 namespace pd
@@ -110,19 +111,28 @@ static Arg convert(t_atom& atom)
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");
 }
 
-t_symbol* symbol_for_port(avnd::mono_audio_port auto& port)
+template <typename T>
+t_symbol* symbol_for_port()
+{
+  return &s_anything; // TODO is that correct ?
+}
+
+template <avnd::mono_audio_port P>
+t_symbol* symbol_for_port()
 {
   return &s_signal;
 }
 
-t_symbol* symbol_for_port(avnd::poly_audio_port auto& port)
+template <avnd::poly_audio_port P>
+t_symbol* symbol_for_port()
 {
   return &s_signal;
 }
 
-t_symbol* symbol_for_port(avnd::parameter auto& port)
+template <avnd::parameter P>
+t_symbol* symbol_for_port()
 {
-  using type = std::remove_cvref_t<decltype(port.value)>;
+  using type = std::remove_cvref_t<decltype(P::value)>;
   if constexpr(avnd::vector_ish<type>)
     return &s_list;
   else if constexpr(avnd::set_ish<type>)
@@ -144,8 +154,50 @@ t_symbol* symbol_for_port(avnd::parameter auto& port)
   return &s_anything; // TODO is that correct ?
 }
 
-t_symbol* symbol_for_port(auto& port)
+template <typename R, typename... Args, template <typename...> typename F>
+static t_symbol* symbol_for_arguments(F<R(Args...)>)
 {
-  return &s_anything; // TODO is that correct ?
+  if constexpr(sizeof...(Args) == 0)
+  {
+    return &s_bang;
+  }
+  else if constexpr(sizeof...(Args) == 1)
+  {
+    if constexpr(std::is_integral_v<Args...> || std::is_floating_point_v<Args...>)
+      return &s_float;
+    else if constexpr(std::is_convertible_v<Args..., std::string>)
+      return &s_symbol;
+    else
+      return &s_list;
+  }
+  else
+  {
+    return &s_list;
+  }
+}
+
+template <typename C>
+static t_symbol* get_static_symbol()
+{
+  if constexpr(avnd::has_symbol<C>)
+  {
+    static constexpr auto sym = avnd::get_symbol<C>();
+    return gensym(sym.data());
+  }
+  else if constexpr(avnd::has_c_name<C>)
+  {
+    static constexpr auto sym = avnd::get_c_name<C>();
+    return gensym(sym.data());
+  }
+  else if constexpr(requires { sizeof(decltype(C::call)); })
+  {
+    using call_type = decltype(C::call);
+    return symbol_for_arguments(call_type{});
+  }
+  else
+  {
+    using value_type = decltype(C::value);
+    return symbol_for_port<C>();
+  }
 }
 }

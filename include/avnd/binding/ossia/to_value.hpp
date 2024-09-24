@@ -51,7 +51,7 @@ struct to_ossia_value_impl
       static_assert(fields == F::field_names().size());
       to_map(f);
     }
-    else if constexpr(vecf_compatible<F>())
+    else if constexpr(avnd::vecf_compatible<F>())
     {
       if constexpr(fields == 2)
       {
@@ -180,7 +180,7 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
-  void operator()(const oscr::type_wrapper auto& f)
+  void operator()(const avnd::type_wrapper auto& f)
   {
     auto& [obj] = f;
     (*this)(obj);
@@ -296,7 +296,7 @@ ossia::value to_ossia_value(const T& v)
   {
     return ossia::impulse{};
   }
-  else if constexpr(vecf_compatible<type>())
+  else if constexpr(avnd::vecf_compatible<type>())
   {
     if constexpr(sz == 2)
     {
@@ -423,7 +423,7 @@ ossia::value to_ossia_value(const T& v)
   return to_ossia_value_rec(v);
 }
 
-ossia::value to_ossia_value(const oscr::type_wrapper auto& v)
+ossia::value to_ossia_value(const avnd::type_wrapper auto& v)
 {
   auto& [obj] = v;
   return to_ossia_value_rec(obj);

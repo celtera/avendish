@@ -9,12 +9,12 @@
   }
 
 #define halp_flag(flag) \
-  enum                  \
+  enum : bool           \
   {                     \
     flag                \
   }
 #define halp_flags(...) \
-  enum                  \
+  enum : unsigned char  \
   {                     \
     __VA_ARGS__         \
   }

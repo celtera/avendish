@@ -1,11 +1,14 @@
 #pragma once
-#include <avnd/concepts/field_names.hpp>
 #include <avnd/binding/ossia/ossia_to_curve.hpp>
 #include <avnd/binding/ossia/value.hpp>
+#include <avnd/concepts/field_names.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/range.hpp>
+#include <avnd/introspection/type_wrapper.hpp>
+#include <avnd/introspection/vecf.hpp>
 #include <boost/mp11/algorithm.hpp>
+#include <ossia/network/value/value.hpp>
 #include <ossia/network/value/value_conversion.hpp>
 
 #include <type_traits>
@@ -143,7 +146,7 @@ template <typename T>
 using is_bool = std::is_same<bool, T>;
 template <typename T>
 using is_variant
-    = std::integral_constant<bool, avnd::variant_ish<T> || oscr::type_wrapper<T>>;
+    = std::integral_constant<bool, avnd::variant_ish<T> || avnd::type_wrapper<T>>;
 
 // Exclude string-ish stuff
 template <typename T>
@@ -340,7 +343,7 @@ struct from_ossia_value_impl
   operator()(const ossia::value& src, F& dst)
   {
     constexpr int sz = boost::pfr::tuple_size_v<F>;
-    if constexpr(vecf_compatible<F>())
+    if constexpr(avnd::vecf_compatible<F>())
     {
       if constexpr(sz == 2)
       {
@@ -667,7 +670,7 @@ struct from_ossia_value_impl
     */
   }
 
-  bool operator()(const ossia::value& src, oscr::type_wrapper auto& f)
+  bool operator()(const ossia::value& src, avnd::type_wrapper auto& f)
   {
     auto& [obj] = f;
     return (*this)(src, obj);
@@ -1177,7 +1180,7 @@ template <typename T>
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using type = std::decay_t<T>;
-  static_assert(!oscr::type_wrapper<T>);
+  static_assert(!avnd::type_wrapper<T>);
   constexpr int sz = boost::pfr::tuple_size_v<T>;
   if constexpr(sz == 0)
   {
@@ -1185,7 +1188,7 @@ bool from_ossia_value(const ossia::value& src, T& dst)
     // FIXME unless we have an optional parameter !
     return true;
   }
-  else if constexpr(vecf_compatible<type>())
+  else if constexpr(avnd::vecf_compatible<type>())
   {
     if constexpr(sz == 2)
     {
@@ -1290,7 +1293,7 @@ void from_ossia_value(const ossia::value& src, T& dst)
   }
 }
 
-template <oscr::type_wrapper T>
+template <avnd::type_wrapper T>
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   auto& [obj] = dst;

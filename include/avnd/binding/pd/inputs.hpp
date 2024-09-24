@@ -181,7 +181,7 @@ struct inputs
         {
           static constexpr auto name = avnd::get_name<M>();
 
-          inlet_new(&x_obj, &x_obj.ob_pd, pd::symbol_for_port(ctl), gensym(name.data()));
+          inlet_new(&x_obj, &x_obj.ob_pd, pd::symbol_for_port<M>(), gensym(name.data()));
         }
       }
     });

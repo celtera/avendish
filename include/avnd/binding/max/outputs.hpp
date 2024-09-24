@@ -7,7 +7,7 @@
 #include <commonsyms.h>
 namespace max
 {
-struct do_process_outlet
+struct do_value_to_max_typed
 {
   t_outlet* p;
 
@@ -98,6 +98,57 @@ struct do_process_outlet
   }
 };
 
+// FIXME port the thread-local mechanism to pd in to_list
+template <typename C, typename... Args>
+inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
+{
+  if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
+  {
+    static const auto sym = sget_static_symbol<C>();
+    return do_value_to_max_anything{}(outlet, sym, std::forward<Args>(v)...);
+  }
+  else
+  {
+    return do_value_to_max_typed{}(outlet, std::forward<Args>(v)...);
+  }
+}
+
+template <avnd::tag_dynamic_symbol C>
+inline void value_to_max_dispatch(
+    t_outlet* outlet, avnd::string_ish auto&& dsym, avnd::span_ish auto&& v) noexcept
+{
+  static thread_local std::vector<t_atom> atoms;
+  const int N = v.size();
+  atoms.clear();
+  atoms.resize(N);
+
+  for(int i = 0; i < N; i++)
+  {
+    value_to_max(atoms[i], v[i]);
+  }
+  outlet_anything(outlet, gensym(dsym.data()), N, atoms.data());
+}
+
+template <avnd::tag_dynamic_symbol C, typename... Args>
+inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
+{
+  [outlet]<typename... TArgs>(const avnd::string_ish auto& dsym, TArgs&&... args) {
+    std::array<t_atom, sizeof...(TArgs)> atoms;
+    static constexpr int N = sizeof...(TArgs);
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (value_to_max(atoms[I], args), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_anything(outlet, gensym(dsym.data()), N, atoms.data());
+  }(v...);
+}
+
+template <typename C, typename... Args>
+void dispatch_outlet(C& c, t_outlet* outlet, Args&&... args)
+{
+  do_process_outlet{p}(std::forward<Args>(args)...);
+}
 
 template <typename T>
 struct outputs
