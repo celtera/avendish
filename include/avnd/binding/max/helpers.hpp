@@ -111,24 +111,83 @@ static Arg convert(t_atom& atom)
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");
 }
 
-t_symbol* symbol_for_port(avnd::float_parameter auto& port)
+template<avnd::int_parameter C>
+t_symbol* symbol_for_port()
+{
+  return _sym_long;
+}
+
+template<avnd::float_parameter C>
+t_symbol* symbol_for_port()
 {
   return _sym_float;
 }
 
-t_symbol* symbol_for_port(avnd::string_parameter auto& port)
+template<avnd::string_parameter C>
+t_symbol* symbol_for_port()
 {
   return _sym_symbol;
 }
 
-t_symbol* symbol_for_port(avnd::mono_audio_port auto& port)
+template<avnd::mono_audio_port C>
+t_symbol* symbol_for_port()
 {
   return _sym_signal;
 }
 
-t_symbol* symbol_for_port(auto& port)
+template<typename C>
+t_symbol* symbol_for_port()
 {
   return _sym_anything; // TODO is that correct ?
+}
+
+template <typename R, typename... Args, template <typename...> typename F>
+static t_symbol* symbol_for_arguments(F<R(Args...)>)
+{
+  if constexpr(sizeof...(Args) == 0)
+  {
+    return _sym_bang;
+  }
+  else if constexpr(sizeof...(Args) == 1)
+  {
+    if constexpr(std::is_integral_v<Args...>)
+      return _sym_long;
+    else if constexpr(std::is_floating_point_v<Args...>)
+      return _sym_float;
+    else if constexpr(std::is_convertible_v<Args..., std::string>)
+      return _sym_symbol;
+    else
+      return _sym_list;
+  }
+  else
+  {
+    return _sym_list;
+  }
+}
+
+template <typename C>
+static t_symbol* get_static_symbol()
+{
+  if constexpr(avnd::has_symbol<C>)
+  {
+    static constexpr auto sym = avnd::get_symbol<C>();
+    return gensym(sym.data());
+  }
+  else if constexpr(avnd::has_c_name<C>)
+  {
+    static constexpr auto sym = avnd::get_c_name<C>();
+    return gensym(sym.data());
+  }
+  else if constexpr(requires { sizeof(decltype(C::call)); })
+  {
+    using call_type = decltype(C::call);
+    return symbol_for_arguments(call_type{});
+  }
+  else
+  {
+    using value_type = decltype(C::value);
+    return symbol_for_port<C>();
+  }
 }
 
 }

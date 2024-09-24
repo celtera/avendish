@@ -12,7 +12,6 @@ namespace max
 {
 struct to_list
 {
-  t_outlet* outlet{};
   static inline thread_local boost::container::vector<t_atom> atoms;
 
   to_list()

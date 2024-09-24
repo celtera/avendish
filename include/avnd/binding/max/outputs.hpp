@@ -104,12 +104,12 @@ inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
 {
   if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
-    static const auto sym = sget_static_symbol<C>();
-    return do_value_to_max_anything{}(outlet, sym, std::forward<Args>(v)...);
+    static const auto sym = get_static_symbol<C>();
+    // return do_value_to_max_anything{}(outlet, sym, std::forward<Args>(v)...);
   }
-  else
+  //else
   {
-    return do_value_to_max_typed{}(outlet, std::forward<Args>(v)...);
+    return do_value_to_max_typed{outlet}(std::forward<Args>(v)...);
   }
 }
 
@@ -117,16 +117,9 @@ template <avnd::tag_dynamic_symbol C>
 inline void value_to_max_dispatch(
     t_outlet* outlet, avnd::string_ish auto&& dsym, avnd::span_ish auto&& v) noexcept
 {
-  static thread_local std::vector<t_atom> atoms;
-  const int N = v.size();
-  atoms.clear();
-  atoms.resize(N);
-
-  for(int i = 0; i < N; i++)
-  {
-    value_to_max(atoms[i], v[i]);
-  }
-  outlet_anything(outlet, gensym(dsym.data()), N, atoms.data());
+  to_list conv;
+  conv(v);
+  outlet_anything(outlet, gensym(dsym.data()), conv.atoms.size(), conv.atoms.data());
 }
 
 template <avnd::tag_dynamic_symbol C, typename... Args>
@@ -137,37 +130,31 @@ inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
     static constexpr int N = sizeof...(TArgs);
 
     [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (value_to_max(atoms[I], args), ...);
+      (set_atom{}(&atoms[I], args), ...);
     }(std::make_index_sequence<N>{});
 
     outlet_anything(outlet, gensym(dsym.data()), N, atoms.data());
   }(v...);
 }
 
-template <typename C, typename... Args>
-void dispatch_outlet(C& c, t_outlet* outlet, Args&&... args)
-{
-  do_process_outlet{p}(std::forward<Args>(args)...);
-}
-
 template <typename T>
 struct outputs
 {
-  template <typename R, typename... Args, template <typename...> typename F>
+  template <typename C, typename R, typename... Args, template <typename...> typename F>
   static void init_func_view(F<R(Args...)>& call, t_outlet& outlet)
   {
     call.context = &outlet;
     call.function = [](void* ptr, Args... args) {
       t_outlet* p = static_cast<t_outlet*>(ptr);
-      do_process_outlet{p}(std::forward<Args>(args)...);
+      value_to_max_dispatch<C>(p, std::forward<Args>(args)...);
     };
   }
 
-  template <typename R, typename... Args, template <typename...> typename F>
+  template <typename C, typename R, typename... Args, template <typename...> typename F>
   static void init_func(F<R(Args...)>& call, t_outlet& outlet)
   {
     call = [&outlet](Args... args)  {
-      do_process_outlet{&outlet}(std::forward<Args>(args)...);
+      value_to_max_dispatch<C>(&outlet, std::forward<Args>(args)...);
     };
   }
 
@@ -177,11 +164,11 @@ struct outputs
     using call_type = decltype(C::call);
     if constexpr(avnd::function_view_ish<call_type>)
     {
-      init_func_view(out.call, outlet);
+      init_func_view<C>(out.call, outlet);
     }
     else if constexpr(avnd::function_ish<call_type>)
     {
-      init_func(out.call, outlet);
+      init_func<C>(out.call, outlet);
     }
   }
 
@@ -195,6 +182,7 @@ struct outputs
     int k = 0;
     avnd::output_introspection<T>::for_all(
         avnd::get_outputs<T>(implementation), [this, &k]<typename C>(C& ctl) {
+          // FIXME handle all the normal output types
           if constexpr(requires(float v) { v = ctl.value; })
           {
             outlet_float(outlets[k], ctl.value);
@@ -213,8 +201,8 @@ struct outputs
 
       // outlet_new is right-to-left so we create in reverse order...
       avnd::output_introspection<T>::for_all(
-          avnd::get_outputs<T>(implementation), [&names, &out_k](auto& ctl) {
-            names[out_k++] = symbol_for_port(ctl);
+          avnd::get_outputs<T>(implementation), [&names, &out_k]<typename C>(C& ctl) {
+            names[out_k++] = symbol_for_port<C>();
           });
 
       out_k = N;

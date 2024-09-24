@@ -172,7 +172,6 @@ function(avnd_make_max)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
-  if(NOT WIN32)
   if(TARGET json_to_maxref)
     message(STATUS "json_to_maxref found")
     get_target_property(_dump_path ${AVND_TARGET} AVND_DUMP_PATH)
@@ -180,22 +179,19 @@ function(avnd_make_max)
       message(STATUS "_dump_path: ${_dump_path}")
       set(_maxref_template "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml")
       set(_maxref_destination "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml")
-      add_custom_command(
-          COMMAND json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
-          DEPENDS "${_dump_path}"
-          OUTPUT "${_maxref_destination}"
-      )
       add_custom_target(dump_maxref_${AVND_FX_TARGET} ALL
+          json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
           DEPENDS
-            "${_dump_file_path}"
-            ${AVND_FX_TARGET}
+            "${_dump_path}"
+            json_to_maxref
+          BYPRODUCTS
+            "${_maxref_destination}"
         )
       set_target_properties(${AVND_FX_TARGET}
         PROPERTIES
           AVND_MAX_MAXREF_XML "${_maxref_destination}"
       )
     endif()
-  endif()
   endif()
 endfunction()
 

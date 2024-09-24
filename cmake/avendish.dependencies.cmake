@@ -1,10 +1,12 @@
 include(FetchContent)
+
 if(NOT TARGET fmt::fmt)
   FetchContent_Declare(
     fmt
     GIT_REPOSITORY "https://github.com/fmtlib/fmt"
     GIT_TAG 11.0.1
     GIT_PROGRESS true
+    FETCHCONTENT_FULLY_DISCONNECTED 1
   )
   FetchContent_MakeAvailable(fmt)
 endif()
@@ -15,6 +17,7 @@ if(NOT TARGET concurrentqueue)
     GIT_REPOSITORY "https://github.com/jcelerier/concurrentqueue"
     GIT_TAG master
     GIT_PROGRESS true
+    FETCHCONTENT_FULLY_DISCONNECTED 1
   )
   FetchContent_MakeAvailable(concurrentqueue)
 endif()
@@ -25,6 +28,7 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
     GIT_REPOSITORY "https://github.com/nlohmann/json"
     GIT_TAG master
     GIT_PROGRESS true
+    FETCHCONTENT_FULLY_DISCONNECTED 1
   )
   FetchContent_MakeAvailable(nlohmann_json)
 endif()
@@ -39,6 +43,7 @@ if(NOT TARGET pantor::inja)
     GIT_REPOSITORY "https://github.com/pantor/inja"
     GIT_TAG main
     GIT_PROGRESS true
+    FETCHCONTENT_FULLY_DISCONNECTED 1
   )
   FetchContent_MakeAvailable(pantor_inja)
   endblock()

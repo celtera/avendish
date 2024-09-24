@@ -16,6 +16,31 @@ static std::string match_type(std::string_view tp)
   return "atom";
 }
 
+static std::string html_escape(std::string_view v)
+{
+  std::string res;
+  res.reserve(v.size());
+  for(unsigned char c : v)
+  {
+    switch(c)
+    {
+      case '&':
+        res += "&amp;";
+        break;
+      case '<':
+        res += "&lt;";
+        break;
+      case '>':
+        res += "&gt;";
+        break;
+      default:
+        res += c;
+        break;
+    }
+  }
+  return res;
+}
+
 int main(int argc, char** argv)
 {
   using namespace inja;
@@ -38,7 +63,7 @@ int main(int argc, char** argv)
     const nlohmann::json& a = *arg.at(0);
     if(auto it = a.find("name"); it != a.cend())
       return it->get<std::string>();
-    return "<unnamed port>";
+    return "unnamed_port";
   });
 
   env.add_callback("arg_type", [](inja::Arguments& arg) -> std::string {
@@ -78,11 +103,11 @@ int main(int argc, char** argv)
       return "";
     auto& o = *a;
     if(auto it = o.find("digest"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     if(auto it = o.find("short_description"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     if(auto it = o.find("description"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     return "";
   });
   env.add_callback("make_description", [](inja::Arguments& arg) -> std::string {
@@ -91,13 +116,13 @@ int main(int argc, char** argv)
       return "";
     auto& o = *a;
     if(auto it = o.find("long_description"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     if(auto it = o.find("description"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     if(auto it = o.find("short_description"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     if(auto it = o.find("digest"); it != o.end())
-      return it->get<std::string>();
+      return html_escape(it->get<std::string>());
     return "";
   });
 
