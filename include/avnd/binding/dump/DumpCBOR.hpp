@@ -332,7 +332,9 @@ void print_parameter(nlohmann::json& obj)
 
   if constexpr(avnd::has_widget<type>)
   {
-    obj["widget"] = avnd::get_widget<type>().name();
+    const auto& p1  = avnd::get_widget<type>();
+    const auto& p2 = p1.name();
+    obj["widget"] = p2;
   }
 
   if constexpr(avnd::smooth_parameter<type>)

@@ -50,7 +50,7 @@ enum class slider_orientation
 template <typename T>
 struct widget_reflection
 {
-  constexpr auto name()
+  constexpr std::string_view name() const noexcept
   {
     switch(widget)
     {
