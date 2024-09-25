@@ -16,7 +16,7 @@ Read the [documentation](https://celtera.github.io/avendish) to get started !
 
 The [original blog post](https://ossia.io/posts/reflection/) contains the motivation and some implementation details.
 
-If you use this work in an academic setting, please cite the paper: 
+If you use this work in an academic setting, please cite the [paper](https://cnrs.hal.science/hal-04090584/file/icmc2022template.pdf): 
 
 ```bib
 @inproceedings{celerier2022rage,
