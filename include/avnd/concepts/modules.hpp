@@ -122,6 +122,14 @@ struct has_recursive_groups_impl
       is_recursive_group>::value;
 };
 
+// Quick fix to catch std::array which otherwise causes a compile error with MSVC
+// instead of just making the concept return false
+template <typename T, std::size_t N, template<typename TT, std::size_t NN> class Arr>
+struct has_recursive_groups_impl<Arr<T,N>>
+{
+  static constexpr bool value = false;
+};
+
 template <typename T>
 concept has_recursive_groups
     = has_recursive_groups_impl<std::remove_reference_t<std::remove_const_t<T>>>::value;

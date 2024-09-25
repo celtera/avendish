@@ -39,7 +39,7 @@ inline void value_to_pd(t_atom& atom, const std::string& v) noexcept
 struct do_value_to_pd_typed
 {
   template <typename T>
-    requires std::is_aggregate_v<T>
+    requires (std::is_aggregate_v<T> && !avnd::span_ish<T>)
   void operator()(t_outlet* outlet, const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
@@ -48,34 +48,6 @@ struct do_value_to_pd_typed
     if constexpr(sz == 0)
     {
       outlet_bang(outlet);
-    }
-    else if constexpr(vecf && sz == 2)
-    {
-      auto [x, y] = v;
-      t_atom arg[2]{
-          {.a_type = A_FLOAT, .a_w = {.w_float = x}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = y}}};
-      outlet_list(outlet, &s_list, 2, arg);
-    }
-    else if constexpr(vecf && sz == 3)
-    {
-      auto [x, y, z] = v;
-      t_atom arg[3]{
-          {.a_type = A_FLOAT, .a_w = {.w_float = x}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = y}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = z}}};
-      outlet_list(outlet, &s_list, 3, arg);
-    }
-    else if constexpr(vecf && sz == 4)
-    {
-      auto [x, y, z, w] = v;
-      t_atom arg[4]{
-          {.a_type = A_FLOAT, .a_w = {.w_float = x}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = y}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = z}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = w}},
-      };
-      outlet_list(outlet, &s_list, 4, arg);
     }
     else
     {
@@ -109,8 +81,20 @@ struct do_value_to_pd_typed
   }
 
   template <typename T, std::size_t N>
-    requires avnd::array_ish<T, N>
-  void operator()(t_outlet* outlet, const T& v)
+  void operator()(t_outlet* outlet, const std::array<T, N>& v)
+  {
+    std::array<t_atom, N> atoms;
+
+    for(int i = 0; i < N; i++)
+    {
+      value_to_pd(atoms[i], v[i]);
+    }
+
+    outlet_list(outlet, &s_list, v.size(), atoms.data());
+  }
+
+  template <std::size_t N>
+  void operator()(t_outlet* outlet, const avnd::array_ish<N> auto& v)
   {
     std::array<t_atom, N> atoms;
 
@@ -228,7 +212,7 @@ struct do_value_to_pd_typed
 struct do_value_to_pd_anything
 {
   template <typename T>
-    requires std::is_aggregate_v<T>
+    requires (std::is_aggregate_v<T> && !avnd::span_ish<T>)
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
@@ -236,36 +220,7 @@ struct do_value_to_pd_anything
 
     if constexpr(sz == 0)
     {
-      t_atom arg[1]{.a_type = A_NULL};
-      outlet_anything(outlet, &s_bang, 1, arg);
-    }
-    else if constexpr(vecf && sz == 2)
-    {
-      auto [x, y] = v;
-      t_atom arg[2]{
-          {.a_type = A_FLOAT, .a_w = {.w_float = x}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = y}}};
-      outlet_anything(outlet, sym, 2, arg);
-    }
-    else if constexpr(vecf && sz == 3)
-    {
-      auto [x, y, z] = v;
-      t_atom arg[3]{
-          {.a_type = A_FLOAT, .a_w = {.w_float = x}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = y}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = z}}};
-      outlet_anything(outlet, sym, 3, arg);
-    }
-    else if constexpr(vecf && sz == 4)
-    {
-      auto [x, y, z, w] = v;
-      t_atom arg[4]{
-          {.a_type = A_FLOAT, .a_w = {.w_float = x}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = y}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = z}},
-          {.a_type = A_FLOAT, .a_w = {.w_float = w}},
-      };
-      outlet_anything(outlet, sym, 4, arg);
+      outlet_anything(outlet, sym, 0, nullptr);
     }
     else
     {
@@ -298,9 +253,22 @@ struct do_value_to_pd_anything
     outlet_anything(outlet, sym, v.size(), atoms.data());
   }
 
+  // FIXME msvc isn't able to match the more generic template
   template <typename T, std::size_t N>
-    requires avnd::array_ish<T, N>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(t_outlet* outlet, t_symbol* sym, const std::array<T, N>& v)
+  {
+    std::array<t_atom, N> atoms;
+
+    for(int i = 0; i < N; i++)
+    {
+      value_to_pd(atoms[i], v[i]);
+    }
+
+    outlet_anything(outlet, sym, v.size(), atoms.data());
+  }
+
+  template <std::size_t N>
+  void operator()(t_outlet* outlet, t_symbol* sym, const avnd::array_ish<N> auto& v)
   {
     std::array<t_atom, N> atoms;
 
@@ -352,7 +320,7 @@ struct do_value_to_pd_anything
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
     using namespace std;
-    visit(v, [&](const auto& element) { (*this)(outlet, element); });
+    visit(v, [&](const auto& element) { (*this)(outlet, sym, element); });
   }
 
   template <typename T>
@@ -372,38 +340,50 @@ struct do_value_to_pd_anything
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
     if(v)
-      (*this)(outlet, *v);
+      (*this)(outlet, sym, *v);
   }
 
   inline void operator()(t_outlet* outlet, t_symbol* sym, std::integral auto v) noexcept
   {
-    outlet_float(outlet, v);
+    t_atom atom;
+    value_to_pd(atom, v);
+    outlet_anything(outlet, sym, 1, &atom);
   }
 
   inline void
   operator()(t_outlet* outlet, t_symbol* sym, std::floating_point auto v) noexcept
   {
-    outlet_float(outlet, v);
+    t_atom atom;
+    value_to_pd(atom, v);
+    outlet_anything(outlet, sym, 1, &atom);
   }
 
   inline void operator()(t_outlet* outlet, t_symbol* sym, bool v) noexcept
   {
-    outlet_float(outlet, v ? 1.f : 0.f);
+    t_atom atom;
+    value_to_pd(atom, v);
+    outlet_anything(outlet, sym, 1, &atom);
   }
 
   inline void operator()(t_outlet* outlet, t_symbol* sym, const char* v) noexcept
   {
-    outlet_symbol(outlet, gensym(v));
+    t_atom atom;
+    value_to_pd(atom, v);
+    outlet_anything(outlet, sym, 1, &atom);
   }
 
   inline void operator()(t_outlet* outlet, t_symbol* sym, std::string_view v) noexcept
   {
-    outlet_symbol(outlet, gensym(v.data()));
+    t_atom atom;
+    value_to_pd(atom, v);
+    outlet_anything(outlet, sym, 1, &atom);
   }
 
   inline void operator()(t_outlet* outlet, t_symbol* sym, const std::string& v) noexcept
   {
-    outlet_symbol(outlet, gensym(v.c_str()));
+    t_atom atom;
+    value_to_pd(atom, v);
+    outlet_anything(outlet, sym, 1, &atom);
   }
 
   template <typename... Args>

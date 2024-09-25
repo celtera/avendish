@@ -86,10 +86,12 @@ function(avnd_make_pd)
       AVND_PUREDATA=1
   )
 
-  target_precompile_headers(${AVND_FX_TARGET}
-    REUSE_FROM
-      Avendish_pd_pch
-  )
+  if(NOT MSVC)
+    target_precompile_headers(${AVND_FX_TARGET}
+      REUSE_FROM
+        Avendish_pd_pch
+    )
+  endif()
 
   target_link_libraries(
     ${AVND_FX_TARGET}
