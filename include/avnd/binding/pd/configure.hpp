@@ -24,7 +24,7 @@ struct logger
   template <typename... T>
   static void error(fmt::format_string<T...> fmt, T&&... args)
   {
-    ::error("%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
+    ::bug("%s", fmt::format(fmt, std::forward<T>(args)...).c_str());
   }
   template <typename... T>
   static void trace(fmt::format_string<T...> fmt, T&&... args) noexcept
@@ -68,7 +68,7 @@ struct logger
   {
     std::ostringstream str;
     ((str << args), ...);
-    ::error("%s", str.str().c_str());
+    ::bug("%s", str.str().c_str());
   }
 
   template <typename... T>
