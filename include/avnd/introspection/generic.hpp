@@ -7,11 +7,11 @@
   using is_##Concept##_t = boost::mp11::mp_bool<Concept<Field>>; \
                                                                  \
   template <typename T>                                          \
-  using Concept##_introspection = predicate_introspection<T, is_##Concept##_t>;
+  using Concept##_introspection = avnd::predicate_introspection<T, is_##Concept##_t>;
 
 #define generate_member_introspection(Concept, Member)           \
   template <typename T>                                          \
   struct Concept##_##Member##_introspection                      \
-      : Concept##_introspection<typename Member##_type<T>::type> \
+      : Concept##_introspection<typename avnd::Member##_type<T>::type> \
   {                                                              \
   };

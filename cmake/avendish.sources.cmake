@@ -12,7 +12,9 @@ if(MSVC)
        "-Zc:inline"
        "-Zc:preprocessor"
        "-Zc:templateScope"
-       -wd4244)
+       -wd4244 # float -> int lossy conversion warning
+       -wd4068 # disables warning C4068: unknown pragma 'GCC'
+   )
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
 elseif(APPLE)
   target_compile_options(Avendish

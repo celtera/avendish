@@ -111,6 +111,7 @@ function(avnd_make_max)
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_iterator.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/audio_processor.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/configure.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/dict.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/from_atoms.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"

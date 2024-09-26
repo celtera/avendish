@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/max/helpers.hpp>
+#include <avnd/binding/max/dict.hpp>
 #include <avnd/binding/max/to_atoms.hpp>
 #include <commonsyms.h>
 namespace max
@@ -21,7 +22,7 @@ struct do_value_to_max_typed
   }
   void operator()(std::integral auto v) const noexcept
   {
-    outlet_long(p, v);
+    outlet_int(p, v);
   }
   void operator()(std::string_view v) const noexcept
   {
@@ -36,15 +37,6 @@ struct do_value_to_max_typed
     requires std::is_aggregate_v<T>
   void operator()(const T& v) const noexcept
   {
-    if constexpr(avnd::has_field_names<T>)
-    {
-      aggregate_to_dict dict;
-      dict(v);
-      dictionary_dump(dict.d, true, true);
-      object_free(dict.d);
-    }
-    else
-    {
       to_list l;
       l(v);
 
@@ -52,7 +44,7 @@ struct do_value_to_max_typed
         l.atoms.resize(std::numeric_limits<short>::max());
 
       outlet_list(p, nullptr, (short)l.atoms.size(), l.atoms.data());
-    }
+
   }
 
   void operator()(const avnd::vector_ish auto& v) const noexcept
@@ -99,11 +91,53 @@ struct do_value_to_max_typed
 };
 
 // FIXME port the thread-local mechanism to pd in to_list
-template <typename C, typename... Args>
+
+/// Versions for the paramter (one-value) case
+// One-arg overload to handle the dict case
+template <parameter_with_field_names C, typename T, std::size_t Idx, typename Arg>
+inline void value_to_max_dispatch(T& self, avnd::field_index<Idx> idx, t_outlet* outlet, Arg&& v) noexcept
+{
+  // 1. Get the dict from object storage
+  const dict_state& storage = self.dicts.get_output(idx);
+
+  // 2. Update it
+  aggregate_to_dict dict{storage.d};
+  dict(v);
+
+  // 3. Output it
+  t_atom a;
+  atom_setsym(&a, storage.s);
+  outlet_anything(outlet, _sym_dictionary, 1, &a);
+}
+
+template <typename C, typename T, std::size_t Idx, typename Arg>
+inline void value_to_max_dispatch(T& self, avnd::field_index<Idx>, t_outlet* outlet, Arg&& v) noexcept
+{
+  if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
+  {
+    // FIXME
+    static const auto sym = get_static_symbol<C>();
+    // return do_value_to_max_anything{}(outlet, sym, std::forward<Arg>(v));
+  }
+  //else
+  {
+    return do_value_to_max_typed{outlet}(std::forward<Arg>(v));
+  }
+}
+
+template <avnd::tag_dynamic_symbol C, typename T, std::size_t Idx, typename Arg>
+inline void value_to_max_dispatch(T& self, avnd::field_index<Idx>, t_outlet* outlet, avnd::string_ish auto&& dsym) noexcept
+{
+  outlet_anything(outlet, gensym(dsym.data()), 0, nullptr);
+}
+
+/// Versions only for the avnd::callback cases
+template <typename C,typename... Args>
 inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
 {
   if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
+    // FIXME
     static const auto sym = get_static_symbol<C>();
     // return do_value_to_max_anything{}(outlet, sym, std::forward<Args>(v)...);
   }
@@ -115,11 +149,17 @@ inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
 
 template <avnd::tag_dynamic_symbol C>
 inline void value_to_max_dispatch(
-    t_outlet* outlet, avnd::string_ish auto&& dsym, avnd::span_ish auto&& v) noexcept
+                                  t_outlet* outlet, avnd::string_ish auto&& dsym, avnd::span_ish auto&& v) noexcept
 {
   to_list conv;
   conv(v);
   outlet_anything(outlet, gensym(dsym.data()), conv.atoms.size(), conv.atoms.data());
+}
+
+template <avnd::tag_dynamic_symbol C,typename Arg>
+inline void value_to_max_dispatch(t_outlet* outlet, avnd::string_ish auto&& dsym) noexcept
+{
+  outlet_anything(outlet, gensym(dsym.data()), 0, nullptr);
 }
 
 template <avnd::tag_dynamic_symbol C, typename... Args>
@@ -136,6 +176,61 @@ inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
     outlet_anything(outlet, gensym(dsym.data()), N, atoms.data());
   }(v...);
 }
+
+template <typename T>
+struct value_writer
+{
+  T& self;
+
+  template <avnd::parameter Field, std::size_t Idx>
+    requires(!avnd::sample_accurate_parameter<Field>)
+  void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
+  {
+    value_to_max_dispatch<Field>(self, avnd::field_index<Idx>{}, port, ctrl.value);
+  }
+
+  template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
+  void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
+  {
+    // FIXME
+#if 0
+    auto& buffers = self.control_buffers.linear_inputs;
+    // Idx is the index of the port in the complete input array.
+    // We need to map it to the linear input index.
+    using processor_type = typename T::processor_type;
+    using lin_out = avnd::linear_timed_parameter_output_introspection<processor_type>;
+    using indices = typename lin_out::indices_n;
+    static constexpr int storage_index = avnd::index_of_element<Idx>(indices{});
+
+    auto& buffer = get<storage_index>(buffers);
+
+    for(int i = 0, N = self.buffer_size; i < N; i++)
+    {
+      if(buffer[i])
+      {
+        value_to_max_dispatch<Field>(self, avnd::field_index<Idx>{}, port, *buffer[i]);
+        buffer[i] = {};
+      }
+    }
+#endif
+  }
+
+  template <avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
+  void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
+  {
+    for(auto& [timestamp, val] : ctrl.values)
+    {
+      value_to_max_dispatch<Field>(self, avnd::field_index<Idx>{}, port, val);
+    }
+    ctrl.values.clear();
+  }
+
+  // does not make sense as output, only as input
+  template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
+  void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept = delete;
+
+  void operator()(auto&&...) const noexcept { }
+};
 
 template <typename T>
 struct outputs
@@ -159,7 +254,7 @@ struct outputs
   }
 
   template <avnd::callback C>
-  static void setup(C& out, t_outlet& outlet)
+  static void setup(T& self, C& out, t_outlet& outlet)
   {
     using call_type = decltype(C::call);
     if constexpr(avnd::function_view_ish<call_type>)
@@ -177,18 +272,21 @@ struct outputs
   {
   }
 
-  void commit(avnd::effect_container<T>& implementation)
+  template <typename Self>
+  void commit(Self& self)
   {
-    int k = 0;
-    avnd::output_introspection<T>::for_all(
-        avnd::get_outputs<T>(implementation), [this, &k]<typename C>(C& ctl) {
-          // FIXME handle all the normal output types
-          if constexpr(requires(float v) { v = ctl.value; })
-          {
-            outlet_float(outlets[k], ctl.value);
-          }
-          ++k;
-        });
+    using info = avnd::output_introspection<T>;
+    if constexpr(info::size > 0)
+    {
+      // FIXME stops being correct if we loose the avnd port <-> outlet correspondance
+      // with e.g. multiple callbacks in a single port
+      auto& outs = avnd::get_outputs<T>(self.implementation);
+      [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+        (value_writer<Self>{self}(
+             avnd::pfr::get<Index>(outs), outlets[Index], avnd::num<Index>{}),
+         ...);
+      }(typename info::indices_n{});
+    }
   }
 
   void init(avnd::effect_container<T>& implementation, t_object& x_obj)

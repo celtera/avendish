@@ -136,20 +136,20 @@ struct CompleteMessageExample
     halp::val_port<"out_0", int> out_int;
 
     // Case 2: outputting a basic tuple
-    // pd: will output [float 123 456 789>
-    // max: will output [float 123 456 789>
+    // pd: will output [list 123 456 789>
+    // max: will output [list 123 456 789>
     halp::val_port<"out_1", std::array<float, 3>> out_vec3;
 
     // Case 2: outputting an object without names
     // Note that the object can be defined elsewhere.
     // Only rules are no specific constructors / destructors, only aggregate types.
-    // pd: a list
-    // max: a list
+    // pd: will output [list 123 foo>
+    // max: will output [list 123 foo>
     halp::val_port<"out_2", some_object> out_obj1;
 
     // Case 3: outputting an object with names
-    // pd: a list
-    // max: a dict
+    // pd: will output [list 123 foo>
+    // max: will output [dict x:123 v:foo>
     halp::val_port<"out_3", some_object_named> out_obj2;
 
     // Case 4: outputting messages
@@ -188,11 +188,11 @@ struct CompleteMessageExample
     std::cerr << "Test1: " << inputs.test1.value << "\n";
     std::cerr << "Test2: " << inputs.test2.value << "\n";
     std::cerr << "Test3: " << inputs.test3.value << "\n";
-    outputs.out_int = 123;
+    outputs.out_int++;
     outputs.out_vec3 = std::array{4.f, 5.f, 6.f};
-    outputs.out_obj1 = some_object{13, "hello"};
-    outputs.out_obj2 = some_object_named{31, "bye"};
-    outputs.out_msg1(inputs.slider.value, 2, "from bang");
+    outputs.out_obj1 = some_object{outputs.out_int, "hello"};
+    outputs.out_obj2 = some_object_named{outputs.out_int, "bye"};
+    outputs.out_msg1(inputs.slider.value, outputs.out_int, "from bang");
     outputs.out_msg2("text1", "text2");
     outputs.out_msg_list(std::vector<std::string>{"text1", "text2", "text3"});
     std::vector<std::string> v{"a", "b", "c", "d"};

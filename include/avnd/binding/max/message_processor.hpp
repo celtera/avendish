@@ -4,6 +4,7 @@
 
 #include <avnd/binding/max/attributes_setup.hpp>
 #include <avnd/binding/max/helpers.hpp>
+#include <avnd/binding/max/dict.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/inputs.hpp>
 #include <avnd/binding/max/messages.hpp>
@@ -51,10 +52,15 @@ struct message_processor
 
   [[no_unique_address]] outputs<T> output_setup;
 
+  [[no_unique_address]] dict_storage<T> dicts;
+
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
   void init(int argc, t_atom* argv)
   {
+    /// Create internal metadata ///
+    dicts.init(implementation);
+
     /// Create ports ///
     // Create inlets
     input_setup.init(implementation, x_obj);
@@ -100,7 +106,9 @@ struct message_processor
     }
   }
 
-  void destroy() { }
+  void destroy() {
+    dicts.release(implementation);
+  }
 
   void process_inlet_control(int inlet, t_atom_long val)
   {
@@ -186,7 +194,7 @@ struct message_processor
     if_possible(implementation.effect());
 
     // Then bang
-    output_setup.commit(implementation);
+    output_setup.commit(*this);
   }
 
   template <typename V>

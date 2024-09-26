@@ -4,7 +4,7 @@
 #include <avnd/common/aggregates.hpp>
 #include <avnd/common/for_nth.hpp>
 
-#include <boost/container/vector.hpp>
+#include <boost/container/small_vector.hpp>
 
 #include <ext.h>
 
@@ -12,12 +12,11 @@ namespace max
 {
 struct to_list
 {
-  static inline thread_local boost::container::vector<t_atom> atoms;
+  boost::container::small_vector<t_atom, 256> atoms;
 
   to_list()
   {
     atoms.clear();
-    atoms.reserve(256);
   }
 
   void operator()(std::floating_point auto arg)  noexcept
@@ -125,18 +124,12 @@ struct aggregate_to_dict
 {
   t_dictionary* d{};
 
-  explicit aggregate_to_dict() noexcept
-      : d{dictionary_new()}
-  {
-
-  }
-
-  void operator()(t_symbol* k, std::floating_point auto v) noexcept
+  void operator()(t_symbol* k, std::floating_point auto&& v) noexcept
   {
     dictionary_appendfloat(d, k, v);
   }
 
-  void operator()(t_symbol* k, std::integral auto v) noexcept
+  void operator()(t_symbol* k, std::integral auto&& v) noexcept
   {
     dictionary_appendlong(d, k, v);
   }
@@ -146,22 +139,41 @@ struct aggregate_to_dict
     dictionary_appendstring(d, k, v.data());
   }
 
-  template<typename T, std::size_t N>
-  void operator()(t_symbol* k, std::array<T, N> v) noexcept
+  template<typename T>
+  void operator()(t_symbol* k, T&& v) noexcept
   {
+    to_list l;
+    l(v);
+    dictionary_appendatoms(d, k, l.atoms.size(), l.atoms.data());
+  }
+
+  template<typename T>
+    requires avnd::has_field_names<std::remove_cvref_t<T>>
+  void operator()(t_symbol* k, T&& v) noexcept
+  {
+    t_object* cur{};
+    bool is_new{};
+    if(dictionary_getdictionary(d, k, &cur) != MAX_ERR_NONE || !cur) {
+      cur = (t_object*)dictionary_new();
+      is_new = true;
+    }
+
+    aggregate_to_dict sub{(t_dictionary*)cur};
+    sub(v);
+
+    dictionary_appenddictionary(d, k, cur);
   }
 
   template<typename F>
-    requires avnd::has_field_names<F>
+    requires avnd::has_field_names<std::remove_cvref_t<F>>
   void operator()(F&& f)
   {
-    constexpr auto field_names = F::field_names();
     int k = 0;
-    avnd::for_each_field_ref(
-        f, [&](const auto& f) {
-          constexpr auto name = field_names[k++];
+    avnd::for_each_field_ref_n(
+        f, [&]<std::size_t N>(const auto& f, avnd::field_index<N>) {
+          static constexpr auto name = std::remove_cvref_t<F>::field_names()[N];
           static const auto sym = gensym(name.data());
-          add(sym, f);
+          (*this)(sym, f);
         });
   }
 };
