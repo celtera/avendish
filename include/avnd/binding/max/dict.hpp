@@ -10,12 +10,13 @@
 namespace max
 {
 template <typename T>
-concept parameter_with_field_names
-    = avnd::parameter<T> && avnd::has_field_names<decltype(T::value)>;
+concept dict_parameter
+    = avnd::parameter<T> &&
+      (avnd::has_field_names<decltype(T::value)> || avnd::dict_ish<decltype(T::value)>);
 
-generate_predicate_introspection(parameter_with_field_names);
-generate_member_introspection(parameter_with_field_names, inputs);
-generate_member_introspection(parameter_with_field_names, outputs);
+generate_predicate_introspection(dict_parameter);
+generate_member_introspection(dict_parameter, inputs);
+generate_member_introspection(dict_parameter, outputs);
 
 struct dict_state
 {
@@ -34,7 +35,7 @@ struct dict_state
   t_symbol* s{};
 };
 
-generate_port_state_holders(parameter_with_field_names, dict_state);
+generate_port_state_holders(dict_parameter, dict_state);
 
 template <typename T>
 struct dict_storage
@@ -46,8 +47,8 @@ struct dict_storage
 
   void init(avnd::effect_container<T>& t)
   {
-    if constexpr(parameter_with_field_names_outputs_introspection<T>::size > 0)
-      parameter_with_field_names_outputs_introspection<T>::for_all_n(
+    if constexpr(dict_parameter_outputs_introspection<T>::size > 0)
+      dict_parameter_outputs_introspection<T>::for_all_n(
           avnd::get_outputs(t),
           [this]<typename F, std::size_t N>(F& field, avnd::predicate_index<N>) {
         auto& state = get<N>(outputs.handles);
@@ -57,8 +58,8 @@ struct dict_storage
 
   void release(avnd::effect_container<T>& t)
   {
-    if constexpr(parameter_with_field_names_outputs_introspection<T>::size > 0)
-      parameter_with_field_names_outputs_introspection<T>::for_all_n(
+    if constexpr(dict_parameter_outputs_introspection<T>::size > 0)
+      dict_parameter_outputs_introspection<T>::for_all_n(
           avnd::get_outputs(t),
           [this]<typename F, std::size_t N>(F& field, avnd::predicate_index<N>) {
         auto& state = get<N>(outputs.handles);
@@ -70,7 +71,7 @@ struct dict_storage
   auto& get_input(avnd::field_index<NField>)
   {
     constexpr std::size_t NPred
-        = parameter_with_field_names_outputs_introspection<T>::template field_index_to_index(
+        = dict_parameter_outputs_introspection<T>::template field_index_to_index(
             avnd::field_index<NField>{});
     return get<NPred>(inputs.handles);
   }
@@ -79,7 +80,7 @@ struct dict_storage
   auto& get_output(avnd::field_index<NField>)
   {
     constexpr std::size_t NPred
-        = parameter_with_field_names_outputs_introspection<T>::template field_index_to_index(
+        = dict_parameter_outputs_introspection<T>::template field_index_to_index(
             avnd::field_index<NField>{});
     return get<NPred>(outputs.handles);
   }

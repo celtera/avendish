@@ -120,7 +120,7 @@ struct to_list
   }
 };
 
-struct aggregate_to_dict
+struct to_dict
 {
   t_dictionary* d{};
 
@@ -139,6 +139,19 @@ struct aggregate_to_dict
     dictionary_appendstring(d, k, v.data());
   }
 
+  void operator()(t_symbol* k, const avnd::variant_ish auto& f)  noexcept
+  {
+    visit([this, k](auto&& val) { (*this)(k, val); }, f);
+  }
+
+  void operator()(t_symbol* k, const avnd::optional_ish auto& f)  noexcept
+  {
+    if(f)
+      (*this)(*f);
+    else
+      dictionary_deleteentry(d, k);
+  }
+
   template<typename T>
   void operator()(t_symbol* k, T&& v) noexcept
   {
@@ -148,7 +161,7 @@ struct aggregate_to_dict
   }
 
   template<typename T>
-    requires avnd::has_field_names<std::remove_cvref_t<T>>
+    requires avnd::has_field_names<std::remove_cvref_t<T>> || avnd::dict_ish<std::remove_cvref_t<T>>
   void operator()(t_symbol* k, T&& v) noexcept
   {
     t_object* cur{};
@@ -158,23 +171,50 @@ struct aggregate_to_dict
       is_new = true;
     }
 
-    aggregate_to_dict sub{(t_dictionary*)cur};
+    to_dict sub{(t_dictionary*)cur};
     sub(v);
 
     dictionary_appenddictionary(d, k, cur);
   }
 
+  /// Two functions below are the entrypoints of this mechanism
+  // Static case (aggregate with field names)
   template<typename F>
     requires avnd::has_field_names<std::remove_cvref_t<F>>
   void operator()(F&& f)
   {
-    int k = 0;
     avnd::for_each_field_ref_n(
         f, [&]<std::size_t N>(const auto& f, avnd::field_index<N>) {
           static constexpr auto name = std::remove_cvref_t<F>::field_names()[N];
           static const auto sym = gensym(name.data());
           (*this)(sym, f);
         });
+  }
+
+  // Dynamic case (std::map<std::string, ...>)
+  template<typename F>
+    requires avnd::dict_ish<std::remove_cvref_t<F>>
+  void operator()(F&& f)
+  {
+    // 1. Remove entries not in the new map
+    {
+      t_symbol** keys{};
+      long n = 0;
+      if(dictionary_getkeys(d, &n, &keys); keys)
+      {
+        for(long i = 0; i < n; i++)
+        {
+          if(!f->contains(keys[i]->s_name))
+            dictionary_deleteentry(d, keys[i]);
+        }
+        dictionary_freekeys(d, n, keys);
+      }
+    }
+
+    // 2. Add all entries in the new map
+    for(const auto& [k, v] : f) {
+      (*this)(gensym(k.data()), v);
+    }
   }
 };
 

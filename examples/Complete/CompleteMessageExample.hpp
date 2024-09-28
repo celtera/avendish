@@ -5,6 +5,9 @@
 #include <halp/messages.hpp>
 #include <halp/meta.hpp>
 
+#include <fmt/format.h>
+#include <fmt/std.h>
+#include <fmt/ranges.h>
 #include <array>
 #include <iostream>
 #include <string>
@@ -185,9 +188,12 @@ struct CompleteMessageExample
 
   void operator()()
   {
-    std::cerr << "Test1: " << inputs.test1.value << "\n";
-    std::cerr << "Test2: " << inputs.test2.value << "\n";
-    std::cerr << "Test3: " << inputs.test3.value << "\n";
+    std::cerr << "Test1: " << inputs.test1.value << " ; ";
+    std::cerr << "Test2: " << inputs.test2.value << " ; ";
+    std::cerr << "Test3: " << inputs.test3.value << " ; ";
+    std::cerr << "Test4: " << inputs.test4.value << " ; ";
+    std::cerr << "Test5: " << fmt::format("{}", inputs.test5.value) << " ; ";
+    std::cerr << "Test6: " << inputs.slider.value << "\n\n";
     outputs.out_int++;
     outputs.out_vec3 = std::array{4.f, 5.f, 6.f};
     outputs.out_obj1 = some_object{outputs.out_int, "hello"};

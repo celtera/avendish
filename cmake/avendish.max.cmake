@@ -114,6 +114,7 @@ function(avnd_make_max)
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/dict.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/from_atoms.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/from_dict.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/init.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/inputs.hpp"

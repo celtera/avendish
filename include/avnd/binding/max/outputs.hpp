@@ -8,6 +8,33 @@
 #include <commonsyms.h>
 namespace max
 {
+
+template <std::integral T>
+inline void value_to_max(t_atom& atom, T v) noexcept
+{
+  atom = {.a_type = A_LONG, .a_w = {.w_long = v}};
+}
+template <std::floating_point T>
+inline void value_to_max(t_atom& atom, T v) noexcept
+{
+  atom = {.a_type = A_FLOAT, .a_w = {.w_float = v}};
+}
+inline void value_to_max(t_atom& atom, bool v) noexcept
+{
+  atom = {.a_type = A_LONG, .a_w = {.w_long= v ? 1 : 0}};
+}
+inline void value_to_max(t_atom& atom, const char* v) noexcept
+{
+  atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(v)}};
+}
+inline void value_to_max(t_atom& atom, std::string_view v) noexcept
+{
+  atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(v.data())}};
+}
+inline void value_to_max(t_atom& atom, const std::string& v) noexcept
+{
+  atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(v.c_str())}};
+}
 struct do_value_to_max_typed
 {
   t_outlet* p;
@@ -69,12 +96,11 @@ struct do_value_to_max_typed
 
   void operator()(const avnd::map_ish auto& v) const noexcept
   {
-    /*
-    to_dict l;
+    to_list l;
     l(v);
     outlet_list(p, nullptr, l.atoms.size(), l.atoms.data());
-    */
   }
+
   template <typename... Args>
     requires(sizeof...(Args) > 1)
   void operator()(Args&&... v) noexcept
@@ -90,18 +116,118 @@ struct do_value_to_max_typed
   }
 };
 
+struct do_value_to_max_anything
+{
+  t_outlet* p;
+  t_symbol* s;
+
+  void operator()() const noexcept
+  {
+    outlet_anything(p, s, 0, nullptr);
+  }
+  void operator()(std::floating_point auto v) const noexcept
+  {
+    t_atom atom;
+    value_to_max(atom, v);
+    outlet_anything(p, s, 1, &atom);
+  }
+  void operator()(std::integral auto v) const noexcept
+  {
+    t_atom atom;
+    value_to_max(atom, v);
+    outlet_anything(p, s, 1, &atom);
+  }
+  void operator()(std::string_view v) const noexcept
+  {
+    t_atom atom;
+    value_to_max(atom, v);
+    outlet_anything(p, s, 1, &atom);
+  }
+  void operator()(const std::string& v) const noexcept
+  {
+    t_atom atom;
+    value_to_max(atom, v);
+    outlet_anything(p, s, 1, &atom);
+  }
+
+  template<typename T>
+    requires std::is_aggregate_v<T>
+  void operator()(const T& v) const noexcept
+  {
+    to_list l;
+    l(v);
+
+    if(l.atoms.size()> std::numeric_limits<short>::max())
+      l.atoms.resize(std::numeric_limits<short>::max());
+
+    outlet_anything(p, s, (short)l.atoms.size(), l.atoms.data());
+  }
+
+  void operator()(const avnd::vector_ish auto& v) const noexcept
+  {
+    to_list l;
+    l(v);
+    outlet_anything(p, s,  l.atoms.size(), l.atoms.data());
+  }
+
+  void operator()(const avnd::set_ish auto& v) const noexcept
+  {
+    to_list l;
+    l(v);
+    outlet_anything(p, s, l.atoms.size(), l.atoms.data());
+  }
+
+  void operator()(const avnd::variant_ish auto& v) const noexcept
+  {
+    using namespace std;
+    visit([this](const auto& val) { (*this)(val); }, v);
+  }
+
+  void operator()(const avnd::map_ish auto& v) const noexcept
+  {
+    to_list l;
+    l(v);
+    outlet_anything(p, s, l.atoms.size(), l.atoms.data());
+  }
+
+  template <typename T>
+    requires avnd::pair_ish<T>
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  {
+    t_atom atoms[2];
+
+    value_to_max(atoms[0], v.first);
+    value_to_max(atoms[1], v.second);
+
+    outlet_anything(outlet, sym, 2, atoms);
+  }
+
+  template <typename... Args>
+    requires(sizeof...(Args) > 1)
+  void operator()(Args&&... v) noexcept
+  {
+    std::array<t_atom, sizeof...(Args)> atoms;
+    static constexpr int N = sizeof...(Args);
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (set_atom{}(&atoms[I], v), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_anything(p, s, N, atoms.data());
+  }
+};
 // FIXME port the thread-local mechanism to pd in to_list
 
 /// Versions for the paramter (one-value) case
 // One-arg overload to handle the dict case
-template <parameter_with_field_names C, typename T, std::size_t Idx, typename Arg>
+template <dict_parameter C, typename T, std::size_t Idx, typename Arg>
 inline void value_to_max_dispatch(T& self, avnd::field_index<Idx> idx, t_outlet* outlet, Arg&& v) noexcept
 {
   // 1. Get the dict from object storage
   const dict_state& storage = self.dicts.get_output(idx);
 
   // 2. Update it
-  aggregate_to_dict dict{storage.d};
+  to_dict dict{storage.d};
   dict(v);
 
   // 3. Output it
@@ -110,13 +236,14 @@ inline void value_to_max_dispatch(T& self, avnd::field_index<Idx> idx, t_outlet*
   outlet_anything(outlet, _sym_dictionary, 1, &a);
 }
 
+
 template <typename C, typename T, std::size_t Idx, typename Arg>
 inline void value_to_max_dispatch(T& self, avnd::field_index<Idx>, t_outlet* outlet, Arg&& v) noexcept
 {
   if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
     // FIXME
-    static const auto sym = get_static_symbol<C>();
+    static const auto sym = get_message_out_symbol<C>();
     // return do_value_to_max_anything{}(outlet, sym, std::forward<Arg>(v));
   }
   //else
@@ -138,7 +265,7 @@ inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
   if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
     // FIXME
-    static const auto sym = get_static_symbol<C>();
+    static const auto sym = get_message_out_symbol<C>();
     // return do_value_to_max_anything{}(outlet, sym, std::forward<Args>(v)...);
   }
   //else

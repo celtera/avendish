@@ -13,14 +13,6 @@
 
 namespace max
 {
-template<typename F>
-constexpr std::string_view attribute_name()
-{
-  if constexpr(avnd::has_c_name<F>)
-    return avnd::get_c_name<F>();
-  else
-    return avnd::get_name<F>();
-}
 
 template <typename Processor, typename T>
 struct attribute_register;
@@ -82,7 +74,7 @@ struct attribute_register<Processor, T>
     if(t_symbol* sym = get_atoms_sym<V>())
     {
       static constexpr auto attr_idx = attrs::template unmap<I>();
-      static constexpr auto attr_name = attribute_name<F>();
+      static constexpr auto attr_name = max::get_name_symbol<F>();
       static constexpr auto label = avnd::get_name<F>();
       static constexpr auto get = &attribute_register::getter<I>;
       static constexpr auto set = &attribute_register::setter<I>;
@@ -138,15 +130,23 @@ struct attribute_object_register<Processor, T>
   template<typename F, std::size_t I>
   void operator()(F& field, avnd::predicate_index<I>)
   {
-    static constexpr auto attr_name = attribute_name<F>();
+    static const auto attr_name = max::symbol_from_name<F>();
 
-    if constexpr(std::is_arithmetic_v<decltype(F::value)>)
+    if constexpr(std::is_integral_v<decltype(F::value)>)
     {
-      object_attr_setlong(o, gensym(attr_name.data()), field.value);
+      object_attr_setlong(o, attr_name, field.value);
+    }
+    else if constexpr(std::is_floating_point_v<decltype(F::value)>)
+    {
+      object_attr_setfloat(o, attr_name, field.value);
     }
     else if constexpr(avnd::string_ish<decltype(F::value)>)
     {
-      object_attr_setsym(o, gensym(attr_name.data()), gensym(field.value.data()));
+      object_attr_setsym(o, attr_name, gensym(field.value.data()));
+    }
+    else
+    {
+      static_assert(F::error_in_attribute, "Unhandled attribute type");
     }
   }
 };

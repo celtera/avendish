@@ -190,6 +190,9 @@ concept type_list = is_type_list<std::remove_const_t<T>>::value;
 template <typename T>
 concept enum_ish = std::is_enum_v<std::decay_t<T>>;
 
+template<typename T>
+concept dict_ish = map_ish<T> && string_ish<typename T::key_type>;
+
 /**
  * A macro to define a set of concepts & type-checks to devise if
  * in the expression T::foo, foo is a type or a value.

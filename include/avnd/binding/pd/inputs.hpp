@@ -179,9 +179,9 @@ struct inputs
         // Do not create a port for attributes
         if constexpr(!avnd::attribute_port<M>)
         {
-          static constexpr auto name = avnd::get_name<M>();
+          static const auto name = pd::symbol_from_name<M>();
 
-          inlet_new(&x_obj, &x_obj.ob_pd, pd::symbol_for_port<M>(), gensym(name.data()));
+          inlet_new(&x_obj, &x_obj.ob_pd, pd::symbol_for_port<M>(), name);
         }
       }
     });
@@ -189,14 +189,11 @@ struct inputs
 
   template <typename Field>
   bool
-  process_inlet_control(T& obj, Field& field, std::string_view s, int argc, t_atom* argv)
+  process_inlet_control(T& obj, Field& field, int argc, t_atom* argv)
   {
     if(from_atoms{argc, argv}(field.value))
     {
-      if constexpr(requires { field.update(obj); })
-      {
-        field.update(obj);
-      }
+      if_possible(field.update(obj));
       return true;
     }
     return false;
@@ -214,9 +211,9 @@ struct inputs
           avnd::get_inputs(implementation), [&]<typename M>(M& field) {
         if(ok)
           return;
-        if(symname == avnd::get_name<M>())
+        if(symname == pd::get_name_symbol<M>())
         {
-          ok = process_inlet_control(implementation.effect, field, symname, argc, argv);
+          ok = process_inlet_control(implementation.effect, field, argc, argv);
         }
       });
       return ok;

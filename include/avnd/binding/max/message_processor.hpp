@@ -5,6 +5,7 @@
 #include <avnd/binding/max/attributes_setup.hpp>
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/dict.hpp>
+#include <avnd/binding/max/from_dict.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/inputs.hpp>
 #include <avnd/binding/max/messages.hpp>
@@ -59,6 +60,7 @@ struct message_processor
   void init(int argc, t_atom* argv)
   {
     /// Create internal metadata ///
+    // FIXME parse dict inputs
     dicts.init(implementation);
 
     /// Create ports ///
@@ -112,79 +114,147 @@ struct message_processor
 
   void process_inlet_control(int inlet, t_atom_long val)
   {
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
     {
       auto& obj = this->implementation.effect;
-      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
-          avnd::get_inputs<T>(implementation), inlet, [&obj, val](auto& field) {
-            if constexpr(requires { field.value = 0; })
-            {
-              static_assert(!std::is_pointer_v<decltype(field.value)>);
-              field.value = val;
-              if constexpr(requires { field.update(obj); })
-              {
-                field.update(obj);
-              }
-            }
-          });
+      this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
+        if constexpr(requires { field.value = "str"; })
+        {
+          if constexpr(std::is_same_v<std::string, decltype(F::value)>)
+          {
+            field.value = std::to_string(val);
+            if_possible(field.update(obj));
+          }
+          // FIXME int / float -> str for string_view? need separate storage
+        }
+        else if constexpr(requires { field.value = 0; })
+        {
+          static_assert(!std::is_pointer_v<decltype(field.value)>);
+          field.value = val;
+          if_possible(field.update(obj));
+        }
+      });
     }
   }
 
   void process_inlet_control(int inlet, t_atom_float val)
   {
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
     {
       auto& obj = this->implementation.effect;
-      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
-          avnd::get_inputs<T>(implementation), inlet, [&obj, val](auto& field) {
-            if constexpr(requires { field.value = 0; })
-            {
-              static_assert(!std::is_pointer_v<decltype(field.value)>);
-              field.value = val;
-              if constexpr(requires { field.update(obj); })
-              {
-                field.update(obj);
-              }
-            }
-          });
+      this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
+        if constexpr(requires { field.value = "str"; })
+        {
+          if constexpr(std::is_same_v<std::string, decltype(F::value)>)
+          {
+            field.value = std::to_string(val);
+            if_possible(field.update(obj));
+          }
+          // FIXME int / float -> str for string_view? need separate storage
+        }
+        else if constexpr(requires { field.value = 0; })
+        {
+          static_assert(!std::is_pointer_v<decltype(field.value)>);
+          field.value = val;
+          if_possible(field.update(obj));
+        }
+      });
     }
   }
 
   void process_inlet_control(int inlet, struct symbol* val)
   {
-    if constexpr(avnd::has_inputs<T>)
+    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
     {
       auto& obj = this->implementation.effect;
-      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
-          avnd::get_inputs<T>(implementation), inlet, [&obj, val](auto& field) {
-            if constexpr(requires { field.value = "str"; })
-            {
-              static_assert(!std::is_pointer_v<decltype(field.value)>);
-              field.value = val->s_name;
-              if constexpr(requires { field.update(obj); })
-              {
-                field.update(obj);
-              }
-            }
-          });
-    }
-  }
-
-  void process_inlet_control(int inlet, t_symbol* s, int argc, t_atom* argv)
-  {
-    if constexpr(avnd::has_inputs<T>)
-    {
-      auto& obj = this->implementation.effect;
-      max::explicit_parameter_input_introspection<T>::for_nth_mapped(
-          avnd::get_inputs<T>(implementation), inlet, [&obj, argc, argv](auto& field) {
-        if(from_atoms{argc, argv}(field.value)) {
-          if constexpr(requires { field.update(obj); })
+      this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
+        if constexpr(requires { field.value = "str"; })
+        {
+          static_assert(!std::is_pointer_v<decltype(field.value)>);
+          field.value = val->s_name;
+          if_possible(field.update(obj));
+        }
+        else if constexpr(requires { field.value = 1; })
+        {
+          if constexpr(std::floating_point<decltype(F::value)>)
           {
-            field.update(obj);
+            field.value = std::stod(val->s_name);
+            if_possible(field.update(obj));
+          }
+          else if constexpr(std::integral<decltype(F::value)>)
+          {
+            field.value = std::stoll(val->s_name);
+            if_possible(field.update(obj));
           }
         }
       });
     }
+  }
+
+  void process_inlet_dict(int inlet, struct symbol* val)
+  {
+    if constexpr(max::dict_parameter_inputs_introspection<T>::size > 0)
+    {
+      auto dict = dictobj_findregistered_retain(val);
+      if(!dict)
+        return;
+
+      auto& obj = this->implementation.effect;
+      this->input_setup.for_inlet(inlet, *this, [&obj, dict] <typename F>(F& field) {
+        if constexpr(max::dict_parameter<F>)
+        {
+          from_dict{}(dict, field);
+          if_possible(field.update(obj));
+        }
+      });
+      dictobj_release(dict);
+    }
+  }
+
+  template <typename Field>
+  static bool
+  process_inlet_control(T& obj, Field& field, int argc, t_atom* argv)
+  {
+    if(from_atoms{argc, argv}(field.value))
+    {
+      if_possible(field.update(obj));
+      return true;
+    }
+    return false;
+  }
+
+  void process_inlet_control(int inlet, t_symbol* s, int argc, t_atom* argv)
+  {
+    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
+    {
+      auto& obj = this->implementation.effect;
+      this->input_setup.for_inlet(inlet, *this, [&obj, argc, argv] <typename F>(F& field) {
+        process_inlet_control(obj, field, argc, argv);
+      });
+    }
+  }
+
+  bool process_inputs(
+      avnd::effect_container<T>& implementation, t_symbol* s, int argc, t_atom* argv)
+  {
+    // FIXME create static pointer tables instead, implement for_each_field_function_table
+    // FIXME refactor with pd too
+    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
+    {
+      bool ok = false;
+      std::string_view symname = s->s_name;
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs(implementation), [&]<typename M>(M& field) {
+        if(ok)
+          return;
+        if(symname == max::get_name_symbol<M>())
+        {
+          ok = process_inlet_control(implementation.effect, field, argc, argv);
+        }
+      });
+      return ok;
+    }
+    return false;
   }
 
   void process()
@@ -205,15 +275,31 @@ struct message_processor
     // Process the control
     process_inlet_control(inlet, value);
 
-    process();
+    if(inlet == 0)
+      process();
+  }
+  void process_dict(t_symbol* name)
+  {
+    const int inlet = proxy_getinlet(&x_obj);
+
+    // Process the control
+    process_inlet_dict(inlet, name);
+
+    if(inlet == 0)
+      process();
   }
 
   void process(t_symbol* s, int argc, t_atom* argv)
   {
+    // Called when unknown symbol. We only process those
+    // on the first inlet.
     const int inlet = proxy_getinlet(&x_obj);
 
     // First try to process messages handled explicitely in the object
     if(inlet == 0 && messages<T>{}.process_messages(implementation, s, argc, argv))
+      return;
+    // Then try to find if any message matches the name of a port
+    if(inlet == 0 && process_inputs(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
@@ -223,7 +309,7 @@ struct message_processor
       {
         if(inlet == 0)
         {
-          if(strcmp(s->s_name, "bang") == 0)
+          if(s == _sym_bang)
           {
             process();
           }
@@ -236,10 +322,16 @@ struct message_processor
         [[fallthrough]];
       }
       default: {
-        // First apply the data to the first inlet (other inlets are handled by Pd).
+        // Apply the data to the first inlet (other inlets are handled by Max).
+        // It will always be the first parameter (attribute or not).
         process_inlet_control(inlet, s, argc, argv);
 
-        process();
+        if(inlet == 0)
+        {
+          // Bang
+          process();
+        }
+
         break;
       }
     }
@@ -321,6 +413,9 @@ message_processor_metaclass<T>::message_processor_metaclass()
   constexpr auto obj_process_sym
       = +[](instance* obj, t_symbol* value) -> void { obj->process(value); };
 
+  constexpr auto obj_process_dict
+      = +[](instance* obj, t_symbol* value) -> void { obj->process_dict(value); };
+
   constexpr auto obj_assist
       = +[](instance* obj, void *b, long msg, long arg, char *dst) -> void {
     switch(msg) {
@@ -343,6 +438,7 @@ message_processor_metaclass<T>::message_processor_metaclass()
   class_addmethod(g_class, (method)obj_process_float, "float", A_FLOAT, 0);
   class_addmethod(g_class, (method)obj_process_sym, "symbol", A_SYM, 0);
   class_addmethod(g_class, (method)obj_process_bang, "bang", A_NOTHING, 0);
+  class_addmethod(g_class, (method)obj_process_dict, "dict", A_SYM, 0);
   class_addmethod(g_class, (method)obj_process, "anything", A_GIMME, 0);
   class_addmethod(g_class, (method)obj_assist, "assist", A_CANT, 0);
 

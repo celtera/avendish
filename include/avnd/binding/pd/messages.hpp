@@ -184,7 +184,7 @@ struct messages
           avnd::get_messages(implementation), [&]<typename M>(M& field) {
         if(ok)
           return;
-        if(symname == avnd::get_name<M>())
+        if(symname == pd::get_name_symbol<M>())
         {
           ok = process_message(implementation.effect, field, symname, argc, argv);
         }

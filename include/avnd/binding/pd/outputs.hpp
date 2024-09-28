@@ -18,7 +18,6 @@ inline void value_to_pd(t_atom& atom, T v) noexcept
 {
   atom = {.a_type = A_FLOAT, .a_w = {.w_float = (t_float)v}};
 }
-
 inline void value_to_pd(t_atom& atom, bool v) noexcept
 {
   atom = {.a_type = A_FLOAT, .a_w = {.w_float = v ? 1.0f : 0.0f}};
@@ -284,6 +283,7 @@ struct do_value_to_pd_anything
     requires avnd::set_ish<T>
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
+    // FIXME that does not work, we can have recursive types
     static thread_local std::vector<t_atom> atoms;
     const int N = v.size();
     atoms.clear();
@@ -406,7 +406,7 @@ inline void value_to_pd_dispatch(t_outlet* outlet, Args&&... v) noexcept
 {
   if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
-    static const auto sym = get_static_symbol<C>();
+    static const auto sym = get_message_out_symbol<C>();
     return do_value_to_pd_anything{}(outlet, sym, std::forward<Args>(v)...);
   }
   else

@@ -147,7 +147,7 @@ struct audio_processor
                 avnd::float_parameter<C> || avnd::int_parameter<C>
                 || avnd::bool_parameter<C>)
             {
-              constexpr std::string_view control_name = avnd::get_name<C>();
+              static constexpr auto control_name = max::get_name_symbol<C>();
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, res);
@@ -167,7 +167,7 @@ struct audio_processor
                 avnd::int_parameter<C> || avnd::float_parameter<C>
                 || avnd::enum_parameter<C> || avnd::bool_parameter<C>)
             {
-              constexpr std::string_view control_name = avnd::get_name<C>();
+              static constexpr auto control_name = max::get_name_symbol<C>();
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, res);
@@ -183,11 +183,11 @@ struct audio_processor
 
         case A_SYM: {
           // TODO ?
-          std::string res = argv[0].a_w.w_sym->s_name;
+          std::string_view res = argv[0].a_w.w_sym->s_name;
           avnd::for_each_field_ref(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
             if constexpr(avnd::string_parameter<C>)
             {
-              constexpr std::string_view control_name = avnd::get_name<C>();
+              static constexpr auto control_name = max::get_name_symbol<C>();
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, std::move(res));

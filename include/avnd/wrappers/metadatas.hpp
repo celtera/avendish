@@ -162,28 +162,76 @@ static constexpr bool valid_char_for_c_identifier(char c)
          || (c == '_');
 }
 
-template <avnd::has_c_name T>
-constexpr auto get_c_identifier()
+template<auto Symtab>
+static constexpr bool validate_name(std::string_view name)
 {
-  return avnd::get_c_name<T>();
+  // FIXME we could replace with underscore with some compile-time string library
+  for(char c : name)
+    if(!Symtab(c))
+      return false;
+  return true;
 }
 
-template <avnd::has_name T>
-  requires(!avnd::has_c_name<T>)
-auto get_c_identifier()
+template<std::size_t Sz>
+struct static_identifier: std::array<char, Sz + 1>
 {
-  std::string name{avnd::get_name<T>()};
-  for(char& c : name)
-  {
-    if(!valid_char_for_c_identifier(c))
-      c = '_';
+// operator std::string_view() const noexcept {
+//   return std::string_view{data(), Sz};
+// }
+  constexpr bool operator==(std::string_view other) const noexcept {
+    return std::string_view{this->data(), Sz} == other;
   }
-  return name;
+};
+
+template <typename T, auto Symtab = valid_char_for_c_identifier>
+static constexpr auto fixup_identifier()
+{
+  constexpr auto nm = avnd::get_name<T>();
+  constexpr auto sz = nm.size();
+  static_identifier<sz> storage;
+  for(std::size_t i = 0; i < sz; i++)
+    storage[i] = Symtab(nm[i]) ? nm[i] : '_';
+  storage[sz] = 0;
+  return storage;
 }
 
-template <typename T>
-  requires(!avnd::has_c_name<T> && !avnd::has_name<T>)
-auto get_c_identifier() = delete;
+template <typename T, auto Symtab = valid_char_for_c_identifier>
+static constexpr auto get_c_identifier()
+{
+  if constexpr(avnd::has_c_name<T>)
+  {
+    return avnd::get_c_name<T>();
+  }
+  else if constexpr(avnd::has_name<T>)
+  {
+    constexpr auto name = avnd::get_name<T>();
+    if constexpr(validate_name<Symtab>(name))
+    {
+      return name;
+    }
+    else
+    {
+      return fixup_identifier<T, Symtab>();
+    }
+  }
+  else
+  {
+    using namespace std::literals;
+    // FIXME variable name with pfr
+    return "unnamed"sv;
+  }
+}
+
+template <typename T, auto Symtab = valid_char_for_c_identifier>
+static constexpr auto get_static_symbol()
+{
+  if constexpr(avnd::has_symbol<T>)
+    return avnd::get_symbol<T>();
+  else
+    return avnd::get_c_identifier<T, Symtab>();
+}
+
+
 
 template <typename T>
 concept has_author

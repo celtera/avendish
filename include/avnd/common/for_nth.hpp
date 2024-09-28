@@ -138,6 +138,26 @@ void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
   }
 }
 
+/* FIXME TBD
+template <typename T, typename R>
+constexpr void for_each_field_function_table(T&& value, R func)
+{
+#if !defined(_MSC_VER)
+  static_assert(!requires { value.size(); });
+#endif
+  using namespace avnd::pfr;
+  using namespace avnd::pfr::detail;
+  constexpr std::size_t fields_count_val
+      = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
+
+  auto t = avnd::pfr::detail::tie_as_tuple(value);
+
+  return [&]<std::size_t... I>(std::index_sequence<I...>) {
+    return std::make_tuple(
+        []<typename... Args>(Args... args) { R{}(get<I>(t), std::forward<Args>(args)...); }...);
+  }(std::make_index_sequence<fields_count_val>{});
+}
+*/
 constexpr int index_in_struct(const auto& s, auto... member)
 {
   int index = -1;

@@ -20,22 +20,15 @@ static constexpr bool valid_char_for_name(char c)
 }
 
 template <typename T>
+static constexpr auto get_name_symbol()
+{
+  return avnd::get_static_symbol<T, pd::valid_char_for_name>();
+}
+
+template <typename T>
 t_symbol* symbol_from_name()
 {
-  if constexpr(const char* str; requires { str = T::c_name(); })
-  {
-    return gensym(avnd::get_c_name<T>().data());
-  }
-  else
-  {
-    std::string name{avnd::get_name<T>()};
-    for(char& c : name)
-    {
-      if(!valid_char_for_name(c))
-        c = '_';
-    }
-    return gensym(name.c_str());
-  }
+  return gensym(pd::get_name_symbol<T>().data());
 }
 
 template <typename T>
@@ -177,7 +170,7 @@ static t_symbol* symbol_for_arguments(F<R(Args...)>)
 }
 
 template <typename C>
-static t_symbol* get_static_symbol()
+static t_symbol* get_message_out_symbol()
 {
   if constexpr(avnd::has_symbol<C>)
   {
