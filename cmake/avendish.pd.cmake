@@ -138,3 +138,44 @@ target_sources(Avendish PRIVATE
   "${AVND_SOURCE_DIR}/include/avnd/binding/pd/outputs.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/pd/helpers.hpp"
 )
+
+function(avnd_create_pd_package)
+  cmake_parse_arguments(AVND
+      "INSTALL"
+      "NAME;SOURCE_PATH;PACKAGE_ROOT"
+      "EXTERNALS;SUPPORT"
+      ${ARGN})
+
+  set(_pkg_target "${AVND_NAME}_pd_package")
+  add_custom_target(${_pkg_target} ALL
+    DEPENDS ${AVND_EXTERNALS}
+  )
+
+  # Copy the package base
+  set(_pkg "${AVND_PACKAGE_ROOT}/${AVND_NAME}")
+  file(GLOB _pkg_content
+       LIST_DIRECTORIES true
+       "${AVND_SOURCE_PATH}/*")
+  foreach(f ${_pkg_content})
+    file(COPY "${f}" DESTINATION "${_pkg}/")
+  endforeach()
+
+  # Copy the externals
+  foreach(_external ${AVND_EXTERNALS})
+    set(_external_bin "$<TARGET_FILE:${_external}>")
+    set(_external_path $<PATH:GET_PARENT_PATH,${_external_bin}>)
+    get_target_property(_c_name ${_external} AVND_C_NAME)
+
+    # Copy the external (fairly platform-specific)
+    add_custom_command(TARGET ${_external} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy "${_external_bin}" "${_pkg}/"
+    )
+  endforeach()
+
+  # Copy the support files
+  foreach(_support ${AVND_SUPPORT})
+    add_custom_command(TARGET ${_pkg_target} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy "${_support}" "${_pkg}/"
+    )
+  endforeach()
+endfunction()
