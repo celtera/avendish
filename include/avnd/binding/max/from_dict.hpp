@@ -1,5 +1,6 @@
 #pragma once
 #include <avnd/binding/max/from_atoms.hpp>
+#include <avnd/binding/max/helpers.hpp>
 #include <avnd/common/for_nth.hpp>
 #include <avnd/concepts/field_names.hpp>
 namespace max
@@ -26,7 +27,14 @@ struct from_dict
       }
       else if(t_atom value; dictionary_getatom(d, key, &value) == MAX_ERR_NONE)
       {
-        from_atom{value}(v[name]);
+        if constexpr(max::convertible_to_fundamental_value_type<V>)
+        {
+          from_atom{value}(v[name]);
+        }
+        else
+        {
+          // FIXME TODO
+        }
       }
     });
   }
@@ -36,7 +44,7 @@ struct from_dict
   {
     v.clear();
 
-    ::dictionary_funall(d, [](t_dictionary_entry* entry, void* my_arg) {
+    ::dictionary_funall(d, (method)+[](t_dictionary_entry* entry, void* my_arg) -> void {
       auto& v = *static_cast<V*>(my_arg);
 
       // Get the data
@@ -51,12 +59,22 @@ struct from_dict
       }
       else
       {
-        t_atom value;
-        dictionary_entry_getvalue(entry, &value);
-        if(value.a_type != A_NOTHING)
-          from_atom{value}(v[key->s_name]);
+        if constexpr(max::convertible_to_fundamental_value_type<V>)
+        {
+          t_atom value;
+          dictionary_entry_getvalue(entry, &value);
+          if(value.a_type != A_NOTHING)
+            from_atom{value}(v[key->s_name]);
+        }
+        else
+        {
+          // FIXME TODO
+        }
       }
     }, &v);
   }
+
+  template<typename V>
+  void operator()(t_dictionary* d, V& v) = delete;
 };
 }

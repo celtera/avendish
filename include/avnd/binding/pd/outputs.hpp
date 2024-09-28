@@ -6,7 +6,6 @@
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/vecf.hpp>
-
 #include <array>
 #include <vector>
 namespace pd
@@ -34,31 +33,48 @@ inline void value_to_pd(t_atom& atom, const std::string& v) noexcept
 {
   atom = {.a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(v.c_str())}};
 }
+template<typename T>
+inline void value_to_pd(t_atom& atom, const std::optional<T>& v) noexcept
+{
+  if(v)
+    value_to_pd(atom, *v);
+  else
+    atom = {.a_type = A_NULL, .a_w = {}};
+}
+
+struct do_value_to_pd_rec
+{
+  // FIXME static thread_local errors with msvc...
+  std::vector<t_atom> atoms;
+
+  template <typename T>
+    requires (std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+  void operator()(const T& v)
+  {
+    avnd::for_each_field_ref_n(
+        v, [this]<std::size_t I>(auto& field, avnd::field_index<I>) mutable {
+      (*this)(field);
+    });
+  }
+
+  void operator()(const auto& v)
+  {
+    //FIXME
+  }
+};
 
 struct do_value_to_pd_typed
 {
   template <typename T>
-    requires (std::is_aggregate_v<T> && !avnd::span_ish<T>)
+    requires (std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
   void operator()(t_outlet* outlet, const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
-    static constexpr bool vecf = avnd::vecf_compatible<T>();
+    static_assert(sz == 0);
 
     if constexpr(sz == 0)
     {
       outlet_bang(outlet);
-    }
-    else
-    {
-      // FIXME for pd we need to flatten outputs as there
-      // is no data-structure nesting
-      static constexpr auto N = avnd::pfr::tuple_size_v<T>;
-      std::array<t_atom, N> atoms;
-      avnd::for_each_field_ref_n(
-          v, [&atoms]<std::size_t I>(auto& field, avnd::field_index<I>) mutable {
-        value_to_pd(atoms[I], field);
-      });
-      outlet_list(outlet, &s_list, N, atoms.data());
     }
   }
 
@@ -66,30 +82,46 @@ struct do_value_to_pd_typed
     requires avnd::vector_ish<T>
   void operator()(t_outlet* outlet, const T& v)
   {
-    static thread_local std::vector<t_atom> atoms;
-    const int N = v.size();
-    atoms.clear();
-    atoms.resize(N);
-
-    for(int i = 0; i < N; i++)
+    if constexpr(convertible_to_fundamental_value_type<typename T::value_type>)
     {
-      value_to_pd(atoms[i], v[i]);
-    }
+      // FIXME does not work for recursivity: static thread_local. We need a pool.
+      std::vector<t_atom> atoms;
+      const int N = v.size();
+      atoms.clear();
+      atoms.resize(N);
 
-    outlet_list(outlet, &s_list, v.size(), atoms.data());
+      for(int i = 0; i < N; i++)
+      {
+        value_to_pd(atoms[i], v[i]);
+      }
+
+      outlet_list(outlet, &s_list, N, atoms.data());
+    }
+    else
+    {
+    }
   }
 
   template <typename T, std::size_t N>
   void operator()(t_outlet* outlet, const std::array<T, N>& v)
   {
-    std::array<t_atom, N> atoms;
-
-    for(int i = 0; i < N; i++)
+    if constexpr(convertible_to_fundamental_value_type<typename T::value_type>)
     {
-      value_to_pd(atoms[i], v[i]);
-    }
+      std::array<t_atom, N> atoms;
 
-    outlet_list(outlet, &s_list, v.size(), atoms.data());
+      for(int i = 0; i < N; i++)
+      {
+        value_to_pd(atoms[i], v[i]);
+      }
+
+      outlet_list(outlet, &s_list, v.size(), atoms.data());
+    }
+    else
+    {
+      do_value_to_pd_rec rec{};
+      rec(v);
+      outlet_list(outlet, &s_list, rec.atoms.size(), rec.atoms.data());
+    }
   }
 
   template <std::size_t N>
@@ -215,7 +247,6 @@ struct do_value_to_pd_anything
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
-    static constexpr bool vecf = avnd::vecf_compatible<T>();
 
     if constexpr(sz == 0)
     {
@@ -407,11 +438,31 @@ inline void value_to_pd_dispatch(t_outlet* outlet, Args&&... v) noexcept
   if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
     static const auto sym = get_message_out_symbol<C>();
-    return do_value_to_pd_anything{}(outlet, sym, std::forward<Args>(v)...);
+    if constexpr((convertible_to_atom_list_statically<Args> && ...))
+    {
+      return do_value_to_pd_anything{}(outlet, sym, std::forward<Args>(v)...);
+    }
+    else
+    {
+      do_value_to_pd_rec rec{};
+      (rec(v), ...);
+      outlet_anything(outlet, sym, rec.atoms.size(), rec.atoms.data());
+      return;
+    }
   }
   else
   {
-    return do_value_to_pd_typed{}(outlet, std::forward<Args>(v)...);
+    if constexpr((convertible_to_atom_list_statically<Args> && ...))
+    {
+      return do_value_to_pd_typed{}(outlet, std::forward<Args>(v)...);
+    }
+    else
+    {
+      do_value_to_pd_rec rec{};
+      (rec(v), ...);
+      outlet_list(outlet, &s_list, rec.atoms.size(), rec.atoms.data());
+      return;
+    }
   }
 }
 

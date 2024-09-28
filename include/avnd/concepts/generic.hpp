@@ -123,7 +123,7 @@ template <typename T, std::size_t N>
 concept c_array_ish = std::extent_v<T, 0> >=
 N;
 template <typename T, std::size_t N>
-concept cpp_tuple_ish = requires { std::tuple_size_v<T> >= N; };
+concept cpp_tuple_ish = requires { std::tuple_size_v<std::remove_cvref_t<T>> >= N; };
 template <typename T, std::size_t N>
 concept cpp_array_ish = !
 vector_ish<T>&& cpp_tuple_ish<T, N>&& requires(T t) {

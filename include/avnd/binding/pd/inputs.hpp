@@ -1,5 +1,7 @@
 #pragma once
 #include <avnd/binding/pd/helpers.hpp>
+#include <avnd/common/arithmetic.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #if !defined(__cpp_lib_to_chars)
 #include <boost/lexical_cast.hpp>
@@ -15,6 +17,47 @@ namespace pd
 struct from_atom
 {
   t_atom& av;
+
+  template<typename T>
+    requires std::is_aggregate_v<T>
+  bool operator()(T& v) const noexcept = delete;
+
+  bool operator()(avnd::span_ish auto& v) const noexcept = delete;
+  bool operator()(avnd::pair_ish auto& v) const noexcept = delete;
+  bool operator()(avnd::tuple_ish auto& v) const noexcept = delete;
+  bool operator()(avnd::map_ish auto& v) const noexcept = delete;
+  bool operator()(avnd::set_ish auto& v) const noexcept = delete;
+  bool operator()(avnd::bitset_ish auto& v) const noexcept = delete;
+
+  template<typename T>
+    requires std::is_enum_v<T>
+  bool operator()(T& v) const noexcept
+  {
+    switch(av.a_type)
+    {
+      case A_FLOAT:
+      {
+        v = atom_getfloat(&av);
+        return true;
+      }
+      case A_SYMBOL:
+      {
+        auto sym = av.a_w.w_symbol;
+        if(sym && sym->s_name)
+        {
+          auto color = magic_enum::enum_cast<T>(sym->s_name);
+          if (color.has_value()) {
+            v = *color;
+            return true;
+          }
+        }
+        return false;
+      }
+      default:
+        return false;
+    }
+  }
+
   template <typename T>
     requires std::integral<T> || std::floating_point<T>
   bool operator()(T& v) const noexcept
@@ -56,11 +99,21 @@ struct from_atom
 
   bool operator()(std::string& v) const noexcept
   {
-    if(av.a_type == A_SYMBOL)
+    switch(av.a_type)
     {
-      if(auto sym = av.a_w.w_symbol; sym && sym->s_name)
+      case A_FLOAT:
       {
-        v = sym->s_name;
+        // FIXME to_chars?
+        v = std::to_string(av.a_w.w_float);
+        break;
+      }
+      case A_SYMBOL:
+      {
+        if(auto sym = av.a_w.w_symbol; sym && sym->s_name)
+        {
+          v = sym->s_name;
+        }
+        break;
       }
     }
     return true;
@@ -72,10 +125,15 @@ struct from_atoms
   long ac{};
   t_atom* av{};
 
-  bool operator()(std::integral auto& v) const noexcept { return from_atom{av[0]}(v); }
+  bool operator()(std::integral auto& v) const noexcept {
+    if(ac < 1)
+      return false;
+    return from_atom{av[0]}(v); }
 
   bool operator()(std::floating_point auto& v) const noexcept
   {
+    if(ac < 1)
+      return false;
     return from_atom{av[0]}(v);
   }
 
@@ -107,11 +165,12 @@ struct from_atoms
     return true;
   }
 
-  bool operator()(avnd::set_ish auto& v) const noexcept
+  template<avnd::set_ish T>
+  bool operator()(T& v) const noexcept
   {
     v.clear();
 
-    using value_type = std::remove_cvref_t<typename decltype(v)::value_type>;
+    using value_type = std::remove_cvref_t<typename T::value_type>;
     for(int i = 0; i < ac; i++)
     {
       value_type val;
@@ -121,21 +180,23 @@ struct from_atoms
     return true;
   }
 
-  bool operator()(avnd::map_ish auto& v) const noexcept
+  template<avnd::map_ish T>
+  bool operator()(T& v) const noexcept
   {
     v.clear();
     if(ac <= 1)
       return false;
 
-    using value_type = std::remove_cvref_t<typename decltype(v)::value_type>;
-    using key_type = std::remove_cvref_t<typename decltype(v)::key_type>;
-    using mapped_type = std::remove_cvref_t<typename decltype(v)::mapped_type>;
+    using value_type = std::remove_cvref_t<typename T::value_type>;
+    using key_type = std::remove_cvref_t<typename T::key_type>;
+    using mapped_type = std::remove_cvref_t<typename T::mapped_type>;
     for(int i = 0; i < ac / 2; i += 2)
     {
-      value_type val;
-      from_atom{av[i]}(val.first);
-      from_atom{av[i + 1]}(val.second);
-      v.insert(std::move(val));
+      key_type k;
+      mapped_type val;
+      from_atom{av[i]}(k);
+      from_atom{av[i + 1]}(val);
+      v.emplace(std::move(k), std::move(val));
     }
     return true;
   }
@@ -144,6 +205,9 @@ struct from_atoms
     requires std::is_enum_v<T>
   bool operator()(T& v) const noexcept
   {
+    if(ac < 1)
+      return false;
+
     auto r = static_cast<std::underlying_type_t<T>>(v);
     auto res = from_atom{av[0]}(r);
     if(res)
@@ -162,7 +226,94 @@ struct from_atoms
     return true;
   }
 
-  bool operator()(std::string& v) const noexcept { return from_atom{av[0]}(v); }
+  bool operator()(std::string& v) const noexcept {
+    if(ac < 1)
+      return false;
+    return from_atom{av[0]}(v);
+  }
+
+  // FIXME
+  template<avnd::tuple_ish T>
+    requires (!avnd::pair_ish<T>)
+  bool operator()(T& v) const noexcept { return false; }
+
+  bool operator()(avnd::variant_ish auto& v) const noexcept
+  {
+    if(ac < 1)
+      return false;
+    // FIXME variant<std::vector<float>, std::vector<int>>
+    switch(av[0].a_type)
+    {
+      case A_FLOAT:
+      {
+#define convert_float_to_type(t) \
+        if constexpr(requires { v = (t)0; }) \
+          { \
+                v = (t)av[0].a_w.w_float; \
+                return true; \
+          }
+        avnd_for_all_fp_types(convert_float_to_type);
+#undef convert_float_to_type
+        break;
+      }
+      case A_SYMBOL:
+      {
+        if constexpr(requires { v = "hello"; })
+        {
+          v = av[0].a_w.w_symbol->s_name;
+          return true;
+        }
+        break;
+      }
+    }
+
+    return false;
+  }
+
+  template<avnd::optional_ish T>
+  bool operator()(T& v) const noexcept
+  {
+    if(ac < 1)
+      return false;
+
+    typename T::value_type res;
+    (*this)(res);
+    v = std::move(res);
+    return true;
+  }
+
+  template <typename T>
+    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && avnd::pfr::tuple_size_v<T> > 0)
+  bool operator()(T& v) const noexcept
+  {
+    avnd::for_each_field_ref(v, [this, i = 0] <typename F> (F& field) mutable {
+      if(i < ac)
+      {
+        from_atom{av[i]}(field);
+      }
+    });
+    return true;
+  }
+
+  bool operator()(avnd::bitset_ish auto& f)  noexcept
+  {
+    f.reset();
+    for(int k = 0; k < std::min((int)f.size(), (int)ac); k++) {
+      switch(av[k].a_type) {
+        case A_FLOAT:
+          if(av[k].a_w.w_float != 0.f)
+            f.set(k);
+          break;
+        case A_SYMBOL:
+          if(av[k].a_w.w_symbol != gensym(""))
+            f.set(k);
+          break;
+        default:
+          break;
+      }
+    }
+    return true;
+  }
 };
 
 template <typename T>
@@ -191,10 +342,13 @@ struct inputs
   bool
   process_inlet_control(T& obj, Field& field, int argc, t_atom* argv)
   {
-    if(from_atoms{argc, argv}(field.value))
+    if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
     {
-      if_possible(field.update(obj));
-      return true;
+      if(from_atoms{argc, argv}(field.value))
+      {
+        if_possible(field.update(obj));
+        return true;
+      }
     }
     return false;
   }

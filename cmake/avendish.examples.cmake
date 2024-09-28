@@ -1,3 +1,16 @@
+avnd_make_object(
+  TARGET Aggregate
+  MAIN_FILE examples/Raw/Aggregate.hpp
+  MAIN_CLASS examples::Aggregate
+  C_NAME avnd_aggregate
+)
+
+avnd_make_object(
+  TARGET AllPortsTypes
+  MAIN_FILE examples/Raw/AllPortsTypes.hpp
+  MAIN_CLASS examples::AllPortsTypes
+  C_NAME avnd_all_ports_types
+)
 
 avnd_make_object(
   TARGET Construct
@@ -105,6 +118,14 @@ avnd_make_object(
   MAIN_CLASS examples::helpers::Peak
   C_NAME avnd_peak
 )
+
+avnd_make_object(
+  TARGET Poles
+  MAIN_FILE examples/Helpers/Poles.hpp
+  MAIN_CLASS examples::helpers::Poles
+  C_NAME avnd_poles
+)
+
 
 
 avnd_make_object(

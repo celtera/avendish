@@ -203,7 +203,7 @@ struct message_processor
       this->input_setup.for_inlet(inlet, *this, [&obj, dict] <typename F>(F& field) {
         if constexpr(max::dict_parameter<F>)
         {
-          from_dict{}(dict, field);
+          from_dict{}(dict, field.value);
           if_possible(field.update(obj));
         }
       });
@@ -215,10 +215,17 @@ struct message_processor
   static bool
   process_inlet_control(T& obj, Field& field, int argc, t_atom* argv)
   {
-    if(from_atoms{argc, argv}(field.value))
+    if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
     {
-      if_possible(field.update(obj));
-      return true;
+      if(from_atoms{argc, argv}(field.value))
+      {
+        if_possible(field.update(obj));
+        return true;
+      }
+    }
+    else
+    {
+      // FIXME
     }
     return false;
   }

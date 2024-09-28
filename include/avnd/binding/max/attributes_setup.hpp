@@ -50,9 +50,16 @@ struct attribute_register<Processor, T>
     auto& ins = avnd::get_inputs(obj);
     auto& field = avnd::input_introspection<T>::template field<I>(ins);
     if (ac && av) {
-      if(from_atoms{ac, av}(field.value))
+      if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
       {
-        if_possible(field.update(obj));
+        if(from_atoms{ac, av}(field.value))
+        {
+          if_possible(field.update(obj));
+        }
+      }
+      else
+      {
+        // FIXME TODO
       }
     }
     else

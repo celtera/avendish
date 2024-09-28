@@ -14,6 +14,23 @@
 
 namespace max
 {
+template <typename T>
+concept convertible_to_fundamental_value_type
+    = std::is_arithmetic_v<T> || avnd::string_ish<T> || std::is_same_v<const char*, T> || std::is_same_v<std::string_view, T>;
+template<typename T>
+struct convertible_to_fundamental_value_type_pred : std::bool_constant<convertible_to_fundamental_value_type<T>>{};
+template <typename T>
+concept convertible_to_atom_list_statically
+    = convertible_to_fundamental_value_type<T> ||
+      (avnd::bitset_ish<T>) ||
+      (avnd::span_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
+      (avnd::pair_ish<T> && convertible_to_fundamental_value_type<typename T::first_type> && convertible_to_fundamental_value_type<typename T::second_type>) ||
+      (avnd::map_ish<T> && convertible_to_fundamental_value_type<typename T::key_type> && convertible_to_fundamental_value_type<typename T::mapped_type>) ||
+      (avnd::optional_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
+      (avnd::variant_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
+      (avnd::tuple_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value)
+    ;
+
 static constexpr bool valid_char_for_name(char c)
 {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')

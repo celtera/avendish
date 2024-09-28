@@ -61,6 +61,7 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_execution.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/widgets.hpp"
 
+    "${AVND_SOURCE_DIR}/include/avnd/common/arithmetic.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/aggregates.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/concepts_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/coroutines.hpp"

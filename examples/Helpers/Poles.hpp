@@ -28,6 +28,7 @@ struct Poles
 
     struct : halp::spinbox_i32<"Length", halp::range{1, 1000, 20}>
     {
+      halp_flag(class_attribute);
       void update(Poles& self)
       {
         if(value >= 0 && value < 1000)
@@ -37,6 +38,7 @@ struct Poles
 
     struct : halp::knob_f32<"Sigma", halp::range{0.001, 1., 0.01}>
     {
+      halp_flag(class_attribute);
       using mapper = halp::log_mapper<std::ratio<95, 100>>;
       void update(Poles& self)
       {
@@ -46,8 +48,11 @@ struct Poles
         }
       }
     } sigma;
-    
-    halp::knob_f32<"Range", halp::range{0., 1., 1.0}> mult;
+
+    struct : halp::knob_f32<"Range", halp::range{0., 1., 1.0}>
+    {
+      halp_flag(class_attribute);
+    } mult;
   } inputs;
 
   struct
