@@ -177,7 +177,7 @@ function(avnd_make_max)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
-  if(TARGET json_to_maxref)
+  if(TARGET json_to_maxref AND NOT "${AVND_DISABLE_AUTOMAXREF}")
     message(STATUS "json_to_maxref found")
     get_target_property(_dump_path ${AVND_TARGET} AVND_DUMP_PATH)
     if(_dump_path)
