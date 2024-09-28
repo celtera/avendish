@@ -64,14 +64,25 @@ struct do_value_to_max_typed
     requires std::is_aggregate_v<T>
   void operator()(const T& v) const noexcept
   {
-      to_list l;
-      l(v);
+    to_list l;
+    l(v);
 
-      if(l.atoms.size()> std::numeric_limits<short>::max())
-        l.atoms.resize(std::numeric_limits<short>::max());
+    if(l.atoms.size()> std::numeric_limits<short>::max())
+      l.atoms.resize(std::numeric_limits<short>::max());
 
-      outlet_list(p, nullptr, (short)l.atoms.size(), l.atoms.data());
+    outlet_list(p, nullptr, (short)l.atoms.size(), l.atoms.data());
+  }
 
+  template <std::size_t N>
+  void operator()(t_outlet* outlet, const avnd::array_ish<N> auto& v)
+  {
+    std::array<t_atom, N> atoms;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (set_atom{}(&atoms[I], v), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_list(p, nullptr, N, atoms.data());
   }
 
   void operator()(const avnd::vector_ish auto& v) const noexcept
@@ -381,7 +392,7 @@ struct outputs
   }
 
   template <avnd::callback C>
-  static void setup(T& self, C& out, t_outlet& outlet)
+  static void setup(C& out, t_outlet& outlet)
   {
     using call_type = decltype(C::call);
     if constexpr(avnd::function_view_ish<call_type>)
@@ -391,6 +402,9 @@ struct outputs
     else if constexpr(avnd::function_ish<call_type>)
     {
       init_func<C>(out.call, outlet);
+    }
+    else
+    {
     }
   }
 

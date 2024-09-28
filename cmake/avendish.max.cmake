@@ -141,6 +141,9 @@ function(avnd_make_max)
   target_link_libraries(
     ${AVND_FX_TARGET}
     PUBLIC
+      Boost::boost
+      magic_enum::magic_enum
+      qlibs::reflect
       Avendish::Avendish_max
       DisableExceptions
       maxmsp_commonsyms

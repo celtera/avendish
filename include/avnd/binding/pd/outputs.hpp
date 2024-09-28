@@ -65,16 +65,30 @@ struct do_value_to_pd_rec
 
 struct do_value_to_pd_typed
 {
+  void operator()(t_outlet* outlet)
+  {
+    outlet_bang(outlet);
+  }
+
   template <typename T>
     requires (std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
   void operator()(t_outlet* outlet, const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
-    static_assert(sz == 0);
 
     if constexpr(sz == 0)
     {
       outlet_bang(outlet);
+    }
+    else
+    {
+      static constexpr auto N = avnd::pfr::tuple_size_v<T>;
+      std::array<t_atom, N> atoms;
+      avnd::for_each_field_ref_n(
+          v, [&atoms]<std::size_t I>(auto& field, avnd::field_index<I>) mutable {
+        value_to_pd(atoms[I], field);
+      });
+      outlet_list(outlet, &s_list, N, atoms.data());
     }
   }
 
@@ -82,46 +96,33 @@ struct do_value_to_pd_typed
     requires avnd::vector_ish<T>
   void operator()(t_outlet* outlet, const T& v)
   {
-    if constexpr(convertible_to_fundamental_value_type<typename T::value_type>)
-    {
-      // FIXME does not work for recursivity: static thread_local. We need a pool.
-      std::vector<t_atom> atoms;
-      const int N = v.size();
-      atoms.clear();
-      atoms.resize(N);
+    static_assert(convertible_to_fundamental_value_type<typename T::value_type>);
+    // FIXME does not work for recursivity: static thread_local. We need a pool.
+    static thread_local std::vector<t_atom> atoms;
+    const int N = v.size();
+    atoms.clear();
+    atoms.resize(N);
 
-      for(int i = 0; i < N; i++)
-      {
-        value_to_pd(atoms[i], v[i]);
-      }
-
-      outlet_list(outlet, &s_list, N, atoms.data());
-    }
-    else
+    for(int i = 0; i < N; i++)
     {
+      value_to_pd(atoms[i], v[i]);
     }
+
+    outlet_list(outlet, &s_list, N, atoms.data());
   }
 
   template <typename T, std::size_t N>
   void operator()(t_outlet* outlet, const std::array<T, N>& v)
   {
-    if constexpr(convertible_to_fundamental_value_type<typename T::value_type>)
-    {
-      std::array<t_atom, N> atoms;
+    static_assert(convertible_to_fundamental_value_type<T>);
+    std::array<t_atom, N> atoms;
 
-      for(int i = 0; i < N; i++)
-      {
-        value_to_pd(atoms[i], v[i]);
-      }
-
-      outlet_list(outlet, &s_list, v.size(), atoms.data());
-    }
-    else
+    for(int i = 0; i < N; i++)
     {
-      do_value_to_pd_rec rec{};
-      rec(v);
-      outlet_list(outlet, &s_list, rec.atoms.size(), rec.atoms.data());
+      value_to_pd(atoms[i], v[i]);
     }
+
+    outlet_list(outlet, &s_list, v.size(), atoms.data());
   }
 
   template <std::size_t N>
@@ -134,7 +135,7 @@ struct do_value_to_pd_typed
       value_to_pd(atoms[i], v[i]);
     }
 
-    outlet_list(outlet, &s_list, v.size(), atoms.data());
+    outlet_list(outlet, &s_list, N, atoms.data());
   }
 
   template <typename T>
@@ -242,6 +243,11 @@ struct do_value_to_pd_typed
 
 struct do_value_to_pd_anything
 {
+  void operator()(t_outlet* outlet, t_symbol* sym)
+  {
+    outlet_anything(outlet, sym, 0, nullptr);
+  }
+
   template <typename T>
     requires (std::is_aggregate_v<T> && !avnd::span_ish<T>)
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)

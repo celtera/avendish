@@ -1,3 +1,5 @@
+*.dll
+*.dylib
 book/book
 *.zip
 build-*

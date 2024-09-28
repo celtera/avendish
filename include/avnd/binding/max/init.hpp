@@ -27,7 +27,7 @@ struct init_arguments
 
   static auto call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    static thread_local std::vector<std::variant<float, std::string_view>> ctor;
+    static thread_local std::vector<std::variant< float, std::string_view>> ctor;
     ctor.clear();
     ctor.reserve(64);
 
@@ -36,7 +36,7 @@ struct init_arguments
       if(argv[i].a_type == A_FLOAT)
         ctor.emplace_back((float)argv[i].a_w.w_float);
       else if(argv[i].a_type == A_LONG)
-        ctor.emplace_back((float)argv[i].a_w.w_long); // FIXME
+        ctor.emplace_back((float)argv[i].a_w.w_long); // FIXME long support
       else if(argv[i].a_type == A_SYM)
         ctor.emplace_back(std::string_view(argv[i].a_w.w_sym->s_name));
     }

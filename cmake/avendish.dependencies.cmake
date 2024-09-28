@@ -59,7 +59,7 @@ if(NOT TARGET qlibs::reflect)
   include_directories("${qlibs_reflect_SOURCE_DIR}")
 endif()
 
-if(NOT TARGET magic_enum)
+if(NOT TARGET magic_enum::magic_enum)
   FetchContent_Declare(
     magic_enum
     GIT_REPOSITORY "https://github.com/Neargye/magic_enum"
@@ -67,5 +67,4 @@ if(NOT TARGET magic_enum)
     GIT_PROGRESS true
   )
   FetchContent_MakeAvailable(magic_enum)
-  include_directories("${magic_enum_SOURCE_DIR}/include")
 endif()

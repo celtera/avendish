@@ -1,7 +1,7 @@
 #pragma once
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/common/arithmetic.hpp>
-#include <magic_enum/magic_enum.hpp>
+#include <magic_enum.hpp>
 
 #if !defined(__cpp_lib_to_chars)
 #include <boost/lexical_cast.hpp>
@@ -37,7 +37,7 @@ struct from_atom
     {
       case A_FLOAT:
       {
-        v = atom_getfloat(&av);
+        v = static_cast<T>(std::round(av.a_w.w_float));
         return true;
       }
       case A_SYMBOL:

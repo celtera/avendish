@@ -9,7 +9,7 @@
 #else
 #include <charconv>
 #endif
-#include <magic_enum/magic_enum.hpp>
+#include <magic_enum.hpp>
 #include <string>
 #include <ext.h>
 
@@ -40,12 +40,12 @@ struct from_atom
     {
       case A_LONG:
       {
-        v = atom_getlong(&av);
+        v = static_cast<T>(atom_getlong(&av));
         return true;
       }
       case A_FLOAT:
       {
-        v = atom_getfloat(&av);
+        v = static_cast<T>(std::round(atom_getfloat(&av)));
         return true;
       }
       case A_SYM:

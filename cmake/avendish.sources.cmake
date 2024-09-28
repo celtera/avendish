@@ -35,6 +35,13 @@ target_sources(Avendish
     $<TARGET_OBJECTS:avnd_dummy_lib>
 )
 
+target_link_libraries(Avendish
+  PUBLIC
+    Boost::boost
+    magic_enum::magic_enum
+    qlibs::reflect
+)
+
 if(AVENDISH_INCLUDE_SOURCE_ONLY)
   target_include_directories(
       Avendish
@@ -49,7 +56,7 @@ function(avnd_target_setup AVND_FX_TARGET)
   target_compile_features(
       ${AVND_FX_TARGET}
       PUBLIC
-        cxx_std_20
+        cxx_std_23
   )
 
   if(UNIX AND NOT APPLE)
@@ -150,7 +157,7 @@ function(avnd_target_setup AVND_FX_TARGET)
       CXX_VISIBILITY_PRESET internal
   )
 
-  target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost)
+  target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost magic_enum::magic_enum qlibs::reflect)
 endfunction()
 
 function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)

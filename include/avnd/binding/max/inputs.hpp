@@ -19,6 +19,10 @@ template <typename T>
 struct inputs
 {
   void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
+
+  void for_inlet(int inlet, auto& inputs, auto&& func)
+  {
+  }
 };
 
 template <typename T>
@@ -103,14 +107,16 @@ struct inputs<T>
 };
 
 template <typename T>
-  requires(avnd::parameter_input_introspection<T>::size > 0 &&& explicit_parameter_input_introspection<T>::size == 0)
+  requires(avnd::parameter_input_introspection<T>::size > 0 && explicit_parameter_input_introspection<T>::size == 0)
 struct inputs<T>
 {
-  void for_inlet(int inlet, auto& inputs, auto&& func)
+  void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
+
+  void for_inlet(int inlet, auto& self, auto&& func)
   {
     // Inlet is necessarily 0
     avnd::parameter_input_introspection<T>::for_nth_mapped(
-        inputs, 0, [&func](auto& field) {
+        avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
       func(field);
     });
   }

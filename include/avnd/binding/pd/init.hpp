@@ -26,14 +26,24 @@ struct init_arguments
 
   static void call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    // TODO std::vector<variant<float, string>>
-    AVND_STATIC_TODO(T);
+    static thread_local std::vector<std::variant<float, std::string_view>> ctor;
+    ctor.clear();
+    ctor.reserve(64);
+
+    for(int i = 0; i < argc; i++)
+    {
+      if(argv[i].a_type == A_FLOAT)
+        ctor.emplace_back((float)argv[i].a_w.w_float);
+      else if(argv[i].a_type == A_SYMBOL)
+        ctor.emplace_back(std::string_view(argv[i].a_w.w_symbol->s_name));
+    }
+
+    return implementation.initialize(ctor);
   }
 
   static void call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    // TODO avnd::span<variant<float, string>>
-    AVND_STATIC_TODO(T);
+    return call_vec(implementation, name, argc, argv);
   }
 
   static void
