@@ -9,6 +9,55 @@
 
 namespace avnd
 {
+
+template <typename T>
+struct member_iterator_one_effect
+{
+  T & self;
+  int i = 0;
+  explicit member_iterator_one_effect(T& self) noexcept
+      : self{self}
+  {
+  }
+
+  void operator++() noexcept { i++; }
+  auto& operator*() const noexcept { return self.effect; }
+  bool operator==(std::default_sentinel_t) const noexcept
+  {
+    return i > 0;
+  }
+  member_iterator_one_effect begin() const noexcept {
+    return *this;
+  }
+  auto end() const noexcept {
+    return std::default_sentinel;
+  }
+};
+
+template <typename T>
+struct member_iterator_poly_effect
+{
+  T & self;
+  int i = 0;
+  explicit member_iterator_poly_effect(T& self) noexcept
+      : self{self}
+  {
+  }
+
+  void operator++() noexcept { i++; }
+  auto& operator*() const noexcept { return self.effect[i]; }
+  bool operator==(std::default_sentinel_t) const noexcept
+  {
+    return i >= self.effects.size();
+  }
+  member_iterator_poly_effect begin() const noexcept {
+    return *this;
+  }
+  auto end() const noexcept {
+    return std::default_sentinel;
+  }
+};
+
 template <typename T>
 struct inputs_storage
 {
@@ -113,7 +162,9 @@ struct effect_container
     return {ref{effect, this->inputs(), this->outputs()}};
   }
 
-  member_iterator<T> effects() { co_yield effect; }
+  auto effects() {
+    return member_iterator_one_effect<effect_container>{*this};
+  }
 };
 
 template <typename T>
@@ -138,7 +189,9 @@ struct effect_container<T>
   auto& outputs() noexcept { return dummy_instance; }
   auto& outputs() const noexcept { return dummy_instance; }
 
-  member_iterator<T> effects() { co_yield effect; }
+  member_iterator<T> effects() {
+    return member_iterator_one_effect<effect_container>{*this};
+  }
 
   struct ref
   {
@@ -181,10 +234,9 @@ struct effect_container<T>
   auto& outputs() noexcept { return dummy_instance; }
   auto& outputs() const noexcept { return dummy_instance; }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& eff : effect)
-      co_yield eff;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   struct ref
@@ -244,10 +296,9 @@ struct effect_container<T>
     }
   }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 };
 
@@ -292,10 +343,9 @@ struct effect_container<T>
     }
   }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& e : effect)
-      co_yield e.effect;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<typename T::outputs> outputs()
@@ -343,10 +393,9 @@ struct effect_container<T>
     }
   }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<typename T::outputs> outputs()
@@ -398,10 +447,9 @@ struct effect_container<T>
     }
   }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<decltype(T::inputs)> inputs()
@@ -458,10 +506,9 @@ struct effect_container<T>
     }
   }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<decltype(T::inputs)> inputs()
