@@ -29,10 +29,10 @@ jobs:
             }
           - {
               name: "Ubuntu (clang)",
-              os: ubuntu-22.04,
+              os: ubuntu-24.04,
               path: "/opt/ossia-sdk/llvm/bin",
-              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-15 \
-                             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-15 \
+              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-18 \
+                             -DCMAKE_CXX_COMPILER=/usr/bin/clang++-18 \
                              -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld \
                              -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld \
                              -DCMAKE_MODULE_LINKER_FLAGS=-fuse-ld=lld",
@@ -45,15 +45,15 @@ jobs:
                              chmod +x ./llvm.sh ; \
                              sudo ./llvm.sh ; \
                              sudo apt update ; \
-                             sudo apt install ninja-build clang-15 lld-15 libc++-15-dev libc++1-15 libc++abi1-15 libc++abi-15-dev",
+                             sudo apt install ninja-build clang-18 lld-18 libc++-18-dev libc++1-18 libc++abi1-18 libc++abi-18-dev",
               sdk: "/opt/ossia-sdk",
               pre_build: ""
             }
           - {
               name: "Ubuntu (GCC)",
-              os: ubuntu-22.04,
-              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/gcc-12 \
-                             -DCMAKE_CXX_COMPILER=/usr/bin/g++-12",
+              os: ubuntu-24.04,
+              common_flags: "-DCMAKE_C_COMPILER=/usr/bin/gcc-14 \
+                             -DCMAKE_CXX_COMPILER=/usr/bin/g++-14",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
@@ -61,7 +61,7 @@ jobs:
                              sudo apt install lsb-release wget software-properties-common ; \
                              sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; \
                              sudo apt update ; \
-                             sudo apt install ninja-build gcc-12 g++-12",
+                             sudo apt install ninja-build gcc-14 g++-14",
               sdk: "/opt/ossia-sdk",
               pre_build: ""
             }
