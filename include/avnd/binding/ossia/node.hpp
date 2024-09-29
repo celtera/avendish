@@ -408,8 +408,9 @@ public:
   template <typename Functor, typename... Args>
   void process_all_ports(Args&&... args)
   {
-    for(auto& [impl, i, o] : this->impl.full_state())
+    for(auto [impl, i, o] : this->impl.full_state())
     {
+      static_assert(std::is_reference_v<decltype(impl)>);
       Functor f{*this, impl, args...};
       if constexpr(avnd::inputs_type<T>::size > 0)
         process_inputs_impl(f, i);
@@ -826,7 +827,7 @@ public:
   typename controls_input_queue<T>::i_tuple make_controls_in_tuple()
   {
     // We only care about the inputs of the first one, since they're all the same
-    for(auto& state : this->impl.full_state())
+    for(auto state : this->impl.full_state())
     {
       return avnd::control_input_introspection<T>::filter_tuple(
           state.inputs, [](auto& field) { return field.value; });
@@ -837,7 +838,7 @@ public:
   typename controls_output_queue<T>::o_tuple make_controls_out_tuple()
   {
     // Note that this does not yet make a lot of sens for polyphonic effects
-    for(auto& state : this->impl.full_state())
+    for(auto state : this->impl.full_state())
     {
       return avnd::control_output_introspection<T>::filter_tuple(
           state.outputs, [](auto& field) { return field.value; });

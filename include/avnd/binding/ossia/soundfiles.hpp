@@ -120,7 +120,7 @@ struct soundfile_storage : soundfile_input_storage<T>
         buf[i] = g->data[i].data();
 
       // Update the port
-      for(auto& state : t.full_state())
+      for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
         port.soundfile.data = buf.data();
@@ -149,7 +149,7 @@ struct soundfile_storage : soundfile_input_storage<T>
       }
 
       // Update the port
-      for(auto& state : t.full_state())
+      for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
         port.soundfile.data = buf.data();
@@ -216,7 +216,7 @@ struct midifile_storage : midifile_input_storage<T>
     // Store the handle to keep the memory from being freed
     std::exchange(g, hdl);
 
-    for(auto& state : t.full_state())
+    for(auto state : t.full_state())
     {
       avnd::midifile_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
@@ -343,7 +343,7 @@ struct raw_file_storage : raw_file_input_storage<T>
     // Store the handle to keep the memory from being freed
     std::exchange(g, hdl);
 
-    for(auto& state : t.full_state())
+    for(auto state : t.full_state())
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 

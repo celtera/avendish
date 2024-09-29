@@ -53,6 +53,7 @@ struct fixed_audio_bus
 
   FP** samples{};
   HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+  HALP_INLINE_FLATTEN auto get() const noexcept { return *this; }
   HALP_INLINE_FLATTEN FP* operator[](int i) const noexcept { return samples[i]; }
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept
@@ -71,6 +72,7 @@ struct dynamic_audio_bus_base
   int channels{};
 
   HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+  HALP_INLINE_FLATTEN auto get() const noexcept { return *this; }
   HALP_INLINE_FLATTEN FP* operator[](int i) const noexcept { return samples[i]; }
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept
@@ -80,6 +82,15 @@ struct dynamic_audio_bus_base
     else
       return {};
   }
+
+  FP** begin() noexcept { return samples; }
+  FP** end() noexcept { return samples + channels; }
+  FP* const* begin() const noexcept { return samples; }
+  FP* const* end() const noexcept { return samples + channels; }
+  FP* const* cbegin() noexcept { return samples; }
+  FP* const* cend() noexcept { return samples + channels; }
+  FP* const* cbegin() const noexcept { return samples; }
+  FP* const* cend() const noexcept { return samples + channels; }
 };
 
 template <static_string Name, typename FP, static_string Desc = "">
@@ -163,6 +174,7 @@ struct dynamic_audio_spectrum_bus
   int channels{};
 
   HALP_INLINE_FLATTEN operator FP**() const noexcept { return samples; }
+  HALP_INLINE_FLATTEN auto get() const noexcept { return *this; }
   HALP_INLINE_FLATTEN FP* operator[](std::size_t i) const noexcept { return samples[i]; }
   HALP_INLINE_FLATTEN avnd::span<FP>
   channel(std::size_t i, std::size_t frames) const noexcept

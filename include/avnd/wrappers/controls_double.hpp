@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/introspection/widgets.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <cmath>
 
@@ -50,7 +51,8 @@ static constexpr auto map_control_from_double(std::floating_point auto v)
 template <typename T>
 static constexpr auto map_control_from_double(std::floating_point auto v)
 {
-  static_assert(std::is_void_v<T>, "Error: unhandled control type");
+  // static_assert(std::is_void_v<T>, "Error: unhandled control type");
+  return T{};
 }
 
 template <avnd::float_parameter T>
@@ -89,7 +91,8 @@ static constexpr auto map_control_to_double(const auto& value)
 template <typename T>
 static constexpr auto map_control_to_double(const auto& value)
 {
-  static_assert(std::is_void_v<T>, "Error: unhandled control type");
+  // static_assert(std::is_void_v<T>, "Error: unhandled control type");
+  return 0.;
 }
 
 template <avnd::parameter T>

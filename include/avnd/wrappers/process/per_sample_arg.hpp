@@ -94,7 +94,8 @@ struct process_adapter<T>
       for(int c = 0; c < channels && effects_it != effects_range.end();
           ++c, ++effects_it)
       {
-        auto& [impl, ins, outs] = *effects_it;
+        auto [impl, ins, outs] = *effects_it;
+        static_assert(std::is_reference_v<decltype(impl)>);
 
         if constexpr(avnd::has_tick<T>)
         {

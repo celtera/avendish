@@ -90,5 +90,20 @@ struct formatter<halp::range_slider_value<T>>
   }
 };
 
+template <auto T>
+struct formatter<halp::impulse_button_t<T>>
+{
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept
+  {
+    return ctx.begin();
+  }
+
+  template <typename FormatContext>
+  auto format(const halp::impulse_button_t<T>&, FormatContext& ctx) const noexcept
+  {
+    return fmt::format_to(ctx.out(), "impulse: {}", T.value);
+  }
+};
 }
 #endif

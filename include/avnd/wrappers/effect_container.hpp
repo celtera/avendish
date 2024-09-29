@@ -45,10 +45,16 @@ struct member_iterator_poly_effect
   }
 
   void operator++() noexcept { i++; }
-  auto& operator*() const noexcept { return self.effect[i]; }
+  auto& operator*() const noexcept
+  {
+    if constexpr(std::is_same_v<decltype(self.effect), typename T::type>)
+      return self.effect[i];
+    else
+      return self.effect[i].effect;
+  }
   bool operator==(std::default_sentinel_t) const noexcept
   {
-    return i >= self.effects.size();
+    return i >= self.effect.size();
   }
   member_iterator_poly_effect begin() const noexcept {
     return *this;
@@ -56,6 +62,26 @@ struct member_iterator_poly_effect
   auto end() const noexcept {
     return std::default_sentinel;
   }
+};
+
+template <typename T>
+struct full_state_iterator
+{
+  T& self;
+  int i = 0;
+  explicit full_state_iterator(T& self) noexcept
+      : self{self}
+  {
+  }
+
+  void operator++() noexcept { i++; }
+  auto operator*() const noexcept { return self.full_state(i); }
+  bool operator==(std::default_sentinel_t) const noexcept
+  {
+    return i >= self.effect.size();
+  }
+  full_state_iterator begin() const noexcept { return *this; }
+  auto end() const noexcept { return std::default_sentinel; }
 };
 
 template <typename T>
@@ -189,9 +215,7 @@ struct effect_container<T>
   auto& outputs() noexcept { return dummy_instance; }
   auto& outputs() const noexcept { return dummy_instance; }
 
-  member_iterator<T> effects() {
-    return member_iterator_one_effect<effect_container>{*this};
-  }
+  auto effects() { return member_iterator_one_effect<effect_container>{*this}; }
 
   struct ref
   {
@@ -287,13 +311,10 @@ struct effect_container<T>
     [[no_unique_address]] avnd::dummy outputs;
   };
 
-  member_iterator<ref> full_state()
+  ref full_state(int i) { return {effect[i], this->inputs_storage, dummy_instance}; }
+  full_state_iterator<effect_container> full_state()
   {
-    for(T& e : effect)
-    {
-      ref r{e, this->inputs_storage, dummy_instance};
-      co_yield r;
-    }
+    return full_state_iterator<effect_container>{*this};
   }
 
   auto effects()
@@ -334,13 +355,14 @@ struct effect_container<T>
     typename T::outputs& outputs;
   };
 
-  member_iterator<ref> full_state()
+  ref full_state(int i)
   {
-    for(state& e : effect)
-    {
-      ref r{e.effect, this->inputs_storage, e.outputs_storage};
-      co_yield r;
-    }
+    return {effect[i].effect, this->inputs_storage, effect[i].outputs_storage};
+  }
+
+  full_state_iterator<effect_container> full_state()
+  {
+    return full_state_iterator<effect_container>{*this};
   }
 
   auto effects()
@@ -384,13 +406,15 @@ struct effect_container<T>
     typename T::inputs& inputs;
     decltype(T::outputs)& outputs;
   };
-  member_iterator<ref> full_state()
+
+  ref full_state(int i)
   {
-    for(T& e : effect)
-    {
-      ref r{e.effect, this->inputs_storage, e.effect.outputs};
-      co_yield r;
-    }
+    return {effect[i].effect, this->inputs_storage, effect[i].effect.outputs};
+  }
+
+  full_state_iterator<effect_container> full_state()
+  {
+    return full_state_iterator<effect_container>{*this};
   }
 
   auto effects()
@@ -438,19 +462,18 @@ struct effect_container<T>
     decltype(T::inputs)& inputs;
     decltype(T::outputs)& outputs;
   };
-  member_iterator<ref> full_state()
+
+  ref full_state(int i)
   {
-    for(T& e : effect)
-    {
-      ref r{e, e.inputs, e.outputs};
-      co_yield r;
-    }
+    return {effect[i].effect, effect[i].inputs, effect[i].outputs};
   }
 
-  auto effects()
+  full_state_iterator<effect_container> full_state()
   {
-    return member_iterator_poly_effect<effect_container>{*this};
+    return full_state_iterator<effect_container>{*this};
   }
+
+  auto effects() { return member_iterator_poly_effect<effect_container>{*this}; }
 
   member_iterator<decltype(T::inputs)> inputs()
   {
@@ -497,13 +520,15 @@ struct effect_container<T>
 
     [[no_unique_address]] avnd::dummy outputs;
   };
-  member_iterator<ref> full_state()
+
+  ref full_state(int i)
   {
-    for(T& e : effect)
-    {
-      ref r{e.effect, e.effect.inputs, avnd::dummy_instance};
-      co_yield r;
-    }
+    return {effect[i].effect, effect[i].inputs, avnd::dummy_instance};
+  }
+
+  full_state_iterator<effect_container> full_state()
+  {
+    return full_state_iterator<effect_container>{*this};
   }
 
   auto effects()

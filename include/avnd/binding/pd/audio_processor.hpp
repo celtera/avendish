@@ -162,7 +162,7 @@ struct audio_processor
 
   void process_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
-    for(auto& state : implementation.full_state())
+    for(auto state : implementation.full_state())
     {
       switch(argv[0].a_type)
       {

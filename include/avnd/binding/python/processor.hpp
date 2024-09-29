@@ -34,6 +34,12 @@ inline consteval const char* c_str(const char* v) noexcept
   return v;
 }
 
+template <std::size_t Sz>
+inline const char* c_str(const std::array<char, Sz>& v) noexcept
+{
+  return v.data();
+}
+
 namespace py = pybind11;
 
 template <auto Idx, typename C>

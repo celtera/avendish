@@ -23,7 +23,7 @@ struct process_adapter<T>
 
   // Here we know that we at least have one in and one out
   template <typename FP>
-  FP process_0(avnd::effect_container<T>& implementation, FP in, auto& ref, auto&& tick)
+  FP process_0(avnd::effect_container<T>& implementation, FP in, auto ref, auto&& tick)
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
@@ -44,7 +44,7 @@ struct process_adapter<T>
   }
 
   template <typename FP>
-  FP process_0(avnd::effect_container<T>& implementation, FP in, auto& ref)
+  FP process_0(avnd::effect_container<T>& implementation, FP in, auto ref)
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input

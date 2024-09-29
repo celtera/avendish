@@ -54,7 +54,7 @@ struct time_control_storage : time_control_input_storage<T>
     auto& g = get<N>(this->handles);
     if(g.sync)
     {
-      for(auto& state : t.full_state())
+      for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
         port.value = to_seconds(g.value, new_tempo);

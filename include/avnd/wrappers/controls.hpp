@@ -47,7 +47,7 @@ static constexpr void init_controls(F& state)
 template <typename F>
 static constexpr void init_controls(avnd::effect_container<F>& effect)
 {
-  for(auto& state : effect.full_state())
+  for(auto state : effect.full_state())
   {
     init_controls(state);
   }
