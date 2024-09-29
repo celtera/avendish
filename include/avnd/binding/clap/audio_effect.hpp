@@ -20,71 +20,86 @@ namespace avnd_clap
 template <typename T>
 struct midi_processor : public avnd::midi_storage<T>
 {
-  void init_midi_message(avnd::dynamic_midi_message auto& in, const clap_event& ev)
+  void
+  init_midi_message(avnd::dynamic_midi_message auto& in, const clap_event_note_t& ev)
   {
     using mb = unsigned char;
-    switch(ev.type)
+    switch(ev.header.type)
     {
       case CLAP_EVENT_NOTE_ON:
-        in.bytes
-            = {mb(0x90 | ev.note.channel), mb(ev.note.key), mb(ev.note.velocity * 127)};
+        in.bytes = {mb(0x90 | ev.channel), mb(ev.key), mb(ev.velocity * 127)};
         break;
       case CLAP_EVENT_NOTE_OFF:
-        in.bytes
-            = {mb(0x80 | ev.note.channel), mb(ev.note.key), mb(ev.note.velocity * 127)};
+        in.bytes = {mb(0x80 | ev.channel), mb(ev.key), mb(ev.velocity * 127)};
         break;
-      case CLAP_EVENT_MIDI:
-        in.bytes.assign(ev.midi.data, ev.midi.data + 3);
-        break;
-      case CLAP_EVENT_MIDI_SYSEX:
-        in.bytes.assign(ev.midi_sysex.buffer, ev.midi_sysex.buffer + ev.midi_sysex.size);
-        break;
-
       default:
         // TODO
         break;
     }
-    if_possible(in.timestamp = ev.time);
+    if_possible(in.timestamp = ev.header.time);
+  }
+  void init_midi_message(
+      avnd::dynamic_midi_message auto& in, const clap_event_midi_sysex_t& ev)
+  {
+    using mb = unsigned char;
+    in.bytes.assign(ev.buffer, ev.buffer + ev.size);
+    if_possible(in.timestamp = ev.header.time);
   }
 
-  void init_midi_message(avnd::raw_midi_message auto& in, const clap_event& ev)
+  void
+  init_midi_message(avnd::dynamic_midi_message auto& in, const clap_event_midi_t& ev)
+  {
+    using mb = unsigned char;
+    in.bytes.assign(ev.data, ev.data + 3);
+    if_possible(in.timestamp = ev.header.time);
+  }
+
+  void init_midi_message(avnd::raw_midi_message auto& in, const clap_event_note_t& ev)
   {
     using bytes_type = decltype(in.bytes);
-    switch(ev.type)
+    switch(ev.header.type)
     {
       case CLAP_EVENT_NOTE_ON:
-        in.bytes[0] = 0x90 | ev.note.channel;
-        in.bytes[1] = ev.note.key;
-        in.bytes[2] = ev.note.velocity * 127;
+        in.bytes[0] = 0x90 | ev.channel;
+        in.bytes[1] = ev.key;
+        in.bytes[2] = ev.velocity * 127;
         break;
       case CLAP_EVENT_NOTE_OFF:
-        in.bytes[0] = 0x80 | ev.note.channel;
-        in.bytes[1] = ev.note.key;
-        in.bytes[2] = ev.note.velocity * 127;
+        in.bytes[0] = 0x80 | ev.channel;
+        in.bytes[1] = ev.key;
+        in.bytes[2] = ev.velocity * 127;
         break;
-      case CLAP_EVENT_MIDI:
-        static_assert(sizeof(in.bytes[0]) == sizeof(ev.midi.data[0]));
-        memcpy(std::begin(in.bytes), ev.midi.data, 3);
-        break;
-      case CLAP_EVENT_MIDI_SYSEX:
-        // Not supported in that case
-        break;
-
       default:
         // TODO
         break;
     }
-    if_possible(in.timestamp = ev.time);
+    if_possible(in.timestamp = ev.header.time);
   }
 
-  void add_message(avnd::dynamic_container_midi_port auto& port, const clap_event& msg)
+  void
+  init_midi_message(avnd::raw_midi_message auto& in, const clap_event_midi_sysex_t& ev)
+  {
+    using bytes_type = decltype(in.bytes);
+    // FIXME unsuppported
+    if_possible(in.timestamp = ev.header.time);
+  }
+
+  void init_midi_message(avnd::raw_midi_message auto& in, const clap_event_midi_t& ev)
+  {
+    using bytes_type = decltype(in.bytes);
+    static_assert(sizeof(in.bytes[0]) == sizeof(ev.data[0]));
+    memcpy(std::begin(in.bytes), ev.data, 3);
+    if_possible(in.timestamp = ev.header.time);
+  }
+
+  void add_message(avnd::dynamic_container_midi_port auto& port, const auto& msg)
   {
     port.midi_messages.push_back({});
     auto& elt = port.midi_messages.back();
     init_midi_message(elt, msg);
   }
 
-  void add_message(avnd::raw_container_midi_port auto& port, const clap_event& msg)
+  void add_message(avnd::raw_container_midi_port auto& port, const auto& msg)
   {
     auto& elt = port.midi_messages[port.size];
     init_midi_message(elt, msg);
@@ -302,44 +317,50 @@ struct SimpleAudioEffect : clap_plugin
 
       for(uint32_t i = 0; i < N; i++)
       {
-        auto ev = p.in_events->get(p.in_events, i);
+        const clap_event_header_t* ev = p.in_events->get(p.in_events, i);
 
         switch(ev->type)
         {
           case CLAP_EVENT_NOTE_ON:
           case CLAP_EVENT_NOTE_OFF: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(), ev->note.port_index,
-                [&]<typename C>(C& in_port) { midi.add_message(in_port, *ev); });
+                this->effect.inputs(), ((clap_event_note_t*)ev)->port_index,
+                [&]<typename C>(C& in_port) {
+              midi.add_message(in_port, *(clap_event_note_t*)ev);
+            });
             break;
           }
           case CLAP_EVENT_MIDI: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(), ev->midi.port_index,
-                [&]<typename C>(C& in_port) { midi.add_message(in_port, *ev); });
+                this->effect.inputs(), ((clap_event_midi_t*)ev)->port_index,
+                [&]<typename C>(C& in_port) {
+              midi.add_message(in_port, *(clap_event_midi_t*)ev);
+            });
             break;
           }
           case CLAP_EVENT_MIDI_SYSEX: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(), ev->midi_sysex.port_index,
-                [&]<typename C>(C& in_port) { midi.add_message(in_port, *ev); });
+                this->effect.inputs(), ((clap_event_midi_sysex_t*)ev)->port_index,
+                [&]<typename C>(C& in_port) {
+              midi.add_message(in_port, *(clap_event_midi_sysex_t*)ev);
+            });
             break;
           }
 
           case CLAP_EVENT_PARAM_VALUE: {
-            process_param(ev->param_value);
+            process_param(*((clap_event_param_value_t*)ev));
             break;
           }
           break;
           case CLAP_EVENT_PARAM_MOD:
             break;
           case CLAP_EVENT_TRANSPORT: {
-            process_transport(ev->time_info);
+            process_transport(*((clap_event_transport_t*)ev));
             break;
           }
           case CLAP_EVENT_NOTE_CHOKE:
           case CLAP_EVENT_NOTE_EXPRESSION:
-          case CLAP_EVENT_NOTE_MASK:
+          case CLAP_EVENT_NOTE_END:
           default:
             // TODO
             break;
@@ -426,6 +447,38 @@ struct SimpleAudioEffect : clap_plugin
   }
 
   static constexpr std::array<char, 256> keywords = avnd::get_keywords<T, ';'>();
+  static constexpr const auto get_features()
+  {
+    static constexpr bool midi_ins = avnd::midi_input_introspection<T>::size > 0;
+    static constexpr bool midi_outs = avnd::midi_output_introspection<T>::size > 0;
+    static constexpr bool audio_ins
+        = avnd::audio_channel_input_introspection<T>::size > 0;
+    static constexpr bool audio_outs
+        = avnd::audio_channel_output_introspection<T>::size > 0;
+    static constexpr bool instrument = midi_ins && audio_outs;
+    static constexpr bool audio_fx = audio_ins && audio_outs;
+    static constexpr bool analyzer = audio_ins && !audio_outs;
+    static constexpr bool note_fx = !audio_ins && midi_outs;
+    static constexpr bool note_detector = audio_ins && midi_outs;
+    // FIXME add tags
+    // FIXME add CLAP_PLUGIN_FEATURE_MONO, etc
+    // FIXME combine
+    if constexpr(instrument)
+      return std::array<const char*, 3>{
+          CLAP_PLUGIN_FEATURE_INSTRUMENT,
+          audio_fx ? CLAP_PLUGIN_FEATURE_AUDIO_EFFECT : 0, 0};
+    else if constexpr(audio_fx)
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_AUDIO_EFFECT, 0};
+    else if constexpr(analyzer)
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_NOTE_EFFECT, 0};
+    else if constexpr(note_fx)
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_NOTE_DETECTOR, 0};
+    else if constexpr(note_detector)
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_ANALYZER, 0};
+    else
+      return std::array<const char*, 1>{0};
+  }
+  static constexpr auto features = get_features();
   static constexpr clap_plugin_descriptor descriptor{
       .clap_version = CLAP_VERSION,
       .id = avnd::get_name<T>().data(),
@@ -436,72 +489,63 @@ struct SimpleAudioEffect : clap_plugin
       .support_url = avnd::get_support_url<T>().data(),
       .version = avnd::get_version<T>().data(),
       .description = avnd::get_description<T>().data(),
-      .keywords = keywords.data() //"analog;character;roland;moog"
-      ,
-      .plugin_type = ((avnd::midi_input_introspection<T>::size > 0
-                       && avnd::audio_channel_output_introspection<T>::size)
-                          ? CLAP_PLUGIN_INSTRUMENT
-                          : 0)
-                     | ((avnd::audio_channel_input_introspection<T>::size > 0
-                         && avnd::audio_channel_output_introspection<T>::size > 0)
-                            ? CLAP_PLUGIN_AUDIO_EFFECT
-                            : CLAP_PLUGIN_EVENT_EFFECT)};
+      .features = features.data()};
 
   static constexpr clap_plugin_params params{
       .count = [](const clap_plugin* plugin) -> uint32_t { return param_in_info::size; },
 
-      .get_info = [](const clap_plugin* plugin, int32_t param_index,
-                     clap_param_info* param_info) -> bool {
-        return self(plugin)->get_param_info(param_index, param_info);
-      },
+      .get_info = [](const clap_plugin_t* plugin, uint32_t param_index,
+                     clap_param_info_t* param_info) -> bool {
+    return self(plugin)->get_param_info(param_index, param_info);
+  },
 
       .get_value
       = [](const clap_plugin* plugin, clap_id param_id, double* value) -> bool {
-        return self(plugin)->get_param_value(param_id, value);
-      },
+    return self(plugin)->get_param_value(param_id, value);
+  },
 
       .value_to_text = [](const clap_plugin* plugin, clap_id param_id, double value,
                           char* display, uint32_t size) -> bool {
-        return self(plugin)->get_value_text(param_id, value, display, size);
-      },
+    return self(plugin)->get_value_text(param_id, value, display, size);
+  },
 
       .text_to_value = [](const clap_plugin* plugin, clap_id param_id,
                           const char* display, double* value) -> bool { return false; },
 
       .flush
-      = [](const clap_plugin* plugin, const clap_event_list* input_parameter_changes,
-           const clap_event_list* output_parameter_changes) -> void {}};
+      = [](const clap_plugin* plugin, const clap_input_events_t* input_parameter_changes,
+           const clap_output_events_t* output_parameter_changes) -> void {}};
 
   static constexpr clap_plugin_audio_ports audio_ports{
       .count = [](const clap_plugin* plugin, bool input) -> uint32_t {
-        if(input)
-          return avnd_clap::audio_bus_info<T>::input_count();
-        else
-          return avnd_clap::audio_bus_info<T>::output_count();
-      },
+    if(input)
+      return avnd_clap::audio_bus_info<T>::input_count();
+    else
+      return avnd_clap::audio_bus_info<T>::output_count();
+  },
 
       .get = [](const clap_plugin* plugin, uint32_t index, bool input,
                 clap_audio_port_info* info) -> bool {
-        if(input)
-          return avnd_clap::audio_bus_info<T>::input_info(index, *info);
-        else
-          return avnd_clap::audio_bus_info<T>::output_info(index, *info);
-      }};
+    if(input)
+      return avnd_clap::audio_bus_info<T>::input_info(index, *info);
+    else
+      return avnd_clap::audio_bus_info<T>::output_info(index, *info);
+  }};
 
   static constexpr clap_plugin_note_ports note_ports{
       .count = [](const clap_plugin* plugin, bool input) -> uint32_t {
-        if(input)
-          return avnd_clap::event_bus_info<T>::input_count();
-        else
-          return avnd_clap::event_bus_info<T>::output_count();
-      },
+    if(input)
+      return avnd_clap::event_bus_info<T>::input_count();
+    else
+      return avnd_clap::event_bus_info<T>::output_count();
+  },
 
       .get = [](const clap_plugin* plugin, uint32_t index, bool input,
                 clap_note_port_info* info) -> bool {
-        if(input)
-          return avnd_clap::event_bus_info<T>::input_info(index, *info);
-        else
-          return avnd_clap::event_bus_info<T>::output_info(index, *info);
-      }};
+    if(input)
+      return avnd_clap::event_bus_info<T>::input_info(index, *info);
+    else
+      return avnd_clap::event_bus_info<T>::output_info(index, *info);
+  }};
 };
 }

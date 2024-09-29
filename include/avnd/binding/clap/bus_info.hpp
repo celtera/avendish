@@ -108,11 +108,12 @@ struct audio_bus_info<T>
       copy_string(info.name, "Stereo In");
 
       info.channel_count = default_input_channel_count();
-      info.channel_map = {};
-      info.sample_size = avnd::polyphonic_arg_audio_effect<double, T> ? 64 : 32;
-      info.is_main = true;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_STEREO;
+      info.flags
+          = avnd::polyphonic_arg_audio_effect<double, T>
+                ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                : 0;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -131,11 +132,12 @@ struct audio_bus_info<T>
       copy_string(info.name, "Stereo Out");
 
       info.channel_count = default_output_channel_count();
-      info.channel_map = {};
-      info.sample_size = avnd::polyphonic_arg_audio_effect<double, T> ? 64 : 32;
-      info.is_main = true;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_STEREO;
+      info.flags
+          = avnd::polyphonic_arg_audio_effect<double, T>
+                ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                : 0;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -163,11 +165,12 @@ struct audio_bus_info<T>
       copy_string(info.name, "Mono In");
 
       info.channel_count = default_input_channel_count();
-      info.channel_map = CLAP_CHMAP_MONO;
-      info.sample_size = avnd::mono_per_sample_arg_processor<double, T> ? 64 : 32;
-      info.is_main = true;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.flags
+          = avnd::mono_per_sample_arg_processor<double, T>
+                ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                : 0;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -183,11 +186,12 @@ struct audio_bus_info<T>
       copy_string(info.name, "Mono Out");
 
       info.channel_count = default_output_channel_count();
-      info.channel_map = CLAP_CHMAP_MONO;
-      info.sample_size = avnd::mono_per_sample_arg_processor<double, T> ? 64 : 32;
-      info.is_main = true;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.flags
+          = avnd::mono_per_sample_arg_processor<double, T>
+                ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                : 0;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -215,11 +219,12 @@ struct audio_bus_info<T>
       copy_string(info.name, "Mono In");
 
       info.channel_count = default_input_channel_count();
-      info.channel_map = CLAP_CHMAP_MONO;
-      info.sample_size = avnd::monophonic_arg_audio_effect<double, T> ? 64 : 32;
-      info.is_main = true;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.flags
+          = avnd::monophonic_arg_audio_effect<double, T>
+                ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                : 0;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -235,11 +240,12 @@ struct audio_bus_info<T>
       copy_string(info.name, "Mono Out");
 
       info.channel_count = default_output_channel_count();
-      info.channel_map = CLAP_CHMAP_MONO;
-      info.sample_size = avnd::monophonic_arg_audio_effect<double, T> ? 64 : 32;
-      info.is_main = true;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.flags
+          = avnd::monophonic_arg_audio_effect<double, T>
+                ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                : 0;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -276,14 +282,15 @@ struct audio_bus_info<T>
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
-        info.sample_size = avnd::poly_array_sample_port<double, C> ? 64 : 32;
+        info.flags
+            = avnd::poly_array_sample_port<double, C>
+                  ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                  : 0;
           });
 
       info.channel_count = default_input_channel_count();
-      info.channel_map = {};
-      info.is_main = index == 0;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_STEREO;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -300,14 +307,15 @@ struct audio_bus_info<T>
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
-        info.sample_size = avnd::poly_array_sample_port<double, C> ? 64 : 32;
+        info.flags
+            = avnd::poly_array_sample_port<double, C>
+                  ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                  : 0;
           });
 
       info.channel_count = default_output_channel_count();
-      info.channel_map = {};
-      info.is_main = index == 0;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_STEREO;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -338,14 +346,15 @@ struct audio_bus_info<T>
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
-        info.sample_size = avnd::audio_sample_port<double, C> ? 64 : 32;
+        info.flags
+            = avnd::audio_sample_port<double, C>
+                  ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                  : 0;
           });
 
       info.channel_count = 1;
-      info.channel_map = {};
-      info.is_main = index == 0;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -362,14 +371,15 @@ struct audio_bus_info<T>
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
-        info.sample_size = avnd::audio_sample_port<double, C> ? 64 : 32;
+        info.flags
+            = avnd::audio_sample_port<double, C>
+                  ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                  : 0;
           });
 
       info.channel_count = 1;
-      info.channel_map = {};
-      info.is_main = index == 0;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
       return true;
     }
 
@@ -399,14 +409,15 @@ struct audio_bus_info<T>
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
-        info.sample_size = avnd::mono_array_sample_port<double, C> ? 64 : 32;
+        info.flags
+            = avnd::mono_array_sample_port<double, C>
+                  ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                  : 0;
           });
 
       info.channel_count = 1;
-      info.channel_map = {};
-      info.is_main = index == 0;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }
@@ -423,14 +434,15 @@ struct audio_bus_info<T>
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
-        info.sample_size = avnd::mono_array_sample_port<double, C> ? 64 : 32;
+        info.flags
+            = avnd::mono_array_sample_port<double, C>
+                  ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
+                  : 0;
           });
 
       info.channel_count = 1;
-      info.channel_map = {};
-      info.is_main = index == 0;
-      info.is_cv = false;
-      info.in_place = true;
+      info.port_type = CLAP_PORT_MONO;
+      info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
     }

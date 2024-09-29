@@ -4,6 +4,7 @@
 #include <avnd/binding/clap/audio_effect.hpp>
 #include <avnd/binding/clap/configure.hpp>
 
+// clang-format off
 using plug_type = decltype(avnd::configure<avnd_clap::config, @AVND_MAIN_CLASS@>())::type;
 using effect_type = avnd_clap::SimpleAudioEffect<plug_type>;
 
@@ -11,13 +12,20 @@ AVND_EXPORTED_SYMBOL const struct clap_plugin_entry clap_plugin_entry = {
    CLAP_VERSION,
    +[] (const char* path) -> bool { /* init */ return true; },
    +[] () { /* deinit */ },
-   +[] () -> uint32_t { /* count */ return 1; },
-   +[] (uint32_t) -> const clap_plugin_descriptor* { return &effect_type::descriptor; },
+   +[] (const char* factory_id) -> const void* {
+      static constexpr const clap_plugin_factory factory {
+        .get_plugin_count = +[] (const struct clap_plugin_factory *factory) -> uint32_t { /* count */ return 1; }
+      , .get_plugin_descriptor =  +[] (const struct clap_plugin_factory *factory, uint32_t) -> const clap_plugin_descriptor* { return &effect_type::descriptor; }
+      , .create_plugin = +[] (const struct clap_plugin_factory *factory, const clap_host_t *host, const char *plugin_id) -> const clap_plugin_t* { return new effect_type{host}; }
+      };
+      if(!strcmp(factory_id,CLAP_PLUGIN_FACTORY_ID))
+        return &factory;
+      return nullptr;
+#if 0
+   +[] () -> uint32_t { return 0; };
+   +[] (uint32_t) -> const clap_plugin_invalidation_source* { return nullptr; };
 
-   +[] (const clap_host *host, const char *plugin_id) -> const clap_plugin* { return new effect_type{host}; },
-
-   +[] () -> uint32_t { return 0; },
-   +[] (uint32_t) -> const clap_plugin_invalidation_source* { return nullptr; },
-
-   +[] () { /* refresh */ },
+   +[] () { /* refresh */ };
+#endif
+   }
 };
