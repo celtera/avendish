@@ -837,9 +837,77 @@ struct from_ossia_value_impl
     return false;
   }
 
+  template <avnd::list_ish T>
+    requires(!avnd::string_ish<T> && !avnd::vector_ish<T>)
+  bool operator()(const ossia::value& src, T& f)
+  {
+    switch(src.get_type())
+    {
+      case ossia::val_type::VEC2F: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          ossia::vec2f v = *src.target<ossia::vec2f>();
+          f.clear();
+          for(auto& val : v)
+            f.push_back(val);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+      case ossia::val_type::VEC3F: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          ossia::vec3f v = *src.target<ossia::vec3f>();
+          f.clear();
+          for(auto& val : v)
+            f.push_back(val);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+      case ossia::val_type::VEC4F: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          ossia::vec4f v = *src.target<ossia::vec4f>();
+          f.clear();
+          for(auto& val : v)
+            f.push_back(val);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+      case ossia::val_type::LIST: {
+        const std::vector<ossia::value>& vl = *src.target<std::vector<ossia::value>>();
+        f.clear();
+        for(auto& val : vl)
+        {
+          typename T::value_type res;
+          (*this)(val, res);
+          f.push_back(res);
+        }
+        return true;
+        break;
+      }
+      default:
+        return false;
+        break;
+    }
+  }
   template <avnd::vector_ish T>
-    requires(!avnd::string_ish<T>) bool
-  operator()(const ossia::value& src, T& f)
+    requires(!avnd::string_ish<T>)
+  bool operator()(const ossia::value& src, T& f)
   {
     switch(src.get_type())
     {
@@ -1177,6 +1245,7 @@ bool from_ossia_value_rec(const ossia::value& src, T& dst)
 }
 
 template <typename T>
+  requires std::is_aggregate_v<T>
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using type = std::decay_t<T>;
@@ -1270,7 +1339,7 @@ from_ossia_value(const ossia::value& src, T<N>& dst)
 template <typename T>
   requires(
       avnd::variant_ish<T> || avnd::set_ish<T> || avnd::map_ish<T> || avnd::bitset_ish<T>
-      || avnd::pair_ish<T> || avnd::tuple_ish<T>
+      || avnd::pair_ish<T> || avnd::tuple_ish<T> || avnd::iterable_ish<T>
       || (avnd::vector_ish<T> && !avnd::string_ish<T>))
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
