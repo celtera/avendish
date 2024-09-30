@@ -87,4 +87,3 @@
                                                                                     \
     [[no_unique_address]] hdl_tuple handles;                                        \
   }
-\

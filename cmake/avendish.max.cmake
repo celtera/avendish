@@ -51,7 +51,7 @@ target_compile_definitions(
     C74_USE_STRICT_TYPES=1
 )
 
-target_include_directories(maxmsp_commonsyms PRIVATE
+target_include_directories(maxmsp_commonsyms SYSTEM PRIVATE
     "${MAXSDK_MAX_INCLUDE_DIR}"
     "${MAXSDK_MSP_INCLUDE_DIR}"
     "${MAXSDK_JIT_INCLUDE_DIR}"
@@ -132,7 +132,7 @@ function(avnd_make_max)
       C74_USE_STRICT_TYPES=1
   )
 
-  target_include_directories(${AVND_FX_TARGET} PRIVATE
+  target_include_directories(${AVND_FX_TARGET} SYSTEM PRIVATE
       "${MAXSDK_MAX_INCLUDE_DIR}"
       "${MAXSDK_MSP_INCLUDE_DIR}"
       "${MAXSDK_JIT_INCLUDE_DIR}"

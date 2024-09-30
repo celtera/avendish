@@ -2,9 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/dict.hpp>
+#include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/to_atoms.hpp>
+#include <boost/container/small_vector.hpp>
 #include <commonsyms.h>
 namespace max
 {
@@ -35,6 +36,86 @@ inline void value_to_max(t_atom& atom, const std::string& v) noexcept
 {
   atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(v.c_str())}};
 }
+
+struct do_value_to_max_rec
+{
+  // FIXME static thread_local errors with msvc...
+  boost::container::small_vector<t_atom, 256> atoms;
+
+  template <typename T>
+    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+  void operator()(const T& v)
+  {
+    avnd::for_each_field_ref_n(
+        v, [this]<std::size_t I>(auto& field, avnd::field_index<I>) mutable {
+      (*this)(field);
+    });
+  }
+
+  void operator()() noexcept
+  {
+    atoms.push_back({.a_type = A_NOTHING, .a_w = {.w_long = 0}});
+  }
+  void operator()(std::floating_point auto v) noexcept
+  {
+    atoms.push_back({.a_type = A_FLOAT, .a_w = {.w_float = v}});
+  }
+  void operator()(std::integral auto v) noexcept
+  {
+    atoms.push_back({.a_type = A_LONG, .a_w = {.w_long = v}});
+  }
+  void operator()(std::string_view v) noexcept
+  {
+    atoms.push_back({.a_type = A_SYM, .a_w = {.w_sym = gensym(v.data())}});
+  }
+  void operator()(const std::string& v) noexcept
+  {
+    atoms.push_back({.a_type = A_SYM, .a_w = {.w_sym = gensym(v.data())}});
+  }
+
+  void operator()(const avnd::iterable_ish auto& v) noexcept
+  {
+    atoms.reserve(atoms.size() + v.size());
+    for(auto& e : v)
+    {
+      (*this)(e);
+    }
+  }
+
+  void operator()(const avnd::map_ish auto& v) noexcept
+  {
+    atoms.reserve(atoms.size() + v.size() * 2);
+    for(auto& [k, v] : v)
+    {
+      (*this)(k);
+      (*this)(v);
+    }
+  }
+
+  void operator()(const avnd::variant_ish auto& v) noexcept
+  {
+    using namespace std;
+    visit([this](const auto& val) { (*this)(val); }, v);
+  }
+
+  void operator()(const avnd::pair_ish auto& v) noexcept
+  {
+    (*this)(v.first);
+    (*this)(v.second);
+  }
+
+  template <avnd::tuple_ish T>
+    requires(!avnd::iterable_ish<T>)
+  void operator()(const T& v) noexcept
+  {
+    static constexpr int N = std::tuple_size_v<T>;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      ((*this)(std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
+  }
+};
+
 struct do_value_to_max_typed
 {
   t_outlet* p;
@@ -60,8 +141,8 @@ struct do_value_to_max_typed
     outlet_anything(p, gensym(v.data()), 0, nullptr);
   }
 
-  template<typename T>
-    requires std::is_aggregate_v<T>
+  template <typename T>
+    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v) const noexcept
   {
     to_list l;
@@ -74,15 +155,22 @@ struct do_value_to_max_typed
   }
 
   template <std::size_t N>
-  void operator()(t_outlet* outlet, const avnd::array_ish<N> auto& v)
+  void operator()(const avnd::array_ish<N> auto& v)
   {
     std::array<t_atom, N> atoms;
 
     [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (set_atom{}(&atoms[I], v), ...);
+      (set_atom{}(&atoms[I], v[I]), ...);
     }(std::make_index_sequence<N>{});
 
     outlet_list(p, nullptr, N, atoms.data());
+  }
+
+  void operator()(const avnd::span_ish auto& v) const noexcept
+  {
+    to_list l;
+    l(v);
+    outlet_list(p, nullptr, l.atoms.size(), l.atoms.data());
   }
 
   void operator()(const avnd::vector_ish auto& v) const noexcept
@@ -161,8 +249,8 @@ struct do_value_to_max_anything
     outlet_anything(p, s, 1, &atom);
   }
 
-  template<typename T>
-    requires std::is_aggregate_v<T>
+  template <typename T>
+    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v) const noexcept
   {
     to_list l;
@@ -172,6 +260,38 @@ struct do_value_to_max_anything
       l.atoms.resize(std::numeric_limits<short>::max());
 
     outlet_anything(p, s, (short)l.atoms.size(), l.atoms.data());
+  }
+
+  template <std::size_t N>
+  void operator()(const avnd::array_ish<N> auto& v)
+  {
+    std::array<t_atom, N> atoms;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (set_atom{}(&atoms[I], v[I]), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_anything(p, s, N, atoms.data());
+  }
+
+  template <avnd::tuple_ish T>
+  void operator()(const T& v)
+  {
+    static constexpr auto N = std::tuple_size_v<T>;
+    std::array<t_atom, N> atoms;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (set_atom{}(&atoms[I], std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_anything(p, s, N, atoms.data());
+  }
+
+  void operator()(const avnd::span_ish auto& v) const noexcept
+  {
+    to_list l;
+    l(v);
+    outlet_anything(p, s, l.atoms.size(), l.atoms.data());
   }
 
   void operator()(const avnd::vector_ish auto& v) const noexcept
@@ -203,15 +323,18 @@ struct do_value_to_max_anything
 
   template <typename T>
     requires avnd::pair_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(const T& v)
   {
     t_atom atoms[2];
 
     value_to_max(atoms[0], v.first);
     value_to_max(atoms[1], v.second);
 
-    outlet_anything(outlet, sym, 2, atoms);
+    outlet_anything(p, s, 2, atoms);
   }
+
+  template <typename... Args>
+  void operator()(t_outlet*, Args&&... v) noexcept = delete;
 
   template <typename... Args>
     requires(sizeof...(Args) > 1)
@@ -221,7 +344,7 @@ struct do_value_to_max_anything
     static constexpr int N = sizeof...(Args);
 
     [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (set_atom{}(&atoms[I], v), ...);
+      (set_atom{}(&atoms[I], v[I]), ...);
     }(std::make_index_sequence<N>{});
 
     outlet_anything(p, s, N, atoms.data());
@@ -255,11 +378,31 @@ inline void value_to_max_dispatch(T& self, avnd::field_index<Idx>, t_outlet* out
   {
     // FIXME
     static const auto sym = get_message_out_symbol<C>();
-    // return do_value_to_max_anything{}(outlet, sym, std::forward<Arg>(v));
+    if constexpr(convertible_to_atom_list_statically<Arg>)
+    {
+      return do_value_to_max_anything{outlet, sym}(std::forward<Arg>(v));
+    }
+    else
+    {
+      do_value_to_max_rec rec{};
+      rec(v);
+      outlet_anything(outlet, sym, rec.atoms.size(), rec.atoms.data());
+      return;
+    }
   }
-  //else
+  else
   {
-    return do_value_to_max_typed{outlet}(std::forward<Arg>(v));
+    if constexpr(convertible_to_atom_list_statically<Arg>)
+    {
+      return do_value_to_max_typed{outlet}(std::forward<Arg>(v));
+    }
+    else
+    {
+      do_value_to_max_rec rec{};
+      rec(v);
+      outlet_list(outlet, _sym_list, rec.atoms.size(), rec.atoms.data());
+      return;
+    }
   }
 }
 
@@ -277,11 +420,31 @@ inline void value_to_max_dispatch(t_outlet* outlet, Args&&... v) noexcept
   {
     // FIXME
     static const auto sym = get_message_out_symbol<C>();
-    // return do_value_to_max_anything{}(outlet, sym, std::forward<Args>(v)...);
+    if constexpr((convertible_to_atom_list_statically<Args> && ...))
+    {
+      return do_value_to_max_anything{outlet, sym}(std::forward<Args>(v)...);
+    }
+    else
+    {
+      do_value_to_max_rec rec{};
+      (rec(v), ...);
+      outlet_anything(outlet, sym, rec.atoms.size(), rec.atoms.data());
+      return;
+    }
   }
-  //else
+  else
   {
-    return do_value_to_max_typed{outlet}(std::forward<Args>(v)...);
+    if constexpr((convertible_to_atom_list_statically<Args> && ...))
+    {
+      return do_value_to_max_typed{outlet}(std::forward<Args>(v)...);
+    }
+    else
+    {
+      do_value_to_max_rec rec{};
+      (rec(v), ...);
+      outlet_list(outlet, _sym_list, rec.atoms.size(), rec.atoms.data());
+      return;
+    }
   }
 }
 

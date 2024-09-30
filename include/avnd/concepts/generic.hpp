@@ -43,51 +43,54 @@ namespace avnd
 
 // Very generic concepts
 template <typename T>
-concept vector_ish = requires(T t) {
-                       t.push_back({});
-                       t.size();
-                       // t.reserve(1); // many containers don't have it
-                       t.resize(1);
-                       t.clear();
-                       // t.data(); // did you know? std::vector<bool> does not have it
-                       t[1];
-                     };
+concept iterable_ish = requires(const T& t) {
+  std::size(t);
+  std::begin(t);
+  std::end(t);
+};
+template <typename T>
+concept span_ish = iterable_ish<T> && requires(const T& t) { t[0]; };
+template <typename T>
+concept vector_ish = span_ish<T> && requires(T t) {
+  t.push_back({});
+  // t.reserve(1); // many containers don't have it
+  t.resize(1);
+  t.clear();
+  // t.data(); // did you know? std::vector<bool> does not have it
+};
 
 template <typename T>
-concept set_ish = requires(T t) {
-                    sizeof(typename T::key_type);
-                    sizeof(typename T::value_type);
-                    t.insert(typename T::key_type{});
-                    t.find(typename T::key_type{});
-                    t.size();
-                    t.clear();
-                  } && !requires(T t) { sizeof(typename T::mapped_type); };
+concept set_ish = iterable_ish<T> && requires(T t) {
+  sizeof(typename T::key_type);
+  sizeof(typename T::value_type);
+  t.insert(typename T::key_type{});
+  t.find(typename T::key_type{});
+  t.size();
+  t.clear();
+} && !requires(T t) { sizeof(typename T::mapped_type); };
 
 template <typename T>
-concept map_ish = requires(T t) {
-                    sizeof(typename T::key_type);
-                    sizeof(typename T::mapped_type);
-                    sizeof(typename T::value_type);
-                    t.insert(typename T::value_type{});
-                    t.find(typename T::key_type{});
-                    t[typename T::key_type{}];
-                    t.size();
-                    t.clear();
-                  };
+concept map_ish = iterable_ish<T> && requires(T t) {
+  sizeof(typename T::key_type);
+  sizeof(typename T::mapped_type);
+  sizeof(typename T::value_type);
+  t.insert(typename T::value_type{});
+  t.find(typename T::key_type{});
+  t[typename T::key_type{}];
+  t.size();
+  t.clear();
+};
 
 template <typename T, typename V>
-concept vector_v_ish = requires(T t) {
-                         t.push_back(V{});
-                         t.size();
-                         t.resize(1);
-                         t.reserve(1);
-                         t.clear();
-                         t.data();
-                         {
-                           t[1]
-                           } -> std::convertible_to<V>;
-                         t[1] = std::declval<V>();
-                       };
+concept vector_v_ish = span_ish<T> && requires(T t) {
+  t.push_back(V{});
+  t.resize(1);
+  t.reserve(1);
+  t.clear();
+  t.data();
+  { t[1] } -> std::convertible_to<V>;
+  t[1] = std::declval<V>();
+};
 
 template <typename T, typename V>
 concept vector_v_strict = vector_ish<T> && std::is_same_v<typename T::value_type, V>;
@@ -105,11 +108,11 @@ concept pair_ish = requires(T t) {
                    } && (std::tuple_size_v<T> == 2);
 
 template <typename T>
-concept tuple_ish = requires(T t) {
-                      std::tuple_size<T>::value;
-                      typename std::tuple_element_t<0, T>;
-                      std::get<0>(t);
-                    };
+concept tuple_ish = requires(const T& t) {
+  std::tuple_size<T>::value;
+  typename std::tuple_element_t<0, T>;
+  std::get<0>(t);
+};
 
 template <typename T>
 concept optional_ish = requires(T t) {
@@ -120,19 +123,18 @@ concept optional_ish = requires(T t) {
                        };
 
 template <typename T, std::size_t N>
-concept c_array_ish = std::extent_v<T, 0> >=
-N;
+concept c_array_ish = span_ish<T> && (std::extent_v<T, 0> >= N);
 template <typename T, std::size_t N>
-concept cpp_tuple_ish = requires { std::tuple_size_v<std::remove_cvref_t<T>> >= N; };
+concept cpp_tuple_ish
+    = tuple_ish<T> && requires { std::tuple_size_v<std::remove_cvref_t<T>> == N; };
 template <typename T, std::size_t N>
-concept cpp_array_ish = !
-vector_ish<T>&& cpp_tuple_ish<T, N>&& requires(T t) {
-                                        std::size(t);
-                                        t[0];
-                                      };
+concept cpp_array_ish = span_ish<T> && !vector_ish<T> && cpp_tuple_ish<T, N>;
 
 template <typename T, std::size_t N>
-concept array_ish = c_array_ish<T, N> || cpp_array_ish<T, N>;
+concept array_ish = span_ish<T> && (c_array_ish<T, N> || cpp_array_ish<T, N>);
+
+template <typename T>
+concept static_array_ish = span_ish<T> && tuple_ish<T>;
 
 template <typename T>
 concept bitset_ish = requires(T t) {
@@ -146,12 +148,6 @@ concept bitset_ish = requires(T t) {
                        t.reset();
                        t.reset(123);
                      };
-
-template <typename T>
-concept span_ish = requires(T t) {
-                     t.size();
-                     t[0];
-                   };
 
 template <typename T>
 concept pointer = std::is_pointer_v<std::decay_t<T>>;

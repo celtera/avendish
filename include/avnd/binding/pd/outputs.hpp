@@ -6,6 +6,8 @@
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/vecf.hpp>
+#include <boost/container/small_vector.hpp>
+
 #include <array>
 #include <vector>
 namespace pd
@@ -45,21 +47,88 @@ inline void value_to_pd(t_atom& atom, const std::optional<T>& v) noexcept
 struct do_value_to_pd_rec
 {
   // FIXME static thread_local errors with msvc...
-  std::vector<t_atom> atoms;
+  boost::container::small_vector<t_atom, 256> atoms;
 
   template <typename T>
-    requires (std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v)
   {
-    avnd::for_each_field_ref_n(
-        v, [this]<std::size_t I>(auto& field, avnd::field_index<I>) mutable {
-      (*this)(field);
-    });
+    static constexpr int sz = avnd::pfr::tuple_size_v<T>;
+
+    if constexpr(sz == 0)
+    {
+      atoms.push_back({.a_type = A_NULL, .a_w = {.w_float = 0}});
+    }
+    else
+    {
+      avnd::for_each_field_ref_n(
+          v, [this]<std::size_t I>(auto& field, avnd::field_index<I>) mutable {
+        (*this)(field);
+      });
+    }
   }
 
-  void operator()(const auto& v)
+  void operator()() noexcept
   {
-    //FIXME
+    atoms.push_back({.a_type = A_NULL, .a_w = {.w_float = 0}});
+  }
+  void operator()(std::floating_point auto v) noexcept
+  {
+    atoms.push_back({.a_type = A_FLOAT, .a_w = {.w_float = (t_float)v}});
+  }
+  void operator()(std::integral auto v) noexcept
+  {
+    atoms.push_back({.a_type = A_FLOAT, .a_w = {.w_float = (t_float)v}});
+  }
+  void operator()(std::string_view v) noexcept
+  {
+    atoms.push_back({.a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(v.data())}});
+  }
+  void operator()(const std::string& v) noexcept
+  {
+    atoms.push_back({.a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(v.data())}});
+  }
+
+  void operator()(const avnd::iterable_ish auto& v) noexcept
+  {
+    atoms.reserve(atoms.size() + v.size());
+    for(auto& e : v)
+    {
+      (*this)(e);
+    }
+  }
+
+  void operator()(const avnd::map_ish auto& v) noexcept
+  {
+    atoms.reserve(atoms.size() + v.size() * 2);
+    for(auto& [k, v] : v)
+    {
+      (*this)(k);
+      (*this)(v);
+    }
+  }
+
+  void operator()(const avnd::variant_ish auto& v) noexcept
+  {
+    using namespace std;
+    visit([this](const auto& val) { (*this)(val); }, v);
+  }
+
+  void operator()(const avnd::pair_ish auto& v) noexcept
+  {
+    (*this)(v.first);
+    (*this)(v.second);
+  }
+
+  template <avnd::tuple_ish T>
+    requires(!avnd::iterable_ish<T>)
+  void operator()(const T& v) noexcept
+  {
+    static constexpr int N = std::tuple_size_v<T>;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      ((*this)(std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
   }
 };
 
@@ -93,7 +162,7 @@ struct do_value_to_pd_typed
   }
 
   template <typename T>
-    requires avnd::vector_ish<T>
+    requires avnd::span_ish<T>
   void operator()(t_outlet* outlet, const T& v)
   {
     static_assert(convertible_to_fundamental_value_type<typename T::value_type>);
@@ -249,7 +318,7 @@ struct do_value_to_pd_anything
   }
 
   template <typename T>
-    requires (std::is_aggregate_v<T> && !avnd::span_ish<T>)
+    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
@@ -273,7 +342,7 @@ struct do_value_to_pd_anything
   }
 
   template <typename T>
-    requires avnd::vector_ish<T>
+    requires avnd::span_ish<T>
   void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
   {
     static thread_local std::vector<t_atom> atoms;
