@@ -59,7 +59,7 @@ jobs:
               build_flags: "",
               dependencies: "sudo apt update ; \
                              sudo apt install lsb-release wget software-properties-common ; \
-                             sudo add-apt-repository ppa:ubuntu-toolchain-r/test ; \
+                             sudo add-apt-repository ppa:ubuntu-toolchain-r/ppa ; \
                              sudo apt update ; \
                              sudo apt install ninja-build gcc-14 g++-14",
               sdk: "/opt/ossia-sdk",
