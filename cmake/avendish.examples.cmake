@@ -54,6 +54,14 @@ avnd_make_all(
   C_NAME avnd_modular
   )
 
+avnd_make_object(
+  TARGET Variant
+  MAIN_FILE examples/Raw/Variant.hpp
+  MAIN_CLASS examples::Variant
+  C_NAME avnd_variant
+)
+
+
 avnd_make_all(
   TARGET Ui
   MAIN_FILE examples/Raw/Ui.hpp

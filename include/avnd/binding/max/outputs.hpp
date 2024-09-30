@@ -11,6 +11,7 @@ namespace max
 {
 
 template <std::integral T>
+  requires (!std::is_pointer_v<T>)
 inline void value_to_max(t_atom& atom, T v) noexcept
 {
   atom = {.a_type = A_LONG, .a_w = {.w_long = v}};
@@ -23,6 +24,10 @@ inline void value_to_max(t_atom& atom, T v) noexcept
 inline void value_to_max(t_atom& atom, bool v) noexcept
 {
   atom = {.a_type = A_LONG, .a_w = {.w_long= v ? 1 : 0}};
+}
+inline void value_to_max(t_atom& atom, t_symbol* v) noexcept
+{
+  atom = {.a_type = A_SYM, .a_w = {.w_sym = v}};
 }
 inline void value_to_max(t_atom& atom, const char* v) noexcept
 {
@@ -425,7 +430,7 @@ struct do_value_to_max_anything
     static constexpr int N = sizeof...(Args);
 
     [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (set_atom{}(&atoms[I], v[I]), ...);
+      (set_atom{}(&atoms[I], v), ...);
     }(std::make_index_sequence<N>{});
 
     outlet_anything(p, s, N, atoms.data());

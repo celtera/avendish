@@ -120,35 +120,6 @@ struct message_processor
 
   void destroy() { }
 
-  template <typename C>
-  void set_inlet(C& port, t_atom& arg)
-  {
-    switch(arg.a_type)
-    {
-      case A_FLOAT: {
-        // This is the float that is supposed to go inside the first inlet if any ?
-        if constexpr(requires { port.value = 0.f; })
-        {
-          avnd::apply_control(port, arg.a_w.w_float);
-          if_possible(port.update(implementation.effect));
-        }
-        break;
-      }
-
-      case A_SYMBOL: {
-        if constexpr(requires { port.value = "string"; })
-        {
-          avnd::apply_control(port, arg.a_w.w_symbol->s_name);
-          if_possible(port.update(implementation.effect));
-        }
-        break;
-      }
-
-      default:
-        break;
-    }
-  }
-
   void process_first_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
     if constexpr(avnd::has_inputs<T>)
@@ -158,7 +129,7 @@ struct message_processor
         auto& first_inlet = avnd::pfr::get<0>(avnd::get_inputs<T>(implementation));
         if(argc > 0)
         {
-          set_inlet(first_inlet, argv[0]);
+          this->input_setup.process_inlet_control(this->implementation.effect, first_inlet, argc, argv);
         }
         else
         {

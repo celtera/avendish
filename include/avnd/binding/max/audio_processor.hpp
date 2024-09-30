@@ -171,9 +171,9 @@ struct audio_processor
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, res);
-                post(
-                    "Apply contorl :%s %s %d", s->s_name, control_name.data(),
-                    ctl.value);
+                // post(
+                //     "Apply contorl :%s %s %d", s->s_name, control_name.data(),
+                //     ctl.value);
                 if_possible(ctl.update(state.effect));
               }
             }

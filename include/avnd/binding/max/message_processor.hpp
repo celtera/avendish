@@ -112,79 +112,24 @@ struct message_processor
     dicts.release(implementation);
   }
 
-  void process_inlet_control(int inlet, t_atom_long val)
+  void process_inlet_control(int inlet, auto val)
   {
     if constexpr(avnd::parameter_input_introspection<T>::size > 0)
     {
       auto& obj = this->implementation.effect;
       this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
-        if constexpr(requires { field.value = "str"; })
+        if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
         {
-          if constexpr(std::is_same_v<std::string, decltype(F::value)>)
+          t_atom res;
+          value_to_max(res, val);
+          if(from_atoms{1, &res}(field.value))
           {
-            field.value = std::to_string(val);
             if_possible(field.update(obj));
+            return true;
           }
-          // FIXME int / float -> str for string_view? need separate storage
-        }
-        else if constexpr(requires { field.value = 0; })
-        {
-          static_assert(!std::is_pointer_v<decltype(field.value)>);
-          field.value = val;
-          if_possible(field.update(obj));
-        }
-      });
-    }
-  }
-
-  void process_inlet_control(int inlet, t_atom_float val)
-  {
-    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
-    {
-      auto& obj = this->implementation.effect;
-      this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
-        if constexpr(requires { field.value = "str"; })
-        {
-          if constexpr(std::is_same_v<std::string, decltype(F::value)>)
+          else
           {
-            field.value = std::to_string(val);
-            if_possible(field.update(obj));
-          }
-          // FIXME int / float -> str for string_view? need separate storage
-        }
-        else if constexpr(requires { field.value = 0; })
-        {
-          static_assert(!std::is_pointer_v<decltype(field.value)>);
-          field.value = val;
-          if_possible(field.update(obj));
-        }
-      });
-    }
-  }
-
-  void process_inlet_control(int inlet, struct symbol* val)
-  {
-    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
-    {
-      auto& obj = this->implementation.effect;
-      this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
-        if constexpr(requires { field.value = "str"; })
-        {
-          static_assert(!std::is_pointer_v<decltype(field.value)>);
-          field.value = val->s_name;
-          if_possible(field.update(obj));
-        }
-        else if constexpr(requires { field.value = 1; })
-        {
-          if constexpr(std::floating_point<decltype(F::value)>)
-          {
-            field.value = std::stod(val->s_name);
-            if_possible(field.update(obj));
-          }
-          else if constexpr(std::integral<decltype(F::value)>)
-          {
-            field.value = std::stoll(val->s_name);
-            if_possible(field.update(obj));
+            return false;
           }
         }
       });
