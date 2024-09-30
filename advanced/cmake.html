@@ -208,7 +208,7 @@ For an actual processor though, it's likely that you would have to write your ow
 using plug_type = decltype(avnd::configure&lt;avnd_clap::config, @AVND_MAIN_CLASS@&gt;())::type;
 using effect_type = avnd_clap::SimpleAudioEffect&lt;plug_type&gt;;
 
-AVND_EXPORTED_SYMBOL const struct clap_plugin_entry clap_plugin_entry = {
+AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_plugin_entry = {
    CLAP_VERSION,
    +[] (const char* path) -&gt; bool { /* init */ return true; },
    +[] () { /* deinit */ },
