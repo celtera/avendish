@@ -25,7 +25,7 @@ struct from_atom
     requires std::is_aggregate_v<T>
   bool operator()(T& v) const noexcept = delete;
 
-  bool operator()(avnd::span_ish auto& v) const noexcept = delete;
+  bool operator()(avnd::iterable_ish auto& v) const noexcept = delete;
   bool operator()(avnd::pair_ish auto& v) const noexcept = delete;
   bool operator()(avnd::tuple_ish auto& v) const noexcept = delete;
   bool operator()(avnd::map_ish auto& v) const noexcept = delete;
@@ -154,6 +154,20 @@ struct from_atoms
     if(res)
       v = static_cast<T>(r);
     return res;
+  }
+
+  template <avnd::list_ish T>
+  bool operator()(T& v) const noexcept
+  {
+    v.clear();
+
+    for(int i = 0; i < ac; i++)
+    {
+      typename T::value_type item;
+      from_atom{av[i]}(item);
+      v.push_back(std::move(item));
+    }
+    return true;
   }
 
   bool operator()(avnd::vector_ish auto& v) const noexcept
@@ -308,7 +322,9 @@ struct from_atoms
   }
 
   template <typename T>
-    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && avnd::pfr::tuple_size_v<T> > 0)
+    requires(
+        std::is_aggregate_v<T> && !avnd::iterable_ish<T>
+        && avnd::pfr::tuple_size_v<T> > 0)
   bool operator()(T& v) const noexcept
   {
     avnd::for_each_field_ref(v, [this, i = 0] <typename F> (F& field) mutable {

@@ -206,7 +206,7 @@ struct construct_arguments
       {
         return call_vec(implementation, name, argc, argv);
       }
-      else if constexpr(avnd::span_ish<main_arg_type>)
+      else if constexpr(avnd::iterable_ish<main_arg_type>)
       {
         return call_span(implementation, name, argc, argv);
       }

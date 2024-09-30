@@ -23,18 +23,20 @@ concept convertible_to_fundamental_value_type
 template<typename T>
 struct convertible_to_fundamental_value_type_pred : std::bool_constant<convertible_to_fundamental_value_type<T>>{};
 
+// clang-format off
 template <typename T>
 concept convertible_to_atom_list_statically_impl
     = convertible_to_fundamental_value_type<T> ||
       (avnd::bitset_ish<T>) ||
-      (avnd::span_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
+      (avnd::iterable_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
       (avnd::pair_ish<T> && convertible_to_fundamental_value_type<typename T::first_type> && convertible_to_fundamental_value_type<typename T::second_type>) ||
       (avnd::map_ish<T> && convertible_to_fundamental_value_type<typename T::key_type> && convertible_to_fundamental_value_type<typename T::mapped_type>) ||
       (avnd::optional_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
       (avnd::variant_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
       (avnd::tuple_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
-      (std::is_aggregate_v<T> && !avnd::span_ish<T> && boost::mp11::mp_all_of<avnd::as_typelist<T>, convertible_to_fundamental_value_type_pred>::value)
+      (std::is_aggregate_v<T> && !avnd::iterable_ish<T> && boost::mp11::mp_all_of<avnd::as_typelist<T>, convertible_to_fundamental_value_type_pred>::value)
     ;
+// clang-format on
 template <typename T>
 concept convertible_to_atom_list_statically
     = convertible_to_atom_list_statically_impl<std::remove_cvref_t<T>>;
@@ -162,7 +164,7 @@ t_symbol* symbol_for_port()
     return &s_list;
   else if constexpr(avnd::tuple_ish<type>)
     return &s_list;
-  else if constexpr(avnd::span_ish<type>)
+  else if constexpr(avnd::iterable_ish<type>)
     return &s_list;
   else if constexpr(std::floating_point<type>)
     return &s_float;

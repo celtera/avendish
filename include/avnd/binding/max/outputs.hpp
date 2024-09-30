@@ -36,6 +36,12 @@ inline void value_to_max(t_atom& atom, const std::string& v) noexcept
 {
   atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(v.c_str())}};
 }
+template <typename T>
+  requires std::is_enum_v<T>
+inline void value_to_max(t_atom& atom, T v) noexcept
+{
+  atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(magic_enum::enum_name(v).data())}};
+}
 
 struct do_value_to_max_rec
 {
@@ -43,7 +49,7 @@ struct do_value_to_max_rec
   boost::container::small_vector<t_atom, 256> atoms;
 
   template <typename T>
-    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+    requires(std::is_aggregate_v<T> && !avnd::iterable_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v)
   {
     avnd::for_each_field_ref_n(
@@ -72,6 +78,13 @@ struct do_value_to_max_rec
   {
     atoms.push_back({.a_type = A_SYM, .a_w = {.w_sym = gensym(v.data())}});
   }
+  template <typename T>
+    requires std::is_enum_v<T>
+  void operator()(T v) noexcept
+  {
+    atoms.push_back(
+        {.a_type = A_SYM, .a_w = {.w_sym = gensym(magic_enum::enum_name(v).data())}});
+  }
 
   void operator()(const avnd::iterable_ish auto& v) noexcept
   {
@@ -96,6 +109,12 @@ struct do_value_to_max_rec
   {
     using namespace std;
     visit([this](const auto& val) { (*this)(val); }, v);
+  }
+
+  void operator()(const avnd::optional_ish auto& v) noexcept
+  {
+    if(v)
+      (*this)(*v);
   }
 
   void operator()(const avnd::pair_ish auto& v) noexcept
@@ -132,6 +151,14 @@ struct do_value_to_max_typed
   {
     outlet_int(p, v);
   }
+  template <typename T>
+    requires std::is_enum_v<T>
+  void operator()(T v) const noexcept
+  {
+    t_atom atom;
+    value_to_max(atom, v);
+    outlet_anything(p, _sym_symbol, 1, &atom);
+  }
   void operator()(std::string_view v) const noexcept
   {
     outlet_anything(p, gensym(v.data()), 0, nullptr);
@@ -142,7 +169,7 @@ struct do_value_to_max_typed
   }
 
   template <typename T>
-    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+    requires(std::is_aggregate_v<T> && !avnd::iterable_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v) const noexcept
   {
     to_list l;
@@ -155,7 +182,7 @@ struct do_value_to_max_typed
   }
 
   template <std::size_t N>
-  void operator()(const avnd::array_ish<N> auto& v)
+  void operator()(const avnd::array_ish<N> auto& v) const noexcept
   {
     std::array<t_atom, N> atoms;
 
@@ -166,7 +193,7 @@ struct do_value_to_max_typed
     outlet_list(p, nullptr, N, atoms.data());
   }
 
-  void operator()(const avnd::span_ish auto& v) const noexcept
+  void operator()(const avnd::iterable_ish auto& v) const noexcept
   {
     to_list l;
     l(v);
@@ -187,6 +214,12 @@ struct do_value_to_max_typed
     outlet_list(p, nullptr, l.atoms.size(), l.atoms.data());
   }
 
+  void operator()(const avnd::optional_ish auto& v) const noexcept
+  {
+    if(v)
+      (*this)(*v);
+  }
+
   void operator()(const avnd::variant_ish auto& v) const noexcept
   {
     using namespace std;
@@ -200,9 +233,49 @@ struct do_value_to_max_typed
     outlet_list(p, nullptr, l.atoms.size(), l.atoms.data());
   }
 
+  template <typename T>
+    requires avnd::pair_ish<T>
+  void operator()(const T& v) const noexcept
+  {
+    t_atom atoms[2];
+
+    value_to_max(atoms[0], v.first);
+    value_to_max(atoms[1], v.second);
+
+    outlet_list(p, nullptr, 2, atoms);
+  }
+
+  template <avnd::tuple_ish T>
+    requires(!avnd::iterable_ish<T> && !avnd::pair_ish<T>)
+  void operator()(const T& v) const noexcept
+  {
+    static constexpr int N = std::tuple_size_v<T>;
+    std::array<t_atom, N> atoms;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (set_atom{}(&atoms[I], std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_list(p, nullptr, N, atoms.data());
+  }
+
+  void operator()(const avnd::bitset_ish auto& v) const noexcept
+  {
+    boost::container::small_vector<t_atom, 512> atoms;
+    const int N = v.size();
+    atoms.resize(2 * N);
+
+    for(int i = 0, N = v.size(); i < N; i++)
+    {
+      value_to_max(atoms[i], v.test(i) ? 1 : 0);
+    }
+
+    outlet_list(p, nullptr, atoms.size(), atoms.data());
+  }
+
   template <typename... Args>
     requires(sizeof...(Args) > 1)
-  void operator()(Args&&... v) noexcept
+  void operator()(Args&&... v) const noexcept
   {
     std::array<t_atom, sizeof...(Args)> atoms;
     static constexpr int N = sizeof...(Args);
@@ -248,9 +321,17 @@ struct do_value_to_max_anything
     value_to_max(atom, v);
     outlet_anything(p, s, 1, &atom);
   }
+  template <typename T>
+    requires std::is_enum_v<T>
+  void operator()(T v) const noexcept
+  {
+    t_atom atom;
+    value_to_max(atom, v);
+    outlet_anything(p, s, 1, &atom);
+  }
 
   template <typename T>
-    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+    requires(std::is_aggregate_v<T> && !avnd::iterable_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v) const noexcept
   {
     to_list l;
@@ -263,7 +344,7 @@ struct do_value_to_max_anything
   }
 
   template <std::size_t N>
-  void operator()(const avnd::array_ish<N> auto& v)
+  void operator()(const avnd::array_ish<N> auto& v) const noexcept
   {
     std::array<t_atom, N> atoms;
 
@@ -275,7 +356,8 @@ struct do_value_to_max_anything
   }
 
   template <avnd::tuple_ish T>
-  void operator()(const T& v)
+    requires(!avnd::iterable_ish<T> && !avnd::pair_ish<T>)
+  void operator()(const T& v) const noexcept
   {
     static constexpr auto N = std::tuple_size_v<T>;
     std::array<t_atom, N> atoms;
@@ -287,21 +369,7 @@ struct do_value_to_max_anything
     outlet_anything(p, s, N, atoms.data());
   }
 
-  void operator()(const avnd::span_ish auto& v) const noexcept
-  {
-    to_list l;
-    l(v);
-    outlet_anything(p, s, l.atoms.size(), l.atoms.data());
-  }
-
-  void operator()(const avnd::vector_ish auto& v) const noexcept
-  {
-    to_list l;
-    l(v);
-    outlet_anything(p, s,  l.atoms.size(), l.atoms.data());
-  }
-
-  void operator()(const avnd::set_ish auto& v) const noexcept
+  void operator()(const avnd::iterable_ish auto& v) const noexcept
   {
     to_list l;
     l(v);
@@ -314,16 +382,15 @@ struct do_value_to_max_anything
     visit([this](const auto& val) { (*this)(val); }, v);
   }
 
-  void operator()(const avnd::map_ish auto& v) const noexcept
+  void operator()(const avnd::optional_ish auto& v) const noexcept
   {
-    to_list l;
-    l(v);
-    outlet_anything(p, s, l.atoms.size(), l.atoms.data());
+    if(v)
+      (*this)(*v);
   }
 
   template <typename T>
     requires avnd::pair_ish<T>
-  void operator()(const T& v)
+  void operator()(const T& v) const noexcept
   {
     t_atom atoms[2];
 
@@ -333,12 +400,26 @@ struct do_value_to_max_anything
     outlet_anything(p, s, 2, atoms);
   }
 
+  void operator()(const avnd::bitset_ish auto& v) const noexcept
+  {
+    boost::container::small_vector<t_atom, 512> atoms;
+    const int N = v.size();
+    atoms.resize(2 * N);
+
+    for(int i = 0, N = v.size(); i < N; i++)
+    {
+      value_to_max(atoms[i], v.test(i) ? 1 : 0);
+    }
+
+    outlet_anything(p, s, atoms.size(), atoms.data());
+  }
+
   template <typename... Args>
-  void operator()(t_outlet*, Args&&... v) noexcept = delete;
+  void operator()(t_outlet*, Args&&... v) const noexcept = delete;
 
   template <typename... Args>
     requires(sizeof...(Args) > 1)
-  void operator()(Args&&... v) noexcept
+  void operator()(Args&&... v) const noexcept
   {
     std::array<t_atom, sizeof...(Args)> atoms;
     static constexpr int N = sizeof...(Args);

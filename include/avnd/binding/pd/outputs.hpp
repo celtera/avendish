@@ -7,6 +7,7 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/vecf.hpp>
 #include <boost/container/small_vector.hpp>
+#include <magic_enum.hpp>
 
 #include <array>
 #include <vector>
@@ -22,6 +23,13 @@ inline void value_to_pd(t_atom& atom, T v) noexcept
 inline void value_to_pd(t_atom& atom, bool v) noexcept
 {
   atom = {.a_type = A_FLOAT, .a_w = {.w_float = v ? 1.0f : 0.0f}};
+}
+template <typename T>
+  requires std::is_enum_v<T>
+inline void value_to_pd(t_atom& atom, T v) noexcept
+{
+  atom = {
+      .a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(magic_enum::enum_name(v).data())}};
 }
 inline void value_to_pd(t_atom& atom, const char* v) noexcept
 {
@@ -50,7 +58,7 @@ struct do_value_to_pd_rec
   boost::container::small_vector<t_atom, 256> atoms;
 
   template <typename T>
-    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
+    requires(std::is_aggregate_v<T> && !avnd::iterable_ish<T> && !avnd::tuple_ish<T>)
   void operator()(const T& v)
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
@@ -79,6 +87,14 @@ struct do_value_to_pd_rec
   void operator()(std::integral auto v) noexcept
   {
     atoms.push_back({.a_type = A_FLOAT, .a_w = {.w_float = (t_float)v}});
+  }
+  template <typename T>
+    requires std::is_enum_v<T>
+  void operator()(T v) noexcept
+  {
+    atoms.push_back(
+        {.a_type = A_SYMBOL,
+         .a_w = {.w_symbol = gensym(magic_enum::enum_name(v).data())}});
   }
   void operator()(std::string_view v) noexcept
   {
@@ -114,6 +130,15 @@ struct do_value_to_pd_rec
     visit([this](const auto& val) { (*this)(val); }, v);
   }
 
+  void operator()(const avnd::optional_ish auto& v) noexcept
+  {
+    using namespace std;
+    if(v)
+      (*this)(*v);
+    else
+      atoms.push_back({.a_type = A_NULL, .a_w = {.w_float = 0}});
+  }
+
   void operator()(const avnd::pair_ish auto& v) noexcept
   {
     (*this)(v.first);
@@ -134,14 +159,11 @@ struct do_value_to_pd_rec
 
 struct do_value_to_pd_typed
 {
-  void operator()(t_outlet* outlet)
-  {
-    outlet_bang(outlet);
-  }
+  void operator()(t_outlet* outlet) const noexcept { outlet_bang(outlet); }
 
   template <typename T>
-    requires (std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
-  void operator()(t_outlet* outlet, const T& v)
+    requires(std::is_aggregate_v<T> && !avnd::iterable_ish<T> && !avnd::tuple_ish<T>)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
 
@@ -161,9 +183,22 @@ struct do_value_to_pd_typed
     }
   }
 
+  template <avnd::tuple_ish T>
+  void operator()(t_outlet* outlet, const T& v) const noexcept
+  {
+    static constexpr int N = std::tuple_size_v<T>;
+    std::array<t_atom, N> atoms;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (value_to_pd(atoms[I], std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_list(outlet, &s_list, N, atoms.data());
+  }
+
   template <typename T>
     requires avnd::span_ish<T>
-  void operator()(t_outlet* outlet, const T& v)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     static_assert(convertible_to_fundamental_value_type<typename T::value_type>);
     // FIXME does not work for recursivity: static thread_local. We need a pool.
@@ -181,7 +216,7 @@ struct do_value_to_pd_typed
   }
 
   template <typename T, std::size_t N>
-  void operator()(t_outlet* outlet, const std::array<T, N>& v)
+  void operator()(t_outlet* outlet, const std::array<T, N>& v) const noexcept
   {
     static_assert(convertible_to_fundamental_value_type<T>);
     std::array<t_atom, N> atoms;
@@ -195,7 +230,7 @@ struct do_value_to_pd_typed
   }
 
   template <std::size_t N>
-  void operator()(t_outlet* outlet, const avnd::array_ish<N> auto& v)
+  void operator()(t_outlet* outlet, const avnd::array_ish<N> auto& v) const noexcept
   {
     std::array<t_atom, N> atoms;
 
@@ -208,8 +243,8 @@ struct do_value_to_pd_typed
   }
 
   template <typename T>
-    requires avnd::set_ish<T>
-  void operator()(t_outlet* outlet, const T& v)
+    requires((avnd::set_ish<T> || avnd::list_ish<T>) && !avnd::vector_ish<T>)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     static thread_local std::vector<t_atom> atoms;
     const int N = v.size();
@@ -226,7 +261,7 @@ struct do_value_to_pd_typed
 
   template <typename T>
     requires avnd::map_ish<T>
-  void operator()(t_outlet* outlet, const T& v)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     static thread_local std::vector<t_atom> atoms;
     const int N = v.size();
@@ -244,15 +279,15 @@ struct do_value_to_pd_typed
 
   template <typename T>
     requires avnd::variant_ish<T>
-  void operator()(t_outlet* outlet, const T& v)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     using namespace std;
-    visit(v, [&](const auto& element) { (*this)(outlet, element); });
+    visit([&](const auto& element) { (*this)(outlet, element); }, v);
   }
 
   template <typename T>
     requires avnd::pair_ish<T>
-  void operator()(t_outlet* outlet, const T& v)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     t_atom atoms[2];
 
@@ -264,40 +299,53 @@ struct do_value_to_pd_typed
 
   template <typename T>
     requires avnd::optional_ish<T>
-  void operator()(t_outlet* outlet, const T& v)
+  void operator()(t_outlet* outlet, const T& v) const noexcept
   {
     if(v)
       (*this)(outlet, *v);
   }
 
-  inline void operator()(t_outlet* outlet, std::integral auto v) noexcept
+  inline void operator()(t_outlet* outlet, std::integral auto v) const noexcept
   {
     outlet_float(outlet, v);
   }
-  inline void operator()(t_outlet* outlet, std::floating_point auto v) noexcept
+  inline void operator()(t_outlet* outlet, std::floating_point auto v) const noexcept
   {
     outlet_float(outlet, v);
   }
-  inline void operator()(t_outlet* outlet, bool v) noexcept
+  inline void operator()(t_outlet* outlet, bool v) const noexcept
   {
     outlet_float(outlet, v ? 1.f : 0.f);
   }
-  inline void operator()(t_outlet* outlet, const char* v) noexcept
+  inline void operator()(t_outlet* outlet, const char* v) const noexcept
   {
     outlet_symbol(outlet, gensym(v));
   }
-  inline void operator()(t_outlet* outlet, std::string_view v) noexcept
+  inline void operator()(t_outlet* outlet, std::string_view v) const noexcept
   {
     outlet_symbol(outlet, gensym(v.data()));
   }
-  inline void operator()(t_outlet* outlet, const std::string& v) noexcept
+  inline void operator()(t_outlet* outlet, const std::string& v) const noexcept
   {
     outlet_symbol(outlet, gensym(v.c_str()));
+  }
+  void operator()(t_outlet* outlet, const avnd::bitset_ish auto& v) const noexcept
+  {
+    boost::container::small_vector<t_atom, 512> atoms;
+    const int N = v.size();
+    atoms.resize(2 * N);
+
+    for(int i = 0, N = v.size(); i < N; i++)
+    {
+      value_to_pd(atoms[i], v.test(i) ? 1 : 0);
+    }
+
+    outlet_list(outlet, &s_list, N, atoms.data());
   }
 
   template <typename... Args>
     requires(sizeof...(Args) > 1)
-  inline void operator()(t_outlet* outlet, Args&&... v) noexcept
+  inline void operator()(t_outlet* outlet, Args&&... v) const noexcept
   {
     std::array<t_atom, sizeof...(Args)> atoms;
     static constexpr int N = sizeof...(Args);
@@ -312,14 +360,14 @@ struct do_value_to_pd_typed
 
 struct do_value_to_pd_anything
 {
-  void operator()(t_outlet* outlet, t_symbol* sym)
+  void operator()(t_outlet* outlet, t_symbol* sym) const noexcept
   {
     outlet_anything(outlet, sym, 0, nullptr);
   }
 
   template <typename T>
-    requires(std::is_aggregate_v<T> && !avnd::span_ish<T> && !avnd::tuple_ish<T>)
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+    requires(std::is_aggregate_v<T> && !avnd::iterable_ish<T> && !avnd::tuple_ish<T>)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     static constexpr int sz = avnd::pfr::tuple_size_v<T>;
 
@@ -343,7 +391,7 @@ struct do_value_to_pd_anything
 
   template <typename T>
     requires avnd::span_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     static thread_local std::vector<t_atom> atoms;
     const int N = v.size();
@@ -360,7 +408,8 @@ struct do_value_to_pd_anything
 
   // FIXME msvc isn't able to match the more generic template
   template <typename T, std::size_t N>
-  void operator()(t_outlet* outlet, t_symbol* sym, const std::array<T, N>& v)
+  void
+  operator()(t_outlet* outlet, t_symbol* sym, const std::array<T, N>& v) const noexcept
   {
     std::array<t_atom, N> atoms;
 
@@ -373,7 +422,8 @@ struct do_value_to_pd_anything
   }
 
   template <std::size_t N>
-  void operator()(t_outlet* outlet, t_symbol* sym, const avnd::array_ish<N> auto& v)
+  void operator()(
+      t_outlet* outlet, t_symbol* sym, const avnd::array_ish<N> auto& v) const noexcept
   {
     std::array<t_atom, N> atoms;
 
@@ -386,8 +436,8 @@ struct do_value_to_pd_anything
   }
 
   template <typename T>
-    requires avnd::set_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+    requires((avnd::set_ish<T> || avnd::list_ish<T>) && !avnd::vector_ish<T>)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     // FIXME that does not work, we can have recursive types
     static thread_local std::vector<t_atom> atoms;
@@ -405,7 +455,7 @@ struct do_value_to_pd_anything
 
   template <typename T>
     requires avnd::map_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     static thread_local std::vector<t_atom> atoms;
     const int N = v.size();
@@ -423,15 +473,15 @@ struct do_value_to_pd_anything
 
   template <typename T>
     requires avnd::variant_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     using namespace std;
-    visit(v, [&](const auto& element) { (*this)(outlet, sym, element); });
+    visit([&](const auto& element) { (*this)(outlet, sym, element); }, v);
   }
 
   template <typename T>
     requires avnd::pair_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     t_atom atoms[2];
 
@@ -443,13 +493,14 @@ struct do_value_to_pd_anything
 
   template <typename T>
     requires avnd::optional_ish<T>
-  void operator()(t_outlet* outlet, t_symbol* sym, const T& v)
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
   {
     if(v)
       (*this)(outlet, sym, *v);
   }
 
-  inline void operator()(t_outlet* outlet, t_symbol* sym, std::integral auto v) noexcept
+  inline void
+  operator()(t_outlet* outlet, t_symbol* sym, std::integral auto v) const noexcept
   {
     t_atom atom;
     value_to_pd(atom, v);
@@ -457,44 +508,74 @@ struct do_value_to_pd_anything
   }
 
   inline void
-  operator()(t_outlet* outlet, t_symbol* sym, std::floating_point auto v) noexcept
+  operator()(t_outlet* outlet, t_symbol* sym, std::floating_point auto v) const noexcept
   {
     t_atom atom;
     value_to_pd(atom, v);
     outlet_anything(outlet, sym, 1, &atom);
   }
 
-  inline void operator()(t_outlet* outlet, t_symbol* sym, bool v) noexcept
+  inline void operator()(t_outlet* outlet, t_symbol* sym, bool v) const noexcept
   {
     t_atom atom;
     value_to_pd(atom, v);
     outlet_anything(outlet, sym, 1, &atom);
   }
 
-  inline void operator()(t_outlet* outlet, t_symbol* sym, const char* v) noexcept
+  inline void operator()(t_outlet* outlet, t_symbol* sym, const char* v) const noexcept
   {
     t_atom atom;
     value_to_pd(atom, v);
     outlet_anything(outlet, sym, 1, &atom);
   }
 
-  inline void operator()(t_outlet* outlet, t_symbol* sym, std::string_view v) noexcept
+  inline void
+  operator()(t_outlet* outlet, t_symbol* sym, std::string_view v) const noexcept
   {
     t_atom atom;
     value_to_pd(atom, v);
     outlet_anything(outlet, sym, 1, &atom);
   }
 
-  inline void operator()(t_outlet* outlet, t_symbol* sym, const std::string& v) noexcept
+  inline void
+  operator()(t_outlet* outlet, t_symbol* sym, const std::string& v) const noexcept
   {
     t_atom atom;
     value_to_pd(atom, v);
     outlet_anything(outlet, sym, 1, &atom);
+  }
+
+  void operator()(
+      t_outlet* outlet, t_symbol* sym, const avnd::bitset_ish auto& v) const noexcept
+  {
+    boost::container::small_vector<t_atom, 512> atoms;
+    const int N = v.size();
+    atoms.resize(2 * N);
+
+    for(int i = 0, N = v.size(); i < N; i++)
+    {
+      value_to_pd(atoms[i], v.test(i) ? 1 : 0);
+    }
+
+    outlet_anything(outlet, sym, N, atoms.data());
+  }
+
+  template <avnd::tuple_ish T>
+  void operator()(t_outlet* outlet, t_symbol* sym, const T& v) const noexcept
+  {
+    static constexpr int N = std::tuple_size_v<T>;
+    std::array<t_atom, N> atoms;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (value_to_pd(atoms[I], std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
+
+    outlet_anything(outlet, sym, N, atoms.data());
   }
 
   template <typename... Args>
     requires(sizeof...(Args) > 1)
-  inline void operator()(t_outlet* outlet, t_symbol* sym, Args&&... v) noexcept
+  inline void operator()(t_outlet* outlet, t_symbol* sym, Args&&... v) const noexcept
   {
     std::array<t_atom, sizeof...(Args)> atoms;
     static constexpr int N = sizeof...(Args);

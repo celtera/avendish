@@ -1,12 +1,11 @@
 #pragma once
 #include <avnd/binding/max/helpers.hpp>
-#include <avnd/concepts/field_names.hpp>
 #include <avnd/common/aggregates.hpp>
 #include <avnd/common/for_nth.hpp>
-
+#include <avnd/concepts/field_names.hpp>
 #include <boost/container/small_vector.hpp>
-
 #include <ext.h>
+#include <magic_enum.hpp>
 
 namespace max
 {
@@ -27,7 +26,15 @@ struct to_list
   {
     atom_setlong(&atoms.emplace_back(), arg);
   }
-  void operator()(std::string_view v)  noexcept
+
+  template <typename T>
+    requires std::is_enum_v<T>
+  void operator()(T arg) noexcept
+  {
+    atom_setsym(&atoms.emplace_back(), gensym(magic_enum::enum_name(arg).data()));
+  }
+
+  void operator()(std::string_view v) noexcept
   {
     atom_setsym(&atoms.emplace_back(), gensym(v.data()));
   }
@@ -47,9 +54,9 @@ struct to_list
       (*this)(0);
   }
 
-  template<typename F>
-    requires std::is_aggregate_v<F>
-  void operator()(const F& f)  noexcept
+  template <typename F>
+    requires(std::is_aggregate_v<F> && !avnd::iterable_ish<F> && !avnd::tuple_ish<F>)
+  void operator()(const F& f) noexcept
   {
     atoms.reserve(atoms.size() + boost::pfr::tuple_size_v<F>);
 
@@ -59,25 +66,7 @@ struct to_list
         });
   }
 
-  template<typename T, std::size_t N>
-  void operator()(const std::array<T, N>& f)  noexcept
-  {
-    atoms.reserve(atoms.size() + f.size());
-    for(auto& v : f) {
-      (*this)(v);
-    }
-  }
-
-
-  void operator()(const avnd::set_ish auto& f)  noexcept
-  {
-    atoms.reserve(atoms.size() + f.size());
-    for(auto& v : f) {
-      (*this)(v);
-    }
-  }
-
-  void operator()(const avnd::span_ish auto& f)  noexcept
+  void operator()(const avnd::iterable_ish auto& f) noexcept
   {
     atoms.reserve(atoms.size() + f.size());
     for(auto& v : f) {
@@ -103,8 +92,9 @@ struct to_list
     (*this)(f.second);
   }
 
-  template<avnd::tuple_ish U>
-  void operator()(const U& f)  noexcept
+  template <avnd::tuple_ish U>
+    requires(!avnd::iterable_ish<U>)
+  void operator()(const U& f) noexcept
   {
     atoms.reserve(atoms.size() + std::tuple_size_v<U>);
     std::apply(
@@ -139,7 +129,14 @@ struct to_dict
     dictionary_appendstring(d, k, v.data());
   }
 
-  void operator()(t_symbol* k, const avnd::variant_ish auto& f)  noexcept
+  template <typename T>
+    requires std::is_enum_v<T>
+  void operator()(t_symbol* k, T&& arg) noexcept
+  {
+    dictionary_appendstring(d, k, magic_enum::enum_name(arg).data());
+  }
+
+  void operator()(t_symbol* k, const avnd::variant_ish auto& f) noexcept
   {
     visit([this, k](auto&& val) { (*this)(k, val); }, f);
   }
@@ -204,7 +201,7 @@ struct to_dict
       {
         for(long i = 0; i < n; i++)
         {
-          if(!f->contains(keys[i]->s_name))
+          if(!f.contains(keys[i]->s_name))
             dictionary_deleteentry(d, keys[i]);
         }
         dictionary_freekeys(d, n, keys);
@@ -241,6 +238,14 @@ struct set_atom
   t_max_err operator()(t_atom* at, std::string_view v) const noexcept
   {
     atom_setsym(at, gensym(v.data()));
+    return MAX_ERR_NONE;
+  }
+
+  template <typename T>
+    requires std::is_enum_v<T>
+  t_max_err operator()(t_atom* at, T arg) noexcept
+  {
+    atom_setsym(at, gensym(magic_enum::enum_name(arg).data()));
     return MAX_ERR_NONE;
   }
 };
@@ -294,6 +299,50 @@ struct to_atoms
     if(auto atoms = allocate(1, ac, av); !atoms.empty())
     {
       atom_setsym(&atoms[0], gensym(v.data()));
+      return MAX_ERR_NONE;
+    }
+    return MAX_ERR_OUT_OF_MEM;
+  }
+
+  template <typename T>
+    requires std::is_enum_v<T>
+  t_max_err operator()(T arg) noexcept
+  {
+    if(auto atoms = allocate(1, ac, av); !atoms.empty())
+    {
+      atom_setsym(&atoms[0], gensym(magic_enum::enum_name(arg).data()));
+      return MAX_ERR_NONE;
+    }
+    return MAX_ERR_OUT_OF_MEM;
+  }
+
+  template <avnd::iterable_ish T>
+  t_max_err operator()(const T& arg) noexcept
+  {
+    if(auto atoms = allocate(std::size(arg), ac, av); !atoms.empty())
+    {
+      using span_val_type = typename T::value_type;
+      int i = 0;
+      if constexpr(std::is_integral_v<span_val_type>)
+      {
+        for(auto& v : arg)
+          atom_setlong(&atoms[i++], v);
+      }
+      else if constexpr(std::is_floating_point_v<span_val_type>)
+      {
+        for(auto& v : arg)
+          atom_setfloat(&atoms[i], v);
+      }
+      else if constexpr(avnd::string_ish<span_val_type>)
+      {
+        for(auto& v : arg)
+          atom_setsym(&atoms[i], gensym(v.data()));
+      }
+      else if constexpr(std::is_enum_v<span_val_type>)
+      {
+        for(auto& v : arg)
+          atom_setsym(&atoms[i], gensym(magic_enum::enum_name(v).data()));
+      }
       return MAX_ERR_NONE;
     }
     return MAX_ERR_OUT_OF_MEM;

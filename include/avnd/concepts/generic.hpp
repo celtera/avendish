@@ -51,13 +51,15 @@ concept iterable_ish = requires(const T& t) {
 template <typename T>
 concept span_ish = iterable_ish<T> && requires(const T& t) { t[0]; };
 template <typename T>
-concept vector_ish = span_ish<T> && requires(T t) {
+concept list_ish = requires(T t) {
   t.push_back({});
   // t.reserve(1); // many containers don't have it
   t.resize(1);
   t.clear();
   // t.data(); // did you know? std::vector<bool> does not have it
 };
+template <typename T>
+concept vector_ish = span_ish<T> && list_ish<T>;
 
 template <typename T>
 concept set_ish = iterable_ish<T> && requires(T t) {
@@ -96,23 +98,23 @@ template <typename T, typename V>
 concept vector_v_strict = vector_ish<T> && std::is_same_v<typename T::value_type, V>;
 
 template <typename T>
-concept variant_ish = requires(T t) {
-                        t.index();
-                        t.valueless_by_exception();
-                      };
-
-template <typename T>
-concept pair_ish = requires(T t) {
-                     t.first;
-                     t.second;
-                   } && (std::tuple_size_v<T> == 2);
-
-template <typename T>
 concept tuple_ish = requires(const T& t) {
   std::tuple_size<T>::value;
   typename std::tuple_element_t<0, T>;
   std::get<0>(t);
 };
+
+template <typename T>
+concept variant_ish = requires(T t) {
+  t.index();
+  t.valueless_by_exception();
+};
+
+template <typename T>
+concept pair_ish = tuple_ish<T> && requires(T t) {
+  t.first;
+  t.second;
+} && (std::tuple_size_v<T> == 2);
 
 template <typename T>
 concept optional_ish = requires(T t) {

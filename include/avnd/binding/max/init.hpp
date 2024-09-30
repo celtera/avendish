@@ -125,7 +125,7 @@ struct init_arguments
         call_vec(implementation, name, argc, argv);
         return;
       }
-      else if constexpr(avnd::span_ish<main_arg_type>)
+      else if constexpr(avnd::iterable_ish<main_arg_type>)
       {
         call_span(implementation, name, argc, argv);
         return;
