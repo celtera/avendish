@@ -1,3 +1,5 @@
+*.mxe64
+*.mxo
 *.dll
 *.dylib
 book/book

@@ -1,4 +1,4 @@
-#N canvas 960 0 956 1002 12;
+#N canvas 960 0 956 1165 12;
 #X floatatom 340 241 5 0 0 0 - - - 0;
 #X msg 330 39 Test1 1;
 #X msg 332 191 m1 1 2.3 foobar;

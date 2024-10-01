@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 663.0, 263.0, 1215.0, 710.0 ],
+		"rect" : [ 215.0, 572.0, 1215.0, 710.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -40,13 +40,85 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-76",
+					"linecount" : 5,
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 922.0, 320.5, 224.0, 75.0 ],
+					"presentation_linecount" : 10,
+					"text" : "Raw/Callback.hpp: When we do not need to store a value we can use function declarations instead, they will be automatically parsed. std::function or just raw function pointers work."
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-75",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 996.0, 489.0, 50.0, 22.0 ],
+					"text" : "23000."
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-74",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 930.0, 489.0, 50.0, 22.0 ],
+					"text" : "230."
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-68",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "anything", "anything" ],
+					"patching_rect" : [ 961.0, 452.0, 85.0, 22.0 ],
+					"text" : "avnd_callback"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-67",
+					"maxclass" : "number",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "bang" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 1024.0, 409.0, 50.0, 22.0 ]
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-62",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 961.0, 409.0, 34.0, 22.0 ],
+					"text" : "work"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-26",
 					"linecount" : 3,
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 1029.0, 30.0, 155.0, 48.0 ],
-					"presentation_linecount" : 3,
+					"patching_rect" : [ 1029.0, 30.0, 157.0, 48.0 ],
 					"text" : "Raw/Variant.hpp: \nHandling polymorphic input types"
 				}
 
@@ -59,7 +131,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 1024.0, 204.0, 106.0, 22.0 ],
-					"text" : "16"
+					"text" : "27"
 				}
 
 			}
@@ -71,7 +143,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 1024.0, 177.0, 106.0, 22.0 ],
-					"text" : "16."
+					"text" : "27."
 				}
 
 			}
@@ -1176,6 +1248,13 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-68", 0 ],
+					"source" : [ "obj-62", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-4", 1 ],
 					"source" : [ "obj-64", 1 ]
 				}
@@ -1185,6 +1264,27 @@
 				"patchline" : 				{
 					"destination" : [ "obj-66", 1 ],
 					"source" : [ "obj-64", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-68", 0 ],
+					"source" : [ "obj-67", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-74", 1 ],
+					"source" : [ "obj-68", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-75", 1 ],
+					"source" : [ "obj-68", 1 ]
 				}
 
 			}
@@ -1241,6 +1341,10 @@
 			}
 , 			{
 				"name" : "avnd_attributes.mxe64",
+				"type" : "mx64"
+			}
+, 			{
+				"name" : "avnd_callback.mxe64",
 				"type" : "mx64"
 			}
 , 			{

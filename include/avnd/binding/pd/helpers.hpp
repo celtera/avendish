@@ -135,7 +135,11 @@ static Arg convert(t_atom& atom)
 template <typename T>
 t_symbol* symbol_for_port()
 {
-  return &s_anything; // TODO is that correct ?
+  // https://sourceforge.net/p/pure-data/patches/164/
+  // s_list is the "generic" inlet type,
+  // it is the only type that allows right-inlets to also
+  // react to float & symbol messages
+  return &s_list;
 }
 
 template <avnd::mono_audio_port P>
@@ -163,6 +167,8 @@ t_symbol* symbol_for_port()
   else if constexpr(avnd::pair_ish<type>)
     return &s_list;
   else if constexpr(avnd::tuple_ish<type>)
+    return &s_list;
+  else if constexpr(avnd::variant_ish<type>)
     return &s_list;
   else if constexpr(avnd::iterable_ish<type>)
     return &s_list;

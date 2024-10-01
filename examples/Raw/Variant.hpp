@@ -5,7 +5,6 @@
 #include <string>
 #include <variant>
 
-// clang-format on
 namespace examples
 {
 struct Variant
@@ -49,4 +48,3 @@ struct Variant
   }
 };
 }
-// clang-format on

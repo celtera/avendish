@@ -346,9 +346,14 @@ struct inputs
         // Do not create a port for attributes
         if constexpr(!avnd::attribute_port<M>)
         {
-          static const auto name = pd::symbol_from_name<M>();
+          // If we get a message [port_sym 1 2 3)
+          auto port_sym = pd::symbol_for_port<M>();
 
-          inlet_new(&x_obj, &x_obj.ob_pd, pd::symbol_for_port<M>(), name);
+          // Then the message through this inlet will be received by "process"
+          // as [name 1 2 3)
+          auto name = pd::symbol_from_name<M>();
+
+          inlet_new(&x_obj, &x_obj.ob_pd, port_sym, name);
         }
       }
     });
