@@ -261,7 +261,18 @@ struct from_atoms
   // FIXME
   template<avnd::tuple_ish T>
     requires (!avnd::pair_ish<T>)
-  bool operator()(T& v) const noexcept { return false; }
+  bool operator()(T& v) const noexcept
+  {
+    static constexpr int N = std::tuple_size_v<T>;
+    if(ac < N)
+      return false;
+
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (from_atom{av[I]}(std::get<I>(v)), ...);
+    }(std::make_index_sequence<N>{});
+
+    return true;
+  }
 
 
   bool operator()(avnd::variant_ish auto& v) const noexcept
