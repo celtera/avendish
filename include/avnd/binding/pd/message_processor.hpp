@@ -164,7 +164,6 @@ struct message_processor
 
   void process(t_symbol* s, int argc, t_atom* argv)
   {
-
     // First try to process messages handled explicitely in the object
     if(messages_setup.process_messages(implementation, s, argc, argv))
       return;

@@ -371,6 +371,19 @@ struct inputs
         return true;
       }
     }
+    else
+    {
+      static std::once_flag f;
+      std::call_once(f, [] {
+        post("Field type not supported as input: %s",
+#if defined(_MSC_VER)
+             __FUNCSIG__
+#else
+             __PRETTY_FUNCTION__
+#endif
+        );
+      });
+    }
     return false;
   }
 
@@ -382,15 +395,19 @@ struct inputs
     {
       bool ok = false;
       std::string_view symname = s->s_name;
-      avnd::parameter_input_introspection<T>::for_all(
-          avnd::get_inputs(implementation), [&]<typename M>(M& field) {
-        if(ok)
-          return;
-        if(symname == pd::get_name_symbol<M>())
-        {
-          ok = process_inlet_control(implementation.effect, field, argc, argv);
-        }
-      });
+
+      for(auto state : implementation.full_state())
+      {
+        avnd::parameter_input_introspection<T>::for_all(
+            state.inputs, [&,&obj=state.effect]<typename M>(M& field) {
+          if(ok)
+            return;
+          if(symname == pd::get_name_symbol<M>())
+          {
+            ok = process_inlet_control(obj, field, argc, argv);
+          }
+        });
+      }
       return ok;
     }
     return false;
