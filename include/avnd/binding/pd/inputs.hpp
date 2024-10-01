@@ -10,6 +10,7 @@
 #endif
 
 #include <cstring>
+#include <mutex>
 namespace pd
 {
 
