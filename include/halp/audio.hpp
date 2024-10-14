@@ -192,6 +192,8 @@ struct variable_audio_bus : halp::dynamic_audio_bus<Name, FP, Desc>
   std::function<void(int)> request_channels;
 };
 
+using quantification_frames = boost::container::small_vector<std::pair<int, int>, 8>;
+using quarter_note = double;
 struct tick
 {
   int frames{};
@@ -207,22 +209,35 @@ struct tick_musical
     int num;
     int denom;
   } signature;
+
   int64_t position_in_frames{};
+
   double position_in_nanoseconds{};
-  double start_position_in_quarters{};
-  double end_position_in_quarters{};
+
+  // Quarter note of the first sample in the buffer
+  quarter_note start_position_in_quarters{};
+
+  // Quarter note of the first sample in the next buffer
+  // (or one past the last sample of this buffer, e.g. a [closed; open) interval like C++ begin / end)
+  quarter_note end_position_in_quarters{};
+
+  // Position of the last signature change in quarter notes (at the start of the tick)
+  quarter_note last_signature_change{};
 
   // Position of the last bar relative to start in quarter notes
-  double bar_at_start{};
+  quarter_note bar_at_start{};
 
   // Position of the last bar relative to end in quarter notes
-  double bar_at_end{};
+  quarter_note bar_at_end{};
 
   // If the division falls in the current tick, returns the corresponding frames
-  [[nodiscard]] boost::container::small_vector<std::pair<int, int>, 8>
-  get_quantification_date(double div) const noexcept
+  // FIXME: this fails if we have a change of musical metric in the middle of a bar.
+  // This requires the host to always cut the tick before a change of metrics
+  // Div is the division in quarter notes: div == 1 means 1 quarter note.
+  // FIXME: use std::generator :)
+  [[nodiscard]] quantification_frames get_quantification_date(double div) const noexcept
   {
-    boost::container::small_vector<std::pair<int, int>, 8> frames;
+    quantification_frames frames;
     double start_in_bar = start_position_in_quarters - bar_at_start;
     double end_in_bar = end_position_in_quarters - bar_at_start;
 
@@ -260,6 +275,194 @@ struct tick_musical
       }
     }
     return frames;
+  }
+
+  // Given a quantification rate (1 for bars, 2 for half, 4 for quarters...)
+  // return the next occurring quantification date, if such date is in the tick
+  // defined by this token_request: div == 1 means 1 bar.
+  // Unlike the function above, this one also takes into account parent bar and time signature changes which
+  // may or may not be desired depending on the situatoin.
+  // FIXME: use std::generator :)
+  [[nodiscard]] halp::quantification_frames
+  get_quantification_date_with_bars(double rate) const noexcept
+  {
+    halp::quantification_frames quantification_date;
+
+    if(rate <= 0.)
+      return {}; //fixme: tk.prev_date;
+
+    const double musical_tick_duration
+        = this->end_position_in_quarters - this->start_position_in_quarters;
+    if(musical_tick_duration <= 0.)
+      return {}; //fixme: this->prev_date;
+
+    if(rate <= 1.)
+    {
+      // Quantize relative to bars
+      if(this->bar_at_end != this->bar_at_start)
+      {
+        // 4 if we're in 4/4 for instance
+        const double musical_bar_duration = this->bar_at_end - this->bar_at_start;
+
+        // rate = 0.5 -> 2 bars at 3/4 -> 6 quarter notes
+        const double quantif_duration = musical_bar_duration / rate;
+
+        // we must be on quarter note 6, 12, 18, ... from the previous
+        // signature
+        const double rem = std::fmod(
+            this->bar_at_end - this->last_signature_change, quantif_duration);
+        if(rem < 0.0001)
+        {
+          // There is a bar change in this tick and it is when we are going to
+          // trigger
+          const double musical_bar_start
+              = this->bar_at_end - this->start_position_in_quarters;
+
+          const double ratio = musical_bar_start / musical_tick_duration;
+          const int dt = this->frames; // TODO should be tick_offset
+
+          // FIXME we should go "back" by as many measures length if length(bar) < length(tick)
+          // as right now we only catch the last bar change, but there may be multiple bar changes,
+          // with very fast tempos and long buffer sizes
+          quantification_date.push_back({std::floor(dt * ratio), 1});
+        }
+      }
+    }
+    else
+    {
+      // Quantize relative to quarter divisions
+      // TODO ! if there is a bar change,
+      // and no prior quantization date before that, we have to quantize to the
+      // bar change. To be handled by the host by splitting the buffer there.
+      const double start_quarter
+          = (this->start_position_in_quarters - this->bar_at_start);
+      const double end_quarter = (this->end_position_in_quarters - this->bar_at_start);
+
+      // duration of what we quantify in terms of quarters
+      const double musical_quant_dur = rate / 4.;
+      const double start_quant = std::floor(start_quarter * musical_quant_dur);
+      const double end_quant = std::floor(end_quarter * musical_quant_dur);
+
+      if(start_quant != end_quant)
+      {
+        // Date to quantify is the next one :
+        const double musical_tick_duration
+            = this->end_position_in_quarters - this->start_position_in_quarters;
+        const double ratio = this->frames / musical_tick_duration;
+
+        int i = 1;
+        for(;;)
+        {
+          const double quantified_duration
+              = (this->bar_at_start + (start_quant + i) * 4. / rate)
+                - this->start_position_in_quarters;
+
+          if(int frame = std::floor(quantified_duration * ratio); frame < this->frames)
+          {
+            quantification_date.push_back({frame, 1});
+            i++;
+          }
+          else
+          {
+            break;
+          }
+        }
+      }
+      else if(
+          this->start_position_in_quarters == 0. && this->end_position_in_quarters > 0.)
+      {
+        // Special first bar case
+        return {{0, 1}};
+      }
+    }
+
+    return quantification_date;
+  }
+
+  template <typename Tick, typename Tock>
+  constexpr void metronome(Tick tick, Tock tock) const noexcept
+  {
+    if((bar_at_end != bar_at_start) || start_position_in_quarters == 0.)
+    {
+      // There is a bar change in this tick, start the up tick
+      const double musical_tick_duration
+          = end_position_in_quarters - start_position_in_quarters;
+      if(musical_tick_duration != 0)
+      {
+        const double musical_bar_start = bar_at_end - start_position_in_quarters;
+        if(this->frames > 0)
+        {
+          const double ratio = musical_bar_start / musical_tick_duration;
+          const int64_t hi_start_sample = this->frames * ratio;
+          tick(hi_start_sample);
+        }
+      }
+    }
+    else
+    {
+      const int64_t start_quarter
+          = std::floor(start_position_in_quarters - bar_at_start);
+      const int64_t end_quarter = std::floor(end_position_in_quarters - bar_at_start);
+      if(start_quarter != end_quarter)
+      {
+        // There is a quarter change in this tick, start the down tick
+        // start_position is prev_date
+        // end_position is date
+        const double musical_tick_duration
+            = end_position_in_quarters - start_position_in_quarters;
+        if(musical_tick_duration != 0)
+        {
+          const double musical_bar_start
+              = (end_quarter + bar_at_start) - start_position_in_quarters;
+          if(this->frames > 0)
+          {
+            const double ratio = musical_bar_start / musical_tick_duration;
+            const int64_t lo_start_sample = this->frames * ratio;
+            tock(lo_start_sample);
+          }
+        }
+      }
+    }
+  }
+
+  // FIXME dpes that work for a bar change at frame 0 or 1 ?
+  [[nodiscard]] constexpr bool unexpected_bar_change() const noexcept
+  {
+    double bar_difference = bar_at_end - bar_at_start;
+    if(bar_difference != 0.)
+    {
+      // If the difference is divisble by the signature,
+      // then the bar change is expected.
+      // e.g. start = 4 -> end = 8  ; signature = 4/4 : good
+      // e.g. start = 4 -> end = 8  ; signature = 6/8 : bad
+      // e.g. start = 4 -> end = 7  ; signature = 6/8 : good
+
+      double quarters_sig = 4. * double(signature.num) / signature.denom;
+      double div = bar_difference / quarters_sig;
+      bool unexpected = div - int64_t(div) > 0.000001;
+      return unexpected;
+    }
+    return false;
+  }
+
+  //! Is the given value in this buffer
+  [[nodiscard]] constexpr bool in_range(int64_t abs_time) const noexcept
+  {
+    return abs_time >= position_in_frames && abs_time < (position_in_frames + frames);
+  }
+};
+
+struct tick_flicks : halp::tick_musical
+{
+  int64_t start_in_flicks{};
+  int64_t end_in_flicks{};
+  double relative_position{};
+  int64_t parent_duration{};
+
+  //! How much we read from our data model
+  [[nodiscard]] constexpr int64_t model_read_duration() const noexcept
+  {
+    return end_in_flicks - start_in_flicks;
   }
 };
 

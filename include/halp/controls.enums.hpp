@@ -6,6 +6,10 @@
 
 #include <string_view>
 #include <type_traits>
+#if __has_include(<magic_enum.hpp>)
+#include <magic_enum.hpp>
+#endif
+
 namespace halp
 {
 /// ComboBox / Enum ///
@@ -23,6 +27,9 @@ struct enum_t
   {
     struct enum_setup
     {
+#if __has_include(<magic_enum.hpp>)
+      decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#endif
       Enum init{};
     };
 
@@ -39,9 +46,67 @@ struct enum_t
     value = t;
     return *this;
   }
+  auto& operator=(std::string_view t) noexcept
+  {
+#if __has_include(<magic_enum.hpp>)
+    if(auto res = magic_enum::enum_cast<Enum>(t))
+      value = *res;
+#endif
+    return *this;
+  }
+};
+
+template <typename Enum, static_string lit>
+struct string_enum_t
+{
+  enum widget
+  {
+    enumeration,
+    list,
+    combobox
+  };
+
+  static clang_buggy_consteval auto range()
+  {
+    struct enum_setup
+    {
+#if __has_include(<magic_enum.hpp>)
+      decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#endif
+      Enum init{};
+    };
+
+    return enum_setup{};
+  }
+
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  std::string value{};
+  operator std::string&() noexcept { return value; }
+  operator const std::string&() const noexcept { return value; }
+  auto& operator=(std::string t) noexcept
+  {
+    value = std::move(t);
+    return *this;
+  }
+  auto& operator=(Enum t) noexcept
+  {
+#if __has_include(<magic_enum.hpp>)
+    value = magic_enum::enum_name(t);
+#endif
+    return *this;
+  }
+  auto& operator=(std::integral auto t) noexcept
+  {
+#if __has_include(<magic_enum.hpp>)
+    value = magic_enum::enum_name(static_cast<Enum>(t));
+#endif
+    return *this;
+  }
 };
 
 /* the science isn't there yet...
+ * last try: https://gcc.godbolt.org/z/4Y8hvcqch 
 template<typename T>
 using combo_init = combo_pair<T>[];
 

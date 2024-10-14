@@ -38,7 +38,11 @@ enum class widget_type
   bargraph,
   range_slider,
   range_spinbox,
-  multi_slider
+  multi_slider,
+  log_slider,
+  log_knob,
+  control,
+  no_control,
 };
 
 enum class slider_orientation
@@ -94,6 +98,14 @@ struct widget_reflection
         return "range_spinbox";
       case widget_type::multi_slider:
         return "multi_slider";
+      case widget_type::log_slider:
+        return "log_slider";
+      case widget_type::log_knob:
+        return "log_knob";
+      case widget_type::control:
+        return "control";
+      case widget_type::no_control:
+        return "no_control";
       default:
         return "unknown";
     }
@@ -103,11 +115,36 @@ struct widget_reflection
 };
 
 template <typename T>
+struct control_reflection
+{
+  static constexpr auto name() { return "control"; }
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::control;
+};
+
+template <typename T>
+struct no_control_reflection
+{
+  static constexpr auto name() { return "no_control"; }
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::no_control;
+};
+
+template <typename T>
 struct slider_reflection
 {
   static constexpr auto name() { return "slider"; }
   using value_type = T;
   static constexpr widget_type widget = widget_type::slider;
+  slider_orientation orientation{slider_orientation::horizontal};
+};
+
+template <typename T>
+struct log_slider_reflection
+{
+  static constexpr auto name() { return "log_slider"; }
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::log_slider;
   slider_orientation orientation{slider_orientation::horizontal};
 };
 
@@ -165,6 +202,17 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::multi_slider; })
   {
     return widget_reflection<std::vector<float>>{widget_type::multi_slider};
+  }
+  else if constexpr(requires { T::widget::log_slider; })
+  {
+    if constexpr(requires { T::widget::vslider; })
+    {
+      return log_slider_reflection<float>{slider_orientation::vertical};
+    }
+    else
+    {
+      return log_slider_reflection<float>{slider_orientation::horizontal};
+    }
   }
   else if constexpr(requires { T::widget::hslider; })
   {
@@ -361,6 +409,10 @@ consteval auto get_widget()
   }
 
   // Most general categories at the end
+  else if constexpr(requires { T::widget::control; })
+  {
+    return control_reflection<value_type>{};
+  }
   else if constexpr(std::is_floating_point_v<value_type>)
   {
     return slider_reflection<value_type>{slider_orientation::horizontal};

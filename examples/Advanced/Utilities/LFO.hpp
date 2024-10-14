@@ -32,7 +32,6 @@ struct LFO
           "Waveform", Sin, Sin, Triangle, Saw, Square, SampleAndHold, Noise1, Noise2,
           Noise3)
     } waveform;
-
   } inputs;
   struct
   {

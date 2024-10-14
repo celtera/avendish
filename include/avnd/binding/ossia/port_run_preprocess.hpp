@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/binding/ossia/from_value.hpp>
 #include <avnd/binding/ossia/geometry.hpp>
+#include <avnd/binding/ossia/port_base.hpp>
 #include <avnd/binding/ossia/window_functions.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/fft.hpp>
@@ -40,6 +41,18 @@ struct process_before_run
   int frames{};
 
   template <avnd::parameter Field, std::size_t Idx>
+    requires ossia_port<Field>
+  void init_value(Field& ctrl, auto& port, avnd::field_index<Idx> idx) const noexcept
+  {
+  }
+  template <avnd::parameter Field, std::size_t Idx>
+    requires ossia_port<Field>
+  void operator()(Field& ctrl, auto& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
+
+  template <avnd::parameter Field, std::size_t Idx>
+    requires(!ossia_port<Field>)
   void init_value(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
@@ -102,7 +115,9 @@ struct process_before_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field> && !avnd::span_parameter<Field>)
+    requires(
+        !avnd::sample_accurate_parameter<Field> && !avnd::span_parameter<Field>
+        && !ossia_port<Field>)
   void operator()(
       Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
   {
@@ -378,7 +393,7 @@ struct process_before_run
   operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
   {
     using midi_msg_type =
-        typename std::decay_t<decltype(Field::midi_messages)>::value_type;
+        typename std::remove_cvref_t<decltype(Field::midi_messages)>::value_type;
 
     if constexpr(std::is_same_v<midi_msg_type, libremidi::message>)
     {

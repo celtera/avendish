@@ -1,7 +1,11 @@
 #pragma once
+#include <avnd/binding/ossia/builtin_ports.hpp>
+#include <avnd/binding/ossia/callbacks.hpp>
 #include <avnd/binding/ossia/configure.hpp>
+#include <avnd/binding/ossia/controls.hpp>
 #include <avnd/binding/ossia/dynamic_ports.hpp>
 #include <avnd/binding/ossia/ffts.hpp>
+#include <avnd/binding/ossia/message_process.hpp>
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
 #include <avnd/binding/ossia/port_setup.hpp>
@@ -24,7 +28,6 @@
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/smooth.hpp>
 #include <avnd/wrappers/widgets.hpp>
-#include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <ossia/dataflow/audio_port.hpp>
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/node_process.hpp>
@@ -98,189 +101,6 @@ static void safety_checks(const ossia::token_request& tk, ossia::exec_state_faca
 // void process(double** in, double** out, int N)
 
 template <typename T>
-struct builtin_arg_audio_ports
-{
-  void init(ossia::inlets& inlets, ossia::outlets& outlets) { }
-};
-
-template <avnd::audio_argument_processor T>
-struct builtin_arg_audio_ports<T>
-{
-  ossia::audio_inlet in;
-  ossia::audio_outlet out;
-
-  void init(ossia::inlets& inlets, ossia::outlets& outlets)
-  {
-    inlets.push_back(&in);
-    outlets.push_back(&out);
-  }
-};
-
-template <typename T>
-struct builtin_message_value_ports
-{
-  void init(ossia::inlets& inlets) { }
-};
-
-template <typename T>
-  requires(avnd::messages_introspection<T>::size > 0)
-struct builtin_message_value_ports<T>
-{
-  ossia::value_inlet message_inlets[avnd::messages_introspection<T>::size];
-  void init(ossia::inlets& inlets)
-  {
-    for(auto& in : message_inlets)
-    {
-      inlets.push_back(&in);
-    }
-  }
-};
-
-template <typename Field>
-using controls_type = std::decay_t<decltype(Field::value)>;
-
-template <typename T>
-using atomic_shared_ptr = boost::atomic_shared_ptr<T>;
-
-template <typename T>
-struct controls_mirror
-{
-  static constexpr int i_size = avnd::control_input_introspection<T>::size;
-  static constexpr int o_size = avnd::control_output_introspection<T>::size;
-  using i_tuple
-      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
-  using o_tuple
-      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
-
-  controls_mirror()
-  {
-    inputs.load(new i_tuple);
-    outputs.load(new o_tuple);
-  }
-
-  [[no_unique_address]] atomic_shared_ptr<i_tuple> inputs;
-  [[no_unique_address]] atomic_shared_ptr<o_tuple> outputs;
-
-  std::bitset<i_size> inputs_bits;
-  std::bitset<o_size> outputs_bits;
-};
-
-template <typename T>
-struct controls_input_queue
-{
-  using i_tuple = std::tuple<>;
-};
-template <typename T>
-struct controls_output_queue
-{
-  using o_tuple = std::tuple<>;
-};
-template <typename T>
-  requires(avnd::control_input_introspection<T>::size > 0)
-struct controls_input_queue<T>
-{
-  static constexpr int i_size = avnd::control_input_introspection<T>::size;
-  using i_tuple
-      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
-
-  moodycamel::ConcurrentQueue<i_tuple> ins_queue;
-  std::bitset<i_size> inputs_set;
-};
-
-template <typename T>
-  requires(avnd::control_output_introspection<T>::size > 0)
-struct controls_output_queue<T>
-{
-  static constexpr int o_size = avnd::control_output_introspection<T>::size;
-  using o_tuple
-      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
-
-  moodycamel::ConcurrentQueue<o_tuple> outs_queue;
-
-  std::bitset<o_size> outputs_set;
-};
-
-template <typename T>
-struct controls_queue
-    : controls_input_queue<T>
-    , controls_output_queue<T>
-{
-};
-
-template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
-struct do_callback;
-
-template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
-  requires(!requires { Field::timestamp; })
-struct do_callback<Self, Idx, Field, R, Args...>
-{
-  Self& self;
-  Field& field;
-  R operator()(Args... args)
-  {
-    // Idx is the index of the port in the complete input array.
-    // We need to map it to the callback index.
-    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
-    if constexpr(sizeof...(Args) == 0)
-    {
-      port.data.write_value(ossia::impulse{}, 0);
-    }
-    else if constexpr(sizeof...(Args) == 1)
-    {
-      port.data.write_value(to_ossia_value(field, args...), 0);
-    }
-    else
-    {
-      std::vector<ossia::value> vec{to_ossia_value(field, args)...};
-      port.data.write_value(std::move(vec), 0);
-    }
-
-    if constexpr(!std::is_void_v<R>)
-      return R{};
-  }
-};
-
-template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
-  requires(requires { Field::timestamp; })
-struct do_callback<Self, Idx, Field, R, Args...>
-{
-  Self& self;
-  Field& field;
-
-  void do_call(int64_t ts)
-  {
-    // Idx is the index of the port in the complete input array.
-    // We need to map it to the callback index.
-    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
-    port.data.write_value(ossia::impulse{}, ts);
-  }
-
-  template <typename U>
-  void do_call(int64_t ts, U&& u)
-  {
-    // Idx is the index of the port in the complete input array.
-    // We need to map it to the callback index.
-    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
-    port.data.write_value(to_ossia_value(field, std::forward<U>(u)), ts);
-  }
-
-  template <typename... U>
-  void do_call(int64_t ts, U&&... us)
-  {
-    ossia::value_outlet& port = tuplet::get<Idx>(self.ossia_outlets.ports);
-    std::vector<ossia::value> vec{to_ossia_value(field, us)...};
-    port.data.write_value(std::move(vec), ts);
-  }
-
-  R operator()(Args... args)
-  {
-    do_call(static_cast<Args&&>(args)...);
-    if constexpr(!std::is_void_v<R>)
-      return R{};
-  }
-};
-
-template <typename T>
 class safe_node_base_base : public ossia::nonowning_graph_node
 {
 public:
@@ -288,6 +108,9 @@ public:
       : channels{this->impl}
   {
   }
+
+  int start_frame_for_this_tick = 0;
+  int frame_count_for_this_tick = 0;
 
   int buffer_size{};
   double sample_rate{};
@@ -328,6 +151,8 @@ public:
   [[no_unique_address]] controls_queue<T> control;
 
   [[no_unique_address]] oscr::dynamic_ports_storage<T> dynamic_ports;
+
+  [[no_unique_address]] oscr::message_processor<T> messages;
 
   using control_input_values_type
       = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
@@ -456,6 +281,7 @@ public:
 
     // Small setup step for the variable channel counts
     this->process_all_ports<setup_variable_audio_ports<safe_node_base, T>>();
+    this->process_all_ports<setup_raw_ossia_ports<safe_node_base, T>>();
   }
 
   void finish_init()
@@ -546,7 +372,7 @@ public:
     // Mark the control as changed
     this->control.inputs_set.set(N);
   }
-  void audio_configuration_changed()
+  void audio_configuration_changed(ossia::exec_state_facade st)
   {
     // qDebug() << "New Audio configuration: "
     //          << this->channels.actual_runtime_inputs
@@ -557,7 +383,9 @@ public:
         .output_channels = this->channels.actual_runtime_outputs,
         .frames_per_buffer = this->buffer_size,
         .rate = this->sample_rate,
-        .instance = this->instance};
+        .instance = this->instance,
+        .model_to_samples = st.modelToSamples(),
+        .samples_to_model = st.samplesToModel()};
 
     // This allocates the buffers that may be used for conversion
     // if e.g. we have an API that works with doubles,
@@ -615,7 +443,8 @@ public:
     }
   }
 
-  bool prepare_run(const ossia::token_request& tk, int start, int frames)
+  bool prepare_run(
+      const ossia::token_request& tk, ossia::exec_state_facade st, int start, int frames)
   {
     // Update metadatas
     this->update_tempo(tk.tempo);
@@ -631,7 +460,7 @@ public:
 
     if(changed)
     {
-      audio_configuration_changed();
+      audio_configuration_changed(st);
     }
 
     // Clean up MIDI output ports
@@ -640,186 +469,21 @@ public:
     // Clean up sample-accurate control output ports
     this->control_buffers.clear_outputs(this->impl);
 
+    // Save the current start and frames
+    this->start_frame_for_this_tick = start;
+    this->frame_count_for_this_tick = frames;
+
     // Process inputs of all sorts
     this->process_all_ports<process_before_run<safe_node_base, T>>(start, frames);
 
     // Process messages
     if constexpr(avnd::messages_type<T>::size > 0)
-      process_messages();
+    {
+      avnd::messages_introspection<T>::for_all(
+          [&](auto m) { this->messages(*this, m); });
+    }
 
     return true;
-  }
-
-  template <typename M, typename Args, std::size_t Idx>
-  std::optional<Args> value_to_argument_tuple(const ossia::value& val)
-  {
-    static constexpr std::size_t count = boost::mp11::mp_size<Args>{};
-
-    if constexpr(count == 0)
-    {
-      return std::tuple<>{};
-    }
-    else if constexpr(count == 1)
-    {
-      static constexpr M field;
-      typename boost::mp11::mp_front<Args> arg;
-      from_ossia_value(field, val, arg, avnd::field_index<Idx>{});
-      return std::make_tuple(arg);
-    }
-    else
-    {
-      static constexpr bool all_numbers
-          = boost::mp11::mp_all_of<Args, std::is_integral>{}
-            || boost::mp11::mp_all_of<Args, std::is_floating_point>{};
-      switch(val.get_type())
-      {
-        case ossia::val_type::VEC2F: {
-          if constexpr(count == 2 && all_numbers)
-          {
-            const auto& vec = *val.target<ossia::vec2f>();
-            return std::make_tuple(vec[0], vec[1]);
-          }
-          break;
-        }
-        case ossia::val_type::VEC3F:
-          if constexpr(count == 3 && all_numbers)
-          {
-            const auto& vec = *val.target<ossia::vec3f>();
-            return std::make_tuple(vec[0], vec[1], vec[2]);
-          }
-          break;
-        case ossia::val_type::VEC4F:
-          if constexpr(count == 4 && all_numbers)
-          {
-            const auto& vec = *val.target<ossia::vec4f>();
-            return std::make_tuple(vec[0], vec[1], vec[2], vec[3]);
-          }
-          break;
-        case ossia::val_type::LIST: {
-          static constexpr M field;
-          Args tuple;
-          const auto& vec = *val.target<std::vector<ossia::value>>();
-          if(vec.size() == count)
-          {
-            int i = 0; // FIXME doable at compile-time
-            std::apply([this, &vec, &i]<typename... Ts>(Ts&&... args) {
-              (from_ossia_value(field, vec[i++], args, avnd::field_index<Idx>{}), ...);
-            }, tuple);
-            return tuple;
-          }
-          break;
-        }
-        case ossia::val_type::MAP:
-          // FIXME
-          break;
-        default:
-          break;
-      }
-    }
-    return std::nullopt;
-  }
-
-  template <auto Idx, typename M>
-  void invoke_message(const ossia::value& val, avnd::field_reflection<Idx, M>)
-  {
-    if constexpr(!std::is_void_v<avnd::message_reflection<M>>)
-    {
-      using refl = avnd::message_reflection<M>;
-      constexpr auto arg_count = refl::count;
-      constexpr auto f = avnd::message_get_func<M>();
-
-      if constexpr(arg_count == 0)
-      {
-        for(auto& m : this->impl.effects())
-        {
-          if constexpr(std::is_member_function_pointer_v<decltype(f)>)
-          {
-            if constexpr(requires { M{}(); })
-              M{}();
-            else
-              (m.*f)();
-          }
-          else
-            f();
-        }
-      }
-      else
-      {
-        using namespace boost::mp11;
-        if constexpr(std::is_same_v<avnd::first_message_argument<M>, T&>)
-        {
-          using main_args = mp_pop_front<typename refl::arguments>;
-          using no_ref = mp_transform<std::remove_cvref_t, main_args>;
-          using args = mp_rename<no_ref, std::tuple>;
-
-          if(auto res = value_to_argument_tuple<M, args, Idx>(val))
-          {
-            for(auto& m : this->impl.effects())
-            {
-              std::apply([&]<typename... Ts>(Ts&&... args) {
-                if constexpr(std::is_member_function_pointer_v<decltype(f)>)
-                {
-                  if constexpr(requires { M{}(m, std::forward<Ts>(args)...); })
-                    M{}(m, std::forward<Ts>(args)...);
-                  else if constexpr(requires { (m.*f)(m, std::forward<Ts>(args)...); })
-                    (m.*f)(m, std::forward<Ts>(args)...);
-                }
-                else
-                {
-                  f(m, std::forward<Ts>(args)...);
-                }
-              }, *res);
-            }
-          }
-        }
-        else
-        {
-          using main_args = typename refl::arguments;
-          using no_ref = mp_transform<std::remove_cvref_t, main_args>;
-          using args = mp_rename<no_ref, std::tuple>;
-          if(auto res = value_to_argument_tuple<M, args, Idx>(val))
-          {
-            for(auto& m : this->impl.effects())
-            {
-              std::apply([&]<typename... Ts>(Ts&&... args) {
-                if constexpr(std::is_member_function_pointer_v<decltype(f)>)
-                {
-                  if constexpr(requires { M{}(m, std::forward<Ts>(args)...); })
-                    M{}(std::forward<Ts>(args)...);
-                  else if constexpr(requires { (m.*f)(m, std::forward<Ts>(args)...); })
-                    (m.*f)(std::forward<Ts>(args)...);
-                }
-                else
-                {
-                  f(std::forward<Ts>(args)...);
-                }
-              }, *res);
-            }
-          }
-        }
-      }
-    }
-    else
-    {
-      //FIXME > 1 arguments
-    }
-  }
-
-  template <auto Idx, typename M>
-  void process_message(avnd::field_reflection<Idx, M>)
-  {
-    ossia::value_inlet& inl = this->message_ports.message_inlets[Idx];
-    if(inl.data.get_data().empty())
-      return;
-    for(const auto& val : inl.data.get_data())
-    {
-      invoke_message(val.value, avnd::field_reflection<Idx, M>{});
-    }
-  }
-
-  void process_messages()
-  {
-    avnd::messages_introspection<T>::for_all([&](auto m) { process_message(m); });
   }
 
   void process_smooth() { this->smooth.smooth_all(this->impl); }
@@ -848,15 +512,6 @@ public:
 
   void finish_run()
   {
-    // Copy output events
-    this->process_all_ports<process_after_run<safe_node_base, T>>();
-
-    // Clean up MIDI inputs
-    this->midi_buffers.clear_inputs(this->impl);
-
-    // Clean up sample-accurate control input ports
-    this->control_buffers.clear_inputs(this->impl);
-
     // Clear control bitsets for UI
     if constexpr(avnd::control_input_introspection<T>::size > 0)
     {
@@ -867,6 +522,15 @@ public:
         this->control.inputs_set.reset();
       }
     }
+
+    // Copy output events
+    this->process_all_ports<process_after_run<safe_node_base, T>>();
+
+    // Clean up MIDI inputs
+    this->midi_buffers.clear_inputs(this->impl);
+
+    // Clean up sample-accurate control input ports
+    this->control_buffers.clear_inputs(this->impl);
 
     if constexpr(avnd::control_output_introspection<T>::size > 0)
     {
@@ -938,6 +602,7 @@ public:
     this->soundfiles.load(
         this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
+
   template <std::size_t N, std::size_t NField>
   void midifile_loaded(
       const std::shared_ptr<oscr::midifile_data>& hdl, avnd::predicate_index<N>,
@@ -946,6 +611,7 @@ public:
     this->midifiles.load(
         this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
+
 #if OSCR_HAS_MMAP_FILE_STORAGE
   template <std::size_t N, std::size_t NField>
   void file_loaded(
@@ -988,16 +654,16 @@ class safe_node;
 
 struct tick_info
 {
+  const ossia::graph_node& self;
   const ossia::token_request& tk;
   ossia::exec_state_facade st;
   int64_t m_frames{};
 
   int64_t frames() const noexcept { return m_frames; }
+  int64_t start_in_flicks() const noexcept { return tk.prev_date.impl; }
+  int64_t end_in_flicks() const noexcept { return tk.date.impl; }
 
-  int64_t position_in_frames() const noexcept
-  {
-    return tk.start_date_to_physical(st.modelToSamples());
-  }
+  int64_t position_in_frames() const noexcept { return self.processed_frames(); }
 
   auto signature() const noexcept
   {
@@ -1028,4 +694,17 @@ struct tick_info
   double bar_at_start() const noexcept { return tk.musical_start_last_bar; }
   double bar_at_end() const noexcept { return tk.musical_end_last_bar; }
 };
+}
+
+namespace avnd
+{
+
+template <typename T, typename Tick>
+  requires(std::same_as<std::remove_cvref_t<typename T::tick>, ossia::token_request>)
+inline constexpr const ossia::token_request&
+get_tick_or_frames(avnd::effect_container<T>& implementation, const oscr::tick_info& v)
+{
+  return v.tk;
+}
+
 }

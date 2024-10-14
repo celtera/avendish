@@ -72,7 +72,7 @@ public:
     // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -103,7 +103,7 @@ public:
         avnd::span<double*>{
             const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
         avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
-        tick_info{tk, st, frames}, this->smooth);
+        tick_info{*this, tk, st, frames}, this->smooth);
 
     this->finish_run();
   }
@@ -141,7 +141,7 @@ public:
     // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -156,7 +156,7 @@ public:
     // Run
     this->processor.process(
         this->impl, avnd::span<double*>{}, avnd::span<double*>{audio_outs, 1},
-        tick_info{tk, st, frames}, this->smooth);
+        tick_info{*this, tk, st, frames}, this->smooth);
 
     this->finish_run();
   }

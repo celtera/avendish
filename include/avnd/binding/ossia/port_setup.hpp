@@ -1,4 +1,5 @@
 #pragma once
+#include <avnd/binding/ossia/port_base.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/soundfile.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -12,7 +13,6 @@
 
 namespace oscr
 {
-
 // Compile-time map of avnd concept to ossia port
 
 template <typename N, typename T>
@@ -22,11 +22,32 @@ struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::audio_inlet;
 };
+
 template <typename N, avnd::parameter T>
+  requires(!ossia_port<T>)
 struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
+template <typename N, avnd::parameter T>
+  requires(ossia_value_port<T>)
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::value_inlet;
+};
+template <typename N, avnd::parameter T>
+  requires(ossia_audio_port<T>)
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::audio_inlet;
+};
+template <typename N, avnd::parameter T>
+  requires(ossia_midi_port<T>)
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::midi_inlet;
+};
+
 template <typename N, avnd::dynamic_ports_port T>
 struct get_ossia_inlet_type<N, T>
 {
@@ -82,10 +103,30 @@ struct get_ossia_outlet_type<N, T>
   using type = ossia::audio_outlet;
 };
 template <typename N, avnd::parameter T>
+  requires(!ossia_port<T>)
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::value_outlet;
 };
+template <typename N, avnd::parameter T>
+  requires(ossia_value_port<T>)
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::value_outlet;
+};
+template <typename N, avnd::parameter T>
+  requires(ossia_audio_port<T>)
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::audio_outlet;
+};
+template <typename N, avnd::parameter T>
+  requires(ossia_midi_port<T>)
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::midi_outlet;
+};
+
 template <typename N, avnd::dynamic_ports_port T>
 struct get_ossia_outlet_type<N, T>
 {
@@ -224,6 +265,19 @@ struct setup_value_port
       port.is_event = Field::event;
     else
       port.is_event = true;
+  }
+
+  template <typename Field>
+    requires avnd::optional_ish<decltype(Field::value)>
+  void setup(ossia::value_port& port)
+  {
+    using concrete_val_type
+        = std::remove_cvref_t<decltype(*std::declval<Field>().value)>;
+    struct fake_parameter : Field
+    {
+      concrete_val_type value;
+    };
+    setup<fake_parameter>(port);
   }
 
   template <avnd::int_parameter Field>
@@ -481,4 +535,23 @@ struct setup_variable_audio_ports
   void operator()(auto&&...) const noexcept { }
 };
 
+template <typename Exec_T, typename Obj_T>
+struct setup_raw_ossia_ports
+{
+  Exec_T& self;
+  Obj_T& impl;
+
+  template <ossia_port Field, std::size_t Idx>
+  void operator()(Field& ctrl, auto& port, avnd::field_index<Idx>) const noexcept
+  {
+    ctrl.value = &port.data;
+
+    if constexpr(Field::is_event())
+    {
+      if_possible(ctrl.value->is_event = true);
+    }
+  }
+
+  void operator()(auto&&...) const noexcept { }
+};
 }

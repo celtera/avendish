@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <avnd/binding/ossia/geometry.hpp>
+#include <avnd/binding/ossia/port_base.hpp>
 #include <avnd/binding/ossia/to_value.hpp>
 #include <avnd/common/struct_reflection.hpp>
 // #include <halp/midi.hpp>
@@ -18,8 +19,14 @@ struct process_after_run
 {
   Exec_T& self;
   Obj_T& impl;
-  int start{};
-  int frames{};
+  int& start = self.start_frame_for_this_tick;
+  int& frames = self.frame_count_for_this_tick;
+
+  template <typename Field, std::size_t Idx>
+    requires ossia_port<Field>
+  void operator()(Field& ctrl, auto& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
 
   template <typename Field, std::size_t Idx>
   void operator()(
@@ -64,7 +71,14 @@ struct process_after_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::control<Field>)
+    requires ossia_port<Field>
+  void write_value(
+      Field& ctrl, auto& port, auto& val, int64_t ts,
+      avnd::field_index<Idx>) const noexcept
+  {
+  }
+  template <avnd::parameter Field, std::size_t Idx>
+    requires(!avnd::control<Field> && !ossia_port<Field>)
   void write_value(
       Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
       avnd::field_index<Idx>) const noexcept
@@ -74,7 +88,7 @@ struct process_after_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(avnd::control<Field>)
+    requires(avnd::control<Field> && !ossia_port<Field>)
   void write_value(
       Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
       avnd::field_index<Idx> idx) const noexcept
@@ -94,7 +108,7 @@ struct process_after_run
   }
 
   template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field>)
+    requires(!avnd::sample_accurate_parameter<Field> && !ossia_port<Field>)
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
@@ -171,10 +185,19 @@ struct process_after_run
     for(int i = 0; i < N; i++)
     {
       auto& m = ctrl.midi_messages[i];
-      libremidi::message ms;
-      ms.bytes.assign(m.bytes.begin(), m.bytes.end());
-      ms.timestamp = start + m.timestamp;
-      port.data.messages.push_back(std::move(ms));
+      using msg_type = std::remove_reference_t<decltype(m)>;
+      if constexpr(std::is_same_v<msg_type, libremidi::message>)
+      {
+        m.timestamp += start;
+        port.data.messages.push_back(std::move(m));
+      }
+      else
+      {
+        libremidi::message ms;
+        ms.bytes.assign(m.bytes.begin(), m.bytes.end());
+        ms.timestamp = start + m.timestamp;
+        port.data.messages.push_back(std::move(ms));
+      }
     }
   }
 
@@ -186,10 +209,19 @@ struct process_after_run
     port.data.messages.reserve(ctrl.midi_messages.size());
     for(auto& m : ctrl.midi_messages)
     {
-      libremidi::message ms;
-      ms.bytes.assign(m.bytes.begin(), m.bytes.end());
-      ms.timestamp = start + m.timestamp;
-      port.data.messages.push_back(std::move(ms));
+      using msg_type = std::remove_reference_t<decltype(m)>;
+      if constexpr(std::is_same_v<msg_type, libremidi::message>)
+      {
+        m.timestamp += start;
+        port.data.messages.push_back(std::move(m));
+      }
+      else
+      {
+        libremidi::message ms;
+        ms.bytes.assign(m.bytes.begin(), m.bytes.end());
+        ms.timestamp = start + m.timestamp;
+        port.data.messages.push_back(std::move(ms));
+      }
     }
   }
 

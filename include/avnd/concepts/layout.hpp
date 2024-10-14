@@ -6,10 +6,15 @@
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/concepts/generic.hpp>
 
-#include <string_view>
-
 namespace avnd
 {
+
+/**
+ * @brief fully_custom_item tag: the host environment 
+ * should draw as little decoration & chrome as possible, ideally 
+ * just leaving a blank canvas for the item to draw in.
+ */
+AVND_DEFINE_TAG(fully_custom_item)
 
 type_or_value_qualification(ui)
 type_or_value_reflection(ui)

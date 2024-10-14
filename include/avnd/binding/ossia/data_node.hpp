@@ -30,7 +30,7 @@ public:
 
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -40,7 +40,8 @@ public:
     this->process_smooth();
 
     avnd::invoke_effect(
-        this->impl, avnd::get_tick_or_frames(this->impl, tick_info{tk, st, frames}));
+        this->impl,
+        avnd::get_tick_or_frames(this->impl, tick_info{*this, tk, st, frames}));
 
     this->finish_run();
   }

@@ -144,7 +144,7 @@ public:
     // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -174,8 +174,8 @@ public:
     // Run
     this->processor.process(
         this->impl, avnd::span<double*>{const_cast<double**>(audio_ins), init_audio_ins},
-        avnd::span<double*>{audio_outs, init_audio_outs}, tick_info{tk, st, frames},
-        this->smooth);
+        avnd::span<double*>{audio_outs, init_audio_outs},
+        tick_info{*this, tk, st, frames}, this->smooth);
 
     this->finish_run();
   }

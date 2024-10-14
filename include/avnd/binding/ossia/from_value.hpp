@@ -1389,6 +1389,12 @@ inline void from_ossia_value(auto& field, const ossia::value& src, ossia::value&
   dst = src;
 }
 
+inline void
+from_ossia_value(auto& field, const ossia::value& src, std::optional<ossia::value>& dst)
+{
+  dst = src;
+}
+
 inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
 {
   from_ossia_value(src, dst);

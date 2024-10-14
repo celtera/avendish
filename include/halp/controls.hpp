@@ -173,6 +173,15 @@ struct toggle_t : slider_t<T, lit, setup>
 
 template <static_string lit, auto setup = default_range<float>>
 using hslider_f32 = halp::hslider_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<float>>
+struct log_hslider_f32 : halp::hslider_t<float, lit, setup>
+{
+  enum widget
+  {
+    log_slider
+  };
+};
+
 template <static_string lit, auto setup = default_range<int>>
 using hslider_i32 = halp::hslider_t<int, lit, setup>;
 

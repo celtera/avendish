@@ -11,4 +11,10 @@ namespace avnd
 template <typename T>
 concept can_initialize = requires(T t) { &T::initialize; };
 
+/**
+ * @brief deprecated tag: used when an object should not be shown 
+ * in lists, etc... to the users, e.g. when it's an old version
+ * that must be updated.
+ */
+AVND_DEFINE_TAG(deprecated)
 }

@@ -1,13 +1,6 @@
 #pragma once
 #include <score/plugins/UuidKey.hpp>
 
-#define make_uuid(text) score::uuids::string_generator::compute((text))
-#if defined(_MSC_VER)
-#define uuid_constexpr inline
-#else
-#define uuid_constexpr constexpr
-#endif
-
 namespace oscr
 {
 inline QString fromStringView(std::string_view v)

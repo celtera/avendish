@@ -114,6 +114,12 @@ constexpr auto to_const_char_array(const T (&val)[N])
 }
 
 template <std::size_t N, typename T>
+constexpr auto to_const_char_array(const std::array<std::pair<const char*, T>, N>& val)
+{
+  return val;
+}
+
+template <std::size_t N, typename T>
 constexpr auto
 to_const_char_array(const std::array<std::pair<std::string_view, T>, N>& val)
 {

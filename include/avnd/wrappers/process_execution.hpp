@@ -77,9 +77,11 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
   if constexpr(has_tick<T>)
   {
     using tick_t = typename T::tick;
-    static_assert(std::is_aggregate_v<tick_t>);
+    static_assert(requires { tick_t{}; });
 
     tick_t t{};
+    if_possible(t.start_in_flicks = tick_data.start_in_flicks());
+    if_possible(t.end_in_flicks = tick_data.end_in_flicks());
     if_possible(t.frames = tick_data.frames());
     if_possible(t.relative_position = tick_data.relative_position());
     if_possible(t.parent_duration = tick_data.parent_duration());
@@ -94,6 +96,7 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
     if_possible(t.position_in_frames = tick_data.position_in_frames());
     if_possible(t.position_in_seconds = tick_data.position_in_seconds());
     if_possible(t.position_in_nanoseconds = tick_data.position_in_nanoseconds());
+    if_possible(t.last_signature_change = tick_data.last_signature_change());
     if_possible(t.start_position_in_quarters = tick_data.start_position_in_quarters());
     if_possible(t.end_position_in_quarters = tick_data.end_position_in_quarters());
 
@@ -116,9 +119,11 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
   if constexpr(has_tick<T>)
   {
     using tick_t = typename T::tick;
-    static_assert(std::is_aggregate_v<tick_t>);
+    static_assert(requires { tick_t{}; });
 
     tick_t t{};
+    if_possible(t.start_in_flicks = tick_data.start_in_flicks);
+    if_possible(t.end_in_flicks = tick_data.end_in_flicks);
     if_possible(t.frames = tick_data.frames);
     if_possible(t.relative_position = tick_data.relative_position);
     if_possible(t.parent_duration = tick_data.parent_duration);
@@ -133,6 +138,7 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
     if_possible(t.position_in_frames = tick_data.position_in_frames);
     if_possible(t.position_in_seconds = tick_data.position_in_seconds);
     if_possible(t.position_in_nanoseconds = tick_data.position_in_nanoseconds);
+    if_possible(t.last_signature_change = tick_data.last_signature_change);
     if_possible(t.start_position_in_quarters = tick_data.start_position_in_quarters);
     if_possible(t.end_position_in_quarters = tick_data.end_position_in_quarters);
 

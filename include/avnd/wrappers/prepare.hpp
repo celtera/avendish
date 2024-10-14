@@ -23,6 +23,10 @@ struct process_setup
   // e.g. a plug-in instantiated twice in the same DAW will get two
   // different instance numbers
   uint64_t instance{};
+
+  double samples_to_model{1.};
+
+  double model_to_samples{1.};
 };
 
 template <typename T>
@@ -42,6 +46,8 @@ void prepare(avnd::effect_container<T>& implementation, process_setup setup)
     if_possible(t.frames = setup.frames_per_buffer);
     if_possible(t.rate = setup.rate);
     if_possible(t.instance = setup.instance);
+    if_possible(t.samples_to_model = setup.samples_to_model);
+    if_possible(t.model_to_samples = setup.model_to_samples);
 
     // Coroutines get used here.
     int k = 0;
@@ -72,6 +78,8 @@ void prepare(T& implementation, process_setup setup)
     if_possible(t.frames = setup.frames_per_buffer);
     if_possible(t.rate = setup.rate);
     if_possible(t.instance = setup.instance);
+    if_possible(t.samples_to_model = setup.samples_to_model);
+    if_possible(t.model_to_samples = setup.model_to_samples);
 
     implementation.prepare(t);
   }

@@ -128,7 +128,7 @@ public:
           output_channels += this->template compute_output_channels<NPred>(field);
         });
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -161,7 +161,8 @@ public:
         });
 
     avnd::invoke_effect(
-        this->impl, avnd::get_tick_or_frames(this->impl, tick_info{tk, st, frames}));
+        this->impl,
+        avnd::get_tick_or_frames(this->impl, tick_info{*this, tk, st, frames}));
 
     this->finish_run();
   }
