@@ -17,6 +17,8 @@ public:
   halp_meta(author, "ossia score")
   halp_meta(description, "A simple volume control")
   halp_meta(uuid, "6c158669-0f81-41c9-8cc6-45820dcda867")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/audio-utilities.html#gain")
 
   struct inputs
   {

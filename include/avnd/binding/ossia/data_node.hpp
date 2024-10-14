@@ -19,6 +19,7 @@ public:
   OSSIA_MAXIMUM_INLINE
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
+    // FIXME handle splitting execution multiple times per-input for e.g. time_independent mapping objects
     if constexpr(avnd::tag_single_exec<T>)
     {
       if(std::exchange(exec_once, true))
