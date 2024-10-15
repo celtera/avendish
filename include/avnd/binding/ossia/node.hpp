@@ -384,8 +384,9 @@ public:
         .frames_per_buffer = this->buffer_size,
         .rate = this->sample_rate,
         .instance = this->instance,
+        .samples_to_model = st.samplesToModel(),
         .model_to_samples = st.modelToSamples(),
-        .samples_to_model = st.samplesToModel()};
+    };
 
     // This allocates the buffers that may be used for conversion
     // if e.g. we have an API that works with doubles,
