@@ -8,6 +8,10 @@
 #include <type_traits>
 #if __has_include(<magic_enum.hpp>)
 #include <magic_enum.hpp>
+#elif __has_include(<magic_enum/magic_enum.hpp>)
+#include <magic_enum/magic_enum.hpp>
+#else
+#error magic_enum is required
 #endif
 
 namespace halp
@@ -27,7 +31,7 @@ struct enum_t
   {
     struct enum_setup
     {
-#if __has_include(<magic_enum.hpp>)
+#if MAGIC_ENUM_SUPPORTED
       decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
 #endif
       Enum init{};
@@ -48,7 +52,7 @@ struct enum_t
   }
   auto& operator=(std::string_view t) noexcept
   {
-#if __has_include(<magic_enum.hpp>)
+#if MAGIC_ENUM_SUPPORTED
     if(auto res = magic_enum::enum_cast<Enum>(t))
       value = *res;
 #endif
@@ -70,7 +74,7 @@ struct string_enum_t
   {
     struct enum_setup
     {
-#if __has_include(<magic_enum.hpp>)
+#if MAGIC_ENUM_SUPPORTED
       decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
 #endif
       Enum init{};
@@ -91,14 +95,14 @@ struct string_enum_t
   }
   auto& operator=(Enum t) noexcept
   {
-#if __has_include(<magic_enum.hpp>)
+#if MAGIC_ENUM_SUPPORTED
     value = magic_enum::enum_name(t);
 #endif
     return *this;
   }
   auto& operator=(std::integral auto t) noexcept
   {
-#if __has_include(<magic_enum.hpp>)
+#if MAGIC_ENUM_SUPPORTED
     value = magic_enum::enum_name(static_cast<Enum>(t));
 #endif
     return *this;

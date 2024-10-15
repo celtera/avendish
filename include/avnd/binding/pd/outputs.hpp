@@ -3,11 +3,11 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/pd/helpers.hpp>
+#include <avnd/common/enum_reflection.hpp>
 #include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/vecf.hpp>
 #include <boost/container/small_vector.hpp>
-#include <magic_enum.hpp>
 
 #include <array>
 #include <vector>

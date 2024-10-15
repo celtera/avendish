@@ -1,17 +1,19 @@
 #pragma once
 
-#include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/aggregates.hpp>
-#include <avnd/common/for_nth.hpp>
 #include <avnd/common/arithmetic.hpp>
+#include <avnd/common/concepts_polyfill.hpp>
+#include <avnd/common/enum_reflection.hpp>
+#include <avnd/common/for_nth.hpp>
+
 #if !defined(__cpp_lib_to_chars)
 #include <boost/lexical_cast.hpp>
 #else
 #include <charconv>
 #endif
-#include <magic_enum.hpp>
-#include <string>
 #include <ext.h>
+
+#include <string>
 
 namespace max
 {

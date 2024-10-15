@@ -1,11 +1,11 @@
 #pragma once
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/common/aggregates.hpp>
+#include <avnd/common/enum_reflection.hpp>
 #include <avnd/common/for_nth.hpp>
 #include <avnd/concepts/field_names.hpp>
 #include <boost/container/small_vector.hpp>
 #include <ext.h>
-#include <magic_enum.hpp>
 
 namespace max
 {

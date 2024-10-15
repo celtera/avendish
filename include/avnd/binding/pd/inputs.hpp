@@ -1,7 +1,7 @@
 #pragma once
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/common/arithmetic.hpp>
-#include <magic_enum.hpp>
+#include <avnd/common/enum_reflection.hpp>
 
 #if !defined(__cpp_lib_to_chars)
 #include <boost/lexical_cast.hpp>

@@ -67,6 +67,7 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/common/coroutines.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/dummy.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/errors.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/enum_reflection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/export.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/for_nth.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/function_reflection.hpp"
