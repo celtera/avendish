@@ -76,26 +76,30 @@ struct message_processor
     return std::nullopt;
   }
 
-  template <typename M>
-  void invoke_message_impl(auto& self, const auto& res, auto& obj, auto&&... first_args)
+  template <typename M, typename... Args>
+  void invoke_message_impl(auto& self, const auto& res, auto& obj, Args&&... first_args)
   {
     static constexpr auto f = avnd::message_get_func<M>();
     using F = std::remove_cvref_t<decltype(f)>;
 
-    std::apply([&]<typename... Ts>(Ts&&... args) {
+    std::apply(
+        [&obj, ... first_args
+               = std::forward<Args>(first_args)]<typename... Ts>(Ts&&... args) mutable {
       if constexpr(std::is_member_function_pointer_v<F>)
       {
         // M is a functor ; the function f is its operator()
-        if_possible(M{}(first_args..., std::forward<Ts>(args)...))
+        if_possible(M{}(std::forward<Args>(first_args)..., std::forward<Ts>(args)...))
             // M contains a function pointer on the root object
-            else if_possible((obj.*f)(first_args..., std::forward<Ts>(args)...));
+            else if_possible(
+                (obj.*f)(std::forward<Args>(first_args)..., std::forward<Ts>(args)...));
       }
       else
       {
         // M contains a function pointer to a free function f
         f(first_args..., std::forward<Ts>(args)...);
       }
-    }, res);
+    },
+        res);
   }
   template <auto Idx, typename M>
   void invoke_message_first_arg_is_object(
