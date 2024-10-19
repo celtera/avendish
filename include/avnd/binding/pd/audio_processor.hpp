@@ -221,7 +221,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
+  static constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     t_pd* ptr = pd_new(g_class);
 
@@ -233,16 +233,16 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void {
+  static constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // DSP
-  constexpr auto obj_dsp = +[](instance* obj, t_signal** sp) -> void { obj->dsp(sp); };
+  static constexpr auto obj_dsp = +[](instance* obj, t_signal** sp) -> void { obj->dsp(sp); };
 
   // Message processing
-  constexpr auto obj_process
+  static constexpr auto obj_process
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
     obj->process(s, argc, argv);
   };

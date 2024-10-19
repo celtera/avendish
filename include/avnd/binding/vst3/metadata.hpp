@@ -121,7 +121,7 @@ static consteval UnionID controller_uuid_for_type()
   UnionID component_id = component_uuid_for_type<T>();
 
   // We just swap the values to get a new uuid...
-  constexpr auto exch = [](char& a, char& b) consteval
+  static constexpr auto exch = [](char& a, char& b) consteval
   {
     char tmp = a;
     a = b;

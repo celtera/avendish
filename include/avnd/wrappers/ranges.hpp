@@ -27,7 +27,7 @@ static constexpr double map_index_to_01(std::integral auto v)
 template <avnd::parameter_with_values_range T>
 static constexpr int closest_value_index(const auto& value)
 {
-  constexpr auto range = avnd::get_range<T>();
+  static constexpr auto range = avnd::get_range<T>();
   static_assert(std::ssize(range.values) > 0);
 
   // TODO if we can check at compile-time that we are sorted,
@@ -76,7 +76,7 @@ template <avnd::parameter_with_values_range T>
 static constexpr auto range_value(int index) -> std::decay_t<decltype(T::value)>
 {
   using value_type = std::decay_t<decltype(T::value)>;
-  constexpr auto range = avnd::get_range<T>();
+  static constexpr auto range = avnd::get_range<T>();
 
   assert(index >= 0);
   assert(index < avnd::get_enum_choices_count<T>());

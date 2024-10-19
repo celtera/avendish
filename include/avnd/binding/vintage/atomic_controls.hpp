@@ -82,7 +82,7 @@ struct Controls<T>
       auto& sink = this->parameters;
 
       auto do_store = [&]<std::size_t N> {
-        constexpr auto idx = inputs_info_t::index_map[N];
+        static constexpr auto idx = inputs_info_t::index_map[N];
         if constexpr(requires { avnd::map_control_to_01(avnd::pfr::get<idx>(source)); })
           sink[N].store(
               avnd::map_control_to_01(avnd::pfr::get<idx>(source)),

@@ -326,7 +326,7 @@ message_processor_metaclass<T>::message_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
+  static constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
     t_object tmp;
@@ -343,32 +343,32 @@ message_processor_metaclass<T>::message_processor_metaclass()
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void {
+  static constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // Message processing
-  constexpr auto obj_process
+  static constexpr auto obj_process
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
     obj->process(s, argc, argv);
   };
 
-  constexpr auto obj_process_bang = +[](instance* obj) -> void { obj->process(); };
+  static constexpr auto obj_process_bang = +[](instance* obj) -> void { obj->process(); };
 
-  constexpr auto obj_process_int
+  static constexpr auto obj_process_int
       = +[](instance* obj, t_atom_long value) -> void { obj->process(value); };
 
-  constexpr auto obj_process_float
+  static constexpr auto obj_process_float
       = +[](instance* obj, t_atom_float value) -> void { obj->process(value); };
 
-  constexpr auto obj_process_sym
+  static constexpr auto obj_process_sym
       = +[](instance* obj, t_symbol* value) -> void { obj->process(value); };
 
-  constexpr auto obj_process_dict
+  static constexpr auto obj_process_dict
       = +[](instance* obj, t_symbol* value) -> void { obj->process_dict(value); };
 
-  constexpr auto obj_assist
+  static constexpr auto obj_assist
       = +[](instance* obj, void *b, long msg, long arg, char *dst) -> void {
     switch(msg) {
       case 1:

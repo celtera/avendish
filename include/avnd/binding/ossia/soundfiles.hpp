@@ -231,7 +231,7 @@ struct midifile_storage : midifile_input_storage<T>
         auto& out = port.midifile.tracks[i];
         using message_type = std::decay_t<decltype(out[0])>;
         using bytes_type = std::remove_reference_t<decltype(message_type::bytes)>;
-        constexpr bool is_c_array = std::is_bounded_array_v<bytes_type>;
+        static constexpr bool is_c_array = std::is_bounded_array_v<bytes_type>;
 
         if constexpr(is_c_array)
           out.reserve(in.size());

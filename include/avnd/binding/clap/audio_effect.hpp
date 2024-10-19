@@ -385,7 +385,7 @@ struct SimpleAudioEffect : clap_plugin
         [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
       if constexpr(avnd::has_range<C>)
       {
-        constexpr auto range = avnd::get_range<C>();
+        static constexpr auto range = avnd::get_range<C>();
         if constexpr(requires { range.init; })
           info->default_value = avnd::map_control_to_double<C>(range.init);
 

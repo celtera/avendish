@@ -19,7 +19,7 @@ consteval score::uuid_t uuid_from_string()
   }
   else
   {
-    constexpr const char* str = N::uuid();
+    static constexpr const char* str = N::uuid();
     return score::uuids::string_generator::compute(str, str + 37);
   }
 }

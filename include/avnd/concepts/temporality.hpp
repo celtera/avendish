@@ -9,6 +9,29 @@
 namespace avnd
 {
 /**
+ * @brief timestamp tag: used to state that 
+ * an element is a timestamp, when there could be an ambiguity.
+ * 
+ * Used for instance in messages and callbacks, to indicate that 
+ * the first int64_t element being passed is the timestamp and not 
+ * a value passed in the host environment.
+ * 
+ * e.g.
+ * ```
+ * struct { 
+ *   void operator()(int64_t, float); 
+ * } msg1;
+ * struct { 
+ *   enum { timestamp; };
+ *   void operator()(int64_t ts, float x); 
+ * } msg2;
+ * ```
+ * 
+ * Here msg1 will exepect an input of an int and a float, msg2 will expect only a float
+ * and the binding code will pass the timestamp as first argument.
+ */
+AVND_DEFINE_TAG(timestamp)
+/**
  * @brief single_exec tag: the 'process' method should only be called once 
  * per execution.
  * 

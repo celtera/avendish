@@ -93,7 +93,7 @@ struct processor
     using func_type = decltype(avnd::message_get_func<M>());
     if constexpr(std::is_member_function_pointer_v<func_type>)
     {
-      constexpr auto func = avnd::message_get_func<M>();
+      static constexpr auto func = avnd::message_get_func<M>();
       using refl = avnd::function_reflection<func>;
       using class_type = typename refl::class_type;
       if constexpr(std::is_same_v<class_type, M>)

@@ -312,7 +312,7 @@ void print_parameter(nlohmann::json& obj)
   if constexpr(avnd::parameter_with_minmax_range<type>)
   {
     nlohmann::json range;
-    constexpr auto ctl = avnd::get_range<type>();
+    static constexpr auto ctl = avnd::get_range<type>();
     if constexpr(requires { ctl.min; })
       range["min"] = ctl.min;
     if constexpr(requires { ctl.max; })

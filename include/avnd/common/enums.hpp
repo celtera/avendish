@@ -140,12 +140,12 @@
   [](auto& container, auto defaultvalue) -> decltype(defaultvalue) { \
     if constexpr(requires { container.member_name; })                \
     {                                                                \
-      constexpr auto m = AVND_ENUM_MATCHER(__VA_ARGS__);             \
+      static constexpr auto m = AVND_ENUM_MATCHER(__VA_ARGS__);             \
       return m(container.member_name, defaultvalue);                 \
     }                                                                \
     else                                                             \
     {                                                                \
-      constexpr auto m = AVND_TAG_MATCHER(__VA_ARGS__);              \
+      static constexpr auto m = AVND_TAG_MATCHER(__VA_ARGS__);              \
       return m(container, defaultvalue);                             \
     }                                                                \
   };

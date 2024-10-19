@@ -183,7 +183,7 @@ struct process_before_run
     {
       using sc_in = avnd::spectrum_split_channel_input_introspection<
           typename Exec_T::processor_type>;
-      constexpr auto fft_idx = sc_in::field_index_to_index(idx);
+      static constexpr auto fft_idx = sc_in::field_index_to_index(idx);
       ossia::fft& fft = get<fft_idx>(self.spectrums.split_channel.ffts);
 
       auto& samples = port.data.channel(0);
@@ -209,7 +209,7 @@ struct process_before_run
     {
       using sc_in = avnd::spectrum_complex_channel_input_introspection<
           typename Exec_T::processor_type>;
-      constexpr auto fft_idx = sc_in::field_index_to_index(idx);
+      static constexpr auto fft_idx = sc_in::field_index_to_index(idx);
       ossia::fft& fft = get<fft_idx>(self.spectrums.complex_channel.ffts);
 
       auto& samples = port.data.channel(0);
@@ -231,7 +231,7 @@ struct process_before_run
     {
       using sc_in = avnd::spectrum_split_bus_input_introspection<
           typename Exec_T::processor_type>;
-      constexpr auto fft_idx = sc_in::field_index_to_index(idx);
+      static constexpr auto fft_idx = sc_in::field_index_to_index(idx);
       auto& ffts = get<fft_idx>(self.spectrums.split_bus.ffts);
 
       for(std::size_t c = 0; c < port.data.channels(); c++)
@@ -261,7 +261,7 @@ struct process_before_run
     {
       using sc_in = avnd::spectrum_split_bus_input_introspection<
           typename Exec_T::processor_type>;
-      constexpr auto fft_idx = sc_in::field_index_to_index(idx);
+      static constexpr auto fft_idx = sc_in::field_index_to_index(idx);
       auto& ffts = get<fft_idx>(self.spectrums.complex_bus.ffts);
 
       for(std::size_t c = 0; c < port.data.channels(); c++)
@@ -314,7 +314,7 @@ struct process_before_run
 
     using span_in = avnd::span_parameter_input_introspection<Obj_T>;
     using T = typename decltype(Field::value)::value_type;
-    constexpr auto field_idx
+    static constexpr auto field_idx
         = span_in::template field_index_to_index(avnd::field_index<Idx>{});
     auto& dest_vec = get<field_idx>(self.control_buffers.span_inputs);
     dest_vec.resize(src_vec->size());

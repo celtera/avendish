@@ -17,7 +17,7 @@ struct init_arguments
 {
   static void call_noargs(T& implementation)
   {
-    constexpr auto f = &T::initialize;
+    static constexpr auto f = &T::initialize;
     if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       return (implementation.*f)();
     else
@@ -67,8 +67,8 @@ struct init_arguments
   static void
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::initialize;
-    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
+    static constexpr auto f = &T::initialize;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if(arg_counts != argc)
     {
@@ -106,8 +106,8 @@ struct init_arguments
   static void
   call_simple(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::initialize;
-    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
+    static constexpr auto f = &T::initialize;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if constexpr(arg_counts == 0)
     {
@@ -152,7 +152,7 @@ struct init_arguments
   static bool
   call_instance(F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
 
     using arg_list_t = typename avnd::function_reflection<decltype(+f){}>::arguments;
 
@@ -182,7 +182,7 @@ struct init_arguments
   static bool call_overloaded_impl(
       F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
     if(arg_counts != (argc + 1))
       return false;
 

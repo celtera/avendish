@@ -35,7 +35,7 @@ struct ubitset
   // Utility
   static consteval std::size_t size() noexcept { return N; }
 
-  constexpr auto quo_rem(std::size_t idx) const noexcept
+  static constexpr auto quo_rem(std::size_t idx) const noexcept
   {
     struct
     {
@@ -123,22 +123,22 @@ struct optionalize_all<T>
   template <auto member>
   constexpr bool engaged() const noexcept
   {
-    constexpr auto idx = avnd::index_in_struct(T{}, member);
+    static constexpr auto idx = avnd::index_in_struct(T{}, member);
     return m_engaged.test(idx);
   }
 
   template <auto member>
-  constexpr auto get() noexcept
+  static constexpr auto get() noexcept
   {
     using ret = avnd::member_type<member>;
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
     return m_engaged.test(idx) ? std::optional<ret>{m_storage.*member} : std::nullopt;
   }
 
   template <auto member, typename U>
   constexpr void set(U&& value) noexcept
   {
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
 
     static_assert(noexcept(m_storage.*member = std::forward<U>(value)));
     m_storage.*member = std::forward<U>(value);
@@ -148,7 +148,7 @@ struct optionalize_all<T>
   template <auto member>
   constexpr void set(std::nullopt_t) noexcept
   {
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
     m_engaged.set(idx, false);
   }
 };
@@ -266,15 +266,15 @@ struct optionalize_all
   template <auto member>
   constexpr bool engaged() const noexcept
   {
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
     return m_engaged.test(idx);
   }
 
   template <auto member>
-  constexpr auto get()
+  static constexpr auto get()
   {
     using ret = avnd::member_type<member>;
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
     return m_engaged.test(idx)
                ? std::optional<ret>{reinterpret_cast<T*>(m_storage)->*member}
                : std::nullopt;
@@ -284,7 +284,7 @@ struct optionalize_all
   constexpr void set(U&& value)
   {
     using ret = avnd::member_type<member>;
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
 
     auto& mem = (reinterpret_cast<T*>(m_storage)->*member);
     if constexpr(is_pod_v<ret>)
@@ -310,7 +310,7 @@ struct optionalize_all
   constexpr void set(std::nullopt_t)
   {
     using ret = avnd::member_type<member>;
-    constexpr auto idx = index_in_struct(T{}, member);
+    static constexpr auto idx = index_in_struct(T{}, member);
     if constexpr(!is_pod_v<ret>)
     {
       if(m_engaged.test(idx))

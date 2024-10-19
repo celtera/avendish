@@ -681,7 +681,7 @@ struct outputs
 
   void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
-    constexpr auto N = avnd::output_introspection<T>::size;
+    static constexpr auto N = avnd::output_introspection<T>::size;
     if constexpr(N > 0)
     {
       int out_k = 0;

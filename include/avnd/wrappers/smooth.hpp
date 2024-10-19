@@ -61,7 +61,7 @@ struct smooth_storage : smooth_param_storage<T>
       {
         auto& buf = tpl::get<Idx>(this->smoothed_inputs);
 
-        constexpr auto smooth = avnd::get_smooth<M>();
+        static constexpr auto smooth = avnd::get_smooth<M>();
 
         if constexpr(requires { smooth.ratio(0.); })
         {

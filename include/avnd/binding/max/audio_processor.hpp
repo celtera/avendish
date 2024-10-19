@@ -259,7 +259,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
+  static constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
     t_object tmp;
@@ -276,19 +276,19 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void {
+  static constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // DSP
-  constexpr auto obj_dsp
+  static constexpr auto obj_dsp
       = +[](instance* obj, t_object* dsp64, short* count, double samplerate,
             long maxvectorsize, long flags) -> void {
     obj->dsp(dsp64, count, samplerate, maxvectorsize, flags);
   };
 
-  constexpr auto inputchange = +[](instance* x, long index, long count) -> long {
+  static constexpr auto inputchange = +[](instance* x, long index, long count) -> long {
     if(count != x->m_runtime_input_count)
     {
       x->m_runtime_input_count = count;
@@ -297,13 +297,13 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
     else
       return false;
   };
-  constexpr auto outputcount = +[](instance* x, long index) -> long {
+  static constexpr auto outputcount = +[](instance* x, long index) -> long {
     // TODO check whether the outputs are fixed or dynamic
     return x->m_runtime_input_count;
   };
 
   // Message processing
-  constexpr auto obj_process
+  static constexpr auto obj_process
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
     obj->process(s, argc, argv);
   };

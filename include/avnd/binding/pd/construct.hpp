@@ -26,7 +26,7 @@ constexpr auto get_possible_constructor_types()
 
   if constexpr(requires { decltype(&T::construct){}; })
   {
-    constexpr auto f
+    static constexpr auto f
         = []<typename R, typename... Args>(R (*f)(Args...)) -> R* { return nullptr; };
     if constexpr(requires { f(&T::construct); })
     {
@@ -43,7 +43,7 @@ constexpr auto get_possible_constructor_types()
     }
     else
     {
-      constexpr auto f = []<typename R, typename... Args>(R (T::*f)(Args...)) -> R* {
+      static constexpr auto f = []<typename R, typename... Args>(R (T::*f)(Args...)) -> R* {
         return nullptr;
       };
       if constexpr(requires { f(&T::construct); })
@@ -104,7 +104,7 @@ struct construct_arguments
 {
   static auto call_noargs(T& implementation)
   {
-    constexpr auto f = &T::KEYWORD;
+    static constexpr auto f = &T::KEYWORD;
     if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       return (implementation.*f)();
     else
@@ -151,8 +151,8 @@ struct construct_arguments
   static auto
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::KEYWORD;
-    constexpr auto arg_counts = avnd::function_reflection<&T::KEYWORD>::count;
+    static constexpr auto f = &T::KEYWORD;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::KEYWORD>::count;
 
     if(arg_counts != argc)
     {
@@ -190,8 +190,8 @@ struct construct_arguments
   static auto
   call_simple(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::KEYWORD;
-    constexpr auto arg_counts = avnd::function_reflection<&T::KEYWORD>::count;
+    static constexpr auto f = &T::KEYWORD;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::KEYWORD>::count;
 
     if constexpr(arg_counts == 0)
     {
@@ -231,7 +231,7 @@ struct construct_arguments
   static auto
   call_instance(F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
 
     using arg_list_t = typename avnd::function_reflection<decltype(+f){}>::arguments;
 
@@ -261,7 +261,7 @@ struct construct_arguments
   static bool call_overloaded_impl(
       F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
     if(arg_counts != (argc + 1))
       return false;
 

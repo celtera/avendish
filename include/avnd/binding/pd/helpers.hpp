@@ -72,7 +72,7 @@ static void process_generic_message(T& implementation, t_symbol* s)
     int k = 0;
     avnd::input_introspection<object_type>::for_all(
         avnd::get_inputs<object_type>(implementation), [&k]<typename C>(C& ctl) {
-          constexpr auto obj_name = avnd::get_name<object_type>().data();
+          static constexpr auto obj_name = avnd::get_name<object_type>().data();
           if constexpr(avnd::has_name<C>)
           {
             if constexpr(requires { (float)ctl.value; })

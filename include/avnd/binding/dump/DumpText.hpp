@@ -207,7 +207,7 @@ void print_parameters()
 
       if constexpr(avnd::parameter_with_minmax_range<type>)
       {
-        constexpr auto ctl = avnd::get_range<type>();
+        static constexpr auto ctl = avnd::get_range<type>();
         if constexpr(requires { ctl.min; })
           fmt::print("   - Min: {}\n", ctl.min);
         if constexpr(requires { ctl.max; })

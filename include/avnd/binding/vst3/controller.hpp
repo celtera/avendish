@@ -86,7 +86,7 @@ public:
         setStr(info.shortTitle, C::units());
       if constexpr(avnd::has_range<C>)
       {
-        constexpr auto range = avnd::get_range<C>();
+        static constexpr auto range = avnd::get_range<C>();
         if constexpr(requires { range.init; })
           info.defaultNormalizedValue = avnd::map_control_to_01<C>(range.init);
 

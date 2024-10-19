@@ -9,7 +9,7 @@ template <typename Self, std::size_t Idx, typename Field, typename R, typename..
 struct do_callback;
 
 template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
-  requires(!requires { Field::timestamp; })
+  requires(!avnd::tag_timestamp<Field>)
 struct do_callback<Self, Idx, Field, R, Args...>
 {
   Self& self;
@@ -40,7 +40,7 @@ struct do_callback<Self, Idx, Field, R, Args...>
 };
 
 template <typename Self, std::size_t Idx, typename Field, typename R, typename... Args>
-  requires(requires { Field::timestamp; })
+  requires(avnd::tag_timestamp<Field>)
 struct do_callback<Self, Idx, Field, R, Args...>
 {
   Self& self;

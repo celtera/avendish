@@ -186,8 +186,8 @@ struct static_identifier: std::array<char, Sz + 1>
 template <typename T, auto Symtab = valid_char_for_c_identifier>
 static constexpr auto fixup_identifier()
 {
-  constexpr auto nm = avnd::get_name<T>();
-  constexpr auto sz = nm.size();
+  static constexpr auto nm = avnd::get_name<T>();
+  static constexpr auto sz = nm.size();
   static_identifier<sz> storage;
   for(std::size_t i = 0; i < sz; i++)
     storage[i] = Symtab(nm[i]) ? nm[i] : '_';
@@ -204,7 +204,7 @@ static constexpr auto get_c_identifier()
   }
   else if constexpr(avnd::has_name<T>)
   {
-    constexpr auto name = avnd::get_name<T>();
+    static constexpr auto name = avnd::get_name<T>();
     if constexpr(validate_name<Symtab>(name))
     {
       return name;
@@ -352,7 +352,7 @@ constexpr std::array<char, 256> get_keywords()
   if constexpr(requires { T::keywords(); })
   {
     const auto& w = T::keywords();
-    constexpr auto n = std::ssize(w);
+    static constexpr auto n = std::ssize(w);
     if(n > 0)
     {
       constexpr int cmax = 255;
@@ -402,7 +402,7 @@ inline std::vector<std::string_view> get_tags()
 {
   if constexpr(requires { T::tags(); })
   {
-    constexpr auto t = T::tags();
+    static constexpr auto t = T::tags();
     return std::vector<std::string_view>(std::begin(t), std::end(t));
   }
   else if constexpr(requires { T::tags; })

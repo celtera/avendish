@@ -33,7 +33,7 @@ struct to_ossia_value_impl
     ossia::value_map_type v;
     v.reserve(fields);
 
-    constexpr auto field_names = F::field_names();
+    static constexpr auto field_names = F::field_names();
     int k = 0;
     boost::pfr::for_each_field(
         f, [&](const auto& f) { to_ossia_value_impl{v[field_names[k++]]}(f); });

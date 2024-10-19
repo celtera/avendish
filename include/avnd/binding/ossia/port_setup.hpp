@@ -202,7 +202,7 @@ struct setup_value_port
   template <avnd::parameter_with_minmax_range T>
   ossia::domain range_to_domain()
   {
-    constexpr auto dom = avnd::get_range<T>();
+    static constexpr auto dom = avnd::get_range<T>();
     if constexpr(std::is_floating_point_v<decltype(dom.min)>)
       return ossia::make_domain((float)dom.min, (float)dom.max);
     if constexpr(std::is_same_v<std::decay_t<decltype(dom.init)>, bool>)
@@ -221,7 +221,7 @@ struct setup_value_port
   {
     ossia::domain_base<std::string> d;
 #if !defined(_MSC_VER)
-    constexpr auto dom = avnd::get_enum_choices<T>();
+    static constexpr auto dom = avnd::get_enum_choices<T>();
     d.values.assign(std::begin(dom), std::end(dom));
 #endif
     return d;
@@ -232,7 +232,7 @@ struct setup_value_port
   {
     if constexpr(avnd::has_range<T> && requires { avnd::get_range<T>().values; })
     {
-      constexpr auto dom = avnd::get_range<T>();
+      static constexpr auto dom = avnd::get_range<T>();
       if constexpr(requires { std::string_view{dom.values[0].first}; })
       {
         // Case for combo_pair things
@@ -381,7 +381,7 @@ struct setup_inlets
 
     if constexpr(avnd::has_unit<Field>)
     {
-      constexpr auto unit = avnd::get_unit<Field>();
+      static constexpr auto unit = avnd::get_unit<Field>();
       if(!unit.empty())
         port->type = ossia::parse_dataspace(unit);
     }
@@ -445,7 +445,7 @@ struct setup_outlets
 
     if constexpr(avnd::has_unit<Field>)
     {
-      constexpr auto unit = avnd::get_unit<Field>();
+      static constexpr auto unit = avnd::get_unit<Field>();
       if(!unit.empty())
         port->type = ossia::parse_dataspace(unit);
     }
@@ -456,7 +456,8 @@ struct setup_outlets
       avnd::field_reflection<Idx, Field> ctrl,
       std::vector<ossia::value_outlet*>& port) const noexcept
   {
-    int expected = self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{});
+    const std::size_t expected
+        = self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{});
     while(port.size() < expected)
       port.push_back(new ossia::value_outlet);
     while(port.size() > expected)
