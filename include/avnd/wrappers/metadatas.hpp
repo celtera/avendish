@@ -267,7 +267,7 @@ static constexpr auto get_c_identifier()
   }
   else if constexpr(avnd::has_name<T>)
   {
-    static constexpr auto name = avnd::get_name<T>();
+    constexpr auto name = avnd::get_name<T>();
     if constexpr(validate_name<Symtab>(name))
     {
       return name;
