@@ -1,4 +1,11 @@
 #pragma once
+#include <avnd/common/aggregates.hpp>
+#include <avnd/concepts/all.hpp>
+#include <boost/mp11.hpp>
+#include <ossia/network/value/value.hpp>
+
+#include <optional>
+#include <tuple>
 
 namespace oscr
 {
@@ -57,18 +64,31 @@ struct message_processor
           const auto& vec = *val.target<std::vector<ossia::value>>();
           if(vec.size() == count)
           {
-            int i = 0; // FIXME doable at compile-time
-            std::apply([&self, &vec, &i]<typename... Ts>(Ts&&... args) {
-              (self.from_ossia_value(field, vec[i++], args, avnd::field_index<Idx>{}),
+            std::apply(
+                [&self, &vec, it = vec.begin()]<typename... Ts>(Ts&&... args) mutable {
+              (self.from_ossia_value(field, *(it++), args, avnd::field_index<Idx>{}),
                ...);
             }, tuple);
             return tuple;
           }
           break;
         }
-        case ossia::val_type::MAP:
-          // FIXME
+        case ossia::val_type::MAP: {
+          static constexpr M field;
+          Args tuple;
+          const auto& vec = *val.target<ossia::value_map_type>();
+          if(vec.size() == count)
+          {
+            std::apply(
+                [&self, &vec, it = vec.begin()]<typename... Ts>(Ts&&... args) mutable {
+              (self.from_ossia_value(
+                   field, (it++)->second, args, avnd::field_index<Idx>{}),
+               ...);
+            }, tuple);
+            return tuple;
+          }
           break;
+        }
         default:
           break;
       }
@@ -96,51 +116,90 @@ struct message_processor
       else
       {
         // M contains a function pointer to a free function f
-        f(first_args..., std::forward<Ts>(args)...);
+        f(std::forward<Args>(first_args)..., std::forward<Ts>(args)...);
       }
     },
         res);
   }
+
   template <auto Idx, typename M>
   void invoke_message_first_arg_is_object(
-      auto& self, const ossia::value& val, avnd::field_reflection<Idx, M>)
+      auto& self, const ossia::value& val, int64_t ts, avnd::field_reflection<Idx, M>)
   {
     auto& impl = self.impl;
     using refl = avnd::message_reflection<M>;
     using namespace boost::mp11;
     using first_arg_type = std::remove_cvref_t<avnd::first_message_argument<M>>;
-    if constexpr(std::is_same_v<first_arg_type, T>)
-    {
-      using main_args = mp_pop_front<typename refl::arguments>;
-      using no_ref = mp_transform<std::remove_cvref_t, main_args>;
-      using args = mp_rename<no_ref, std::tuple>;
 
-      if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
+    if constexpr(avnd::tag_timestamp<M>)
+    {
+      if constexpr(std::is_same_v<first_arg_type, T>)
       {
-        for(auto& m : impl.effects())
+        static_assert(boost::mp11::mp_size<typename refl::arguments>::value >= 2);
+        using main_args = mp_pop_front<mp_pop_front<typename refl::arguments>>;
+        using no_ref = mp_transform<std::remove_cvref_t, main_args>;
+        using args = mp_rename<no_ref, std::tuple>;
+
+        if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
         {
-          invoke_message_impl<M>(self, *res, m, m);
+          for(auto& m : impl.effects())
+          {
+            invoke_message_impl<M>(self, *res, m, m, ts);
+          }
+        }
+      }
+      else
+      {
+        static_assert(boost::mp11::mp_size<typename refl::arguments>::value >= 1);
+        using main_args = mp_pop_front<typename refl::arguments>;
+        using no_ref = mp_transform<std::remove_cvref_t, main_args>;
+        using args = mp_rename<no_ref, std::tuple>;
+        if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
+        {
+          for(auto& m : impl.effects())
+          {
+            invoke_message_impl<M>(self, *res, m, ts);
+          }
         }
       }
     }
     else
     {
-      using main_args = typename refl::arguments;
-      using no_ref = mp_transform<std::remove_cvref_t, main_args>;
-      using args = mp_rename<no_ref, std::tuple>;
-      if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
+      if constexpr(std::is_same_v<first_arg_type, T>)
       {
-        for(auto& m : impl.effects())
+        static_assert(boost::mp11::mp_size<typename refl::arguments>::value >= 1);
+        using main_args = mp_pop_front<typename refl::arguments>;
+        using no_ref = mp_transform<std::remove_cvref_t, main_args>;
+        using args = mp_rename<no_ref, std::tuple>;
+
+        if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
         {
-          invoke_message_impl<M>(self, *res, m);
+          for(auto& m : impl.effects())
+          {
+            invoke_message_impl<M>(self, *res, m, m);
+          }
+        }
+      }
+      else
+      {
+        using main_args = typename refl::arguments;
+        using no_ref = mp_transform<std::remove_cvref_t, main_args>;
+        using args = mp_rename<no_ref, std::tuple>;
+        if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
+        {
+          for(auto& m : impl.effects())
+          {
+            invoke_message_impl<M>(self, *res, m);
+          }
         }
       }
     }
   }
 
   template <auto Idx, typename M>
-  void
-  invoke_message(auto& self, const ossia::value& val, avnd::field_reflection<Idx, M> idx)
+  void invoke_message(
+      auto& self, const ossia::value& val, int64_t ts,
+      avnd::field_reflection<Idx, M> idx)
   {
     auto& impl = self.impl;
     if constexpr(!std::is_void_v<avnd::message_reflection<M>>)
@@ -154,37 +213,10 @@ struct message_processor
           invoke_message_impl<M>(self, std::tuple<>{}, m);
         }
       }
-      else // if constexpr(refl::count == 1)
-      {
-        invoke_message_first_arg_is_object(self, val, idx);
-      }
-      /*
       else
       {
-        using namespace boost::mp11;
-        using first_arg_type = std::remove_cvref_t<avnd::first_message_argument<M>>;
-        using second_arg_type = std::remove_cvref_t<avnd::second_message_argument<M>>;
-        if constexpr(
-            std::is_same_v<first_arg_type, T> && avnd::has_tick<M>
-            && std::is_same_v<second_arg_type, typename M::tick>)
-        {
-          using main_args = mp_pop_front<typename refl::arguments>;
-          using no_ref = mp_transform<std::remove_cvref_t, main_args>;
-          using args = mp_rename<no_ref, std::tuple>;
-
-          if(auto res = value_to_argument_tuple<M, args, Idx>(self, val))
-          {
-            for(auto& m : impl.effects())
-            {
-              invoke_message_impl<M>(self, *res, m, m);
-            }
-          }
-        }
-        else
-        {
-          invoke_message_first_arg_is_object(self, val, idx);
-        }
-      }*/
+        invoke_message_first_arg_is_object(self, val, ts, idx);
+      }
     }
   }
 
@@ -196,7 +228,7 @@ struct message_processor
       return;
     for(const auto& val : inl.data.get_data())
     {
-      invoke_message(self, val.value, avnd::field_reflection<Idx, M>{});
+      invoke_message(self, val.value, val.timestamp, avnd::field_reflection<Idx, M>{});
     }
   }
 };

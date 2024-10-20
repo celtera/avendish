@@ -122,12 +122,12 @@ struct effect_container
 
   T effect;
 
-  void init_channels(int input, int output)
+  inline constexpr void init_channels(int input, int output)
   {
     // TODO maybe a runtime check
   }
 
-  auto& inputs() noexcept
+  inline constexpr auto& inputs() noexcept
   {
     if constexpr(has_inputs<T>)
     {
@@ -139,7 +139,8 @@ struct effect_container
     else
       return dummy_instance;
   }
-  auto& inputs() const noexcept
+
+  inline constexpr auto& inputs() const noexcept
   {
     if constexpr(has_inputs<T>)
     {
@@ -151,7 +152,8 @@ struct effect_container
     else
       return dummy_instance;
   }
-  auto& outputs() noexcept
+
+  inline constexpr auto& outputs() noexcept
   {
     if constexpr(has_outputs<T>)
     {
@@ -163,7 +165,8 @@ struct effect_container
     else
       return dummy_instance;
   }
-  auto& outputs() const noexcept
+
+  inline constexpr auto& outputs() const noexcept
   {
     if constexpr(has_outputs<T>)
     {
@@ -183,12 +186,13 @@ struct effect_container
     decltype(std::declval<effect_container>().outputs())& outputs;
   };
 
-  std::array<ref, 1> full_state() noexcept
+  inline std::array<ref, 1> full_state() noexcept
   {
     return {ref{effect, this->inputs(), this->outputs()}};
   }
 
-  auto effects() {
+  inline auto effects() noexcept
+  {
     return member_iterator_one_effect<effect_container>{*this};
   }
 };

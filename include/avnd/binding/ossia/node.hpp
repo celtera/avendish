@@ -155,9 +155,9 @@ public:
   [[no_unique_address]] oscr::message_processor<T> messages;
 
   using control_input_values_type
-      = avnd::filter_and_apply<controls_type, avnd::control_input_introspection, T>;
+      = avnd::filter_and_apply<controls_type_t, avnd::control_input_introspection, T>;
   using control_output_values_type
-      = avnd::filter_and_apply<controls_type, avnd::control_output_introspection, T>;
+      = avnd::filter_and_apply<controls_type_t, avnd::control_output_introspection, T>;
 };
 
 template <std::size_t Index, typename F>

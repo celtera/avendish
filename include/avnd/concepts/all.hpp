@@ -7,6 +7,7 @@
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/callback.hpp>
 #include <avnd/concepts/channels.hpp>
+#include <avnd/concepts/control.hpp>
 #include <avnd/concepts/curve.hpp>
 #include <avnd/concepts/dynamic_ports.hpp>
 #include <avnd/concepts/fft.hpp>

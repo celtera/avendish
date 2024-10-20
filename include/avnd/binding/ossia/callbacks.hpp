@@ -34,6 +34,17 @@ struct do_callback<Self, Idx, Field, R, Args...>
       port.data.write_value(std::move(vec), self.start_frame_for_this_tick);
     }
 
+    // FIXME handle control feedback !
+    // if constexpr(avnd::control<Field>)
+    // {
+    //   // Get the index of the control in [0; N[
+    //   using type = typename Exec_T::processor_type;
+    //   using controls = avnd::control_output_introspection<type>;
+    //   constexpr int control_index = controls::field_index_to_index(idx);
+    //
+    //   // Mark the control as changed
+    //   self.control.outputs_set.set(control_index);
+    // }
     if constexpr(!std::is_void_v<R>)
       return R{};
   }

@@ -22,6 +22,67 @@ namespace avnd
 #define AVND_IF_CONSTEVAL (std::is_constant_evaluated())
 #endif
 
+#define define_get_property_auto(PropName, Default)                       \
+  template <typename T>                                                   \
+  constexpr auto get_##PropName()                                         \
+  {                                                                       \
+    if constexpr(requires { T::PropName(); })                             \
+      return T::PropName();                                               \
+    else if constexpr(requires { T::PropName; })                          \
+      return T::PropName;                                                 \
+    else                                                                  \
+      return Default;                                                     \
+  }                                                                       \
+                                                                          \
+  template <typename T>                                                   \
+  constexpr auto get_##PropName(const T& t)                               \
+  {                                                                       \
+    if AVND_IF_CONSTEVAL                                                  \
+    {                                                                     \
+      return get_##PropName<T>();                                         \
+    }                                                                     \
+    else                                                                  \
+    {                                                                     \
+      if constexpr(requires { T::PropName(); })                           \
+        return T::PropName();                                             \
+      else if constexpr(requires { T::PropName; })                        \
+        return T::PropName;                                               \
+      else if constexpr(requires { t.PropName(); })                       \
+        return t.PropName();                                              \
+      else if constexpr(requires { t.PropName; })                         \
+        return t.PropName;                                                \
+      else                                                                \
+        return get_##PropName<T>();                                       \
+    }                                                                     \
+  }                                                                       \
+                                                                          \
+  template <typename T>                                                   \
+  concept has_##PropName                                                  \
+      = requires(T t) { t.PropName(); } || requires(T t) { t.PropName; }; \
+                                                                          \
+  struct prop_##PropName                                                  \
+  {                                                                       \
+    template <typename T>                                                 \
+    static constexpr bool has() noexcept                                  \
+    {                                                                     \
+      return has_##PropName<T>;                                           \
+    }                                                                     \
+                                                                          \
+    static constexpr std::string_view name() noexcept                     \
+    {                                                                     \
+      return #PropName;                                                   \
+    }                                                                     \
+                                                                          \
+    template <typename T>                                                 \
+    static constexpr auto get()                                           \
+    {                                                                     \
+      if constexpr(has_##PropName<T>)                                     \
+        return get_##PropName<T>();                                       \
+      else                                                                \
+        return Default;                                                   \
+    }                                                                     \
+  };
+
 #define define_get_property(PropName, Type, Default)                                  \
   template <typename T>                                                               \
   constexpr Type get_##PropName()                                                     \
@@ -134,8 +195,10 @@ define_get_property(description, std::string_view, "(description)")
 define_get_property(short_description, std::string_view, "(short_description)")
 define_get_property(module, std::string_view, "(module)")
 
-template <typename T>
-constexpr std::string_view default_osc_path()
+define_get_property_auto(pixmaps, std::span<const char*>{})
+
+    template <typename T>
+    constexpr std::string_view default_osc_path()
 {
   return get_name<T>();
 }
@@ -304,30 +367,22 @@ template <typename T>
 /* constexpr */ int get_int_version()
 {
   if constexpr(requires {
-                 {
-                   T::version()
-                 } -> std::integral;
+                 { T::version() } -> std::integral;
                })
   {
     return T::version();
   }
   else if constexpr(requires {
-                      {
-                        std::declval<T>().version
-                      } -> std::integral;
+                      { std::declval<T>().version } -> std::integral;
                     })
   {
     return T::version;
   }
   else if constexpr(requires {
-                      {
-                        T::version()
-                        } -> avnd::string_ish;
+                      { T::version() } -> avnd::string_ish;
                     } || requires {
-             {
-               std::declval<T>().version
-               } -> avnd::string_ish;
-           })
+                      { std::declval<T>().version } -> avnd::string_ish;
+                    })
   {
     auto str = avnd::get_version<T>();
     if(str.empty())
@@ -346,6 +401,7 @@ template <typename T>
     return 1;
   }
 }
+
 template <typename T, char Sep>
 constexpr std::array<char, 256> get_keywords()
 {

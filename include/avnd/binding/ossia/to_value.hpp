@@ -399,7 +399,9 @@ ossia::value to_ossia_value(const avnd::variant_ish auto& v)
 {
   return to_ossia_value_rec(v);
 }
-ossia::value to_ossia_value(const avnd::optional_ish auto& v)
+template <avnd::optional_ish T>
+  requires(!std::is_same_v<std::optional<ossia::value>, T>)
+ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);
 }
@@ -449,6 +451,13 @@ template <typename T>
 inline ossia::value to_ossia_value(const T& v)
 {
   return v;
+}
+
+template <typename T>
+  requires std::is_same_v<std::optional<ossia::value>, T>
+inline ossia::value to_ossia_value(const T& v)
+{
+  return v ? *v : ossia::value{};
 }
 
 inline ossia::value to_ossia_value(auto& field, const auto& src)
