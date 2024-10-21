@@ -5,6 +5,7 @@
 #include <avnd/introspection/widgets.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <cmath>
+#include <halp/polyfill.hpp>
 
 #include <string>
 
@@ -40,8 +41,8 @@ static constexpr auto map_control_from_double(std::floating_point auto v)
 template <avnd::enum_parameter T>
 static constexpr auto map_control_from_double(std::floating_point auto v)
 {
-  static constexpr auto min_val = 0;
-  static constexpr auto max_val = avnd::get_enum_choices_count<T>() - 1;
+  static_constexpr auto min_val = 0;
+  static_constexpr auto max_val = avnd::get_enum_choices_count<T>() - 1;
   int res = std::round(v);
   res = res < min_val ? min_val : res;
   res = res > max_val ? max_val : res;
