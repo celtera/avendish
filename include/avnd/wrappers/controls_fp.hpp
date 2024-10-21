@@ -99,7 +99,7 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
   double v{};
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
