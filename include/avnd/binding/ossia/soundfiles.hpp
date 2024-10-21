@@ -354,6 +354,25 @@ struct raw_file_storage : raw_file_input_storage<T>
       if_possible(port.update(state.effect));
     }
   }
+
+  template <std::size_t N, std::size_t NField>
+  void load(
+      T& state, const std::shared_ptr<raw_file_data>& hdl, avnd::predicate_index<N>,
+      avnd::field_index<NField>)
+  {
+    std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
+
+    // Store the handle to keep the memory from being freed
+    std::exchange(g, hdl);
+
+    // FIXME not generic enough.. GPU should also use effect_container
+    avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
+
+    port.file.bytes = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+    port.file.filename = hdl->filename;
+
+    if_possible(port.update(state));
+  }
 };
 }
 #endif

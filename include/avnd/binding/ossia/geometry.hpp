@@ -3,6 +3,7 @@
 #include <avnd/common/enums.hpp>
 #include <avnd/common/for_nth.hpp>
 #include <avnd/concepts/gfx.hpp>
+#include <halp/polyfill.hpp>
 #include <ossia/dataflow/geometry_port.hpp>
 
 #include <memory>
@@ -45,7 +46,7 @@ constexpr int standard_location_for_attribute(int k)
 template <typename T>
 constexpr auto get_topology(const T& t) -> decltype(ossia::geometry::topology)
 {
-  static constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
+  static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
       topology, (ossia::geometry::triangles, triangle, triangles),
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
       (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
@@ -56,7 +57,7 @@ constexpr auto get_topology(const T& t) -> decltype(ossia::geometry::topology)
 template <typename T>
 constexpr auto get_front_face(const T& t) -> decltype(ossia::geometry::front_face)
 {
-  static constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
+  static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
       front_face, (ossia::geometry::clockwise, clockwise, cw, CW),
       (ossia::geometry::counter_clockwise, counter_clockwise, ccw, CCW));
   return m(t, ossia::geometry::clockwise);
@@ -65,7 +66,7 @@ constexpr auto get_front_face(const T& t) -> decltype(ossia::geometry::front_fac
 template <typename T>
 constexpr auto get_cull_mode(const T& t) -> decltype(ossia::geometry::cull_mode)
 {
-  static constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
+  static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
       cull_mode, (ossia::geometry::front, front, cull_front),
       (ossia::geometry::back, back, cull_back), (ossia::geometry::none, none));
   return m(t, ossia::geometry::none);
@@ -224,7 +225,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
       b.stride = binding.stride;
       if constexpr(requires { binding.classification; })
       {
-        static constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
+        static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
             classification, (ossia::geometry::binding::per_vertex, per_vertex),
             (ossia::geometry::binding::per_instance, per_instance));
         b.classification
@@ -277,7 +278,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
       }
       else
       {
-        static constexpr auto m = AVND_ENUM_MATCHER(
+        static_constexpr auto m = AVND_ENUM_MATCHER(
             (ossia::geometry::attribute::fp1, float1, fp1, Float1),
             (ossia::geometry::attribute::fp2, float2, fp2, Float2, vec2),
             (ossia::geometry::attribute::fp3, float3, fp3, Float3, vec3),
@@ -310,7 +311,7 @@ void load_geometry(T& ctrl, ossia::mesh_list& geom)
 template <typename T>
 constexpr auto to_front_face(auto v)
 {
-  static constexpr auto m = AVND_ENUM_CONVERTER(
+  static_constexpr auto m = AVND_ENUM_CONVERTER(
       (ossia::geometry::clockwise, clockwise, cw, CW),
       (ossia::geometry::counter_clockwise, counter_clockwise, ccw, CCW));
   return m(v, decltype(T::front_face){});
@@ -319,7 +320,7 @@ constexpr auto to_front_face(auto v)
 template <typename T>
 constexpr auto to_topology(auto v)
 {
-  static constexpr auto m = AVND_ENUM_CONVERTER(
+  static_constexpr auto m = AVND_ENUM_CONVERTER(
       (ossia::geometry::triangles, triangle, triangles),
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
       (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
@@ -330,7 +331,7 @@ constexpr auto to_topology(auto v)
 template <typename T>
 constexpr auto to_cull_mode(auto v)
 {
-  static constexpr auto m = AVND_ENUM_CONVERTER(
+  static_constexpr auto m = AVND_ENUM_CONVERTER(
       (ossia::geometry::front, front, cull_front),
       (ossia::geometry::back, back, cull_back), (ossia::geometry::none, none));
   return m(v, decltype(T::cull_mode){});

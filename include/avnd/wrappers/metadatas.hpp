@@ -4,6 +4,7 @@
 
 #include <avnd/common/coroutines.hpp>
 #include <avnd/concepts/generic.hpp>
+#include <halp/polyfill.hpp>
 
 #include <array>
 #include <string>
@@ -249,8 +250,8 @@ struct static_identifier: std::array<char, Sz + 1>
 template <typename T, auto Symtab = valid_char_for_c_identifier>
 static constexpr auto fixup_identifier()
 {
-  static constexpr auto nm = avnd::get_name<T>();
-  static constexpr auto sz = nm.size();
+  static_constexpr auto nm = avnd::get_name<T>();
+  static_constexpr auto sz = nm.size();
   static_identifier<sz> storage;
   for(std::size_t i = 0; i < sz; i++)
     storage[i] = Symtab(nm[i]) ? nm[i] : '_';
@@ -408,7 +409,7 @@ constexpr std::array<char, 256> get_keywords()
   if constexpr(requires { T::keywords(); })
   {
     const auto& w = T::keywords();
-    static constexpr auto n = std::ssize(w);
+    static_constexpr auto n = std::ssize(w);
     if(n > 0)
     {
       constexpr int cmax = 255;
@@ -458,7 +459,7 @@ inline std::vector<std::string_view> get_tags()
 {
   if constexpr(requires { T::tags(); })
   {
-    static constexpr auto t = T::tags();
+    static_constexpr auto t = T::tags();
     return std::vector<std::string_view>(std::begin(t), std::end(t));
   }
   else if constexpr(requires { T::tags; })

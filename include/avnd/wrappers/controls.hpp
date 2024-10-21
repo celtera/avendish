@@ -8,6 +8,7 @@
 #include <avnd/wrappers/ranges.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <cmath>
+#include <halp/polyfill.hpp>
 
 #include <string>
 
@@ -27,7 +28,7 @@ static constexpr void init_controls(F& state)
     avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
       if constexpr(avnd::has_range<T>)
       {
-        static constexpr auto c = avnd::get_range<T>();
+        static_constexpr auto c = avnd::get_range<T>();
         // clang-format off
         if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
             else if_possible(ctl.value = c.values[c.init])   // For string enums
@@ -68,7 +69,7 @@ static constexpr void apply_control(T& ctl, V v)
   // Clamp
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     if(ctl.value < c.min)
       ctl.value = c.min;
     else if(ctl.value > c.max)
@@ -86,7 +87,7 @@ static void apply_control(T& ctl, avnd::string_ish auto&& v)
   // Clamp in range if there's one
   if constexpr(avnd::parameter_with_values_range<T>)
   {
-    static constexpr auto range = avnd::get_range<T>();
+    static_constexpr auto range = avnd::get_range<T>();
     static_assert(std::ssize(range.values) > 0);
     int k = 0;
     for(const auto& range_v : range.values)
@@ -122,7 +123,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 {
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else if constexpr(avnd::parameter_with_values_range<T>)
@@ -146,7 +147,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 {
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else if constexpr(avnd::parameter_with_values_range<T>)
@@ -197,7 +198,7 @@ static constexpr auto map_control_to_01(const auto& value)
   double v{};
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
@@ -222,7 +223,7 @@ static constexpr auto map_control_to_01(const auto& value)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }

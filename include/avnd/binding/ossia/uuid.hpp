@@ -1,4 +1,5 @@
 #pragma once
+#include <halp/polyfill.hpp>
 #include <score/plugins/UuidKey.hpp>
 
 namespace oscr
@@ -19,7 +20,7 @@ consteval score::uuid_t uuid_from_string()
   }
   else
   {
-    static constexpr const char* str = N::uuid();
+    static_constexpr const char* str = N::uuid();
     return score::uuids::string_generator::compute(str, str + 37);
   }
 }
