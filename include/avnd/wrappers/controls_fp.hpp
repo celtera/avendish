@@ -6,6 +6,7 @@
 #include <avnd/wrappers/ranges.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <cmath>
+#include <halp/polyfill.hpp>
 
 #include <string>
 
@@ -20,7 +21,7 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else if constexpr(avnd::parameter_with_values_range<T>)
@@ -44,7 +45,7 @@ static constexpr auto map_control_from_01_to_fp(std::floating_point auto v)
 {
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else if constexpr(avnd::parameter_with_values_range<T>)
@@ -123,7 +124,7 @@ static constexpr auto map_control_from_fp_to_01(std::floating_point auto value)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);
-    static constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
