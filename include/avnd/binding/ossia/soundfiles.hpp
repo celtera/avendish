@@ -347,11 +347,14 @@ struct raw_file_storage : raw_file_input_storage<T>
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-      port.file.bytes
-          = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
-      port.file.filename = hdl->filename;
+      if(port.file.filename != hdl->filename)
+      {
+        port.file.bytes
+            = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+        port.file.filename = hdl->filename;
 
-      if_possible(port.update(state.effect));
+        if_possible(port.update(state.effect));
+      }
     }
   }
 
@@ -368,10 +371,14 @@ struct raw_file_storage : raw_file_input_storage<T>
     // FIXME not generic enough.. GPU should also use effect_container
     avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-    port.file.bytes = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
-    port.file.filename = hdl->filename;
+    if(port.file.filename != hdl->filename)
+    {
+      port.file.bytes
+          = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+      port.file.filename = hdl->filename;
 
-    if_possible(port.update(state));
+      if_possible(port.update(state));
+    }
   }
 };
 }

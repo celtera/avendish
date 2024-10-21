@@ -115,6 +115,12 @@ static void apply_control(T& ctl, avnd::string_ish auto&& v)
   }
 }
 
+template <typename T>
+static void apply_control(T& ctl, const char* v)
+{
+  return apply_control(ctl, std::string_view(v));
+}
+
 /**
  * @brief Used for the case where the "host" works in a fixed [0. ; 1.] range
  */

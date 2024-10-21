@@ -136,7 +136,7 @@ public:
   using clk = std::chrono::steady_clock;
   clk::time_point last_ui_message = clk::now();
 
-  void init()
+  void prepare()
   {
     inputs.image.request_width = inputs.size.value.x;
     inputs.image.request_height = inputs.size.value.y;
