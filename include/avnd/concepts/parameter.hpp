@@ -105,8 +105,12 @@ template <typename T>
 concept rgb_parameter = rgb_value<decltype(T::value)>;
 
 template <typename C>
-concept parameter_with_minmax_range = AVND_REQUIREMENT_ON_MEMBER(C, range, min)
-                                      && AVND_REQUIREMENT_ON_MEMBER(C, range, max)
+concept parameter_with_minmax_range_ignore_init
+    = AVND_REQUIREMENT_ON_MEMBER(C, range, min)
+      && AVND_REQUIREMENT_ON_MEMBER(C, range, max);
+
+template <typename C>
+concept parameter_with_minmax_range = parameter_with_minmax_range_ignore_init<C>
                                       && AVND_REQUIREMENT_ON_MEMBER(C, range, init);
 
 template <typename C>

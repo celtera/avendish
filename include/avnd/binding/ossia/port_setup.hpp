@@ -199,25 +199,33 @@ struct outlet_storage
 
 struct setup_value_port
 {
-  template <avnd::parameter_with_minmax_range T>
-  ossia::domain range_to_domain()
+  template <avnd::parameter_with_minmax_range_ignore_init T>
+  static ossia::domain range_to_domain()
   {
     static constexpr auto dom = avnd::get_range<T>();
     if constexpr(std::is_floating_point_v<decltype(dom.min)>)
       return ossia::make_domain((float)dom.min, (float)dom.max);
-    if constexpr(std::is_same_v<std::decay_t<decltype(dom.init)>, bool>)
-      return ossia::domain_base<bool>{};
+
+    if constexpr(avnd::parameter_with_minmax_range<T>)
+    {
+      if constexpr(std::is_same_v<std::decay_t<decltype(dom.init)>, bool>)
+        return ossia::domain_base<bool>{};
+      else
+        return ossia::make_domain(dom.min, dom.max);
+    }
     else
       return ossia::make_domain(dom.min, dom.max);
   }
+
   template <avnd::string_parameter T>
-  ossia::domain range_to_domain()
+  static ossia::domain range_to_domain()
   {
+    // FIXME
     return {};
   }
 
   template <avnd::enum_parameter T>
-  ossia::domain range_to_domain()
+  static ossia::domain range_to_domain()
   {
     ossia::domain_base<std::string> d;
 #if !defined(_MSC_VER)
@@ -228,7 +236,7 @@ struct setup_value_port
   }
 
   template <typename T>
-  ossia::domain range_to_domain()
+  static ossia::domain range_to_domain()
   {
     if constexpr(avnd::has_range<T> && requires { avnd::get_range<T>().values; })
     {
@@ -269,7 +277,7 @@ struct setup_value_port
 
   template <typename Field>
     requires avnd::optional_ish<decltype(Field::value)>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     using concrete_val_type
         = std::remove_cvref_t<decltype(*std::declval<Field>().value)>;
@@ -281,39 +289,39 @@ struct setup_value_port
   }
 
   template <avnd::int_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::val_type::INT;
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <avnd::float_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::val_type::FLOAT;
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <avnd::bool_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::val_type::BOOL;
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <avnd::string_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::val_type::STRING;
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <avnd::soundfile_port Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::val_type::STRING;
@@ -321,23 +329,23 @@ struct setup_value_port
   }
 
   template <avnd::enum_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::val_type::INT;
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <avnd::xy_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::cartesian_2d_u{};
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <avnd::rgb_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::rgba_u{};
@@ -345,15 +353,15 @@ struct setup_value_port
   }
 
   template <avnd::span_parameter Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
     port.type = ossia::list_type();
-    port.domain = this->range_to_domain<Field>();
+    port.domain = setup_value_port::range_to_domain<Field>();
   }
 
   template <typename Field>
-  void setup(ossia::value_port& port)
+  static void setup(ossia::value_port& port)
   {
     if constexpr(requires { bool(Field::event); })
       port.is_event = Field::event;

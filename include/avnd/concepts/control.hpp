@@ -31,7 +31,7 @@ namespace avnd
  */
 template <typename T>
 concept control = /*(parameter<T> || callback<T>) &&*/ parameter<T>
-                  && (has_range<T> || has_widget<T>);
+                  && (/*has_range<T> || */ has_widget<T>);
 
 // FIXME all this needs improving: they do not support callbacks.
 // Also messages are not handled.
