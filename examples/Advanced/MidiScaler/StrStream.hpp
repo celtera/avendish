@@ -481,6 +481,8 @@ inline strstreambuf::pos_type strstreambuf::seekoff(
       if(pos_in == pos_out)
         return pos_type(off_type(-1));
       break;
+    default:
+      break;
   }
 
   if(pos_in && gptr() == nullptr)

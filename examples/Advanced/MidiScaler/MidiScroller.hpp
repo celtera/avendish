@@ -68,8 +68,8 @@ struct MidiScroller
 
     if(track < 0)
       track = 0;
-    if(track >= inputs.midi.midifile.tracks.size())
-      track = inputs.midi.midifile.tracks.size() - 1;
+    if(track >= tracks)
+      track = tracks - 1;
 
     for(const auto& ev : inputs.midi.midifile.tracks[track])
     {

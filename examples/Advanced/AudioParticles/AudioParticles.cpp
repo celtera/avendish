@@ -96,9 +96,14 @@ void AudioParticles::operator()(const halp::tick_musical& t)
   }
 
   ossia::remove_erase_if(m_playheads, [this](const auto& playhead) {
+    if(outputs.audio.channels <= playhead.channel)
+      return true;
+    if(std::ssize(m_sounds) <= playhead.index)
+      return true;
+
     auto& sound = m_sounds[playhead.index];
-    return playhead.frame >= sound[0].size() || (m_sounds.size() <= playhead.index)
-           || (outputs.audio.channels <= playhead.channel);
+    SCORE_ASSERT(!sound.empty());
+    return playhead.frame >= std::ssize(sound[0]);
   });
 }
 }
