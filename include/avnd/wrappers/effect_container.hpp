@@ -467,10 +467,7 @@ struct effect_container<T>
     decltype(T::outputs)& outputs;
   };
 
-  ref full_state(int i)
-  {
-    return {effect[i].effect, effect[i].inputs, effect[i].outputs};
-  }
+  ref full_state(int i) { return {effect[i], effect[i].inputs, effect[i].outputs}; }
 
   full_state_iterator<effect_container> full_state()
   {
