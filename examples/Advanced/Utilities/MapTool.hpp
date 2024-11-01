@@ -26,8 +26,16 @@ struct MapTool
 
   struct ins
   {
-    halp::spinbox_f32<"Min", halp::free_range_min<>> in_min;
-    halp::spinbox_f32<"Max", halp::free_range_max<>> in_max;
+    struct : halp::spinbox_f32<"Min", halp::free_range_min<>>
+    {
+      halp_flag(class_attribute);
+      std::function<void(float)> update_controller;
+    } in_min;
+    struct : halp::spinbox_f32<"Max", halp::free_range_max<>>
+    {
+      halp_flag(class_attribute);
+      std::function<void(float)> update_controller;
+    } in_max;
 
     halp::toggle<"Learn min"> min_learn;
     halp::toggle<"Learn max"> max_learn;
@@ -72,6 +80,20 @@ struct MapTool
   double operator()(double v)
   {
     /// 0. Learn min / max
+    // TODO think of a better way to have host feature detection?
+    if(inputs.in_min.update_controller)
+    {
+      if(inputs.min_learn && v < inputs.in_min)
+      {
+        inputs.in_min.value = v;
+        inputs.in_min.update_controller(v);
+      }
+      if(inputs.max_learn && v > inputs.in_max)
+      {
+        inputs.in_max.value = v;
+        inputs.in_max.update_controller(v);
+      }
+    }
 
     /// 1. Scale input to 0 - 1
     double in_scale = (inputs.in_max - inputs.in_min);
