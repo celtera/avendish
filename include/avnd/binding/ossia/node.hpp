@@ -120,6 +120,8 @@ public:
 
   [[no_unique_address]] oscr::builtin_arg_audio_ports<T> audio_ports;
 
+  [[no_unique_address]] oscr::builtin_arg_value_ports<T> arg_value_ports;
+
   [[no_unique_address]] oscr::builtin_message_value_ports<T> message_ports;
 
   [[no_unique_address]] oscr::inlet_storage<T> ossia_inlets;
@@ -188,6 +190,7 @@ public:
     this->sample_rate = sample_rate;
 
     this->audio_ports.init(this->m_inlets, this->m_outlets);
+    this->arg_value_ports.init(this->m_inlets, this->m_outlets);
     this->message_ports.init(this->m_inlets);
     this->soundfiles.init(this->impl);
 
@@ -628,27 +631,31 @@ public:
 // FIXME these concepts are super messy
 
 template <typename FP, typename T>
-concept real_mono_processor = avnd::mono_per_sample_arg_processor<FP, T>
-                              || avnd::mono_per_sample_port_processor<FP, T>
-                              || avnd::monophonic_single_port_audio_effect<FP, T>
-                              || avnd::mono_per_channel_arg_processor<FP, T>
-                              || avnd::mono_per_channel_port_processor<FP, T>;
+concept real_mono_processor = !avnd::tag_cv<T>
+                              && (avnd::mono_per_sample_arg_processor<FP, T>
+                                  || avnd::mono_per_sample_port_processor<FP, T>
+                                  || avnd::monophonic_single_port_audio_effect<FP, T>
+                                  || avnd::mono_per_channel_arg_processor<FP, T>
+                                  || avnd::mono_per_channel_port_processor<FP, T>);
 template <typename T>
 concept real_good_mono_processor
     = real_mono_processor<float, T> || real_mono_processor<double, T>;
 
 template <typename T>
-concept mono_generator = avnd::monophonic_single_port_generator<float, T>
-                         || avnd::monophonic_single_port_generator<double, T>;
+concept mono_generator = !avnd::tag_cv<T>
+                         && (avnd::monophonic_single_port_generator<float, T>
+                             || avnd::monophonic_single_port_generator<double, T>);
 
 template <typename T>
 concept ossia_compatible_nonaudio_processor
-    = !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>);
+    = avnd::tag_cv<T>
+      || !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>);
 
 template <typename T>
 concept ossia_compatible_audio_processor
-    = avnd::poly_sample_array_input_port_count<double, T> > 0
-      || avnd::poly_sample_array_output_port_count<double, T> > 0;
+    = !avnd::tag_cv<T>
+      && (avnd::poly_sample_array_input_port_count<double, T> > 0
+          || avnd::poly_sample_array_output_port_count<double, T> > 0);
 
 template <typename T>
 class safe_node;

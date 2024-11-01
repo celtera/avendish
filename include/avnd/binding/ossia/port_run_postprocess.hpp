@@ -117,6 +117,7 @@ struct process_after_run
     assert(N == ctrl.ports.size());
     for(int i = 0; i < N; i++)
     {
+      // FIXME double-check all the "0", most likely they should be the tick start timestamp instead
       write_value(
           ctrl.ports[i], *port[i], ctrl.ports[i].value, 0, avnd::field_index<Idx>{});
     }

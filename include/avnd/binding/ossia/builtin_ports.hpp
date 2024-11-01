@@ -25,6 +25,25 @@ struct builtin_arg_audio_ports<T>
 };
 
 template <typename T>
+struct builtin_arg_value_ports
+{
+  void init(ossia::inlets& inlets, ossia::outlets& outlets) { }
+};
+
+template <avnd::tag_cv T>
+struct builtin_arg_value_ports<T>
+{
+  ossia::value_inlet in;
+  ossia::value_outlet out;
+
+  void init(ossia::inlets& inlets, ossia::outlets& outlets)
+  {
+    inlets.push_back(&in);
+    outlets.push_back(&out);
+  }
+};
+
+template <typename T>
 struct builtin_message_value_ports
 {
   void init(ossia::inlets& inlets) { }

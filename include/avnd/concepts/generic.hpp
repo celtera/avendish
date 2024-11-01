@@ -16,6 +16,12 @@ namespace avnd
     action;                          \
   }
 
+#define if_possible_r(action)        \
+  if constexpr(requires { action; }) \
+  {                                  \
+    return action;                   \
+  }
+
 #define value_if_possible(A, X, B) \
   []() consteval                   \
   {                                \

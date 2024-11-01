@@ -4,6 +4,7 @@
 
 #include <avnd/common/function_reflection.hpp>
 #include <avnd/concepts/audio_port.hpp>
+#include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/port.hpp>
 
 // clang-format off
@@ -286,15 +287,15 @@ concept bus_port_processor
 
 template<typename T>
 concept audio_argument_processor =
-     sample_arg_processor<T>
+     (sample_arg_processor<T>
   || channel_arg_processor<T>
-  || bus_arg_processor<T>
+  || bus_arg_processor<T>) && !tag_cv<T>
 ;
 template<typename T>
 concept audio_port_processor =
-     sample_port_processor<T>
+     (sample_port_processor<T>
   || channel_port_processor<T>
-  || bus_port_processor<T>
+  || bus_port_processor<T>) && !tag_cv<T>
 ;
 }
 

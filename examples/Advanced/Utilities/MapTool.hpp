@@ -22,20 +22,23 @@ struct MapTool
   halp_meta(description, "Map a value to a given domain in various ways")
   halp_meta(uuid, "ae6e3c9f-40cf-493a-8dc8-d45e75a07213")
   halp_flag(cv);
+  halp_flag(stateless);
 
-  struct
+  struct ins
   {
-    halp::spinbox_f32<"Min"> in_min;
-    halp::spinbox_f32<"Max"> in_max;
+    halp::spinbox_f32<"Min", halp::free_range_min<>> in_min;
+    halp::spinbox_f32<"Max", halp::free_range_max<>> in_max;
+
     halp::toggle<"Learn min"> min_learn;
     halp::toggle<"Learn max"> max_learn;
+
     halp::enum_t<MapToolWrapMode, "Range behaviour"> range_behaviour;
     halp::knob_f32<"Curve", halp::range{-1., 1., 0.}> curve;
     halp::toggle<"Invert"> invert;
-    halp::toggle<"Smooth"> smooth;
+    halp::knob_f32<"Smooth"> smooth;
 
-    halp::spinbox_f32<"Out min"> out_min;
-    halp::spinbox_f32<"Out max"> out_max;
+    halp::spinbox_f32<"Out min", halp::free_range_min<>> out_min;
+    halp::spinbox_f32<"Out max", halp::free_range_max<>> out_max;
   } inputs;
 
   struct
@@ -83,7 +86,10 @@ struct MapTool
     to_01 = wrap(to_01);
 
     // - Curve
-    to_01 = std::pow(to_01, inputs.curve.value + 1);
+    if(inputs.curve.value >= 0)
+      to_01 = std::pow(to_01, std::pow(16., inputs.curve.value));
+    else
+      to_01 = 1. - std::pow(1. - to_01, std::pow(16., -inputs.curve.value));
 
     // - Invert
     if(inputs.invert)
@@ -92,5 +98,50 @@ struct MapTool
     /// 3. Unscale
     return to_01 * (inputs.out_max - inputs.out_min) + inputs.out_min;
   }
+
+  struct ui
+  {
+    halp_meta(layout, halp::layouts::hbox)
+    struct
+    {
+      halp_meta(layout, halp::layouts::vbox)
+      halp_meta(background, halp::colors::mid)
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        halp::control<&ins::in_min> p;
+        halp::control<&ins::min_learn> l;
+      } min;
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        halp::control<&ins::in_max> p;
+        halp::control<&ins::max_learn> l;
+      } max;
+    } in_range;
+
+    struct
+    {
+      halp_meta(layout, halp::layouts::vbox)
+      halp_meta(background, halp::colors::mid)
+
+      halp::control<&ins::range_behaviour> rb;
+      halp::control<&ins::invert> i;
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        halp::control<&ins::curve> c;
+        halp::control<&ins::smooth> s;
+      } Knobs;
+    } filter;
+
+    struct
+    {
+      halp_meta(layout, halp::layouts::vbox)
+      halp_meta(background, halp::colors::mid)
+      halp::control<&ins::out_min> min;
+      halp::control<&ins::out_max> max;
+    } out_range;
+  };
 };
 }

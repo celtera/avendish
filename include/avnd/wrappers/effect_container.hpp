@@ -198,7 +198,8 @@ struct effect_container
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>)
+  requires(
+      !has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -234,7 +235,8 @@ struct effect_container<T>
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>)
+  requires(
+      !has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -287,7 +289,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>)
+  requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -328,7 +330,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
+  requires(avnd::inputs_is_type<T> && avnd::outputs_is_type<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -382,7 +384,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
+  requires(avnd::inputs_is_type<T> && avnd::outputs_is_value<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -434,7 +436,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
+  requires(avnd::inputs_is_value<T> && avnd::outputs_is_value<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -488,7 +490,7 @@ struct effect_container<T>
   }
 };
 template <avnd::monophonic_audio_processor T>
-  requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>)
+  requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
