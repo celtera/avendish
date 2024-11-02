@@ -1,8 +1,10 @@
 #pragma once
+#include <halp/modules.hpp>
+
 #include <cinttypes>
 #include <memory>
 #include <vector>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 

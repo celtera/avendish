@@ -3,12 +3,13 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/meta.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
 #include <functional>
 #include <string_view>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 

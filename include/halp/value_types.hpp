@@ -1,8 +1,11 @@
 #pragma once
+#include <halp/modules.hpp>
+
 #include <cinttypes>
 #include <cstdint>
 #include <string_view>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 

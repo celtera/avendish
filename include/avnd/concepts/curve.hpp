@@ -30,10 +30,16 @@ template <typename T>
 concept curve_segment_map_gamma
     = requires(T t) { t.gamma = 0.f; } || requires(T t) { t.power = 0.f; };
 
+struct dummy_function_for_curve
+{
+  int foo = 123;
+  void operator()(auto x) { return foo * x; }
+};
+
 template <typename T>
-concept curve_segment_map_function
-    = requires(T t) { t.function = [foo = 123](auto x) { return foo * x; }; }
-      || requires(T t) { t.map = [foo = 123](auto x) { return foo * x; }; };
+concept curve_segment_map_function = requires(T t) {
+  t.function = dummy_function_for_curve{};
+} || requires(T t) { t.map = dummy_function_for_curve{}; };
 
 template <typename T>
 concept curve_segment_map = curve_segment_map_gamma<T> || curve_segment_map_function<T>;

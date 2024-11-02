@@ -4,6 +4,7 @@
 
 #include <halp/inline.hpp>
 #include <halp/midi.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
@@ -11,6 +12,7 @@
 #include <string_view>
 #include <vector>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 struct midi_track_event

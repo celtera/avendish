@@ -1,7 +1,9 @@
 #pragma once
 #include <boost/container/flat_map.hpp>
+#include <halp/modules.hpp>
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
+HALP_MODULE_EXPORT
 namespace halp
 {
 struct xyz_color

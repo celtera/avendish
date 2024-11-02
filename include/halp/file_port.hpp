@@ -3,13 +3,14 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
 #include <cstddef>
 #include <string_view>
 #include <vector>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 // TODO look into using the LLFIO concepts instead for maximum power

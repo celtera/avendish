@@ -1,5 +1,6 @@
 #pragma once
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
@@ -8,6 +9,7 @@
 #include <span>
 #include <string_view>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <typename T>

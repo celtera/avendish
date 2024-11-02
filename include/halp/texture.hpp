@@ -4,10 +4,12 @@
 
 #include <boost/container/vector.hpp>
 #include <halp/controls.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/texture_formats.hpp>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 

@@ -1,7 +1,11 @@
 #pragma once
 #include <avnd/concepts/processor.hpp>
 #include <avnd/introspection/messages.hpp>
+#include <ossia/dataflow/audio_port.hpp>
 #include <ossia/dataflow/graph_node.hpp>
+#include <ossia/dataflow/port.hpp>
+#include <ossia/dataflow/value_port.hpp>
+
 namespace oscr
 {
 

@@ -1,6 +1,8 @@
 #pragma once
-#include <functional>
+#include <halp/modules.hpp>
 
+#include <functional>
+HALP_MODULE_EXPORT
 namespace halp
 {
 

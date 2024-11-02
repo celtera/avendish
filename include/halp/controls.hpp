@@ -4,6 +4,7 @@
 
 #include <boost/predef.h>
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
@@ -16,14 +17,9 @@
 #include <halp/controls.basic.hpp>
 #include <halp/controls.buttons.hpp>
 #include <halp/controls.enums.hpp>
-
-#if(!BOOST_COMP_GNUC || (BOOST_COMP_GNUC >= 12)) && !defined(ESP8266)
 #include <halp/controls.sliders.hpp>
-#else
-#define HALP_GCC10_SLIDERS_WORKAROUND 1
-#include <halp/controls.sliders.gcc10.hpp>
-#endif
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 

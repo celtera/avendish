@@ -7,11 +7,13 @@
 #include <boost/container/small_vector.hpp>
 #include <cmath>
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/static_string.hpp>
 
 #include <cstdint>
 #include <functional>
 #include <string_view>
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <static_string Name, typename FP, static_string Desc = "">

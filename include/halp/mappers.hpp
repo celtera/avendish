@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cmath>
+#include <halp/modules.hpp>
 
 #include <ratio>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 

@@ -4,6 +4,8 @@
 // #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <ossia/detail/lockfree_queue.hpp>
 
+#include <bitset>
+
 namespace oscr
 {
 

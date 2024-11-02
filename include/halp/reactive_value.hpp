@@ -3,6 +3,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/callback.hpp>
+#include <halp/modules.hpp>
+
+HALP_MODULE_EXPORT
 namespace halp
 {
 

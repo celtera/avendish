@@ -16,6 +16,9 @@
 #define HALP_TOKENPASTE(x, y) x##y
 #define HALP_TOKENPASTE2(x, y) HALP_TOKENPASTE(x, y)
 
+#include <halp/modules.hpp>
+
+HALP_MODULE_EXPORT
 namespace halp
 {
 

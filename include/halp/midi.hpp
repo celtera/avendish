@@ -3,10 +3,13 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <boost/container/small_vector.hpp>
+#include <halp/modules.hpp>
 #include <halp/static_string.hpp>
 
 #include <algorithm>
 #include <string_view>
+
+HALP_MODULE_EXPORT
 namespace halp
 {
 

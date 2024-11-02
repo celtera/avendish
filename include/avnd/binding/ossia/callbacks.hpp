@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/binding/ossia/to_value.hpp>
 #include <ossia/dataflow/value_port.hpp>
+#include <tuplet/tuple.hpp>
 
 namespace oscr
 {

@@ -1,5 +1,6 @@
 #pragma once
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
@@ -7,7 +8,7 @@
 #include <limits>
 #include <string_view>
 #include <type_traits>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <typename T>

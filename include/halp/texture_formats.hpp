@@ -3,8 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <boost/container/vector.hpp>
+#include <halp/modules.hpp>
 #include <halp/value_types.hpp>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 struct r8_texture

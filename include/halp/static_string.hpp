@@ -2,8 +2,10 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <cstddef>
+#include <halp/modules.hpp>
 
+#include <cstddef>
+HALP_MODULE_EXPORT
 namespace halp
 {
 

@@ -2,12 +2,14 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <halp/modules.hpp>
 #include <halp/static_string.hpp>
 
 #include <cassert>
 #include <cstdint>
 #include <string_view>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 

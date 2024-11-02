@@ -1,7 +1,9 @@
 #pragma once
+#include <halp/modules.hpp>
+
 #include <functional>
 #include <vector>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <typename Port>

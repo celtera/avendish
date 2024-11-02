@@ -1,7 +1,9 @@
 #pragma once
 #include <halp/controls.hpp>
+#include <halp/modules.hpp>
 #include <halp/smoothers.hpp>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <typename T>

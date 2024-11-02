@@ -1,7 +1,9 @@
 #pragma once
+#include <halp/modules.hpp>
 #include <halp/static_string.hpp>
 
 #include <string_view>
+HALP_MODULE_EXPORT
 namespace halp
 {
 

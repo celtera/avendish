@@ -14,6 +14,8 @@
 #error magic_enum is required
 #endif
 
+#include <halp/modules.hpp>
+HALP_MODULE_EXPORT
 namespace halp
 {
 /// ComboBox / Enum ///
