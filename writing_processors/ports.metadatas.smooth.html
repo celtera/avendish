@@ -203,10 +203,11 @@
 #pragma once
 
 #include &lt;cmath&gt;
+#include &lt;halp/modules.hpp&gt;
 
+HALP_MODULE_EXPORT
 namespace halp
 {
-static const constexpr double pi = 3.141592653589793238462643383279502884;
 
 // A basic smooth specification
 template &lt;int T&gt;
@@ -223,6 +224,7 @@ struct milliseconds_smooth
 template &lt;int T&gt;
 struct exp_smooth
 {
+  static const constexpr double pi = 3.141592653589793238462643383279502884;
   static constexpr auto ratio(double sample_rate) noexcept
   {
     return std::exp(-2. * pi / (T * 1e-3 * sample_rate));
