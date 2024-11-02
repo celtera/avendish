@@ -4,6 +4,7 @@
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
 
+#include <limits>
 #include <string_view>
 #include <type_traits>
 
@@ -25,6 +26,13 @@ inline constexpr auto default_irange = irange{0, 127, 64};
 
 // Range still constrained as many ui widgets bail out past some ~2^24 value
 template <typename T = long double>
+inline constexpr auto positive_range_min
+    = range{0., std::numeric_limits<int>::max() / 256., 0.};
+template <typename T = long double>
+inline constexpr auto positive_range_max
+    = range{0., std::numeric_limits<int>::max() / 256., 1.};
+
+template <typename T = long double>
 inline constexpr auto free_range_min = range{
     std::numeric_limits<int>::lowest() / 256., std::numeric_limits<int>::max() / 256.,
     0.};
@@ -32,13 +40,6 @@ template <typename T = long double>
 inline constexpr auto free_range_max = range{
     std::numeric_limits<int>::lowest() / 256., std::numeric_limits<int>::max() / 256.,
     1.};
-
-template <typename T = long double>
-inline constexpr auto free_positive_range_min
-    = range{0., std::numeric_limits<int>::max() / 256., 0.};
-template <typename T = long double>
-inline constexpr auto free_positive_range_max
-    = range{0., std::numeric_limits<int>::max() / 256., 1.};
 
 template <typename T>
 struct init_range_t
