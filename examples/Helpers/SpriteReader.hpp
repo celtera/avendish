@@ -18,9 +18,9 @@ namespace examples::helpers
 {
 struct SpriteReader
 {
-  halp_meta(name, "Spirte reader");
+  halp_meta(name, "Sprite reader");
   halp_meta(c_name, "sprite_reader");
-  halp_meta(category, "GFX");
+  halp_meta(category, "Visuals");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Loads an image file into a texture");
   halp_meta(uuid, "b28b0cf5-164b-4aa0-8edd-8830ade702e5");
