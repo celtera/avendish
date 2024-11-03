@@ -347,6 +347,11 @@ struct tick_musical
 
       if(start_quant != end_quant)
       {
+        if(end_quant == end_quarter * musical_quant_dur)
+        {
+          // We want quantization on start, not on end
+          return {};
+        }
         // Date to quantify is the next one :
         const double musical_tick_duration
             = this->end_position_in_quarters - this->start_position_in_quarters;
@@ -370,8 +375,7 @@ struct tick_musical
           }
         }
       }
-      else if(
-          this->start_position_in_quarters == 0. && this->end_position_in_quarters > 0.)
+      else if(start_quant == start_quarter * musical_quant_dur)
       {
         // Special first bar case
         return {{0, 1}};
