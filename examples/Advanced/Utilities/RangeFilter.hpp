@@ -19,6 +19,8 @@ public:
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Filter out values of an input outside of a numeric range")
   halp_meta(uuid, "db16b5fa-e6b0-4f89-8210-225384dbc677")
+  halp_flag(cv);
+  halp_flag(stateless);
 
   struct inputs_t
   {
@@ -40,14 +42,14 @@ public:
   {
     if(inputs.invert)
     {
-      if(v >= inputs.min && v <= inputs.max)
+      if(v <= inputs.min || v >= inputs.max)
       {
         return v;
       }
     }
     else
     {
-      if(v <= inputs.min || v >= inputs.max)
+      if(v >= inputs.min && v <= inputs.max)
       {
         return v;
       }

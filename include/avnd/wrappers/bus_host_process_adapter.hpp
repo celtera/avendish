@@ -33,71 +33,57 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   // Handle "virtual" audio ports for simple processors
   // which pass things by arguments
 
-  if constexpr(avnd::mono_per_sample_arg_processor<double, T>)
+  if constexpr(avnd::tag_cv<T>)
   {
-    if constexpr(avnd::tag_cv<T>)
+    using input_value_type = std::remove_cvref_t<
+        boost::mp11::mp_first<typename avnd::function_reflection_o<T>::arguments>>;
+    using operator_ret = typename avnd::function_reflection_o<T>::return_type;
+    struct
     {
-      struct
-      {
-        static consteval auto name() { return "Value In"; }
-        double value;
-      } fake_in;
+      static consteval auto name() { return "Value In"; }
+      input_value_type value;
+    } fake_in;
+    func_inlets(fake_in, avnd::field_index<0>{});
+
+    if constexpr(!std::is_void_v<operator_ret>)
+    {
       struct
       {
         static consteval auto name() { return "Value Out"; }
-        double value;
+        operator_ret value;
       } fake_out;
-      func_inlets(fake_in, avnd::field_index<0>{});
-      func_outlets(fake_out, avnd::field_index<0>{});
-    }
-    else
-    {
-      struct
-      {
-        static consteval auto name() { return "Audio In"; }
-        double sample;
-      } fake_in;
-      struct
-      {
-        static consteval auto name() { return "Audio Out"; }
-        double sample;
-      } fake_out;
-      func_inlets(fake_in, avnd::field_index<0>{});
       func_outlets(fake_out, avnd::field_index<0>{});
     }
   }
+  else if constexpr(avnd::mono_per_sample_arg_processor<double, T>)
+  {
+    struct
+    {
+      static consteval auto name() { return "Audio In"; }
+      double sample;
+    } fake_in;
+    struct
+    {
+      static consteval auto name() { return "Audio Out"; }
+      double sample;
+    } fake_out;
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
+  }
   else if constexpr(avnd::mono_per_sample_arg_processor<float, T>)
   {
-    if constexpr(avnd::tag_cv<T>)
+    struct
     {
-      struct
-      {
-        static consteval auto name() { return "Value In"; }
-        float value;
-      } fake_in;
-      struct
-      {
-        static consteval auto name() { return "Value Out"; }
-        float value;
-      } fake_out;
-      func_inlets(fake_in, avnd::field_index<0>{});
-      func_outlets(fake_out, avnd::field_index<0>{});
-    }
-    else
+      static consteval auto name() { return "Audio In"; }
+      float sample;
+    } fake_in;
+    struct
     {
-      struct
-      {
-        static consteval auto name() { return "Audio In"; }
-        float sample;
-      } fake_in;
-      struct
-      {
-        static consteval auto name() { return "Audio Out"; }
-        float sample;
-      } fake_out;
-      func_inlets(fake_in, avnd::field_index<0>{});
-      func_outlets(fake_out, avnd::field_index<0>{});
-    }
+      static consteval auto name() { return "Audio Out"; }
+      float sample;
+    } fake_out;
+    func_inlets(fake_in, avnd::field_index<0>{});
+    func_outlets(fake_out, avnd::field_index<0>{});
   }
   else if constexpr(avnd::mono_per_channel_arg_processor<double, T>)
   {

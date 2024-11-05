@@ -62,14 +62,12 @@ public:
   template <typename Tick>
   static auto invoke_effect(T& obj, auto&& val, const Tick& t)
   {
-    return obj(val);
-    /*
     // clang-format off
     if constexpr(std::is_integral_v<Tick>)
     {
       static_assert(!avnd::has_tick<T>);
-      if_possible_r(this->impl.effect(val, t))
- else if_possible_r(this->impl.effect(val))
+      if_possible_r(obj(val, t))
+ else if_possible_r(obj(val))
  else static_assert(std::is_void_v<Tick>, "impossible to call");
     }
     else
@@ -77,29 +75,71 @@ public:
       if constexpr (avnd::has_tick<T>)
       {
         // Do the process call
-        if_possible_r(this->impl.effect(val, t))
-   else if_possible_r(this->impl.effect(val, t.frames))
-   else if_possible_r(this->impl.effect(val, t.frames, t))
-   else if_possible_r(this->impl.effect(val))
+        if_possible_r(obj(val, t))
+   else if_possible_r(obj(val, t.frames))
+   else if_possible_r(obj(val, t.frames, t))
+   else if_possible_r(obj(val))
    else static_assert(std::is_void_v<Tick>, "impossible to call");
       }
       else
       {
-        if_possible_r(this->impl.effect(val, t.frames))
-   else if_possible_r(this->impl.effect(val))
+        if_possible_r(obj(val, t.frames))
+   else if_possible_r(obj(val))
    else static_assert(std::is_void_v<Tick>, "impossible to call");
       }
     }
     // clang-format on
-*/
   }
 
-  using tick_t = decltype(avnd::get_tick_or_frames(
-      safe_node<T>::impl, std::declval<tick_info>()));
   using input_value_type = std::remove_cvref_t<
       boost::mp11::mp_first<typename avnd::function_reflection_o<T>::arguments>>;
-  using operator_ret = decltype(invoke_effect(
-      std::declval<T&>(), std::declval<input_value_type>(), tick_t{}));
+  using operator_ret = typename avnd::function_reflection_o<T>::return_type;
+
+  template <typename ValType, typename Tick>
+  struct process_value_no_ret
+  {
+    static constexpr inline struct
+    {
+      ValType value;
+    } fake_port;
+    safe_node& self;
+    const Tick& tick;
+    int ts{};
+    void operator()() { }
+    void operator()(ossia::impulse) { self.invoke_effect(self.impl.effect, 0, tick); }
+    void operator()(bool v) { self.invoke_effect(self.impl.effect, v ? 1 : 0, tick); }
+    void operator()(int v) { self.invoke_effect(self.impl.effect, v, tick); }
+    void operator()(float v) { self.invoke_effect(self.impl.effect, v, tick); }
+    void operator()(const std::string& v)
+    {
+      self.invoke_effect(self.impl.effect, std::stof(v), tick);
+    }
+    template <std::size_t N>
+    void operator()(std::array<float, N> v)
+    {
+      std::array<float, N> res;
+      for(int i = 0; i < N; i++)
+        res[i] = self.invoke_effect(self.impl.effect, v[i], tick);
+    }
+
+    // FIXME handle recursion
+    void operator()(const std::vector<ossia::value>& v)
+    {
+      std::vector<ossia::value> res;
+      res.reserve(v.size());
+
+      for(std::size_t i = 0; i < v.size(); i++)
+        self.invoke_effect(self.impl.effect, ossia::convert<float>(v[i]), tick);
+    }
+    void operator()(const ossia::value_map_type& v)
+    {
+      ossia::value_map_type res;
+      for(auto& [k, val] : v)
+      {
+        self.invoke_effect(self.impl.effect, ossia::convert<float>(val), tick);
+      }
+    }
+  };
 
   template <typename ValType, typename Tick>
   struct process_value
@@ -265,22 +305,63 @@ public:
     const auto tick
         = avnd::get_tick_or_frames(this->impl, tick_info{*this, tk, st, frames});
 
-    if constexpr(avnd::optional_ish<operator_ret>)
+    if constexpr(std::is_void_v<operator_ret>)
     {
-      process_value_opt<input_value_type, decltype(tick)> proc{
-          *this, tick, *this->arg_value_ports.out};
-      for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+      if constexpr(std::is_same_v<input_value_type, ossia::value>)
       {
-        val.value.apply(proc);
+        for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+        {
+          invoke_effect(this->impl.effect, val.value, tick);
+        }
+      }
+      else
+      {
+        process_value_no_ret<input_value_type, decltype(tick)> proc{
+            *this, tick, *this->arg_value_ports.out};
+        for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+        {
+          val.value.apply(proc);
+        }
+      }
+    }
+    else if constexpr(avnd::optional_ish<operator_ret>)
+    {
+      if constexpr(std::is_same_v<input_value_type, ossia::value>)
+      {
+        for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+        {
+          if(auto res = invoke_effect(this->impl.effect, val.value, tick))
+            this->arg_value_ports.out->write_value(*res, 0);
+        }
+      }
+      else
+      {
+        process_value_opt<input_value_type, decltype(tick)> proc{
+            *this, tick, *this->arg_value_ports.out};
+        for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+        {
+          val.value.apply(proc);
+        }
       }
     }
     else
     {
-      process_value<input_value_type, decltype(tick)> proc{
-          *this, tick, *this->arg_value_ports.out};
-      for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+      if constexpr(std::is_same_v<input_value_type, ossia::value>)
       {
-        val.value.apply(proc);
+        for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+        {
+          this->arg_value_ports.out->write_value(
+              invoke_effect(this->impl.effect, val.value, tick), 0);
+        }
+      }
+      else
+      {
+        process_value<input_value_type, decltype(tick)> proc{
+            *this, tick, *this->arg_value_ports.out};
+        for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
+        {
+          val.value.apply(proc);
+        }
       }
     }
     this->finish_run();
