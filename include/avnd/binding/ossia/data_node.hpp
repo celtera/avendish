@@ -98,10 +98,6 @@ public:
   template <typename ValType, typename Tick>
   struct process_value_no_ret
   {
-    static constexpr inline struct
-    {
-      ValType value;
-    } fake_port;
     safe_node& self;
     const Tick& tick;
     int ts{};
@@ -144,10 +140,6 @@ public:
   template <typename ValType, typename Tick>
   struct process_value
   {
-    static constexpr inline struct
-    {
-      ValType value;
-    } fake_port;
     safe_node& self;
     const Tick& tick;
     ossia::value_port& out;
@@ -209,10 +201,6 @@ public:
   template <typename ValType, typename Tick>
   struct process_value_opt
   {
-    static constexpr inline struct
-    {
-      ValType value;
-    } fake_port;
     safe_node& self;
     const Tick& tick;
     ossia::value_port& out;
