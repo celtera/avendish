@@ -1,6 +1,10 @@
 #pragma once
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
+#include <halp/meta.hpp>
 #include <ossia/detail/math.hpp>
+
+#include <functional>
 
 namespace ao
 {
