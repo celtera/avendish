@@ -22,25 +22,37 @@ public:
 
   struct inputs_t
   {
-    halp::val_port<"In", std::optional<float>> in;
     halp::spinbox_f32<"Min", halp::range{-1e6, 1e6, 0.}> min;
     halp::spinbox_f32<"Max", halp::range{-1e6, 1e6, 1.}> max;
+    struct : halp::toggle<"Invert">
+    {
+      halp_meta(
+          description,
+          "Invert the filter operation: only let values outside the range go through.")
+    } invert;
   } inputs;
 
   struct
   {
-    halp::val_port<"Out", std::optional<float>> out;
   } outputs;
 
-  void operator()() noexcept
+  std::optional<float> operator()(float v) noexcept
   {
-    if(inputs.in.value)
+    if(inputs.invert)
     {
-      float v = *inputs.in.value;
       if(v >= inputs.min && v <= inputs.max)
-        outputs.out = v;
+      {
+        return v;
+      }
     }
+    else
+    {
+      if(v <= inputs.min || v >= inputs.max)
+      {
+        return v;
+      }
+    }
+    return std::nullopt;
   }
 };
-
 }
