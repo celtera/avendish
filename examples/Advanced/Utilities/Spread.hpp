@@ -17,7 +17,7 @@ struct Spread
   halp_meta(description, "Spread N inputs from a list")
   halp_meta(uuid, "cd6dc025-1d8e-4b73-868a-599df81667e4")
 
-  struct inputs
+  struct
   {
     struct : halp::spinbox_i32<"Control", halp::range{0, 1024, 1}>
     {

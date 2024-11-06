@@ -17,7 +17,7 @@ struct Combine
   halp_meta(description, "Combine N inputs in a list")
   halp_meta(uuid, "3bbf74cd-55c1-473f-a11c-25ffec5b5c71")
 
-  struct inputs
+  struct
   {
     struct : halp::spinbox_i32<"Control", halp::range{0, 1024, 1}>
     {
