@@ -125,6 +125,11 @@ struct to_ossia_value_impl
     val = std::move(res);
   }
 
+  // FIXME try to std::move always in this case?
+  void operator()(const std::vector<ossia::value>& f) { val = f; }
+  void operator()(std::vector<ossia::value>& f) { val = std::move(f); }
+  void operator()(std::vector<ossia::value>&& f) { val = std::move(f); }
+
   void operator()(const avnd::vector_ish auto& f)
   {
     std::vector<ossia::value> v;

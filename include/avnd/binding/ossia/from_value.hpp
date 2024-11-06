@@ -1345,7 +1345,16 @@ bool from_ossia_value(const ossia::value& src, T& dst)
 {
   return from_ossia_value_impl{}(src, dst);
 }
-
+inline bool from_ossia_value(const ossia::value& src, std::vector<ossia::value>& dst)
+{
+  dst = ossia::convert<std::vector<ossia::value>>(src);
+  return true;
+}
+inline bool from_ossia_value(const ossia::value& src, ossia::value_map_type& dst)
+{
+  dst = ossia::convert<ossia::value_map_type>(src);
+  return true;
+}
 template <avnd::optional_ish T>
 void from_ossia_value(const ossia::value& src, T& dst)
 {

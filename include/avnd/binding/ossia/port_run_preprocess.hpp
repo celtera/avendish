@@ -430,7 +430,8 @@ struct process_before_run
     ctrl.ports.resize(ports.size());
     for(auto& port_value : ctrl.ports)
     {
-      port_value.value = {};
+      using type = std::remove_cvref_t<decltype(port_value.value)>;
+      port_value.value = type{};
     }
   }
 
