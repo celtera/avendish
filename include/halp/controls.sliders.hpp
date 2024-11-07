@@ -115,6 +115,7 @@ struct toggle_setup
 };
 
 inline constexpr auto default_toggle = toggle_setup{.init = false};
+inline constexpr auto default_on_toggle = toggle_setup{.init = false};
 
 /// XY position ///
 template <typename T, static_string lit, range setup>
