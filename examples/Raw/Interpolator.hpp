@@ -6,7 +6,7 @@ namespace examples
 {
 struct ExponentialSmoothing
 {
-  static constexpr auto name() { return "Exponential Smoothing"; }
+  static constexpr auto name() { return "Exp Smoothing"; }
   static constexpr auto c_name() { return "avnd_expsmooth"; }
   static constexpr auto author() { return "Jean-Michaël Celerier"; }
   static constexpr auto category() { return "Control/Mappings"; }
@@ -24,6 +24,10 @@ struct ExponentialSmoothing
     struct
     {
       static constexpr auto name() { return "Alpha"; }
+      enum widget
+      {
+        hslider
+      };
       struct range
       {
         double min{0.01}, max{1.}, init{0.5};
