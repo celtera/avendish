@@ -3,8 +3,7 @@
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
-
-/* SPDX-License-Identifier: GPL-3.0-or-later */
+#include <ossia/network/value/value.hpp>
 
 namespace ao
 {
