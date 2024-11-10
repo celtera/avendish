@@ -14,6 +14,8 @@ struct Spread
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Mapping")
   halp_meta(description, "Spread N inputs from a list")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#spread")
   halp_meta(uuid, "cd6dc025-1d8e-4b73-868a-599df81667e4")
 
   struct

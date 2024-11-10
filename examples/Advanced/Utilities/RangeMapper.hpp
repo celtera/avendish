@@ -16,6 +16,9 @@ public:
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Map values in a numeric range")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/mapping-utilities.html#range-mapper")
   halp_meta(uuid, "cb6f19b2-827d-420c-ad19-7a366f914026")
 
   struct inputs_t

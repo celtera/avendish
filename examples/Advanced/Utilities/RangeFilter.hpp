@@ -18,6 +18,9 @@ public:
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Filter out values of an input outside of a numeric range")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/mapping-utilities.html#range-filter")
   halp_meta(uuid, "db16b5fa-e6b0-4f89-8210-225384dbc677")
   halp_flag(cv);
   halp_flag(stateless);

@@ -20,6 +20,7 @@ public:
   halp_meta(category, "Audio")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Basic soundfile player")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/soundfile.html")
   halp_meta(uuid, "5c12a267-63a3-4dde-99e5-264b4ca4243b")
 
   struct

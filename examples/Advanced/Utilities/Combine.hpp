@@ -14,6 +14,8 @@ struct Combine
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Mapping")
   halp_meta(description, "Combine N inputs in a list")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#combine")
   halp_meta(uuid, "3bbf74cd-55c1-473f-a11c-25ffec5b5c71")
 
   struct

@@ -21,6 +21,7 @@ struct Poles
   halp_meta(category, "Control/Generators")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Generate a gaussian pole")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/poles.html")
   halp_meta(uuid, "c01c06ed-2005-46d5-a47b-d9dbc947afea")
   struct
   {

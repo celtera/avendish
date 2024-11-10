@@ -20,6 +20,8 @@ public:
   halp_meta(author, "Lance Putnam, Gamma library")
   halp_meta(description, "Simple but efficient bitcrusher")
   halp_meta(category, "Audio/Effects")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/audio-effects.html#bitcrush")
   halp_meta(uuid, "8ba36c05-f2c9-4cb2-b273-d726b56f9199")
 
   struct inputs

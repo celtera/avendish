@@ -15,6 +15,8 @@ public:
   halp_meta(category, "Audio")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Sum all the input channels")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/audio-utilities.html#mono-mix")
   halp_meta(uuid, "a3b16235-5855-43a6-8a2f-fc7d6f3a8038")
 
   struct

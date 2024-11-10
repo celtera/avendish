@@ -23,6 +23,7 @@ struct SpriteReader
   halp_meta(category, "Visuals");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Loads an image file into a texture");
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/sprite-reader.html")
   halp_meta(uuid, "b28b0cf5-164b-4aa0-8edd-8830ade702e5");
 
   struct

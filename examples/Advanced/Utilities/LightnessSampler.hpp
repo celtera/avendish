@@ -70,6 +70,9 @@ public:
   halp_meta(category, "Visuals/Computer Vision");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Sample the values of an image on multiple points.");
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/pixel-utilities.html#lightness-sampler")
   halp_meta(uuid, "0e64750a-d014-44d9-9a4e-919d4305af1a");
 
   struct

@@ -30,6 +30,7 @@ struct MapTool
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Map a value to a given domain in various ways")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/mapping-tool.html")
   halp_meta(uuid, "ae6e3c9f-40cf-493a-8dc8-d45e75a07213")
   halp_flag(cv);
   halp_flag(stateless);

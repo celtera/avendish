@@ -17,6 +17,8 @@ struct Trigger
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Send an impulse upon triggering")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#trigger")
   halp_meta(uuid, "37998523-7a8a-4d12-8bd9-37e49adea083")
 
   struct

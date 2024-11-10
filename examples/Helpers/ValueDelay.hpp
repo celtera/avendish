@@ -24,6 +24,7 @@ struct ValueDelay
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Multitap delay for control input")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/value-delay.html")
   halp_meta(uuid, "39a7a489-a86b-4eaa-a617-ec2c9d559744")
 
   // Helper types for defining common cases of UI controls

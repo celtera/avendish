@@ -17,6 +17,8 @@ struct MidiPitch
   halp_meta(category, "Midi");
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Extract a MIDI pitch")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/midi-utilities.html#midi-pitch")
   halp_meta(uuid, "29ce484f-cb56-4501-af79-88768fa261c3")
 
   struct

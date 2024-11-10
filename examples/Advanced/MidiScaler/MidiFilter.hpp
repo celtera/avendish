@@ -20,6 +20,7 @@ struct MidiFilter
 {
   halp_meta(name, "Midi filter")
   halp_meta(c_name, "avnd_helpers_midifilter")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-filter.html")
   halp_meta(uuid, "f66d6cf7-693a-47d4-a249-5978cc946e43")
   halp_meta(category, "Midi")
 

@@ -17,6 +17,9 @@ public:
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Audio/Utilities")
   halp_meta(description, "Mix and pan multiple stereo audio inputs")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/audio-utilities.html#stereo-mixer")
   halp_meta(uuid, "93910fcf-e45a-4eac-ad55-a14b221a12aa")
 
   struct

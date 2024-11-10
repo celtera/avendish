@@ -18,6 +18,7 @@ public:
   halp_meta(category, "Automations")
   halp_meta(description, "Color automation curve")
   halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/color-automation.html")
   halp_meta(uuid, "80e88817-797c-4ad7-9265-9fefa009a65f")
 
   struct

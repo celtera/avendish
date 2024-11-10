@@ -21,6 +21,10 @@ struct GpuComputeExample
   halp_meta(category, "Visuals/Computer Vision")
   halp_meta(c_name, "average_color")
   halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/"
+      "computer-vision-utilities.html#average-color")
   halp_meta(description, "Extract the average color of an input video feed")
 
   static constexpr int downscale = 16;

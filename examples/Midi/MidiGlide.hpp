@@ -17,6 +17,8 @@ struct MidiGlide
   halp_meta(category, "Midi");
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Midi Glide")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/midi-utilities.html#midi-glide")
   halp_meta(uuid, "74d26417-1ce5-4765-874e-055921f0a0bb")
 
   struct

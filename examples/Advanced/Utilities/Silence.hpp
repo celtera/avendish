@@ -17,6 +17,8 @@ public:
   halp_meta(category, "Audio")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Enjoy the silence")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/audio-utilities.html#silence")
   halp_meta(uuid, "3bf48e32-06c0-4693-8a80-062ae9b5eac8")
 
   struct

@@ -24,6 +24,7 @@ struct MidiScroller
 {
   halp_meta(name, "Midi file scroller")
   halp_meta(c_name, "avnd_helpers_scroller")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-scroller.html")
   halp_meta(uuid, "6a1429f8-f466-4748-ad1d-4fdd644e2359")
   halp_meta(category, "Midi")
 

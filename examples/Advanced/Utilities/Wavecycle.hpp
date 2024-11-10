@@ -17,6 +17,7 @@ public:
   halp_meta(c_name, "wavecycle")
   halp_meta(category, "Audio/Generator")
   halp_meta(description, "Generate audio cycles from hand-drawn waveshapes")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/wavecycle.html")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(uuid, "494bd8a3-e973-4fb0-b84b-b4ed3c0068a1")
 

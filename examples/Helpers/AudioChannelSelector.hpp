@@ -8,10 +8,14 @@ namespace examples::helpers
 {
 struct AudioChannelSelector
 {
-  static constexpr auto name() { return "Audio Channel Selector"; }
-  static constexpr auto c_name() { return "avnd_channel_selector"; }
+  static constexpr auto name() { return "Audio Channel Extractor"; }
+  static constexpr auto c_name() { return "avnd_channel_extractor"; }
   static constexpr auto author() { return "Jean-Michaël Celerier"; }
   static consteval auto category() { return "Audio/Utilities"; }
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/"
+      "audio-utilities.html#audio-channel-extractor")
   static constexpr auto uuid() { return "5a0b7b2c-4f1e-40e7-8d27-10bdcb856ddf"; }
 
   struct

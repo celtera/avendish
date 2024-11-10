@@ -16,6 +16,8 @@ struct MidiHiResOutput
   halp_meta(category, "Midi");
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Creates MIDI LSB/MSB from a 0-16384 or 0-1 value")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/midi-utilities.html#midi-hires")
   halp_meta(uuid, "d6f5173b-b823-4571-b31f-660832b6132b")
 
   struct

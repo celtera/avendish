@@ -51,6 +51,9 @@ public:
   halp_meta(category, "Visuals/Computer Vision");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Convert an image to a list of lightness values.");
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/pixel-utilities.html#lightness-computer")
   halp_meta(uuid, "60a11c39-dc14-449d-bbe4-1c51e44ea99a");
 
   struct ins

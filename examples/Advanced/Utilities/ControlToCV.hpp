@@ -16,7 +16,7 @@ public:
   halp_meta(name, "Control to CV")
   halp_meta(c_name, "control_to_cv")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(description, "Simple but efficient bitcrusher")
+  halp_meta(description, "Convert control values to CV")
   halp_meta(category, "Audio")
   halp_meta(uuid, "22076692-8ac2-43e4-bfca-0bf7945a748b")
 
