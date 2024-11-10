@@ -230,11 +230,11 @@ struct dynamic_geometry
     int binding = 0;
     enum : uint32_t
     {
-      position,
-      tex_coord,
-      color,
-      normal,
-      tangent
+      position = 0,
+      tex_coord = 1,
+      color = 2,
+      normal = 3,
+      tangent = 4
     } location{};
     enum
     {
