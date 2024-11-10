@@ -313,6 +313,10 @@ template <typename T>
     return T::author();
   else if constexpr(requires { T::author; })
     return T::author;
+  else if constexpr(requires { std::string_view(T::authors()); })
+    return T::authors();
+  else if constexpr(requires { std::string_view(T::authors); })
+    return T::authors;
   else if constexpr(requires { T::authors(); })
     return array_to_string(T::authors());
   else if constexpr(requires { T::authors; })
@@ -321,6 +325,10 @@ template <typename T>
     return T::developer();
   else if constexpr(requires { T::developer; })
     return T::developer;
+  else if constexpr(requires { std::string_view(T::developers()); })
+    return T::developers();
+  else if constexpr(requires { std::string_view(T::developers); })
+    return T::developers;
   else if constexpr(requires { T::developers(); })
     return array_to_string(T::developers());
   else if constexpr(requires { T::developers; })
@@ -329,6 +337,10 @@ template <typename T>
     return T::creator();
   else if constexpr(requires { T::creator; })
     return T::creator;
+  else if constexpr(requires { std::string_view(T::creators()); })
+    return T::creators();
+  else if constexpr(requires { std::string_view(T::creators); })
+    return T::creators;
   else if constexpr(requires { T::creators(); })
     return array_to_string(T::creators());
   else if constexpr(requires { T::creators; })
