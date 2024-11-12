@@ -242,8 +242,8 @@ struct process_after_run
 
     if(ctrl.dirty_mesh)
     {
-      port.data.meshes = std::make_shared<ossia::mesh_list>();
-      auto& ossia_meshes = *port.data.meshes;
+      port.data.geometry.meshes = std::make_shared<ossia::mesh_list>();
+      auto& ossia_meshes = *port.data.geometry.meshes;
       if constexpr(static_geometry_type<Field> || dynamic_geometry_type<Field>)
       {
         ossia_meshes.meshes.resize(1);

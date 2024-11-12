@@ -430,7 +430,7 @@ void meshes_from_ossia(const ossia::mesh_list_ptr& src, T& dst)
 template <typename T>
 void geometry_from_ossia(const ossia::geometry_port& src, T& dst)
 {
-  meshes_from_ossia(src.meshes, dst.mesh);
+  meshes_from_ossia(src.geometry.meshes, dst.mesh);
   static_assert(sizeof(dst.transform) / sizeof(dst.transform[0]) == 16);
   std::copy_n(src.transform.matrix, std::ssize(src.transform.matrix), dst.transform);
 }
