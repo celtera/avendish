@@ -40,13 +40,13 @@ struct AudioChannelSelector
 
   void reconfigure()
   {
-    if(inputs.last_channel > inputs.first_channel)
-      outputs.audio.request_channels(inputs.last_channel - inputs.first_channel);
+    if(inputs.last_channel >= inputs.first_channel)
+      outputs.audio.request_channels(inputs.last_channel - inputs.first_channel + 1);
   }
 
   void operator()(int frames)
   {
-    for(int c_in = inputs.first_channel, c_out = 0; c_in < inputs.last_channel;
+    for(int c_in = inputs.first_channel, c_out = 0; c_in <= inputs.last_channel;
         c_in++, c_out++)
     {
       if(c_in < inputs.audio.channels)
