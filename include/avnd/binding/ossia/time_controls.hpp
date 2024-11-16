@@ -68,7 +68,7 @@ struct time_control_storage : time_control_input_storage<T>
       avnd::effect_container<T>& t, avnd::field_index<NField>, float value, bool sync)
   {
     static constexpr std::size_t NPred
-        = avnd::time_control_input_introspection<T>::template field_index_to_index(
+        = avnd::time_control_input_introspection<T>::field_index_to_index(
             avnd::field_index<NField>{});
 
     time_control_state& g = get<NPred>(this->handles);

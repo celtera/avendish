@@ -315,7 +315,7 @@ struct process_before_run
     using span_in = avnd::span_parameter_input_introspection<Obj_T>;
     using T = typename decltype(Field::value)::value_type;
     static constexpr auto field_idx
-        = span_in::template field_index_to_index(avnd::field_index<Idx>{});
+        = span_in::field_index_to_index(avnd::field_index<Idx>{});
     auto& dest_vec = get<field_idx>(self.control_buffers.span_inputs);
     dest_vec.resize(src_vec->size());
 
