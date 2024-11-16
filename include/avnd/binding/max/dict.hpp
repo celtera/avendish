@@ -71,7 +71,7 @@ struct dict_storage
   auto& get_input(avnd::field_index<NField>)
   {
     constexpr std::size_t NPred
-        = dict_parameter_outputs_introspection<T>::template field_index_to_index(
+        = dict_parameter_outputs_introspection<T>::field_index_to_index(
             avnd::field_index<NField>{});
     return get<NPred>(inputs.handles);
   }
@@ -80,7 +80,7 @@ struct dict_storage
   auto& get_output(avnd::field_index<NField>)
   {
     constexpr std::size_t NPred
-        = dict_parameter_outputs_introspection<T>::template field_index_to_index(
+        = dict_parameter_outputs_introspection<T>::field_index_to_index(
             avnd::field_index<NField>{});
     return get<NPred>(outputs.handles);
   }
