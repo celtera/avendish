@@ -12,7 +12,7 @@ struct Spread
   halp_meta(name, "Spread")
   halp_meta(c_name, "avnd_Spread")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(category, "Mapping")
+  halp_meta(category, "Control/Mappings")
   halp_meta(description, "Spread N inputs from a list")
   halp_meta(
       manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#spread")

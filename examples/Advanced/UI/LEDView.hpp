@@ -11,6 +11,8 @@
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <ossia/network/value/format_value.hpp>
+#include <ossia/network/value/value_conversion.hpp>
+#include <score/application/GUIApplicationContext.hpp>
 #include <score/model/Skin.hpp>
 
 #include <QPainter>
