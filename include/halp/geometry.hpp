@@ -203,6 +203,122 @@ struct position_texcoords_geometry
   };
 };
 
+// In this example the vertex buffer has
+// all the position attributes, then all the normal attributes, then all the texcoord attributes
+struct position_normals_texcoords_geometry
+{
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } main_buffer;
+  } buffers;
+
+  // This example uses two successive bindings to one buffer.
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } position_binding;
+
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } normals_binding;
+
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 2 * sizeof(float);
+      int step_rate = 1;
+    } uv_binding;
+  };
+
+  struct attributes
+  {
+    struct
+    {
+      enum
+      {
+        position
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 0;
+    } position;
+
+    struct
+    {
+      enum
+      {
+        normal
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 1;
+    } normal;
+    struct
+    {
+      enum
+      {
+        texcoord
+      };
+      using datatype = float[2];
+      int32_t offset = 0;
+      int32_t binding = 2;
+    } texcoord;
+  };
+
+  struct
+  {
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input0;
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input1;
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input2;
+  } input;
+
+  int vertices = 0;
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_back
+  };
+};
+
 // This example allows to define the geometry at run-time instead
 
 struct dynamic_geometry

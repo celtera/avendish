@@ -23,21 +23,19 @@ struct is_shared_ptr<std::shared_ptr<T>> : std::true_type
 template <typename Attr>
 constexpr int standard_location_for_attribute(int k)
 {
-  if constexpr(
-      requires { Attr::position; } || requires { Attr::positions; })
+  if constexpr(requires { Attr::position; } || requires { Attr::positions; })
     return 0;
-  else if constexpr(
-      requires { Attr::texcoord; } || requires { Attr::tex_coord; }
-      || requires { Attr::texcoords; } || requires { Attr::tex_coords; })
+  else if constexpr(requires { Attr::texcoord; } || requires {
+                      Attr::tex_coord;
+                    } || requires { Attr::texcoords; } || requires {
+                      Attr::tex_coords;
+                    } || requires { Attr::uv; } || requires { Attr::uvs; })
     return 1;
-  else if constexpr(
-      requires { Attr::color; } || requires { Attr::colors; })
+  else if constexpr(requires { Attr::color; } || requires { Attr::colors; })
     return 2;
-  else if constexpr(
-      requires { Attr::normal; } || requires { Attr::normals; })
+  else if constexpr(requires { Attr::normal; } || requires { Attr::normals; })
     return 3;
-  else if constexpr(
-      requires { Attr::tangent; } || requires { Attr::tangents; })
+  else if constexpr(requires { Attr::tangent; } || requires { Attr::tangents; })
     return 4;
   else
     return k;
