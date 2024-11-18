@@ -9,6 +9,7 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <boost/type_index.hpp>
 #include <cmath>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
@@ -45,20 +46,89 @@ namespace py = pybind11;
 template <auto Idx, typename C>
 constexpr auto input_name(avnd::field_reflection<Idx, C>)
 {
-  if constexpr(avnd::has_name<C>)
-    return avnd::get_name<C>();
-  else
-    return "input_" + std::to_string(Idx);
+  return avnd::get_static_symbol<C>();
 }
 
 template <auto Idx, typename C>
 constexpr auto output_name(avnd::field_reflection<Idx, C>)
 {
-  if constexpr(avnd::has_name<C>)
-    return avnd::get_name<C>();
-  else
-    return "output_" + std::to_string(Idx);
+  return avnd::get_static_symbol<C>();
 }
+
+template <typename... Args>
+struct register_types;
+template <>
+struct register_types<>
+{
+  void operator()(pybind11::module_& m) { }
+};
+template <typename Arg>
+  requires std::is_aggregate_v<Arg>
+struct register_types<Arg>
+{
+  void operator()(pybind11::module_& m)
+  {
+    static py::class_<Arg> class_def(
+        m, boost::typeindex::type_id<Arg>().pretty_name().c_str()); // FIXME
+    static auto reg = [] {
+      Arg a;
+      avnd::for_each_field_ref_n(
+          a, []<typename M, std::size_t I>(const M&, avnd::field_index<I>) {
+        static constexpr std::string_view nm = boost::pfr::get_name<I, Arg>();
+        class_def.def_property(nm.data(), [](const Arg& a) {
+          return avnd::pfr::get<I>(a);
+        }, [](Arg& a, M x) { avnd::pfr::get<I>(a) = x; });
+      });
+
+      class_def.def("__repr__", [](const Arg& o) {
+        std::string str = "{";
+
+        avnd::for_each_field_ref_n(
+            o, [&str]<typename M, std::size_t I>(const M& m, avnd::field_index<I>) {
+          static constexpr std::string_view nm = boost::pfr::get_name<I, Arg>();
+          str += nm;
+          str += ": ";
+          str += fmt::format("{}", m);
+          str += ", ";
+        });
+        str += "}";
+        return str;
+      });
+      return 0;
+    }();
+  }
+};
+
+template <typename Arg, typename... Args>
+struct register_types<Arg, Args...>
+{
+  void operator()(pybind11::module_& m)
+  {
+    register_types<Arg>{}(m);
+    register_types<Args...>{}(m);
+  }
+};
+
+template <typename, typename>
+struct register_arg_types;
+template <typename stdfunc_type, typename R, typename... Args>
+struct register_arg_types<stdfunc_type, R(Args...)>
+{
+  auto operator()(pybind11::module_& m) { register_types<Args...>{}(m); }
+};
+
+template <typename, typename>
+struct make_lambda_for_args;
+template <typename stdfunc_type, typename R, typename... Args>
+struct make_lambda_for_args<stdfunc_type, R(Args...)>
+{
+  auto operator()()
+  {
+    return +[](void* ctx, Args... args) {
+      return (*(stdfunc_type*)(ctx))(std::forward<Args>(args)...);
+    };
+  }
+};
 
 template <typename T>
 struct processor
@@ -69,10 +139,14 @@ struct processor
   template <auto Idx, typename C>
   void setup_input(avnd::field_reflection<Idx, C> refl)
   {
-    class_def.def_property(
-        c_str(input_name(refl)),
-        [](const T& t) { return avnd::pfr::get<Idx>(t.inputs).value; },
-        [](T& t, decltype(C::value) x) { avnd::pfr::get<Idx>(t.inputs).value = x; });
+    class_def.def_property(c_str(input_name(refl)), [](const T& t) {
+      return avnd::pfr::get<Idx>(t.inputs).value;
+    }, [](T& t, decltype(C::value) x) {
+      avnd::pfr::get<Idx>(t.inputs).value = x;
+      auto& inputs = avnd::get_inputs(t);
+      auto& field = boost::pfr::get<Idx>(inputs);
+      if_possible(field.update(t));
+    });
   }
 
   template <auto Idx, typename C>
@@ -101,17 +175,19 @@ struct processor
         auto synth_fun = []<typename... Args>(boost::mp11::mp_list<Args...>) {
           return [](Args... args) { M{}(args...); };
         };
-        class_def.def(c_str(avnd::get_name<M>()), synth_fun(typename refl::arguments{}));
+        class_def.def(
+            c_str(avnd::get_static_symbol<M>()), synth_fun(typename refl::arguments{}));
       }
       else
       {
-        class_def.def(c_str(avnd::get_name<M>()), func);
+        class_def.def(c_str(avnd::get_static_symbol<M>()), func);
       }
     }
     else if constexpr(requires { avnd::function_reflection<M::func()>::count; })
     {
       // TODO other cases: see pd
-      class_def.def_static(c_str(avnd::get_name<M>()), avnd::message_get_func<M>());
+      class_def.def_static(
+          c_str(avnd::get_static_symbol<M>()), avnd::message_get_func<M>());
     }
   }
 
@@ -137,36 +213,47 @@ struct processor
       avnd::parameter_output_introspection<T>::for_all(
           [this](auto a) { setup_output(a); });
       avnd::callback_output_introspection<T>::for_all(
-          [this](auto a) { setup_callback(a); });
+          [this, &m](auto a) { setup_callback(a, m); });
     }
 
     avnd::messages_introspection<T>::for_all([this](auto a) { setup_message(a); });
   }
 
   template <std::size_t Idx, typename C>
-  void setup_callback(const avnd::field_reflection<Idx, C>& out)
+  void setup_callback(const avnd::field_reflection<Idx, C>& out, pybind11::module_& m)
   {
-    if constexpr(requires { avnd::get_name<C>(); })
+    if constexpr(requires { avnd::get_static_symbol<C>(); })
     {
       using call_type = decltype(C::call);
+
       if constexpr(avnd::function_view_ish<call_type>)
       {
-        /* not easily doable...
-        class_def.def_property(
-          c_str(C::name())
-          , [] (T& t) { return avnd::pfr::get<Idx>(t.outputs).call; }
-          , [] (T& t, call_type cb) { avnd::pfr::get<Idx>(t.outputs).call = std::move(cb); }
-        );
-        */
+        using func_type = typename call_type::type;
+        using stdfunc_type = std::function<func_type>;
+        register_arg_types<stdfunc_type, func_type>{}(m);
+
+        class_def.def_property(c_str(avnd::get_static_symbol<C>()), [](T& t) {
+          return avnd::pfr::get<Idx>(t.outputs).call;
+        }, [](T& t, stdfunc_type cb) {
+          auto& cur = avnd::pfr::get<Idx>(t.outputs).call;
+          if(cur.context)
+            delete(stdfunc_type*)cur.context;
+
+          cur.context = new stdfunc_type{std::move(cb)};
+          cur.function = make_lambda_for_args<stdfunc_type, func_type>{}();
+        });
       }
       else if constexpr(avnd::function_ish<call_type>)
       {
-        class_def.def_property(
-            c_str(avnd::get_name<C>()),
-            [](T& t) { return avnd::pfr::get<Idx>(t.outputs).call; },
-            [](T& t, call_type cb) {
+        class_def.def_property(c_str(avnd::get_static_symbol<C>()), [](T& t) {
+          return avnd::pfr::get<Idx>(t.outputs).call;
+        }, [](T& t, call_type cb) {
           avnd::pfr::get<Idx>(t.outputs).call = std::move(cb);
-            });
+        });
+      }
+      else
+      {
+        static_assert(C::callback_type_unsupported);
       }
     }
   }
