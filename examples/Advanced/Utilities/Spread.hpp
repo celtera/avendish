@@ -20,7 +20,7 @@ struct Spread
 
   struct
   {
-    struct : halp::spinbox_i32<"Control", halp::range{0, 1024, 1}>
+    struct : halp::spinbox_i32<"Output count", halp::range{0, 1024, 1}>
     {
       static std::function<void(Spread&, int)> on_controller_interaction()
       {

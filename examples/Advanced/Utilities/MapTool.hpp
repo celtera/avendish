@@ -23,6 +23,48 @@ enum MapToolShapeMode
   Asym
 };
 
+// FIXME refactor with calibrator
+static constexpr double rescale(double v, double min, double max) noexcept
+{
+  return (v - min) / (max - min);
+}
+
+static inline double wrap(MapToolWrapMode mode, double f)
+{
+  using mode_t = MapToolWrapMode;
+  switch(mode)
+  {
+    case mode_t::Free:
+      return f;
+    default:
+    case mode_t::Clip:
+      return ossia::clamp<double>(f, 0., 1.);
+    case mode_t::Wrap:
+      return ossia::wrap<double>(f, 0., 1.);
+    case mode_t::Fold:
+      return ossia::fold<double>(f, 0., 1.);
+  }
+}
+
+static inline double shape(MapToolShapeMode mode, double f)
+{
+  using mode_t = MapToolShapeMode;
+  switch(mode)
+  {
+    default:
+    case mode_t::None:
+      return f;
+    case mode_t::Tanh:
+      return (std::tanh(f * 2. - 1.) + 1.) / 2.;
+    case mode_t::Sin:
+      return (std::sin(f * 2. - 1.) + 1.) / 2.;
+    case mode_t::Asym: {
+      double x = f * 2. - 1.;
+      double shape = (std::exp(x) - std::exp(-x * 1.2)) / (std::exp(x) + std::exp(-x));
+      return (shape + 1.) / 2.;
+    }
+  }
+}
 struct MapTool
 {
   halp_meta(name, "Mapping tool")
@@ -68,48 +110,6 @@ struct MapTool
   {
   } outputs;
 
-  // FIXME refactor with calibrator
-  static constexpr double rescale(double v, double min, double max) noexcept
-  {
-    return (v - min) / (max - min);
-  }
-
-  double wrap(double f)
-  {
-    using mode_t = MapToolWrapMode;
-    switch(inputs.range_behaviour.value)
-    {
-      case mode_t::Free:
-        return f;
-      default:
-      case mode_t::Clip:
-        return ossia::clamp<double>(f, 0., 1.);
-      case mode_t::Wrap:
-        return ossia::wrap<double>(f, 0., 1.);
-      case mode_t::Fold:
-        return ossia::fold<double>(f, 0., 1.);
-    }
-  }
-
-  double shape(double f)
-  {
-    using mode_t = MapToolShapeMode;
-    switch(inputs.shape_behaviour.value)
-    {
-      default:
-      case mode_t::None:
-        return f;
-      case mode_t::Tanh:
-        return (std::tanh(f * 2. - 1.) + 1.) / 2.;
-      case mode_t::Sin:
-        return (std::sin(f * 2. - 1.) + 1.) / 2.;
-      case mode_t::Asym: {
-        double x = f * 2. - 1.;
-        double shape = (std::exp(x) - std::exp(-x * 1.2)) / (std::exp(x) + std::exp(-x));
-        return (shape + 1.) / 2.;
-      }
-    }
-  }
   double operator()(double v)
   {
     /// Learn min / max
@@ -146,10 +146,10 @@ struct MapTool
     /// Apply operations
 
     // - Wrap
-    to_01 = wrap(to_01);
+    to_01 = wrap(inputs.range_behaviour.value, to_01);
 
     // - Shape
-    to_01 = shape(to_01);
+    to_01 = shape(inputs.shape_behaviour.value, to_01);
 
     // - Curve
     if(std::abs(inputs.curve.value) > 1e-12)

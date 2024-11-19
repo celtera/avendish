@@ -161,7 +161,8 @@ template <typename T>
 concept pointer = std::is_pointer_v<std::decay_t<T>>;
 
 template <typename T>
-concept string_ish = span_ish<T> && requires(T t, std::string_view v) { v = t; };
+concept string_ish = (span_ish<T> && requires(T t, std::string_view v) { v = t; })
+                     || std::same_as<T, const char*>;
 
 template <typename T>
 concept int_ish = std::is_same_v<std::decay_t<T>, signed int>

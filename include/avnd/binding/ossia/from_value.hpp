@@ -1320,6 +1320,20 @@ inline bool from_ossia_value(const ossia::value& src, const char*& dst)
   }
 }
 
+inline bool from_ossia_value(const ossia::value& src, std::string& dst)
+{
+  if(auto p = src.target<std::string>())
+  {
+    dst = std::move(*p);
+    return true;
+  }
+  else
+  {
+    dst = "";
+    return false;
+  }
+}
+
 template <
     template <typename, std::size_t, typename...> typename T, typename Val,
     std::size_t N>
