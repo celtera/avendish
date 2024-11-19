@@ -81,7 +81,7 @@ function(avnd_target_setup AVND_FX_TARGET)
     target_compile_options(
         ${AVND_FX_TARGET}
         PUBLIC
-          -stdlib=libc++
+          # -stdlib=libc++
           # -flto
           -fno-stack-protector
           -fno-ident
