@@ -53,6 +53,13 @@ struct led_item
 };
 #endif
 
+enum LEDInputMode
+{
+  RGB,
+  RGBW,
+  Lightness01,
+  Lightness8bit,
+};
 struct LEDView
 {
   halp_meta(name, "LED View")
@@ -66,13 +73,15 @@ struct LEDView
 
   struct ins
   {
-    struct : halp::val_port<"RGB", std::vector<int>>
+    struct : halp::val_port<"RGB", std::vector<float>>
     {
       enum widget
       {
         control
       };
     } values;
+
+    halp::enum_t<LEDInputMode, "Mode"> mode;
   } inputs;
 
 #if 0
@@ -105,6 +114,8 @@ struct LEDView
   {
   public:
     std::vector<QColor> m_pixels;
+    std::string m_mode = "RGB";
+    LEDInputMode m_display_mode{};
 
     Layer(
         const Process::ProcessModel& process, const Process::Context& doc,
@@ -116,29 +127,95 @@ struct LEDView
       const Process::PortFactoryList& portFactory
           = doc.app.interfaces<Process::PortFactoryList>();
 
-      auto inl = static_cast<Process::ControlInlet*>(process.inlets().front());
-
-      auto fact = portFactory.get(inl->concreteKey());
-      auto port = fact->makePortItem(*inl, doc, this, this);
-      port->setPos(0, 5);
+      auto led_inl = static_cast<Process::ControlInlet*>(process.inlets()[0]);
+      auto mode_inl = static_cast<Process::ControlInlet*>(process.inlets()[1]);
+      auto mode = ossia::value_to_pretty_string(mode_inl->value());
 
       connect(
-          inl, &Process::ControlInlet::executionValueChanged, this,
-          [this](const ossia::value& v) {
-        if(auto list = v.target<std::vector<ossia::value>>())
+          mode_inl, &Process::ControlInlet::executionValueChanged, this,
+          [this, mode_inl](const ossia::value& v) {
+        auto str = ossia::convert<std::string>(mode_inl->value());
+        if(str != m_mode)
         {
           m_pixels.clear();
-          auto& vec = *list;
-          for(int i = 0, N = vec.size() - 2; i < N; i += 3)
-          {
-            const auto r = std::clamp(ossia::convert<int>(vec[i]), 0, 255);
-            const auto g = std::clamp(ossia::convert<int>(vec[i + 1]), 0, 255);
-            const auto b = std::clamp(ossia::convert<int>(vec[i + 2]), 0, 255);
-            m_pixels.push_back(QColor::fromRgb(r, g, b));
-          }
+          m_mode = str;
           update();
         }
       });
+
+      auto fact = portFactory.get(led_inl->concreteKey());
+      auto port = fact->makePortItem(*led_inl, doc, this, this);
+      port->setPos(0, 5);
+
+      connect(
+          led_inl, &Process::ControlInlet::executionValueChanged, this,
+          [this](const ossia::value& v) {
+        if(auto list = v.target<std::vector<ossia::value>>())
+        {
+          update_mode();
+          m_pixels.clear();
+
+          switch(m_display_mode)
+          {
+            case LEDInputMode::RGB: {
+              auto& vec = *list;
+              for(int i = 0, N = vec.size() - 2; i < N; i += 3)
+              {
+                const auto r = std::clamp(ossia::convert<float>(vec[i]), 0.f, 255.f);
+                const auto g = std::clamp(ossia::convert<float>(vec[i + 1]), 0.f, 255.f);
+                const auto b = std::clamp(ossia::convert<float>(vec[i + 2]), 0.f, 255.f);
+                m_pixels.push_back(QColor::fromRgb(r, g, b));
+              }
+              break;
+            }
+            case LEDInputMode::RGBW: {
+              auto& vec = *list;
+              for(int i = 0, N = vec.size() - 3; i < N; i += 4)
+              {
+                const auto r = std::clamp(ossia::convert<float>(vec[i]), 0.f, 255.f);
+                const auto g = std::clamp(ossia::convert<float>(vec[i + 1]), 0.f, 255.f);
+                const auto b = std::clamp(ossia::convert<float>(vec[i + 2]), 0.f, 255.f);
+                // fixme
+                const auto w = std::clamp(ossia::convert<float>(vec[i + 3]), 0.f, 255.f);
+                m_pixels.push_back(QColor::fromRgb(r, g, b));
+              }
+              break;
+            }
+            case LEDInputMode::Lightness01: {
+              auto& vec = *list;
+              for(int i = 0, N = vec.size(); i < N; i++)
+              {
+                const auto l = std::clamp(ossia::convert<float>(vec[i]), 0.f, 1.f);
+                m_pixels.push_back(QColor::fromRgbF(l, l, l));
+              }
+              break;
+            }
+            case LEDInputMode::Lightness8bit: {
+              auto& vec = *list;
+              for(int i = 0, N = vec.size(); i < N; i++)
+              {
+                const auto l = std::clamp(ossia::convert<float>(vec[i]), 0.f, 255.f);
+                m_pixels.push_back(QColor::fromRgb(l, l, l));
+              }
+              break;
+            }
+          }
+
+          update();
+        }
+      });
+    }
+
+    void update_mode()
+    {
+      if(m_mode == "RGB")
+        m_display_mode = LEDInputMode::RGB;
+      else if(m_mode == "RGBW")
+        m_display_mode = LEDInputMode::RGBW;
+      else if(m_mode == "Lightness01")
+        m_display_mode = LEDInputMode::Lightness01;
+      else if(m_mode == "Lightness8bit")
+        m_display_mode = LEDInputMode::Lightness8bit;
     }
 
     void reset()

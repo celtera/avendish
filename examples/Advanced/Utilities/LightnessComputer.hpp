@@ -64,7 +64,7 @@ public:
     {
       halp__enum_combobox(
           "Mode", Lightness, Lightness, Value, Saturation, Hue, HSV, HSL, Red, Green,
-          Blue, Alpha, RGB)
+          Blue, Alpha, RGB, RGBW)
     } mode;
   } inputs;
 
@@ -124,6 +124,101 @@ public:
         H -= 1.;
       return {H, S, V};
     }
+  }
+
+  // https://gist.github.com/ciembor/1494530
+  static std::array<double, 3> hsl(float r, float g, float b)
+  {
+    struct hsl
+    {
+      double h, s, l;
+    } result;
+
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    float max = std::max(std::max(r, g), b);
+    float min = std::min(std::min(r, g), b);
+
+    result.h = result.s = result.l = (max + min) / 2;
+
+    if(max == min)
+    {
+      result.h = result.s = 0; // achromatic
+    }
+    else
+    {
+      float d = max - min;
+      result.s = (result.l > 0.5) ? d / (2 - max - min) : d / (max + min);
+
+      if(max == r)
+      {
+        result.h = (g - b) / d + (g < b ? 6 : 0);
+      }
+      else if(max == g)
+      {
+        result.h = (b - r) / d + 2;
+      }
+      else if(max == b)
+      {
+        result.h = (r - g) / d + 4;
+      }
+
+      result.h /= 6;
+    }
+
+    return {result.h, result.s, result.l};
+  }
+
+  //http://blog.saikoled.com/post/44677718712/how-to-convert-from-hsi-to-rgb-white
+  static void hsi2rgbw(double h, double s, double i, int* rgbw)
+  {
+    using namespace std;
+    int r, g, b, w;
+    double cos_h, cos_1047_h;
+    //h = fmod(h,360); // cycle h around to 0-360 degrees
+    h = h * 2. * 3.14159; // * h = 3.14159 * h / 180.; // Convert to radians.
+    // s /= 100.;
+    // i /= 100.;                           //from percentage to ratio
+    s = s > 0. ? (s < 1. ? s : 1.) : 0.; // clamp s and i to interval [0,1]
+    i = i > 0. ? (i < 1. ? i : 1.) : 0.;
+    i = i * sqrt(i); //shape intensity to have finer granularity near 0
+
+    if(h < 2.09439)
+    {
+      cos_h = cos(h);
+      cos_1047_h = cos(1.047196667 - h);
+      r = s * 4095. * i / 3. * (1. + cos_h / cos_1047_h);
+      g = s * 4095. * i / 3. * (1. + (1. - cos_h / cos_1047_h));
+      b = 0.;
+      w = 4095. * (1. - s) * i;
+    }
+    else if(h < 4.188787)
+    {
+      h = h - 2.09439;
+      cos_h = cos(h);
+      cos_1047_h = cos(1.047196667 - h);
+      g = s * 4095. * i / 3. * (1. + cos_h / cos_1047_h);
+      b = s * 4095. * i / 3. * (1. + (1. - cos_h / cos_1047_h));
+      r = 0.;
+      w = 4095. * (1. - s) * i;
+    }
+    else
+    {
+      h = h - 4.188787;
+      cos_h = cos(h);
+      cos_1047_h = cos(1.047196667 - h);
+      b = s * 4095. * i / 3. * (1. + cos_h / cos_1047_h);
+      r = s * 4095. * i / 3. * (1. + (1. - cos_h / cos_1047_h));
+      g = 0.;
+      w = 4095. * (1. - s) * i;
+    }
+
+    rgbw[0] = r;
+    rgbw[1] = g;
+    rgbw[2] = b;
+    rgbw[3] = w;
   }
 
   // Communication with UI
@@ -217,12 +312,10 @@ public:
       case ins::mode::HSL: {
         samples.resize(in_tex.height * in_tex.width * 3);
         apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-          auto [h, s, v] = hsv(r, g, b);
+          auto [h, s, l] = hsl(r, g, b);
           samples[i++] = h;
           samples[i++] = s;
-          const auto lightness = linear_to_y(r / 255.f, g / 255.f, b / 255.f);
-          const auto perceptual_lightness = y_to_lstar(lightness);
-          samples[i++] = perceptual_lightness;
+          samples[i++] = l;
         });
         break;
       }
@@ -264,6 +357,20 @@ public:
           samples[i++] = r;
           samples[i++] = g;
           samples[i++] = b;
+        });
+        break;
+      }
+      case ins::mode::RGBW: {
+        samples.resize(in_tex.height * in_tex.width * 4);
+        apply([&](uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+          const auto [h, s, l] = hsl(r, g, b);
+
+          int rgbw[4];
+          hsi2rgbw(h, s, l, rgbw);
+          samples[i++] = rgbw[0];
+          samples[i++] = rgbw[1];
+          samples[i++] = rgbw[2];
+          samples[i++] = rgbw[3];
         });
         break;
       }
