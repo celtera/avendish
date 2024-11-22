@@ -1,5 +1,7 @@
 #pragma once
 #include "MapTool.hpp"
+
+#include <halp/callback.hpp>
 namespace ao
 {
 /**
