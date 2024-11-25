@@ -1,6 +1,6 @@
-
 # Demo: dump all the known metadata.
 if(TARGET pantor::inja AND TARGET nlohmann_json::nlohmann_json)
+  message("Building json_to_maxref")
   add_executable(json_to_maxref examples/Demos/JSONToMaxref.cpp)
   if(NOT MSVC)
     target_compile_options(json_to_maxref PRIVATE -std=c++20)

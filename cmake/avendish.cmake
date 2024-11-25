@@ -126,6 +126,7 @@ add_library(avnd_dummy_lib OBJECT "${AVND_SOURCE_DIR}/src/dummy.cpp")
 include(avendish.dependencies)
 include(avendish.disableexceptions)
 include(avendish.sources)
+include(avendish.tools)
 
 include(avendish.ui.qt)
 include(avendish.dump)
@@ -138,7 +139,6 @@ include(avendish.clap)
 include(avendish.ossia)
 include(avendish.standalone)
 include(avendish.example)
-include(avendish.tools)
 
 # Used for getting completion in IDEs...
 function(avnd_register)

@@ -261,6 +261,7 @@ function(avnd_create_max_package)
 
     # Copy the doc
     if(_maxref_xml)
+      add_dependencies("${_external}" "dump_maxref_${_external}")
       add_custom_command(TARGET ${_external} POST_BUILD
         COMMAND echo "=== copy doc === ${_maxref_xml}"
         COMMAND ${CMAKE_COMMAND} -E copy "${_maxref_xml}" "${_pkg}/docs/refpages/"
