@@ -148,7 +148,7 @@ function(avnd_target_setup AVND_FX_TARGET)
       CXX_VISIBILITY_PRESET internal
   )
 
-  target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost)
+  target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost concurrentqueue)
 endfunction()
 
 function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)
