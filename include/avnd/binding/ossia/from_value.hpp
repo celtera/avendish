@@ -1289,19 +1289,19 @@ bool from_ossia_value(const ossia::value& src, T& dst)
 }
 
 template <std::integral T>
-bool from_ossia_value(const ossia::value& src, T& dst)
+OSSIA_INLINE bool from_ossia_value(const ossia::value& src, T& dst)
 {
   dst = ossia::convert<int>(src);
   return true;
 }
 template <std::floating_point T>
-bool from_ossia_value(const ossia::value& src, T& dst)
+OSSIA_INLINE bool from_ossia_value(const ossia::value& src, T& dst)
 {
   dst = ossia::convert<float>(src);
   return true;
 }
 template <avnd::string_ish T>
-bool from_ossia_value(const ossia::value& src, T& dst)
+OSSIA_INLINE bool from_ossia_value(const ossia::value& src, T& dst)
 {
   dst = ossia::convert<std::string>(src);
   return true;
@@ -1418,7 +1418,7 @@ from_ossia_value(auto& field, const ossia::value& src, std::optional<ossia::valu
   dst = src;
 }
 
-inline void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
+OSSIA_INLINE void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
 {
   from_ossia_value(src, dst);
 }

@@ -553,7 +553,7 @@ public:
   }
 
   template <typename Field, typename Val, std::size_t NField>
-  inline constexpr bool from_ossia_value(
+  OSSIA_INLINE constexpr bool from_ossia_value(
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField>)
   {
     oscr::from_ossia_value(field, src, dst);
