@@ -31,7 +31,7 @@ struct Point2DView
 
   struct ins
   {
-    struct : halp::val_port<"XY", std::vector<float>>
+    struct : halp::val_port<"XY", std::vector<ossia::value>>
     {
       enum widget
       {
