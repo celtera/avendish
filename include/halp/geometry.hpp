@@ -21,6 +21,155 @@ struct mesh
   bool dirty_transform = false;
 };
 
+// In this example the vertex buffer has only position attributes,
+// e.g. for basic xyz point clouds
+struct position_geometry
+{
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } main_buffer;
+  } buffers;
+
+  // This example uses two successive bindings to one buffer.
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } position_binding;
+  };
+
+  struct attributes
+  {
+    struct
+    {
+      enum
+      {
+        position
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 0;
+    } position;
+  };
+
+  struct
+  {
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input0;
+  } input;
+
+  int vertices = 0;
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_back
+  };
+};
+
+// In this example the vertex buffer has
+// strided attributes, e.g. xyzrgbxyzrgb
+struct position_color_packed_geometry
+{
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } main_buffer;
+  } buffers;
+
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 6 * sizeof(float);
+      int step_rate = 1;
+    } position_binding;
+
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 6 * sizeof(float);
+      int step_rate = 1;
+    } color_binding;
+  };
+
+  struct attributes
+  {
+    struct
+    {
+      enum
+      {
+        position
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 0;
+    } position;
+
+    struct
+    {
+      enum
+      {
+        color
+      };
+      using datatype = float[3];
+      int32_t offset = 3 * sizeof(float);
+      int32_t binding = 0;
+    } normal;
+  };
+
+  struct
+  {
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::main_buffer; }
+      int offset = 0;
+    } input0;
+  } input;
+
+  int vertices = 0;
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_back
+  };
+};
 // In this example the vertex buffer has
 // all the position attributes, then all the normal attributes
 struct position_normals_geometry
