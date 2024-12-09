@@ -21,8 +21,10 @@ struct xyz_color
 
     auto translate = [](auto var) -> float {
       return std::clamp(
-          var > 0.0031308 ? 1.055 * (std::pow(var, (1 / 2.4))) - 0.055 : var * 12.92, 0.,
-          1.);
+          static_cast<decltype(0.)>(
+              var > 0.0031308 ? 1.055 * (std::pow(var, (1 / 2.4))) - 0.055
+                              : var * 12.92),
+          0., 1.);
     };
 
     return rgba32f_color{translate(var_R), translate(var_G), translate(var_B), 1.f};
