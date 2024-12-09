@@ -26,4 +26,30 @@ consteval auto get_range(const T&)
 {
   return get_range<T>();
 }
+
+template <avnd::has_visual_range T>
+consteval auto get_visual_range()
+{
+  if constexpr(requires { sizeof(typename T::visual_range); })
+    return typename T::visual_range{};
+  else if constexpr(requires { T::visual_range(); })
+    return T::visual_range();
+  else if constexpr(requires { sizeof(decltype(T::visual_range)); })
+    return T::visual_range;
+  else
+    return get_range<T>();
+}
+
+template <avnd::has_range T>
+  requires(!avnd::has_visual_range<T>)
+consteval auto get_visual_range()
+{
+  return get_range<T>();
+}
+
+template <typename T>
+consteval auto get_visual_range(const T&)
+{
+  return get_visual_range<T>();
+}
 }
