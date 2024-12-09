@@ -112,6 +112,12 @@ struct callback_output_introspection
 };
 
 template <typename T>
+struct geometry_output_introspection
+    : geometry_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct output_introspection : fields_introspection<typename outputs_type<T>::type>
 {
 };

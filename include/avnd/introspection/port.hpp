@@ -250,4 +250,9 @@ template <typename T>
 using spectrum_complex_bus_port_introspection
     = predicate_introspection<T, is_spectrum_complex_bus_port_t>;
 
+// Geometry
+template <typename Field>
+using is_geometry_t = boost::mp11::mp_bool<geometry_port<Field>>;
+template <typename T>
+using geometry_introspection = predicate_introspection<T, is_geometry_t>;
 }

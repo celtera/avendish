@@ -168,6 +168,11 @@ struct attribute_input_introspection : attribute_introspection<typename inputs_t
 {
 };
 
+template <typename T>
+struct geometry_input_introspection
+    : geometry_introspection<typename inputs_type<T>::type>
+{
+};
 
 template <typename T>
 struct spectrum_split_channel_input_introspection

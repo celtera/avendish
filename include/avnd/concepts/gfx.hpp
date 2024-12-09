@@ -7,20 +7,28 @@
 
 namespace avnd
 {
+template <typename T>
+concept cpu_raw_texture = requires(T t) {
+  t.bytes;
+  t.bytesize;
+  t.changed;
+  typename T::format;
+};
+template <typename T>
+concept cpu_fixed_format_texture = requires(T t) {
+  t.bytes;
+  t.width;
+  t.height;
+  t.changed;
+  typename T::format;
+};
+template <typename T>
+concept cpu_texture = cpu_raw_texture<T> || cpu_fixed_format_texture<T>;
 
 template <typename T>
-concept cpu_texture = requires(T t) {
-                        t.bytes;
-                        t.width;
-                        t.height;
-                        t.changed;
-                        typename T::format;
-                      };
-
-template <typename T>
-concept cpu_texture_port
-    = requires(T t) { t.texture; }
-      && cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>;
+concept cpu_texture_port = requires(T t) {
+  t.texture;
+} && (cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>);
 
 template <typename T>
 concept sampler_port = requires(T t) { T::sampler(); };

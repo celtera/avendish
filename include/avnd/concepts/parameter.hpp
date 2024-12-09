@@ -52,14 +52,13 @@ template <typename T>
 concept parameter = std::is_default_constructible_v<decltype(T::value)>;
 
 template <typename T>
-concept int_parameter = requires(T t) {
-                          {
-                            t.value
-                            } -> int_ish;
-                        };
+concept int_parameter = parameter<T> && requires(T t) {
+  { t.value } -> int_ish;
+};
 
 template <typename T>
-concept enum_parameter = std::is_enum_v<std::decay_t<decltype(T::value)>>;
+concept enum_parameter
+    = parameter<T> && std::is_enum_v<std::decay_t<decltype(T::value)>>;
 
 template <typename Field>
 concept enum_ish_parameter
@@ -67,25 +66,19 @@ concept enum_ish_parameter
       || (avnd::has_range<Field> && AVND_REQUIREMENT_ON_MEMBER(Field, range, values[0]));
 
 template <typename T>
-concept float_parameter = requires(T t) {
-                            {
-                              t.value
-                              } -> fp_ish;
-                          };
+concept float_parameter = parameter<T> && requires(T t) {
+  { t.value } -> fp_ish;
+};
 
 template <typename T>
-concept bool_parameter = requires(T t) {
-                           {
-                             t.value
-                             } -> bool_ish;
-                         };
+concept bool_parameter = parameter<T> && requires(T t) {
+  { t.value } -> bool_ish;
+};
 
 template <typename T>
-concept string_parameter = requires(T t) {
-                             {
-                               t.value
-                               } -> std::convertible_to<std::string>;
-                           };
+concept string_parameter = parameter<T> && requires(T t) {
+  { t.value } -> std::convertible_to<std::string>;
+};
 
 template <typename T>
 concept xy_value = requires(T t) {
@@ -93,7 +86,7 @@ concept xy_value = requires(T t) {
                      t.y;
                    };
 template <typename T>
-concept xy_parameter = xy_value<decltype(T::value)>;
+concept xy_parameter = parameter<T> && xy_value<decltype(T::value)>;
 
 template <typename T>
 concept rgb_value = requires(T t) {
@@ -102,11 +95,11 @@ concept rgb_value = requires(T t) {
                       t.b;
                     };
 template <typename T>
-concept rgb_parameter = rgb_value<decltype(T::value)>;
+concept rgb_parameter = parameter<T> && rgb_value<decltype(T::value)>;
 
 template <typename C>
 concept parameter_with_minmax_range_ignore_init
-    = AVND_REQUIREMENT_ON_MEMBER(C, range, min)
+    = parameter<C> && AVND_REQUIREMENT_ON_MEMBER(C, range, min)
       && AVND_REQUIREMENT_ON_MEMBER(C, range, max);
 
 template <typename C>
@@ -119,7 +112,7 @@ concept integer_or_enum
 
 template <typename C>
 concept parameter_with_values_range
-    = AVND_REQUIREMENT_ON_MEMBER(C, range, values[0])
+    = parameter<C> && AVND_REQUIREMENT_ON_MEMBER(C, range, values[0])
       && AVND_CONCEPT_CHECK_ON_MEMBER(integer_or_enum, C, range, init);
 
 // Used for defining process which take programs in some lang as input

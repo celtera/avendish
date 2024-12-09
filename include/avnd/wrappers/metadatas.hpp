@@ -7,6 +7,7 @@
 #include <halp/polyfill.hpp>
 
 #include <array>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>

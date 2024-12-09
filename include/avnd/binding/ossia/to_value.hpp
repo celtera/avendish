@@ -130,6 +130,15 @@ struct to_ossia_value_impl
   void operator()(std::vector<ossia::value>& f) { val = std::move(f); }
   void operator()(std::vector<ossia::value>&& f) { val = std::move(f); }
 
+  void operator()(const avnd::vector_v_strict<float> auto& f)
+  {
+    val = std::vector<ossia::value>(f.begin(), f.end());
+  }
+  void operator()(const avnd::vector_v_strict<int> auto& f)
+  {
+    val = std::vector<ossia::value>(f.begin(), f.end());
+  }
+
   void operator()(const avnd::vector_ish auto& f)
   {
     std::vector<ossia::value> v;
