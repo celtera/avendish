@@ -4,6 +4,7 @@
 #include <halp/meta.hpp>
 #include <rnd/random.hpp>
 
+#include <algorithm>
 #include <numbers>
 #include <random>
 

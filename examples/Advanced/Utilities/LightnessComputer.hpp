@@ -59,7 +59,7 @@ public:
   struct ins
   {
     halp::fixed_texture_input<"In"> image{.request_width = 16, .request_height = 16};
-    halp::xy_spinboxes_i32<"Size", halp::range{1, 64, 10}> size;
+    halp::xy_spinboxes_i32<"Size", halp::range{1, 512, 10}> size;
     struct mode
     {
       halp__enum_combobox(
@@ -259,7 +259,7 @@ public:
     samples.clear();
 
     int i = 0;
-    auto apply = [&](auto func) mutable {
+    auto apply = [this, &in_tex](auto func) mutable {
 #pragma omp simd
       for(int y = 0; y < in_tex.height; y++)
       {
