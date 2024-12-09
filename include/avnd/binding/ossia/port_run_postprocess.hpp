@@ -19,6 +19,7 @@ struct process_after_run
 {
   Exec_T& self;
   Obj_T& impl;
+  int instance{};
   int& start = self.start_frame_for_this_tick;
   int& frames = self.frame_count_for_this_tick;
 

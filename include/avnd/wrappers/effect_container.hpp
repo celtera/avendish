@@ -298,14 +298,16 @@ struct effect_container<T>
     multi_instance
   };
 
-  typename T::inputs inputs_storage;
+  struct state
+  {
+    T effect;
+    typename T::inputs inputs_storage;
+  };
 
-  std::vector<T> effect;
+  std::vector<state> effect;
 
   void init_channels(int input, int output) { effect.resize(std::max(input, output)); }
 
-  auto& inputs() noexcept { return inputs_storage; }
-  auto& inputs() const noexcept { return inputs_storage; }
   auto& outputs() noexcept { return dummy_instance; }
   auto& outputs() const noexcept { return dummy_instance; }
 
@@ -313,16 +315,23 @@ struct effect_container<T>
   {
     T& effect;
     typename T::inputs& inputs;
-
     [[no_unique_address]] avnd::dummy outputs;
   };
 
-  ref full_state(int i) { return {effect[i], this->inputs_storage, dummy_instance}; }
+  ref full_state(int i)
+  {
+    return {effect[i].effect, effect[i].inputs_storage, dummy_instance};
+  }
   full_state_iterator<effect_container> full_state()
   {
     return full_state_iterator<effect_container>{*this};
   }
 
+  member_iterator<typename T::inputs> inputs()
+  {
+    for(auto& e : effect)
+      co_yield e.inputs_storage;
+  }
   auto effects()
   {
     return member_iterator_poly_effect<effect_container>{*this};
@@ -339,20 +348,16 @@ struct effect_container<T>
     multi_instance
   };
 
-  typename T::inputs inputs_storage;
-
   struct state
   {
     T effect;
+    typename T::inputs inputs_storage;
     typename T::outputs outputs_storage;
   };
 
   std::vector<state> effect;
 
   void init_channels(int input, int output) { effect.resize(std::max(input, output)); }
-
-  auto& inputs() noexcept { return inputs_storage; }
-  auto& inputs() const noexcept { return inputs_storage; }
 
   struct ref
   {
@@ -363,7 +368,7 @@ struct effect_container<T>
 
   ref full_state(int i)
   {
-    return {effect[i].effect, this->inputs_storage, effect[i].outputs_storage};
+    return {effect[i].effect, effect[i].inputs_storage, effect[i].outputs_storage};
   }
 
   full_state_iterator<effect_container> full_state()
@@ -376,6 +381,11 @@ struct effect_container<T>
     return member_iterator_poly_effect<effect_container>{*this};
   }
 
+  member_iterator<typename T::inputs> inputs()
+  {
+    for(auto& e : effect)
+      co_yield e.inputs_storage;
+  }
   member_iterator<typename T::outputs> outputs()
   {
     for(auto& e : effect)
@@ -393,18 +403,19 @@ struct effect_container<T>
     multi_instance
   };
 
-  typename T::inputs inputs_storage;
+  struct state
+  {
+    T effect;
+    typename T::inputs inputs_storage;
+  };
 
-  std::vector<T> effect;
+  std::vector<state> effect;
 
   void init_channels(int input, int output)
   {
     assert(input == output);
     effect.resize(input);
   }
-
-  auto& inputs() noexcept { return inputs_storage; }
-  auto& inputs() const noexcept { return inputs_storage; }
 
   struct ref
   {
@@ -415,7 +426,7 @@ struct effect_container<T>
 
   ref full_state(int i)
   {
-    return {effect[i].effect, this->inputs_storage, effect[i].effect.outputs};
+    return {effect[i].effect, effect[i].inputs, effect[i].effect.outputs};
   }
 
   full_state_iterator<effect_container> full_state()
@@ -428,6 +439,11 @@ struct effect_container<T>
     return member_iterator_poly_effect<effect_container>{*this};
   }
 
+  member_iterator<typename T::inputs> inputs()
+  {
+    for(auto& e : effect)
+      co_yield e.inputs_storage;
+  }
   member_iterator<typename T::outputs> outputs()
   {
     for(auto& e : effect)
