@@ -134,7 +134,7 @@ struct Point2DView
 
     void paint_impl(QPainter* p) const override
     {
-      static constexpr auto side = 4.;
+      static constexpr auto side = 3.;
       if(m_points.empty())
         return;
 
@@ -143,19 +143,20 @@ struct Point2DView
       if(scalex < 0.000001f || scaley < 0.000001f)
         return;
 
+      p->setRenderHint(QPainter::RenderHint::Antialiasing, true);
       const auto rect = boundingRect();
       const auto w = rect.width();
       const auto h = rect.height();
       auto& skin = score::Skin::instance();
-      p->fillRect(boundingRect(), skin.Background1);
-      p->setPen(Qt::NoPen);
-      p->setBrush(skin.Emphasis3);
+      p->setPen(skin.NoPen);
+      p->setBrush(skin.Base1);
       for(QPointF pix : m_points)
       {
         const auto x01 = (pix.x() - min_x) / scalex;
         const auto y01 = 1. - (pix.y() - min_y) / scaley;
         p->drawEllipse(QPointF{w * x01 - side / 2., h * y01 - side / 2.}, side, side);
       }
+      p->setRenderHint(QPainter::RenderHint::Antialiasing, false);
     }
   };
 };
