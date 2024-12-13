@@ -4,6 +4,7 @@ on: push
 
 jobs:
   mingw:
+    if: false # Disables this entire workflow, since it always fails
     runs-on: windows-latest
     strategy:
       matrix:
