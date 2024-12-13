@@ -56,16 +56,20 @@ struct Processor
         auto quants = tk.get_quantification_date(4. / pat.size());
         for(auto [pos, q] : quants)
         {
+          // FIXME: The position returned by get_quantification_date is a negative timestamp.
           if(pos < tk.frames)
           {
             auto qq = std::abs(q % std::ssize(pat));
             if(uint8_t vel = pat[qq]; vel > 0)
             {
               halp::midi_msg m;
+              // Note on:
               m.bytes = {144, (uint8_t)note, vel};
               m.timestamp = pos;
               outputs.midi.midi_messages.push_back(m);
 
+              // FIXME: The note off should not be output right away.
+              // Note off:
               m.bytes = {128, (uint8_t)note, 0};
               m.timestamp = pos;
               outputs.midi.midi_messages.push_back(m);

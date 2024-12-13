@@ -203,9 +203,15 @@ struct tick
 
 struct tick_musical
 {
+  /**
+   * How many frames in the buffer.
+   */
   int frames{};
 
   double tempo = 120.;
+  /**
+   * Time signature. Example: 4/4
+   */
   struct
   {
     int num;
