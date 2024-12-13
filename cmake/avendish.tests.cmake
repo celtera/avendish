@@ -7,11 +7,13 @@ endfunction()
 
 function(avnd_add_executable_test theTarget theFile)
   add_executable("${theTarget}" "${theFile}")
+  add_test(NAME "${theTarget}" COMMAND "${theTarget}")
   avnd_common_setup("" "${theTarget}")
 endfunction()
 
 function(avnd_add_catch_test theTarget theFile)
   add_executable("${theTarget}" "${theFile}")
+  add_test(NAME "${theTarget}" COMMAND "${theTarget}")
   avnd_common_setup("" "${theTarget}")
   target_link_libraries("${theTarget}" PRIVATE Catch2::Catch2WithMain)
 endfunction()
