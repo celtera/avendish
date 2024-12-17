@@ -47,5 +47,6 @@ if(BUILD_TESTING)
 
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
+  avnd_add_catch_test(test_quantification_date tests/test_quantification_date.cpp)
 endif()
 
