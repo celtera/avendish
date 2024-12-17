@@ -203,9 +203,15 @@ struct tick
 
 struct tick_musical
 {
+  /**
+   * How many frames in the buffer.
+   */
   int frames{};
 
   double tempo = 120.;
+  /**
+   * Time signature. Example: 4/4
+   */
   struct
   {
     int num;
@@ -240,11 +246,11 @@ struct tick_musical
   [[nodiscard]] quantification_frames get_quantification_date(double div) const noexcept
   {
     quantification_frames frames;
-    double start_in_bar = start_position_in_quarters - bar_at_start;
+    double start_in_bar = this->start_position_in_quarters - bar_at_start;
     double end_in_bar = end_position_in_quarters - bar_at_start;
 
     auto pos_to_frame = [this](double in_bar) {
-      double start = start_position_in_quarters;
+      double start = this->start_position_in_quarters;
       double musical_pos = in_bar + bar_at_start;
       double end = end_position_in_quarters;
 
