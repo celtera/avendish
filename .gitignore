@@ -64,3 +64,5 @@ Documentation/Doc_sources/score-documentation/site
 
 *.patch
 .*.swp
+
+docs/doxygen
