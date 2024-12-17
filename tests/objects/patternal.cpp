@@ -66,11 +66,12 @@ TEST_CASE("Compare two MIDI notes", "[advanced][patternal]")
 TEST_CASE("MIDI messages are output properly", "[advanced][patternal]")
 {
   // Our sampling rate is 48kHz and the buffer size is 512
-  static const double samplingRate = 48000;
-  static const int bufferSize = 512;
-  static const double tickDuration = samplingRate / bufferSize; // seconds
-  static const double ticksPerSecond = 1.0 / tickDuration;
-  static const double testDuration = 3.0; // seconds
+  static constexpr double samplingRate = 48000;
+  static constexpr int bufferSize = 512;
+  static constexpr double tickDuration = samplingRate / bufferSize; // seconds
+  static constexpr double ticksPerSecond = 1.0 / tickDuration;
+  static constexpr double testDuration = 3.0; // seconds
+  static constexpr double NS_PER_S = 1000000;
 
   Processor patternalProcessor;
   patternalProcessor.inputs.patterns.value = {
@@ -81,15 +82,23 @@ TEST_CASE("MIDI messages are output properly", "[advanced][patternal]")
 
   // Check the output on each tick:
   const int totalNumberOfTicks = (int) ticksPerSecond * testDuration;
+  int64_t pos_in_frames = 0;
+  double pos_in_ns = 0;
   for (int tickIndex = 0; tickIndex < totalNumberOfTicks; tickIndex++) {
 
     INFO("tick number " << tickIndex << " / " << totalNumberOfTicks);
     // INFO("Test tick " << tickIndex);
+    pos_in_frames += bufferSize;
+    pos_in_ns += tickDuration / NS_PER_S;
     tick_musical tk;
+    // TODO tk.start_position_quarter = 
+    // TODO tk.end_position_quarter = 
     tk.tempo = 120; // 120 BPM. One beat lasts 500 ms.
     tk.signature.num = 4;
     tk.signature.denom = 4;
     tk.frames = bufferSize;
+    tk.position_in_nanoseconds = pos_in_ns;
+    tk.position_in_frames = pos_in_frames;
     double timeNow = tickIndex * tickDuration;
     patternalProcessor(tk);
 
