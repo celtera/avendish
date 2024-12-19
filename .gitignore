@@ -62,3 +62,7 @@ Documentation/Doc_sources/score-documentation/site
 
 .vscode
 
+*.patch
+.*.swp
+
+docs/doxygen
