@@ -11,9 +11,9 @@ TEST_CASE("Test Patternal patterns", "[advanced][patternal]")
 
     // Create the input pattern:
     patternalProcessor.inputs.patterns.value = {
-      (patternal::Pattern) {42, {127, 127, 127, 127}}, // hi-hat
-      (patternal::Pattern) {38, {0, 127, 0, 127}}, // snare
-      (patternal::Pattern) {35, {127, 0, 127, 0}}, // bass drum
+      {42, {127, 127, 127, 127}}, // hi-hat
+      {38, {0, 127, 0, 127}}, // snare
+      {35, {127, 0, 127, 0}}, // bass drum
     };
 
     // Check that the input pattern is stored correctly:
