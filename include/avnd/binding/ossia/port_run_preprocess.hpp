@@ -13,10 +13,13 @@
 #include <avnd/wrappers/widgets.hpp>
 #include <fmt/printf.h>
 #include <ossia/audio/fft.hpp>
+#include <ossia/dataflow/dataflow.hpp>
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/detail/math.hpp>
 #include <ossia/editor/curve/curve_segment/easing.hpp>
+#include <ossia/network/base/node.hpp>
+#include <ossia/network/base/parameter.hpp>
 #include <ossia/network/value/format_value.hpp>
 
 namespace oscr
@@ -31,6 +34,31 @@ inline void update_value(
     if_possible(field.update(obj));
   }
 }
+
+struct node_from_destination
+{
+  ossia::net::node_base* operator()(ossia::net::parameter_base* p)
+  {
+    if(p)
+      return &p->get_node();
+  }
+  // ossia::traversal::path, ossia::net::node_base*
+};
+
+template <typename Exec_T, typename Obj_T>
+struct set_ossia_node_in_port
+{
+  Exec_T& self;
+  Obj_T& impl;
+
+  inline void operator()(auto& ctrl, auto& port, auto) const noexcept
+  {
+    if constexpr(requires { ctrl.ossia_node = nullptr; })
+    {
+      ctrl.ossia_node = impl.ossia_state.get_first_destination(port.address);
+    }
+  }
+};
 
 template <typename Exec_T, typename Obj_T>
 struct process_before_run

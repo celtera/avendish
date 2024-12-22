@@ -478,6 +478,7 @@ public:
     this->frame_count_for_this_tick = frames;
 
     // Process inputs of all sorts
+    this->process_all_ports<set_ossia_node_in_port<safe_node_base, T>>();
     this->process_all_ports<process_before_run<safe_node_base, T>>(start, frames);
 
     // Process messages
