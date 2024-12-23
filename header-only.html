@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>Header-only support - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,58 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="using-libremidi-in-header-only-mode"><a class="header" href="#using-libremidi-in-header-only-mode">Using libremidi in header-only mode</a></h1>
+<p>The library can be used header-only, with minimal modifications to your build system if you aren't using CMake:</p>
+<ul>
+<li>
+<p>Define <code>LIBREMIDI_HEADER_ONLY=1</code></p>
+</li>
+<li>
+<p>Define macros for the APIs you wish to build. The possible macros are as follows:</p>
+<ul>
+<li>macOS: <code>LIBREMIDI_COREMIDI=1</code> and link against <code>-framework CoreMIDI -framework CoreAudio -framework CoreFoundation</code>.</li>
+<li>Linux: <code>LIBREMIDI_ALSA=1</code> and link against <code>-lasound -phtread</code>.</li>
+<li>Windows (WinMM): <code>LIBREMIDI_WINMM=1</code> and link against <code>winmm</code>.</li>
+<li>Windows (UWP): <code>LIBREMIDI_WINUWP=1</code> ; note that there is complex linking logic detailed in the CMakeLists.txt when using UWP.</li>
+<li>emscripten: <code>LIBREMIDI_EMSCRIPTEN=1</code>.</li>
+<li>Any platform with JACK: <code>LIBREMIDI_JACK=1</code>.</li>
+</ul>
+</li>
+<li>
+<p>Add the <code>include</code> folder to your include path.</p>
+</li>
+<li>
+<p><code>#include &lt;libremidi/libremidi.hpp&gt;</code> in your source code.</p>
+</li>
+</ul>
+<p>For instance, to build the <code>midiprobe</code> example on Linux with only ALSA support, one would run:</p>
+<pre><code>$ g++ ~/libremidi/tests/midiprobe.cpp \
+      -std=c++20 \
+      -DLIBREMIDI_ALSA=1 \
+      -DLIBREMIDI_HEADER_ONLY=1 \
+      -I ~/libremidi/include \
+      -lasound -pthread
+</code></pre>
+<p>To build it on macOS, one would run:</p>
+<pre><code>$ clang++ ~/libremidi/tests/midiprobe.cpp \
+      -std=c++20 \
+      -DLIBREMIDI_COREMIDI=1 \
+      -DLIBREMIDI_HEADER_ONLY=1 \
+      -I ~/libremidi/include \
+      -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="compiling.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="cmake.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +211,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="compiling.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="cmake.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

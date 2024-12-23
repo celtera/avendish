@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>MIDI file support - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,68 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="midi-file-io-usage"><a class="header" href="#midi-file-io-usage">MIDI file I/O usage</a></h1>
+<h2 id="reading-a-mid-file"><a class="header" href="#reading-a-mid-file">Reading a .mid file</a></h2>
+<p>See <code>midifile_dump.cpp</code> for a more complete example.</p>
+<pre><code class="language-cpp">// Read raw from a MIDI file
+std::ifstream file{"path/to/a.mid", std::ios::binary};
+
+std::vector&lt;uint8_t&gt; bytes;
+bytes.assign(std::istreambuf_iterator&lt;char&gt;(file), std::istreambuf_iterator&lt;char&gt;());
+
+// Initialize our reader object
+libremidi::reader r;
+
+// Parse
+libremidi::reader::parse_result result = r.parse(bytes);
+
+// If parsing succeeded, use the parsed data
+if(result != libremidi::reader::invalid) {
+  for(auto&amp; track : r.tracks) {
+    for(auto&amp; event : t.events) {
+      std::cout &lt;&lt; (int) event.m.bytes[0] &lt;&lt; '\n';
+    }
+  }
+}
+</code></pre>
+<h2 id="writing-a-mid-file"><a class="header" href="#writing-a-mid-file">Writing a .mid file</a></h2>
+<pre><code class="language-cpp">// Initialize a writer object
+libremidi::writer writer;
+
+// Create tracks and events declaratively by changing the track vector directly:
+writer.tracks.push_back(
+  libremidi::midi_track{
+    libremidi::track_event{0, 0, libremidi::channel_events::note_on(1, 45, 35)},
+    libremidi::track_event{140, 0, libremidi::channel_events::note_off(1, 45, 0)},
+  }
+);
+
+// Or through a builder API:
+{
+  int tick = 500;
+  int track = 3;
+  libremidi::message msg = libremidi::channel_events::note_on(1, 45, 35);
+
+  // Tracks will be added as needed within safe limits
+  writer.add_event(tick, track, msg);
+}
+
+// Read raw from a MIDI file
+std::ofstream output{"output.mid", std::ios::binary};
+writer.write(output);
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="midi-2-out.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="midi-2-integrations.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +221,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="midi-2-out.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="midi-2-integrations.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

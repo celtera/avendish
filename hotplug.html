@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>Hotplug support - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,39 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="device-connection--disconnection-notification"><a class="header" href="#device-connection--disconnection-notification">Device connection / disconnection notification</a></h1>
+<pre><code class="language-cpp">// The callbacks will be called when the relevant event happens.
+// Note that they may be called from other threads than the main thread.
+
+libremidi::observer_configuration conf{
+    .input_added = [&amp;] (const libremidi::input_port&amp; id) {
+      std::cout &lt;&lt; "Input connected: " &lt;&lt; id.port_name &lt;&lt; std::endl;
+    },
+    .input_removed = [&amp;] (const libremidi::input_port&amp; id) {
+      std::cout &lt;&lt; "Input removed: " &lt;&lt; id.port_name &lt;&lt; std::endl;
+    },
+    .output_added = [&amp;] (const libremidi::output_port&amp; id) {
+      std::cout &lt;&lt; "Output connected: " &lt;&lt; id.port_name &lt;&lt; std::endl;
+    },
+    .output_removed = [&amp;] (const libremidi::output_port&amp; id) {
+      std::cout &lt;&lt; "Output removed: " &lt;&lt; id.port_name &lt;&lt; std::endl;
+}};
+
+libremidi::observer obs{std::move(conf)};
+</code></pre>
+<p>See <code>midiobserve.cpp</code> or <code>emscripten_midiin.cpp</code> for an example.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="midi-2-integrations.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="error-handling.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +192,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="midi-2-integrations.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="error-handling.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

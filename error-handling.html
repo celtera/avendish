@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>Error handling - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,37 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="error-handling"><a class="header" href="#error-handling">Error handling</a></h1>
+<p>The default error handling is done with exceptions.
+If exceptions are undesirable, it is also possible to set a callback function which will be invoked upon error, for the <code>midi_in</code> and <code>midi_out</code> classes.</p>
+<p>(Some classes may still throw, such as when creating invalid MIDI messages with the <code>libremidi::message</code> helpers, or the <code>observer</code> classes).</p>
+<pre><code class="language-cpp">// Create the configuration
+libremidi::input_configuration conf{
+    .on_message = /* usual message callback */
+  , .on_error = [] (libremidi::midi_error code, std::string_view info) {
+      // ... log error however you want
+    }
+  , .on_warning = [] (libremidi::midi_error code, std::string_view info) {
+      // ... log warning however you want
+    }
+};
+
+// Create the midi object
+libremidi::midi_in midi{conf};
+</code></pre>
+<p>Ditto for <code>midi_out</code> and <code>midi_observer</code>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="hotplug.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="configuration.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +190,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="hotplug.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="configuration.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

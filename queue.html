@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>Queue vs callbacks - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,23 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="queue-input"><a class="header" href="#queue-input">Queue input</a></h1>
+<p>The old queued input mechanism present in RtMidi and previous versions of the library has been moved out of the code as it can be built entirely on the callback mechanism and integrated with the user application's event processing queue instead.</p>
+<p>A basic example is provided in <code>qmidiin.cpp</code>.</p>
+<p>We recommend if possible to instead use an asynchronous runtime in order to keep an imperative behaviour while benefiting from the non-blocking properties of async programming.</p>
+<p>An example based on C++20 coroutines with Boost.Cobalt is provided in <code>coroutines.cpp</code>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="timestamping.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="keyboard.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +176,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="timestamping.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="keyboard.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

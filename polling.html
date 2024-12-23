@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>External polling - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,29 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="custom-polling"><a class="header" href="#custom-polling">Custom polling</a></h1>
+<p>Traditionnally, RtMidi (and most other MIDI libraries) opened a dedicated MIDI thread from which messages are read, and then transferred to the rest of the app.</p>
+<p>If your app is based on an event loop that can poll file descriptors, such as <code>poll()</code>, the relevant back-ends will allow to instead control polling manually by providing you with the file descriptors,
+which can then be injected into your app's main loop.</p>
+<p>Thus, this enables complete control over threading (and can also remove the need for synchronisation as this allows to make a callback-based yet single-threaded app, for simple applications which do not wish to reimplement MIDI filtering &amp; parsing for back-ends such as ALSA Sequencer or RawMidi).</p>
+<p>Since this feature is pretty complicated to implement, we recommend checking the examples:</p>
+<p>See:</p>
+<ul>
+<li><code>poll_share.cpp</code> for a complete example for ALSA RawMidi (recommended).</li>
+<li><code>alsa_share.cpp</code> for a complete example for ALSA Seq.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="context-sharing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="timestamping.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +182,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="context-sharing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="timestamping.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>Custom configuration - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,49 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="advanced-configuration"><a class="header" href="#advanced-configuration">Advanced configuration</a></h1>
+<p>The <code>midi_in</code>, <code>midi_out</code> and <code>midi_observer</code> objects are configured through a <code>input_configuration</code> (resp. <code>output_</code>, etc.) object passed in argument to the constructor.</p>
+<p>Example:</p>
+<pre><code class="language-cpp">#include &lt;libremidi/configurations.hpp&gt;
+
+...
+
+libremidi::midi_in in{
+    libremidi::input_configuration{
+      .on_message = ...
+    , .ignore_sysex = false
+    , .ignore_sensing = true
+    }
+};
+</code></pre>
+<h2 id="custom-back-end-configuration"><a class="header" href="#custom-back-end-configuration">Custom back-end configuration</a></h2>
+<p>Additionnally, each back-end supports back-end specific configuration options, to enable users to tap into advanced features of a given API while retaining the general C++ abstraction.</p>
+<p>For instance, this enables to set output buffer sizes, chunking parameters, etc. for back-ends which support the feature.</p>
+<pre><code class="language-cpp">#include &lt;libremidi/backends.hpp&gt;
+
+...
+
+libremidi::midi_in in{
+    libremidi::input_configuration{
+      .on_message = ...
+    },
+    libremidi::pipewire_input_configuration{
+      .client_name = "My app"
+    }
+};
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="error-handling.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="context-sharing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +202,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="error-handling.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="context-sharing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

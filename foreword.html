@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Foreword - Avendish documentation</title>
+        <title>Foreword - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -120,7 +120,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">Avendish documentation</h1>
+                    <h1 class="menu-title">libremidi documentation</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -152,121 +152,46 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="making-media-objects-with-avendish"><a class="header" href="#making-media-objects-with-avendish">Making media objects with <a href="https://github.com/celtera/avendish">Avendish</a></a></h1>
-<p>This book is two things: a tutorial for the usage of <a href="https://github.com/celtera/avendish">Avendish</a>, intertwined with
-an explanation of the concepts and implementation.</p>
-<p>Avendish aims to enable media objects / processors authors to write the processor in the most natural way possible, and then to map this to host softwares or languages with so-called zero-cost abstraction.</p>
-<blockquote>
-<p>By zero-cost abstraction, we mean zero run-time cost. However, we'll see that the system actually enables extremely short compile times compared to the norm in C++.</p>
-</blockquote>
-<p>The library is borne from:</p>
+                        <h1 id="funky-midi-with-libremidi"><a class="header" href="#funky-midi-with-libremidi">Funky MIDI with <a href="https://github.com/celtera/libremidi">libremidi</a></a></h1>
+<p>libremidi is an all-in-one cross-platform C++20 MIDI library for both file and real-time output.
+Real-time I/O supports MIDI 2 on macOS (11+) and Linux (Kernel 6.5+), and soon on Windows (the OS does not support it yet).</p>
+<p>It is a fork / rewrite originally based on two libraries, but has since then almost been entirely rewritten:</p>
 <ul>
-<li>
-<p>The necessity to reduce duplication among media processors in C++.</p>
-</li>
-<li>
-<p>Allowing to express the quintessence of a given media processor.</p>
+<li><a href="https://github.com/theSTK/RtMidi">RtMidi</a></li>
+<li><a href="https://github.com/ddiakopoulos/ModernMIDI">ModernMIDI</a></li>
+</ul>
+<p>Compared to its origins, it features a lot of changes and improvements:</p>
 <ul>
-<li>There should be no compromise at any point: the user of the library must be able to declare all the properties, inputs, outputs of a media processor, whether it processes audio, video, MIDI, asynchronous messages, etc...</li>
-<li>UIs must be possible.</li>
-<li>GPU-based processors must be possible.</li>
-<li>The way this is expressed should be the simplest possible way in C++, in the sense that the code should be as natural as possible: just declaring variables should be sufficient. The lack of proper reflection in C++ still limits this in a way, but we will see that it is already possible to get quite far !</li>
-<li>For a given processor, multiple potential expressions are possible. We aim to capture most possible expressions: for instance, it may be more natural for a given audio processor to implement it in a sample-wise way (each audio sample processed one-by-one), and for another to be implemented through buffer-wise processing.</li>
+<li><code>libremidi::observer</code> provides hotplug support.</li>
+<li>Ports are identified not with a number but with a handle which enables more stability when unplugging / replugging.</li>
+<li>Memory allocations and virtual function calls are greatly reduced when compared to the RtMidi base-line.
+<ul>
+<li>Ability to enforce fixed message sizes with boost::static_vector for hard real-time operation</li>
+<li>Ability to use boost::small_vector to cover most cases.</li>
 </ul>
 </li>
-<li>
-<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their "canonic" form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
-</li>
+<li>Integer timestamps everywhere, by default in nanoseconds.</li>
+<li>Ability to choose different timestamping methods (e.g. relative, absolute monotonic clock, sample-based or custom timestamping...).</li>
+<li>Integration of modern C++20 types (for instance std::span instead of std::vector, std::function for callbacks, etc.)</li>
+<li>Standard C++ threading primitives (std::thread, std::jthread) are now used, as well as modern Linux facilities for polling control (eventfd, timerfd).</li>
+<li>Most of the code has been refactored in multiple files for clarity.</li>
 </ul>
-<p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-)</p>
-<p>In contrast, Avendish processors can be written in a way that does not depend on <em>any</em> existing library, not even the standard C or C++ libraries, which makes them trivially portable to such platforms. The only required thing is a C++ compiler, really!</p>
-<p>Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a <code>string</code> output port in a VST plug-in), in other cases just because by lack of time, but it's on the roadmap! In general features are prototyped implemented in the <a href="https://ossia.io">ossia score</a> back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.</p>
-<h1 id="why-c"><a class="header" href="#why-c">Why C++</a></h1>
-<p>To ease porting of most effects, which are also in C++. Step by step, we will be able to lift them towards maybe higher-level descriptions, but first I believe that having something in C++ is important to allow capturing the semantics of the vast majority of media processors in existence.</p>
-<p>Also because this is the language I know best =p</p>
-<p>Non-C++ alternatives exist: <a href="https://faust.grame.fr/">Faust</a> and <a href="https://soul.dev/">SOUL</a> are the two most known and are great inspirations for Avendish ; they focus however mainly on audio processing. Avendish can be used to make purely message-based processors for e.g. Max/MSP and PureData, Python objects, etc. or video processing objects (currently implemented only for <a href="https://ossia.io">ossia score</a>, but could easily be ported to e.g. Jitter for Max, GEM for PureData, etc.).</p>
-<h1 id="what-is-really-avendish"><a class="header" href="#what-is-really-avendish">What is really Avendish</a></h1>
-<ol>
-<li>An ontology for media objects.</li>
-<li>An automated binding of a part of the C++ object semantics to other languages and run-time environments.</li>
-<li>An example implementation of this until C++ gets proper reflection and code generation features.</li>
-<li>Very, very, very, very uncompromising on its goals.</li>
-<li>Lots of fun C++20 code !</li>
-</ol>
-<h1 id="gimme-code"><a class="header" href="#gimme-code">GIMME CODE</a></h1>
-<p>Here's an example of a complete audio processor which uses an <strong>optional</strong> library of helper types:
-if one wants, the exact same thing can be written without any macro or pre-existing type ; it is just a tad more verbose.</p>
-<pre><code class="language-cpp">struct MyProcessor {
-  // Define generic metadata
-  halp_meta(name, "Gain");
-  halp_meta(author, "Professional DSP Development, Ltd.");
-  halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
-
-  // Define the inputs of our processor
-  struct ins {
-    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
-    halp::knob_f32&lt;"Gain", halp::range{.min = 0., .max = 1.}&gt; gain;
-  } inputs;
-
-  // Define the outputs of our processor
-  struct outs {
-    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
-    halp::hbargraph_f32&lt;"Measure", halp::range{-1., 1., 0.}&gt; measure;
-  } outputs;
-
-  // Define an optional UI layout
-  struct ui {
-    using enum halp::colors;
-    using enum halp::layouts;
-    halp_meta(name, "Main")
-    halp_meta(layout, hbox)
-    halp_meta(background, mid)
-
-    struct {
-      halp_meta(name, "Widget")
-      halp_meta(layout, vbox)
-      halp_meta(background, dark)
-
-      const char* label = "Hello !";
-      halp::item&lt;&amp;ins::gain&gt; widget;
-      const char* label2 = "Gain control!";
-    } widgets;
-
-    halp::spacing spc{.width = 20, .height = 20};
-
-    halp::item&lt;&amp;outs::measure&gt; widget2;
-  };
-
-  // Our process function
-  void operator()(int N) {
-    auto&amp; in = inputs.audio;
-    auto&amp; out = outputs.audio;
-    const double gain = inputs.gain;
-
-    double measure = 0.;
-    for (int i = 0; i &lt; in.channels; i++)
-    {
-      for (int j = 0; j &lt; N; j++)
-      {
-        out[i][j] = gain * in[i][j];
-        measure += std::abs(out[i][j]);
-      }
-    }
-
-    if(N &gt; 0 &amp;&amp; in.channels &gt; 0)
-      outputs.measure = measure / (N * in.channels);
-  }
-};
-</code></pre>
-<p>Here is how it looks like when compiled against the <a href="https://ossia.io">ossia score</a> backend:</p>
-<p><img src="images/example.gif" alt="Gain example" /></p>
+<p>It also features some new &amp; improved backends:</p>
+<ul>
+<li>ALSA RawMidi API.</li>
+<li>PipeWire.</li>
+<li>Windows UWP.</li>
+<li>WebMIDI in Emscripten.</li>
+<li>JACK support on all platforms where it is available.</li>
+<li>Computer keyboard input.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="getting_started/hello_world.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="compiling.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -277,7 +202,7 @@ if one wants, the exact same thing can be written without any macro or pre-exist
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="getting_started/hello_world.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="compiling.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

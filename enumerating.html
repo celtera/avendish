@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - libremidi documentation</title>
-        <base href="/">
+        <title>Enumerating ports - libremidi documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -153,14 +152,33 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="enumerating-ports"><a class="header" href="#enumerating-ports">Enumerating ports</a></h1>
+<p>The required header is <code>#include &lt;libremidi/libremidi.hpp&gt;</code>.</p>
+<p>Inputs:</p>
+<pre><code class="language-cpp">libremidi::observer obs;
+for(const libremidi::input_port&amp; port : obs.get_input_ports()) {
+  std::cout &lt;&lt; port.port_name &lt;&lt; "\n";
+}
+</code></pre>
+<p>Outputs:</p>
+<pre><code class="language-cpp">libremidi::observer obs;
+for(const libremidi::output_port&amp; port : obs.get_output_ports()) {
+  std::cout &lt;&lt; port.port_name &lt;&lt; "\n";
+}
+</code></pre>
+<p>See <code>midiprobe.cpp</code> for a simple example.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="cmake.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="midi-1-in.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +186,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="cmake.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="midi-1-in.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
