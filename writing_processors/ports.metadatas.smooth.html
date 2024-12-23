@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Smoothing - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,171 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="smoothing-values"><a class="header" href="#smoothing-values">Smoothing values</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>It is common to require controls to be smoothed over time, in order to prevent clicks and pops in the sound.</p>
+<p>Avendish allows this, by defining a simple <code>smoother</code> struct which specifies over how many milliseconds the control changes must be smoothed.</p>
+<pre><code class="language-cpp">struct {
+  static consteval auto name() { return "foobar"; }
+
+  struct smoother {
+    float milliseconds = 10.;
+  };
+
+  struct range {
+    float min = 20.;
+    float max = 20000.;
+    float init = 100.;
+  };
+
+  float value{};
+} foobar;
+</code></pre>
+<p>It is also possible to get precise control over the smoothing ratio, depending on the control update rate (sample rate or buffer rate).</p>
+<h1 id="helpers"><a class="header" href="#helpers">Helpers</a></h1>
+<p>Helper types are provided:</p>
+<pre><code class="language-cpp">// #include: &lt;halp/smoothers.hpp&gt;
+
+#pragma once
+
+#include &lt;cmath&gt;
+#include &lt;halp/modules.hpp&gt;
+
+HALP_MODULE_EXPORT
+namespace halp
+{
+
+// A basic smooth specification
+template &lt;int T&gt;
+struct milliseconds_smooth
+{
+  static constexpr float milliseconds{T};
+
+  // Alternative:
+  // static constexpr std::chrono::milliseconds duration{T};
+};
+
+// Same thing but explicit control over the smoothing
+// ratio
+template &lt;int T&gt;
+struct exp_smooth
+{
+  static const constexpr double pi = 3.141592653589793238462643383279502884;
+  static constexpr auto ratio(double sample_rate) noexcept
+  {
+    return std::exp(-2. * pi / (T * 1e-3 * sample_rate));
+  }
+};
+
+}
+</code></pre>
+<h1 id="usage-example"><a class="header" href="#usage-example">Usage example</a></h1>
+<p>These examples smooth the gain control parameter, either over a buffer in the first case, or for each sample in the second case.</p>
+<pre><code class="language-cpp">#pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include &lt;halp/audio.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/meta.hpp&gt;
+#include &lt;halp/smoothers.hpp&gt;
+
+#include &lt;vector&gt;
+
+namespace examples::helpers
+{
+/**
+ * Smooth gain
+ */
+class SmoothGainPoly
+{
+public:
+  halp_meta(name, "Smooth Gain")
+  halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
+
+  using setup = halp::setup;
+  using tick = halp::tick;
+
+  struct
+  {
+    halp::dynamic_audio_bus&lt;"Input", double&gt; audio;
+    struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    {
+      struct smoother
+      {
+        float milliseconds = 20.;
+      };
+    } gain;
+  } inputs;
+
+  struct
+  {
+    halp::dynamic_audio_bus&lt;"Output", double&gt; audio;
+  } outputs;
+
+  void prepare(halp::setup info) { }
+
+  // Do our processing for N samples
+  void operator()(halp::tick t)
+  {
+    // Process the input buffer
+    for(int i = 0; i &lt; inputs.audio.channels; i++)
+    {
+      auto* in = inputs.audio[i];
+      auto* out = outputs.audio[i];
+
+      for(int j = 0; j &lt; t.frames; j++)
+      {
+        out[j] = inputs.gain * in[j];
+      }
+    }
+  }
+};
+
+class SmoothGainPerSample
+{
+public:
+  halp_meta(name, "Smooth Gain")
+  halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
+
+  struct inputs
+  {
+    halp::audio_sample&lt;"Input", double&gt; audio;
+    struct : halp::hslider_f32&lt;"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}&gt;
+    {
+      using smooth = halp::milliseconds_smooth&lt;20&gt;;
+    } gain;
+  };
+
+  struct outputs
+  {
+    halp::audio_sample&lt;"Output", double&gt; audio;
+  };
+
+  // Do our processing for N samples
+  void operator()(const inputs&amp; inputs, outputs&amp; outputs)
+  {
+    outputs.audio.sample = inputs.audio.sample * inputs.gain;
+  }
+};
+}
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../writing_processors/ports.metadatas.mapping.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../writing_processors/ports.metadatas.helpers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +324,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../writing_processors/ports.metadatas.mapping.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../writing_processors/ports.metadatas.helpers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +343,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

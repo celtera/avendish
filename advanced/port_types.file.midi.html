@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>MIDI files - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,90 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="midifle-ports"><a class="header" href="#midifle-ports">Midifle ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>Midifile ports are currently only supported with the ossia binding.</p>
+<p>They allow to define an input which will be the content of a MIDI file.</p>
+<h2 id="port-definition"><a class="header" href="#port-definition">Port definition</a></h2>
+<p>A midifile input port assumes the existence of a MIDI event structure.</p>
+<p>The whole thing can look like this:</p>
+<pre><code class="language-cpp">struct midi_event
+{
+  // The MIDI messages
+  std::vector&lt;unsigned char&gt; bytes;
+
+  // Can also be this, but meta events won't be available 
+  // since they are &gt; 3 bytes.
+  unsigned char bytes[3];
+  
+  // optional, delta time in ticks
+  int tick_delta;
+
+  // optional, time since the beginning in ticks
+  int tick_absolute; 
+};
+
+struct
+{
+  static consteval auto name() { return "My midifile"}
+  struct {
+    // Can be any vector-ish container, but must support push_back
+    std::vector&lt;std::vector&lt;midi_event&gt;&gt; tracks; 
+
+    // If present, the length in ticks 
+    int64_t length{};
+
+    // If present, the length in ticks     
+    int64_t ticks_per_beat{};
+
+    // If present, the length in ticks     
+    float starting_tempo{};
+    std::string_view filename; // Currently loaded midifile
+  } midifile;
+} snd;
+</code></pre>
+<p>A few helper types are provided:</p>
+<pre><code class="language-cpp">struct midi_track_event
+{
+  boost::container::small_vector&lt;uint8_t, 15&gt; bytes;
+  int tick_delta = 0;
+};
+
+struct simple_midi_track_event
+{
+  uint8_t bytes[3];
+  int64_t tick_absolute;
+};
+
+struct {
+  // Default event type is simple_midi_track_event for performance and compile times, 
+  // but it can be changed through the template arguments
+  halp::midifile_port&lt;"My midifile", midi_track_event&gt; snd;
+} inputs;
+</code></pre>
+<h2 id="callback"><a class="header" href="#callback">Callback</a></h2>
+<p>Like other ports, it is possible to get an update callback, by implementing an <code>update</code> method ;
+the simplest way is to make an empty struct which inherits from <code>halp::midifile_port</code></p>
+<pre><code class="language-cpp">struct : halp::midifile_port&lt;"My midifile"&gt; {
+  void update(MyObject&amp; obj) {
+    // This code is called whenever the midifile has been changed by the user
+  }
+} port_name;
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/port_types.file.sound.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../advanced/port_types.file.raw.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +243,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/port_types.file.sound.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../advanced/port_types.file.raw.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +262,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

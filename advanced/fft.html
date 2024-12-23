@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>FFT - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,103 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="fft-feature"><a class="header" href="#fft-feature">FFT feature</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>FFT operates on complex numbers ; you can expect a <code>real()</code> and <code>complex()</code> members.
+Here is a simple example, which looks for the band with the most amplitude.</p>
+<pre><code class="language-cpp">#pragma once
+#include &lt;cmath&gt;
+#include &lt;halp/audio.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/fft.hpp&gt;
+#include &lt;halp/meta.hpp&gt;
+
+namespace examples::helpers
+{
+
+/**
+ * This examples shows how one can get an FFT implementation to be
+ * dependency-injected at compile-time. Check the Logger example for more explanations.
+ *
+ * The idea is that the host software / plugin wrapper will provide its own FFT implementation.
+ * This way, we don't end up with 450 different FFT implementations in a single binary,
+ * and the algorithm is abstracted from the actual way to compute the FFT which does not
+ * matter - it could be FFTW, MKL, etc... depending on the licensing requirements
+ * of the project, or be left up to the host which will instantiate the plug-in.
+ */
+
+template &lt;halp::has_fft_1d&lt;double&gt; C&gt;
+struct PeakBand
+{
+  halp_meta(name, "Peak band")
+  halp_meta(c_name, "avnd_peak_band")
+  halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
+
+  struct
+  {
+    halp::audio_channel&lt;"In", double&gt; audio;
+  } inputs;
+
+  struct
+  {
+    halp::val_port&lt;"Peak", double&gt; peak;
+    halp::val_port&lt;"Band", int&gt; band;
+  } outputs;
+
+  // Instantiate the FFT provided by the configuration.
+  // Syntax is a bit ugly as we are already in a template
+  // causing the need for the "::template " thing ; in C++23
+  // it should be possible to omit typename.
+  using fft_type = typename C::template fft_type&lt;double&gt;;
+  fft_type fft;
+
+  void prepare(halp::setup info)
+  {
+    // Initialize potential internal FFT buffers
+    fft.reset(info.frames);
+  }
+
+  void operator()(int frames)
+  {
+    outputs.peak = 0.;
+
+    // Process the fft
+    auto cplx = fft.execute(inputs.audio.channel, frames);
+
+    // Compute the band with the highest amplitude
+    for(int k = 0; k &lt; frames / 2; k++)
+    {
+      const double mag_squared = std::norm(cplx[k]);
+      if(mag_squared &gt; outputs.peak)
+      {
+        outputs.peak = mag_squared;
+        outputs.band = k;
+      }
+    }
+
+    outputs.peak = std::sqrt(outputs.peak);
+  }
+};
+
+}
+</code></pre>
+<blockquote>
+<p>Avendish currently provides a very simple and unoptimized FFT for the sake of testing. Contributions of bindings to more efficient FFT libraries are very welcome :-)</p>
+</blockquote>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/logging.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../advanced/presets.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +256,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/logging.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../advanced/presets.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +275,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

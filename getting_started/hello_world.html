@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Hello World - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,90 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h1>
+<p>Here is a minimal, self-contained definition of an Avendish processor:</p>
+<pre><code class="language-cpp">import std;
+
+[[name: "Hello World"]]
+export struct MyProcessor
+{
+  void operator()() { 
+    std::print("Henlo\n");
+  }
+};
+</code></pre>
+<p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those,
+and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope !</p>
+<h1 id="getting-started-for-good"><a class="header" href="#getting-started-for-good">Getting started, for good</a></h1>
+<p>Here is a minimal, self-contained definition of an Avendish processor, which works on 2022 compilers:</p>
+<pre><code class="language-cpp">#pragma once
+#include &lt;cstdio&gt;
+
+struct MyProcessor
+{
+  static consteval auto name() { return "Hello World"; }
+
+  void operator()() { 
+    printf("Henlo\n");
+  }
+};
+</code></pre>
+<p>Yes, it's not much. You may even already have some in your codebase without even being aware of it !</p>
+<p>Now, you may be used to the usual APIs for making audio plug-ins and start wondering about all the things you are used too and that are missing here:</p>
+<ul>
+<li>Inheritance or shelving function pointers in a C struct.</li>
+<li>Libraries: defining an Avendish processor does not in itself require including anything.
+A central point of the system is that everything can be defined through bare C++ constructs, without requiring the user to import types from a library. A library of helpers is nonetheless provided, to simplify some repetitive cases, but is in no way mandatory ; if anything, I encourage anyone to try to make different helper APIs that fit different coding styles.</li>
+<li>Functions to process audio such as</li>
+</ul>
+<pre><code class="language-cpp">void process(double** inputs, double** outpus, int frames);
+</code></pre>
+<p>We'll see how all the usual amenities can be built on top of this and simple C++ constructs such as variables, methods and structures.</p>
+<h2 id="line-by-line"><a class="header" href="#line-by-line">Line by line</a></h2>
+<pre><code class="language-cpp">// This line is used to instruct the compiler to not include a header file multiple times.
+#pragma once
+
+// This line is used to allow our program to use `printf`:
+#include &lt;cstdio&gt;
+
+// This line declares a struct named MyProcessor. A struct can contain functions, variables, etc.
+// It could also be a class - in C++, there is no strong semantic difference between either.
+struct MyProcessor
+{
+  // This line declares a function that will return a visible name to show to our 
+  // users.
+  // - static is used so that an instance of MyProcessor is not needed: 
+  //   we can just refer to the function as MyProcessor::name();
+  // - consteval is used to enforce that the function can be called at compile-time, 
+  //   which may enable optimizations in the backends that will generate plug-ins.
+  // - auto because it does not matter much here, we know that this is a string :-)
+  static consteval auto name() { return "Hello World"; }
+
+  // This line declares a special function that will allow our processor to be executed as follows: 
+  // 
+  // MyProcessor the_processor;
+  // the_processor();
+  //
+  // ^ the second line will call the "operator()" function.
+  void operator()() 
+  { 
+    // This one should hopefully be obvious :-)
+    printf("Henlo\n");
+  }
+};
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../foreword.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../getting_started/compiling.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +243,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../foreword.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../getting_started/compiling.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +262,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

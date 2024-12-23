@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Example - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,125 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="midi-synth-example"><a class="header" href="#midi-synth-example">MIDI synth example</a></h1>
+<p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries:</p>
+<ul>
+<li><a href="https://github.com/jcelerier/libremidi"><code>libremidi</code></a> provides an useful <code>enum</code> of common MIDI messages types.</li>
+<li><a href="https://github.com/ossia/libossia"><code>libossia</code></a> provides frequency &lt;-&gt; MIDI note and gain &lt;-&gt; MIDI velocity conversion operations.</li>
+</ul>
+<pre><code class="language-cpp">#pragma once
+#include &lt;halp/audio.hpp&gt;
+#include &lt;halp/controls.hpp&gt;
+#include &lt;halp/meta.hpp&gt;
+#include &lt;halp/midi.hpp&gt;
+#include &lt;halp/sample_accurate_controls.hpp&gt;
+#include &lt;libremidi/message.hpp&gt;
+#include &lt;ossia/network/dataspace/gain.hpp&gt;
+#include &lt;ossia/network/dataspace/time.hpp&gt;
+#include &lt;ossia/network/dataspace/value_with_unit.hpp&gt;
+
+namespace examples
+{
+/**
+ * This example exhibits a simple, monophonic synthesizer.
+ * It relies on some libossia niceties.
+ */
+struct Synth
+{
+  halp_meta(name, "My example synth");
+  halp_meta(c_name, "synth_123");
+  halp_meta(category, "Demo");
+  halp_meta(author, "Jean-Michaël Celerier");
+  halp_meta(description, "A demo synth");
+  halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
+
+  struct
+  {
+    /** MIDI input: simply a list of timestamped messages.
+     * Timestamp are in samples, 0 is the first sample.
+     */
+    halp::midi_bus&lt;"In"&gt; midi;
+  } inputs;
+
+  struct
+  {
+    halp::fixed_audio_bus&lt;"Out", double, 2&gt; audio;
+  } outputs;
+
+  struct conf
+  {
+    int sample_rate{44100};
+  } configuration;
+
+  void prepare(conf c) { configuration = c; }
+
+  int in_flight = 0;
+  ossia::frequency last_note{};
+  ossia::linear last_volume{};
+  double phase = 0.;
+
+  /** Simple monophonic synthesizer **/
+  void operator()(int frames)
+  {
+    // 1. Process the MIDI messages. We'll just play the latest note-on
+    // in a not very sample-accurate way..
+
+    for(auto&amp; m : inputs.midi.midi_messages)
+    {
+      // Let's ignore channels
+      switch((libremidi::message_type)(m.bytes[0] &amp; 0xF0))
+      {
+        case libremidi::message_type::NOTE_ON:
+          in_flight++;
+
+          // Let's leverage the ossia unit conversion framework (adapted from Jamoma):
+          // bytes is interpreted as a midi pitch and then converted to frequency.
+          last_note = ossia::midi_pitch{m.bytes[1]};
+
+          // Store the velocity in linear gain
+          last_volume = ossia::midigain{m.bytes[2]};
+          break;
+
+        case libremidi::message_type::NOTE_OFF:
+          in_flight--;
+          break;
+        default:
+          break;
+      }
+    }
+
+    // 2. Quit if we don't have any more note to play
+    if(in_flight &lt;= 0)
+      return;
+
+    // 3. Output some bleeps
+    double increment
+        = ossia::two_pi * last_note.dataspace_value / double(configuration.sample_rate);
+    auto&amp; out = outputs.audio.samples;
+
+    for(int64_t j = 0; j &lt; frames; j++)
+    {
+      out[0][j] = last_volume.dataspace_value * std::sin(phase);
+      out[1][j] = out[0][j];
+
+      phase += increment;
+    }
+  }
+};
+}
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../writing_processors/midi.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../writing_processors/images.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +278,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../writing_processors/midi.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../writing_processors/images.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +297,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

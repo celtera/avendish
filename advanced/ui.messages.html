@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Message bus - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,90 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="ui-message-bus"><a class="header" href="#ui-message-bus">UI message bus</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>Some UIs may have more complicated logic that cannot just be represented through
+widgets changing single controls: pressing a button may trigger the loading of a file,
+the entire reconfiguration of the UI, etc.</p>
+<p>Thus, the engine may have to be notified of such changes happening in the UI. The way this is
+generally done is through thread-safe queues exchanging messages.</p>
+<p>An experimental implementation of this has been done in <em>ossia score</em>.
+Here is a skeleton for how to write such a plug-in:</p>
+<pre><code class="language-cpp">using message_to_ui = ...;
+using message_to_engine = ...;
+
+struct MyProcessor {
+  // Receive a message on the processing thread from the UI
+  void process_message(message_to_engine msg)
+  {
+    // 3. The engine received the message from the UI.
+    //    It can for instance send a confirmation that the message has been received:
+    send_message(message_to_ui{ ... });
+  }
+
+  // Send a message from the processing thread to the ui
+  std::function&lt;void(message_to_ui)&gt; send_message;
+
+  struct ui {
+    // Define the UI here as seen previously.
+
+    struct bus {
+      // 1. Set up connections from UI widgets to the message bus
+      void init(ui&amp; ui)
+      {
+        ui.some.widget.on_some_event = [&amp;] {
+          // 2. Some action occured on the UI: this callback is called.
+          //    We send a message to the engine: 
+          this-&gt;send_message(message_to_engine{...});
+        };
+      }
+
+      // Receive a message on the UI thread from the processing thread
+      static void process_message(ui&amp; self, processor_to_ui msg)
+      {
+        // 4. The UI has received the confirmation from the engine, 
+        //    we made a safe round-trip between our threads :-)
+      }
+
+      // Send a message from the ui to the processing thread
+      std::function&lt;void(ui_to_processor)&gt; send_message;
+    }
+  };
+}
+</code></pre>
+<p>Note that <code>message_to_ui</code> and <code>message_to_engine</code> can be any simple type:</p>
+<ul>
+<li>Ints, floats, strings, etc.</li>
+<li><code>std::vector</code></li>
+<li><code>std::variant</code></li>
+<li>Any combination and nesting of those in an aggregate struct.</li>
+</ul>
+<p>For example, the following type will automatically be serialized &amp; deserialized:</p>
+<pre><code class="language-cpp">struct ui_to_processor {
+  int foo;
+  std::string bar;
+  std::variant&lt;float, double&gt; x;
+  std::vector&lt;float&gt; y;
+  struct {
+    int x, y;
+  } baz;
+};
+</code></pre>
+<p>So far this has only been tested on a single computer but this could be tried over a network too.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/ui.painting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../advanced/ui.messages.example.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +243,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/ui.painting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../advanced/ui.messages.example.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +262,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

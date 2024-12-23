@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Logging - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,81 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="logging-feature"><a class="header" href="#logging-feature">Logging feature</a></h1>
+<blockquote>
+<p>Supported bindings: all</p>
+</blockquote>
+<p>The API is modeled after <a href="https://github.com/gabime/spdlog">spdlog</a> and expects the <a href="https://github.com/fmtlib/fmt">fmt</a> syntax:</p>
+<pre><code class="language-cpp">#pragma once
+
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include &lt;halp/log.hpp&gt;
+#include &lt;halp/messages.hpp&gt;
+#include &lt;halp/meta.hpp&gt;
+
+// Sadly this example makes GCC segfault:
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102990
+namespace examples::helpers
+{
+/**
+ * This examples shows how things can look with a small helper
+ * library to abstract common use cases.
+ */
+template &lt;typename C&gt;
+requires
+    // Here we pass template arguments as a primitive form of dependency injection.
+    // Out effect is saying: "I want to be passed configured with a type
+    // holding a "logger_type" typedef
+    // which will be something matching the logger concept.
+    halp::has_logger&lt;C&gt;
+struct Logger
+{
+  // halp_meta is simply a macro that expands to a consteval function.
+  // Hopefully C++ would use a similar syntax for reflexion.
+  halp_meta(name, "Helpers")
+  halp_meta(c_name, "avnd_helpers_logger")
+  halp_meta(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
+
+  // We store our logger in the class to make things simpler.
+  // no_unique_address makes sure that it stays a zero-memory-cost abstraction
+  // if possible.
+  [[no_unique_address]] typename C::logger_type logger;
+
+  // Helpers for referring to local functions.
+  // Ideally metaclasses would make that obsolete.
+  void example(float x)
+  {
+    logger.trace("example: {}", x);
+    logger.info("example: {}", x);
+    logger.debug("example: {}", x);
+    logger.warn("example: {}", x);
+    logger.error("example: {}", x);
+    logger.critical("example: {}", x);
+  }
+
+  struct
+  {
+    halp::func_ref&lt;"member", &amp;Logger&lt;C&gt;::example&gt; my_message;
+  } messages;
+};
+}
+</code></pre>
+<blockquote>
+<p>Avendish currently will look for <code>fmtlib</code> for its logger implementation, until <code>std::format</code> gets implemented by compiler authors.</p>
+</blockquote>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/injection.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../advanced/fft.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +234,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/injection.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../advanced/fft.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +253,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

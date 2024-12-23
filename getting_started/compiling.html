@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Compiling - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,85 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="compiling-our-processor"><a class="header" href="#compiling-our-processor">Compiling our processor</a></h1>
+<h2 id="environment-set-up"><a class="header" href="#environment-set-up">Environment set-up</a></h2>
+<p>Before anything, we need a C++ compiler. The recommandation is to use Clang (at least clang-13). GCC 11 also works with some limitations. Visual Studio is sadly still not competent enough.</p>
+<ul>
+<li>On Windows, through <a href="https://github.com/mstorsjo/llvm-mingw/releases/tag/20220323">llvm-mingw</a>.</li>
+<li>On Mac, through Xcode.</li>
+<li>On Linux, through your distribution packages.</li>
+</ul>
+<p>Avendish's code is header-only ; however, CMake automatizes correctly linking to the relevant libraries, and generates a correct entrypoint for the targeted bindings, thus we recommend installing it.</p>
+<p>Ninja is recommended: it makes the build faster. Below are a few useful set-up commands for various operating systems.</p>
+<h4 id="archlinux-manjaro-etc"><a class="header" href="#archlinux-manjaro-etc">ArchLinux, Manjaro, etc</a></h4>
+<pre><code>$ sudo pacman -S base-devel cmake ninja clang gcc boost
+</code></pre>
+<h4 id="debian-ubuntu-etc"><a class="header" href="#debian-ubuntu-etc">Debian, Ubuntu, etc</a></h4>
+<pre><code>$ sudo apt install build-essential cmake ninja-build libboost-dev
+</code></pre>
+<h4 id="macos-with-homebrew"><a class="header" href="#macos-with-homebrew">macOS with Homebrew</a></h4>
+<p>Xcode is required. Then:</p>
+<pre><code>$ brew install cmake ninja boost
+</code></pre>
+<h4 id="windows-with-msys2--mingw"><a class="header" href="#windows-with-msys2--mingw">Windows with MSYS2 / MinGW</a></h4>
+<pre><code>$ pacman -S pactoys
+$ pacboy -S cmake:p ninja:p toolchain:p boost:p
+</code></pre>
+<h3 id="install-backend-specific-dependencies"><a class="header" href="#install-backend-specific-dependencies">Install backend-specific dependencies</a></h3>
+<p>The APIs and SDK that you wish to create plug-ins / bindings for must also be available:</p>
+<ul>
+<li>PureData: needs the PureData API.
+<ul>
+<li><code>m_pd.h</code> and <code>pd.lib</code> must be findable through <code>CMAKE_PREFIX_PATH</code>.</li>
+<li>On Linux this is automatic if you install PureData through your distribution.</li>
+</ul>
+</li>
+<li>Max/MSP: needs the Max SDK.
+<ul>
+<li>Pass <code>-DAVND_MAXSDK_PATH=/path/to/max/sdk</code> to CMake.</li>
+</ul>
+</li>
+<li>Python: needs pybind11.
+<ul>
+<li>Installable through most distro's repos.</li>
+</ul>
+</li>
+<li>ossia: needs <a href="https://github.com/ossia/libossia">libossia</a>.</li>
+<li>clap: needs <a href="https://github.com/free-audio/clap">clap</a>.</li>
+<li>UIs can be built with Qt or <a href="https://github.com/Immediate-Mode-UI/Nuklear">Nuklear</a>.
+<ul>
+<li>Qt is installable easily through <a href="https://github.com/miurahr/aqtinstall">aqtinstall</a>.</li>
+</ul>
+</li>
+<li>VST3: needs the Steinberg VST3 SDK.
+<ul>
+<li>Pass <code>-DVST3_SDK_ROOT=/path/to/vst3/sdk</code> to CMake.</li>
+</ul>
+</li>
+<li>By default, plug-ins compatible with most DAWs through an obsolete, Vintage, almost vestigial, API will be built. This does not require any specific dependency to be installed, on the other hand it only supports audio plug-ins.</li>
+</ul>
+<h2 id="building-the-template"><a class="header" href="#building-the-template">Building the template</a></h2>
+<p>The simplest way to get started is from the <a href="https://github.com/celtera/avendish-audio-processor-template/blob/main/CMakeLists.txt">template repository</a>: simply clear the <a href="https://github.com/celtera/avendish-audio-processor-template/blob/main/src/Processor.cpp">Processor.cpp</a> file for now and put the content in <a href="https://github.com/celtera/avendish-audio-processor-template/blob/main/src/Processor.hpp">Processor.hpp</a>.</p>
+<p>Here's a complete example (from bash):</p>
+<pre><code class="language-bash">$ git clone https://github.com/celtera/avendish-audio-processor-template
+$ mkdir build
+$ cd build
+$ cmake ../avendish-audio-processor-template
+$ ninja # or make -j8
+</code></pre>
+<p>This should produce various binaries in the build folder: for instance, a PureData object (in <code>build/pd</code>), a Python one (in <code>build/python</code>, etc.).</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../getting_started/hello_world.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../getting_started/running.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +238,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../getting_started/hello_world.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../getting_started/running.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +257,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

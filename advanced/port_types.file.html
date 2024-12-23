@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Avendish documentation</title>
-        <base href="/">
+        <title>Files - Avendish documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -13,32 +12,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root to javascript -->
         <script>
-            var path_to_root = "";
+            var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "ayu";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="body-container">
@@ -90,7 +89,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -124,7 +123,7 @@
                     <h1 class="menu-title">Avendish documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -153,14 +152,79 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="file-ports"><a class="header" href="#file-ports">File ports</a></h1>
+<blockquote>
+<p>Supported bindings: ossia</p>
+</blockquote>
+<p>File ports are currently only supported with the ossia binding.</p>
+<p>They allow to specify that we want the content of a file.
+The host will take care of loading, mmaping, converting, etc... the file in the relevant format - as far as possible outside of DSP / processing threads.</p>
+<p>Every file port should at least conform to the very basic following concept:</p>
+<pre><code class="language-cpp">template &lt;typename T&gt;
+concept file = requires(T t) {
+  t.filename;
+};
+
+template &lt;typename T&gt;
+concept file_port = requires(T t) {
+  { t.file } -&gt; file;
+};
+</code></pre>
+<p>Here is for instance a valid basic file port ; hosts will open a relevant file chooser:</p>
+<pre><code class="language-cpp">struct my_file_port {
+  struct {
+    std::string filename;
+  } file;
+};
+</code></pre>
+<h2 id="features"><a class="header" href="#features">Features</a></h2>
+<h3 id="file-watch"><a class="header" href="#file-watch">File watch</a></h3>
+<p>By adding a <code>file_watch</code> <a href="../development/flags.html">flag</a> to the class, the host environment will reload the file's data whenever a change is detected on disk.
+Note that this has an obvious performance cost as the host must check regularly for changes: do not overdo it!</p>
+<h3 id="file-filters"><a class="header" href="#file-filters">File filters</a></h3>
+<p>File ports should prompt the host to open a file chooser.
+One is generally only interested in a specific file type.
+This can be specified in the following ways:</p>
+<h4 id="general-file-filters"><a class="header" href="#general-file-filters">General file filters</a></h4>
+<p>Here, the filter is a string of either of the following formats:</p>
+<pre><code>"*.jpg *.jpeg"
+"JPEG Images (*.jpg *.jpeg)"
+</code></pre>
+<pre><code class="language-cpp">struct my_file_port : ... {
+  // Currently implemented:
+  // Any audio file that can be loaded by the host
+  static consteval auto filters() { return "CSV files (*.csv)"; }
+};
+</code></pre>
+<h4 id="domain-specific-file-filters"><a class="header" href="#domain-specific-file-filters">Domain-specific file filters</a></h4>
+<p>This is for the case where you want a general kind of media and don't care specifically about the extension:
+for instance, for audio files you could have .wav, .aiff, .mp3, etc etc ; it is pointless to try to specify a whole list.
+Instead, the host knows which audio file formats it is able to load and should just be able to show its own audio-specific file chooser.</p>
+<pre><code class="language-cpp">struct my_file_port : ... {
+  // Currently implemented:
+  // Any audio file that can be loaded by the host
+  static consteval auto filters() { enum { audio }; return audio; }
+
+  // Any midi file that can be loaded by the host
+  static consteval auto filters() { enum { midi }; return midi; }
+
+  // In the future:
+  static consteval auto filters() { enum { image }; return image; }
+  static consteval auto filters() { enum { video }; return video; }
+};
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/port_types.example.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="../advanced/port_types.file.sound.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -168,7 +232,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/port_types.example.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="../advanced/port_types.file.sound.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -181,13 +251,13 @@
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 
