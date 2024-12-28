@@ -315,17 +315,17 @@ ossia::value to_ossia_value(const T& v)
     if constexpr(sz == 2)
     {
       auto [x, y] = v;
-      return ossia::vec2f{x, y};
+      return ossia::vec2f{(float)x, (float)y};
     }
     else if constexpr(sz == 3)
     {
       auto [x, y, z] = v;
-      return ossia::vec3f{x, y, z};
+      return ossia::vec3f{(float)x, (float)y, (float)z};
     }
     else if constexpr(sz == 4)
     {
       auto [x, y, z, w] = v;
-      return ossia::vec4f{x, y, z, w};
+      return ossia::vec4f{(float)x, (float)y, (float)z, (float)w};
     }
     else
     {
@@ -347,17 +347,17 @@ ossia::value to_ossia_value(const T& v)
     if constexpr(N == 2)
     {
       auto [x, y] = v;
-      return ossia::vec2f{x, y};
+      return ossia::vec2f{(float)x, (float)y};
     }
     else if constexpr(N == 3)
     {
       auto [x, y, z] = v;
-      return ossia::vec3f{x, y, z};
+      return ossia::vec3f{(float)x, (float)y, (float)z};
     }
     else if constexpr(N == 4)
     {
       auto [x, y, z, w] = v;
-      return ossia::vec4f{x, y, z, w};
+      return ossia::vec4f{(float)x, (float)y, (float)z, (float)w};
     }
     else
     {
