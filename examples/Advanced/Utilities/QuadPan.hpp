@@ -63,9 +63,9 @@ public:
     const avnd::span<double> channels[4] = {fl, fr, bl, br};
 
 #pragma omp simd
-    for(auto chan : channels)
+    for(int c = 0; c < 4; c++)
       for(int j = 0; j < frames; j++)
-        chan[j] = 0.;
+        channels[c][j] = 0.;
 
     const auto pl = inputs.pl.value;
     const auto lr_c = std::cos((inputs.lr + 1.) * pl * std::numbers::pi);
