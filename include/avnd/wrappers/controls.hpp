@@ -14,6 +14,26 @@
 
 namespace avnd
 {
+// Was a lambda but turned into a function
+// because MSVC:
+// error C2039: 'effect': is not a member of 'examples::helpers::SpriteReader'
+
+template <typename F, typename T>
+static constexpr inline void init_controls_impl(F& state, T& ctl)
+{
+  if constexpr(avnd::has_range<T>)
+  {
+    static_constexpr auto c = avnd::get_range<T>();
+    // clang-format off
+        if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
+            else if_possible(ctl.value = c.values[c.init])   // For string enums
+            else if_possible(ctl.value = c.init);            // Default case
+    // clang-format on
+  }
+
+  if_possible(ctl.update(state.effect));
+}
+
 template <typename F>
 static constexpr void init_controls(F& state)
 {
@@ -25,19 +45,8 @@ static constexpr void init_controls(F& state)
   }
   else
   {
-    avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
-      if constexpr(avnd::has_range<T>)
-      {
-        static_constexpr auto c = avnd::get_range<T>();
-        // clang-format off
-        if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
-            else if_possible(ctl.value = c.values[c.init])   // For string enums
-            else if_possible(ctl.value = c.init);            // Default case
-        // clang-format on
-      }
-
-      if_possible(ctl.update(state.effect));
-    });
+    avnd::for_each_field_ref(
+        state.inputs, [&]<typename T>(T& ctl) { init_controls_impl(state, ctl); });
   }
 }
 

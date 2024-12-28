@@ -378,11 +378,13 @@ void mesh_from_ossia(const ossia::geometry& src, T& dst)
   for(const ossia::geometry::binding& in : src.bindings)
   {
     using value_type = typename decltype(dst.bindings)::value_type;
+    using stride_type = decltype(value_type::stride);
+    using step_rate_type = decltype(value_type::step_rate);
+    using classification_type = decltype(value_type::classification);
     dst.bindings.push_back({
-        .stride = in.stride,
-        .step_rate = in.step_rate,
-        .classification
-        = static_cast<decltype(value_type::classification)>(in.classification) // FIXME
+        .stride = static_cast<stride_type>(in.stride),
+        .step_rate = static_cast<step_rate_type>(in.step_rate),
+        .classification = static_cast<classification_type>(in.classification)
     });
   }
 
@@ -390,11 +392,15 @@ void mesh_from_ossia(const ossia::geometry& src, T& dst)
   for(const ossia::geometry::attribute& in : src.attributes)
   {
     using value_type = typename decltype(dst.attributes)::value_type;
+    using binding_type = decltype(value_type::binding);
+    using location_type = decltype(value_type::location);
+    using format_type = decltype(value_type::format);
+    using offset_type = decltype(value_type::offset);
     dst.attributes.push_back(
-        {.binding = in.binding,
-         .location = static_cast<decltype(value_type::location)>(in.location),
-         .format = static_cast<decltype(value_type::format)>(in.format), // FIXME
-         .offset = in.offset});
+        {.binding = static_cast<binding_type>(in.binding),
+         .location = static_cast<location_type>(in.location),
+         .format = static_cast<format_type>(in.format),
+         .offset = static_cast<offset_type>(in.offset)});
   }
 }
 

@@ -91,7 +91,9 @@ auto current_tick(avnd::effect_container<T>& implementation, const Tick& tick_da
         requires { t.signature; } && requires { tick_data.signature(); })
     {
       auto [num, denom] = tick_data.signature();
-      t.signature = {num, denom};
+      auto& [tnum, tdenom] = t.signature;
+      tnum = num;
+      tdenom = denom;
     }
     if_possible(t.position_in_frames = tick_data.position_in_frames());
     if_possible(t.position_in_seconds = tick_data.position_in_seconds());
