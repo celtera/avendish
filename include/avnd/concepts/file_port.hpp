@@ -30,4 +30,6 @@ concept raw_file_port = requires(T t) {
                         };
 
 AVND_DEFINE_TAG(file_watch)
+AVND_DEFINE_TAG(file_load)
+AVND_DEFINE_TAG(file_create)
 }
