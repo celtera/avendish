@@ -11,4 +11,8 @@ namespace avnd
 template <typename C>
 concept has_range = requires { C::range(); } || requires { sizeof(C::range); }
                     || requires { sizeof(typename C::range); };
+template <typename C>
+concept has_visual_range = requires { C::visual_range(); } || requires {
+  sizeof(C::visual_range);
+} || requires { sizeof(typename C::visual_range); };
 }
