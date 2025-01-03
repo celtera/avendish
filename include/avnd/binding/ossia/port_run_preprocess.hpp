@@ -17,6 +17,7 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 #include <ossia/detail/math.hpp>
+#include <ossia/detail/parse_relax.hpp>
 #include <ossia/editor/curve/curve_segment/easing.hpp>
 #include <ossia/network/base/node.hpp>
 #include <ossia/network/base/parameter.hpp>
@@ -24,16 +25,74 @@
 
 namespace oscr
 {
-template <typename Field, std::size_t Idx>
-inline void update_value(
-    auto& node, auto& obj, Field& field, const ossia::value& src, auto& dst,
-    avnd::field_index<Idx> idx)
+
+// If we have a polyphonic object
+// And we get an array input that corresponds to the kind of data expected
+// Then we apply the value element-wise to each monophonic instance
+//
+// To do this we must make sure that we always create as many "input" objects as needed
+template <typename Value>
+  requires std::is_arithmetic_v<Value>
+struct apply_value_polyphonic_control
 {
-  if(node.from_ossia_value(field, src, dst, idx))
+  Value& res;
+  int instance;
+  bool operator()() const { return false; }
+  bool operator()(ossia::impulse) const
   {
-    if_possible(field.update(obj));
+    if_possible(res = {});
+    return true;
   }
-}
+
+  bool operator()(float v) const
+  {
+    res = v;
+    return true;
+  }
+
+  bool operator()(int v) const
+  {
+    res = v;
+    return true;
+  }
+
+  bool operator()(bool v) const
+  {
+    res = v ? 1. : 0.;
+    return true;
+  }
+
+  bool operator()(const std::string& v) const
+  {
+    if(auto f = ossia::parse_relax<double>(v))
+    {
+      res = *f;
+      return true;
+    }
+    return false;
+  }
+
+  template <std::size_t N>
+  bool operator()(const std::array<float, N>& v) const
+  {
+    if(instance >= 0 && instance < N)
+    {
+      res = v[instance];
+      return true;
+    }
+    return false;
+  }
+  bool operator()(const std::vector<ossia::value>& v) const
+  {
+    if(instance >= 0 && instance < v.size())
+    {
+      res = ossia::convert<float>(v[instance]);
+      return true;
+    }
+    return false;
+  }
+  bool operator()(const ossia::value_map_type& v) const { return false; }
+};
 
 struct node_from_destination
 {
@@ -65,9 +124,49 @@ struct process_before_run
 {
   Exec_T& self;
   Obj_T& impl;
+  int instance{};
   int start{};
   int frames{};
 
+  template <typename Field, typename Value, std::size_t Idx>
+  OSSIA_INLINE void update_value(
+      Field& field, const ossia::value& src, Value& dst,
+      avnd::field_index<Idx> idx) const
+  {
+    // TODO
+    // if constexpr(oscr::real_good_mono_processor<Obj>)
+    if(self.from_ossia_value(field, src, dst, idx))
+    {
+      if_possible(field.update(impl));
+    }
+  }
+
+  // Some heads up for the most common cases, + handle mono deconstruction
+  template <typename Field, typename Value, std::size_t Idx>
+    requires std::is_arithmetic_v<Value>
+  OSSIA_INLINE void update_value(
+      Field& field, const ossia::value& src, Value& dst,
+      avnd::field_index<Idx> idx) const
+  {
+    // FIXME time controls & smooth
+    using eff_t = avnd::effect_container<Obj_T>;
+    static constexpr bool multi_instance = requires { sizeof(eff_t::multi_instance); };
+    if constexpr(
+        multi_instance && !avnd::smooth_parameter<Field> && !avnd::time_control<Field>)
+    {
+      if(src.apply(apply_value_polyphonic_control<Value>{dst, instance}))
+      {
+        if_possible(field.update(impl));
+      }
+    }
+    else
+    {
+      if(self.from_ossia_value(field, src, dst, idx))
+      {
+        if_possible(field.update(impl));
+      }
+    }
+  }
   template <avnd::parameter Field, std::size_t Idx>
     requires ossia_port<Field>
   void init_value(Field& ctrl, auto& port, avnd::field_index<Idx> idx) const noexcept
@@ -88,7 +187,7 @@ struct process_before_run
     if(!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
-      update_value(self, impl, ctrl, last, ctrl.value, idx);
+      update_value(ctrl, last, ctrl.value, idx);
 
       if constexpr(avnd::control<Field>)
       {
@@ -197,8 +296,7 @@ struct process_before_run
     {
       if(ts >= start && ts < start + frames)
       {
-        update_value(
-            self, impl, ctrl, val, ctrl.values[ts - start], avnd::field_index<Idx>{});
+        update_value(ctrl, val, ctrl.values[ts - start], avnd::field_index<Idx>{});
       }
     }
   }
