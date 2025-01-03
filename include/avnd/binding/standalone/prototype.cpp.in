@@ -22,18 +22,18 @@ void run_ui(auto& object)
 #if AVND_STANDALONE_NKL
   if constexpr(avnd::has_ui<type>)
   {
-    nkl::layout_ui< type > ui{object};
+    nkl::layout_ui<type> ui{object};
     ui.render();
   }
 #elif AVND_STANDALONE_QML
   if constexpr(avnd::has_ui<type>)
   {
-    qml::qml_layout_ui< type > ui{object};
+    qml::qml_layout_ui<type> ui{object};
     qApp->exec();
   }
   else
   {
-    qml::qml_ui< type > ui{object};
+    qml::qml_ui<type> ui{object};
     qApp->exec();
   }
 #endif
@@ -48,6 +48,7 @@ int main(int argc, char** argv)
   int osc_port = 1234;
   int ws_port = 5678;
 
+  const auto app_name = std::string(avnd::get_name<type>());
 #if AVND_STANDALONE_QML
   qputenv("QML_DISABLE_DISTANCEFIELD", "1");
   qputenv("QT_SCALE_FACTOR", "1");
@@ -55,8 +56,7 @@ int main(int argc, char** argv)
   qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", "Dark");
 
-  QCoreApplication::setApplicationName(
-      QString::fromStdString(std::string(avnd::get_name<type>())));
+  QCoreApplication::setApplicationName(QString::fromStdString(app_name));
   QCoreApplication::setApplicationVersion(
       QString::fromStdString(std::string(avnd::get_version<type>())));
   QCoreApplication::setOrganizationName(
@@ -119,18 +119,20 @@ int main(int argc, char** argv)
   avnd::init_controls(object);
 
   // Create an audio processor
-#if __has_include(<ossia/detail/config.hpp>)
+#if AVND_STANDALONE_AUDIO
   standalone::audio_mapper<type> audio{
       object, in_channels, out_channels, buffer_size, sample_rate};
+#endif
 
+#if AVND_STANDALONE_OSCQUERY
   // Create an oscquery interface to it.
-  standalone::oscquery_mapper<type> oscq{object, osc_port, ws_port};
+  standalone::oscquery_mapper<type> oscq{object, app_name, osc_port, ws_port};
   std::thread t{[&] { oscq.run(); }};
 #endif
 
   run_ui(object);
 
-#if __has_include(<ossia/detail/config.hpp>)
+#if AVND_STANDALONE_OSCQUERY
   oscq.stop();
   t.join();
 #endif
