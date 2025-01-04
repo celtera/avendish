@@ -565,6 +565,51 @@ struct effect_container<T>
   auto& outputs() const noexcept { return dummy_instance; }
 };
 
+// For CV objects
+template <typename T>
+  requires(
+      avnd::tag_cv<T> && !avnd::tag_stateless<T>
+      && !(avnd::audio_argument_processor<T> || avnd::audio_port_processor<T>)
+      && avnd::inputs_is_value<T> && avnd::outputs_is_value<T>)
+struct effect_container<T>
+{
+  using type = T;
+  enum
+  {
+    multi_instance
+  };
+
+  inline constexpr void init_channels(int input, int output) { }
+  std::vector<T> effect;
+
+  struct ref
+  {
+    T& effect;
+    decltype(T::inputs)& inputs;
+    decltype(T::outputs)& outputs;
+  };
+
+  ref full_state(int i) { return {effect[i], effect[i].inputs, effect[i].outputs}; }
+
+  full_state_iterator<effect_container> full_state()
+  {
+    return full_state_iterator<effect_container>{*this};
+  }
+
+  auto effects() { return member_iterator_poly_effect<effect_container>{*this}; }
+
+  member_iterator<decltype(T::inputs)> inputs()
+  {
+    for(auto& e : effect)
+      co_yield e.inputs;
+  }
+  member_iterator<decltype(T::outputs)> outputs()
+  {
+    for(auto& e : effect)
+      co_yield e.outputs;
+  }
+};
+
 template <typename T>
 struct get_object_type
 {
