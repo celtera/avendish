@@ -201,35 +201,83 @@ struct tick
   int frames{};
 };
 
+/**
+ * Contains the info about the current audio buffer and the bar and quarter notes it's
+ * associated with, so that the musical audio rendering utilities can do their job of
+ * playing back the musical notes, etc.
+ * They need to know when we are in the score.
+ *
+ * The quarter notes have their index starting at 0.
+ * The position of the bars are in quarters. (in 4/4, the first bar has position 0.0 and the
+ * second one has a position of 4.0)
+ *
+ * This struct is usually created and destroyed thousands of times per second.
+ */
 struct tick_musical
 {
+  /**
+   * How many frames in the buffer.
+   */
   int frames{};
 
+  /**
+   * The tempo in BPM.
+   */
   double tempo = 120.;
+  /**
+   * Time signature. Example: 4/4
+   */
   struct
   {
     int num;
     int denom;
   } signature;
 
+  /** 
+   * The total number of samples since the beginning of the playback of the score.
+   */
   int64_t position_in_frames{};
 
+  /**
+   * Playback time since the beginning of the score.
+   */
   double position_in_nanoseconds{};
 
-  // Quarter note of the first sample in the buffer
+  /**
+   * Quarter note of the first sample in this buffer
+   * This is a double.
+   *
+   * The first quarter note in a score has index 0.
+   *
+   * For example:
+   * - 3.95 would be slightly before the 2nd bar.
+   * - 4.05 would be slightly after the beginning of the 2nd bar.
+   */
   quarter_note start_position_in_quarters{};
 
-  // Quarter note of the first sample in the next buffer
-  // (or one past the last sample of this buffer, e.g. a [closed; open) interval like C++ begin / end)
+  /**
+   * Quarter note of the first sample in the next buffer
+   * (or one past the last sample of this buffer, e.g. a [closed; open) interval like C++ begin / end)
+   */
   quarter_note end_position_in_quarters{};
 
-  // Position of the last signature change in quarter notes (at the start of the tick)
+  /**
+   * Position of the last signature change in quarter notes (at the start of the tick)
+   *
+   * For example: 0.0 if the signature never changes in the score.
+   * If we change the time signature at some, we'll give it the index (in quarter) of the
+   * bar when it last changed.
+   */
   quarter_note last_signature_change{};
 
-  // Position of the last bar relative to start in quarter notes
+  /**
+   * Position of the last bar relative to start in quarter notes
+   */
   quarter_note bar_at_start{};
 
-  // Position of the last bar relative to end in quarter notes
+  /**
+   * Position of the last bar relative to end in quarter notes
+   */
   quarter_note bar_at_end{};
 
   // If the division falls in the current tick, returns the corresponding frames
@@ -240,11 +288,11 @@ struct tick_musical
   [[nodiscard]] quantification_frames get_quantification_date(double div) const noexcept
   {
     quantification_frames frames;
-    double start_in_bar = start_position_in_quarters - bar_at_start;
+    double start_in_bar = this->start_position_in_quarters - bar_at_start;
     double end_in_bar = end_position_in_quarters - bar_at_start;
 
     auto pos_to_frame = [this](double in_bar) {
-      double start = start_position_in_quarters;
+      double start = this->start_position_in_quarters;
       double musical_pos = in_bar + bar_at_start;
       double end = end_position_in_quarters;
 
