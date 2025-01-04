@@ -285,6 +285,15 @@ foreach(theTarget ${OSSIA_EXAMPLES})
   )
 endforeach()
 
+###### Advanced examples
+avnd_make_all(
+  TARGET AudioToOSC
+  MAIN_FILE examples/Advanced/Utilities/AudioToOSC.hpp
+  MAIN_CLASS ad::AudioToOSC
+  C_NAME ad_audio_to_osc
+  LINK_LIBRARIES samplerate ossia::ossia
+)
+
 ###### Ports
 
 ## Essentia
