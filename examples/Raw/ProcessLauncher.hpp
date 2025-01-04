@@ -17,6 +17,15 @@ struct ProcessLauncher
   static consteval auto c_name() { return "avnd_process"; }
   static consteval auto category() { return "Script"; }
   static consteval auto uuid() { return "ac3afbbb-cbe0-4559-ac14-51250024b458"; }
+  static consteval auto description()
+  {
+    return "Launch and manage an external process for the lifetime of this object";
+  }
+  static consteval auto manual_url()
+  {
+    return "https://ossia.io/score-docs/processes/process-launcher.html";
+  }
+  static consteval auto author() { return "Jean-Michaël Celerier"; }
 
   // This tag is an indication that the node will have start / stop methods called when
   // the execution starts or stop. Only relevant in systems with such an ability,
