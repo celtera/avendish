@@ -1,0 +1,48 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <avnd/binding/gstreamer/element.hpp>
+#include <avnd/binding/gstreamer/configuration.hpp>
+#include <@AVND_MAIN_FILE@>
+
+
+using type = decltype(avnd::configure<gst::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+static gboolean plugin_init(GstPlugin* plugin)
+{
+  auto res =  gst_element_register(
+      plugin, "@AVND_C_NAME@", GST_RANK_NONE, gst::metaclass<type>::get_type());
+  return res;
+}
+
+extern "C"
+{
+static const GstPluginDesc gst_plugin_desc
+    = {GST_VERSION_MAJOR,
+       GST_VERSION_MINOR,
+       "@AVND_C_NAME@",
+       (gchar*)"description",
+       plugin_init,
+       "1.0",
+       "LGPL",
+       "@AVND_C_NAME@",
+       "@AVND_C_NAME@",
+       "https://example.com",
+       nullptr,
+       {nullptr}};
+
+AVND_EXPORTED_SYMBOL
+const GstPluginDesc* gst_plugin_@AVND_C_NAME@_get_desc(void)
+{
+  return &gst_plugin_desc;
+}
+
+AVND_EXPORTED_SYMBOL
+void gst_plugin_@AVND_C_NAME@_register(void)
+{
+  gst_plugin_register_static(
+      GST_VERSION_MAJOR, GST_VERSION_MINOR, "@AVND_C_NAME@", "description", plugin_init, "1.0",
+      "LGPL", "@AVND_C_NAME@", "@AVND_C_NAME@", "https://example.com");
+}
+}

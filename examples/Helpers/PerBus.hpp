@@ -35,7 +35,7 @@ struct PerBusAsArgs
 struct PerBusAsPortsFixed
 {
   halp_meta(name, "Per-bus processing (fixed ports, helpers)")
-  halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(c_name, "avnd_helpers_per_bus_as_ports_fixed")
   halp_meta(uuid, "0dd7b1df-7c84-49e9-8427-0532a87bccbe")
 
   struct
@@ -69,7 +69,7 @@ struct PerBusAsPortsFixed
 struct PerBusAsPortsDynamic
 {
   halp_meta(name, "Per-bus processing (dynamic ports, helpers)")
-  halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(c_name, "avnd_helpers_per_bus_as_ports_dynamic")
   halp_meta(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
 
   struct
