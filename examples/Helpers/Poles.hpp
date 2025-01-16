@@ -69,14 +69,14 @@ struct Poles
 
   void operator()()
   {
-    if(inputs.length.value < 0 || inputs.length.value > 1000)
+    if(inputs.length.value <= 0 || inputs.length.value > 1000)
       return;
       
     const float mult = inputs.mult.value;
     auto& res = outputs.a.value;
-    res.resize(inputs.length + 1, boost::container::default_init);
+    res.resize(inputs.length, boost::container::default_init);
 
-    for(int k = 0; k <= inputs.length; k++)
+    for(int k = 0; k < inputs.length; k++)
     {
       const double i = 2. * k / inputs.length - 1.;
       res[k] = mult * pdf(i / 10. - inputs.pos, inv_sigma);

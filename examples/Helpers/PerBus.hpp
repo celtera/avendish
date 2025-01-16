@@ -13,7 +13,7 @@ namespace examples::helpers
 struct PerBusAsArgs
 {
   halp_meta(name, "Per-bus processing (args, helpers)")
-  halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(c_name, "avnd_helpers_per_bus_as_args1")
   halp_meta(uuid, "23a4de57-800b-453a-99b6-481db19d834f")
   halp_meta(input_channels, 2)
   halp_meta(output_channels, 2)
