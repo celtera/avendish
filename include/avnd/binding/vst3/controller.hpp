@@ -14,6 +14,9 @@
 
 #include <cstdio>
 
+#if defined(AVND_ADD_OSCQUERY_BINDINGS)
+#include <avnd/binding/standalone/oscquery_minimal_mapper.hpp>
+#endif
 namespace stv3
 {
 template <typename T>
@@ -60,12 +63,22 @@ class Controller final
 
   using inputs_t = typename avnd::inputs_type<T>::type;
   inputs_t inputs_mirror{};
+#undef AVND_ADD_OSCQUERY_BINDINGS
+#if AVND_ADD_OSCQUERY_BINDINGS
+  standalone::oscquery_minimal_mapper<T> oscquery_mapper{
+      std::string(avnd::get_name<T>()), 1234, 5678};
+#endif
 
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
 
 public:
-  Controller() { }
+  Controller()
+  {
+#if AVND_ADD_OSCQUERY_BINDINGS
+    oscquery_mapper.create_ports(inputs_mirror);
+#endif
+  }
 
   virtual ~Controller();
 
@@ -170,7 +183,6 @@ public:
     {
       bool ok = inputs_info_t::for_all_unless(
           this->inputs_mirror, [&]<typename C>(C& field) -> bool {
-
             double param = 0.f;
             if(streamer.readDouble(param) == false)
               return false;
