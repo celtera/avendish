@@ -13,14 +13,14 @@ struct ExponentialSmoothing
   static constexpr auto description() { return "Simplest real-time value smoothing"; }
   static constexpr auto uuid() { return "971739ae-14a3-4283-b0a0-96dbd367ce66"; }
 
+  // Allows the object to be seen as a value, not audio, processor
+  enum
+  {
+    cv
+  };
+
   struct
   {
-    struct
-    {
-      static constexpr auto name() { return "Input"; }
-      double value{};
-    } in;
-
     struct
     {
       static constexpr auto name() { return "Alpha"; }
@@ -38,21 +38,15 @@ struct ExponentialSmoothing
 
   struct
   {
-    struct
-    {
-      static constexpr auto name() { return "Output"; }
-      double value{};
-    } out;
   } outputs;
 
   double filtered{};
-  void operator()()
+  double operator()(double in)
   {
-    const double in = this->inputs.in.value;
     const double a = this->inputs.alpha.value;
 
     filtered = in * a + filtered * (1.0f - a);
-    outputs.out.value = filtered;
+    return filtered;
   }
 };
 }
