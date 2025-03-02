@@ -93,8 +93,26 @@ struct MapTool
     halp::spinbox_f32<"Midpoint", halp::free_range_min<>> midpoint;
     halp::spinbox_f32<"Deadzone", halp::positive_range_min<>> deadzone;
 
-    halp::toggle<"Learn min"> min_learn;
-    halp::toggle<"Learn max"> max_learn;
+    struct : halp::toggle<"Learn min">
+    {
+      void update(MapTool& self)
+      {
+        if(value)
+        {
+          self.inputs.in_min.value = std::numeric_limits<float>::max();
+        }
+      }
+    } min_learn;
+    struct : halp::toggle<"Learn max">
+    {
+      void update(MapTool& self)
+      {
+        if(value)
+        {
+          self.inputs.in_max.value = std::numeric_limits<float>::lowest();
+        }
+      }
+    } max_learn;
 
     halp::enum_t<MapToolWrapMode, "Range behaviour"> range_behaviour;
     halp::enum_t<MapToolShapeMode, "Shape behaviour"> shape_behaviour;
@@ -104,6 +122,7 @@ struct MapTool
 
     halp::spinbox_f32<"Out min", halp::free_range_min<>> out_min;
     halp::spinbox_f32<"Out max", halp::free_range_max<>> out_max;
+    // TODO add a gain (* x) & boost (+ x) setting ?
   } inputs;
 
   struct
@@ -112,6 +131,7 @@ struct MapTool
 
   double operator()(double v)
   {
+    static constexpr double float_min = std::numeric_limits<float>::min();
     /// Learn min / max
     // TODO think of a better way to have host feature detection?
     if(inputs.in_min.update_controller)
@@ -137,9 +157,9 @@ struct MapTool
       v = inputs.midpoint;
 
     /// Scale input to 0 - 1
-    double in_scale = (inputs.in_max - inputs.in_min);
-    if(in_scale < 1e-12f)
-      return 0;
+    const double in_scale = (inputs.in_max - inputs.in_min);
+    if(in_scale < float_min)
+      return 0.5 * (inputs.out_max - inputs.out_min) + inputs.out_min;
 
     double to_01 = rescale(v, inputs.in_min, inputs.in_max);
 
@@ -152,14 +172,15 @@ struct MapTool
     to_01 = shape(inputs.shape_behaviour.value, to_01);
 
     // - Curve
-    if(std::abs(inputs.curve.value) > 1e-12)
+    if(std::abs(inputs.curve.value) > float_min)
     {
       if(inputs.curve.value >= 0)
-        to_01 = std::pow(std::abs(to_01) + 1e-12, std::pow(16., inputs.curve.value));
+        to_01 = std::pow(std::abs(to_01) + float_min, std::pow(16., inputs.curve.value));
       else
-        to_01 = 1.
-                - std::pow(
-                    std::abs(1. - to_01) + 1e-12, std::pow(16., -inputs.curve.value));
+        to_01
+            = 1.
+              - std::pow(
+                  std::abs(1. - to_01) + float_min, std::pow(16., -inputs.curve.value));
     }
 
     // - Invert
