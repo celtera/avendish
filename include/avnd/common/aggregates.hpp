@@ -3,9 +3,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/index_sequence.hpp>
+#include <avnd/common/inline.hpp>
+#include <avnd/common/tuple.hpp>
 
 #include <string_view>
-#include <tuple>
 
 namespace avnd
 {
@@ -16,7 +17,9 @@ struct typelist
 }
 
 #if !defined(AVND_USE_BOOST_PFR)
+#if __cpp_­structured_­bindings < 202400L && __cplusplus < 202400L
 #define AVND_USE_BOOST_PFR 1
+#endif
 #endif
 
 #if AVND_USE_BOOST_PFR
