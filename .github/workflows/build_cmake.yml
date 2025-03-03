@@ -67,13 +67,13 @@ jobs:
             }
           - {
               name: "macOS",
-              os: macos-13,
+              os: macos-latest,
               common_flags: "",
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
               sdk: "/opt/ossia-sdk-x86_64",
-              pre_build: "sudo xcode-select -s /Applications/Xcode_15.0.app"
+              pre_build: "sudo xcode-select -s /Applications/Xcode_16.2.app"
             }
 
     steps:
