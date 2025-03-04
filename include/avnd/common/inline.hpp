@@ -1,5 +1,12 @@
 #pragma once
 
+#include <version>
+#if __cpp_constexpr >= 202211L
+#define AVND_STATIC_CONSTEXPR static constexpr
+#else
+#define AVND_STATIC_CONSTEXPR constexpr
+#endif
+
 #if defined(__clang__)
 #define AVND_INLINE inline __attribute__((always_inline))
 #elif defined(__GNUC__)
