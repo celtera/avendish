@@ -16,11 +16,21 @@ struct typelist
 };
 }
 
+// clang-format off
+#if defined(__clang_major__) && (__clang_major__ < 21)
+#define AVND_USE_BOOST_PFR 1
+#endif
+
+#if defined(_MSC_VER)
+#define AVND_USE_BOOST_PFR 1
+#endif
+
 #if !defined(AVND_USE_BOOST_PFR)
-#if __cpp_­structured_­bindings < 202400L && __cplusplus < 202400L
+#if (__cpp_structured_bindings < 202403L) || (__cpp_pack_indexing < 202311L) || (__cplusplus < 202400L)
 #define AVND_USE_BOOST_PFR 1
 #endif
 #endif
+// clang-format on
 
 #if AVND_USE_BOOST_PFR
 #include <boost/mp11/algorithm.hpp>
