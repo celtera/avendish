@@ -3,6 +3,7 @@
 #include <avnd/binding/ossia/port_base.hpp>
 #include <avnd/binding/ossia/to_value.hpp>
 #include <avnd/common/struct_reflection.hpp>
+#include <libremidi/detail/conversion.hpp>
 // #include <halp/midi.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -187,13 +188,17 @@ struct process_after_run
       }
       else
       {
-        libremidi::message ms;
-        ms.bytes.assign(m.bytes.begin(), m.bytes.end());
+        libremidi::ump ms;
+        cmidi2_midi1_channel_voice_to_midi2(m.bytes.data(), m.bytes.size(), ms.data);
         ms.timestamp = start + m.timestamp;
+
         port.data.messages.push_back(std::move(ms));
       }
     }
   }
+
+  // TODO UMP ports
+  // TODO note ports
 
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void operator()(
@@ -207,13 +212,14 @@ struct process_after_run
       if constexpr(std::is_same_v<msg_type, libremidi::message>)
       {
         m.timestamp += start;
-        port.data.messages.push_back(std::move(m));
+        port.data.messages.push_back(libremidi::ump_from_midi1(m));
       }
       else
       {
-        libremidi::message ms;
-        ms.bytes.assign(m.bytes.begin(), m.bytes.end());
+        libremidi::ump ms;
+        cmidi2_midi1_channel_voice_to_midi2(m.bytes.data(), m.bytes.size(), ms.data);
         ms.timestamp = start + m.timestamp;
+
         port.data.messages.push_back(std::move(ms));
       }
     }

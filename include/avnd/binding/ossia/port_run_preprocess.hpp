@@ -426,24 +426,30 @@ struct process_before_run
     if constexpr(std::is_same_v<midi_msg_type, libremidi::message>)
     {
       ctrl.midi_messages.reserve(port.data.messages.size());
-      for(const libremidi::message& msg_in : port.data.messages)
+      for(const libremidi::ump& msg_in : port.data.messages)
       {
         if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
         {
-          ctrl.midi_messages.push_back(msg_in);
-          ctrl.midi_messages.back().timestamp -= start;
+          if(auto mm = libremidi::midi1_from_ump(msg_in); !mm.empty())
+          {
+            ctrl.midi_messages.push_back(std::move(mm));
+            ctrl.midi_messages.back().timestamp -= start;
+          }
         }
       }
     }
     else
     {
+      static_assert((requires { std::declval<midi_msg_type>().bytes.resize(123); }));
+      // we must make sure that the MIDI data is copied, not referenced
       ctrl.midi_messages.reserve(port.data.messages.size());
-      for(const libremidi::message& msg_in : port.data.messages)
+      for(const libremidi::ump& msg_in : port.data.messages)
       {
         if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
         {
+          auto msg = libremidi::midi1_from_ump(msg_in);
           ctrl.midi_messages.push_back(
-              {.bytes{msg_in.begin(), msg_in.end()}, .timestamp{(int)msg_in.timestamp}});
+              {.bytes{msg.begin(), msg.end()}, .timestamp{(int)msg_in.timestamp}});
           ctrl.midi_messages.back().timestamp -= start;
         }
       }
