@@ -135,6 +135,19 @@ struct custom_control : T
   decltype(F) model = F;
 };
 
+
+template <typename T, auto F>
+struct multi_control : T
+{
+  halp_meta(layout, halp::layouts::multi_control)
+
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+
+  decltype(F) model = F;
+};
+
 template <typename M, typename L, typename T>
 struct prop
 {

@@ -39,6 +39,8 @@ enum class widget_type
   range_slider,
   range_spinbox,
   multi_slider,
+  multi_slider_xy,
+  path_generator_xy,
   log_slider,
   log_knob,
   control,
@@ -98,6 +100,10 @@ struct widget_reflection
         return "range_spinbox";
       case widget_type::multi_slider:
         return "multi_slider";
+      case widget_type::multi_slider_xy:
+        return "multi_slider_xy";
+      case widget_type::path_generator_xy:
+        return "path_generator_xy";
       case widget_type::log_slider:
         return "log_slider";
       case widget_type::log_knob:
@@ -202,6 +208,14 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::multi_slider; })
   {
     return widget_reflection<std::vector<float>>{widget_type::multi_slider};
+  }
+  else if constexpr(requires { T::widget::multi_slider_xy; })
+  {
+    return widget_reflection<std::vector<float>>{widget_type::multi_slider_xy};
+  }
+  else if constexpr(requires { T::widget::path_generator_xy; })
+  {
+    return widget_reflection<std::vector<float>>{widget_type::path_generator_xy};
   }
   else if constexpr(requires { T::widget::log_slider; })
   {
