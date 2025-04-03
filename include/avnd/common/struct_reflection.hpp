@@ -85,7 +85,9 @@ struct fields_introspection
 #else
     // FIXME pass it the avnd::field_index<I>
     auto&& [... elts] = fields;
-    (func(elts), ...);
+    const auto [... Is] = field_indices(std::make_index_sequence<sizeof...(elts)>{});
+
+    (func(elts, Is), ...);
 #endif
   }
 
@@ -117,7 +119,12 @@ struct fields_introspection
   template <std::size_t N>
   static inline constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
+#if AVND_USE_BOOST_PFR
     return pfr::get<N>(unfiltered_fields);
+#else
+    auto&& [... elts] = unfiltered_fields;
+    return std::forward_like<type&>(elts...[N]);
+#endif
   }
 
   // Will stop if an error is encountered (func should return bool)
@@ -125,6 +132,7 @@ struct fields_introspection
   {
     if constexpr(size > 0)
     {
+#if AVND_USE_BOOST_PFR
       auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
         return func(pfr::get<Index>(unfiltered_fields));
       };
@@ -132,6 +140,10 @@ struct fields_introspection
                  std::integer_sequence<K, Index...>) {
         return (stack_size_helper.template operator()<Index>() && ...);
       }(indices_n{});
+#else
+      auto&& [... elts] = unfiltered_fields;
+      return (func(elts) && ...);
+#endif
     }
     else
     {
@@ -144,6 +156,7 @@ struct fields_introspection
   {
     if constexpr(size > 0)
     {
+#if AVND_USE_BOOST_PFR
       auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
         return func(pfr::get<Index>(unfiltered_fields));
       };
@@ -151,6 +164,10 @@ struct fields_introspection
                  std::integer_sequence<K, Index...>) {
         return (stack_size_helper.template operator()<Index>() || ...);
       }(indices_n{});
+#else
+      auto&& [... elts] = unfiltered_fields;
+      return (func(elts) || ...);
+#endif
     }
     else
     {
@@ -283,14 +300,24 @@ struct predicate_introspection
   template <std::size_t N>
   static constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
+#if AVND_USE_BOOST_PFR
     return pfr::get<index_map[N]>(unfiltered_fields);
+#else
+    auto& [... elts] = unfiltered_fields;
+    return std::forward_like<type&>(elts...[index_map[N]]);
+#endif
   }
 
   // Gives std::tuple<field1&, field2&, etc...>
   static constexpr auto tie(type& unfiltered_fields)
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+#if AVND_USE_BOOST_PFR
       return tpl::tie(pfr::get<Index>(unfiltered_fields)...);
+#else
+      auto&& [... elts] = unfiltered_fields;
+      return tpl::tie(elts...[Index]...);
+#endif
     }(indices_n{});
   }
 
@@ -298,19 +325,31 @@ struct predicate_introspection
   static constexpr auto make_tuple(type& unfiltered_fields)
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+#if AVND_USE_BOOST_PFR
       return tpl::make_tuple(pfr::get<Index>(unfiltered_fields)...);
+#else
+      auto&& [... elts] = unfiltered_fields;
+      return tpl::make_tuple(elts...[Index]...);
+#endif
     }(indices_n{});
   }
 
   // Gives std::tuple<f(field1), f(field2), etc...>
   static constexpr auto filter_tuple(type& unfiltered_fields, auto filter)
   {
+#if AVND_USE_BOOST_PFR
     auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
       return filter(pfr::get<Index>(unfiltered_fields));
     };
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
       return tpl::make_tuple(stack_size_helper.template operator()<Index>()...);
     }(indices_n{});
+#else
+    return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+      auto&& [... elts] = unfiltered_fields;
+      return tpl::make_tuple(filter(elts...[Index])...);
+    }(indices_n{});
+#endif
   }
 
   static constexpr void for_all(type& unfiltered_fields, auto&& func) noexcept
@@ -319,8 +358,13 @@ struct predicate_introspection
     {
       [&func,
        &unfiltered_fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+#if AVND_USE_BOOST_PFR
         (func(pfr::get<Index>(unfiltered_fields)), ...);
-          }(indices_n{});
+#else
+        auto&& [... elts] = unfiltered_fields;
+        (func(elts...[Index]), ...);
+#endif
+      }(indices_n{});
     }
   }
 
@@ -488,7 +532,12 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+#if AVND_USE_BOOST_PFR
         (void)((Index == n && (func(pfr::get<Index>(fields)), true)) || ...);
+#else
+        auto&& [... elts] = fields;
+        (void)((Index == n && (func(elts...[Index]), true)) || ...);
+#endif
           }(indices_n{});
     }
   }
@@ -499,7 +548,12 @@ struct predicate_introspection
     {
       [k = index_map[n], &func,
        &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
+#if AVND_USE_BOOST_PFR
         (void)((Index == k && (func(pfr::get<Index>(fields)), true)) || ...);
+#else
+        auto&& [... elts] = fields;
+        (void)((Index == k && (func(elts...[Index]), true)) || ...);
+#endif
           }(indices_n{});
     }
   }

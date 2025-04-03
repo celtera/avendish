@@ -23,7 +23,7 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = boost::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = boost::pfr::detail::tie_as_tuple(
@@ -74,7 +74,7 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = avnd::pfr::detail::tie_as_tuple(value);
@@ -97,9 +97,8 @@ constexpr void for_each_field_ref_n(T&& value, F&& func)
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
-
   auto t = avnd::pfr::detail::tie_as_tuple(value);
 
   [&]<std::size_t... I>(std::index_sequence<I...>)
@@ -109,7 +108,9 @@ constexpr void for_each_field_ref_n(T&& value, F&& func)
   (std::make_index_sequence<fields_count_val>{});
 #else
   auto&& [... elts] = value;
-  (func(elts), ...);
+  const auto [... Is] = field_indices(std::make_index_sequence<sizeof...(elts)>{});
+
+  (func(elts, Is), ...);
 #endif
 }
 
@@ -147,7 +148,7 @@ constexpr void for_each_field_function_table(T&& value, R func)
 #endif
   using namespace avnd::pfr;
   using namespace avnd::pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = avnd::pfr::detail::tie_as_tuple(value);
