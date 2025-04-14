@@ -402,7 +402,7 @@ struct setup_inlets
   {
     int expected = self.dynamic_ports.num_in_ports(avnd::field_index<Idx>{});
     while(port.size() < expected)
-      port.push_back(new ossia::value_inlet);
+      port.push_back(new ossia::value_inlet); // FIXME not freed
     while(port.size() > expected)
       port.erase(port.rbegin().base());
 
@@ -467,7 +467,7 @@ struct setup_outlets
     const std::size_t expected
         = self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{});
     while(port.size() < expected)
-      port.push_back(new ossia::value_outlet);
+      port.push_back(new ossia::value_outlet); // FIXME not freed
     while(port.size() > expected)
       port.erase(port.rbegin().base());
 

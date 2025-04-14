@@ -70,7 +70,6 @@ struct SpriteReader
     const int cur_col = cur % columns;
     const QRect rect(cur_col * sprite_w, cur_row * sprite_h, sprite_w, sprite_h);
     sprite = image_data.copy(rect);
-    sprite.mirror();
     outputs.tex.texture.update(sprite.bits(), inputs.sz.value.x, inputs.sz.value.y);
   }
 };
