@@ -208,8 +208,8 @@ struct tick_musical
   double tempo = 120.;
   struct
   {
-    int num;
-    int denom;
+    int num{};
+    int denom{};
   } signature;
 
   int64_t position_in_frames{};
