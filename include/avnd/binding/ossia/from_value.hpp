@@ -1032,12 +1032,6 @@ struct from_ossia_value_impl
     return from_array<N>(src, f);
   }
 
-  template <std::size_t N, typename T>
-  bool operator()(const ossia::value& src, std::array<T, N>& f)
-  {
-    return from_array<N>(src, f);
-  }
-
   template <
       template <typename, std::size_t, typename...> typename T, typename Val,
       std::size_t N>
