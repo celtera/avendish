@@ -150,7 +150,7 @@ struct position_color_packed_geometry
       using datatype = float[3];
       int32_t offset = 3 * sizeof(float);
       int32_t binding = 0;
-    } normal;
+    } color;
   };
 
   struct
