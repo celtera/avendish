@@ -29,7 +29,9 @@ struct MidiFilter
     halp::midi_bus<"MIDI messages"> midi;
     struct
     {
-      halp__enum("Filter type", CC, CC, PitchBend, AfterTouch, PolyPressure);
+      halp__enum(
+          "Filter type", CC, CC, PitchBend, AfterTouch, PolyPressure, NoteOn, NoteOff,
+          NoteAny);
     } filter;
     struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}>
     {
@@ -58,10 +60,45 @@ struct MidiFilter
         continue;
 
       using filter = decltype(inputs.filter)::enum_type;
+      const auto t = m.get_message_type();
       switch(inputs.filter)
       {
+        case filter::NoteOn:
+          if(t == libremidi::message_type::NOTE_ON)
+          {
+            if(inputs.index == 0 || inputs.index == m.bytes[1])
+            {
+              outputs.midi.push_back(msg);
+              outputs.raw = m.bytes[2];
+              outputs.normalized = m.bytes[2] / 127.;
+            }
+          }
+          break;
+        case filter::NoteOff:
+          if(t == libremidi::message_type::NOTE_OFF)
+          {
+            if(inputs.index == 0 || inputs.index == m.bytes[1])
+            {
+              outputs.midi.push_back(msg);
+              outputs.raw = m.bytes[2];
+              outputs.normalized = m.bytes[2] / 127.;
+            }
+          }
+          break;
+        case filter::NoteAny:
+          if(t == libremidi::message_type::NOTE_ON
+             || t == libremidi::message_type::NOTE_OFF)
+          {
+            if(inputs.index == 0 || inputs.index == m.bytes[1])
+            {
+              outputs.midi.push_back(msg);
+              outputs.raw = m.bytes[2];
+              outputs.normalized = m.bytes[2] / 127.;
+            }
+          }
+          break;
         case filter::AfterTouch:
-          if(m.get_message_type() == libremidi::message_type::AFTERTOUCH)
+          if(t == libremidi::message_type::AFTERTOUCH)
           {
             outputs.midi.push_back(msg);
             outputs.raw = m.bytes[1];
@@ -69,7 +106,7 @@ struct MidiFilter
           }
           break;
         case filter::CC:
-          if(m.get_message_type() == libremidi::message_type::CONTROL_CHANGE)
+          if(t == libremidi::message_type::CONTROL_CHANGE)
           {
             if(inputs.index == 0 || inputs.index == m.bytes[1])
             {
@@ -80,7 +117,7 @@ struct MidiFilter
           }
           break;
         case filter::PolyPressure:
-          if(m.get_message_type() == libremidi::message_type::POLY_PRESSURE)
+          if(t == libremidi::message_type::POLY_PRESSURE)
           {
             if(inputs.index == 0 || inputs.index == m.bytes[1])
             {
@@ -91,7 +128,7 @@ struct MidiFilter
           }
           break;
         case filter::PitchBend:
-          if(m.get_message_type() == libremidi::message_type::PITCH_BEND)
+          if(t == libremidi::message_type::PITCH_BEND)
           {
             outputs.midi.push_back(msg);
             outputs.raw = (m.bytes[2] * 128 + m.bytes[1]);
