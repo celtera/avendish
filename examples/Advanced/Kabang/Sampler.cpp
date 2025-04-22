@@ -103,7 +103,7 @@ void sampler::process_frame(voice& v, double& out_l, double& out_r)
   };
 
   // Process pitch envelope
-  if(v.pitch_envelope)
+  if(v.pitch_envelope || v.pitch != 1.)
   {
     if(v.pitch_track >= 0.)
       penv *= v.pitch_track;

@@ -1,17 +1,19 @@
 #include "Kabang.hpp"
 
+#include "Minibang.hpp"
+
 namespace kbng
 {
 
-void DrumChannel::trigger(int ts, int vel_byte)
+voice* DrumChannel::trigger(int ts, int vel_byte)
 {
   double rate = this->sample.soundfile.rate;
   int channels = this->sample.soundfile.channels;
 
   if(channels <= 0)
-    return;
+    return nullptr;
   if(rate <= 0)
-    return;
+    return nullptr;
 
   voice& v = this->sample.trigger();
   double vel = vel_byte / 127.;
@@ -53,6 +55,15 @@ void DrumChannel::trigger(int ts, int vel_byte)
   v.amp_adsr.decay(this->amp_decay);
   v.amp_adsr.sustain(this->amp_sustain);
   v.amp_adsr.release(this->amp_release);
+
+  return &v;
+}
+
+voice* DrumChannel::trigger(int ts, float pitch_ratio, int vel_byte)
+{
+  auto v = trigger(ts, vel_byte);
+  v->pitch *= pitch_ratio;
+  return v;
 }
 
 void DrumChannel::run(int frames, int channels, double** out, double volume)
@@ -91,4 +102,32 @@ void Kabang::operator()(halp::tick t)
   });
 }
 
+void Minibang::operator()(halp::tick t)
+{
+  for(auto& msg : inputs.midi)
+  {
+    auto m = libremidi::message{{msg.bytes[0], msg.bytes[1], msg.bytes[2]}};
+    if(m.get_message_type() == libremidi::message_type::NOTE_ON)
+    {
+      float pitch_ratio = float(msg.bytes[1]) / this->inputs.s1.midi_key.value;
+      for_each_channel([&msg, pitch_ratio](DrumChannel& channel) {
+        channel.trigger(msg.timestamp, pitch_ratio, msg.bytes[2]);
+      });
+    }
+    else if(m.get_message_type() == libremidi::message_type::NOTE_OFF)
+    {
+      for_each_channel([&msg](DrumChannel& channel) {
+        {
+          for(auto& voice : channel.sample.voices)
+          {
+            voice->amp_adsr.release();
+          }
+        }
+      });
+    }
+  }
+  for_each_channel([&](DrumChannel& channel) {
+    channel.run(t.frames, 2, outputs.audio.samples, inputs.volume);
+  });
+}
 }

@@ -61,7 +61,8 @@ struct DrumChannel
 
   halp::knob_f32<"Vel->Amp", halp::range{-1., 1., 0.}> amp_envelop;
 
-  void trigger(int ts, int vel_byte);
+  voice* trigger(int ts, int vel_byte);
+  voice* trigger(int ts, float pitch_ratio, int vel_byte);
 
   void run(int frames, int channels, double** out, double volume);
 
