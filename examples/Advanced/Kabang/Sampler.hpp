@@ -3,13 +3,17 @@
 #include <DspFilters/RBJ.h>
 #include <DspFilters/SmoothedFilter.h>
 #include <Gamma/Envelope.h>
-#include <RubberBandStretcher.h>
 #include <boost/container/static_vector.hpp>
 #include <halp/audio.hpp>
 #include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/file_port.hpp>
 #include <halp/soundfile_port.hpp>
+#if __has_include(<RubberBandStretcher.h>)
+#include <RubberBandStretcher.h>
+#elif __has_include(<rubberband/RubberBandStretcher.h>)
+#include <rubberband/RubberBandStretcher.h>
+#endif
 
 #include <cinttypes>
 
