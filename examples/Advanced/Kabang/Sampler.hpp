@@ -9,6 +9,7 @@
 #include <halp/compat/gamma.hpp>
 #include <halp/controls.hpp>
 #include <halp/file_port.hpp>
+#include <halp/soundfile_port.hpp>
 
 #include <cinttypes>
 

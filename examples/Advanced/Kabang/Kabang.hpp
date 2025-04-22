@@ -190,19 +190,19 @@ public:
         halp_meta(name, "Drum 4")
       } s4;
 
-      struct : halp::recursive_group_item<&ins::s1, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s5, DrumChannel::ui>
       {
         halp_meta(name, "Drum 5")
       } s5;
-      struct : halp::recursive_group_item<&ins::s2, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s6, DrumChannel::ui>
       {
         halp_meta(name, "Drum 6")
       } s6;
-      struct : halp::recursive_group_item<&ins::s3, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s7, DrumChannel::ui>
       {
         halp_meta(name, "Drum 7")
       } s7;
-      struct : halp::recursive_group_item<&ins::s4, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s8, DrumChannel::ui>
       {
         halp_meta(name, "Drum 8")
       } s8;

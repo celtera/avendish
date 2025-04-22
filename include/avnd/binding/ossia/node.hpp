@@ -163,7 +163,8 @@ public:
 };
 
 template <std::size_t Index, typename F>
-constexpr void invoke_helper(F& f, auto& avnd_ports, auto& ossia_ports)
+AVND_INLINE_FLATTEN static constexpr void
+invoke_helper(F& f, auto& avnd_ports, auto& ossia_ports)
 {
   f(avnd::pfr::get<Index>(avnd_ports), tuplet::get<Index>(ossia_ports),
     avnd::field_index<Index>{});
@@ -234,7 +235,7 @@ public:
   }
 
   template <typename Functor, typename... Args>
-  void process_all_ports(Args&&... args)
+  AVND_INLINE_FLATTEN void process_all_ports(Args&&... args)
   {
     for(auto [impl, i, o] : this->impl.full_state())
     {
