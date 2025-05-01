@@ -2,8 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later OR BSL-1.0 OR CC0-1.0 OR CC-PDCC OR 0BSD */
 
-#include <avnd/common/aggregates.hpp>
 #include <avnd/common/dummy.hpp>
+
+#include <avnd/common/aggregates.base.hpp>
 
 #include <string_view>
 #include <type_traits>

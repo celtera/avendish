@@ -1,4 +1,5 @@
-
+#pragma once
+#include <avnd/binding/common/aggregates.base.hpp>
 namespace avnd
 {
 namespace pfr

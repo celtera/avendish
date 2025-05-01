@@ -18,13 +18,22 @@ constexpr AVND_INLINE auto tie_as_tuple(T& val)
 }
 }
 
+// Necessary because of
+// https://github.com/llvm/llvm-project/issues/138018
+struct structure_to_typelist_helper
+{
+  template <template <typename...> typename T, typename... Args>
+  constexpr AVND_INLINE auto operator()(T<Args...>)
+  {
+    return avnd::typelist<std::decay_t<Args>...>{};
+  }
+};
+
 constexpr AVND_INLINE auto structure_to_typelist(const auto& s) noexcept
 {
   static_assert(flattening::is_tuple<decltype(detail::tie_as_tuple(s))>::value);
   // mp11 : flatten all the types with "recursive_module" defined in them.
-  return []<template <typename...> typename T, typename... Args>(T<Args...>) {
-    return avnd::typelist<std::decay_t<Args>...>{};
-  }(detail::tie_as_tuple(s));
+  return structure_to_typelist_helper{}(detail::tie_as_tuple(s));
 }
 
 template <std::size_t N, typename T>
@@ -43,7 +52,9 @@ using tuple_size = boost::mp11::mp_size<avnd::recursive_groups_transform_t<T>>;
 template <typename T>
 inline constexpr size_t tuple_size_v = tuple_size<T>::value;
 
+// manual inlining of structure_to_typelist
 template <typename T>
-using as_typelist = decltype(pfr_recursive::structure_to_typelist(std::declval<T&>()));
+using as_typelist = decltype(structure_to_typelist_helper{}(
+    avnd::flatten_tuple(avnd::detail::detuple<T, true>(std::declval<T&>()))));
 }
 }
