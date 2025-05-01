@@ -89,7 +89,7 @@ static consteval uint8_t decode_hex(char c1, char c2)
 template <typename T>
 static consteval UnionID component_uuid_for_type()
 {
-  constexpr std::string_view chars = T::uuid();
+  static_constexpr std::string_view chars = T::uuid();
   static_assert(chars.length() == 36);
 
   UnionID id;
@@ -119,25 +119,32 @@ static consteval UnionID component_uuid_for_type()
 template <typename T>
 static consteval UnionID controller_uuid_for_type()
 {
-  UnionID component_id = component_uuid_for_type<T>();
+  // We just swap the values of component_id to get a new uuid...
+  static_constexpr std::string_view chars = T::uuid();
+  static_assert(chars.length() == 36);
 
-  // We just swap the values to get a new uuid...
-  static_constexpr auto exch = [](char& a, char& b) consteval {
-    char tmp = a;
-    a = b;
-    b = tmp;
-  };
-  exch(component_id.tuid[0], component_id.tuid[15]);
-  exch(component_id.tuid[1], component_id.tuid[14]);
-  exch(component_id.tuid[2], component_id.tuid[13]);
-  exch(component_id.tuid[3], component_id.tuid[12]);
+  UnionID id;
+  id.tuid[15] = decode_hex(chars[0], chars[1]);
+  id.tuid[14] = decode_hex(chars[2], chars[3]);
+  id.tuid[13] = decode_hex(chars[4], chars[5]);
+  id.tuid[12] = decode_hex(chars[6], chars[7]);
 
-  exch(component_id.tuid[4], component_id.tuid[12]);
-  exch(component_id.tuid[5], component_id.tuid[11]);
-  exch(component_id.tuid[6], component_id.tuid[10]);
-  exch(component_id.tuid[7], component_id.tuid[9]);
+  id.tuid[11] = decode_hex(chars[9], chars[10]);
+  id.tuid[10] = decode_hex(chars[11], chars[12]);
+  id.tuid[9] = decode_hex(chars[14], chars[15]);
+  id.tuid[8] = decode_hex(chars[16], chars[17]);
 
-  return component_id;
+  id.tuid[7] = decode_hex(chars[19], chars[20]);
+  id.tuid[6] = decode_hex(chars[21], chars[22]);
+  id.tuid[5] = decode_hex(chars[24], chars[25]);
+  id.tuid[4] = decode_hex(chars[26], chars[27]);
+
+  id.tuid[3] = decode_hex(chars[28], chars[29]);
+  id.tuid[2] = decode_hex(chars[30], chars[31]);
+  id.tuid[1] = decode_hex(chars[32], chars[33]);
+  id.tuid[0] = decode_hex(chars[34], chars[35]);
+
+  return id;
 }
 
 #define INIT_FROM_TUID(ID)                                                              \
