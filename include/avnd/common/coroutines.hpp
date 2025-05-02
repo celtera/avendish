@@ -31,6 +31,7 @@ inline constexpr default_sentinel_t default_sentinel{};
 }
 #endif
 
+#include <cstdlib>
 #include <optional>
 #include <type_traits>
 namespace avnd

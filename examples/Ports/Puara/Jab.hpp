@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/circular_buffer.hpp>
 #include <halp/controls.hpp>
+
 namespace puara
 {
 template <typename T>
