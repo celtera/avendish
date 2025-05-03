@@ -354,7 +354,7 @@ struct position_texcoords_geometry
 
 // In this example the vertex buffer has
 // all the position attributes, then all the normal attributes, then all the texcoord attributes
-struct position_normals_texcoords_geometry
+struct position_normals_texcoords_geometry_base
 {
   struct buffers
   {
@@ -460,6 +460,21 @@ struct position_normals_texcoords_geometry
   } input;
 
   int vertices = 0;
+};
+
+struct position_normals_texcoords_geometry_plane
+    : position_normals_texcoords_geometry_base
+{
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_none
+  };
+};
+struct position_normals_texcoords_geometry_volume
+    : position_normals_texcoords_geometry_base
+{
   enum
   {
     triangles,

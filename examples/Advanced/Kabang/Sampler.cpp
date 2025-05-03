@@ -55,9 +55,9 @@ void sampler::filter(voice& v, double* (&arr)[2])
 
   double filt_env = v.flt_envelope ? fenv * (1. + v.filt_track) : 0.;
   Dsp::Params params;
+  params[0] = sf.rate;
 
-  // HPF
-  params[0] = sf.rate;                                                // sample rate
+  // HPF                                           // sample rate
   params[1] = std::clamp(v.hpCutoff - 1000. * filt_env, 20., 20000.); // cutoff
   params[2] = v.hpRes;                                                // Q
   v.highpassFilter.setParams(params);
