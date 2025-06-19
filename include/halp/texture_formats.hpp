@@ -11,6 +11,7 @@ namespace halp
 {
 struct r8_texture
 {
+  static constexpr auto bytes_per_pixel = sizeof(unsigned char);
   using uninitialized_bytes = boost::container::vector<unsigned char>;
   enum format
   {
@@ -21,10 +22,7 @@ struct r8_texture
   int height;
   bool changed;
 
-  constexpr auto bytesize() const noexcept
-  {
-    return width * height * sizeof(unsigned char);
-  }
+  constexpr auto bytesize() const noexcept { return width * height * bytes_per_pixel; }
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
@@ -68,6 +66,7 @@ struct r8_texture
 
 struct rgba_texture
 {
+  static constexpr auto bytes_per_pixel = 4 * sizeof(unsigned char);
   using uninitialized_bytes = boost::container::vector<unsigned char>;
   enum format
   {
@@ -78,10 +77,7 @@ struct rgba_texture
   int height;
   bool changed;
 
-  constexpr auto bytesize() const noexcept
-  {
-    return width * height * 4 * sizeof(unsigned char);
-  }
+  constexpr auto bytesize() const noexcept { return width * height * bytes_per_pixel; }
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
@@ -131,6 +127,7 @@ struct rgba_texture
 
 struct rgba32f_texture
 {
+  static constexpr auto bytes_per_pixel = 4 * sizeof(float);
   using uninitialized_bytes = boost::container::vector<float>;
   enum format
   {
@@ -141,7 +138,7 @@ struct rgba32f_texture
   int height;
   bool changed;
 
-  constexpr auto bytesize() const noexcept { return width * height * 4 * sizeof(float); }
+  constexpr auto bytesize() const noexcept { return width * height * bytes_per_pixel; }
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
@@ -206,6 +203,7 @@ struct rgba32f_texture
 
 struct rgb_texture
 {
+  static constexpr auto bytes_per_pixel = 3 * sizeof(unsigned char);
   using uninitialized_bytes = boost::container::vector<unsigned char>;
   enum format
   {
@@ -217,10 +215,7 @@ struct rgb_texture
   int height;
   bool changed;
 
-  constexpr auto bytesize() const noexcept
-  {
-    return width * height * 3 * sizeof(unsigned char);
-  }
+  constexpr auto bytesize() const noexcept { return width * height * bytes_per_pixel; }
 
   /* FIXME the allocation should not be managed by the plug-in */
   static auto allocate(int width, int height)
