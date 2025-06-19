@@ -30,7 +30,7 @@ struct PromptComposer
       on_controller_interaction()
       {
         return [](PromptComposer& object, std::string_view value) {
-          int n = std::count(value.begin(), value.end(), ',');
+          int n = std::count(value.begin(), value.end(), '\n');
           object.inputs.in_i.request_port_resize(n + 1);
         };
       }
@@ -50,7 +50,7 @@ struct PromptComposer
     thread_local std::vector<std::string> strs;
     static const auto loc = std::locale("C");
     strs.clear();
-    boost::split(strs, inputs.controller.value, boost::is_any_of(","));
+    boost::split(strs, inputs.controller.value, boost::is_any_of("\n"));
     auto it = strs.begin();
     for(auto& val : inputs.in_i.ports)
     {
