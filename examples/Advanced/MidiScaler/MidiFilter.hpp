@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <halp/audio.hpp>
+#include <halp/callback.hpp>
 #include <halp/controls.hpp>
 #include <halp/file_port.hpp>
 #include <halp/meta.hpp>
