@@ -179,7 +179,7 @@ export struct MyProcessor
 };
 </code></pre>
 <p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those,
-and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope !</p>
+and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope -- and read until the end of the page!</p>
 <h1 id="getting-started-for-good"><a class="header" href="#getting-started-for-good">Getting started, for good</a></h1>
 <p>Here is a minimal, self-contained definition of an Avendish processor, which works on 2022 compilers:</p>
 <pre><code class="language-cpp">#pragma once
@@ -238,6 +238,22 @@ struct MyProcessor
   }
 };
 </code></pre>
+<h1 id="2025-update-its-happening"><a class="header" href="#2025-update-its-happening">2025 update: it's happening!</a></h1>
+<p>C++ reflection and custom attributes / annotations will be part of C++26!
+The actual syntax once support for it is implemented in Avendish, will certainly look like:</p>
+<pre><code class="language-cpp">import std;
+import metadata;
+
+[[=metadata::name{"Hello World"}]]
+[[=metadata::description{"An introductory example"}]]
+export struct MyProcessor
+{
+  void operator()() { 
+    std::print("Henlo\n");
+  }
+};
+</code></pre>
+<p>Thanks to the library's open-ended approach, all existing code will continue working :-)</p>
 
                     </main>
 
