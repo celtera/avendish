@@ -12,7 +12,9 @@
 #include <halp/midifile_port.hpp>
 #include <libremidi/message.hpp>
 #include <ossia/detail/flat_set.hpp>
+#include <ossia/detail/small_flat_map.hpp>
 #include <ossia/detail/small_vector.hpp>
+#include <ossia/detail/variant.hpp>
 
 namespace mtk
 {
