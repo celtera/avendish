@@ -47,7 +47,7 @@ struct MidiFilter
     NoteRunning
   };
 
-  struct note
+  struct note_int
   {
     int note{};
     int velocity{};
@@ -77,20 +77,20 @@ struct MidiFilter
   struct
   {
     halp::midi_bus<"MIDI messages", libremidi::message> midi;
-    halp::timed_callback<"Raw Output", ossia::variant<int, note>> raw;
+    halp::timed_callback<"Raw Output", ossia::variant<int, note_int>> raw;
     halp::timed_callback<"Normalized value", ossia::variant<float, note_float>>
         normalized;
 
     halp::timed_callback<
         "Raw poly output",
         ossia::variant<
-            ossia::small_vector<uint8_t, 128>, ossia::small_vector<note, 128>>>
+            ossia::small_vector<uint8_t, 128>, ossia::small_vector<note_int, 128>>>
         poly_raw;
   } outputs;
 
   ossia::small_flat_map<int, int, 128> running;
   ossia::small_vector<uint8_t, 128> out_no_vel;
-  ossia::small_vector<note, 128> out_vel;
+  ossia::small_vector<note_int, 128> out_vel;
 
   using tick = halp::tick_musical;
   void push_poly(int ts)
@@ -160,7 +160,7 @@ struct MidiFilter
       switch(inputs.mode)
       {
         case Both: {
-          outputs.raw(m.timestamp, note{pitch, vel});
+          outputs.raw(m.timestamp, note_int{pitch, vel});
           outputs.normalized(m.timestamp, note_float{pitch, vel / 127.f});
           break;
         }
@@ -233,7 +233,7 @@ struct MidiFilter
                 switch(inputs.mode)
                 {
                   case Both: {
-                    outputs.raw(m.timestamp, note{pitch, 0});
+                    outputs.raw(m.timestamp, note_int{pitch, 0});
                     outputs.normalized(m.timestamp, note_float{pitch, 0.f});
                     break;
                   }
