@@ -2,6 +2,7 @@
 #include <cassert>
 #include <climits>
 #include <cstring>
+#include <exception>
 #include <iostream>
 
 // ! this file ported from libc++ strstream, now sometimes removed
