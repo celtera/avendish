@@ -5,8 +5,10 @@
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
+#include <ossia/detail/pod_vector.hpp>
 
 #include <algorithm>
+#include <iostream>
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
@@ -36,7 +38,24 @@ struct PromptComposer
       }
     } controller;
 
-    halp::dynamic_port<halp::knob_f32<"Input {}">> in_i;
+    struct : halp::val_port<"Weights", ossia::small_pod_vector<float, 8>>
+    {
+      void update(PromptComposer& obj)
+      {
+        int N = std::min(value.size(), obj.inputs.in_i.ports.size());
+        auto& w = obj.inputs.in_i.ports;
+        for(int i = 0; i < N; i++)
+        {
+          w[i].value = value[i];
+        }
+      }
+    } weights;
+    struct weight_port : halp::knob_f32<"Input {}">
+    {
+      void update(PromptComposer& obj) { }
+    };
+
+    halp::dynamic_port<weight_port> in_i;
   } inputs;
 
   struct
@@ -47,23 +66,24 @@ struct PromptComposer
   void operator()()
   {
     outputs.out.value = "";
-    thread_local std::vector<std::string> strs;
-    static const auto loc = std::locale("C");
-    strs.clear();
-    boost::split(strs, inputs.controller.value, boost::is_any_of("\n"));
-    auto it = strs.begin();
+    splitted.clear();
+    boost::split(splitted, inputs.controller.value, boost::is_any_of("\n"));
+    auto it = splitted.begin();
     for(auto& val : inputs.in_i.ports)
     {
-      boost::trim(*it, loc);
+      boost::trim_if(*it, [](char c) { return c <= 32; });
       outputs.out.value += fmt::format("({}:{}), ", *it, val.value);
       ++it;
     }
+
     if(outputs.out.value.ends_with(", "))
     {
       outputs.out.value.pop_back();
       outputs.out.value.pop_back();
     }
   }
+
+  std::vector<std::string> splitted;
 };
 
 }
