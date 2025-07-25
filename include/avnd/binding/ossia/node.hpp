@@ -355,11 +355,12 @@ public:
         // Replace the value in the field
         auto& field = avnd::dynamic_ports_input_introspection<T>::template field<N>(
             state.inputs);
+        auto& port = field.ports[dynamic_port];
 
         // OPTIMIZEME we're loosing a few allocations here that should be gc'd
-        field.ports[dynamic_port].value = new_value;
+        port.value = new_value;
 
-        if_possible(field.update(state.effect));
+        if_possible(port.update(state.effect));
       }
     }
     else
@@ -367,10 +368,11 @@ public:
       // Replace the value in the field
       auto& field = avnd::dynamic_ports_input_introspection<T>::template field<N>(
           this->impl.inputs());
+      auto& port = field.ports[dynamic_port];
 
-      std::swap(field.ports[dynamic_port].value, new_value);
+      std::swap(port.value, new_value);
 
-      if_possible(field.update(this->impl.effect));
+      if_possible(port.update(this->impl.effect));
     }
 
     // Mark the control as changed
