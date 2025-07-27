@@ -175,8 +175,8 @@ struct LEDView
                 const auto r = std::clamp(ossia::convert<float>(vec[i]), 0.f, 255.f);
                 const auto g = std::clamp(ossia::convert<float>(vec[i + 1]), 0.f, 255.f);
                 const auto b = std::clamp(ossia::convert<float>(vec[i + 2]), 0.f, 255.f);
-                // fixme
-                const auto w = std::clamp(ossia::convert<float>(vec[i + 3]), 0.f, 255.f);
+                // FIXME w in rgbw
+                // const auto w = std::clamp(ossia::convert<float>(vec[i + 3]), 0.f, 255.f);
                 m_pixels.push_back(QColor::fromRgb(r, g, b));
               }
               break;
