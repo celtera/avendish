@@ -120,11 +120,19 @@ consteval int std140_size()
 
 */
 
+#if defined(_MSC_VER)
+#define MSVC_BUGGY_CONSTEVAL
+#define MSVC_BUGGY_CONSTEXPR
+#else
+#define MSVC_BUGGY_CONSTEVAL consteval
+#define MSVC_BUGGY_CONSTEXPR constexpr
+#endif
+
 namespace gpp
 {
 
 template <typename T, std::size_t Count>
-consteval int std140_offset_impl()
+MSVC_BUGGY_CONSTEVAL int std140_offset_impl()
 {
   int sz = 0;
   auto func = [&](auto field) {
@@ -154,19 +162,13 @@ consteval int std140_offset_impl()
   if constexpr(Count > 0)
   {
     [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-      constexpr T t{};
+      MSVC_BUGGY_CONSTEXPR T t{};
       (func(boost::pfr::get<Index>(t)), ...);
-        }(std::make_index_sequence<Count>{});
+    }(std::make_index_sequence<Count>{});
   }
   return sz;
 }
-#if defined(_MSC_VER)
-#define MSVC_BUGGY_CONSTEVAL
-#define MSVC_BUGGY_CONSTEXPR
-#else
-#define MSVC_BUGGY_CONSTEVAL consteval
-#define MSVC_BUGGY_CONSTEXPR constexpr
-#endif
+
 template <auto F>
 MSVC_BUGGY_CONSTEVAL int std140_offset()
 {
