@@ -65,7 +65,7 @@ struct BarrVerb
   class SVF
   {
   public:
-    constexpr void setFreq(float cutoff, float q, float samplerate)
+    void setFreq(float cutoff, float q, float samplerate)
     {
       z1 = z2 = 0;
 

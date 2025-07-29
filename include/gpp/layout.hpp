@@ -160,18 +160,24 @@ consteval int std140_offset_impl()
   }
   return sz;
 }
-
+#if defined(_MSC_VER)
+#define MSVC_BUGGY_CONSTEVAL
+#define MSVC_BUGGY_CONSTEXPR
+#else
+#define MSVC_BUGGY_CONSTEVAL consteval
+#define MSVC_BUGGY_CONSTEXPR constexpr
+#endif
 template <auto F>
-consteval int std140_offset()
+MSVC_BUGGY_CONSTEVAL int std140_offset()
 {
   using ubo_type = typename avnd::member_reflection<F>::class_type;
-  constexpr ubo_type ubo{};
-  constexpr int field_offset = avnd::index_in_struct(ubo, F);
+  MSVC_BUGGY_CONSTEXPR ubo_type ubo{};
+  MSVC_BUGGY_CONSTEXPR int field_offset = avnd::index_in_struct(ubo, F);
   return std140_offset_impl<ubo_type, field_offset>();
 }
 
 template <typename T>
-consteval int std140_size()
+MSVC_BUGGY_CONSTEVAL int std140_size()
 {
   return std140_offset_impl<T, boost::pfr::tuple_size_v<T>>();
 }
