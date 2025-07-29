@@ -37,7 +37,7 @@ struct BarrVerb
 {
   halp_meta(name, "BarrVerb")
   halp_meta(c_name, "barrverb")
-  halp_meta(category, "Effects/Reverb")
+  halp_meta(category, "Audio/Effects/Reverb")
   halp_meta(description, "Alesis MIDIVerb emulation, a tribute to Keith Barr")
   halp_meta(author, "Gordonjcp")
   halp_meta(uuid, "eb97ea63-3def-4e71-b577-444df5637ea8")
