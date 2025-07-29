@@ -2,6 +2,7 @@
 #include <boost/algorithm/string.hpp>
 #include <cmath>
 #include <fmt/format.h>
+#include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
