@@ -9,15 +9,27 @@
 using type = decltype(avnd::configure<gst::config, @AVND_MAIN_CLASS@>())::type;
 // clang-format on
 
-static gboolean plugin_init(GstPlugin* plugin)
+template <typename T>
+static gboolean plugin_init_t(GstPlugin* plugin)
 {
-  auto res =  gst_element_register(
-      plugin, "@AVND_C_NAME@", GST_RANK_NONE, gst::metaclass<type>::get_type());
-  return res;
+  if constexpr(
+      gst::is_audio_filter<T>() || gst::is_audio_generator<T>()
+      || gst::is_audio_sink<T>() || gst::is_texture_filter<T>()
+      || gst::is_texture_generator<T>() || gst::is_texture_sink<T>())
+  {
+    auto res = gst_element_register(
+        plugin, "@AVND_C_NAME@", GST_RANK_NONE, gst::metaclass<T>::get_type());
+    return res;
+  }
+  return false;
 }
 
-extern "C"
+static gboolean plugin_init(GstPlugin* plugin)
 {
+  return plugin_init_t<type>(plugin);
+}
+
+extern "C" {
 static const GstPluginDesc gst_plugin_desc
     = {GST_VERSION_MAJOR,
        GST_VERSION_MINOR,
@@ -33,16 +45,16 @@ static const GstPluginDesc gst_plugin_desc
        {nullptr}};
 
 AVND_EXPORTED_SYMBOL
-const GstPluginDesc* gst_plugin_@AVND_C_NAME@_get_desc(void)
+const GstPluginDesc* gst_plugin_ @AVND_C_NAME @_get_desc(void)
 {
   return &gst_plugin_desc;
 }
 
 AVND_EXPORTED_SYMBOL
-void gst_plugin_@AVND_C_NAME@_register(void)
+void gst_plugin_ @AVND_C_NAME @_register(void)
 {
   gst_plugin_register_static(
-      GST_VERSION_MAJOR, GST_VERSION_MINOR, "@AVND_C_NAME@", "description", plugin_init, "1.0",
-      "LGPL", "@AVND_C_NAME@", "@AVND_C_NAME@", "https://example.com");
+      GST_VERSION_MAJOR, GST_VERSION_MINOR, "@AVND_C_NAME@", "description", plugin_init,
+      "1.0", "LGPL", "@AVND_C_NAME@", "@AVND_C_NAME@", "https://example.com");
 }
 }
