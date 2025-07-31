@@ -312,8 +312,8 @@ struct element<T> : property_handler
       {
         GstStructure* structure = gst_caps_get_structure(result, i);
         gst_structure_set(
-            structure, "width", GST_TYPE_INT_RANGE, 1, 4096, "height",
-            GST_TYPE_INT_RANGE, 1, 4096, NULL);
+            structure, "width", GST_TYPE_INT_RANGE, 1, G_MAXINT, "height",
+            GST_TYPE_INT_RANGE, 1, G_MAXINT, NULL);
       }
     }
 
@@ -368,8 +368,11 @@ struct element<T> : property_handler
     int in_width = GST_VIDEO_INFO_WIDTH(&in_info);
     int in_height = GST_VIDEO_INFO_HEIGHT(&in_info);
 
-    // Allocate buffer for maximum reasonable size (input size as upper bound)
-    gsize max_buffer_size = in_width * in_height * 4; // RGBA
+    // For effects that might increase resolution, allocate a larger buffer
+    // We'll use 2x the input dimensions as a reasonable upper bound
+    int max_width = std::min(in_width * 2, 8192);  // Cap at 8K width
+    int max_height = std::min(in_height * 2, 8192); // Cap at 8K height
+    gsize max_buffer_size = max_width * max_height * 4; // RGBA
 
     *outbuf = gst_buffer_new_allocate(nullptr, max_buffer_size, nullptr);
 
@@ -381,8 +384,8 @@ struct element<T> : property_handler
     }
 
     GST_DEBUG_OBJECT(
-        this, "Allocated max output buffer: %dx%d, size=%lu", in_width, in_height,
-        max_buffer_size);
+        this, "Allocated max output buffer: %dx%d (input: %dx%d), size=%lu", 
+        max_width, max_height, in_width, in_height, max_buffer_size);
     return GST_FLOW_OK;
   }
 };
@@ -397,14 +400,12 @@ struct metaclass<T>
   static inline GstStaticPadTemplate sink_pad_template = GST_STATIC_PAD_TEMPLATE(
       "sink", GST_PAD_SINK, GST_PAD_ALWAYS,
       GST_STATIC_CAPS(
-          "video/x-raw,format=RGBA,width=[1,4096],height=[1,4096],framerate=[1/1,120/"
-          "1]"));
+          "video/x-raw,format=RGBA,width=[1,MAX],height=[1,MAX],framerate=(fraction)[0/1,MAX]"));
 
   static inline GstStaticPadTemplate src_pad_template = GST_STATIC_PAD_TEMPLATE(
       "src", GST_PAD_SRC, GST_PAD_ALWAYS,
       GST_STATIC_CAPS(
-          "video/x-raw,format=RGBA,width=[1,4096],height=[1,4096],framerate=[1/1,120/"
-          "1]"));
+          "video/x-raw,format=RGBA,width=[1,MAX],height=[1,MAX],framerate=(fraction)[0/1,MAX]"));
 
   GstBaseTransformClass the_class;
 

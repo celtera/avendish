@@ -160,8 +160,7 @@ struct metaclass<T>
   static inline GstStaticPadTemplate sink_pad_template = GST_STATIC_PAD_TEMPLATE(
       "sink", GST_PAD_SINK, GST_PAD_ALWAYS,
       GST_STATIC_CAPS(
-          "video/x-raw,format=RGBA,width=[1,4096],height=[1,4096],framerate=[1/1,120/"
-          "1]"));
+          "video/x-raw,format=RGBA,width=[1,MAX],height=[1,MAX],framerate=(fraction)[0/1,MAX]"));
 
   GstBaseSinkClass the_class;
 
