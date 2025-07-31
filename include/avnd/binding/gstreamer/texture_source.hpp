@@ -61,8 +61,6 @@ struct element<T>
     GST_DEBUG_OBJECT(
         this, "fill called with buffer size: %lu", gst_buffer_get_size(buf));
 
-    // For now, just generate a simple pattern
-    // TODO: Implement proper texture generation via Avendish effect container
     GstMapInfo info;
     if(!gst_buffer_map(buf, &info, GST_MAP_WRITE))
     {
@@ -70,19 +68,83 @@ struct element<T>
       return GST_FLOW_ERROR;
     }
 
-    // Assume RGBA format, create a simple gradient pattern
-    uint8_t* data = info.data;
-    gsize size = info.size;
+    // Fixed dimensions (should match caps from start())
+    int width = 480;
+    int height = 270;
+    gsize expected_size = width * height * 4; // RGBA
 
-    GST_DEBUG_OBJECT(this, "Filling buffer with size: %lu", size);
+    GST_DEBUG_OBJECT(this, "Generating %dx%d texture, buffer size: %lu", width, height, info.size);
 
-    // Fill with a simple pattern (this should be replaced with proper texture processing)
-    for(gsize i = 0; i < size && i + 3 < size; i += 4)
+    // Set up texture output data for Avendish
+    auto& outputs = avnd::get_outputs(impl);
+
+    if constexpr(avnd::texture_output_introspection<T>::size > 0)
     {
-      data[i] = (i / 4) % 256;      // R
-      data[i + 1] = (i / 8) % 256;  // G
-      data[i + 2] = (i / 16) % 256; // B
-      data[i + 3] = 255;            // A
+      avnd::texture_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        // Set up output texture with proper dimensions
+        field.texture.width = width;
+        field.texture.height = height;
+        field.texture.changed = true;
+
+        // Allocate buffer if needed (let Avendish manage it)
+        if(!field.texture.bytes || field.texture.width * field.texture.height * 4 != expected_size)
+        {
+          // Avendish will handle allocation via halp::texture
+        }
+      });
+
+      // Generate texture through Avendish effect
+      if constexpr(avnd::tag_single_exec<T>)
+        impl.effect();
+      else
+        impl.effect.operator()();
+
+      // Copy generated texture data to GStreamer buffer
+      avnd::texture_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        if(field.texture.bytes && field.texture.width * field.texture.height * 4 <= info.size)
+        {
+          memcpy(info.data, field.texture.bytes, field.texture.width * field.texture.height * 4);
+          GST_DEBUG_OBJECT(
+              this, "Copied %dx%d texture from Avendish effect", 
+              field.texture.width, field.texture.height);
+        }
+        else
+        {
+          GST_WARNING_OBJECT(this, "Avendish texture output invalid, using fallback pattern");
+          // Fallback to simple pattern if Avendish fails
+          uint8_t* data = info.data;
+          for(gsize i = 0; i < std::min(expected_size, info.size) && i + 3 < info.size; i += 4)
+          {
+            data[i] = (i / 4) % 256;      // R
+            data[i + 1] = (i / 8) % 256;  // G
+            data[i + 2] = (i / 16) % 256; // B
+            data[i + 3] = 255;            // A
+          }
+        }
+      });
+    }
+    else
+    {
+      // No Avendish texture output, generate a simple gradient pattern
+      uint8_t* data = info.data;
+      GST_DEBUG_OBJECT(this, "No Avendish texture output, generating fallback pattern");
+
+      for(int y = 0; y < height; y++)
+      {
+        for(int x = 0; x < width; x++)
+        {
+          gsize idx = (y * width + x) * 4;
+          if(idx + 3 < info.size)
+          {
+            data[idx] = (x * 255) / width;     // R gradient
+            data[idx + 1] = (y * 255) / height; // G gradient
+            data[idx + 2] = 128;                // B constant
+            data[idx + 3] = 255;                // A opaque
+          }
+        }
+      }
     }
 
     gst_buffer_unmap(buf, &info);

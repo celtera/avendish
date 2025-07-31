@@ -1,9 +1,137 @@
 #pragma once
 
 #include <avnd/binding/gstreamer/utils.hpp>
+#include <cmath>
 
 namespace gst
 {
+
+// Audio source element for objects that generate audio data
+template <typename T>
+  requires(is_audio_generator<T>())
+struct element<T>
+{
+  GstPushSrc the_object; // MUST be first for GObject
+  avnd::effect_container<T> impl;
+
+  void set_property(guint property_id, const GValue* value, GParamSpec* pspec)
+  {
+    GST_DEBUG_OBJECT(this, "set_property");
+
+    if(property_id == 0)
+    {
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(this, property_id, pspec);
+      return;
+    }
+
+    avnd::parameter_input_introspection<T>::for_nth_mapped(
+        avnd::get_inputs(impl), property_id - 1, gst::set_property{value, pspec});
+  }
+
+  void get_property(guint property_id, GValue* value, GParamSpec* pspec)
+  {
+    GST_DEBUG_OBJECT(this, "get_property");
+
+    if(property_id == 0)
+    {
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(this, property_id, pspec);
+      return;
+    }
+
+    avnd::parameter_input_introspection<T>::for_nth_mapped(
+        avnd::get_inputs(impl), property_id - 1, gst::get_property{value, pspec});
+  }
+
+  gboolean start()
+  {
+    GST_DEBUG_OBJECT(this, "start");
+    // Set up fixed caps for stereo F32LE audio at 48kHz
+    GstCaps* caps = gst_caps_new_simple(
+        "audio/x-raw", "format", G_TYPE_STRING, "F32LE", "channels", G_TYPE_INT, 2,
+        "rate", G_TYPE_INT, 48000, "layout", G_TYPE_STRING, "interleaved", NULL);
+    gst_base_src_set_caps(GST_BASE_SRC(this), caps);
+    gst_caps_unref(caps);
+
+    // Set buffer size for 1024 samples stereo F32LE (1024 * 2 * 4 bytes)
+    gst_base_src_set_blocksize(GST_BASE_SRC(this), 1024 * 2 * 4);
+    return TRUE;
+  }
+
+  GstFlowReturn fill(GstBuffer* buf)
+  {
+    GST_DEBUG_OBJECT(
+        this, "fill called with buffer size: %lu", gst_buffer_get_size(buf));
+
+    GstMapInfo info;
+    if(!gst_buffer_map(buf, &info, GST_MAP_WRITE))
+    {
+      GST_ERROR_OBJECT(this, "Failed to map buffer");
+      return GST_FLOW_ERROR;
+    }
+
+    // Audio parameters (hardcoded for now, should match caps)
+    int channels = 2;
+    int sample_rate = 48000;
+    gsize n_frames = info.size / (channels * sizeof(float));
+
+    GST_DEBUG_OBJECT(this, "Generating %lu frames of audio", n_frames);
+
+    // Set up audio output data for Avendish
+    auto& outputs = avnd::get_outputs(impl);
+
+    if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
+    {
+      avnd::audio_bus_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        // Output audio bus channels are managed by host
+        // Nothing to setup here, effect will write to channels
+      });
+
+      // Process audio through Avendish effect
+      if constexpr(avnd::tag_single_exec<T>)
+        impl.effect();
+      else
+        impl.effect.operator()();
+
+      // Convert output audio data to interleaved format
+      avnd::audio_bus_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        float* samples = (float*)info.data;
+        int max_channels = std::min(channels, field.channels);
+        for(int ch = 0; ch < max_channels; ch++)
+        {
+          auto channel_span = field.channel(ch, n_frames);
+          // Planar to interleaved conversion
+          for(gsize i = 0; i < std::min(n_frames, channel_span.size()); i++)
+          {
+            samples[i * channels + ch] = channel_span[i];
+          }
+        }
+      });
+    }
+    else
+    {
+      // No Avendish audio output, generate a simple test tone
+      float* samples = (float*)info.data;
+      static double phase = 0.0;
+      double freq = 440.0; // A4 note
+      double phase_increment = 2.0 * M_PI * freq / sample_rate;
+      
+      for(gsize i = 0; i < n_frames; i++)
+      {
+        float sample = 0.1 * sin(phase);
+        samples[i * channels] = sample;     // Left
+        samples[i * channels + 1] = sample; // Right
+        phase += phase_increment;
+        if(phase >= 2.0 * M_PI) phase -= 2.0 * M_PI;
+      }
+    }
+
+    gst_buffer_unmap(buf, &info);
+    GST_DEBUG_OBJECT(this, "fill completed successfully");
+    return GST_FLOW_OK;
+  }
+};
 
 template <typename T>
   requires(is_audio_generator<T>())
@@ -11,10 +139,10 @@ struct metaclass<T>
 {
   static inline GstDebugCategory* debug_category = nullptr;
 
-  // FIXME
-  static inline GstStaticPadTemplate pad_template = GST_STATIC_PAD_TEMPLATE(
+  static inline GstStaticPadTemplate src_pad_template = GST_STATIC_PAD_TEMPLATE(
       "src", GST_PAD_SRC, GST_PAD_ALWAYS,
-      GST_STATIC_CAPS("video/x-raw,format=RGB,width=640,height=480"));
+      GST_STATIC_CAPS(
+          "audio/x-raw,format={F32LE,F64LE,S16LE},channels=[1,8],rate=[8000,192000]"));
 
   GstPushSrcClass the_class;
 
@@ -25,7 +153,7 @@ struct metaclass<T>
     GstPushSrcClass* push_src_class = GST_PUSH_SRC_CLASS(klass);
     GstBaseSrcClass* base_src_class = GST_BASE_SRC_CLASS(klass);
 
-    gst_element_class_add_static_pad_template(GST_ELEMENT_CLASS(klass), &pad_template);
+    gst_element_class_add_static_pad_template(GST_ELEMENT_CLASS(klass), &src_pad_template);
 
     static constexpr auto c_name = avnd::get_static_symbol<T>();
     static std::string author = avnd::get_author<T>();
@@ -33,11 +161,11 @@ struct metaclass<T>
       author = "John Doe";
     static std::string_view desc = avnd::get_description<T>();
     if constexpr(!avnd::has_description<T>)
-      desc = "Description";
+      desc = "Audio Generator";
 
     g_print("instantiate");
     gst_element_class_set_static_metadata(
-        GST_ELEMENT_CLASS(klass), std::string_view{c_name}.data(), "Generic",
+        GST_ELEMENT_CLASS(klass), std::string_view{c_name}.data(), "Source/Audio",
         desc.data(), author.c_str());
 
     // GObject API

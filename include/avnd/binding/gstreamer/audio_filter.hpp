@@ -1,6 +1,7 @@
 #pragma once
 
 #include <avnd/binding/gstreamer/utils.hpp>
+#include <vector>
 
 namespace gst
 {
@@ -48,6 +49,23 @@ struct element<T>
   {
     GST_DEBUG_OBJECT(this, "transform");
 
+    // Get audio format info from caps
+    GstCaps* caps = gst_pad_get_current_caps(GST_BASE_TRANSFORM_SINK_PAD(this));
+    if(!caps)
+    {
+      GST_ERROR_OBJECT(this, "No caps available");
+      return GST_FLOW_ERROR;
+    }
+
+    GstAudioInfo audio_info;
+    if(!gst_audio_info_from_caps(&audio_info, caps))
+    {
+      GST_ERROR_OBJECT(this, "Failed to get audio info from caps");
+      gst_caps_unref(caps);
+      return GST_FLOW_ERROR;
+    }
+    gst_caps_unref(caps);
+
     GstMapInfo in_info, out_info;
     if(!gst_buffer_map(inbuf, &in_info, GST_MAP_READ))
     {
@@ -71,20 +89,199 @@ struct element<T>
       return GST_FLOW_ERROR;
     }
 
-    // For now, just do a simple pass-through with basic processing
-    // TODO: Implement proper Avendish effect processing
-    float* in_data = (float*)in_info.data;
-    float* out_data = (float*)out_info.data;
-    size_t num_samples = in_info.size / sizeof(float);
+    // Get audio parameters
+    int channels = GST_AUDIO_INFO_CHANNELS(&audio_info);
+    int sample_rate = GST_AUDIO_INFO_RATE(&audio_info);
+    GstAudioFormat format = GST_AUDIO_INFO_FORMAT(&audio_info);
+    int bps = GST_AUDIO_INFO_BPF(&audio_info); // bytes per frame
+    gsize n_frames = in_info.size / bps;
 
-    // Apply a simple lowpass-like effect (basic implementation)
-    static float prev_sample = 0.0f;
-    const float alpha = 0.1f; // Simple lowpass coefficient
+    GST_DEBUG_OBJECT(
+        this, "Processing %lu frames: %d channels, %d Hz, format=%s, bps=%d",
+        n_frames, channels, sample_rate, gst_audio_format_to_string(format), bps);
 
-    for(size_t i = 0; i < num_samples; i++)
+    // Set up audio input and output data for Avendish
+    auto& inputs = avnd::get_inputs(impl);
+    auto& outputs = avnd::get_outputs(impl);
+
+    // Handle different Avendish audio processing patterns
+    if constexpr(avnd::polyphonic_arg_audio_effect<double, T>)
     {
-      out_data[i] = alpha * in_data[i] + (1.0f - alpha) * prev_sample;
-      prev_sample = out_data[i];
+      // Raw double** API processing
+      GST_DEBUG_OBJECT(this, "Processing raw double** audio API");
+      
+      // Allocate temporary channel arrays for double processing
+      std::vector<std::vector<double>> input_channels(channels);
+      std::vector<std::vector<double>> output_channels(channels);
+      std::vector<double*> input_ptrs(channels);
+      std::vector<double*> output_ptrs(channels);
+      
+      for(int ch = 0; ch < channels; ch++)
+      {
+        input_channels[ch].resize(n_frames);
+        output_channels[ch].resize(n_frames);
+        input_ptrs[ch] = input_channels[ch].data();
+        output_ptrs[ch] = output_channels[ch].data();
+      }
+      
+      // Convert from interleaved float to planar double
+      float* samples = (float*)in_info.data;
+      for(int ch = 0; ch < channels; ch++)
+      {
+        for(gsize i = 0; i < n_frames; i++)
+        {
+          input_channels[ch][i] = samples[i * channels + ch];
+        }
+      }
+      
+      // Process through Avendish effect
+      impl.effect(input_ptrs.data(), output_ptrs.data(), n_frames);
+      
+      // Convert back from planar double to interleaved float
+      float* out_samples = (float*)out_info.data;
+      for(int ch = 0; ch < channels; ch++)
+      {
+        for(gsize i = 0; i < n_frames; i++)
+        {
+          out_samples[i * channels + ch] = output_channels[ch][i];
+        }
+      }
+      
+      GST_DEBUG_OBJECT(this, "Raw double** audio processing completed");
+    }
+    else if constexpr(avnd::polyphonic_arg_audio_effect<float, T>)
+    {
+      // Raw float** API processing
+      GST_DEBUG_OBJECT(this, "Processing raw float** audio API");
+      
+      // Allocate temporary channel arrays for float processing
+      std::vector<std::vector<float>> input_channels(channels);
+      std::vector<std::vector<float>> output_channels(channels);
+      std::vector<float*> input_ptrs(channels);
+      std::vector<float*> output_ptrs(channels);
+      
+      for(int ch = 0; ch < channels; ch++)
+      {
+        input_channels[ch].resize(n_frames);
+        output_channels[ch].resize(n_frames);
+        input_ptrs[ch] = input_channels[ch].data();
+        output_ptrs[ch] = output_channels[ch].data();
+      }
+      
+      // Convert from interleaved to planar float
+      float* samples = (float*)in_info.data;
+      for(int ch = 0; ch < channels; ch++)
+      {
+        for(gsize i = 0; i < n_frames; i++)
+        {
+          input_channels[ch][i] = samples[i * channels + ch];
+        }
+      }
+      
+      // Process through Avendish effect
+      impl.effect(input_ptrs.data(), output_ptrs.data(), n_frames);
+      
+      // Convert back from planar to interleaved float
+      float* out_samples = (float*)out_info.data;
+      for(int ch = 0; ch < channels; ch++)
+      {
+        for(gsize i = 0; i < n_frames; i++)
+        {
+          out_samples[i * channels + ch] = output_channels[ch][i];
+        }
+      }
+      
+      GST_DEBUG_OBJECT(this, "Raw float** audio processing completed");
+    }
+    else if constexpr(avnd::audio_bus_input_introspection<T>::size > 0 && avnd::audio_bus_output_introspection<T>::size > 0)
+    {
+      // Audio bus API processing - only handle halp::dynamic_audio_bus with .channel() method
+      GST_DEBUG_OBJECT(this, "Processing audio bus API");
+      
+      // Validate format (currently only F32LE supported)
+      if(format != GST_AUDIO_FORMAT_F32LE)
+      {
+        GST_ERROR_OBJECT(
+            this, "Unsupported audio format: %s (only F32LE supported)",
+            gst_audio_format_to_string(format));
+        gst_buffer_unmap(inbuf, &in_info);
+        gst_buffer_unmap(outbuf, &out_info);
+        return GST_FLOW_ERROR;
+      }
+
+      // Check if all input buses support the .channel() method (halp::dynamic_audio_bus)
+      bool all_inputs_supported = true;
+      avnd::audio_bus_input_introspection<T>::for_all(
+          inputs, [&all_inputs_supported]<typename Field>(Field& field) {
+        if constexpr(!requires { field.channel(0, 0); })
+        {
+          all_inputs_supported = false;
+        }
+      });
+
+      bool all_outputs_supported = true;
+      avnd::audio_bus_output_introspection<T>::for_all(
+          outputs, [&all_outputs_supported]<typename Field>(Field& field) {
+        if constexpr(!requires { field.channel(0, 0); })
+        {
+          all_outputs_supported = false;
+        }
+      });
+
+      if(!all_inputs_supported || !all_outputs_supported)
+      {
+        GST_ERROR_OBJECT(
+            this, "Effect uses raw audio bus API which is not supported by GStreamer binding. Use halp::dynamic_audio_bus or polyphonic_arg_audio_effect instead.");
+        gst_buffer_unmap(inbuf, &in_info);
+        gst_buffer_unmap(outbuf, &out_info);
+        return GST_FLOW_ERROR;
+      }
+
+      // Set up input audio buses (halp::dynamic_audio_bus only)
+      avnd::audio_bus_input_introspection<T>::for_all(
+          inputs, [&]<typename Field>(Field& field) {
+        float* samples = (float*)in_info.data;
+        int max_channels = std::min(channels, field.channels);
+        for(int ch = 0; ch < max_channels; ch++)
+        {
+          auto channel_span = field.channel(ch, n_frames);
+          // Interleaved to planar conversion
+          for(gsize i = 0; i < n_frames && i < channel_span.size(); i++)
+          {
+            channel_span[i] = samples[i * channels + ch];
+          }
+        }
+      });
+
+      // Process audio through Avendish effect
+      if constexpr(avnd::tag_single_exec<T>)
+        impl.effect();
+      else
+        impl.effect.operator()();
+
+      // Convert output audio data back to interleaved format (halp::dynamic_audio_bus only)
+      avnd::audio_bus_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        float* samples = (float*)out_info.data;
+        int max_channels = std::min(channels, field.channels);
+        for(int ch = 0; ch < max_channels; ch++)
+        {
+          auto channel_span = field.channel(ch, n_frames);
+          // Planar to interleaved conversion
+          for(gsize i = 0; i < std::min(n_frames, channel_span.size()); i++)
+          {
+            samples[i * channels + ch] = channel_span[i];
+          }
+        }
+      });
+
+      GST_DEBUG_OBJECT(this, "Audio bus processing completed");
+    }
+    else
+    {
+      // No recognized audio processing API, fallback to simple passthrough
+      GST_DEBUG_OBJECT(this, "No recognized audio processing API, using passthrough");
+      memcpy(out_info.data, in_info.data, in_info.size);
     }
 
     gst_buffer_unmap(inbuf, &in_info);

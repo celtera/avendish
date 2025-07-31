@@ -127,6 +127,20 @@ constexpr bool is_texture_sink()
          && avnd::texture_output_introspection<T>::size == 0;
 }
 
+template <typename T>
+constexpr bool is_audio_generator()
+{
+  return avnd::audio_bus_input_introspection<T>::size == 0
+         && avnd::audio_bus_output_introspection<T>::size > 0;
+}
+
+template <typename T>
+constexpr bool is_audio_sink()
+{
+  return avnd::audio_bus_input_introspection<T>::size > 0
+         && avnd::audio_bus_output_introspection<T>::size == 0;
+}
+
 // Element base class containing the effect implementation
 template <typename T>
 struct element_base
