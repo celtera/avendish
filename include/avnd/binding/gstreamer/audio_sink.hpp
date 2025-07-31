@@ -1,6 +1,7 @@
 #pragma once
 
 #include <avnd/binding/gstreamer/utils.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
 
 namespace gst
 {
@@ -12,6 +13,7 @@ struct element<T>
 {
   GstBaseSink the_object; // MUST be first for GObject
   avnd::effect_container<T> impl;
+  avnd::process_adapter<T> processor;
 
   void set_property(guint property_id, const GValue* value, GParamSpec* pspec)
   {
@@ -44,6 +46,33 @@ struct element<T>
   gboolean start()
   {
     GST_DEBUG_OBJECT(this, "start");
+    return TRUE;
+  }
+  
+  gboolean set_caps(GstCaps* caps)
+  {
+    GST_DEBUG_OBJECT(this, "set_caps");
+    
+    GstAudioInfo audio_info;
+    if(!gst_audio_info_from_caps(&audio_info, caps))
+      return FALSE;
+      
+    int channels = GST_AUDIO_INFO_CHANNELS(&audio_info);
+    int sample_rate = GST_AUDIO_INFO_RATE(&audio_info);
+    int frames_per_buffer = 1024; // Default, will be updated in render()
+    
+    // Initialize process adapter buffers
+    avnd::process_setup setup_info{
+        .input_channels = channels,
+        .output_channels = 0, // Sink has no outputs
+        .frames_per_buffer = frames_per_buffer,
+        .rate = (double)sample_rate
+    };
+    processor.allocate_buffers(setup_info, float{});
+    
+    // Initialize Avendish effect
+    avnd::prepare(impl, setup_info);
+    
     return TRUE;
   }
 
@@ -86,68 +115,72 @@ struct element<T>
         this, "Processing %lu frames: %d channels, %d Hz, format=%s, bps=%d",
         n_frames, channels, sample_rate, gst_audio_format_to_string(format), bps);
 
-    // Set up audio input data for Avendish
-    auto& inputs = avnd::get_inputs(impl);
-
     if constexpr(avnd::audio_bus_input_introspection<T>::size > 0)
     {
-      avnd::audio_bus_input_introspection<T>::for_all(
-          inputs, [&]<typename Field>(Field& field) {
-        // Convert audio data based on format
-        int max_channels = std::min(channels, field.channels);
-        
-        if(format == GST_AUDIO_FORMAT_F32LE)
+      // Use process_adapter for Avendish effects with audio inputs
+      std::vector<float*> input_ptrs(channels);
+      std::vector<std::vector<float>> input_channels(channels);
+      
+      // Allocate input channel arrays and convert from interleaved to planar
+      for(int ch = 0; ch < channels; ch++)
+      {
+        input_channels[ch].resize(n_frames);
+        input_ptrs[ch] = input_channels[ch].data();
+      }
+      
+      // Convert from interleaved to planar format
+      if(format == GST_AUDIO_FORMAT_F32LE)
+      {
+        float* samples = (float*)info.data;
+        for(int ch = 0; ch < channels; ch++)
         {
-          float* samples = (float*)info.data;
-          for(int ch = 0; ch < max_channels; ch++)
+          for(gsize i = 0; i < n_frames; i++)
           {
-            auto channel_span = field.channel(ch, n_frames);
-            // Interleaved to planar conversion
-            for(gsize i = 0; i < std::min(n_frames, channel_span.size()); i++)
-            {
-              channel_span[i] = samples[i * channels + ch];
-            }
+            input_channels[ch][i] = samples[i * channels + ch];
           }
         }
-        else if(format == GST_AUDIO_FORMAT_F64LE)
+      }
+      else if(format == GST_AUDIO_FORMAT_F64LE)
+      {
+        double* samples = (double*)info.data;
+        for(int ch = 0; ch < channels; ch++)
         {
-          double* samples = (double*)info.data;
-          for(int ch = 0; ch < max_channels; ch++)
+          for(gsize i = 0; i < n_frames; i++)
           {
-            auto channel_span = field.channel(ch, n_frames);
-            // Interleaved to planar conversion
-            for(gsize i = 0; i < std::min(n_frames, channel_span.size()); i++)
-            {
-              channel_span[i] = samples[i * channels + ch];
-            }
+            input_channels[ch][i] = samples[i * channels + ch];
           }
         }
-        else if(format == GST_AUDIO_FORMAT_S16LE)
+      }
+      else if(format == GST_AUDIO_FORMAT_S16LE)
+      {
+        int16_t* samples = (int16_t*)info.data;
+        for(int ch = 0; ch < channels; ch++)
         {
-          int16_t* samples = (int16_t*)info.data;
-          for(int ch = 0; ch < max_channels; ch++)
+          for(gsize i = 0; i < n_frames; i++)
           {
-            auto channel_span = field.channel(ch, n_frames);
-            // Interleaved to planar conversion with normalization
-            for(gsize i = 0; i < std::min(n_frames, channel_span.size()); i++)
-            {
-              channel_span[i] = samples[i * channels + ch] / 32768.0;
-            }
+            input_channels[ch][i] = samples[i * channels + ch] / 32768.0;
           }
         }
-        else
-        {
-          GST_WARNING_OBJECT(
-              this, "Unsupported audio format: %s",
-              gst_audio_format_to_string(format));
-        }
-      });
-
-      // Process audio through Avendish effect
-      if constexpr(avnd::tag_single_exec<T>)
-        impl.effect();
+      }
       else
-        impl.effect.operator()();
+      {
+        GST_WARNING_OBJECT(
+            this, "Unsupported audio format: %s",
+            gst_audio_format_to_string(format));
+        // Fill with silence for unsupported formats
+        for(int ch = 0; ch < channels; ch++)
+        {
+          std::fill(input_channels[ch].begin(), input_channels[ch].end(), 0.0f);
+        }
+      }
+      
+      // Process through process_adapter (no outputs for sinks)
+      processor.process(
+          impl,
+          avnd::span<float*>{input_ptrs.data(), (size_t)channels},
+          avnd::span<float*>{}, // Empty output span for sink
+          n_frames
+      );
     }
 
     gst_buffer_unmap(buffer, &info);
@@ -207,6 +240,10 @@ struct metaclass<T>
     // Sink API
     base_sink_class->start = GST_DEBUG_FUNCPTR(+[](GstBaseSink* gobject) -> gboolean {
       return ((element<T>*)gobject)->start();
+    });
+    
+    base_sink_class->set_caps = GST_DEBUG_FUNCPTR(+[](GstBaseSink* gobject, GstCaps* caps) -> gboolean {
+      return ((element<T>*)gobject)->set_caps(caps);
     });
 
     base_sink_class->render = GST_DEBUG_FUNCPTR(

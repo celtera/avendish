@@ -1,6 +1,7 @@
 #pragma once
 
 #include <avnd/binding/gstreamer/utils.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
 #include <cmath>
 
 namespace gst
@@ -13,6 +14,7 @@ struct element<T>
 {
   GstPushSrc the_object; // MUST be first for GObject
   avnd::effect_container<T> impl;
+  avnd::process_adapter<T> processor;
 
   void set_property(guint property_id, const GValue* value, GParamSpec* pspec)
   {
@@ -54,6 +56,19 @@ struct element<T>
 
     // Set buffer size for 1024 samples stereo F32LE (1024 * 2 * 4 bytes)
     gst_base_src_set_blocksize(GST_BASE_SRC(this), 1024 * 2 * 4);
+    
+    // Initialize process adapter buffers
+    avnd::process_setup setup_info{
+        .input_channels = 0,  // Generator has no inputs
+        .output_channels = 2, // Stereo output
+        .frames_per_buffer = 1024,
+        .rate = 48000.0
+    };
+    processor.allocate_buffers(setup_info, float{});
+    
+    // Initialize Avendish effect
+    avnd::prepare(impl, setup_info);
+    
     return TRUE;
   }
 
@@ -76,38 +91,36 @@ struct element<T>
 
     GST_DEBUG_OBJECT(this, "Generating %lu frames of audio", n_frames);
 
-    // Set up audio output data for Avendish
-    auto& outputs = avnd::get_outputs(impl);
-
     if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
     {
-      avnd::audio_bus_output_introspection<T>::for_all(
-          outputs, [&]<typename Field>(Field& field) {
-        // Output audio bus channels are managed by host
-        // Nothing to setup here, effect will write to channels
-      });
-
-      // Process audio through Avendish effect
-      if constexpr(avnd::tag_single_exec<T>)
-        impl.effect();
-      else
-        impl.effect.operator()();
-
-      // Convert output audio data to interleaved format
-      avnd::audio_bus_output_introspection<T>::for_all(
-          outputs, [&]<typename Field>(Field& field) {
-        float* samples = (float*)info.data;
-        int max_channels = std::min(channels, field.channels);
-        for(int ch = 0; ch < max_channels; ch++)
+      // Use process_adapter for Avendish effects with audio outputs
+      std::vector<float*> output_ptrs(channels);
+      std::vector<std::vector<float>> output_channels(channels);
+      
+      // Allocate output channel arrays
+      for(int ch = 0; ch < channels; ch++)
+      {
+        output_channels[ch].resize(n_frames);
+        output_ptrs[ch] = output_channels[ch].data();
+      }
+      
+      // Process through process_adapter (no inputs for generators)
+      processor.process(
+          impl,
+          avnd::span<float*>{}, // Empty input span for generator
+          avnd::span<float*>{output_ptrs.data(), (size_t)channels},
+          n_frames
+      );
+      
+      // Convert from planar to interleaved format
+      float* samples = (float*)info.data;
+      for(int ch = 0; ch < channels; ch++)
+      {
+        for(gsize i = 0; i < n_frames; i++)
         {
-          auto channel_span = field.channel(ch, n_frames);
-          // Planar to interleaved conversion
-          for(gsize i = 0; i < std::min(n_frames, channel_span.size()); i++)
-          {
-            samples[i * channels + ch] = channel_span[i];
-          }
+          samples[i * channels + ch] = output_channels[ch][i];
         }
-      });
+      }
     }
     else
     {
