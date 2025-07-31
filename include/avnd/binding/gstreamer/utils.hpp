@@ -6,6 +6,7 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/effect_container.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/process_execution.hpp>
 #include <gst/audio/audio.h>
 #include <gst/base/gstbasesink.h>
@@ -141,64 +142,62 @@ constexpr bool is_audio_sink()
          && avnd::audio_bus_output_introspection<T>::size == 0;
 }
 
-// Element base class containing the effect implementation
-template <typename T>
-struct element_base
+// Common property handling using C++23 deducing this
+struct property_handler 
 {
-  GstPushSrc the_object; // MUST be first for GObject
-  avnd::effect_container<T> impl;
-
-  element_base() { }
-
-  ~element_base() { }
-
-  void set_property(guint property_id, const GValue* value, GParamSpec* pspec)
+  // Using deducing this to work with any derived element type
+  template <typename Self>
+  void set_property(
+      this Self& self, guint property_id, const GValue* value, GParamSpec* pspec)
   {
-    GST_DEBUG_OBJECT(this, "set_property");
+    GST_DEBUG_OBJECT(&self, "set_property");
 
     if(property_id == 0)
     {
-      G_OBJECT_WARN_INVALID_PROPERTY_ID(this, property_id, pspec);
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(&self, property_id, pspec);
       return;
     }
 
+    using T = typename Self::effect_type;
     avnd::parameter_input_introspection<T>::for_nth_mapped(
-        avnd::get_inputs(impl), property_id - 1, gst::set_property{value, pspec});
+        avnd::get_inputs(self.impl), property_id - 1, gst::set_property{value, pspec});
   }
 
-  void get_property(guint property_id, GValue* value, GParamSpec* pspec)
+  template <typename Self>
+  void get_property(this Self& self, guint property_id, GValue* value, GParamSpec* pspec)
   {
-    GST_DEBUG_OBJECT(this, "get_property");
+    GST_DEBUG_OBJECT(&self, "get_property");
 
     if(property_id == 0)
     {
-      G_OBJECT_WARN_INVALID_PROPERTY_ID(this, property_id, pspec);
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(&self, property_id, pspec);
       return;
     }
 
+    using T = typename Self::effect_type;
     avnd::parameter_input_introspection<T>::for_nth_mapped(
-        avnd::get_inputs(impl), property_id - 1, gst::get_property{value, pspec});
+        avnd::get_inputs(self.impl), property_id - 1, gst::get_property{value, pspec});
   }
+};
 
-  gboolean start()
+// Common caps handling using deducing this
+struct caps_handler
+{
+  template<typename Self>
+  gboolean start(this Self&& self)
   {
-    GST_DEBUG_OBJECT(this, "start");
-
+    GST_DEBUG_OBJECT(&self, "start");
     return TRUE;
   }
+};
 
-  GstFlowReturn fill(GstBuffer* buf)
-  {
-    GST_DEBUG_OBJECT(this, "fill");
-    GstMapInfo info;
-    gst_buffer_map(buf, &info, GST_MAP_WRITE);
-    gsize buf_size = gst_buffer_get_size(buf);
-    for(gsize i = 0; i < buf_size; i++)
-      info.data[i] = rand();
-
-    gst_buffer_unmap(buf, &info);
-    return GST_FLOW_OK;
-  }
+// Base class that combines common functionality
+template<typename T>
+struct element_common : property_handler, caps_handler
+{
+  using effect_type = T;
+  avnd::effect_container<T> impl;
+  avnd::process_adapter<T> processor;
 };
 
 }

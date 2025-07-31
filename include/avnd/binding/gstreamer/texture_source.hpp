@@ -8,37 +8,22 @@ namespace gst
 // Texture generator element for objects that generate textures/video
 template <typename T>
   requires(is_texture_generator<T>())
-struct element<T>
+struct element<T> : property_handler
 {
   GstPushSrc the_object; // MUST be first for GObject
   avnd::effect_container<T> impl;
+  
+  // Using deducing this for property handling
+  using effect_type = T;
 
   void set_property(guint property_id, const GValue* value, GParamSpec* pspec)
   {
-    GST_DEBUG_OBJECT(this, "set_property");
-
-    if(property_id == 0)
-    {
-      G_OBJECT_WARN_INVALID_PROPERTY_ID(this, property_id, pspec);
-      return;
-    }
-
-    avnd::parameter_input_introspection<T>::for_nth_mapped(
-        avnd::get_inputs(impl), property_id - 1, gst::set_property{value, pspec});
+    property_handler::set_property(property_id, value, pspec);
   }
 
   void get_property(guint property_id, GValue* value, GParamSpec* pspec)
   {
-    GST_DEBUG_OBJECT(this, "get_property");
-
-    if(property_id == 0)
-    {
-      G_OBJECT_WARN_INVALID_PROPERTY_ID(this, property_id, pspec);
-      return;
-    }
-
-    avnd::parameter_input_introspection<T>::for_nth_mapped(
-        avnd::get_inputs(impl), property_id - 1, gst::get_property{value, pspec});
+    property_handler::get_property(property_id, value, pspec);
   }
 
   gboolean start()
