@@ -273,10 +273,29 @@ endforeach()
 set(OSSIA_EXAMPLES
   ControlGallery
   Synth
-  TextureFilterExample
-  TextureGeneratorExample
 )
 foreach(theTarget ${OSSIA_EXAMPLES})
+  avnd_make_ossia(
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+  )
+endforeach()
+
+# These texture examples work with GStreamer as well
+set(TEXTURE_EXAMPLES
+  TextureFilterExample
+  TextureGeneratorExample
+  TextureSinkExample
+)
+foreach(theTarget ${TEXTURE_EXAMPLES})
+  avnd_make_gstreamer(
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+  )
   avnd_make_ossia(
     TARGET Tutorial_${theTarget}
     MAIN_FILE examples/Tutorial/${theTarget}.hpp

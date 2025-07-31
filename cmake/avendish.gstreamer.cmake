@@ -8,8 +8,7 @@ pkg_check_modules(Gstreamer REQUIRED IMPORTED_TARGET GLOBAL
         json-glib-1.0
         gstreamer-check-1.0)
 
-if(NOT GSTLIBS_FOUND)
-    message(FATAL_ERROR fuck u)
+if(NOT Gstreamer_FOUND)
     function(avnd_make_gstreamer)
     endfunction()
     return()
@@ -58,6 +57,15 @@ function(avnd_make_gstreamer)
     ${AVND_FX_TARGET}
     PRIVATE
       "${AVND_MAIN_FILE}"
+      include/avnd/binding/gstreamer/audio_source.hpp
+      include/avnd/binding/gstreamer/audio_sink.hpp
+      include/avnd/binding/gstreamer/audio_filter.hpp
+      include/avnd/binding/gstreamer/element.hpp
+      include/avnd/binding/gstreamer/parameters.hpp
+      include/avnd/binding/gstreamer/texture_source.hpp
+      include/avnd/binding/gstreamer/texture_sink.hpp
+      include/avnd/binding/gstreamer/texture_filter.hpp
+      include/avnd/binding/gstreamer/utils.hpp
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_gstreamer.cpp"
   )
 
@@ -83,7 +91,7 @@ function(avnd_make_gstreamer)
       PkgConfig::Gstreamer
   )
 
-  target_link_libraries(${AVND_FX_TARGET} PRIVATE ${GSTREAMER_LIB})
+  target_link_libraries(${AVND_FX_TARGET} PRIVATE ${Gstreamer_LIBRARIES})
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
 
