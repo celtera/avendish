@@ -26,19 +26,62 @@ struct element<T> : property_handler
     property_handler::get_property(property_id, value, pspec);
   }
 
+  // Store current output dimensions
+  int current_width = 0;
+  int current_height = 0;
+  bool size_initialized = false;
+
   gboolean start()
   {
     GST_DEBUG_OBJECT(this, "start");
-    // Set up fixed caps for RGBA video
-    GstCaps* caps = gst_caps_new_simple(
-        "video/x-raw", "format", G_TYPE_STRING, "RGBA", "width", G_TYPE_INT, 480,
-        "height", G_TYPE_INT, 270, "framerate", GST_TYPE_FRACTION, 30, 1, NULL);
-    gst_base_src_set_caps(GST_BASE_SRC(this), caps);
-    gst_caps_unref(caps);
-
-    // Set buffer size for RGBA 480x270
-    gst_base_src_set_blocksize(GST_BASE_SRC(this), 480 * 270 * 4);
+    // Don't set fixed caps here - let negotiation happen
     return TRUE;
+  }
+  
+  gboolean negotiate()
+  {
+    GST_DEBUG_OBJECT(this, "negotiate");
+    
+    // First, check if the Avendish effect has an initialized output
+    auto& outputs = avnd::get_outputs(impl);
+    int desired_width = 480;  // Default
+    int desired_height = 270; // Default
+    
+    if constexpr(avnd::texture_output_introspection<T>::size > 0)
+    {
+      avnd::texture_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        if(field.texture.width > 0 && field.texture.height > 0)
+        {
+          desired_width = field.texture.width;
+          desired_height = field.texture.height;
+          GST_DEBUG_OBJECT(this, "Using Avendish effect size: %dx%d", desired_width, desired_height);
+        }
+      });
+    }
+    
+    // Update current dimensions
+    current_width = desired_width;
+    current_height = desired_height;
+    size_initialized = true;
+    
+    // Create caps for the determined size
+    GstCaps* caps = gst_caps_new_simple(
+        "video/x-raw", "format", G_TYPE_STRING, "RGBA", 
+        "width", G_TYPE_INT, current_width,
+        "height", G_TYPE_INT, current_height, 
+        "framerate", GST_TYPE_FRACTION, 30, 1, NULL);
+    
+    // Set the caps
+    gboolean result = gst_base_src_set_caps(GST_BASE_SRC(this), caps);
+    if(result)
+    {
+      // Update block size for the new dimensions
+      gst_base_src_set_blocksize(GST_BASE_SRC(this), current_width * current_height * 4);
+    }
+    
+    gst_caps_unref(caps);
+    return result;
   }
 
   GstFlowReturn fill(GstBuffer* buf)
@@ -53,37 +96,67 @@ struct element<T> : property_handler
       return GST_FLOW_ERROR;
     }
 
-    // Fixed dimensions (should match caps from start())
-    int width = 480;
-    int height = 270;
-    gsize expected_size = width * height * 4; // RGBA
+    // Ensure we have negotiated caps
+    if(!size_initialized)
+    {
+      if(!negotiate())
+      {
+        GST_ERROR_OBJECT(this, "Failed to negotiate caps");
+        gst_buffer_unmap(buf, &info);
+        return GST_FLOW_NOT_NEGOTIATED;
+      }
+    }
 
-    GST_DEBUG_OBJECT(this, "Generating %dx%d texture, buffer size: %lu", width, height, info.size);
+    GST_DEBUG_OBJECT(this, "Generating %dx%d texture, buffer size: %lu", 
+                     current_width, current_height, info.size);
 
     // Set up texture output data for Avendish
     auto& outputs = avnd::get_outputs(impl);
+    gsize expected_size = current_width * current_height * 4; // RGBA
 
     if constexpr(avnd::texture_output_introspection<T>::size > 0)
     {
-      avnd::texture_output_introspection<T>::for_all(
-          outputs, [&]<typename Field>(Field& field) {
-        // Set up output texture with proper dimensions
-        field.texture.width = width;
-        field.texture.height = height;
-        field.texture.changed = true;
-
-        // Allocate buffer if needed (let Avendish manage it)
-        if(!field.texture.bytes || field.texture.width * field.texture.height * 4 != expected_size)
-        {
-          // Avendish will handle allocation via halp::texture
-        }
-      });
-
       // Generate texture through Avendish effect
       if constexpr(avnd::tag_single_exec<T>)
         impl.effect();
       else
         impl.effect.operator()();
+
+      // Check if the effect changed its output size
+      bool size_changed = false;
+      int new_width = current_width;
+      int new_height = current_height;
+      
+      avnd::texture_output_introspection<T>::for_all(
+          outputs, [&]<typename Field>(Field& field) {
+        if(field.texture.width != current_width || field.texture.height != current_height)
+        {
+          new_width = field.texture.width;
+          new_height = field.texture.height;
+          size_changed = true;
+        }
+      });
+      
+      // Handle dynamic size changes
+      if(size_changed && new_width > 0 && new_height > 0)
+      {
+        GST_DEBUG_OBJECT(this, "Effect changed output size: %dx%d -> %dx%d",
+                         current_width, current_height, new_width, new_height);
+        
+        current_width = new_width;
+        current_height = new_height;
+        
+        // Renegotiate with new size
+        gst_buffer_unmap(buf, &info);
+        if(!negotiate())
+        {
+          GST_ERROR_OBJECT(this, "Failed to renegotiate for new size");
+          return GST_FLOW_NOT_NEGOTIATED;
+        }
+        
+        // Return and let GStreamer allocate a new buffer with correct size
+        return GST_FLOW_OK;
+      }
 
       // Copy generated texture data to GStreamer buffer
       avnd::texture_output_introspection<T>::for_all(
@@ -116,15 +189,15 @@ struct element<T> : property_handler
       uint8_t* data = info.data;
       GST_DEBUG_OBJECT(this, "No Avendish texture output, generating fallback pattern");
 
-      for(int y = 0; y < height; y++)
+      for(int y = 0; y < current_height; y++)
       {
-        for(int x = 0; x < width; x++)
+        for(int x = 0; x < current_width; x++)
         {
-          gsize idx = (y * width + x) * 4;
+          gsize idx = (y * current_width + x) * 4;
           if(idx + 3 < info.size)
           {
-            data[idx] = (x * 255) / width;     // R gradient
-            data[idx + 1] = (y * 255) / height; // G gradient
+            data[idx] = (x * 255) / current_width;     // R gradient
+            data[idx + 1] = (y * 255) / current_height; // G gradient
             data[idx + 2] = 128;                // B constant
             data[idx + 3] = 255;                // A opaque
           }
@@ -147,8 +220,7 @@ struct metaclass<T>
   static inline GstStaticPadTemplate src_pad_template = GST_STATIC_PAD_TEMPLATE(
       "src", GST_PAD_SRC, GST_PAD_ALWAYS,
       GST_STATIC_CAPS(
-          "video/x-raw,format=RGBA,width=[1,4096],height=[1,4096],framerate=[1/1,120/"
-          "1]"));
+          "video/x-raw,format=RGBA,width=[1,MAX],height=[1,MAX],framerate=(fraction)[0/1,MAX]"));
 
   GstPushSrcClass the_class;
 
@@ -196,6 +268,10 @@ struct metaclass<T>
     push_src_class->fill
         = GST_DEBUG_FUNCPTR(+[](GstPushSrc* gobject, GstBuffer* buf) -> GstFlowReturn {
       return ((element<T>*)gobject)->fill(buf);
+    });
+    
+    base_src_class->negotiate = GST_DEBUG_FUNCPTR(+[](GstBaseSrc* gobject) -> gboolean {
+      return ((element<T>*)gobject)->negotiate();
     });
 
     if constexpr(avnd::parameter_input_introspection<T>::size > 0)
