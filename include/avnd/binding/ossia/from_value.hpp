@@ -843,6 +843,47 @@ struct from_ossia_value_impl
   {
     switch(src.get_type())
     {
+      case ossia::val_type::FLOAT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<float>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::INT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<int>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::BOOL: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<bool>() ? 1 : 0);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
       case ossia::val_type::VEC2F: {
         if constexpr(float_compatible<typename T::value_type>)
         {
@@ -911,6 +952,48 @@ struct from_ossia_value_impl
   {
     switch(src.get_type())
     {
+      case ossia::val_type::FLOAT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<float>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::INT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<int>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::BOOL: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<bool>() ? 1 : 0);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
       case ossia::val_type::VEC2F: {
         if constexpr(float_compatible<typename T::value_type>)
         {
@@ -1074,6 +1157,47 @@ struct from_ossia_value_impl
   {
     switch(src.get_type())
     {
+      case ossia::val_type::FLOAT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.insert(*src.target<float>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::INT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.insert(*src.target<int>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::BOOL: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.insert(*src.target<bool>() ? 1 : 0);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
       case ossia::val_type::VEC2F: {
         if constexpr(std::is_constructible_v<typename T::value_type, float>)
         {
