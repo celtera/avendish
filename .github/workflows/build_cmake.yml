@@ -43,7 +43,7 @@ jobs:
                              sudo apt install lsb-release wget software-properties-common ; \
                              curl -L https://apt.llvm.org/llvm.sh > llvm.sh ; \
                              chmod +x ./llvm.sh ; \
-                             sudo ./llvm.sh ; \
+                             sudo ./llvm.sh 20 ; \
                              sudo apt update ; \
                              sudo apt install ninja-build clang-20 lld-20 libc++-20-dev libc++1-20 libc++abi1-20 libc++abi-20-dev",
               sdk: "/opt/ossia-sdk-x86_64",
@@ -72,7 +72,7 @@ jobs:
               debug_flags: "-DCMAKE_BUILD_TYPE=Debug",
               release_flags: "-DCMAKE_BUILD_TYPE=Release",
               build_flags: "",
-              sdk: "/opt/ossia-sdk-x86_64",
+              sdk: "/opt/ossia-sdk-aarch64",
               pre_build: "sudo xcode-select -s /Applications/Xcode_16.4.app"
             }
 
@@ -105,6 +105,13 @@ jobs:
           curl -L https://raw.githubusercontent.com/ossia/score/master/tools/fetch-sdk.sh > fetch-sdk.sh
           chmod +x ./fetch-sdk.sh
           ./fetch-sdk.sh
+
+      - name: Download Boost
+        shell: bash
+        run: |
+          curl -L https://github.com/ossia/sdk/releases/download/sdk31/boost_1_88_0.tar.gz > boost.tar.gz
+          tar -xzf boost.tar.gz
+          mv boost_1_88_0/boost ${{ matrix.config.sdk }}/
 
       - name: Build debug
         shell: bash
