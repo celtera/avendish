@@ -1,4 +1,10 @@
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig)
+if(NOT PKG_CONFIG_EXECUTABLE)
+    function(avnd_make_gstreamer)
+    endfunction()
+    return()
+endif()
+
 pkg_check_modules(Gstreamer IMPORTED_TARGET GLOBAL
         gobject-2.0
         glib-2.0
