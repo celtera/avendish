@@ -20,6 +20,8 @@ struct TextureFilterExample
   struct
   {
     halp::texture_input<"In"> image;
+    halp::knob_f32<"Gain", halp::range{0., 255., 0.}> gain;
+    halp::knob_i32<"Downscale", halp::range{1, 32, 8}> downscale;
   } inputs;
 
   struct
@@ -49,22 +51,28 @@ struct TextureFilterExample
       return;
     in_tex.changed = false;
 
-    // We (dirtily) downscale by a factor of 16
-    if(out_tex.width != in_tex.width || out_tex.height != in_tex.height)
-      outputs.image.create(in_tex.width / 16, in_tex.height / 16);
+    const double downscale_factor = inputs.downscale;
 
-    for(int y = 0; y < in_tex.height / 16; y++)
+    const int small_w = in_tex.width / downscale_factor;
+    const int small_h = in_tex.height / downscale_factor;
+    // We (dirtily) downscale by a factor of downscale_factor
+    if(out_tex.width != small_w || out_tex.height != small_h)
+      outputs.image.create(small_w, small_h);
+
+    for(int y = 0; y < small_h; y++)
     {
-      for(int x = 0; x < in_tex.width / 16; x++)
+      for(int x = 0; x < small_w; x++)
       {
         // Get a pixel
-        auto [r, g, b, a] = inputs.image.get(x * 16, y * 16);
+        auto [r, g, b, a] = inputs.image.get(
+            std::floor(x * downscale_factor), std::floor(y * downscale_factor));
 
         // (Dirtily) Take the luminance and compute its contrast
         double contrasted = std::pow((r + g + b) / (3. * 255.), 4.);
 
         // (Dirtily) Posterize
-        uint8_t col = uint8_t(contrasted * 8) * (255 / 8.);
+        uint8_t col
+            = std::clamp(uint8_t(contrasted * 8) * (255 / 8.) * inputs.gain, 0., 255.);
 
         // Update the output texture
         outputs.image.set(x, y, col, col, col, 255);
