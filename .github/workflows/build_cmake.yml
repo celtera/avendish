@@ -45,7 +45,7 @@ jobs:
                              chmod +x ./llvm.sh ; \
                              sudo ./llvm.sh 20 ; \
                              sudo apt update ; \
-                             sudo apt install ninja-build clang-20 lld-20 libc++-20-dev libc++abi-20-dev",
+                             sudo apt install ninja-build clang-20 lld-20 libc++-20-dev libc++abi-20-dev libgstreamer1.0-dev",
               sdk: "/opt/ossia-sdk-x86_64",
               pre_build: ""
             }
