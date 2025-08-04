@@ -20,7 +20,7 @@ struct SpriteReader
 {
   halp_meta(name, "Sprite reader");
   halp_meta(c_name, "sprite_reader");
-  halp_meta(category, "Visuals");
+  halp_meta(category, "Visuals/Textures");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Loads an image file into a texture");
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/sprite-reader.html")

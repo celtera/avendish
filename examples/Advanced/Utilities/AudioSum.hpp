@@ -14,7 +14,7 @@ class AudioSum
 public:
   halp_meta(name, "Audio Sum")
   halp_meta(c_name, "audio_sum")
-  halp_meta(category, "Audio")
+  halp_meta(category, "Audio/Utilities")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Sum all the input channels")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/audio-utilities.html#sum")

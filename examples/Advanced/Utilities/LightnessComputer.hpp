@@ -48,7 +48,7 @@ struct LightnessComputer
 public:
   halp_meta(name, "Lightness computer");
   halp_meta(c_name, "lightness_computer");
-  halp_meta(category, "Visuals/Computer Vision");
+  halp_meta(category, "Visuals/Analysis");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Convert an image to a list of lightness values.");
   halp_meta(

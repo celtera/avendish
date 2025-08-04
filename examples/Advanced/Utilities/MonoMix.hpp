@@ -12,7 +12,7 @@ class MonoMix
 public:
   halp_meta(name, "Mono mix 8")
   halp_meta(c_name, "mono_mix")
-  halp_meta(category, "Audio")
+  halp_meta(category, "Audio/Utilities")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Sum all the input channels")
   halp_meta(

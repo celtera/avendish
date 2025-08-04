@@ -65,7 +65,7 @@ struct Entropy
 {
   halp_meta(name, "Entropy")
   halp_meta(c_name, "avnd_essentia_entropy")
-  halp_meta(category, "Analysis/Statistics")
+  halp_meta(category, "Analysis/Data processing")
   halp_meta(version, "1.0")
   halp_meta(author, "Gerard Roma")
   halp_meta(vendor, "Music Technology Group - Universitat Pompeu Fabra")

@@ -67,7 +67,7 @@ struct LightnessSampler
 public:
   halp_meta(name, "Lightness sampler");
   halp_meta(c_name, "lightness_sample");
-  halp_meta(category, "Visuals/Computer Vision");
+  halp_meta(category, "Visuals/Analysis");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Sample the values of an image on multiple points.");
   halp_meta(
