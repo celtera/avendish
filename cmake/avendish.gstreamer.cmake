@@ -1,5 +1,5 @@
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(Gstreamer REQUIRED IMPORTED_TARGET GLOBAL
+pkg_check_modules(Gstreamer IMPORTED_TARGET GLOBAL
         gobject-2.0
         glib-2.0
         gstreamer-sdp-1.0
