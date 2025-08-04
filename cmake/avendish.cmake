@@ -77,6 +77,7 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/common/span_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/struct_reflection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/widechar.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/init_cpp_with_c_object_header.hpp"
 
     "${AVND_SOURCE_DIR}/include/halp/attributes.hpp"
     "${AVND_SOURCE_DIR}/include/halp/audio.hpp"
