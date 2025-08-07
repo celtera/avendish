@@ -14,7 +14,7 @@
 namespace uo
 {
 
-struct MultiCursorWidget
+struct MultisliderWidget
 {
   static constexpr double width() { return 600.; }
   static constexpr double height() { return 200.; }
@@ -166,11 +166,11 @@ struct MultiCursorWidget
   bool dragging = false;
 };
 
-struct MultiCursor
+struct Multislider
 {
-  halp_meta(name, "Multi-Slider")
+  halp_meta(name, "MultiSlider")
   halp_meta(c_name, "avnd_multislider")
-  halp_meta(category, "Control/Spatial")
+  halp_meta(category, "Control/Basic")
   halp_meta(author, "ossia score")
   halp_meta(description, "Multiple vertical sliders with dynamic count and bus communication")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/multislider.html")
@@ -180,7 +180,7 @@ struct MultiCursor
   {
     struct : halp::spinbox_i32<"Count", halp::range{.min = 1, .max = 20, .init = 4}>
     {
-      void update(MultiCursor& self) { self.updateCursorCount(); }
+      void update(Multislider& self) { self.updateCursorCount(); }
     } count;
 
     struct : halp::val_port<"Sliders", std::vector<float>>
@@ -193,7 +193,7 @@ struct MultiCursor
       {
         float min = 0., max = 1., init = 0.5;
       };
-      void update(MultiCursor& self) { self.updateFromInput(); }
+      void update(Multislider& self) { self.updateFromInput(); }
     } cursors;
 
   } inputs;
@@ -290,7 +290,7 @@ struct MultiCursor
       halp::control<&ins::count> count;
     } controls;
 
-    halp::custom_control<MultiCursorWidget, &ins::cursors> cursorArea;
+    halp::custom_control<MultisliderWidget, &ins::cursors> cursorArea;
 
     void start() 
     { 
@@ -324,20 +324,19 @@ struct MultiCursor
         }
 
         ui.cursorArea.on_value_changed = [&ui, this] {
-          this->send_message(MultiCursor::cursor_update_message{
-            .cursors = ui.cursorArea.value
-          });
+          this->send_message(
+              Multislider::cursor_update_message{.cursors = ui.cursorArea.value});
         };
       }
 
       // Process messages from the processing thread
-      static void do_process(ui& self, MultiCursor::cursor_update_message msg)
+      static void do_process(ui& self, Multislider::cursor_update_message msg)
       {
         self.cursorArea.value = std::move(msg.cursors);
         // self.cursorArea.update();
       }
 
-      static void do_process(ui& self, MultiCursor::execution_value_to_ui msg)
+      static void do_process(ui& self, Multislider::execution_value_to_ui msg)
       {
         self.cursorArea.runtimeValues = std::move(msg.cursors);
         // self.cursorArea.update();
@@ -345,12 +344,14 @@ struct MultiCursor
 
       static void process_message(
           ui& self,
-          std::variant<MultiCursor::cursor_update_message, MultiCursor::execution_value_to_ui> msg)
+          std::variant<
+              Multislider::cursor_update_message, Multislider::execution_value_to_ui>
+              msg)
       {
         std::visit([&self](auto& m) { do_process(self, m); }, msg);
       }
 
-      std::function<void(MultiCursor::cursor_update_message)> send_message;
+      std::function<void(Multislider::cursor_update_message)> send_message;
     };
   };
 };

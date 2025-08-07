@@ -141,34 +141,4 @@ public:
 
   void operator()() { }
 };
-
-class Multislider
-{
-public:
-  halp_meta(name, "Multislider")
-  halp_meta(c_name, "avnd_ui_multislider")
-  halp_meta(category, "Control/Basic")
-  halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(description, "Basic UI multislider")
-  halp_meta(uuid, "28aed5c2-4776-4231-8f07-6757d1350d85")
-
-  struct
-  {
-    struct : halp::val_port<"Value", std::vector<float>>
-    {
-      enum widget
-      {
-        multi_slider
-      };
-      void update(Knob& self) { }
-    } pos;
-  } inputs;
-
-  struct
-  {
-    halp::val_port<"Output", float> out;
-  } outputs;
-
-  void operator()() { }
-};
 }
