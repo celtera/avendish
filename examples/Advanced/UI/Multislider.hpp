@@ -54,7 +54,7 @@ struct MultisliderWidget
       }
       else
       {
-        ctx.set_fill_color({100, 150, 255, 255});
+        ctx.set_fill_color({255, 176, 30, 255});
       }
       ctx.begin_path();
       ctx.draw_rect(x, height() - fillHeight, sliderWidth, fillHeight);
@@ -64,9 +64,10 @@ struct MultisliderWidget
       if (executing && idx < runtimeValues.size())
       {
         double runtimeHeight = runtimeValues[idx] * height();
-        ctx.set_fill_color({255, 100, 100, 100});
+        ctx.set_fill_color({255, 220, 60, 100});
         ctx.begin_path();
-        ctx.draw_rect(x, height() - runtimeHeight, sliderWidth, runtimeHeight);
+        ctx.draw_rect(
+            x, height() - runtimeHeight, std::max(2., sliderWidth), runtimeHeight);
         ctx.fill();
       }
       
@@ -130,22 +131,6 @@ struct MultisliderWidget
     }
   }
 
-  bool key(int key)
-  {
-    // Reset selected slider to default value with R key
-    if (key == 'r' || key == 'R')
-    {
-      if (selectedCursor >= 0 && selectedCursor < value.size())
-      {
-        value[selectedCursor] = 0.5f;
-        if (on_value_changed)
-          on_value_changed();
-        return true;
-      }
-    }
-    return false;
-  }
-
   void reset()
   {
     executing = false;
@@ -178,7 +163,7 @@ struct Multislider
 
   struct ins
   {
-    struct : halp::spinbox_i32<"Count", halp::range{.min = 1, .max = 20, .init = 4}>
+    struct : halp::spinbox_i32<"Count", halp::range{.min = 1, .max = 200, .init = 4}>
     {
       void update(Multislider& self) { self.updateCursorCount(); }
     } count;
@@ -269,9 +254,6 @@ struct Multislider
   void operator()(halp::tick t)
   {
     update_ui();
-    for(float v : inputs.cursors.value)
-      fprintf(stderr, "%f ", v);
-    fprintf(stderr, "\n");
     outputs.cursors.value = inputs.cursors.value;
   }
 
