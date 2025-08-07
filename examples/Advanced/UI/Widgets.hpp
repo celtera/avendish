@@ -1,4 +1,5 @@
 #pragma once
+#include <halp/callback.hpp>
 #include <halp/controls.hpp>
 #include <halp/messages.hpp>
 #include <halp/meta.hpp>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/custom_widgets.hpp>
@@ -7,8 +8,10 @@
 #include <halp/meta.hpp>
 #include <halp/value_types.hpp>
 
-#include <cmath>
+#include <algorithm>
 #include <functional>
+#include <utility>
+#include <variant>
 #include <vector>
 
 namespace uo
