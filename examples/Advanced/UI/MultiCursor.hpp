@@ -79,6 +79,7 @@ struct MultiCursorWidget
     if (value.empty())
       return false;
 
+    transaction.start();
     dragging = true;
     updateSliderAtPosition(x, y);
     return true;
@@ -89,6 +90,7 @@ struct MultiCursorWidget
     if (dragging)
     {
       updateSliderAtPosition(x, y);
+      transaction.update(value);
       return true;
     }
     return false;
@@ -96,6 +98,8 @@ struct MultiCursorWidget
 
   bool mouse_release(double x, double y)
   {
+    if(dragging)
+      transaction.commit();
     dragging = false;
     selectedCursor = -1;
     return false;
@@ -148,13 +152,18 @@ struct MultiCursorWidget
     runtimeValues.clear();
   }
 
+  void set_value(const auto& control, std::vector<float> value) { this->value = value; }
+
+  static auto value_to_control(auto& control, std::vector<float> value) { return value; }
+  halp::transaction<std::vector<float>> transaction;
+
   std::vector<float> value;
   std::vector<float> runtimeValues;
+  std::function<void()> on_value_changed;
   int selectedCursor = -1;
   int maxCursors = 10;
   bool executing = false;
   bool dragging = false;
-  std::function<void()> on_value_changed;
 };
 
 struct MultiCursor
@@ -178,7 +187,7 @@ struct MultiCursor
     {
       enum widget
       {
-        multi_cursor
+        multi_slider
       };
       struct range
       {
