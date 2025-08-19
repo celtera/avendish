@@ -29,6 +29,15 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-non-virtual-dtor")
 endif()
 
+if(APPLE)
+  set(VST3_DYNAMIC_LIST "_BundleEntry\n_BundleExit\n_bundleEntry\n_bundleExit\n_GetPluginFactory")
+elseif(WIN32)
+  set(VST3_DYNAMIC_LIST "AVND {\nlocal:*;\nglobal:InitDll;\nExitDll;\nGetPluginFactory;\n};\n")
+else()
+  set(VST3_DYNAMIC_LIST "AVND {\n  global:\n    ModuleEntry;\n    ModuleExit;\n    GetPluginFactory;\n  local:\n    *;\n};\n")
+endif()
+
+file(WRITE "${CMAKE_BINARY_DIR}/vst3_symbols" "${VST3_DYNAMIC_LIST}")
 add_subdirectory("${VST3_SDK_ROOT}" "${CMAKE_BINARY_DIR}/vst3_sdk")
 
 function(avnd_make_vst3)
@@ -62,9 +71,42 @@ function(avnd_make_vst3)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish_vst3
-      sdk_common pluginterfaces
+      $<IF:$<BOOL:${APPLE}>,base sdk_common pluginterfaces,$<LINK_GROUP:RESCAN,base,sdk_common,pluginterfaces>>
       DisableExceptions
   )
+
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        -Wl,-z,defs
+    )
+  endif()
+
+  if(APPLE)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE jthread "-Wl,-exported_symbols_list,${CMAKE_BINARY_DIR}/vst3_symbols")
+  elseif(WIN32)
+    if(NOT MSVC)
+      target_link_libraries(${AVND_FX_TARGET} PRIVATE "-Wl,--version-script=${CMAKE_BINARY_DIR}/vst3_symbols")
+    endif()
+  else()
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE "-Wl,--version-script=${CMAKE_BINARY_DIR}/vst3_symbols")
+  endif()
+
+
+  if(TARGET ossia::ossia)
+    target_compile_definitions(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        AVND_ADD_OSCQUERY_BINDINGS=1
+    )
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        ossia::ossia
+    )
+  endif()
+
   if(APPLE)
     find_library(COREFOUNDATION_FK CoreFoundation)
     target_link_libraries(
