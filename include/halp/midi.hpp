@@ -8,6 +8,9 @@
 
 #include <algorithm>
 #include <string_view>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <sstream>
 
 HALP_MODULE_EXPORT
 namespace halp
@@ -17,12 +20,31 @@ struct midi_msg
 {
   boost::container::small_vector<uint8_t, 15> bytes;
   int64_t timestamp{};
+
+  // Equality operator.
+  bool operator==(const midi_msg&) const = default;
+  // auto operator<=>(const midi_msg&) const = default;
 };
+
+std::ostream& operator<<(std::ostream &o, const midi_msg& message)
+{
+  return o << "midi_msg{:bytes=" << fmt::format("{}", message.bytes) <<", :timestamp=" << message.timestamp << "}" << std::endl;
+}
+
 struct midi_note_msg
 {
   uint8_t bytes[8];
   int64_t timestamp{};
+
+  // Equality operator.
+  bool operator==(const midi_note_msg&) const = default;
+  //auto operator<=>(const midi_note_msg&) const = default;
 };
+
+std::ostream& operator<<(std::ostream &o, const midi_note_msg& message)
+{
+  return o << "midi_note_msg{:bytes=" << fmt::format("{}", message.bytes) <<", :timestamp=" << message.timestamp << "}" << std::endl;
+}
 
 template <static_string lit, typename MessageType = midi_msg>
 struct midi_bus
