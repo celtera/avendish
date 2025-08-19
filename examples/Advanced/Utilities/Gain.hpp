@@ -22,7 +22,14 @@ public:
 
   struct inputs
   {
-    halp::smooth_knob<"Gain", halp::range{0., 5., 0.}> gain;
+    struct : halp::smooth_knob<"Gain", halp::range{0., 1., 0.}>
+    {
+      struct visual_range
+      {
+        double min = 0.;
+        double max = 5.;
+      };
+    } gain;
   };
   double operator()(double input, const inputs& in) { return input * in.gain; }
 };
