@@ -7,7 +7,7 @@ namespace oscr
 
 // Special case for the easy non-audio case
 template <ossia_compatible_nonaudio_processor T>
-  requires(!(avnd::tag_cv<T> && avnd::tag_stateless<T>))
+  requires(!avnd::tag_cv<T>)
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
@@ -49,7 +49,7 @@ public:
 };
 
 template <ossia_compatible_nonaudio_processor T>
-  requires(avnd::tag_cv<T> && avnd::tag_stateless<T>)
+  requires(avnd::tag_cv<T>)
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
@@ -60,8 +60,27 @@ public:
   constexpr bool scan_audio_input_channels() { return false; }
   // This function goes from a host-provided tick to what the plugin expects
   template <typename Tick>
-  static auto invoke_effect(T& obj, auto&& val, const Tick& t)
+  auto invoke_effect(int index, int N, auto&& val, const Tick& t)
   {
+    T* pobj{};
+    if constexpr(avnd::tag_stateless<T>)
+    {
+      pobj = &this->impl.effect;
+    }
+    else
+    {
+      this->impl.effect.reserve(N);
+      while(this->impl.effect.size() < N)
+      {
+        // FIXME this should be done before prepare, port copy, etc
+        if(this->impl.effect.empty())
+          this->impl.effect.resize(1);
+        else
+          this->impl.effect.push_back(this->impl.effect[0]);
+      }
+      pobj = &this->impl.effect[index];
+    }
+    auto& obj = *pobj;
     // clang-format off
     if constexpr(std::is_integral_v<Tick>)
     {
@@ -102,37 +121,35 @@ public:
     const Tick& tick;
     int ts{};
     void operator()() { }
-    void operator()(ossia::impulse) { self.invoke_effect(self.impl.effect, 0, tick); }
-    void operator()(bool v) { self.invoke_effect(self.impl.effect, v ? 1 : 0, tick); }
-    void operator()(int v) { self.invoke_effect(self.impl.effect, v, tick); }
-    void operator()(float v) { self.invoke_effect(self.impl.effect, v, tick); }
+    void operator()(ossia::impulse) { self.invoke_effect(0, 1, 0, tick); }
+    void operator()(bool v) { self.invoke_effect(0, 1, v ? 1 : 0, tick); }
+    void operator()(int v) { self.invoke_effect(0, 1, v, tick); }
+    void operator()(float v) { self.invoke_effect(0, 1, v, tick); }
     void operator()(const std::string& v)
     {
-      self.invoke_effect(self.impl.effect, std::stof(v), tick);
+      self.invoke_effect(0, 1, std::stof(v), tick);
     }
     template <std::size_t N>
     void operator()(std::array<float, N> v)
     {
       std::array<float, N> res;
       for(int i = 0; i < N; i++)
-        res[i] = self.invoke_effect(self.impl.effect, v[i], tick);
+        res[i] = self.invoke_effect(i, N, v[i], tick);
     }
 
     // FIXME handle recursion
     void operator()(const std::vector<ossia::value>& v)
     {
-      std::vector<ossia::value> res;
-      res.reserve(v.size());
-
-      for(std::size_t i = 0; i < v.size(); i++)
-        self.invoke_effect(self.impl.effect, ossia::convert<float>(v[i]), tick);
+      for(std::size_t i = 0, N = v.size(); i < N; i++)
+        self.invoke_effect(i, N, ossia::convert<float>(v[i]), tick);
     }
     void operator()(const ossia::value_map_type& v)
     {
-      ossia::value_map_type res;
+      int N = v.size();
+      int i = 0;
       for(auto& [k, val] : v)
       {
-        self.invoke_effect(self.impl.effect, ossia::convert<float>(val), tick);
+        self.invoke_effect(i++, N, ossia::convert<float>(val), tick);
       }
     }
   };
@@ -147,30 +164,24 @@ public:
     void operator()() { }
     void operator()(ossia::impulse)
     {
-      out.write_value(self.invoke_effect(self.impl.effect, 0, tick), 0);
+      out.write_value(self.invoke_effect(0, 1, 0, tick), 0);
     }
     void operator()(bool v)
     {
-      out.write_value(self.invoke_effect(self.impl.effect, v ? 1 : 0, tick), 0);
+      out.write_value(self.invoke_effect(0, 1, v ? 1 : 0, tick), 0);
     }
-    void operator()(int v)
-    {
-      out.write_value(self.invoke_effect(self.impl.effect, v, tick), 0);
-    }
-    void operator()(float v)
-    {
-      out.write_value(self.invoke_effect(self.impl.effect, v, tick), 0);
-    }
+    void operator()(int v) { out.write_value(self.invoke_effect(0, 1, v, tick), 0); }
+    void operator()(float v) { out.write_value(self.invoke_effect(0, 1, v, tick), 0); }
     void operator()(const std::string& v)
     {
-      out.write_value(self.invoke_effect(self.impl.effect, std::stof(v), tick), 0);
+      out.write_value(self.invoke_effect(0, 1, std::stof(v), tick), 0);
     }
     template <std::size_t N>
     void operator()(std::array<float, N> v)
     {
       std::array<float, N> res;
       for(int i = 0; i < N; i++)
-        res[i] = self.invoke_effect(self.impl.effect, v[i], tick);
+        res[i] = self.invoke_effect(i, N, v[i], tick);
       out.write_value(res, 0);
     }
 
@@ -180,19 +191,20 @@ public:
       std::vector<ossia::value> res;
       res.reserve(v.size());
 
-      for(std::size_t i = 0; i < v.size(); i++)
-        res.push_back(
-            self.invoke_effect(self.impl.effect, ossia::convert<float>(v[i]), tick));
+      for(std::size_t i = 0, N = v.size(); i < N; i++)
+        res.push_back(self.invoke_effect(i, N, ossia::convert<ValType>(v[i]), tick));
 
       out.write_value(std::move(res), 0);
     }
     void operator()(const ossia::value_map_type& v)
     {
+      int N = v.size();
+      int i = 0;
       ossia::value_map_type res;
       for(auto& [k, val] : v)
       {
         res.emplace_back(
-            k, self.invoke_effect(self.impl.effect, ossia::convert<float>(val), tick));
+            k, self.invoke_effect(i++, N, ossia::convert<ValType>(val), tick));
       }
       out.write_value(std::move(res), 0);
     }
@@ -208,27 +220,27 @@ public:
     void operator()() { }
     void operator()(ossia::impulse)
     {
-      if(auto res = self.invoke_effect(self.impl.effect, 0, tick))
+      if(auto res = self.invoke_effect(0, 1, 0, tick))
         out.write_value(*res, 0);
     }
     void operator()(bool v)
     {
-      if(auto res = self.invoke_effect(self.impl.effect, v ? 1 : 0, tick))
+      if(auto res = self.invoke_effect(0, 1, v ? 1 : 0, tick))
         out.write_value(*res, 0);
     }
     void operator()(int v)
     {
-      if(auto res = self.invoke_effect(self.impl.effect, v, tick))
+      if(auto res = self.invoke_effect(0, 1, v, tick))
         out.write_value(*res, 0);
     }
     void operator()(float v)
     {
-      if(auto res = self.invoke_effect(self.impl.effect, v, tick))
+      if(auto res = self.invoke_effect(0, 1, v, tick))
         out.write_value(*res, 0);
     }
     void operator()(const std::string& v)
     {
-      if(auto res = self.invoke_effect(self.impl.effect, std::stof(v), tick))
+      if(auto res = self.invoke_effect(0, 1, std::stof(v), tick))
         out.write_value(*res, 0);
     }
     template <std::size_t N>
@@ -339,7 +351,7 @@ public:
         for(const ossia::timed_value& val : this->arg_value_ports.in->get_data())
         {
           this->arg_value_ports.out->write_value(
-              invoke_effect(this->impl.effect, val.value, tick), 0);
+              invoke_effect(0, 1, val.value, tick), 0);
         }
       }
       else

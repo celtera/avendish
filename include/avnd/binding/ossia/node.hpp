@@ -237,10 +237,11 @@ public:
   template <typename Functor, typename... Args>
   AVND_INLINE_FLATTEN void process_all_ports(Args&&... args)
   {
+    int poly_instance = 0;
     for(auto [impl, i, o] : this->impl.full_state())
     {
       static_assert(std::is_reference_v<decltype(impl)>);
-      Functor f{*this, impl, args...};
+      Functor f{*this, impl, poly_instance++, args...};
       if constexpr(avnd::inputs_type<T>::size > 0)
         process_inputs_impl(f, i);
       if constexpr(avnd::outputs_type<T>::size > 0)
@@ -442,11 +443,11 @@ public:
     if constexpr(time_controls::size > 0)
     {
       this->tempo = new_tempo;
-      time_controls::for_all_n2(
-          this->impl.inputs(),
-          [this, new_tempo](auto& field, auto pred_idx, auto f_idx) {
-        this->time_controls.set_tempo(this->impl, pred_idx, f_idx, new_tempo);
-          });
+      for(const auto& [eff, ins, outs] : this->impl.full_state())
+        time_controls::for_all_n2(
+            ins, [this, new_tempo](auto& field, auto pred_idx, auto f_idx) {
+          this->time_controls.set_tempo(this->impl, pred_idx, f_idx, new_tempo);
+        });
     }
   }
 
