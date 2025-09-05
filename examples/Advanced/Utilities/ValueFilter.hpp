@@ -1,12 +1,12 @@
 #pragma once
 
+#include <cmath>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
 #include <ossia/detail/math.hpp>
 
 #include <optional>
-#include <cmath>
 
 namespace ao
 {
@@ -21,7 +21,10 @@ public:
   halp_meta(c_name, "value_filter")
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(description, "Advanced filter for sensor values with range, repetition, hysteresis and crossing detection")
+  halp_meta(
+      description,
+      "Advanced filter for sensor values with range, repetition, hysteresis and "
+      "crossing detection")
   halp_meta(uuid, "76db132f-ef86-45a8-b25d-160ad472718d")
 
   enum InputFilterMode
@@ -59,7 +62,7 @@ public:
     {
       halp_meta(description, "Minimum value for range filter")
     } min;
-    
+
     struct : halp::spinbox_f32<"Max", halp::range{-1e6, 1e6, 1.}>
     {
       halp_meta(description, "Maximum value for range filter")
@@ -75,13 +78,13 @@ public:
     {
       halp_meta(description, "Tolerance for considering values as repetitions")
     } repetition_tolerance;
-    
+
     // Hysteresis controls
     struct : halp::toggle<"Enable Hysteresis">
     {
       halp_meta(description, "Enable hysteresis for threshold crossings")
     } enable_hysteresis;
-    
+
     struct : halp::spinbox_f32<"Hysteresis", halp::range{0., 1., 0.05}>
     {
       halp_meta(description, "Hysteresis amount for threshold crossings")
@@ -104,14 +107,14 @@ public:
     {
       halp_meta(description, "Reset filter state")
     } reset;
-    
+
   } inputs;
 
   struct outputs_t
   {
     // Filtered value output
     halp::val_port<"Filtered", std::optional<float>> filtered;
-    
+
     // Crossing detection outputs
     halp::val_port<"Cross Min Up", std::optional<halp::impulse>> cross_min_up;
     halp::val_port<"Cross Min Down", std::optional<halp::impulse>> cross_min_down;
@@ -131,7 +134,7 @@ public:
     std::optional<float> previous_value;
     std::optional<float> previous_output;
     float smoothed_value = 0.f;
-    
+
     // Crossing detection states
     bool was_below_min = false;
     bool was_above_max = false;
@@ -200,7 +203,7 @@ public:
         value = *state.previous_value;
       }
     }
-    
+
     // Update hysteresis thresholds
     // Proper hysteresis behavior:
     // - When value is BELOW threshold, use lower threshold (threshold - hyst) to detect crossing UP
@@ -208,7 +211,7 @@ public:
     if(inputs.enable_hysteresis)
     {
       float hyst = inputs.hysteresis.value;
-      
+
       // Min threshold hysteresis
       // If we're currently below min (haven't crossed up), we need to reach min + hyst to cross up
       // If we're currently above min (have crossed up), we need to fall below min - hyst to cross down
@@ -220,9 +223,9 @@ public:
       {
         state.effective_min = inputs.min.value - hyst;
       }
-      
+
       // Max threshold hysteresis
-      // If we're currently below max (haven't crossed up), we need to reach max + hyst to cross up  
+      // If we're currently below max (haven't crossed up), we need to reach max + hyst to cross up
       // If we're currently above max (have crossed up), we need to fall below max - hyst to cross down
       if(!state.max_crossed_up)
       {
@@ -243,7 +246,7 @@ public:
 
     // Detect min crossing with hold time
     bool below_min = value < state.effective_min;
-    
+
     // Handle min threshold with hold time
     if(state.min_hold_counter > 0)
     {
@@ -270,10 +273,10 @@ public:
       }
       state.was_below_min = below_min;
     }
-    
+
     // Detect max crossing with hold time
     bool above_max = value > state.effective_max;
-    
+
     // Handle max threshold with hold time
     if(state.max_hold_counter > 0)
     {
@@ -362,7 +365,7 @@ public:
       outputs.filtered.value = std::nullopt;
       return;
     }
-    
+
     // Apply repetition filtering
     if(inputs.filter_repetitions && state.previous_output)
     {
@@ -374,7 +377,7 @@ public:
         return;
       }
     }
-    
+
     // Value passes all filters
     state.previous_value = input_value;
     state.previous_output = value;
