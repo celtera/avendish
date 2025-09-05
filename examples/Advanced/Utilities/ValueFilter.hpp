@@ -87,6 +87,12 @@ public:
       halp_meta(description, "Hysteresis amount for threshold crossings")
     } hysteresis;
 
+    // Hold time (in samples)
+    struct : halp::spinbox_i32<"Hold Time", halp::range{0, 100000, 0}>
+    {
+      halp_meta(description, "Hold time in samples after crossing thresholds")
+    } hold_time;
+
     // Value clipping
     struct : halp::toggle<"Clip to Range">
     {
@@ -136,6 +142,10 @@ public:
     bool min_crossed_up = false;
     bool max_crossed_up = false;
 
+    // Hold time counters
+    int min_hold_counter = 0;
+    int max_hold_counter = 0;
+
     void reset(inputs_t& inputs)
     {
       if(inputs.max.value <= inputs.min.value)
@@ -149,6 +159,8 @@ public:
       max_crossed_up = false;
       effective_min = inputs.min.value;
       effective_max = inputs.max.value;
+      min_hold_counter = 0;
+      max_hold_counter = 0;
     }
   } state;
 
@@ -229,82 +241,117 @@ public:
     if(state.effective_max <= state.effective_min)
       state.effective_max = state.effective_min + 0.0001;
 
-    // Detect min crossing
+    // Detect min crossing with hold time
     bool below_min = value < state.effective_min;
-    if(below_min && !state.was_below_min)
-    {
-      outputs.cross_min_down.value = halp::impulse{};
-      state.min_crossed_up = false;
-    }
-    else if(!below_min && state.was_below_min)
-    {
-      outputs.cross_min_up.value = halp::impulse{};
-      state.min_crossed_up = true;
-    }
-    state.was_below_min = below_min;
     
-    // Detect max crossing
-    bool above_max = value > state.effective_max;
-    if(above_max && !state.was_above_max)
+    // Handle min threshold with hold time
+    if(state.min_hold_counter > 0)
     {
-      outputs.cross_max_up.value = halp::impulse{};
-      state.max_crossed_up = true;
-    }
-    else if(!above_max && state.was_above_max)
-    {
-      outputs.cross_max_down.value = halp::impulse{};
-      state.max_crossed_up = false;
-    }
-    state.was_above_max = above_max;
-
-    // Update state indicators
-    outputs.in_range.value = !below_min && !above_max;
-    // Apply range filtering
-    bool pass = true;
-    if(inputs.clip_to_range)
-    {
-      switch(inputs.filter_range.value)
-      {
-        case InputFilterMode::None:
-          break;
-        case InputFilterMode::Inside:
-          value = std::clamp(value, state.effective_min, state.effective_max);
-          break;
-        case InputFilterMode::Outside:
-          if(outputs.in_range.value)
-          {
-            if(value <= (inputs.max.value + inputs.min.value) / 2)
-              value = inputs.min.value;
-            else
-              value = inputs.max.value;
-          }
-          break;
-        case InputFilterMode::AboveMin:
-          value = std::max(value, state.effective_min);
-          break;
-        case InputFilterMode::BelowMax:
-          value = std::min(value, state.effective_max);
-          break;
-      }
+      state.max_hold_counter = 0;
+      state.min_hold_counter--;
+      // During hold, maintain previous state
+      below_min = state.was_below_min;
     }
     else
     {
-      switch(inputs.filter_range.value)
+      if(below_min && !state.was_below_min)
       {
-        case InputFilterMode::None:
-          break;
-        case InputFilterMode::Inside:
-          pass = (value >= state.effective_min && value <= state.effective_max);
-          break;
-        case InputFilterMode::Outside:
-          pass = (value <= state.effective_min || value >= state.effective_max);
-          break;
-        case InputFilterMode::AboveMin:
-          pass = (value >= state.effective_min);
-          break;
-        case InputFilterMode::BelowMax:
-          pass = (value <= state.effective_max);
-          break;
+        outputs.cross_min_down.value = halp::impulse{};
+        state.min_crossed_up = false;
+        state.min_hold_counter = inputs.hold_time.value;
+        state.max_hold_counter = 0;
+      }
+      else if(!below_min && state.was_below_min)
+      {
+        outputs.cross_min_up.value = halp::impulse{};
+        state.min_crossed_up = true;
+        state.min_hold_counter = inputs.hold_time.value;
+        state.max_hold_counter = 0;
+      }
+      state.was_below_min = below_min;
+    }
+    
+    // Detect max crossing with hold time
+    bool above_max = value > state.effective_max;
+    
+    // Handle max threshold with hold time
+    if(state.max_hold_counter > 0)
+    {
+      state.min_hold_counter = 0;
+      state.max_hold_counter--;
+      // During hold, maintain previous state
+      above_max = state.was_above_max;
+    }
+    else
+    {
+      if(above_max && !state.was_above_max)
+      {
+        outputs.cross_max_up.value = halp::impulse{};
+        state.max_crossed_up = true;
+        state.max_hold_counter = inputs.hold_time.value;
+        state.min_hold_counter = 0;
+      }
+      else if(!above_max && state.was_above_max)
+      {
+        outputs.cross_max_down.value = halp::impulse{};
+        state.max_crossed_up = false;
+        state.max_hold_counter = inputs.hold_time.value;
+        state.min_hold_counter = 0;
+      }
+      state.was_above_max = above_max;
+    }
+
+    // Update state indicators
+    outputs.in_range.value = !state.was_below_min && !state.was_above_max;
+    // Apply range filtering
+    bool pass = true;
+    if(state.min_hold_counter <= 0 & state.max_hold_counter <= 0)
+    {
+      if(inputs.clip_to_range)
+      {
+        switch(inputs.filter_range.value)
+        {
+          case InputFilterMode::None:
+            break;
+          case InputFilterMode::Inside:
+            value = std::clamp(value, state.effective_min, state.effective_max);
+            break;
+          case InputFilterMode::Outside:
+            if(outputs.in_range.value)
+            {
+              if(value <= (inputs.max.value + inputs.min.value) / 2)
+                value = inputs.min.value;
+              else
+                value = inputs.max.value;
+            }
+            break;
+          case InputFilterMode::AboveMin:
+            value = std::max(value, state.effective_min);
+            break;
+          case InputFilterMode::BelowMax:
+            value = std::min(value, state.effective_max);
+            break;
+        }
+      }
+      else
+      {
+        switch(inputs.filter_range.value)
+        {
+          case InputFilterMode::None:
+            break;
+          case InputFilterMode::Inside:
+            pass = (value >= state.effective_min && value <= state.effective_max);
+            break;
+          case InputFilterMode::Outside:
+            pass = (value <= state.effective_min || value >= state.effective_max);
+            break;
+          case InputFilterMode::AboveMin:
+            pass = (value >= state.effective_min);
+            break;
+          case InputFilterMode::BelowMax:
+            pass = (value <= state.effective_max);
+            break;
+        }
       }
     }
 
