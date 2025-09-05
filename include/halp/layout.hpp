@@ -71,7 +71,7 @@ struct control : item_base
   decltype(F) model = F;
   using control_member_type = halp::member_type_t<decltype(F)>;
   using control_value_type = decltype(control_member_type::value);
-  control_value_type value;
+  control_value_type value{};
 };
 
 struct image_item_base
