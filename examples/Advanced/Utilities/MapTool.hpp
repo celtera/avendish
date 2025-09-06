@@ -197,7 +197,7 @@ struct MapTool
     struct
     {
       halp_meta(layout, halp::layouts::vbox)
-      halp_meta(background, halp::colors::mid)
+      halp_meta(background, halp::colors::background_mid)
       halp::control<&ins::absolute> a;
       struct
       {
@@ -222,7 +222,7 @@ struct MapTool
     struct
     {
       halp_meta(layout, halp::layouts::vbox)
-      halp_meta(background, halp::colors::mid)
+      halp_meta(background, halp::colors::background_mid)
 
       halp::control<&ins::range_behaviour> rb;
       halp::control<&ins::shape_behaviour> sb;
@@ -237,7 +237,7 @@ struct MapTool
     struct
     {
       halp_meta(layout, halp::layouts::vbox)
-      halp_meta(background, halp::colors::mid)
+      halp_meta(background, halp::colors::background_mid)
       halp::control<&ins::out_min> min;
       halp::control<&ins::out_max> max;
     } out_range;

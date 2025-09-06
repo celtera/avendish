@@ -52,12 +52,12 @@ public:
   {
     halp_meta(name, "Main")
     halp_meta(layout, halp::layouts::hbox)
-    halp_meta(background, halp::colors::mid)
+    halp_meta(background, halp::colors::background_mid)
 
     struct : halp::recursive_group_item<&ins::s1, DrumChannel::ui>
     {
       halp_meta(name, "Drum 1")
-      halp_meta(background, halp::colors::darker)
+      halp_meta(background, halp::colors::background_darker)
 
     } s1;
 
@@ -65,7 +65,7 @@ public:
     {
       halp_meta(name, "Global")
       halp_meta(layout, halp::layouts::vbox)
-      halp_meta(background, halp::colors::darker)
+      halp_meta(background, halp::colors::background_darker)
 
       halp::item<&ins::volume> globalvol;
     } global;

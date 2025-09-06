@@ -65,13 +65,13 @@ struct Ui
 
     halp_meta(name, "Main")
     halp_meta(layout, halp::layouts::hbox)
-    halp_meta(background, halp::colors::mid)
+    halp_meta(background, halp::colors::background_mid)
 
     struct
     {
       halp_meta(name, "Widget")
       halp_meta(layout, halp::layouts::vbox)
-      halp_meta(background, halp::colors::dark)
+      halp_meta(background, halp::colors::background_dark)
 
       halp::item<&ins::int_ctl> widget;
       halp::item<&outs::measure> widget2;
@@ -83,7 +83,7 @@ struct Ui
     {
       halp_meta(name, "Group")
       halp_meta(layout, halp::layouts::group)
-      halp_meta(background, halp::colors::light)
+      halp_meta(background, halp::colors::background_light)
       struct
       {
         halp_meta(layout, halp::layouts::hbox)
@@ -97,7 +97,7 @@ struct Ui
     {
       halp_meta(name, "Tabs")
       halp_meta(layout, halp::layouts::tabs)
-      halp_meta(background, halp::colors::darker)
+      halp_meta(background, halp::colors::background_darker)
 
       struct
       {
@@ -148,7 +148,7 @@ struct Ui
     {
       halp_meta(name, "Grid")
       halp_meta(layout, halp::layouts::grid)
-      halp_meta(background, halp::colors::lighter)
+      halp_meta(background, halp::colors::background_lighter)
       halp_meta(columns, 3)
       halp_meta(padding, 5)
 

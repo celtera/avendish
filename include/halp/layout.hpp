@@ -29,13 +29,28 @@ enum class layouts
   custom_control,
   multi_control
 };
+
 enum class colors
 {
   darker,
   dark,
   mid,
   light,
-  lighter
+  lighter,
+
+  background_darker,
+  background_dark,
+  background_mid,
+  background_light,
+  background_lighter,
+
+  runtime_value_light,
+  runtime_value_mid,
+  runtime_value_dark,
+
+  editable_value_light,
+  editable_value_mid,
+  editable_value_dark,
 };
 
 struct spacing
@@ -43,6 +58,7 @@ struct spacing
   halp_meta(layout, layouts::spacing)
   int width{}, height{};
 };
+
 struct label
 {
   halp_meta(layout, layouts::widget)

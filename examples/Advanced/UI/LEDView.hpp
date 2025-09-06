@@ -16,7 +16,7 @@
 #include <score/model/Skin.hpp>
 
 #include <QPainter>
-namespace ao
+namespace uo
 {
 #if 0
 struct led_item

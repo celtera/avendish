@@ -16,7 +16,7 @@
 #include <score/application/GUIApplicationContext.hpp>
 
 #include <QPainter>
-namespace ao
+namespace uo
 {
 struct Point2DView
 {
