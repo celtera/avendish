@@ -29,18 +29,13 @@ struct enum_t
     combobox
   };
 
-  static clang_buggy_consteval auto range()
+  struct range
   {
-    struct enum_setup
-    {
 #if MAGIC_ENUM_SUPPORTED
-      decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+    decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
 #endif
-      Enum init{};
-    };
-
-    return enum_setup{};
-  }
+    Enum init{};
+  };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
