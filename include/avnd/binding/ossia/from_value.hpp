@@ -1424,6 +1424,19 @@ OSSIA_INLINE bool from_ossia_value(const ossia::value& src, T& dst)
   dst = ossia::convert<std::string>(src);
   return true;
 }
+
+OSSIA_INLINE bool from_ossia_value(const ossia::value& src, std::string_view& dst)
+{
+  auto str = src.target<std::string>();
+  if(!str)
+  {
+    dst = {};
+    return false;
+  }
+  dst = *str; // FIXME make sure that the ossia::value always outlive this
+  return true;
+}
+
 inline bool from_ossia_value(const ossia::value& src, const char*& dst)
 {
   if(auto p = src.target<std::string>())

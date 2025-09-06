@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string_view>
 HALP_MODULE_EXPORT
 namespace halp
@@ -203,6 +204,7 @@ struct tick
 
 struct tick_musical
 {
+  // Number of audio frames in the current call
   int frames{};
 
   double tempo = 120.;
@@ -212,8 +214,10 @@ struct tick_musical
     int denom{};
   } signature;
 
+  // Number of audio frames elapsed since playback started
   int64_t position_in_frames{};
 
+  // Real time as reported by the soundcard or operating system
   double position_in_nanoseconds{};
 
   // Quarter note of the first sample in the buffer
@@ -232,59 +236,402 @@ struct tick_musical
   // Position of the last bar relative to end in quarter notes
   quarter_note bar_at_end{};
 
-  // If the division falls in the current tick, returns the corresponding frames
-  // FIXME: this fails if we have a change of musical metric in the middle of a bar.
-  // This requires the host to always cut the tick before a change of metrics
-  // Div is the division in quarter notes: div == 1 means 1 quarter note.
-  // FIXME: use std::generator :)
-  [[nodiscard]] quantification_frames get_quantification_date(double div) const noexcept
+  // Position in bar to frames
+  constexpr auto pos_to_frame(double in_bar) const noexcept
   {
-    quantification_frames frames;
-    double start_in_bar = start_position_in_quarters - bar_at_start;
-    double end_in_bar = end_position_in_quarters - bar_at_start;
+    double start = start_position_in_quarters;
+    double musical_pos = in_bar + bar_at_start;
+    double end = end_position_in_quarters;
 
-    auto pos_to_frame = [this](double in_bar) {
-      double start = start_position_in_quarters;
-      double musical_pos = in_bar + bar_at_start;
-      double end = end_position_in_quarters;
+    double percent = (musical_pos - start) / (end - start);
+    int f = percent * this->frames;
+    return f;
+  }
+  constexpr int64_t prev_frame() const noexcept { return position_in_frames; }
+  constexpr int64_t end_frame() const noexcept { return position_in_frames + frames; }
+  //! Given a quantification rate (1 for bars, 2 for half, 4 for quarters...)
+  //! return all occurring quantification dates in the tick
+  [[nodiscard]] quantification_frames get_quantification_date(double rate) const noexcept
+  {
+    quantification_frames result;
 
-      double percent = (musical_pos - start) / (end - start);
-      int f = percent * this->frames;
-      return f;
-    };
-    double cur = start_in_bar;
-    double q = std::floor(start_in_bar / div);
-    if(std::abs(cur - q * div) < 1e-9)
+    if(prev_frame() == end_frame())
+      return result;
+
+    if(rate <= 0.)
     {
-      // Add it: we're on 0 or the correct thing
-      frames.emplace_back(pos_to_frame(cur), q);
+      result.emplace_back(0, 0);
+      return result;
+    }
+
+    const double musical_tick_duration
+        = end_position_in_quarters - start_position_in_quarters;
+    if(musical_tick_duration <= 0.)
+    {
+      result.emplace_back(0, 0);
+      return result;
+    }
+
+    if(rate <= 1.)
+    {
+      // Bars or longer - use logic from get_quantification_date_for_bars_or_longer
+      const double bars_per_quantization = 1.0 / rate;
+
+      // Convert positions to bar numbers from the last signature
+      const double start_bar_position
+          = (start_position_in_quarters - last_signature_change)
+            / (4.0 * signature.num / signature.denom);
+      const double end_bar_position = (end_position_in_quarters - last_signature_change)
+                                      / (4.0 * signature.num / signature.denom);
+
+      // Check if we're exactly on a quantization point at the start
+      const double start_remainder
+          = std::fmod(start_bar_position, bars_per_quantization);
+      if(std::abs(start_remainder) < 0.0001 && start_position_in_quarters >= 0)
+      {
+        result.emplace_back(
+            0, static_cast<int>(std::round(start_bar_position / bars_per_quantization)));
+      }
+
+      // Find all quantization points after start and before end
+      const double start_quant_bar
+          = std::floor(start_bar_position / bars_per_quantization);
+      double next_quant_bar_number = (start_quant_bar + 1) * bars_per_quantization;
+
+      while(next_quant_bar_number < end_bar_position)
+      {
+        // Calculate the musical position of this quantization point
+        const double quant_musical_position
+            = last_signature_change
+              + next_quant_bar_number * (4.0 * signature.num / signature.denom);
+
+        // Map this to a time value
+        const double ratio = (quant_musical_position - start_position_in_quarters)
+                             / musical_tick_duration;
+        const int64_t dt = end_frame() - prev_frame();
+        int64_t frame_offset = dt * ratio;
+
+        if(frame_offset < dt)
+        {
+          result.emplace_back(
+              frame_offset, static_cast<int>(std::round(
+                                next_quant_bar_number / bars_per_quantization)));
+        }
+
+        next_quant_bar_number += bars_per_quantization;
+      }
     }
     else
     {
-      cur = q * div;
-    }
+      // Shorter than bars - subdivisions of quarters
 
-    for(;;)
-    {
-      cur += div;
-      if(cur < end_in_bar)
+      // Special handling when bar boundary occurs within this tick
+      if(bar_at_start != bar_at_end)
       {
-        frames.emplace_back(pos_to_frame(cur), q);
+        // There's a bar boundary within this tick
+        // We need to check for quantifications both before and after the boundary
+
+        // Check if there's a quantification exactly at the bar boundary
+        const double bar_boundary_position
+            = bar_at_end; // This is the musical position of the bar boundary
+
+        // Calculate if this bar boundary position is a subdivision point
+        const double subdivisions_per_quarter = rate / 4.;
+
+        // Check if the bar boundary aligns with our subdivision rate
+        // For quarters (rate=4), every quarter boundary is a quantification point
+        // For eighths (rate=8), every eighth boundary is a quantification point, etc.
+        const double bar_relative_position
+            = 0.0; // At a bar boundary, we're at position 0 within the new bar
+        const double subdivision_at_boundary
+            = bar_relative_position * subdivisions_per_quarter;
+
+        // If the bar boundary is within our tick range, it's always index 0
+        if(bar_boundary_position >= start_position_in_quarters
+           && bar_boundary_position <= end_position_in_quarters
+           && std::abs(subdivision_at_boundary - std::round(subdivision_at_boundary))
+                  < 0.0001)
+        {
+          // Calculate the frame position of this bar boundary
+          const double offset_in_quarters
+              = bar_boundary_position - start_position_in_quarters;
+          const double ratio = offset_in_quarters / musical_tick_duration;
+          int64_t frame_offset = std::round(ratio * frames);
+
+          if(frame_offset >= 0 && frame_offset < frames)
+          {
+            result.emplace_back(frame_offset, 0); // Bar boundaries are always index 0
+          }
+          else if(frame_offset == frames)
+          {
+            // Bar boundary is exactly at the end of the tick - use the last frame
+            result.emplace_back(frames - 1, 0); // Bar boundaries are always index 0
+          }
+        }
+      }
+
+      const double start_quarter = start_position_in_quarters - bar_at_start;
+      const double end_quarter = end_position_in_quarters - bar_at_start;
+
+      // How many subdivisions per quarter note
+      // rate = 4 -> 1 per quarter, rate = 8 -> 2 per quarter, rate = 16 -> 4 per quarter
+      const double subdivisions_per_quarter = rate / 4.;
+
+      // Calculate actual number of subdivisions that can occur in this time signature
+      // For example: 7/8 time has 7 eighth notes, so 4 quarter note positions (0,2,4,6)
+      const int base_units_per_bar = signature.num; // e.g., 7 eighth notes in 7/8
+      const int base_unit_denom = signature.denom;  // e.g., 8 (eighth notes)
+
+      // How many subdivisions actually fit in the bar
+      int subdivisions_per_bar;
+      if(rate >= base_unit_denom)
+      {
+        // Subdivision is smaller than or equal to base unit (e.g., 16th notes in 7/8)
+        subdivisions_per_bar
+            = base_units_per_bar * (static_cast<int>(rate) / base_unit_denom);
       }
       else
       {
-        break;
+        // Subdivision is larger than base unit (e.g., quarter notes in 7/8)
+        // Quarter notes occur every 2 eighth notes, so positions: 0, 2, 4, 6...
+        const int subdivision_interval = base_unit_denom / static_cast<int>(rate);
+        subdivisions_per_bar = (base_units_per_bar + subdivision_interval - 1)
+                               / subdivision_interval; // Ceiling division
+      }
+
+      // Find first subdivision at or after start
+      const double start_subdivision = start_quarter * subdivisions_per_quarter;
+      int current_subdivision_index = static_cast<int>(std::floor(start_subdivision));
+
+      // Check if we start exactly on a subdivision
+      if(std::abs(start_subdivision - current_subdivision_index) < 0.0001)
+      {
+        // Calculate position within the current bar
+        const double absolute_quarter_pos
+            = start_position_in_quarters - last_signature_change;
+        const double quarters_per_bar_exact = 4.0 * signature.num / signature.denom;
+        const double position_in_current_bar
+            = std::fmod(absolute_quarter_pos, quarters_per_bar_exact);
+
+        // Convert to subdivision position within bar and get index
+        const double subdivisions_in_current_bar
+            = position_in_current_bar * subdivisions_per_quarter;
+
+        // Find which subdivision slot this represents within the bar's subdivision pattern
+        int metric_index;
+        if(rate >= base_unit_denom)
+        {
+          // For subdivisions smaller than the base unit (e.g., 16ths in 7/8)
+          metric_index = static_cast<int>(std::round(subdivisions_in_current_bar))
+                         % subdivisions_per_bar;
+        }
+        else
+        {
+          // For subdivisions larger than base unit (e.g., quarters in 7/8)
+          // Count how many of this subdivision type have occurred within the bar
+          const int subdivision_interval = base_unit_denom / static_cast<int>(rate);
+          const double subdivision_position_in_bar
+              = position_in_current_bar * (base_unit_denom / 4.0);
+          metric_index = static_cast<int>(std::floor(
+                             subdivision_position_in_bar / subdivision_interval))
+                         % subdivisions_per_bar;
+        }
+
+        result.emplace_back(0, metric_index);
+        current_subdivision_index++;
+      }
+      else
+      {
+        current_subdivision_index++;
+      }
+
+      // Find all subdivisions in the tick
+      const double end_subdivision = end_quarter * subdivisions_per_quarter;
+
+      while(current_subdivision_index < end_subdivision)
+      {
+        // Calculate the position in quarters for this subdivision
+        const double quarter_position
+            = current_subdivision_index / subdivisions_per_quarter;
+
+        // Calculate the absolute musical position
+        const double absolute_musical_position = bar_at_start + quarter_position;
+
+        // Calculate frame offset within this tick
+        const double offset_in_quarters
+            = absolute_musical_position - start_position_in_quarters;
+        const double ratio = offset_in_quarters / musical_tick_duration;
+        int64_t frame_offset = std::round(ratio * frames);
+
+        if(frame_offset < frames)
+        {
+          // Calculate position within the current bar
+          const double absolute_quarter_pos
+              = absolute_musical_position - last_signature_change;
+          const double quarters_per_bar_exact = 4.0 * signature.num / signature.denom;
+          const double position_in_current_bar
+              = std::fmod(absolute_quarter_pos, quarters_per_bar_exact);
+
+          // Convert to subdivision position within bar and get index
+          const double subdivisions_in_current_bar
+              = position_in_current_bar * subdivisions_per_quarter;
+
+          // Find which subdivision slot this represents within the bar's subdivision pattern
+          int metric_index;
+          if(rate >= base_unit_denom)
+          {
+            // For subdivisions smaller than the base unit (e.g., 16ths in 7/8)
+            metric_index = static_cast<int>(std::round(subdivisions_in_current_bar))
+                           % subdivisions_per_bar;
+          }
+          else
+          {
+            // For subdivisions larger than base unit (e.g., quarters in 7/8)
+            // Count how many of this subdivision type have occurred within the bar
+            const int subdivision_interval = base_unit_denom / static_cast<int>(rate);
+            const double subdivision_position_in_bar
+                = position_in_current_bar * (base_unit_denom / 4.0);
+            metric_index = static_cast<int>(std::floor(
+                               subdivision_position_in_bar / subdivision_interval))
+                           % subdivisions_per_bar;
+          }
+
+          result.emplace_back(frame_offset, metric_index);
+        }
+
+        current_subdivision_index++;
       }
     }
-    return frames;
+
+    return result;
+  }
+
+  [[nodiscard]] std::optional<int64_t>
+  get_quantification_date_for_bars_or_longer(double rate) const noexcept
+  {
+    std::optional<int64_t> quantification_date;
+    const double bars_per_quantization = 1.0 / rate;
+
+    // Convert positions to bar numbers from the last signature
+    const double start_bar_position
+        = (start_position_in_quarters - last_signature_change)
+          / (4.0 * signature.num / signature.denom);
+    const double end_bar_position = (end_position_in_quarters - last_signature_change)
+                                    / (4.0 * signature.num / signature.denom);
+
+    // Check if we're exactly on a quantization point at the start
+    const double start_remainder = std::fmod(start_bar_position, bars_per_quantization);
+    if(std::abs(start_remainder) < 0.0001 && start_position_in_quarters >= 0)
+    {
+      quantification_date = prev_frame();
+    }
+    else
+    {
+      // Find the next quantization bar after start
+      const double start_quant_bar
+          = std::floor(start_bar_position / bars_per_quantization);
+      const double next_quant_bar_number = (start_quant_bar + 1) * bars_per_quantization;
+
+      // Check if this quantization point falls within our tick (but NOT at the end)
+      if(next_quant_bar_number > start_bar_position
+         && next_quant_bar_number < end_bar_position)
+      {
+        // Calculate the musical position of this quantization point
+        const double quant_musical_position
+            = last_signature_change
+              + next_quant_bar_number * (4.0 * signature.num / signature.denom);
+
+        // Map this to a time value
+        const double musical_tick_duration
+            = end_position_in_quarters - start_position_in_quarters;
+        const double ratio = (quant_musical_position - start_position_in_quarters)
+                             / musical_tick_duration;
+        const int64_t dt = end_frame() - prev_frame();
+
+        int64_t potential_date = prev_frame() + dt * ratio;
+
+        // Extra safety check: ensure we're not at the boundary
+        if(potential_date < end_frame())
+        {
+          quantification_date = potential_date;
+        }
+      }
+    }
+    return quantification_date;
+  }
+
+  [[nodiscard]] std::optional<int64_t>
+  get_quantification_date_for_shorter_than_bars(double rate) const noexcept
+  {
+    std::optional<int64_t> quantification_date;
+    // Quantize relative to quarter divisions
+    // TODO ! if there is a bar change,
+    // and no prior quantization date before that, we have to quantize to the
+    // bar change
+    const double start_quarter = (start_position_in_quarters - bar_at_start);
+    const double end_quarter = (end_position_in_quarters - bar_at_start);
+
+    // duration of what we quantify in terms of quarters
+    const double musical_quant_dur = rate / 4.;
+    const double start_quant = std::floor(start_quarter * musical_quant_dur);
+    const double end_quant = std::floor(end_quarter * musical_quant_dur);
+
+    if(start_quant != end_quant)
+    {
+      // We want quantization on start, not on end
+      if(end_quant != end_quarter * musical_quant_dur)
+      {
+        // Date to quantify is the next one :
+        const double musical_tick_duration
+            = end_position_in_quarters - start_position_in_quarters;
+        const double quantified_duration = (bar_at_start + (start_quant + 1) * 4. / rate)
+                                           - start_position_in_quarters;
+        const double ratio = (end_frame() - prev_frame()) / musical_tick_duration;
+
+        quantification_date = prev_frame() + quantified_duration * ratio;
+      }
+    }
+    else if(start_quant == start_quarter * musical_quant_dur)
+    {
+      // We start on a signature change
+      quantification_date = prev_frame();
+    }
+    return quantification_date;
+  }
+
+  //! Given a quantification rate (1 for bars, 2 for half, 4 for quarters...)
+  //! return the next occurring quantification date, if such date is in the tick
+  //! defined by this token_request.
+  [[nodiscard]] std::optional<int64_t>
+  get_one_quantification_date(double rate) const noexcept
+  {
+    if(prev_frame() == end_frame())
+      return std::nullopt;
+
+    if(rate <= 0.)
+      return prev_frame();
+
+    const double musical_tick_duration
+        = end_position_in_quarters - start_position_in_quarters;
+    if(musical_tick_duration <= 0.)
+      return prev_frame();
+
+    if(rate <= 1.)
+    {
+      return get_quantification_date_for_bars_or_longer(rate);
+    }
+    else
+    {
+      return get_quantification_date_for_shorter_than_bars(rate);
+    }
   }
 
   // Given a quantification rate (1 for bars, 2 for half, 4 for quarters...)
   // return the next occurring quantification date, if such date is in the tick
   // defined by this token_request: div == 1 means 1 bar.
   // Unlike the function above, this one also takes into account parent bar and time signature changes which
-  // may or may not be desired depending on the situatoin.
-  // FIXME: use std::generator :)
+  // may or may not be desired depending on the situation.
+  // FIXME does not seem to work either.
   [[nodiscard]] halp::quantification_frames
   get_quantification_date_with_bars(double rate) const noexcept
   {
@@ -328,6 +675,11 @@ struct tick_musical
           // with very fast tempos and long buffer sizes
           quantification_date.push_back({std::floor(dt * ratio), 1});
         }
+      }
+      else if(start_position_in_quarters == 0.0)
+      {
+        // Special first bar case
+        return {{0, 1}};
       }
     }
     else
