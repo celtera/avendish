@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 
 #include <chrono>
@@ -16,7 +17,6 @@ struct PulseItem
 
   void paint(auto ctx)
   {
-    ctx.painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     update_fps();
     if(ratio <= 0.)
     {

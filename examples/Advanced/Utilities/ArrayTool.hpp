@@ -143,16 +143,24 @@ struct ArrayTool
                              : val * (inputs.in_max - inputs.in_min) + inputs.in_min;
     }
     if(inputs.in_pad_l > 0)
+    {
       v.insert(v.begin(), inputs.in_pad_l, 0.);
+    }
     else if(inputs.in_pad_l < 0)
-      v.erase(v.begin(), v.begin() + std::min(int(v.size()), -inputs.in_pad_l));
+    {
+      const int N = std::min(int(v.size()), -inputs.in_pad_l);
+      v.erase(v.begin(), v.begin() + N);
+    }
 
     if(inputs.in_pad_r > 0)
+    {
       v.resize(v.size() + inputs.in_pad_r, 0.);
+    }
     else if(inputs.in_pad_r < 0)
-      v.erase(
-          v.rbegin().base(),
-          (v.rbegin() + std::min(int(v.size()), -inputs.in_pad_r)).base());
+    {
+      const int N = std::min(int(v.size()), -inputs.in_pad_r);
+      v.erase((v.rbegin() + N).base(), v.rbegin().base());
+    }
 
     if(inputs.reverse)
     {

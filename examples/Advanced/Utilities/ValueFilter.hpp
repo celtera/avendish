@@ -5,6 +5,8 @@
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
 #include <ossia/detail/math.hpp>
+#include <ossia/network/value/value.hpp>
+#include <ossia/network/value/value_conversion.hpp>
 
 #include <optional>
 
