@@ -93,22 +93,27 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
         // Dynamic case
         if(buf_k >= geom.buffers.size())
         {
-          ossia::geometry::buffer in;
+          ossia::geometry::cpu_buffer cpu_buf;
           auto data = std::make_unique<char[]>(buf.size);
           std::copy_n((char*)buf.data, buf.size, data.get());
-          in.data = std::move(data);
-          in.size = buf.size;
+          cpu_buf.data = std::move(data);
+          cpu_buf.size = buf.size;
+          ossia::geometry::buffer in{.data = std::move(cpu_buf), .dirty = true};
           buf.dirty = false;
           in.dirty = true;
           geom.buffers.push_back(std::move(in));
         }
         else if(buf.dirty)
         {
-          auto& in = geom.buffers[buf_k];
+          ossia::geometry::cpu_buffer cpu_buf;
           auto data = std::make_unique<char[]>(buf.size);
           std::copy_n((char*)buf.data, buf.size, data.get());
-          in.data = std::move(data);
-          in.size = buf.size;
+          cpu_buf.data = std::move(data);
+          cpu_buf.size = buf.size;
+
+          // FIXME recycle old in.data
+          auto& in = geom.buffers[buf_k];
+          in.data = std::move(cpu_buf);
           buf.dirty = false;
           in.dirty = true;
         }
@@ -122,34 +127,37 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
 
         if(buf_k >= geom.buffers.size())
         {
-          ossia::geometry::buffer in;
-
+          ossia::geometry::cpu_buffer cpu_buf;
           // FIXME find a way to do it with some linear allocator or whatever
           // - we need to handle cleanly both static and dynamic geometry
           // if constexpr(is_shared_ptr<ptr_type>::value)
           // {
-          //   in.data = buf.data;
+          //   cpu_buf.data = buf.data;
           // }
           // else
           {
             auto data = std::make_unique<data_type[]>(buf.size);
             std::copy_n(buf.data, buf.size, data.get());
-            in.data = std::move(data);
+            cpu_buf.data = std::move(data);
+            cpu_buf.size = buf.size * sizeof(data_type);
           }
 
-          in.size = buf.size * sizeof(data_type);
+          ossia::geometry::buffer in{.data = std::move(cpu_buf), .dirty = true};
           buf.dirty = false;
-          in.dirty = true;
 
           geom.buffers.push_back(std::move(in));
         }
         else if(buf.dirty)
         {
-          auto& in = geom.buffers[buf_k];
+          ossia::geometry::cpu_buffer cpu_buf;
           auto data = std::make_unique<data_type[]>(buf.size);
           std::copy_n(buf.data, buf.size, data.get());
-          in.data = std::move(data);
-          in.size = buf.size * sizeof(data_type);
+          cpu_buf.data = std::move(data);
+          cpu_buf.size = buf.size * sizeof(data_type);
+
+          // FIXME recycle old in.data
+          auto& in = geom.buffers[buf_k];
+          in.data = std::move(cpu_buf);
           buf.dirty = false;
           in.dirty = true;
         }
@@ -352,8 +360,16 @@ void mesh_from_ossia(const ossia::geometry& src, T& dst)
     for(auto& buf : src.buffers)
     {
       using value_type = typename decltype(dst.buffers)::value_type;
-      dst.buffers.emplace_back(
-          value_type{.data = buf.data.get(), .size = buf.size, .dirty = buf.dirty});
+      if(auto cpu_buf = ossia::get_if<ossia::geometry::cpu_buffer>(&buf.data))
+      {
+        dst.buffers.emplace_back(
+            value_type{
+                .data = cpu_buf->data.get(), .size = cpu_buf->size, .dirty = buf.dirty});
+      }
+      else
+      {
+        // FIXME need to download gpu -> cpu
+      }
     }
   }
 

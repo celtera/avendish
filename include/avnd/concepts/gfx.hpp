@@ -24,7 +24,16 @@ concept cpu_fixed_format_texture = requires(T t) {
   typename T::format;
 };
 template <typename T>
-concept cpu_texture = cpu_raw_texture<T> || cpu_fixed_format_texture<T>;
+concept cpu_dynamic_format_texture = requires(T t) {
+  t.bytes;
+  t.width;
+  t.height;
+  t.changed;
+  t.format = {};
+};
+template <typename T>
+concept cpu_texture
+    = cpu_raw_texture<T> || cpu_fixed_format_texture<T> || cpu_dynamic_format_texture<T>;
 
 template <typename T>
 concept cpu_texture_port = requires(T t) {

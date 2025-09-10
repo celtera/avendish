@@ -94,8 +94,16 @@ struct texture_output
 
   void create(int width, int height)
   {
-    storage.resize(
-        width * height * TextureType::bytes_per_pixel, boost::container::default_init);
+    if constexpr(requires { texture.bytes_per_pixel(); })
+    {
+      storage.resize(
+          width * height * texture.bytes_per_pixel(), boost::container::default_init);
+    }
+    else
+    {
+      storage.resize(
+          width * height * TextureType::bytes_per_pixel, boost::container::default_init);
+    }
     texture.width = width;
     texture.height = height;
     texture.changed = false;
