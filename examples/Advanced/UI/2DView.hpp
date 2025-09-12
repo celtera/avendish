@@ -150,12 +150,14 @@ struct Point2DView
       auto& skin = score::Skin::instance();
       p->setPen(skin.NoPen);
       p->setBrush(skin.Base1);
+      p->translate(1, 1);
       for(QPointF pix : m_points)
       {
         const auto x01 = (pix.x() - min_x) / scalex;
         const auto y01 = 1. - (pix.y() - min_y) / scaley;
         p->drawEllipse(QPointF{w * x01 - side / 2., h * y01 - side / 2.}, side, side);
       }
+      p->resetTransform();
       p->setRenderHint(QPainter::RenderHint::Antialiasing, false);
     }
   };
