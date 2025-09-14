@@ -47,15 +47,6 @@ public:
 
   struct
   {
-    struct : halp::val_port<"Count", float>
-    {
-      struct range
-      {
-        const float min = 0.f;
-        const float max = 1.f;
-        const float init = 0.f;
-      };
-    } count;
     struct : halp::val_port<"Sum", float>
     {
       struct range
@@ -65,6 +56,15 @@ public:
         const float init = 0.f;
       };
     } sum;
+    struct : halp::val_port<"Count", float>
+    {
+      struct range
+      {
+        const float min = 0.f;
+        const float max = 1.f;
+        const float init = 0.f;
+      };
+    } count;
     struct : halp::val_port<"Consecutive difference", float>
     {
       struct range

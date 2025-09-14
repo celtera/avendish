@@ -1,8 +1,10 @@
 #pragma once
+#include <halp/callback.hpp>
 #include <halp/controls.hpp>
+#include <halp/messages.hpp>
 #include <halp/meta.hpp>
-#include <magic_enum/magic_enum.hpp>
 #include <ossia/detail/math.hpp>
+
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 namespace examples
@@ -42,6 +44,13 @@ struct Counter
       outputs.ceiling();
   }
 
+  void bang()
+  {
+    outputs.count = count;
+    if(count >= inputs.max.value)
+      outputs.ceiling();
+  }
+
   enum Mode
   {
     Free,
@@ -54,7 +63,10 @@ struct Counter
   {
     halp::enum_t<Mode, "Mode"> ceil;
     halp::spinbox_i32<"Max", halp::range{0, std::numeric_limits<int>::max(), 100}> max;
-    halp::impulse_button<"Output"> output;
+    struct : halp::impulse_button<"Output">
+    {
+      void update(Counter& self) { self.bang(); }
+    } output;
   } inputs;
 
   struct messages

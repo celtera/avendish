@@ -93,7 +93,7 @@ public:
     } hysteresis;
 
     // Hold time (in samples)
-    struct : halp::spinbox_i32<"Hold Time", halp::range{0, 100000, 0}>
+    struct : halp::spinbox_i32<"Hold Samples", halp::range{0, 10000, 0}>
     {
       halp_meta(description, "Hold time in samples after crossing thresholds")
     } hold_time;
@@ -103,6 +103,16 @@ public:
     {
       halp_meta(description, "Clip output values to min/max range instead of filtering")
     } clip_to_range;
+
+    // Value clipping
+    struct : halp::toggle<"Temporal filter">
+    {
+      halp_meta(description, "Enable the temporal filter")
+    } temporal_filter;
+    struct : halp::time_chooser<"Temporal filter duration">
+    {
+      halp_meta(description, "Send a new value at most this regularly")
+    } temporal_filter_t;
 
     // Reset button
     struct : halp::impulse_button<"Reset">
@@ -130,11 +140,9 @@ public:
 
   } outputs;
 
-  // Internal state
-  struct State
-  {
     std::optional<float> previous_value;
     std::optional<float> previous_output;
+    std::optional<int64_t> previous_value_t;
     float smoothed_value = 0.f;
 
     // Crossing detection states
@@ -167,20 +175,20 @@ public:
       min_hold_counter = 0;
       max_hold_counter = 0;
     }
-  } state;
 
   void prepare()
   {
     if(inputs.max.value <= inputs.min.value)
       inputs.max.value = inputs.min.value + 0.0001;
-    state.effective_min = inputs.min.value;
-    state.effective_max = inputs.max.value;
+    this->effective_min = inputs.min.value;
+    this->effective_max = inputs.max.value;
   }
 
-  void operator()() noexcept
+  using tick = halp::tick_flicks;
+  void operator()(halp::tick_flicks tk) noexcept
   {
     if(inputs.reset)
-      state.reset(inputs);
+      this->reset(inputs);
 
     if(inputs.max.value <= inputs.min.value)
       inputs.max.value = inputs.min.value + 0.0001;
@@ -191,18 +199,21 @@ public:
     outputs.cross_max_up.value = std::nullopt;
     outputs.cross_max_down.value = std::nullopt;
 
+    if(!this->inputs.input.value.valid())
+      return;
+
     float value = ossia::convert<float>(this->inputs.input.value);
     auto& input_value = value;
 
-    state.smoothed_value = value;
+    this->smoothed_value = value;
 
     // Apply noise gate if enabled
-    if(inputs.noise_threshold.value > 0. && state.previous_value)
+    if(inputs.noise_threshold.value > 0. && this->previous_value)
     {
-      float change = std::abs(value - *state.previous_value);
+      float change = std::abs(value - *this->previous_value);
       if(change < inputs.noise_threshold.value)
       {
-        value = *state.previous_value;
+        value = *this->previous_value;
       }
     }
 
@@ -217,100 +228,100 @@ public:
       // Min threshold hysteresis
       // If we're currently below min (haven't crossed up), we need to reach min + hyst to cross up
       // If we're currently above min (have crossed up), we need to fall below min - hyst to cross down
-      if(!state.min_crossed_up)
+      if(!this->min_crossed_up)
       {
-        state.effective_min = inputs.min.value + hyst;
+        this->effective_min = inputs.min.value + hyst;
       }
       else
       {
-        state.effective_min = inputs.min.value - hyst;
+        this->effective_min = inputs.min.value - hyst;
       }
 
       // Max threshold hysteresis
       // If we're currently below max (haven't crossed up), we need to reach max + hyst to cross up
       // If we're currently above max (have crossed up), we need to fall below max - hyst to cross down
-      if(!state.max_crossed_up)
+      if(!this->max_crossed_up)
       {
-        state.effective_max = inputs.max.value - hyst;
+        this->effective_max = inputs.max.value - hyst;
       }
       else
       {
-        state.effective_max = inputs.max.value + hyst;
+        this->effective_max = inputs.max.value + hyst;
       }
     }
     else
     {
-      state.effective_min = inputs.min.value;
-      state.effective_max = inputs.max.value;
+      this->effective_min = inputs.min.value;
+      this->effective_max = inputs.max.value;
     }
-    if(state.effective_max <= state.effective_min)
-      state.effective_max = state.effective_min + 0.0001;
+    if(this->effective_max <= this->effective_min)
+      this->effective_max = this->effective_min + 0.0001;
 
     // Detect min crossing with hold time
-    bool below_min = value < state.effective_min;
+    bool below_min = value < this->effective_min;
 
     // Handle min threshold with hold time
-    if(state.min_hold_counter > 0)
+    if(this->min_hold_counter > 0)
     {
-      state.max_hold_counter = 0;
-      state.min_hold_counter--;
+      this->max_hold_counter = 0;
+      this->min_hold_counter--;
       // During hold, maintain previous state
-      below_min = state.was_below_min;
+      below_min = this->was_below_min;
     }
     else
     {
-      if(below_min && !state.was_below_min)
+      if(below_min && !this->was_below_min)
       {
         outputs.cross_min_down.value = halp::impulse{};
-        state.min_crossed_up = false;
-        state.min_hold_counter = inputs.hold_time.value;
-        state.max_hold_counter = 0;
+        this->min_crossed_up = false;
+        this->min_hold_counter = inputs.hold_time.value;
+        this->max_hold_counter = 0;
       }
-      else if(!below_min && state.was_below_min)
+      else if(!below_min && this->was_below_min)
       {
         outputs.cross_min_up.value = halp::impulse{};
-        state.min_crossed_up = true;
-        state.min_hold_counter = inputs.hold_time.value;
-        state.max_hold_counter = 0;
+        this->min_crossed_up = true;
+        this->min_hold_counter = inputs.hold_time.value;
+        this->max_hold_counter = 0;
       }
-      state.was_below_min = below_min;
+      this->was_below_min = below_min;
     }
 
     // Detect max crossing with hold time
-    bool above_max = value > state.effective_max;
+    bool above_max = value > this->effective_max;
 
     // Handle max threshold with hold time
-    if(state.max_hold_counter > 0)
+    if(this->max_hold_counter > 0)
     {
-      state.min_hold_counter = 0;
-      state.max_hold_counter--;
+      this->min_hold_counter = 0;
+      this->max_hold_counter--;
       // During hold, maintain previous state
-      above_max = state.was_above_max;
+      above_max = this->was_above_max;
     }
     else
     {
-      if(above_max && !state.was_above_max)
+      if(above_max && !this->was_above_max)
       {
         outputs.cross_max_up.value = halp::impulse{};
-        state.max_crossed_up = true;
-        state.max_hold_counter = inputs.hold_time.value;
-        state.min_hold_counter = 0;
+        this->max_crossed_up = true;
+        this->max_hold_counter = inputs.hold_time.value;
+        this->min_hold_counter = 0;
       }
-      else if(!above_max && state.was_above_max)
+      else if(!above_max && this->was_above_max)
       {
         outputs.cross_max_down.value = halp::impulse{};
-        state.max_crossed_up = false;
-        state.max_hold_counter = inputs.hold_time.value;
-        state.min_hold_counter = 0;
+        this->max_crossed_up = false;
+        this->max_hold_counter = inputs.hold_time.value;
+        this->min_hold_counter = 0;
       }
-      state.was_above_max = above_max;
+      this->was_above_max = above_max;
     }
 
     // Update state indicators
-    outputs.in_range.value = !state.was_below_min && !state.was_above_max;
+    outputs.in_range.value = !this->was_below_min && !this->was_above_max;
     // Apply range filtering
     bool pass = true;
-    if(state.min_hold_counter <= 0 & state.max_hold_counter <= 0)
+    if(this->min_hold_counter <= 0 & this->max_hold_counter <= 0)
     {
       if(inputs.clip_to_range)
       {
@@ -319,7 +330,7 @@ public:
           case InputFilterMode::None:
             break;
           case InputFilterMode::Inside:
-            value = std::clamp(value, state.effective_min, state.effective_max);
+            value = std::clamp(value, this->effective_min, this->effective_max);
             break;
           case InputFilterMode::Outside:
             if(outputs.in_range.value)
@@ -331,10 +342,10 @@ public:
             }
             break;
           case InputFilterMode::AboveMin:
-            value = std::max(value, state.effective_min);
+            value = std::max(value, this->effective_min);
             break;
           case InputFilterMode::BelowMax:
-            value = std::min(value, state.effective_max);
+            value = std::min(value, this->effective_max);
             break;
         }
       }
@@ -345,16 +356,16 @@ public:
           case InputFilterMode::None:
             break;
           case InputFilterMode::Inside:
-            pass = (value >= state.effective_min && value <= state.effective_max);
+            pass = (value >= this->effective_min && value <= this->effective_max);
             break;
           case InputFilterMode::Outside:
-            pass = (value <= state.effective_min || value >= state.effective_max);
+            pass = (value <= this->effective_min || value >= this->effective_max);
             break;
           case InputFilterMode::AboveMin:
-            pass = (value >= state.effective_min);
+            pass = (value >= this->effective_min);
             break;
           case InputFilterMode::BelowMax:
-            pass = (value <= state.effective_max);
+            pass = (value <= this->effective_max);
             break;
         }
       }
@@ -363,26 +374,39 @@ public:
     // Check if value passes range filter
     if(!pass)
     {
-      state.previous_value = input_value;
+      this->previous_value = input_value;
       outputs.filtered.value = std::nullopt;
       return;
     }
 
     // Apply repetition filtering
-    if(inputs.filter_repetitions && state.previous_output)
+    if(inputs.filter_repetitions && this->previous_output)
     {
-      float diff = std::abs(value - *state.previous_output);
+      float diff = std::abs(value - *this->previous_output);
       if(diff < inputs.repetition_tolerance.value)
       {
-        state.previous_value = input_value;
+        this->previous_value = input_value;
+        outputs.filtered.value = std::nullopt;
+        return;
+      }
+    }
+
+    // Apply temporal filtering
+    if(inputs.temporal_filter && this->previous_value_t)
+    {
+      auto t = inputs.temporal_filter_t.value; // in seconds in model-space
+      auto t_flicks = 705'600'000 * t;
+      if(tk.start_in_flicks < *this->previous_value_t + t_flicks)
+      {
         outputs.filtered.value = std::nullopt;
         return;
       }
     }
 
     // Value passes all filters
-    state.previous_value = input_value;
-    state.previous_output = value;
+    this->previous_value = input_value;
+    this->previous_value_t = tk.start_in_flicks;
+    this->previous_output = value;
     outputs.filtered.value = value;
   }
 };
