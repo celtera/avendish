@@ -118,10 +118,14 @@ struct texture_output
   }
 
   void set(int x, int y, rgba_color col) noexcept { texture.set(x, y, col); }
+  void set(int x, int y, rgb_color col) noexcept { texture.set(x, y, col); }
 
   TextureType texture;
 
   typename TextureType::uninitialized_bytes storage;
 };
+
+template <static_string lit>
+using rgb_texture_output = texture_output<lit, rgb_texture>;
 
 }
