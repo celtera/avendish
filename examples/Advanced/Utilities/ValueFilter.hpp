@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
