@@ -19,11 +19,12 @@ enum class ArrayCombinerMode
 };
 struct ArrayCombiner
 {
-  halp_meta(name, "Array Combiner")
+  halp_meta(name, "Array Value Combiner")
   halp_meta(c_name, "avnd_array_combiner")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Control/Mappings")
-  halp_meta(description, "Combine the input arrays")
+  halp_meta(
+      description, "Combine the values of input arrays element-wise: sum, append, etc.")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/array-utilities.html#sum")
   halp_meta(uuid, "f5b8e20e-a016-4e19-a396-39d780179533")
 

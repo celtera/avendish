@@ -72,6 +72,8 @@ struct PromptComposer
     auto it = splitted.begin();
     for(auto& val : inputs.in_i.ports)
     {
+      if(it == splitted.end())
+        break;
       boost::trim_if(*it, [](char c) { return c <= 32; });
       outputs.out.value += fmt::format("({}:{}), ", *it, val.value);
       ++it;

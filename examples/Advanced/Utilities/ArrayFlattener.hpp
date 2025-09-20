@@ -14,7 +14,10 @@ struct ArrayFlattener
   halp_meta(c_name, "avnd_array_flattener")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Control/Mappings")
-  halp_meta(description, "Flatten an input array")
+  halp_meta(
+      description,
+      "Flatten an input array: from "
+      "[ [ 1, 2 ], [ 3, [ 4 ] ], [ [ 5, 6] ] ] into [ 1, 2, 3, 4, 5, 6 ].")
   halp_meta(
       manual_url, "https://ossia.io/score-docs/processes/array-utilities.html#flatten")
   halp_meta(uuid, "d2cd609b-0032-45f0-a210-de6c2f513012")
