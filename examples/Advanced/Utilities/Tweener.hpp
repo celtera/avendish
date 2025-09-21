@@ -130,10 +130,14 @@ public:
 
   void operator()(tick t) noexcept
   {
-    double curve_ease = ease01(t.relative_position);
+    double curve_ease = ease01(std::clamp(t.relative_position, 0., 1.));
 
     outputs.output
         = ossia::easing::ease{}(inputs.from.value, inputs.to.value, curve_ease);
+    if(!std::isfinite(outputs.output) || !std::isnormal(outputs.output))
+    {
+      std::abort();
+    }
   }
 };
 
