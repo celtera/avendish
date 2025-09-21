@@ -75,7 +75,11 @@ struct PulseView
       };
       std::optional<halp::impulse> value;
 
-      void update(PulseView& self) { self.send_message(); }
+      void update(PulseView& self)
+      {
+        if(value)
+          self.send_message();
+      }
     } in;
   };
 
