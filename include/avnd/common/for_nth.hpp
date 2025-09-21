@@ -91,6 +91,13 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 }
 
 template <class T, class F>
+  requires(avnd::vector_ish<std::decay_t<T>>)
+constexpr void for_each_field_ref(T&& value, F&& func)
+{
+  for(auto& v : value) func(v);
+}
+
+template <class T, class F>
   requires(!avnd::vector_ish<T>)
 constexpr void for_each_field_ref_n(T&& value, F&& func)
 {

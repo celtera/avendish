@@ -15,12 +15,12 @@ struct to_ossia_value_impl
   template <typename F>
   void to_vector(const F& f)
   {
-    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    constexpr int fields = avnd::pfr::tuple_size_v<F>;
     std::vector<ossia::value> v;
     v.resize(fields);
 
     int k = 0;
-    boost::pfr::for_each_field(
+    avnd::pfr::for_each_field(
         f, [&](const auto& f) { to_ossia_value_impl{v[k++]}(f); });
 
     val = std::move(v);
@@ -29,13 +29,13 @@ struct to_ossia_value_impl
   template <typename F>
   void to_map(const F& f)
   {
-    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    constexpr int fields = avnd::pfr::tuple_size_v<F>;
     ossia::value_map_type v;
     v.reserve(fields);
 
     static constexpr auto field_names = F::field_names();
     int k = 0;
-    boost::pfr::for_each_field(
+    avnd::pfr::for_each_field(
         f, [&](const auto& f) { to_ossia_value_impl{v[field_names[k++]]}(f); });
 
     val = std::move(v);
@@ -45,7 +45,7 @@ struct to_ossia_value_impl
     requires(std::is_aggregate_v<F> && !avnd::vector_ish<F>)
   void operator()(const F& f)
   {
-    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    constexpr int fields = avnd::pfr::tuple_size_v<F>;
     if constexpr(requires { F::field_names()[0][0]; })
     {
       static_assert(fields == F::field_names().size());
@@ -301,11 +301,37 @@ ossia::value to_ossia_value(const T& v)
   return {};
 }
 
+template <typename T, std::size_t N>
+ossia::value to_ossia_value(const T (&v)[N])
+{
+  using type = std::decay_t<T>;
+  if constexpr(N == 0)
+  {
+    return ossia::impulse{};
+  }
+  else if constexpr(N == 2 && std::is_floating_point_v<type>)
+  {
+    return ossia::vec2f{(float)v[0], (float)v[1]};
+  }
+  else if constexpr(N == 3 && std::is_floating_point_v<type>)
+  {
+    return ossia::vec3f{(float)v[0], (float)v[1], (float)v[2]};
+  }
+  else if constexpr(N == 4 && std::is_floating_point_v<type>)
+  {
+    return ossia::vec4f{(float)v[0], (float)v[1], (float)v[2], (float)v[3]};
+  }
+  else
+  {
+    return to_ossia_value_rec(v);
+  }
+}
+
 template <typename T>
 ossia::value to_ossia_value(const T& v)
 {
   using type = std::decay_t<T>;
-  constexpr int sz = boost::pfr::tuple_size_v<type>;
+  constexpr int sz = avnd::pfr::tuple_size_v<type>;
   if constexpr(sz == 0)
   {
     return ossia::impulse{};

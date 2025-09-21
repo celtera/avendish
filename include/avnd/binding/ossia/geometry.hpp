@@ -85,7 +85,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
 
   {
     std::size_t buf_k = 0;
-    boost::pfr::for_each_field_ref(ctrl.buffers, [&](auto& buf) {
+    avnd::for_each_field_ref(ctrl.buffers, [&](auto& buf) {
       using ptr_type = std::decay_t<decltype(buf.data)>;
       if constexpr(std::is_same_v<ptr_type, void*>)
       {
@@ -167,7 +167,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
   }
 
   geom.input.clear();
-  boost::pfr::for_each_field_ref(ctrl.input, [&](auto& input) {
+  avnd::for_each_field_ref(ctrl.input, [&](auto& input) {
     struct ossia::geometry::input in;
 
     if constexpr(requires { input.buffer(); })
@@ -225,7 +225,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
 
   if(geom.bindings.empty())
   {
-    boost::pfr::for_each_field_ref(avnd::get_bindings(ctrl), [&](auto& binding) {
+    avnd::for_each_field_ref(avnd::get_bindings(ctrl), [&](auto& binding) {
       ossia::geometry::binding b;
 
       b.stride = binding.stride;
@@ -248,7 +248,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
   if(geom.attributes.empty())
   {
     std::size_t k = 0;
-    boost::pfr::for_each_field_ref(avnd::get_attributes(ctrl), [&]<typename A>(A& attr) {
+    avnd::for_each_field_ref(avnd::get_attributes(ctrl), [&]<typename A>(A& attr) {
       ossia::geometry::attribute a;
 
       // FIXME very brittle

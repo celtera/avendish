@@ -35,25 +35,21 @@ AVND_INLINE constexpr auto tie_as_tuple(S&& s) noexcept
 }
 }
 
+#if !defined(AVND_HAS_STRUCTURED_BINDING_SIZE_ATTRIBUTE)
 template <class T>
 AVND_INLINE constexpr auto fields_count_impl(const T& t) noexcept
 {
-#if defined(AVND_HAS_STRUCTURED_BINDING_SIZE_ATTRIBUTE)
-  return __builtin_structured_binding_size(T);
-#else
   const auto& [... elts] = t;
   return avnd::num<sizeof...(elts)>{};
-#endif
 }
 
 template <typename T>
-static constexpr const std::size_t tuple_size_v =
-#if defined(AVND_HAS_STRUCTURED_BINDING_SIZE_ATTRIBUTE)
-    return __builtin_structured_binding_size(T);
-#else
-    decltype(fields_count_impl<T>(std::declval<const T&>()))::value
+static constexpr const std::size_t tuple_size_v = decltype(fields_count_impl<T>(std::declval<const T&>()))::value;
+# else
+
+template <typename T>
+static constexpr const std::size_t tuple_size_v = __builtin_structured_binding_size(T);
 #endif
-;
 
 template <std::size_t I, typename S>
 AVND_INLINE constexpr auto&& get(S&& s) noexcept

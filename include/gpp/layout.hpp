@@ -4,7 +4,7 @@
 
 #include <avnd/common/for_nth.hpp>
 #include <avnd/common/member_reflection.hpp>
-#include <boost/pfr/core.hpp>
+#include <avnd/common/struct_reflection.hpp>
 
 /*
 namespace gpp
@@ -163,7 +163,7 @@ MSVC_BUGGY_CONSTEVAL int std140_offset_impl()
   {
     [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
       MSVC_BUGGY_CONSTEXPR T t{};
-      (func(boost::pfr::get<Index>(t)), ...);
+      (func(avnd::pfr::get<Index>(t)), ...);
     }(std::make_index_sequence<Count>{});
   }
   return sz;
@@ -181,7 +181,7 @@ MSVC_BUGGY_CONSTEVAL int std140_offset()
 template <typename T>
 MSVC_BUGGY_CONSTEVAL int std140_size()
 {
-  return std140_offset_impl<T, boost::pfr::tuple_size_v<T>>();
+  return std140_offset_impl<T, avnd::pfr::tuple_size_v<T>>();
 }
 
 }
