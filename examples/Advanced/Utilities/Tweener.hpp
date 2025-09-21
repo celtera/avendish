@@ -134,10 +134,6 @@ public:
 
     outputs.output
         = ossia::easing::ease{}(inputs.from.value, inputs.to.value, curve_ease);
-    if(!std::isfinite(outputs.output) || !std::isnormal(outputs.output))
-    {
-      std::abort();
-    }
   }
 };
 
