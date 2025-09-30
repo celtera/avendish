@@ -211,11 +211,14 @@ struct ArrayTool
       v.erase(v.begin(), v.begin() + std::min(int(v.size()), -inputs.out_pad_l));
 
     if(inputs.out_pad_r > 0)
+    {
       v.resize(v.size() + inputs.out_pad_r, 0.);
+    }
     else if(inputs.out_pad_r < 0)
-      v.erase(
-          v.rbegin().base(),
-          (v.rbegin() + std::min(int(v.size()), -inputs.out_pad_r)).base());
+    {
+      int to_remove = std::min(int(v.size()), -inputs.out_pad_r);
+      v.erase(v.begin() + v.size() - to_remove, v.end());
+    }
   }
 };
 }
