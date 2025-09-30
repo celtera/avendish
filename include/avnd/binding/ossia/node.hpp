@@ -585,11 +585,13 @@ public:
       // Time in seconds, free mode
       dst = vec[0];
       this->time_controls.update_control(this->impl, idx, vec[0], false);
+      if_possible(field.sync = false);
     }
     else
     {
       dst = to_seconds(vec[0], this->tempo);
       this->time_controls.update_control(this->impl, idx, vec[0], true);
+      if_possible(field.sync = true);
     }
     return true;
   }

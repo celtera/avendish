@@ -78,6 +78,13 @@ constexpr AVND_INLINE auto& get(T&& v)
 
 template <std::size_t N, typename T>
 using tuple_element_t = typename pfr_impl_helper<T>::template tuple_element_t<N>;
+
+template <typename... Args>
+AVND_INLINE constexpr auto for_each_field(Args&&... args) noexcept(
+    noexcept(boost::pfr::for_each_field(std::forward<Args>(args)...))) -> decltype(auto)
+{
+  return boost::pfr::for_each_field(std::forward<Args>(args)...);
+}
 }
 
 namespace avnd
