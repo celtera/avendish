@@ -41,6 +41,7 @@ frame_in_interval(int start_frame, int end_frame, double rate, double freq)
   int64_t itv_ns = 1e9 / freq;
   auto start_div = std::div(start_ns, itv_ns);
   auto end_div = std::div(end_ns, itv_ns);
+
   if(end_div.quot > start_div.quot)
   {
     return 1;
@@ -61,16 +62,28 @@ void AudioParticles::operator()(const halp::tick_musical& t)
   // FIXME range is not respected
 
   if(inputs.frequency > 0.)
+  {
     // Trigger new sounds
-    if(frame_in_interval(
-           t.position_in_frames, t.position_in_frames + t.frames, rate,
-           1. / (1. - inputs.frequency)))
+    bool is_in_frame = false;
+    if(inputs.frequency.sync)
+    {
+      is_in_frame = !t.get_quantification_date(1. / inputs.frequency.value).empty();
+    }
+    else
+    {
+      is_in_frame = bool(frame_in_interval(
+          t.position_in_frames, t.position_in_frames + t.frames, rate,
+          inputs.frequency));
+    }
+    if(is_in_frame)
     {
       if((1. - inputs.density) < std::exponential_distribution<float>()(m_rng))
-        m_playheads.push_back(Playhead{
-            0, uint16_t(unsigned(rand()) % m_sounds.size()),
-            uint16_t(unsigned(rand()) % this->outputs.audio.channels)});
+        m_playheads.push_back(
+            Playhead{
+                0, uint16_t(unsigned(m_rng()) % m_sounds.size()),
+                uint16_t(unsigned(m_rng()) % this->outputs.audio.channels)});
     }
+  }
 
   for(auto& playhead : m_playheads)
   {

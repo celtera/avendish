@@ -28,7 +28,7 @@ public:
     halp::lineedit<"Folder", ""> folder;
     halp::spinbox_i32<"Channels", halp::range{.min = 0., .max = 128, .init = 16}>
         channels;
-    struct : halp::time_chooser<"Frequency", halp::range{0.001, 30., 0.2}>
+    struct : halp::time_chooser<"Frequency", halp::range{0.00001, 30., 0.2}>
     {
       using mapper = halp::log_mapper<std::ratio<95, 100>>;
     } frequency;
