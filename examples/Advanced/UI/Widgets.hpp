@@ -3,6 +3,7 @@
 #include <halp/controls.hpp>
 #include <halp/messages.hpp>
 #include <halp/meta.hpp>
+#include <ossia/network/value/value.hpp>
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
@@ -19,12 +20,35 @@ struct Impulse
       manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#impulse")
   halp_meta(uuid, "161722c3-a2a4-4958-8510-7fde9160bf44")
 
+  struct
+  {
+    halp::toggle<"Skip false-y values"> skip_falsey;
+  } inputs;
+
+  struct truey_vis
+  {
+    bool operator()() { return false; }
+    bool operator()(ossia::impulse) { return true; }
+    bool operator()(int v) { return v != 0; }
+    bool operator()(float v) { return v != 0; }
+    bool operator()(ossia::vec2f) { return true; }
+    bool operator()(ossia::vec3f) { return true; }
+    bool operator()(ossia::vec4f) { return true; }
+    bool operator()(const std::string& v) { return !v.empty(); }
+    bool operator()(const std::vector<ossia::value>& v) { return !v.empty(); }
+    bool operator()(const ossia::value_map_type& v) { return !v.empty(); }
+  };
+
   struct messages
   {
     struct
     {
       static consteval auto name() { return "Message"; }
-      void operator()(Impulse& self) { self.outputs.out(); }
+      void operator()(Impulse& self, const ossia::value& v)
+      {
+        if(!self.inputs.skip_falsey || v.apply(truey_vis{}))
+          self.outputs.out();
+      }
     } functor;
   };
 
@@ -51,7 +75,6 @@ struct Integer
   {
     struct : halp::spinbox_i32<"Value", halp::free_range_max<int>>
     {
-      void update(Integer& self) { self.outputs.out(this->value); }
     } v;
   } inputs;
 
@@ -60,7 +83,7 @@ struct Integer
     halp::callback<"Integer", int> out;
   } outputs;
 
-  void operator()() noexcept { }
+  void operator()() noexcept { outputs.out(inputs.v.value); }
 };
 
 struct Float
@@ -78,7 +101,6 @@ struct Float
   {
     struct : halp::spinbox_f32<"Value", halp::free_range_max<float>>
     {
-      void update(Float& self) { self.outputs.out(this->value); }
     } v;
   } inputs;
 
@@ -87,7 +109,7 @@ struct Float
     halp::callback<"Out", float> out;
   } outputs;
 
-  void operator()() noexcept { }
+  void operator()() noexcept { outputs.out(inputs.v.value); }
 };
 
 struct String
@@ -105,7 +127,6 @@ struct String
   {
     struct : halp::lineedit<"Value", "text">
     {
-      void update(String& self) { self.outputs.out(this->value); }
     } v;
   } inputs;
 
@@ -131,8 +152,7 @@ public:
   {
     struct : halp::knob_f32<"Value", halp::range{0., 1., 0.5}>
     {
-      void update(Knob& self) { self.outputs.out.value = this->value; }
-    } pos;
+    } v;
   } inputs;
 
   struct
@@ -140,6 +160,6 @@ public:
     halp::val_port<"Output", float> out;
   } outputs;
 
-  void operator()() { }
+  void operator()() noexcept { outputs.out = inputs.v.value; }
 };
 }

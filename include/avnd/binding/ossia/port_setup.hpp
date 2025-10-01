@@ -199,22 +199,29 @@ struct outlet_storage
 
 struct setup_value_port
 {
+
+  static constexpr double min_domain_value = std::numeric_limits<int>::lowest() / 256.;
+  static constexpr double max_domain_value = std::numeric_limits<int>::max() / 256.;
+
   template <avnd::parameter_with_minmax_range_ignore_init T>
   static ossia::domain range_to_domain()
   {
     static constexpr auto dom = avnd::get_range<T>();
     if constexpr(std::is_floating_point_v<decltype(dom.min)>)
-      return ossia::make_domain((float)dom.min, (float)dom.max);
+      if constexpr(dom.min > min_domain_value && dom.max < max_domain_value)
+        return ossia::make_domain((float)dom.min, (float)dom.max);
 
     if constexpr(avnd::parameter_with_minmax_range<T>)
     {
       if constexpr(std::is_same_v<std::decay_t<decltype(dom.init)>, bool>)
         return ossia::domain_base<bool>{};
-      else
+      else if constexpr(dom.min > min_domain_value && dom.max < max_domain_value)
         return ossia::make_domain(dom.min, dom.max);
     }
-    else
+    else if constexpr(dom.min > min_domain_value && dom.max < max_domain_value)
       return ossia::make_domain(dom.min, dom.max);
+
+    return ossia::domain{};
   }
 
   template <avnd::string_parameter T>
