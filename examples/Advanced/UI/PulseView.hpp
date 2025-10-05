@@ -17,12 +17,8 @@ struct PulseItem
 
   void paint(auto ctx)
   {
-    update_fps();
     if(ratio <= 0.)
-    {
-      ctx.update();
       return;
-    }
 
     constexpr double side = 10.;
     ctx.begin_path();
@@ -34,23 +30,12 @@ struct PulseItem
     ctx.fill();
     ctx.update();
 
-    ratio = std::max(0.0, ratio - 0.15 / fps);
-  }
-
-  void update_fps()
-  {
-    auto t = std::chrono::steady_clock::now();
-    double elapsed
-        = std::chrono::duration_cast<std::chrono::nanoseconds>(t - m_last).count();
-    if(elapsed <= 0 || elapsed >= 1e9)
-      fps = 30.;
-    else
-      fps = 1e9 / elapsed;
+    ratio = std::max(0.0, ratio - 0.25 / 240.0);
   }
 
   double ratio = 0.0;
-  double fps = 60.0;
   std::chrono::steady_clock::time_point m_last;
+  smallfun::function<void()> update;
 };
 
 struct PulseView
@@ -93,7 +78,11 @@ struct PulseView
     halp::custom_control<PulseItem, &inputs::in> anim{.x = 10, .y = 0};
     struct bus
     {
-      static void process_message(ui& self) { self.anim.ratio = 1.0; }
+      static void process_message(ui& self)
+      {
+        self.anim.ratio = 1.0;
+        self.anim.update();
+      }
     };
   };
 };
