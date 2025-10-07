@@ -90,6 +90,9 @@ struct ArrayTool
     halp::enum_t<ArrayToolStrideMode, "Stride"> stridemode;
     halp::spinbox_i32<"Post-padding L", halp::range{-256, 256, 0}> out_pad_l;
     halp::spinbox_i32<"Post-padding R", halp::range{-256, 256, 0}> out_pad_r;
+    halp::spinbox_i32<"Insert", halp::free_range_min<int>> insert;
+    halp::spinbox_i32<"From", halp::range{0, 256, 0}> insert_offset;
+    halp::spinbox_i32<"Every", halp::range{1, 256, 0}> insert_stride;
 
     halp::toggle<"Normalize"> normalize;
   } inputs;
@@ -171,6 +174,16 @@ struct ArrayTool
        rotate_n > 0 && rotate_n < v.size())
     {
       std::rotate(v.begin(), v.begin() + rotate_n, v.end());
+    }
+
+    if(inputs.insert_stride > 1)
+    {
+      for(int i = inputs.insert_offset; i < v.size(); i += inputs.insert_stride)
+      {
+        if(i < 0)
+          continue;
+        v.insert(v.begin() + i, inputs.insert.value);
+      }
     }
 
     if(int stride = inputs.stride; stride > 1)
