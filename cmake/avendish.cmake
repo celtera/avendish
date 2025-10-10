@@ -140,6 +140,7 @@ include(avendish.vst3)
 include(avendish.clap)
 include(avendish.ossia)
 include(avendish.standalone)
+include(avendish.touchdesigner)
 include(avendish.example)
 
 # Used for getting completion in IDEs...

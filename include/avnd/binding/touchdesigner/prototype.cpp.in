@@ -1,0 +1,121 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+/**
+ * TouchDesigner CHOP plugin entry point template
+ * This file is processed by CMake to instantiate the binding for a specific processor
+ */
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/chop/audio_processor.hpp>
+#include <avnd/binding/touchdesigner/chop/audio_processor.impl.hpp>
+
+// Include TouchDesigner headers
+#include "CHOP_CPlusPlusBase.h"
+
+using type = decltype(avnd::configure<touchdesigner::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+namespace td = touchdesigner::chop;
+
+/**
+ * The actual TouchDesigner CHOP class that inherits from CHOP_CPlusPlusBase
+ */
+class @AVND_C_NAME@_chop : public TD::CHOP_CPlusPlusBase
+{
+public:
+  @AVND_C_NAME@_chop(const TD::OP_NodeInfo* info)
+  {
+    processor.init(0, nullptr);
+  }
+
+  virtual ~@AVND_C_NAME@_chop() { processor.destroy(); }
+
+  // TouchDesigner interface implementation - delegate to processor
+  virtual void getGeneralInfo(TD::CHOP_GeneralInfo* ginfo, const TD::OP_Inputs* inputs, void* reserved) override
+  {
+    processor.getGeneralInfo(ginfo, inputs, reserved);
+  }
+
+  virtual bool getOutputInfo(TD::CHOP_OutputInfo* oinfo, const TD::OP_Inputs* inputs, void* reserved) override
+  {
+    return processor.getOutputInfo(oinfo, inputs, reserved);
+  }
+
+  virtual void getChannelName(
+      int32_t index,
+      TD::OP_String* name,
+      const TD::OP_Inputs* inputs,
+      void* reserved) override
+  {
+    processor.getChannelName(index, name, inputs, reserved);
+  }
+
+  virtual void execute(TD::CHOP_Output* output, const TD::OP_Inputs* inputs, void* reserved) override
+  {
+    processor.execute(output, inputs, reserved);
+  }
+
+  virtual void setupParameters(TD::OP_ParameterManager* manager, void* reserved) override
+  {
+    processor.setupParameters(manager, reserved);
+  }
+
+  virtual void pulsePressed(const char* name, void* reserved) override
+  {
+    // Handle pulse parameters if needed in the future
+  }
+
+private:
+  td::audio_processor<type> processor;
+};
+
+// Plugin export functions required by TouchDesigner
+extern "C"
+{
+
+DLLEXPORT
+void FillCHOPPluginInfo(TD::CHOP_PluginInfo* info)
+{
+  // Plugin identity
+  info->apiVersion = TD::CHOPCPlusPlusAPIVersion;
+  info->customOPInfo.opType->setString("@AVND_C_NAME@");
+  info->customOPInfo.opLabel->setString("@AVND_C_NAME@");
+  info->customOPInfo.opIcon->setString("CHOP");
+
+  // Get metadata from processor if available
+  if constexpr (avnd::has_name<type>)
+  {
+    info->customOPInfo.opLabel->setString(avnd::get_name<type>().data());
+  }
+
+  if constexpr (avnd::has_author<type>)
+  {
+    info->customOPInfo.authorName->setString(avnd::get_author<type>().data());
+  }
+  else
+  {
+    info->customOPInfo.authorName->setString("Avendish");
+  }
+
+  info->customOPInfo.authorEmail->setString("");
+
+  // Input/output configuration
+  info->customOPInfo.minInputs = 1;
+  info->customOPInfo.maxInputs = 1;
+}
+
+DLLEXPORT
+TD::CHOP_CPlusPlusBase* CreateCHOPInstance(const TD::OP_NodeInfo* info)
+{
+  return new @AVND_C_NAME@_chop(info);
+}
+
+DLLEXPORT
+void DestroyCHOPInstance(TD::CHOP_CPlusPlusBase* instance)
+{
+  delete static_cast<@AVND_C_NAME@_chop*>(instance);
+}
+
+} // extern "C"
