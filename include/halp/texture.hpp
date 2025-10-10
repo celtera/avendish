@@ -13,8 +13,11 @@ HALP_MODULE_EXPORT
 namespace halp
 {
 
+template <static_string lit, typename TextureType = rgba_texture>
+struct texture_input;
+
 template <static_string lit>
-struct texture_input
+struct texture_input<lit, rgba_texture>
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -53,14 +56,46 @@ struct texture_input
 };
 
 template <static_string lit>
-struct fixed_texture_input : texture_input<lit>
+struct texture_input<lit, rgba32f_texture>
 {
-  int request_width{1};
-  int request_height{1};
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  struct rgba32f_row
+  {
+    float* components;
+  };
+
+  rgba32f_color get(int x, int y) noexcept
+  {
+    assert(x >= 0 && x < texture.width);
+    assert(y >= 0 && y < texture.height);
+
+    const int pixel_index = y * texture.width + x;
+    const int component_index = pixel_index * 4;
+
+    auto* pixel_ptr = texture.bytes + component_index;
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
+  }
+
+  rgba32f_color get(int x, rgba32f_row y) noexcept
+  {
+    assert(x >= 0 && x < texture.width);
+    const int component_index = x * 4;
+    auto* pixel_ptr = y.components + component_index;
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
+  }
+
+  rgba32f_row row(int y) noexcept
+  {
+    assert(y >= 0 && y < texture.height);
+    return {texture.bytes + y * texture.width * 4};
+  }
+
+  rgba32f_texture texture;
 };
 
 template <static_string lit>
-struct rgb_texture_input
+struct texture_input<lit, rgb_texture>
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -77,6 +112,17 @@ struct rgb_texture_input
   }
 
   rgb_texture texture;
+};
+template <static_string lit>
+struct rgb_texture_input : texture_input<lit, rgb_texture>
+{
+};
+
+template <static_string lit, typename TextureType = rgba_texture>
+struct fixed_texture_input : texture_input<lit, TextureType>
+{
+  int request_width{1};
+  int request_height{1};
 };
 
 template <static_string lit, typename TextureType = rgba_texture>
