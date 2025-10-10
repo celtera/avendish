@@ -1,9 +1,13 @@
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(avendish)
+project(avendish LANGUAGES C CXX)
 option(AVENDISH_INCLUDE_SOURCE_ONLY "Create a simple Avendish target for including headers" OFF)
+
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
 
 if(AVENDISH_INCLUDE_SOURCE_ONLY)
   set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
