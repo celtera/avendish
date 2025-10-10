@@ -308,7 +308,7 @@ concept has_author
       || requires { std::string_view{T::creator}; } || requires { T::creators(); }
       || requires { T::creators; };
 template <typename T>
-/* constexpr */ auto get_author()
+/* constexpr */ std::string_view get_author()
 {
   if constexpr(requires { T::author(); })
     return T::author();

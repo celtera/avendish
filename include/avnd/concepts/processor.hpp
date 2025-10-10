@@ -251,6 +251,8 @@ template <typename T>
 concept float_processor = typed_processor<float, T>;
 template <typename T>
 concept double_processor = typed_processor<double, T>;
+template <typename T>
+concept audio_processor = typed_processor<float, T> || typed_processor<double, T>;
 
 template <typename T>
 concept monophonic_audio_processor
