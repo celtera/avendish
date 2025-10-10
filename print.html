@@ -3428,7 +3428,8 @@ concept painter = requires(T t) {
                     t.draw_circle(0., 0., 20.);
 
                     //           x, y, w, h, bytes, img_w, img_h
-                    t.draw_bytes(0., 0., 0., 0., nullptr, 0, 0);
+                    t.draw_bytes(0., 0., 0., 0., (unsigned char*)nullptr, 0, 0);
+                    t.draw_bytes(0., 0., 0., 0., (float*)nullptr, 0, 0);
                   };
 }
 </code></pre>
