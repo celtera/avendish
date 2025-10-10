@@ -195,6 +195,7 @@ function(avnd_make_all)
   avnd_make_object(${ARGV})
   avnd_make_audioplug(${ARGV})
   avnd_make_gstreamer(${ARGV})
+  avnd_make_touchdesigner(${ARGV})
 endfunction()
 
 function(avnd_make)

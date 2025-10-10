@@ -224,34 +224,38 @@ void audio_processor<T>::setupParameters(TD::OP_ParameterManager* manager, void*
 template <typename T>
 void audio_processor<T>::update_controls(const TD::OP_Inputs* inputs)
 {
-  // Iterate over all parameter inputs and update from TD
-  avnd::parameter_input_introspection<T>::for_all(
-      avnd::get_inputs(implementation.effect),
-      [this, inputs]<typename Field>(Field& field) {
-    constexpr auto name = touchdesigner::get_td_name<Field>();
+  /*
+  if constexpr(avnd::has_inputs<T>) {
+    // Iterate over all parameter inputs and update from TD
+    avnd::parameter_input_introspection<T>::for_all(
+        avnd::get_inputs(implementation.effect),
+        [this, inputs]<typename Field>(Field& field) {
+      constexpr auto name = touchdesigner::get_td_name<Field>();
 
-    if constexpr(avnd::float_parameter<Field>)
-    {
-      field.value = static_cast<float>(inputs->getParDouble(name.data()));
-    }
-    else if constexpr(avnd::int_parameter<Field>)
-    {
-      field.value = inputs->getParInt(name.data());
-    }
-    else if constexpr(avnd::bool_parameter<Field>)
-    {
-      field.value = inputs->getParInt(name.data()) != 0;
-    }
-    else if constexpr(avnd::string_parameter<Field>)
-    {
-      const char* str = inputs->getParString(name.data());
-      if(str)
-        field.value = std::string(str);
-    }
+      if constexpr(avnd::float_parameter<Field>)
+      {
+        field.value = static_cast<float>(inputs->getParDouble(name.data()));
+      }
+      else if constexpr(avnd::int_parameter<Field>)
+      {
+        field.value = inputs->getParInt(name.data());
+      }
+      else if constexpr(avnd::bool_parameter<Field>)
+      {
+        field.value = inputs->getParInt(name.data()) != 0;
+      }
+      else if constexpr(avnd::string_parameter<Field>)
+      {
+        const char* str = inputs->getParString(name.data());
+        if(str)
+          field.value = std::string(str);
+      }
 
-    // Call update callback if it exists
-    if_possible(field.update(implementation.effect));
-      });
+      // Call update callback if it exists
+      if_possible(field.update(implementation.effect));
+        });
+  }
+  */
 }
 
 } // namespace touchdesigner::chop

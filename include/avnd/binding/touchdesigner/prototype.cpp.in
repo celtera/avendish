@@ -80,7 +80,15 @@ void FillCHOPPluginInfo(TD::CHOP_PluginInfo* info)
 {
   // Plugin identity
   info->apiVersion = TD::CHOPCPlusPlusAPIVersion;
-  info->customOPInfo.opType->setString("@AVND_C_NAME@");
+  std::string nm = "@AVND_C_NAME@";
+  if(nm[0]>= 97 && nm[0]<= 122 )
+    nm[0] -= ('a' - 'A');
+    else
+    nm[0] = 'A';
+  std::string nm2;
+  for(char c : nm) if((c>= 97 && c <= 122) or (c>= 65 && c <= 90) or (c>= 48 && c <= 57))
+  nm2.push_back(c);
+  info->customOPInfo.opType->setString(nm2.c_str());
   info->customOPInfo.opLabel->setString("@AVND_C_NAME@");
   info->customOPInfo.opIcon->setString("CHOP");
 

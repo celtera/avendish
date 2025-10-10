@@ -40,12 +40,16 @@ struct parameter_setup
     // We only need the type information, not actual values
     T temp{};
 
-    // Iterate over all input fields that are parameters
-    avnd::parameter_input_introspection<T>::for_all(
-        avnd::get_inputs(temp),
-        [this]<typename Field>(Field& field) {
-          setup_parameter<Field>();
-        });
+    /*
+    if constexpr(avnd::has_inputs<T>) {
+      // Iterate over all input fields that are parameters
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs(temp),
+          [this]<typename Field>(Field& field) {
+            setup_parameter<Field>();
+          });
+    }
+    */
   }
 
 private:

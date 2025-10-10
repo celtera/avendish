@@ -22,9 +22,10 @@ void parameter_setup<T>::setup_float_parameter(const char* name, const char* lab
   param.label = label;
 
   // Check if field has range metadata
-  if constexpr (avnd::has_range<Field>)
+  if constexpr (avnd::parameter_with_minmax_range<Field>)
   {
-    constexpr auto range = avnd::get_range<Field>();
+    // FIXME enum
+    static constexpr auto range = avnd::get_range<Field>();
     param.defaultValues[0] = range.init;
     param.minValues[0] = range.min;
     param.maxValues[0] = range.max;
@@ -53,9 +54,10 @@ void parameter_setup<T>::setup_int_parameter(const char* name, const char* label
   TD::OP_NumericParameter param(name);
   param.label = label;
 
-  if constexpr (avnd::has_range<Field>)
+  if constexpr (avnd::parameter_with_minmax_range<Field>)
   {
-    constexpr auto range = avnd::get_range<Field>();
+    // FIXME enum
+    static constexpr auto range = avnd::get_range<Field>();
     param.defaultValues[0] = range.init;
     param.minValues[0] = range.min;
     param.maxValues[0] = range.max;

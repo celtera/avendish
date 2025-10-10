@@ -69,6 +69,8 @@ function(avnd_make_touchdesigner)
     ${AVND_FX_TARGET}
     PROPERTIES
       OUTPUT_NAME "${AVND_C_NAME}"
+      LIBRARY_OUTPUT_DIRECTORY td
+      RUNTIME_OUTPUT_DIRECTORY td
       PREFIX ""  # No lib prefix
       CXX_STANDARD 23
       CXX_EXTENSIONS OFF
@@ -108,9 +110,6 @@ function(avnd_make_touchdesigner)
       PROPERTIES
         SUFFIX ".dll"
     )
-
-    # Windows-specific: ensure DLLEXPORT is defined
-    target_compile_definitions(${AVND_FX_TARGET} PRIVATE DLLEXPORT=__declspec(dllexport))
   endif()
 
   # Add Avendish headers
