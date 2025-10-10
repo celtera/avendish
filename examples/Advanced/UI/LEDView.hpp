@@ -82,6 +82,7 @@ struct LEDView
     } values;
 
     halp::enum_t<LEDInputMode, "Mode"> mode;
+    halp::xy_spinboxes_i32<"Size", halp::range{0, 512, 0}> size;
   } inputs;
 
 #if 0
@@ -116,6 +117,7 @@ struct LEDView
     std::vector<QColor> m_pixels;
     std::string m_mode = "RGB";
     LEDInputMode m_display_mode{};
+    ossia::vec2f m_sz{};
 
     Layer(
         const Process::ProcessModel& process, const Process::Context& doc,
@@ -129,6 +131,7 @@ struct LEDView
 
       auto led_inl = static_cast<Process::ControlInlet*>(process.inlets()[0]);
       auto mode_inl = static_cast<Process::ControlInlet*>(process.inlets()[1]);
+      auto size_inl = static_cast<Process::ControlInlet*>(process.inlets()[2]);
       auto mode = ossia::value_to_pretty_string(mode_inl->value());
 
       connect(
@@ -172,11 +175,13 @@ struct LEDView
               auto& vec = *list;
               for(int i = 0, N = vec.size() - 3; i < N; i += 4)
               {
-                const auto r = std::clamp(ossia::convert<float>(vec[i]), 0.f, 255.f);
-                const auto g = std::clamp(ossia::convert<float>(vec[i + 1]), 0.f, 255.f);
-                const auto b = std::clamp(ossia::convert<float>(vec[i + 2]), 0.f, 255.f);
-                // FIXME w in rgbw
-                // const auto w = std::clamp(ossia::convert<float>(vec[i + 3]), 0.f, 255.f);
+                const auto w = std::clamp(ossia::convert<float>(vec[i + 3]), 0.f, 255.f);
+                const auto r = std::clamp(ossia::convert<float>(vec[i]) + w, 0.f, 255.f);
+                const auto g
+                    = std::clamp(ossia::convert<float>(vec[i + 1]) + w, 0.f, 255.f);
+                const auto b
+                    = std::clamp(ossia::convert<float>(vec[i + 2]) + w, 0.f, 255.f);
+
                 m_pixels.push_back(QColor::fromRgb(r, g, b));
               }
               break;
@@ -204,6 +209,23 @@ struct LEDView
           update();
         }
       });
+
+      connect(
+          size_inl, &Process::ControlInlet::valueChanged, this,
+          [this](const ossia::value& v) {
+        m_sz = ossia::convert<ossia::vec2f>(v);
+        update();
+      });
+      connect(
+          size_inl, &Process::ControlInlet::executionValueChanged, this,
+          [this](const ossia::value& v) {
+        m_sz = ossia::convert<ossia::vec2f>(v);
+        update();
+      });
+      connect(size_inl, &Process::ControlInlet::executionReset, this, [this, size_inl] {
+        m_sz = ossia::convert<ossia::vec2f>(size_inl->value());
+        update();
+      });
     }
 
     void update_mode()
@@ -230,17 +252,40 @@ struct LEDView
       if(m_pixels.empty())
         return;
 
-      int xpos = 0;
-      int ypos = 0;
-      p->setPen(Qt::NoPen);
-      for(QColor pix : m_pixels)
+      if(m_sz[0] > 0 && m_sz[1] > 0)
       {
-        p->fillRect(QRectF(xpos, ypos, side, side), pix);
-        xpos += side + 1;
-        if(xpos + side > this->boundingRect().width())
+
+        int xn = 0;
+        int xpos = 0;
+        int ypos = 0;
+        p->setPen(Qt::NoPen);
+        for(QColor pix : m_pixels)
         {
-          xpos = 0;
-          ypos += side + 1;
+          p->fillRect(QRectF(xpos, ypos, side, side), pix);
+          xn++;
+          xpos += side + 1;
+          if(xn >= m_sz[0])
+          {
+            xn = 0;
+            xpos = 0;
+            ypos += side + 1;
+          }
+        }
+      }
+      else
+      {
+        int xpos = 0;
+        int ypos = 0;
+        p->setPen(Qt::NoPen);
+        for(QColor pix : m_pixels)
+        {
+          p->fillRect(QRectF(xpos, ypos, side, side), pix);
+          xpos += side + 1;
+          if(xpos + side > this->boundingRect().width())
+          {
+            xpos = 0;
+            ypos += side + 1;
+          }
         }
       }
     }
