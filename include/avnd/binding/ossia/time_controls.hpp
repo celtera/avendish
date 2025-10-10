@@ -57,7 +57,7 @@ struct time_control_storage : time_control_input_storage<T>
       for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
-        port.value = to_seconds(g.value, new_tempo);
+        port.value = to_seconds(g.value, new_tempo); // FIXME support multi-instance
         if_possible(port.update(state.effect));
       }
     }

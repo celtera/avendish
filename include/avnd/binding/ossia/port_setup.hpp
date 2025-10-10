@@ -524,6 +524,7 @@ struct setup_variable_audio_ports
 {
   Exec_T& self;
   Obj_T& impl;
+  int instance{};
 
   using in_refl = avnd::audio_bus_input_introspection<Obj_T>;
   using out_refl = avnd::audio_bus_output_introspection<Obj_T>;
@@ -556,6 +557,7 @@ struct setup_raw_ossia_ports
 {
   Exec_T& self;
   Obj_T& impl;
+  int instance{};
 
   template <ossia_port Field, std::size_t Idx>
   void operator()(Field& ctrl, auto& port, avnd::field_index<Idx>) const noexcept
