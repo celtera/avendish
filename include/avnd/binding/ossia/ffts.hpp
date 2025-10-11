@@ -75,7 +75,7 @@ struct spectrum_split_channel_input_storage<T>
       spectrum_fft_type, avnd::spectrum_split_channel_input_introspection, T>;
 
   // std::tuple< ossia::fft, ossia::fft >
-  [[no_unique_address]] fft_tuple ffts;
+  AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
@@ -110,7 +110,7 @@ struct spectrum_split_bus_input_storage<T>
 
   // TODO optimize for fixed bussys
   // std::tuple< std::vector<ossia::fft>, std::vector<ossia::fft> >
-  [[no_unique_address]] fft_tuple ffts;
+  AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
@@ -147,7 +147,7 @@ struct spectrum_complex_channel_input_storage<T>
       spectrum_fft_type, avnd::spectrum_complex_channel_input_introspection, T>;
 
   // std::tuple< ossia::fft, ossia::fft >
-  [[no_unique_address]] fft_tuple ffts;
+  AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
@@ -181,7 +181,7 @@ struct spectrum_complex_bus_input_storage<T>
 
   // TODO optimize for fixed bussys
   // std::tuple< std::vector<ossia::fft>, std::vector<ossia::fft> >
-  [[no_unique_address]] fft_tuple ffts;
+  AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
   void init(avnd::effect_container<T>& t, int buffer_size)
   {
@@ -209,10 +209,10 @@ struct spectrum_complex_bus_input_storage<T>
 template <typename T>
 struct spectrum_storage
 {
-  [[no_unique_address]] spectrum_split_channel_input_storage<T> split_channel;
-  [[no_unique_address]] spectrum_complex_channel_input_storage<T> complex_channel;
-  [[no_unique_address]] spectrum_split_bus_input_storage<T> split_bus;
-  [[no_unique_address]] spectrum_complex_bus_input_storage<T> complex_bus;
+  AVND_NO_UNIQUE_ADDRESS spectrum_split_channel_input_storage<T> split_channel;
+  AVND_NO_UNIQUE_ADDRESS spectrum_complex_channel_input_storage<T> complex_channel;
+  AVND_NO_UNIQUE_ADDRESS spectrum_split_bus_input_storage<T> split_bus;
+  AVND_NO_UNIQUE_ADDRESS spectrum_complex_bus_input_storage<T> complex_bus;
 
   void reserve_space(avnd::effect_container<T>& t, int buffer_size)
   {

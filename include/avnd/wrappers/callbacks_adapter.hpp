@@ -41,7 +41,7 @@ struct callback_storage_views<T>
       typename avnd::outputs_type<T>::type>;
   using vectors = boost::mp11::mp_transform<std::function, tuple>;
 
-  [[no_unique_address]] vectors functions_storage;
+  AVND_NO_UNIQUE_ADDRESS vectors functions_storage;
 };
 
 /**

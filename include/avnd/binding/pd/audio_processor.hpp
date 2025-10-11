@@ -61,8 +61,8 @@ struct audio_processor
   std::array<t_int, dsp_input_count> dsp_inputs;
   inputs<T> input_setup;
 
-  [[no_unique_address]] init_arguments<T> init_setup;
-  [[no_unique_address]] messages<T> messages_setup;
+  AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
+  AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...

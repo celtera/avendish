@@ -122,9 +122,9 @@ struct SimpleAudioEffect : clap_plugin
 
   const clap_host& host;
 
-  [[no_unique_address]] avnd_clap::audio_bus_info<T> audio_busses;
-  [[no_unique_address]] avnd::process_adapter<T> processor;
-  [[no_unique_address]] midi_processor<T> midi;
+  AVND_NO_UNIQUE_ADDRESS avnd_clap::audio_bus_info<T> audio_busses;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
 
   float sample_rate{44100.};
   int buffer_size{512};

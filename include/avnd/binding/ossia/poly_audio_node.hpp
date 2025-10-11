@@ -10,7 +10,7 @@ template <typename T>
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 

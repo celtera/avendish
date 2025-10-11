@@ -457,9 +457,9 @@ struct audio_channel_manager<T>
   }
 
   // One of the two float/double cases will be null necessarily
-  [[no_unique_address]] ebo_array<int, input_bus_count<T>> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, input_bus_count<T>> input_channels;
 
-  [[no_unique_address]] ebo_array<int, output_bus_count<T>> output_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, output_bus_count<T>> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
@@ -570,7 +570,7 @@ struct audio_channel_manager<T>
   int get_output_channels(auto& processor, int output_id) { return 0; }
 
   // One of the two float/double cases will be null necessarily
-  [[no_unique_address]] ebo_array<int, input_bus_count<T>> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, input_bus_count<T>> input_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
@@ -681,7 +681,7 @@ struct audio_channel_manager<T>
   }
 
   // One of the two float/double cases will be null necessarily
-  [[no_unique_address]] ebo_array<int, output_bus_count<T>> output_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, output_bus_count<T>> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;

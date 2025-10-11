@@ -1,6 +1,8 @@
 #pragma once
 
 #include <version>
+#include <avnd/common/no_unique_address.hpp>
+
 #if __cpp_constexpr >= 202211L
 #define AVND_STATIC_CONSTEXPR static constexpr
 #else

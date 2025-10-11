@@ -51,8 +51,8 @@ struct audio_processor
   avnd::effect_container<T> implementation;
   avnd::process_adapter<T> processor;
 
-  [[no_unique_address]] init_arguments<T> init_setup;
-  [[no_unique_address]] messages<T> messages_setup;
+  AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
+  AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
   int m_runtime_input_count{};
   int m_runtime_output_count{};

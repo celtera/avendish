@@ -40,9 +40,9 @@ generate_port_state_holders(dict_parameter, dict_state);
 template <typename T>
 struct dict_storage
 {
-  [[no_unique_address]]
+  AVND_NO_UNIQUE_ADDRESS
   dict_state_input_storage<T> inputs;
-  [[no_unique_address]]
+  AVND_NO_UNIQUE_ADDRESS
   dict_state_output_storage<T> outputs;
 
   void init(avnd::effect_container<T>& t)

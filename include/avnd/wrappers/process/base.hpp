@@ -86,14 +86,14 @@ template <typename T>
 struct audio_buffer_storage
 {
   // buffers used in case we need to convert float -> double
-  [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_input_f;
-  [[no_unique_address]] buffer_type<double, T> m_dsp_buffer_output_f;
-  [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_input_d;
-  [[no_unique_address]] buffer_type<float, T> m_dsp_buffer_output_d;
+  AVND_NO_UNIQUE_ADDRESS buffer_type<double, T> m_dsp_buffer_input_f;
+  AVND_NO_UNIQUE_ADDRESS buffer_type<double, T> m_dsp_buffer_output_f;
+  AVND_NO_UNIQUE_ADDRESS buffer_type<float, T> m_dsp_buffer_input_d;
+  AVND_NO_UNIQUE_ADDRESS buffer_type<float, T> m_dsp_buffer_output_d;
 
 #if AVND_ENABLE_SAFE_BUFFER_STORAGE
-  [[no_unique_address]] zero_storage<float> m_zero_storage_f;
-  [[no_unique_address]] zero_storage<double> m_zero_storage_d;
+  AVND_NO_UNIQUE_ADDRESS zero_storage<float> m_zero_storage_f;
+  AVND_NO_UNIQUE_ADDRESS zero_storage<double> m_zero_storage_d;
 #endif
 
   auto& input_buffer_for(float) { return m_dsp_buffer_input_f; }

@@ -81,15 +81,15 @@ class example_processor
   // This is done efficiently: as far as possible, there will be a single copy
   // of the input controls for instance, only the internal state will be duplicated
   // in memory.
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
-  [[no_unique_address]] avnd::audio_channel_manager<T> channels;
+  AVND_NO_UNIQUE_ADDRESS avnd::audio_channel_manager<T> channels;
 
-  [[no_unique_address]] avnd::midi_storage<T> midi_buffers;
+  AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi_buffers;
 
-  [[no_unique_address]] avnd::control_storage<T> control_buffers;
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
-  [[no_unique_address]] avnd::callback_storage<T> callbacks;
+  AVND_NO_UNIQUE_ADDRESS avnd::callback_storage<T> callbacks;
 
   int buffer_size{};
   double sample_rate{};

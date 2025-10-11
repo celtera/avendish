@@ -28,7 +28,7 @@ struct time_control_input_storage<T>
   using hdl_tuple = avnd::filter_and_apply<
       time_control_state_type, avnd::time_control_input_introspection, T>;
 
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 static constexpr float to_seconds(float ratio, float tempo) noexcept

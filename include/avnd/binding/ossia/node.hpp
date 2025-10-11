@@ -46,7 +46,7 @@ class safe_node final
     static constexpr int total_input_ports = avnd::total_input_count<T>();
     static constexpr int total_output_ports = avnd::total_input_count<T>();
 
-    [[no_unique_address]]
+    AVND_NO_UNIQUE_ADDRESS
     T impl;
 
     safe_node(ossia::exec_state_facade st) noexcept
@@ -116,45 +116,45 @@ public:
   double sample_rate{};
   double tempo{ossia::root_tempo};
 
-  [[no_unique_address]] avnd::effect_container<T> impl;
+  AVND_NO_UNIQUE_ADDRESS avnd::effect_container<T> impl;
 
-  [[no_unique_address]] oscr::builtin_arg_audio_ports<T> audio_ports;
+  AVND_NO_UNIQUE_ADDRESS oscr::builtin_arg_audio_ports<T> audio_ports;
 
-  [[no_unique_address]] oscr::builtin_arg_value_ports<T> arg_value_ports;
+  AVND_NO_UNIQUE_ADDRESS oscr::builtin_arg_value_ports<T> arg_value_ports;
 
-  [[no_unique_address]] oscr::builtin_message_value_ports<T> message_ports;
+  AVND_NO_UNIQUE_ADDRESS oscr::builtin_message_value_ports<T> message_ports;
 
-  [[no_unique_address]] oscr::inlet_storage<T> ossia_inlets;
+  AVND_NO_UNIQUE_ADDRESS oscr::inlet_storage<T> ossia_inlets;
 
-  [[no_unique_address]] oscr::outlet_storage<T> ossia_outlets;
+  AVND_NO_UNIQUE_ADDRESS oscr::outlet_storage<T> ossia_outlets;
 
-  [[no_unique_address]] avnd::audio_channel_manager<T> channels;
+  AVND_NO_UNIQUE_ADDRESS avnd::audio_channel_manager<T> channels;
 
-  [[no_unique_address]] avnd::midi_storage<T> midi_buffers;
+  AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi_buffers;
 
-  [[no_unique_address]] avnd::control_storage<T> control_buffers;
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
-  [[no_unique_address]] oscr::time_control_storage<T> time_controls;
+  AVND_NO_UNIQUE_ADDRESS oscr::time_control_storage<T> time_controls;
 
-  [[no_unique_address]] avnd::callback_storage<T> callbacks;
+  AVND_NO_UNIQUE_ADDRESS avnd::callback_storage<T> callbacks;
 
-  [[no_unique_address]] avnd::smooth_storage<T> smooth;
+  AVND_NO_UNIQUE_ADDRESS avnd::smooth_storage<T> smooth;
 
-  [[no_unique_address]] oscr::soundfile_storage<T> soundfiles;
+  AVND_NO_UNIQUE_ADDRESS oscr::soundfile_storage<T> soundfiles;
 
-  [[no_unique_address]] oscr::midifile_storage<T> midifiles;
+  AVND_NO_UNIQUE_ADDRESS oscr::midifile_storage<T> midifiles;
 
 #if defined(OSCR_HAS_MMAP_FILE_STORAGE)
-  [[no_unique_address]] oscr::raw_file_storage<T> rawfiles;
+  AVND_NO_UNIQUE_ADDRESS oscr::raw_file_storage<T> rawfiles;
 #endif
 
-  [[no_unique_address]] oscr::spectrum_storage<T> spectrums;
+  AVND_NO_UNIQUE_ADDRESS oscr::spectrum_storage<T> spectrums;
 
-  [[no_unique_address]] controls_queue<T> control;
+  AVND_NO_UNIQUE_ADDRESS controls_queue<T> control;
 
-  [[no_unique_address]] oscr::dynamic_ports_storage<T> dynamic_ports;
+  AVND_NO_UNIQUE_ADDRESS oscr::dynamic_ports_storage<T> dynamic_ports;
 
-  [[no_unique_address]] oscr::message_processor<T> messages;
+  AVND_NO_UNIQUE_ADDRESS oscr::message_processor<T> messages;
 
   using control_input_values_type
       = avnd::filter_and_apply<controls_type_t, avnd::control_input_introspection, T>;

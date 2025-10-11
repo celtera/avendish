@@ -39,7 +39,7 @@ struct smooth_param_storage<T>
   using tuple = filter_and_apply<
       smooth_param_storage_type, smooth_parameter_input_introspection, T>;
 
-  [[no_unique_address]] tuple smoothed_inputs;
+  AVND_NO_UNIQUE_ADDRESS tuple smoothed_inputs;
 };
 
 /**

@@ -50,8 +50,8 @@ struct controls_mirror
     outputs.load(new o_tuple);
   }
 
-  [[no_unique_address]] atomic_shared_ptr<i_tuple> inputs;
-  [[no_unique_address]] atomic_shared_ptr<o_tuple> outputs;
+  AVND_NO_UNIQUE_ADDRESS atomic_shared_ptr<i_tuple> inputs;
+  AVND_NO_UNIQUE_ADDRESS atomic_shared_ptr<o_tuple> outputs;
 
   std::bitset<i_size> inputs_bits;
   std::bitset<o_size> outputs_bits;

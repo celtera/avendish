@@ -226,9 +226,9 @@ struct effect_container<T>
   {
     T& effect;
 
-    [[no_unique_address]] dummy inputs;
+    AVND_NO_UNIQUE_ADDRESS dummy inputs;
 
-    [[no_unique_address]] dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS dummy outputs;
   };
 
   std::array<ref, 1> full_state() noexcept { return {ref{effect, {}, {}}}; }
@@ -273,9 +273,9 @@ struct effect_container<T>
   {
     T& effect;
 
-    [[no_unique_address]] dummy inputs;
+    AVND_NO_UNIQUE_ADDRESS dummy inputs;
 
-    [[no_unique_address]] dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS dummy outputs;
   };
 
   member_iterator<ref> full_state()
@@ -314,7 +314,7 @@ struct effect_container<T>
     T& effect;
     typename T::inputs& inputs;
 
-    [[no_unique_address]] avnd::dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS avnd::dummy outputs;
   };
 
   ref full_state(int i) { return {effect[i], this->inputs_storage, dummy_instance}; }
@@ -521,7 +521,7 @@ struct effect_container<T>
     T& effect;
     decltype(T::inputs)& inputs;
 
-    [[no_unique_address]] avnd::dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS avnd::dummy outputs;
   };
 
   ref full_state(int i)

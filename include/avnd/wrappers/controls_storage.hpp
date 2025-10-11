@@ -46,7 +46,7 @@ struct span_param_input_storage<T>
   // std::tuple< std::vector<float>, std::vector<int> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors span_inputs;
+  AVND_NO_UNIQUE_ADDRESS vectors span_inputs;
 };
 
 template <typename T>
@@ -65,7 +65,7 @@ struct linear_timed_param_input_storage<T>
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors linear_inputs;
+  AVND_NO_UNIQUE_ADDRESS vectors linear_inputs;
 };
 
 template <typename T>
@@ -84,7 +84,7 @@ struct span_timed_param_input_storage<T>
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors span_timed_inputs;
+  AVND_NO_UNIQUE_ADDRESS vectors span_timed_inputs;
 };
 
 template <typename T>
@@ -103,7 +103,7 @@ struct linear_timed_param_output_storage<T>
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors linear_outputs;
+  AVND_NO_UNIQUE_ADDRESS vectors linear_outputs;
 };
 
 template <typename T>
@@ -122,7 +122,7 @@ struct span_timed_param_output_storage<T>
   // std::tuple< std::vector<std::optional<float>>, std::vector<my_optional<int>> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors span_outputs;
+  AVND_NO_UNIQUE_ADDRESS vectors span_outputs;
 };
 
 /**

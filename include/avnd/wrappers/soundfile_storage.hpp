@@ -33,7 +33,7 @@ struct soundfile_input_storage<T>
   // std::tuple< std::vector<float*>, std::vector<double*> >
   using vectors = boost::mp11::mp_transform<std::vector, tuple>;
 
-  [[no_unique_address]] vectors soundfiles;
+  AVND_NO_UNIQUE_ADDRESS vectors soundfiles;
 };
 
 /**

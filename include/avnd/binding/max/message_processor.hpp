@@ -49,11 +49,11 @@ struct message_processor
   avnd::effect_container<T> implementation;
 
   // Setup, storage...for the outputs
-  [[no_unique_address]] inputs<T> input_setup;
+  AVND_NO_UNIQUE_ADDRESS inputs<T> input_setup;
 
-  [[no_unique_address]] outputs<T> output_setup;
+  AVND_NO_UNIQUE_ADDRESS outputs<T> output_setup;
 
-  [[no_unique_address]] dict_storage<T> dicts;
+  AVND_NO_UNIQUE_ADDRESS dict_storage<T> dicts;
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...

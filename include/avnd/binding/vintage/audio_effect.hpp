@@ -34,15 +34,15 @@ struct SimpleAudioEffect : vintage::Effect
   avnd::effect_container<T> effect;
   vintage::HostCallback master{};
 
-  [[no_unique_address]] Controls<T> controls;
+  AVND_NO_UNIQUE_ADDRESS Controls<T> controls;
 
-  [[no_unique_address]] ProcessorSetup processorSetup;
+  AVND_NO_UNIQUE_ADDRESS ProcessorSetup processorSetup;
 
-  [[no_unique_address]] process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS process_adapter<T> processor;
 
-  [[no_unique_address]] programs_setup programs;
+  AVND_NO_UNIQUE_ADDRESS programs_setup programs;
 
-  [[no_unique_address]] midi_processor<T> midi;
+  AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
 
   float sample_rate{44100.};
   int buffer_size{512};
