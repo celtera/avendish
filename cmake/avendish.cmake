@@ -74,6 +74,7 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/common/index_sequence.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/limited_string.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/limited_string_view.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/no_unique_address.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/span_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/struct_reflection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/widechar.hpp"
