@@ -10,21 +10,10 @@
 #include <avnd/wrappers/metadatas.hpp>
 
 #include <CPlusPlus_Common.h>
-
-// TouchDesigner headers
-// We need the actual TD headers here for parameter management
-// These should be available when implementing a TD plugin
-
-namespace TD {
-  class OP_ParameterManager;
-  class OP_NumericParameter;
-  class OP_StringParameter;
-  enum class OP_ParAppendResult : int32_t;
-}
+#include <magic_enum/magic_enum.hpp>
 
 namespace touchdesigner
 {
-
 /**
  * Helper to set up parameters from an Avendish processor's inputs
  * Maps Avendish parameter concepts to TouchDesigner parameter types
@@ -52,43 +41,13 @@ private:
   template <typename Field>
   void setup_parameter()
   {
-    constexpr auto name = get_td_name<Field>();
-    constexpr auto label = avnd::get_name<Field>();
-
-    // Float parameters
-    if constexpr (avnd::float_parameter<Field>)
-    {
-      setup_float_parameter<Field>(name.data(), label.data());
-    }
-    // Int parameters
-    else if constexpr (avnd::int_parameter<Field>)
-    {
-      setup_int_parameter<Field>(name.data(), label.data());
-    }
-    // Bool parameters (toggle)
-    else if constexpr (avnd::bool_parameter<Field>)
-    {
-      setup_bool_parameter<Field>(name.data(), label.data());
-    }
-    // String parameters
-    else if constexpr (avnd::string_parameter<Field>)
-    {
-      setup_string_parameter<Field>(name.data(), label.data());
-    }
-    // Enum parameters (menu)
-    else if constexpr (avnd::enum_parameter<Field>)
-    {
-      setup_enum_parameter<Field>(name.data(), label.data());
-    }
-    // Button/pulse parameters
-    else if constexpr (requires { Field::is_button; } || requires { Field::is_pulse; })
-    {
-      setup_pulse_parameter<Field>(name.data(), label.data());
-    }
+    static constexpr auto name = get_td_name<Field>();
+    static constexpr auto label = get_parameter_label<Field>();
+    setup_parameter<Field>(name.data(), label.data());
   }
 
-  template <typename Field>
-  void setup_float_parameter(const char* name, const char* label)
+  template <avnd::float_parameter Field>
+  void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
     param.label = label;
@@ -119,8 +78,8 @@ private:
     manager->appendFloat(param);
   }
 
-  template <typename Field>
-  void setup_int_parameter(const char* name, const char* label)
+  template <avnd::int_parameter Field>
+  void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
     param.label = label;
@@ -149,8 +108,8 @@ private:
     manager->appendInt(param);
   }
 
-  template <typename Field>
-  void setup_bool_parameter(const char* name, const char* label)
+  template <avnd::bool_parameter Field>
+  void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
     param.label = label;
@@ -168,47 +127,300 @@ private:
     manager->appendToggle(param);
   }
 
-  template <typename Field>
-  void setup_string_parameter(const char* name, const char* label)
+  template <avnd::string_parameter Field>
+  void setup_parameter(const char* name, const char* label)
   {
     TD::OP_StringParameter param(name);
     param.label = label;
 
-    // Set default value if available
-    if constexpr (requires { Field::value; })
+    if constexpr (avnd::has_range<Field>)
     {
-      // For compile-time string, we'd need to extract it
-      // For now, leave as nullptr (empty default)
-      param.defaultValue = nullptr;
+      static constexpr auto init = avnd::get_range<Field>();
+      param.defaultValue = init.init.data();
     }
     else
     {
-      param.defaultValue = nullptr;
+      param.defaultValue = "";
     }
 
     manager->appendString(param);
   }
 
-  template <typename Field>
-  void setup_enum_parameter(const char* name, const char* label)
+  template <avnd::enum_ish_parameter Field>
+  void setup_parameter(const char* name, const char* label)
   {
-    TD::OP_StringParameter param(name);
+    if constexpr(avnd::enum_parameter<Field>)
+    {
+      // actual enum
+      using enum_type = std::decay_t<decltype(Field::value)>;
+      TD::OP_NumericParameter param(name);
+      param.label = label;
+
+      if constexpr (avnd::has_range<Field>)
+      {
+        static constexpr auto range = avnd::get_range<Field>();
+        static constexpr auto colors = magic_enum::enum_values<enum_type>();
+        static_assert(std::ssize(colors) > 0);
+
+        param.defaultValues[0] = std::to_underlying(range.init);
+        param.minValues[0] = std::to_underlying(colors[0]);
+        param.maxValues[0] = std::to_underlying(colors[colors.size() - 1]);
+        param.minSliders[0] = std::to_underlying(colors[0]);
+        param.maxSliders[0] = std::to_underlying(colors[colors.size() - 1]);
+        param.clampMins[0] = true;
+        param.clampMaxes[0] = true;
+      }
+      else
+      {
+        param.defaultValues[0] = 0.0;
+        param.minValues[0] = 0.0;
+        param.maxValues[0] = 100.0;
+        param.minSliders[0] = 0.0;
+        param.maxSliders[0] = 100.0;
+      }
+
+      manager->appendDynamicMenu(param);
+    }
+    else
+    {
+      // actual enum
+      TD::OP_StringParameter param(name);
+      param.label = label;
+
+      manager->appendDynamicStringMenu(param);
+    }
+  }
+
+  template <avnd::xy_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
     param.label = label;
 
-    // TODO: Extract enum values and create menu
-    // For now, create as a simple string parameter
-    // Will need magic_enum or similar to enumerate values
+    for(int i = 0; i < 2; i++) {
+    // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+        // FIXME enum
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
 
-    manager->appendString(param);
+    manager->appendXY(param);
+  }
+
+  template <avnd::xyz_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
+    param.label = label;
+
+    for(int i = 0; i < 3; i++) {
+      // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+        // FIXME enum
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
+
+    manager->appendXYZ(param);
+  }
+
+  template <avnd::uv_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
+    param.label = label;
+
+    for(int i = 0; i < 2; i++) {
+      // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+        // FIXME enum
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
+
+    manager->appendUV(param);
+  }
+
+  template <avnd::uvw_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
+    param.label = label;
+
+    for(int i = 0; i < 3; i++) {
+      // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+        // FIXME enum
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
+
+    manager->appendUVW(param);
+  }
+
+  template <avnd::rgb_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
+    param.label = label;
+
+    for(int i = 0; i < 3; i++) {
+      // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+        // FIXME enum
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
+
+    manager->appendRGB(param);
+  }
+
+  template <avnd::rgba_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
+    param.label = label;
+
+    for(int i = 0; i < 3; i++) {
+      // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+        // FIXME enum
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
+
+    manager->appendRGBA(param);
   }
 
   template <typename Field>
-  void setup_pulse_parameter(const char* name, const char* label)
+  void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
     param.label = label;
 
     manager->appendPulse(param);
+  }
+
+  template <avnd::file_port Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_StringParameter param(name);
+    param.label = label;
+
+    if constexpr (avnd::has_range<Field>)
+    {
+      static constexpr auto init = avnd::get_range<Field>();
+      param.defaultValue = init.c_str();
+    }
+    else
+    {
+      param.defaultValue = "";
+    }
+
+    manager->appendString(param);
   }
 };
 

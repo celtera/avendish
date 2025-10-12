@@ -43,6 +43,13 @@ struct control_introspection : predicate_introspection<T, is_control_t>
 };
 
 template <typename Field>
+using is_value_port_t = boost::mp11::mp_bool<value_port<Field>>;
+template <typename T>
+struct value_port_introspection : predicate_introspection<T, is_value_port_t>
+{
+};
+
+template <typename Field>
 using is_mapped_control_t = boost::mp11::mp_bool<control<Field> && has_mapper<Field>>;
 template <typename T>
 struct mapped_control_introspection : predicate_introspection<T, is_mapped_control_t>

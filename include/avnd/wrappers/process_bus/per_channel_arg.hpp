@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/wrappers/process/base.hpp>
+#include <avnd/wrappers/process_bus/base.hpp>
 
 namespace avnd
 {
@@ -14,7 +14,7 @@ template <typename T>
   requires(
       avnd::mono_per_channel_arg_processor<double, T>
       || avnd::mono_per_channel_arg_processor<float, T>)
-struct process_adapter<T>
+struct process_bus_adapter<T>
 {
   void allocate_buffers(process_setup setup, auto&& f)
   {
@@ -31,7 +31,8 @@ struct process_adapter<T>
 
   template <std::floating_point FP>
   void process(
-      avnd::effect_container<T>& implementation, avnd::span<FP*> in, avnd::span<FP*> out,
+      avnd::effect_container<T>& implementation, avnd::span<avnd::span<FP*>> in,
+      avnd::span<avnd::span<FP*>> out,
       const auto& tick, auto&&... params)
   {
     // Process the various parameters

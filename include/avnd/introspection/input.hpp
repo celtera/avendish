@@ -24,6 +24,12 @@ struct program_parameter_input_introspection
 };
 
 template <typename T>
+struct value_port_input_introspection
+    : value_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct control_input_introspection : control_introspection<typename inputs_type<T>::type>
 {
 };

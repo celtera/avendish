@@ -45,6 +45,23 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/introspection/port.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/introspection/widgets.hpp"
 
+
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/base.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_channel_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_channel_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_sample_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_sample_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/poly_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/poly_port.hpp"
+
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/base.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_channel_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_channel_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_sample_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_sample_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/poly_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/poly_port.hpp"
+
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/audio_channel_manager.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/avnd.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/bus_host_process_adapter.hpp"
@@ -175,6 +192,7 @@ function(avnd_make_object)
   avnd_make_max(${ARGV})
   avnd_make_standalone(${ARGV})
   avnd_make_example_host(${ARGV})
+  avnd_make_touchdesigner(${ARGV} OPTYPE CHOP_MESSAGE)
 endfunction()
 
 # Bindings to audio plug-in APIs
@@ -187,6 +205,7 @@ function(avnd_make_audioplug)
   avnd_make_clap(${ARGV})
   avnd_make_vst3(${ARGV})
   avnd_make_example_host(${ARGV})
+  avnd_make_touchdesigner(${ARGV} OPTYPE CHOP_AUDIO)
 endfunction()
 
 function(avnd_make_all)
@@ -196,7 +215,6 @@ function(avnd_make_all)
   avnd_make_object(${ARGV})
   avnd_make_audioplug(${ARGV})
   avnd_make_gstreamer(${ARGV})
-  avnd_make_touchdesigner(${ARGV} OPTYPE CHOP)
 endfunction()
 
 function(avnd_make)

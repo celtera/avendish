@@ -1,6 +1,6 @@
+option(TOUCHDESIGNER_SDK_PATH "Path to TouchDesigner CustomOperatorSamples directory" "")
 if(NOT TOUCHDESIGNER_SDK_PATH)
-  # Allow setting via environment variable or cache
-  set(TOUCHDESIGNER_SDK_PATH "" CACHE PATH "Path to TouchDesigner CustomOperatorSamples directory")
+  return()
 endif()
 
 # Function to create a TouchDesigner Custom operator OP from an Avendish processor
@@ -34,10 +34,6 @@ function(avnd_make_touchdesigner)
     return()
   endif()
 
-  # Determine plugin type based on processor capabilities
-  # For now, we only support CHOP (audio processors)
-  set(TD_TYPE "${AVND_OPTYPE}")
-
   # Generate the binding cpp file from prototype template
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
@@ -49,7 +45,7 @@ function(avnd_make_touchdesigner)
   )
 
   # Create the plugin library
-  set(AVND_FX_TARGET "avnd_touchdesigner_${AVND_C_NAME}")
+  set(AVND_FX_TARGET "avnd_touchdesigner_${AVND_OPTYPE}_${AVND_C_NAME}")
 
   add_library(${AVND_FX_TARGET} MODULE)
 
@@ -64,7 +60,6 @@ function(avnd_make_touchdesigner)
   set_target_properties(
     ${AVND_FX_TARGET}
     PROPERTIES
-      OUTPUT_NAME "${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY td
       RUNTIME_OUTPUT_DIRECTORY td
       PREFIX ""  # No lib prefix
@@ -128,3 +123,16 @@ function(avnd_make_touchdesigner)
 
   message(STATUS "Configured TouchDesigner CHOP: ${AVND_FX_TARGET}")
 endfunction()
+
+target_sources(Avendish PRIVATE
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/audio_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/message_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_AUDIO.prototype.cpp.in"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_MESSAGE.prototype.cpp.in"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/configure.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/helpers.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_setup.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_update.hpp"
+)

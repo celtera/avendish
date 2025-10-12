@@ -27,6 +27,7 @@ if(MSVC)
        "-Zc:inline"
        -wd4244 # float -> int lossy conversion warning
        -wd4068 # disables warning C4068: unknown pragma 'GCC'
+       -Werror=return-type
     )
   endif()
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
@@ -40,6 +41,7 @@ elseif(APPLE)
       -Wno-cast-function-type
       -Wno-unused-template
       -Wno-unused-local-typedef
+      -Werror=return-type
   )
 endif()
 
@@ -160,6 +162,7 @@ function(avnd_target_setup AVND_FX_TARGET)
     target_link_libraries(${AVND_FX_TARGET} PRIVATE
       # -lc++
       -Bsymbolic
+      -Werror=return-type
       # -flto
     )
   endif()

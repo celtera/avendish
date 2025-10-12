@@ -188,18 +188,9 @@ struct audio_channel_manager<T>
 };
 
 template <typename T>
-static constexpr int input_bus_count
-    = avnd::poly_sample_array_input_port_count<float, T>
-      + avnd::poly_sample_array_input_port_count<double, T>;
-template <typename T>
-static constexpr int output_bus_count
-    = avnd::poly_sample_array_output_port_count<float, T>
-      + avnd::poly_sample_array_output_port_count<double, T>;
-
-template <typename T>
   requires(
       (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-      && input_bus_count<T> > 0 && output_bus_count<T> > 0)
+      && bus_introspection<T>::input_busses > 0 && bus_introspection<T>::output_busses > 0)
 struct audio_channel_manager<T>
 {
   using in_refl = avnd::audio_bus_input_introspection<T>;
@@ -457,9 +448,9 @@ struct audio_channel_manager<T>
   }
 
   // One of the two float/double cases will be null necessarily
-  AVND_NO_UNIQUE_ADDRESS ebo_array<int, input_bus_count<T>> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::input_busses> input_channels;
 
-  AVND_NO_UNIQUE_ADDRESS ebo_array<int, output_bus_count<T>> output_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::output_busses> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
@@ -468,7 +459,7 @@ struct audio_channel_manager<T>
 template <typename T>
   requires(
       (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-      && input_bus_count<T> > 0 && output_bus_count<T> == 0)
+      && bus_introspection<T>::input_busses > 0 && bus_introspection<T>::output_busses == 0)
 struct audio_channel_manager<T>
 {
   using in_refl = avnd::audio_bus_input_introspection<T>;
@@ -570,7 +561,7 @@ struct audio_channel_manager<T>
   int get_output_channels(auto& processor, int output_id) { return 0; }
 
   // One of the two float/double cases will be null necessarily
-  AVND_NO_UNIQUE_ADDRESS ebo_array<int, input_bus_count<T>> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::input_busses> input_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
@@ -579,7 +570,7 @@ struct audio_channel_manager<T>
 template <typename T>
   requires(
       (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-      && input_bus_count<T> == 0)
+      && bus_introspection<T>::input_busses == 0)
 struct audio_channel_manager<T>
 {
   using out_refl = avnd::audio_bus_output_introspection<T>;
@@ -681,7 +672,7 @@ struct audio_channel_manager<T>
   }
 
   // One of the two float/double cases will be null necessarily
-  AVND_NO_UNIQUE_ADDRESS ebo_array<int, output_bus_count<T>> output_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::output_busses> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;

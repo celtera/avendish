@@ -299,6 +299,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   };
   static constexpr auto outputcount = +[](instance* x, long index) -> long {
     // TODO check whether the outputs are fixed or dynamic
+    // FIXME compute it better, e.g. use runtime_output_count
     return x->m_runtime_input_count;
   };
 

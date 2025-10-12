@@ -5,6 +5,7 @@
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
+#include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/wrappers/configure.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/metadatas.hpp>
@@ -99,19 +100,7 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   // - first letter is always capital letter
   // - then only letters and numbers
   // - more than 3 chars
-  std::string nm2;
-  for(char c : nm)
-    if((c>= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
-      nm2.push_back(c);
-
-  while(nm2.size() < 3)
-    nm2.push_back('0');
-
-  if(nm2[0]>= 97 && nm2[0]<= 122 )
-    nm2[0] -= ('a' - 'A');
-  else
-    nm2[0] = 'A';
-
+  std::string nm2 = sanitize_td_name(nm);
   op.opType->setString(nm2.c_str());
   op.opLabel->setString(nm2.c_str());
   char icon[4]{nm2[0],nm2[1],nm2[2],0};
@@ -147,7 +136,7 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
   else
   {
-    op.minInputs = avnd::input_introspection<type>::size + avnd::messages_introspection<type>::size;
+    op.minInputs = avnd::value_port_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
 }

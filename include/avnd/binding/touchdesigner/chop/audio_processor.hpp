@@ -2,180 +2,167 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/binding/touchdesigner/configure.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
+#include <avnd/binding/touchdesigner/parameter_update.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 
 #include <CHOP_CPlusPlusBase.h>
-#include <cstring>
-#include <span>
-#include <string>
-#include <cstring>
-#include <vector>
 
-
-/**
- * TouchDesigner CHOP audio processor binding
- *
- * This file implements the wrapper for Avendish audio processors as TouchDesigner CHOPs
- * Following the pattern established in Max/PD bindings
- */
-
-// Forward declare TD types (actual headers will be included in implementation)
-namespace TD {
-class CHOP_GeneralInfo;
-class CHOP_OutputInfo;
-class CHOP_Output;
-class OP_Inputs;
-class OP_ParameterManager;
-class OP_String;
-class OP_CHOPInput;
-struct OP_NodeInfo;
-}
 
 namespace touchdesigner::chop
 {
 template <typename T>
 struct audio_processor  : public TD::CHOP_CPlusPlusBase
 {
-  // Channel configuration from Avendish introspection
-  static constexpr int input_channels = avnd::input_channels<T>(1);
-  static constexpr int output_channels = avnd::output_channels<T>(1);
+  static constexpr int input_channels = avnd::input_channels<T>(0);
+  static constexpr int output_channels = avnd::output_channels<T>(0);
+  static constexpr int default_sample_rate = 44100;
+  static constexpr int default_buffer_size = 4096;
 
-  // Avendish components
   avnd::effect_container<T> implementation;
   avnd::process_adapter<T> processor;
-
-  // TouchDesigner parameter handling
-  parameter_setup<T> param_setup;
-  using inputs_info_t = avnd::parameter_input_introspection<T>;
-  static const constexpr int32_t parameter_count = inputs_info_t::size;
-
-  // Runtime channel counts (can differ from static if dynamic)
+  AVND_NO_UNIQUE_ADDRESS avnd::audio_channel_manager<T> channels;
   int runtime_input_count{input_channels};
   int runtime_output_count{output_channels};
 
-  // Initialization
+  parameter_setup<T> param_setup;
+
   explicit audio_processor(const TD::OP_NodeInfo* info)
+      : channels{this->implementation}
   {
     init();
   }
 
   void init()
   {
-    // Initialize controls with default values
     avnd::init_controls(implementation);
-
-    // Initialize polyphony if supported
-    if constexpr (avnd::can_prepare<T>)
-    {
-      implementation.init_channels(input_channels, output_channels);
-    }
+    this->channels.set_input_channels(this->implementation, 0, 2);
+    this->channels.set_output_channels(this->implementation, 0, 2);
   }
 
-  // TouchDesigner interface methods (will be pure virtual when inheriting from base)
   void getGeneralInfo(TD::CHOP_GeneralInfo* info, const TD::OP_Inputs* inputs, void* reserved) override
   {
-    // Set cooking behavior
-    info->cookEveryFrameIfAsked = false;
-
-    // Match input 0 by default for channel/sample configuration
+    // No output: we're likely sending things over the network
+    info->cookEveryFrame = avnd::bus_introspection<T>::output_busses == 0;
+    info->cookEveryFrameIfAsked = true;
     info->inputMatchIndex = 0;
-
-    // We're not using timeslice mode for now
     info->timeslice = false;
+  }
+
+  int updateAudioChannels(const TD::OP_Inputs* inputs)
+  {
+    bool ok = true;
+    int total_input_channels = 0;
+    for(int i = 0;  i < inputs->getNumInputs(); i++) {
+      auto td_in = inputs->getInputCHOP(i);
+
+      int expected = td_in->numChannels;
+
+      channels.set_input_channels(implementation, i, expected);
+      int actual = channels.get_input_channels(implementation, i);
+      total_input_channels += actual;
+      ok &= (expected == actual);
+    }
+    return total_input_channels;
   }
 
   bool getOutputInfo(TD::CHOP_OutputInfo* info, const TD::OP_Inputs* inputs, void* reserved) override
   {
-    if(inputs->getNumInputs() == 0)
+    if constexpr(avnd::bus_introspection<T>::output_busses == 0)
     {
-      // No input, use defaults
-      info->numChannels = output_channels;
-      info->numSamples = 1; // ??
-      info->sampleRate = 44100.0f; // ??
+      info->numChannels = 0;
+      info->numSamples = 0;
       info->startIndex = 0;
+      info->sampleRate = 0;
+      return true;
+    }
+    else if constexpr(avnd::bus_introspection<T>::output_busses == 1)
+    {
+      if(inputs->getNumInputs() == 0)
       {
+        if(avnd::monophonic_audio_processor<T>) {
+          return false;
+        }
+
+        // No input, use defaults
+        info->numChannels = output_channels;
+        info->numSamples = 1; // ??
+        info->sampleRate = default_sample_rate; // ??
+        info->startIndex = 0;
+
         // Allocate buffers that may be required for converting float <-> double
         avnd::process_setup setup_info{
                                        .input_channels = 0,
                                        .output_channels = output_channels,
-                                       .frames_per_buffer = 4096,
-                                       .rate = 44100};
+                                       .frames_per_buffer = default_buffer_size,
+                                       .rate = default_sample_rate};
+
         processor.allocate_buffers(setup_info, float{});
+
+        implementation.init_channels(0, output_channels);
 
         // Allocate buffers if supported
         avnd::prepare(implementation, setup_info);
+
+
+        return true;
       }
-      return true;
-    }
 
-    // Get input CHOP if available
-    const TD::OP_CHOPInput* input = inputs->getInputCHOP(0);
-
-    if (input)
-    {
-      // Match input configuration
-      info->numChannels = input->numChannels;
+      const int total_input_channels = updateAudioChannels(inputs);
+      const int output_channels = channels.get_output_channels(implementation, 0);
+      auto input = inputs->getInputCHOP(0);
+      assert(input);
+      info->numChannels = output_channels;
       info->numSamples = input->numSamples;
-      info->sampleRate = static_cast<float>(input->sampleRate);
-      info->startIndex = static_cast<uint32_t>(input->startIndex);
-      {
-        // Allocate buffers that may be required for converting float <-> double
-        avnd::process_setup setup_info{
-                                       .input_channels = input->numChannels,
-                                       .output_channels = output_channels,
-                                       .frames_per_buffer = 4096,
-                                       .rate = 44100};
-        processor.allocate_buffers(setup_info, float{});
+      info->sampleRate = input->sampleRate;
+      info->startIndex = input->startIndex;
 
-        // Allocate buffers if supported
-        avnd::prepare(implementation, setup_info);
-      }
+      // Allocate buffers that may be required for converting float <-> double
+      avnd::process_setup setup_info{
+                                     .input_channels = total_input_channels,
+                                     .output_channels = output_channels,
+                                     .frames_per_buffer = default_buffer_size,
+                                     .rate = input->sampleRate};
+      processor.allocate_buffers(setup_info, float{});
 
+      implementation.init_channels(input->numChannels, output_channels);
+
+      // Allocate buffers if supported
+      avnd::prepare(implementation, setup_info);
+
+
+      return true;
     }
     else
     {
-      // No input, use defaults
-      info->numChannels = output_channels;
-      info->numSamples = 1;
-      info->sampleRate = 44100.0f;
-      info->startIndex = 0;
-      {
-        // Allocate buffers that may be required for converting float <-> double
-        avnd::process_setup setup_info{
-                                       .input_channels = 0,
-                                       .output_channels = output_channels,
-                                       .frames_per_buffer = 4096,
-                                       .rate = 44100};
-        processor.allocate_buffers(setup_info, float{});
-
-        // Allocate buffers if supported
-        avnd::prepare(implementation, setup_info);
-      }
+      return false;
+      //static_assert(false, "Only one output bus is supported by TouchDesigner");
     }
-
-    return true; // We specify output info
   }
 
   void getChannelName(int32_t index, TD::OP_String* name, const TD::OP_Inputs* inputs, void* reserved) override
   {
-    if(index < 0 || index >= inputs_info_t::size)
+    using busses = avnd::bus_introspection<T>;
+    using channels = avnd::channels_introspection<T>;
+    if(index < 0 || index >= channels::output_channels)
       return;
 
-    using busses = avnd::bus_introspection<T>;
     if constexpr(requires { sizeof(busses::outputs); })
     {
+      // FIXME right now we assume a single output bus.
       busses::outputs::for_nth_mapped(
-          index,
+          0,
           [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
-        if constexpr(avnd::has_name<C>)
+        if constexpr(avnd::has_name<C> || avnd::has_symbol<C> || avnd::has_c_name<C>)
         {
-          name->setString(avnd::get_name<C>().data());
+          static constexpr auto n = get_td_name<C>();
+          name->setString(n.data());
         }
         else
         {
@@ -189,42 +176,55 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
     }
   }
 
-  void execute(TD::CHOP_Output* output, const TD::OP_Inputs* inputs, void* reserved) override{
+  void execute(TD::CHOP_Output* output, const TD::OP_Inputs* inputs, void* reserved) override
+  {
+    // FIXME TD is this weird hybrid shit where inputs are distinct busses but there's
+    // only one output bus with all channels concatenated.
+
     // Update parameter values from TouchDesigner
     update_controls(inputs);
 
     // Get input CHOP
     if(inputs->getNumInputs() == 0)
-      return;
-
-    const TD::OP_CHOPInput* input = inputs->getInputCHOP(0);
-
-    if (!input)
     {
-      // No input, output silence
-      for (int i = 0; i < output->numChannels; ++i)
+      if(avnd::monophonic_audio_processor<T>)
+        return;
+
+      // Prepare input/output spans for processing
+      const int num_samples = output->numSamples;
+      const int num_in_channels = 0;
+      const int num_out_channels = output->numChannels;
+      assert(num_out_channels == channels.get_output_channels(implementation, 0));
+
+      float* in_ptrs[8]{0};
+      auto out_ptrs = (float**) alloca(sizeof(float*) * num_out_channels + 4);
+
+      for (int ch = 0; ch < num_out_channels; ++ch)
       {
-        std::memset(output->channels[i], 0, output->numSamples * sizeof(float));
+        out_ptrs[ch] = output->channels[ch];
+        assert(out_ptrs[ch]);
       }
+
+      processor.process(implementation, std::span<float*>(in_ptrs, 0), std::span<float*>(out_ptrs, num_out_channels), num_samples);
       return;
     }
-
-    // Prepare input/output spans for processing
-    // TD uses float, convert to double if needed
-    const int num_samples = output->numSamples;
-    const int num_in_channels = input->numChannels;
-    const int num_out_channels = output->numChannels;
-
-    // Check if processor expects double or float
+    else
     {
-      // Processor uses float - direct processing
-      std::vector<float*> in_ptrs(num_in_channels);
-      std::vector<float*> out_ptrs(num_out_channels);
+      const int total_input_channels = updateAudioChannels(inputs);
+      const TD::OP_CHOPInput* input = inputs->getInputCHOP(0);
+      assert(input);
 
+      // Prepare input/output spans for processing
+      const int num_samples = output->numSamples;
+      const int num_in_channels = total_input_channels;
+      const int num_out_channels = channels.get_output_channels(implementation, 0);
+
+      auto in_ptrs = (float**) alloca(sizeof(float*) * num_in_channels + 4);
+      auto out_ptrs = (float**) alloca(sizeof(float*) * num_out_channels + 4);
 
       for (int ch = 0; ch < num_in_channels; ++ch)
       {
-        in_ptrs[ch] =(float*) input->getChannelData(ch);
+        in_ptrs[ch] = (float*) input->getChannelData(ch);
         assert(in_ptrs[ch]);
       }
 
@@ -234,21 +234,21 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
         assert(out_ptrs[ch]);
       }
 
-      processor.process(implementation, std::span<float*>(in_ptrs), std::span<float*>(out_ptrs), num_samples);
+      processor.process(implementation, std::span<float*>(in_ptrs, num_in_channels), std::span<float*>(out_ptrs, num_out_channels), num_samples);
     }
   }
 
-  void setupParameters(TD::OP_ParameterManager* manager, void* reserved) override{
+  void setupParameters(TD::OP_ParameterManager* manager, void* reserved) override
+  {
     param_setup.setup(implementation, manager);
   }
-
-
 
   int32_t
   getNumInfoCHOPChans(void *reserved1) override
   {
     return 0;
   }
+
   void
   getInfoCHOPChan(int32_t index, TD::OP_InfoCHOPChan* chan, void* reserved1) override
   {
@@ -289,49 +289,20 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
   void
   pulsePressed(const char* name, void* reserved1) override
   {
+    // FIXME
   }
 
   void
   buildDynamicMenu(const TD::OP_Inputs* inputs, TD::OP_BuildDynamicMenuInfo* info, void* reserved1) override
   {
+    // FIXME Used for enums
   }
 
 
 private:
   // Helper to update control values from TD parameters
   void update_controls(const TD::OP_Inputs* inputs){
-
-  if constexpr(avnd::has_inputs<T>) {
-    // Iterate over all parameter inputs and update from TD
-    avnd::parameter_input_introspection<T>::for_all(
-        avnd::get_inputs(implementation),
-        [this, inputs]<typename Field>(Field& field) {
-      constexpr auto name = touchdesigner::get_td_name<Field>();
-
-      if constexpr(avnd::float_parameter<Field>)
-      {
-        field.value = static_cast<float>(inputs->getParDouble(name.data()));
-      }
-      else if constexpr(avnd::int_parameter<Field>)
-      {
-        field.value = inputs->getParInt(name.data());
-      }
-      else if constexpr(avnd::bool_parameter<Field>)
-      {
-        field.value = inputs->getParInt(name.data()) != 0;
-      }
-      else if constexpr(avnd::string_parameter<Field>)
-      {
-        const char* str = inputs->getParString(name.data());
-        if(str)
-          field.value.assign(str);
-      }
-
-      // Call update callback if it exists
-      if_possible(field.update(implementation.effect));
-        });
-  }
-
+    parameter_update<T>{}.update(implementation, inputs);
   }
 };
 }

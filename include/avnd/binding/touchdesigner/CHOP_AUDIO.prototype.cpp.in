@@ -9,7 +9,6 @@
 #include <@AVND_MAIN_FILE@>
 #include <avnd/binding/touchdesigner/configure.hpp>
 #include <avnd/binding/touchdesigner/chop/audio_processor.hpp>
-#include <avnd/binding/touchdesigner/chop/audio_processor.impl.hpp>
 
 // Include TouchDesigner headers
 #include "CHOP_CPlusPlusBase.h"

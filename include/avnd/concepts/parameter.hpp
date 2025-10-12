@@ -89,6 +89,42 @@ template <typename T>
 concept xy_parameter = parameter<T> && xy_value<decltype(T::value)>;
 
 template <typename T>
+concept xyz_value = requires(T t) {
+  t.x;
+  t.y;
+  t.z;
+};
+template <typename T>
+concept xyz_parameter = parameter<T> && xyz_value<decltype(T::value)>;
+
+template <typename T>
+concept uv_value = requires(T t) {
+  t.u;
+  t.v;
+};
+template <typename T>
+concept uv_parameter = parameter<T> && uv_value<decltype(T::value)>;
+
+template <typename T>
+concept uvw_value = requires(T t) {
+  t.u;
+  t.v;
+  t.w;
+};
+template <typename T>
+concept uvw_parameter = parameter<T> && uvw_value<decltype(T::value)>;
+
+template <typename T>
+concept xyzw_value = requires(T t) {
+  t.x;
+  t.y;
+  t.z;
+  t.w;
+};
+template <typename T>
+concept xyzw_parameter = parameter<T> && xyzw_value<decltype(T::value)>;
+
+template <typename T>
 concept rgb_value = requires(T t) {
                       t.r;
                       t.g;
@@ -96,6 +132,16 @@ concept rgb_value = requires(T t) {
                     };
 template <typename T>
 concept rgb_parameter = parameter<T> && rgb_value<decltype(T::value)>;
+
+template <typename T>
+concept rgba_value = requires(T t) {
+  t.r;
+  t.g;
+  t.b;
+  t.a;
+};
+template <typename T>
+concept rgba_parameter = parameter<T> && rgba_value<decltype(T::value)>;
 
 template <typename C>
 concept parameter_with_minmax_range_ignore_init

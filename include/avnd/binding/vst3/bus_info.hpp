@@ -234,7 +234,7 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::input_channels<T>(2);
+      info.channelCount = defaultInputChannelCount();
       setStr(info.name, u16_str "Stereo In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
@@ -249,7 +249,7 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::output_channels<T>(2);
+      info.channelCount = defaultOutputChannelCount();
       setStr(info.name, u16_str "Stereo Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
@@ -262,13 +262,13 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::input_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultInputChannelCount(), arr);
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::output_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultOutputChannelCount(), arr);
   }
 
   Steinberg::tresult setBusArrangements(
@@ -338,7 +338,7 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::input_channels<T>(2);
+      info.channelCount = defaultInputChannelCount();
       setStr(info.name, u16_str "Mono In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
@@ -366,13 +366,13 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::input_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultInputChannelCount(), arr);
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::output_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultOutputChannelCount(), arr);
   }
 
   Steinberg::tresult setBusArrangements(
@@ -442,7 +442,7 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::input_channels<T>(2);
+      info.channelCount = defaultInputChannelCount();
       setStr(info.name, u16_str "Mono In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
@@ -457,7 +457,7 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::output_channels<T>(2);
+      info.channelCount = defaultOutputChannelCount();
       setStr(info.name, u16_str "Mono Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
@@ -470,13 +470,13 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::input_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultInputChannelCount(), arr);
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::output_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultOutputChannelCount(), arr);
   }
 
   Steinberg::tresult setBusArrangements(
