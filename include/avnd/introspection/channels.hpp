@@ -240,6 +240,9 @@ template <typename T>
           || (sample_output_port_count<double, T> != 0)
 struct bus_introspection<T>
 {
+  using inputs = audio_channel_input_introspection<T>;
+  using outputs = audio_channel_output_introspection<T>;
+
   // TODO group them as busses instead ?
   static constexpr const auto input_busses
       = sample_input_port_count<float, T> + sample_input_port_count<double, T>;
@@ -254,6 +257,9 @@ template <typename T>
           || (mono_sample_array_output_port_count<double, T> != 0)
 struct bus_introspection<T>
 {
+  using inputs = audio_channel_input_introspection<T>;
+  using outputs = audio_channel_output_introspection<T>;
+
   // TODO group them as busses instead ?
   static constexpr const auto input_busses
       = mono_sample_array_input_port_count<float, T>
@@ -270,8 +276,11 @@ template <typename T>
           || (poly_sample_array_output_port_count<double, T> != 0)
 struct bus_introspection<T>
 {
+  using inputs = audio_bus_input_introspection<T>;
+  using outputs = audio_bus_output_introspection<T>;
+
   static constexpr const auto input_busses = audio_bus_input_introspection<T>::size;
-  static constexpr const auto output_busses = audio_bus_input_introspection<T>::size;
+  static constexpr const auto output_busses = audio_bus_output_introspection<T>::size;
 };
 
 }

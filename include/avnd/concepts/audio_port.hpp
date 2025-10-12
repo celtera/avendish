@@ -66,6 +66,14 @@ concept mono_audio_port
       || mono_array_sample_port<float, T> || mono_array_sample_port<double, T>;
 
 template <typename T>
+concept sample_audio_port
+    = audio_sample_port<float, T> || audio_sample_port<double, T>;
+
+template <typename T>
+concept channel_audio_port
+    = mono_array_sample_port<float, T> || mono_array_sample_port<double, T>;
+
+template <typename T>
 concept poly_audio_port
     = poly_array_sample_port<float, T> || poly_array_sample_port<double, T>;
 

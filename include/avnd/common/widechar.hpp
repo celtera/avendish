@@ -25,7 +25,7 @@ constexpr int utf8_header_byte(char8_t const in, char32_t& out) noexcept
 {
   if(in < 0x80)
   { // ASCII
-    out = in;
+    out = static_cast<char32_t>(in);
     return 0;
   }
   if(in < 0xC0)
