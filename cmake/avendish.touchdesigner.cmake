@@ -1,32 +1,34 @@
-# TouchDesigner binding CMake configuration
-# Following the pattern of avendish.max.cmake and avendish.pd.cmake
-
-if(NOT TOUCHDESIGNER_CPP_SAMPLES_PATH)
+if(NOT TOUCHDESIGNER_SDK_PATH)
   # Allow setting via environment variable or cache
-  set(TOUCHDESIGNER_CPP_SAMPLES_PATH "" CACHE PATH "Path to TouchDesigner CustomOperatorSamples directory")
+  set(TOUCHDESIGNER_SDK_PATH "" CACHE PATH "Path to TouchDesigner CustomOperatorSamples directory")
 endif()
 
-# Function to create a TouchDesigner CHOP from an Avendish processor
+# Function to create a TouchDesigner Custom operator OP from an Avendish processor
 function(avnd_make_touchdesigner)
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
+  cmake_parse_arguments(AVND "" "OPTYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
+
+  if(MINGW OR CYGWIN OR MSYS OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): MinGW is not supported, use a compiler compatible with the MSVC ABI.")
+    return()
+  endif()
 
   if(NOT TARGET "${AVND_TARGET}")
     message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): target does not exist")
     return()
   endif()
 
-  if(NOT TOUCHDESIGNER_CPP_SAMPLES_PATH)
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_CPP_SAMPLES_PATH not set")
+  if(NOT TOUCHDESIGNER_SDK_PATH)
+    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_SDK_PATH not set")
     return()
   endif()
 
-  if(NOT IS_DIRECTORY "${TOUCHDESIGNER_CPP_SAMPLES_PATH}")
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_CPP_SAMPLES_PATH does not exist")
+  if(NOT IS_DIRECTORY "${TOUCHDESIGNER_SDK_PATH}")
+    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_SDK_PATH does not exist")
     return()
   endif()
 
   # Find the CPlusPlus_Common.h header
-  set(TD_COMMON_HEADER "${TOUCHDESIGNER_CPP_SAMPLES_PATH}/CHOP/BasicFilterCHOP/CPlusPlus_Common.h")
+  set(TD_COMMON_HEADER "${TOUCHDESIGNER_SDK_PATH}/include/CPlusPlus_Common.h")
   if(NOT EXISTS "${TD_COMMON_HEADER}")
     message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): CPlusPlus_Common.h not found")
     return()
@@ -34,19 +36,13 @@ function(avnd_make_touchdesigner)
 
   # Determine plugin type based on processor capabilities
   # For now, we only support CHOP (audio processors)
-  set(TD_TYPE "CHOP")
-  set(TD_BASE_HEADER "${TOUCHDESIGNER_CPP_SAMPLES_PATH}/CHOP/BasicFilterCHOP/CHOP_CPlusPlusBase.h")
-
-  if(NOT EXISTS "${TD_BASE_HEADER}")
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): ${TD_TYPE}_CPlusPlusBase.h not found")
-    return()
-  endif()
+  set(TD_TYPE "${AVND_OPTYPE}")
 
   # Generate the binding cpp file from prototype template
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
   configure_file(
-    "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/prototype.cpp.in"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/${AVND_OPTYPE}.prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_touchdesigner.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -79,8 +75,9 @@ function(avnd_make_touchdesigner)
   # Add TouchDesigner headers
   target_include_directories(
     ${AVND_FX_TARGET}
+    SYSTEM
     PRIVATE
-      "${TOUCHDESIGNER_CPP_SAMPLES_PATH}/CHOP/BasicFilterCHOP"
+      "${TOUCHDESIGNER_SDK_PATH}/include"
   )
 
   # Link to Avendish and dependencies
@@ -120,7 +117,8 @@ function(avnd_make_touchdesigner)
   )
 
   # Compiler flags
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  if(MSVC)
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(${AVND_FX_TARGET} PRIVATE -fvisibility=hidden)
   endif()
 

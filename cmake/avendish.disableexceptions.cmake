@@ -5,7 +5,12 @@ target_compile_definitions(DisableExceptions INTERFACE
   BOOST_NO_TYPEID=1
   BOOST_NO_EXCEPTIONS=1
 )
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+if(MSVC)
+  target_compile_options(DisableExceptions INTERFACE
+    /GR- # no rtti
+    /EHs- /EHc- # no exceptions
+  )
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   target_compile_options(DisableExceptions INTERFACE
     -fno-exceptions
     -fno-rtti

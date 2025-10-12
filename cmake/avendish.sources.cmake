@@ -2,7 +2,8 @@ add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
 if(MSVC)
-  target_compile_options(Avendish
+  if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
+    target_compile_options(Avendish
       PUBLIC
        -std:c++latest
        -Zi
@@ -14,7 +15,20 @@ if(MSVC)
        "-Zc:templateScope"
        -wd4244 # float -> int lossy conversion warning
        -wd4068 # disables warning C4068: unknown pragma 'GCC'
-   )
+    )
+  else()
+    target_compile_options(Avendish
+      PUBLIC
+       -Zi
+       -std=c++latest
+       -Wno-unknown-argument
+       "-permissive-"
+       "-Zc:__cplusplus"
+       "-Zc:inline"
+       -wd4244 # float -> int lossy conversion warning
+       -wd4068 # disables warning C4068: unknown pragma 'GCC'
+    )
+  endif()
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
 elseif(APPLE)
   target_compile_options(Avendish
@@ -78,17 +92,19 @@ function(avnd_target_setup AVND_FX_TARGET)
           -fdata-sections
     )
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
-    target_compile_options(
-        ${AVND_FX_TARGET}
-        PUBLIC
-          # -stdlib=libc++
-          # -flto
-          -fno-stack-protector
-          -fno-ident
-          -fno-plt
-          -ffunction-sections
-          -fdata-sections
-    )
+    if(NOT MSVC)
+      target_compile_options(
+          ${AVND_FX_TARGET}
+          PUBLIC
+            # -stdlib=libc++
+            # -flto
+            -fno-stack-protector
+            -fno-ident
+            -fno-plt
+            -ffunction-sections
+            -fdata-sections
+      )
+    endif()
 
     if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 13.0)
       # target_compile_options(

@@ -191,4 +191,4 @@ inline std::string sanitize_td_name(std::string_view name)
   return result;
 }
 
-} // namespace touchdesigner
+}
