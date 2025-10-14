@@ -9,12 +9,18 @@
 namespace avnd
 {
 template <typename T>
-concept cpu_raw_texture = requires(T t) {
+concept cpu_raw_buffer = requires(T t) {
   t.bytes;
   t.bytesize;
   t.changed;
   typename T::format;
 };
+
+template <typename T>
+concept cpu_buffer_port = requires(T t) {
+  t.buffer;
+} && (cpu_raw_buffer<std::decay_t<decltype(std::declval<T>().buffer)>>);
+
 template <typename T>
 concept cpu_fixed_format_texture = requires(T t) {
   t.bytes;
@@ -33,7 +39,7 @@ concept cpu_dynamic_format_texture = requires(T t) {
 };
 template <typename T>
 concept cpu_texture
-    = cpu_raw_texture<T> || cpu_fixed_format_texture<T> || cpu_dynamic_format_texture<T>;
+    = cpu_raw_buffer<T> || cpu_fixed_format_texture<T> || cpu_dynamic_format_texture<T>;
 
 template <typename T>
 concept cpu_texture_port = requires(T t) {
