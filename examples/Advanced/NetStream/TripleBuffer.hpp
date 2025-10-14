@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <atomic>
+#include <new>
 #include <vector>
 
 namespace netstream
@@ -30,7 +31,7 @@ public:
   {
     // Write to the current write buffer
     int write_idx = m_write_index.load(std::memory_order_relaxed);
-    std::swap(m_buffers[write_idx], std::move(data));
+    std::swap(m_buffers[write_idx], data);
 
     // Swap write buffer with swap buffer
     int swap_idx = m_swap_index.load(std::memory_order_relaxed);
@@ -65,7 +66,8 @@ public:
     m_new_data.store(false, std::memory_order_relaxed);
 
     // Copy the data
-    out = m_buffers[m_read_index.load(std::memory_order_relaxed)];
+    auto& buf = m_buffers[m_read_index.load(std::memory_order_relaxed)];
+    std::swap(out, buf);
     return true;
   }
 

@@ -47,7 +47,7 @@ public:
   struct outputs_t
   {
     // span<raw_bytes> instead?
-    halp::callback<"Data", std::vector<float>> data;
+    halp::val_port<"Data", std::vector<float>> data;
 
     struct : halp::val_port<"Status", std::string>
     {
@@ -90,12 +90,10 @@ public:
     }
 
     // Check for new data from the I/O thread
-    std::vector<float> new_data;
-    if(m_triple_buffer.read(new_data))
+    if(m_triple_buffer.read(outputs.data.value))
     {
       // Update outputs
-      outputs.elements.value = static_cast<int>(new_data.size());
-      outputs.data(std::move(new_data));
+      outputs.elements.value = static_cast<int>(outputs.data.value.size());
     }
 
     // Update status from atomic flags
@@ -140,6 +138,7 @@ private:
       if(!m_listen_socket.is_valid())
       {
         m_status_message = "Failed to create socket";
+        std::cerr << "RECV: " << m_status_message << "\n";
         return;
       }
 
@@ -149,15 +148,18 @@ private:
       if(!bind_and_listen(m_listen_socket.native_handle(), inputs.port))
       {
         m_status_message = "Failed to bind port " + std::to_string(inputs.port.value);
+        std::cerr << "RECV: " << m_status_message << "\n";
         return;
       }
 
       m_status_message = "Listening on port " + std::to_string(inputs.port.value);
+      std::cerr << "RECV: " << m_status_message << "\n";
 
       while(m_running.load(std::memory_order_acquire))
       {
         // Accept connection
         m_status_message = "Waiting for connection...";
+        std::cerr << "RECV: " << m_status_message << "\n";
 
         // Use non-blocking accept with timeout to allow checking m_running
         set_non_blocking(m_listen_socket.native_handle());
@@ -170,7 +172,7 @@ private:
             break;
 
           // Sleep briefly to avoid busy-waiting
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          std::this_thread::sleep_for(std::chrono::microseconds(1000));
         }
 
         if(!client.is_valid())
@@ -178,11 +180,12 @@ private:
 
         // Set client socket to blocking mode for easier I/O
         set_blocking(client.native_handle());
-        set_tcp_nodelay(client.native_handle());
+        optimize_for_low_latency(client.native_handle());
 
         m_client_socket = std::move(client);
         m_connected.store(true, std::memory_order_release);
         m_status_message = "Client connected";
+        std::cerr << "RECV: " << m_status_message << "\n";
 
         // Receive data loop
         while(m_running.load(std::memory_order_acquire)
@@ -197,16 +200,20 @@ private:
         m_client_socket.close();
         m_connected.store(false, std::memory_order_release);
         m_status_message = "Client disconnected";
+        std::cerr << "RECV: " << m_status_message << "\n";
       }
     }
     catch(const std::exception& e)
     {
       m_status_message = std::string("Error: ") + e.what();
+      std::cerr << "RECV: " << m_status_message << "\n";
     }
 
     m_running.store(false, std::memory_order_release);
   }
 
+  std::vector<uint8_t> payload;
+  std::vector<float> float_data;
   bool receive_packet()
   {
     // Receive header
@@ -226,19 +233,29 @@ private:
     if(!header.is_valid())
     {
       m_status_message = "Invalid packet header";
+      std::cerr << "RECV: " << m_status_message << "\n";
       return false;
     }
 
     // Receive payload
-    std::vector<uint8_t> payload(header.payload_bytes);
+    payload.resize(header.payload_bytes);
     if(!recv_all(m_client_socket.native_handle(), std::span(payload)))
     {
       return false;
     }
 
     // Convert to float
-    std::vector<float> float_data;
-    convert_to_float(static_cast<DataFormat>(header.format), payload, float_data);
+    auto fmt = static_cast<DataFormat>(header.format);
+    if(fmt == DataFormat::RAW)
+    {
+      auto data = reinterpret_cast<float*>(payload.data());
+      auto sz = payload.size() / sizeof(float);
+      float_data.assign(data, data + sz);
+    }
+    else
+    {
+      convert_to_float(static_cast<DataFormat>(header.format), payload, float_data);
+    }
 
     // Update format info
     m_format
@@ -253,7 +270,7 @@ private:
 
   void update_status()
   {
-    outputs.status.value = m_status_message;
+    //outputs.status.value = m_status_message;
     outputs.connected.value = m_connected.load(std::memory_order_acquire);
     outputs.format.value = m_format;
   }
@@ -262,6 +279,8 @@ private:
   {
     switch(fmt)
     {
+      case DataFormat::RAW:
+        return "Raw";
       case DataFormat::R_UCHAR:
         return "R (u8)";
       case DataFormat::RGB_UCHAR:

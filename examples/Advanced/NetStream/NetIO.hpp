@@ -7,12 +7,14 @@
 #include <span>
 #include <string>
 #include <system_error>
+#include <iostream>
 
 // Platform-specific includes
 #if defined(_WIN32)
+#include <Windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
+
 using socket_t = SOCKET;
 constexpr socket_t INVALID_SOCKET_VALUE = INVALID_SOCKET;
 #else
@@ -186,6 +188,109 @@ inline void set_reuse_addr(socket_t sock, bool enable = true)
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&flag, sizeof(flag));
 }
 
+// Aggressive TCP optimizations for high-performance, low-latency 10G networks
+inline void optimize_for_low_latency(socket_t sock)
+{
+  // 1. TCP_NODELAY - Disable Nagle's algorithm (send immediately)
+  int flag = 1;
+  setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(flag));
+  int buffer_size = 32 * 1024 * 1024;
+
+#if !defined(_WIN32)
+  // 2. TCP_QUICKACK - Disable delayed ACKs (Linux only)
+  //    Send ACKs immediately instead of waiting up to 40ms
+#ifdef TCP_QUICKACK
+  flag = 1;
+  setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, (const char*)&flag, sizeof(flag));
+#endif
+
+  // 3. Increase send/receive buffer sizes for 10G networks
+  //    Large buffers prevent blocking on fast networks
+  //    Default is often 128KB-256KB, we want several MB for 10G
+  setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&buffer_size, sizeof(buffer_size));
+  setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&buffer_size, sizeof(buffer_size));
+
+  // 4. TCP_CORK / TCP_NOPUSH - Control when data is sent
+  //    Not used here since we want immediate sends, but can be useful
+  //    for batching small writes
+
+  // 5. SO_PRIORITY - Set socket priority for QoS (Linux)
+#ifdef SO_PRIORITY
+  int priority = 6; // High priority (0-7 scale)
+  setsockopt(sock, SOL_SOCKET, SO_PRIORITY, (const char*)&priority, sizeof(priority));
+#endif
+
+  // 6. TCP_USER_TIMEOUT - Detect dead connections faster (Linux)
+#ifdef TCP_USER_TIMEOUT
+  unsigned int timeout_ms = 5000; // 5 seconds instead of default ~15 minutes
+  setsockopt(
+      sock, IPPROTO_TCP, TCP_USER_TIMEOUT, (const char*)&timeout_ms, sizeof(timeout_ms));
+#endif
+
+  // 7. SO_KEEPALIVE with aggressive settings
+  flag = 1;
+  setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char*)&flag, sizeof(flag));
+
+#ifdef TCP_KEEPIDLE
+  // Start probing after 30 seconds of idle
+  int keepidle = 30;
+  setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (const char*)&keepidle, sizeof(keepidle));
+#endif
+
+#ifdef TCP_KEEPINTVL
+  // Probe every 5 seconds
+  int keepintvl = 5;
+  setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (const char*)&keepintvl, sizeof(keepintvl));
+#endif
+
+#ifdef TCP_KEEPCNT
+  // Give up after 3 failed probes
+  int keepcnt = 3;
+  setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (const char*)&keepcnt, sizeof(keepcnt));
+#endif
+
+#else // Windows-specific optimizations
+  // Increase buffer sizes for 10G networks
+  setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&buffer_size, sizeof(buffer_size));
+  setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&buffer_size, sizeof(buffer_size));
+
+  // Disable send buffering for minimal latency
+  flag = 0;
+  setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&flag, sizeof(flag));
+
+  // Enable keepalive
+  flag = 1;
+  setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char*)&flag, sizeof(flag));
+
+  // Windows-specific: Configure TCP keepalive parameters
+  struct tcp_keepalive keepalive_settings;
+  keepalive_settings.onoff = 1;
+  keepalive_settings.keepalivetime = 30000;     // 30 seconds
+  keepalive_settings.keepaliveinterval = 5000;  // 5 seconds
+  DWORD bytes_returned;
+  WSAIoctl(
+      sock, SIO_KEEPALIVE_VALS, &keepalive_settings, sizeof(keepalive_settings), nullptr,
+      0, &bytes_returned, nullptr, nullptr);
+#endif
+}
+
+// Moderate optimizations (balanced performance/compatibility)
+inline void optimize_for_streaming(socket_t sock)
+{
+  // TCP_NODELAY for low latency
+  int flag = 1;
+  setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(flag));
+
+  // Reasonable buffer sizes (1 MB)
+  int buffer_size = 1024 * 1024;
+  setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (const char*)&buffer_size, sizeof(buffer_size));
+  setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (const char*)&buffer_size, sizeof(buffer_size));
+
+  // Basic keepalive
+  flag = 1;
+  setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (const char*)&flag, sizeof(flag));
+}
+
 // Connect to a remote host
 inline bool connect_socket(socket_t sock, const std::string& host, int port)
 {
@@ -297,6 +402,30 @@ inline bool send_scatter(socket_t sock, std::span<WSABUF> buffers)
   if(WSASend(sock, buffers.data(), (DWORD)buffers.size(), &bytes_sent, 0, nullptr, nullptr)
      == SOCKET_ERROR)
   {
+    {
+      int err = WSAGetLastError();
+
+
+      char
+          msgbuf [512] { 0 };   // for a message up to 255 bytes.
+
+
+      msgbuf [0] = '\0';    // Microsoft doesn't guarantee this on man page.
+
+      err = WSAGetLastError ();
+
+      FormatMessageA (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,   // flags
+                    NULL,                // lpsource
+                    err,                 // message id
+                    MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),    // languageid
+                    msgbuf,              // output buffer
+                    sizeof (msgbuf),     // size of msgbuf, bytes
+                    NULL);               // va_list of arguments
+
+      if (! *msgbuf)
+        sprintf (msgbuf, "%d", err);  // provide error # if no string available
+      std::cerr <<msgbuf << std::endl;
+    }
     return false;
   }
   return true;

@@ -11,11 +11,14 @@
 
 #include <atomic>
 #include <cmath>
+#include <iostream>
 #include <thread>
 #include <vector>
 
 namespace netstream
 {
+
+// TODO https://github.com/burtscher/FPcompress/
 
 /**
  * NetStreamSender - Sends buffer data over the network
@@ -33,7 +36,7 @@ public:
   halp_meta(c_name, "netstream_sender")
   halp_meta(category, "Network")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(description, "Sends data buffers over the network")
+  halp_meta(description, "Sends FP data buffers over the network")
   halp_meta(uuid, "b8e9f4c3-6d5a-4b2f-8e7c-9a3d4b2e8c5f")
 
   struct inputs_t
@@ -41,22 +44,6 @@ public:
     halp::lineedit<"Host", "127.0.0.1"> host;
 
     halp::spinbox_i32<"Port", halp::range{1024, 65535, 9001}> port;
-
-    struct : halp::val_port<"Format", int>
-    {
-      enum widget
-      {
-        enumeration
-      };
-      struct range
-      {
-        std::string_view values[9]{
-            "R (u8)", "RGB (u8)", "RGBA (u8)", "R (f32)", "RGB (f32)",
-            "RGBA (f32)", "XYZ (f32)", "XYZW (f32)", "XYZRGB (f32)"};
-        int init{3}; // Default to R (f32)
-      };
-      int value{3};
-    } format;
 
     halp::toggle<"Connect"> connect;
   } inputs;
@@ -114,6 +101,10 @@ public:
     {
       disconnect();
     }
+    else if(m_thread_finished.load(std::memory_order_acquire))
+    {
+      disconnect();
+    }
 
     // Update status from atomic flags
     update_status();
@@ -134,6 +125,7 @@ private:
   void disconnect()
   {
     m_running.store(false, std::memory_order_release);
+    m_thread_finished.store(false, std::memory_order_release);
 
     if(m_thread.joinable())
     {
@@ -155,18 +147,21 @@ private:
       if(!m_socket.is_valid())
       {
         m_status_message = "Failed to create socket";
+        std::cerr << "SEND: " <<  m_status_message << "\n";
         return;
       }
 
-      set_tcp_nodelay(m_socket.native_handle());
+      optimize_for_low_latency(m_socket.native_handle());
 
       // Connect to host
       m_status_message = "Connecting to " + inputs.host.value + ":"
                          + std::to_string(inputs.port.value);
+      std::cerr << "SEND: " << m_status_message << "\n";
 
       if(!connect_socket(m_socket.native_handle(), inputs.host.value, inputs.port))
       {
         m_status_message = "Failed to connect";
+        std::cerr  << "SEND: "<< m_status_message << "\n";
         m_socket.close();
         return;
       }
@@ -174,6 +169,7 @@ private:
       m_connected.store(true, std::memory_order_release);
       m_status_message = "Connected to " + inputs.host.value + ":"
                          + std::to_string(inputs.port.value);
+      std::cerr  << "SEND: "<< m_status_message << "\n";
 
       // Send loop
       int packets_sent = 0;
@@ -187,6 +183,7 @@ private:
           if(!send_packet(data))
           {
             m_status_message = "Send failed";
+            std::cerr << "SEND: " << m_status_message << "\n";
             break;
           }
 
@@ -203,35 +200,36 @@ private:
       m_socket.close();
       m_connected.store(false, std::memory_order_release);
       m_status_message = "Disconnected";
+      std::cerr << "SEND: " << m_status_message << "\n";
     }
     catch(const std::exception& e)
     {
       m_status_message = std::string("Error: ") + e.what();
+      std::cerr  << "SEND: " << m_status_message << "\n";
       m_connected.store(false, std::memory_order_release);
     }
 
-    m_running.store(false, std::memory_order_release);
+    m_thread_finished.store(true, std::memory_order_release);
   }
 
   bool send_packet(const std::vector<float>& payload)
   {
-    if(data.empty())
+    if(payload.empty())
       return true;
 
     // Convert format enum to DataFormat
-    DataFormat fmt = index_to_format(inputs.format.value);
-
+    DataFormat fmt = DataFormat::RAW; //index_to_format(inputs.format.value);
 
     // Calculate number of elements
     int comp_per_elem = components_per_element(fmt);
     uint32_t num_elements
-        = comp_per_elem > 0 ? static_cast<uint32_t>(data.size() / comp_per_elem) : 0;
+        = comp_per_elem > 0 ? static_cast<uint32_t>(payload.size() / comp_per_elem) : 0;
 
     // Create header
     PacketHeader header;
     header.format = static_cast<uint32_t>(fmt);
-    header.num_elements = num_elements;
-    header.payload_bytes = static_cast<uint32_t>(payload.size());
+    header.num_elements = payload.size(); // num_elements;
+    header.payload_bytes = static_cast<uint32_t>(payload.size()) * sizeof(float);
 
     // Convert to network byte order
     header.to_network_order();
@@ -241,8 +239,8 @@ private:
     WSABUF buffers[2];
     buffers[0].buf = reinterpret_cast<char*>(&header);
     buffers[0].len = sizeof(header);
-    buffers[1].buf = reinterpret_cast<char*>(payload.data());
-    buffers[1].len = static_cast<ULONG>(payload.size());
+    buffers[1].buf = const_cast<char*>(reinterpret_cast<const char*>(payload.data()));
+    buffers[1].len = static_cast<ULONG>(payload.size())  * sizeof(float);
 
     return send_scatter(m_socket.native_handle(), std::span(buffers, 2));
 #else
@@ -258,45 +256,25 @@ private:
 
   void update_status()
   {
-    outputs.status.value = m_status_message;
+   // outputs.status.value = m_status_message;
     outputs.connected.value = m_connected.load(std::memory_order_acquire);
     outputs.packets_sent.value = m_packets_sent.load(std::memory_order_relaxed);
   }
 
   static DataFormat index_to_format(int index)
   {
-    switch(index)
-    {
-      case 0:
-        return DataFormat::R_UCHAR;
-      case 1:
-        return DataFormat::RGB_UCHAR;
-      case 2:
-        return DataFormat::RGBA_UCHAR;
-      case 3:
-        return DataFormat::R_FLOAT32;
-      case 4:
-        return DataFormat::RGB_FLOAT32;
-      case 5:
-        return DataFormat::RGBA_FLOAT32;
-      case 6:
-        return DataFormat::XYZ_FLOAT32;
-      case 7:
-        return DataFormat::XYZW_FLOAT32;
-      case 8:
-        return DataFormat::XYZRGB_FLOAT32;
-      default:
-        return DataFormat::R_FLOAT32;
-    }
+    return static_cast<DataFormat>(index + 1);
   }
 
-  std::atomic<bool> m_running{false};
-  std::atomic<bool> m_connected{false};
-  std::atomic<int> m_packets_sent{0};
   std::thread m_thread;
   Socket m_socket;
   TripleBuffer<std::vector<float>> m_triple_buffer;
   std::string m_status_message{"Disconnected"};
+
+  alignas(std::hardware_destructive_interference_size) std::atomic<bool> m_running{false};
+  alignas(std::hardware_destructive_interference_size) std::atomic<bool> m_connected{false};
+  alignas(std::hardware_destructive_interference_size) std::atomic<bool> m_thread_finished{false};
+  alignas(std::hardware_destructive_interference_size) std::atomic<int> m_packets_sent{0};
 };
 
 } // namespace netstream

@@ -31,15 +31,16 @@ inline uint32_t ntohl_portable(uint32_t netlong)
 enum class DataFormat : uint32_t
 {
   UNKNOWN = 0,
-  R_UCHAR = 1,        // Single channel, 8-bit unsigned
-  RGB_UCHAR = 2,      // RGB, 8-bit unsigned per channel
-  RGBA_UCHAR = 3,     // RGBA, 8-bit unsigned per channel
-  R_FLOAT32 = 4,      // Single channel, 32-bit float
-  RGB_FLOAT32 = 5,    // RGB, 32-bit float per channel
-  RGBA_FLOAT32 = 6,   // RGBA, 32-bit float per channel
-  XYZ_FLOAT32 = 7,    // 3D position, 32-bit float per axis
-  XYZW_FLOAT32 = 8,   // 4D position, 32-bit float per component
-  XYZRGB_FLOAT32 = 9, // Point cloud with color, all float32
+  RAW = 1,
+  R_UCHAR = 2,        // Single channel, 8-bit unsigned
+  RGB_UCHAR = 3,      // RGB, 8-bit unsigned per channel
+  RGBA_UCHAR = 4,     // RGBA, 8-bit unsigned per channel
+  R_FLOAT32 = 5,      // Single channel, 32-bit float
+  RGB_FLOAT32 = 6,    // RGB, 32-bit float per channel
+  RGBA_FLOAT32 = 7,   // RGBA, 32-bit float per channel
+  XYZ_FLOAT32 = 8,    // 3D position, 32-bit float per axis
+  XYZW_FLOAT32 = 9,   // 4D position, 32-bit float per component
+  XYZRGB_FLOAT32 = 10, // Point cloud with color, all float32
   // Future formats can be added here
 };
 
@@ -93,6 +94,7 @@ inline constexpr int components_per_element(DataFormat fmt)
 {
   switch(fmt)
   {
+    case DataFormat::RAW:
     case DataFormat::R_UCHAR:
     case DataFormat::R_FLOAT32:
       return 1;
@@ -116,6 +118,8 @@ inline constexpr int bytes_per_component(DataFormat fmt)
 {
   switch(fmt)
   {
+    case DataFormat::RAW:
+      return 4;
     case DataFormat::R_UCHAR:
     case DataFormat::RGB_UCHAR:
     case DataFormat::RGBA_UCHAR:
