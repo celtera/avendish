@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/coroutines.hpp>
+#include <avnd/common/no_unique_address.hpp>
 #include <avnd/concepts/all.hpp>
 
 #include <vector>

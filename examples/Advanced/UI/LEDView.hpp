@@ -5,6 +5,8 @@
 #include <Effect/EffectLayer.hpp>
 #include <Effect/EffectLayout.hpp>
 #include <Process/Process.hpp>
+#include <Process/Dataflow/PortFactory.hpp>
+#include <Process/Dataflow/PortItem.hpp>
 #include <avnd/concepts/painter.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/wrappers/controls.hpp>
