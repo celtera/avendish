@@ -156,27 +156,26 @@ private:
       TD::OP_NumericParameter param(name);
       param.label = label;
 
+      static constexpr auto enum_values = magic_enum::enum_values<enum_type>();
+      static_assert(std::ssize(enum_values) > 0);
+      static constexpr auto enum_min = *std::min_element(std::begin(enum_values), std::end(enum_values));
+      static constexpr auto enum_max = *std::min_element(std::begin(enum_values), std::end(enum_values));
+      param.minValues[0] = std::to_underlying(enum_min);
+      param.maxValues[0] = std::to_underlying(enum_max);
+      param.minSliders[0] = std::to_underlying(enum_min);
+      param.maxSliders[0] = std::to_underlying(enum_max);
+
       if constexpr (avnd::has_range<Field>)
       {
         static constexpr auto range = avnd::get_range<Field>();
-        static constexpr auto colors = magic_enum::enum_values<enum_type>();
-        static_assert(std::ssize(colors) > 0);
 
         param.defaultValues[0] = std::to_underlying(range.init);
-        param.minValues[0] = std::to_underlying(colors[0]);
-        param.maxValues[0] = std::to_underlying(colors[colors.size() - 1]);
-        param.minSliders[0] = std::to_underlying(colors[0]);
-        param.maxSliders[0] = std::to_underlying(colors[colors.size() - 1]);
         param.clampMins[0] = true;
         param.clampMaxes[0] = true;
       }
       else
       {
-        param.defaultValues[0] = 0.0;
-        param.minValues[0] = 0.0;
-        param.maxValues[0] = 100.0;
-        param.minSliders[0] = 0.0;
-        param.maxSliders[0] = 100.0;
+        param.defaultValues[0] = std::to_underlying(enum_values[0]);
       }
 
       manager->appendDynamicMenu(param);

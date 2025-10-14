@@ -267,12 +267,8 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
   {
   }
 
-  std::string m_warn;
-
   void getWarningString(TD::OP_String *warning, void *reserved1)  override
   {
-    if(!m_warn.empty())
-      warning->setString(m_warn.c_str());
   }
 
   void
@@ -289,7 +285,8 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
   void
   pulsePressed(const char* name, void* reserved1) override
   {
-    // FIXME
+    if constexpr(avnd::has_inputs<T>)
+      parameter_update<T>{}.pulse(implementation, name);
   }
 
   void
@@ -302,7 +299,8 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
 private:
   // Helper to update control values from TD parameters
   void update_controls(const TD::OP_Inputs* inputs){
-    parameter_update<T>{}.update(implementation, inputs);
+    if constexpr(avnd::has_inputs<T>)
+      parameter_update<T>{}.update(implementation, inputs);
   }
 };
 }

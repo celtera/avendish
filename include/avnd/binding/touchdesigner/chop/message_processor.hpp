@@ -2,7 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include "avnd/wrappers/controls_double.hpp"
+#include <avnd/wrappers/controls_double.hpp>
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/binding/touchdesigner/configure.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
@@ -143,12 +143,8 @@ struct message_processor  : public TD::CHOP_CPlusPlusBase
   {
   }
 
-  std::string m_warn;
-
   void getWarningString(TD::OP_String *warning, void *reserved1)  override
   {
-    if(!m_warn.empty())
-      warning->setString(m_warn.c_str());
   }
 
   void
@@ -161,24 +157,25 @@ struct message_processor  : public TD::CHOP_CPlusPlusBase
   {
   }
 
-
   void
   pulsePressed(const char* name, void* reserved1) override
   {
-    // FIXME
+    if constexpr(avnd::has_inputs<T>)
+      parameter_update<T>{}.pulse(implementation, name);
   }
 
   void
   buildDynamicMenu(const TD::OP_Inputs* inputs, TD::OP_BuildDynamicMenuInfo* info, void* reserved1) override
   {
-    // FIXME Used for enums
+    if constexpr(avnd::has_inputs<T>)
+      parameter_update<T>{}.menu(implementation, inputs, info);
   }
-
 
 private:
   // Helper to update control values from TD parameters
   void update_controls(const TD::OP_Inputs* inputs){
-    parameter_update<T>{}.update(implementation, inputs);
+    if constexpr(avnd::has_inputs<T>)
+      parameter_update<T>{}.update(implementation, inputs);
   }
 };
 }
