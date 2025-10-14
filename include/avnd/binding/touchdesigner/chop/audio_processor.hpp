@@ -292,7 +292,8 @@ struct audio_processor  : public TD::CHOP_CPlusPlusBase
   void
   buildDynamicMenu(const TD::OP_Inputs* inputs, TD::OP_BuildDynamicMenuInfo* info, void* reserved1) override
   {
-    // FIXME Used for enums
+    if constexpr(avnd::has_inputs<T>)
+      parameter_update<T>{}.menu(implementation, inputs, info);
   }
 
 
