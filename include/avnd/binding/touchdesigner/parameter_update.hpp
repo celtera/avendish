@@ -20,7 +20,7 @@ struct parameter_update
 {
   void pulse(avnd::effect_container<T>& implementation, const char* name)
   {
-    avnd::parameter_input_introspection<T>::for_all(
+    avnd::control_input_introspection<T>::for_all(
         avnd::get_inputs(implementation),
         [&]<typename Field>(Field& field) {
       static constexpr auto name = touchdesigner::get_td_name<Field>();
@@ -40,7 +40,7 @@ struct parameter_update
 
   void menu(avnd::effect_container<T>& implementation, const TD::OP_Inputs* inputs, TD::OP_BuildDynamicMenuInfo* info)
   {
-    avnd::parameter_input_introspection<T>::for_all(
+    avnd::control_input_introspection<T>::for_all(
         avnd::get_inputs(implementation),
         [&]<typename Field>(Field& field) {
       static constexpr auto name = touchdesigner::get_td_name<Field>();
@@ -97,7 +97,7 @@ struct parameter_update
   {
     if constexpr(avnd::has_inputs<T>) {
       // Iterate over all parameter inputs and update from TD
-      avnd::parameter_input_introspection<T>::for_all(
+      avnd::control_input_introspection<T>::for_all(
           avnd::get_inputs(implementation),
           [&]<typename Field>(Field& field) {
         static constexpr auto name = touchdesigner::get_td_name<Field>();

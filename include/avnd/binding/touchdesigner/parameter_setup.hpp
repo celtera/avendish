@@ -29,7 +29,7 @@ struct parameter_setup
 
     if constexpr(avnd::has_inputs<T>) {
       // Iterate over all input fields that are parameters
-      avnd::parameter_input_introspection<T>::for_all(
+      avnd::control_input_introspection<T>::for_all(
           avnd::get_inputs(impl),
           [this]<typename Field>(Field& field) {
             setup_parameter<Field>();

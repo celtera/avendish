@@ -17,7 +17,10 @@
 // TOP bindings
 #include <avnd/binding/touchdesigner/top/texture_processor.hpp>
 
-// TODO: SOP, DAT bindings will be added here in future phases
+// DAT bindings
+#include <avnd/binding/touchdesigner/dat/data_processor.hpp>
+
+// TODO: SOP bindings will be added here in future phases
 
 namespace avnd::touchdesigner
 {
