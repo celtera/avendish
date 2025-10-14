@@ -130,13 +130,18 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
 
   // FIXME
-  if(optype == "CHOP") {
+  if(optype == "CHOP_AUDIO") {
     op.minInputs = avnd::bus_introspection<type>::input_busses;
     op.maxInputs = op.minInputs;
   }
-  else
+  else if(optype == "CHOP_MESSAGE")
   {
     op.minInputs = avnd::value_port_input_introspection<type>::size;
+    op.maxInputs = op.minInputs;
+  }
+  else if(optype == "TOP")
+  {
+    op.minInputs = avnd::texture_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
 }

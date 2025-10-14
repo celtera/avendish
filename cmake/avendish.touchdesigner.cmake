@@ -1,5 +1,7 @@
 option(TOUCHDESIGNER_SDK_PATH "Path to TouchDesigner CustomOperatorSamples directory" "")
 if(NOT TOUCHDESIGNER_SDK_PATH)
+  function(avnd_make_touchdesigner)
+  endfunction()
   return()
 endif()
 
@@ -8,29 +10,19 @@ function(avnd_make_touchdesigner)
   cmake_parse_arguments(AVND "" "OPTYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
 
   if(MINGW OR CYGWIN OR MSYS OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): MinGW is not supported, use a compiler compatible with the MSVC ABI.")
-    return()
-  endif()
-
-  if(NOT TARGET "${AVND_TARGET}")
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): target does not exist")
-    return()
-  endif()
-
-  if(NOT TOUCHDESIGNER_SDK_PATH)
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_SDK_PATH not set")
+    message(FATAL_ERROR "Will not build ${AVND_TARGET} (touchdesigner): MinGW is not supported, use a compiler compatible with the MSVC ABI.")
     return()
   endif()
 
   if(NOT IS_DIRECTORY "${TOUCHDESIGNER_SDK_PATH}")
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_SDK_PATH does not exist")
+    message(FATAL_ERROR "Will not build ${AVND_TARGET} (touchdesigner): TOUCHDESIGNER_SDK_PATH does not exist")
     return()
   endif()
 
   # Find the CPlusPlus_Common.h header
   set(TD_COMMON_HEADER "${TOUCHDESIGNER_SDK_PATH}/include/CPlusPlus_Common.h")
   if(NOT EXISTS "${TD_COMMON_HEADER}")
-    message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): CPlusPlus_Common.h not found")
+    message(FATAL_ERROR "Will not build ${AVND_TARGET} (touchdesigner): CPlusPlus_Common.h not found")
     return()
   endif()
 
@@ -45,7 +37,7 @@ function(avnd_make_touchdesigner)
   )
 
   # Create the plugin library
-  set(AVND_FX_TARGET "avnd_touchdesigner_${AVND_OPTYPE}_${AVND_C_NAME}")
+  set(AVND_FX_TARGET "${AVND_TARGET}_${AVND_OPTYPE}_td")
 
   add_library(${AVND_FX_TARGET} MODULE)
 
@@ -121,16 +113,19 @@ function(avnd_make_touchdesigner)
   # TouchDesigner plugins typically go in <Project>/Plugins/
   # install(TARGETS ${AVND_FX_TARGET} LIBRARY DESTINATION "Plugins")
 
-  message(STATUS "Configured TouchDesigner CHOP: ${AVND_FX_TARGET}")
+  message(STATUS "Configured TouchDesigner: ${AVND_FX_TARGET}")
 endfunction()
 
 target_sources(Avendish PRIVATE
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/audio_processor.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/message_processor.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_AUDIO.prototype.cpp.in"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_MESSAGE.prototype.cpp.in"
+
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/top/texture_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/TOP.prototype.cpp.in"
+
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/configure.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/helpers.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_setup.hpp"

@@ -287,7 +287,6 @@ endforeach()
 set(TEXTURE_EXAMPLES
   TextureFilterExample
   TextureGeneratorExample
-  TextureSinkExample
 )
 foreach(theTarget ${TEXTURE_EXAMPLES})
   avnd_make_gstreamer(
@@ -301,6 +300,13 @@ foreach(theTarget ${TEXTURE_EXAMPLES})
     MAIN_FILE examples/Tutorial/${theTarget}.hpp
     MAIN_CLASS examples::${theTarget}
     C_NAME oscr_${theTarget}
+  )
+  avnd_make_touchdesigner(
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+    OPTYPE TOP
   )
 endforeach()
 

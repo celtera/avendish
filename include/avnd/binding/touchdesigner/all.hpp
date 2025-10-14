@@ -14,7 +14,10 @@
 // CHOP bindings
 #include <avnd/binding/touchdesigner/chop/audio_processor.hpp>
 
-// TODO: TOP, SOP, DAT bindings will be added here in future phases
+// TOP bindings
+#include <avnd/binding/touchdesigner/top/texture_processor.hpp>
+
+// TODO: SOP, DAT bindings will be added here in future phases
 
 namespace avnd::touchdesigner
 {
