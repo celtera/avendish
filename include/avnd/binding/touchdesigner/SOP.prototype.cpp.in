@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+/**
+ * TouchDesigner SOP plugin entry point template
+ * This file is processed by CMake to instantiate the binding for a specific processor
+ */
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/SOP/geometry_processor.hpp>
+
+// Include TouchDesigner headers
+#include "SOP_CPlusPlusBase.h"
+
+using type = decltype(avnd::configure<touchdesigner::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+namespace td = touchdesigner::SOP;
+
+// Plugin export functions required by TouchDesigner
+extern "C"
+{
+
+DLLEXPORT
+void FillSOPPluginInfo(TD::SOP_PluginInfo* info)
+{
+  info->apiVersion = TD::SOPCPlusPlusAPIVersion;
+  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_OPTYPE@");
+}
+
+DLLEXPORT
+TD::SOP_CPlusPlusBase* CreateSOPInstance(const TD::OP_NodeInfo* info)
+{
+  return new td::geometry_processor<type>(info);
+}
+
+DLLEXPORT
+void DestroySOPInstance(TD::SOP_CPlusPlusBase* instance)
+{
+  delete static_cast<td::geometry_processor<type>*>(instance);
+}
+
+}

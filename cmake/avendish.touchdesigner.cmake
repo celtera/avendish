@@ -5,6 +5,30 @@ if(NOT TOUCHDESIGNER_SDK_PATH)
   return()
 endif()
 
+set(AVND_TD_SOURCES
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/audio_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/message_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_AUDIO.prototype.cpp.in"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_MESSAGE.prototype.cpp.in"
+
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/top/texture_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/TOP.prototype.cpp.in"
+
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/dat/data_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/DAT.prototype.cpp.in"
+
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/sop/geometry_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/SOP.prototype.cpp.in"
+
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/configure.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/helpers.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_setup.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_update.hpp"
+
+  CACHE "" INTERNAL
+)
+
 # Function to create a TouchDesigner Custom operator OP from an Avendish processor
 function(avnd_make_touchdesigner)
   cmake_parse_arguments(AVND "" "OPTYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
@@ -46,6 +70,7 @@ function(avnd_make_touchdesigner)
     PRIVATE
       "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_touchdesigner.cpp"
+      ${AVND_TD_SOURCES}
   )
 
   # Set output name (TouchDesigner plugins are .dll on Windows, .dylib on macOS)
@@ -116,18 +141,10 @@ function(avnd_make_touchdesigner)
   message(STATUS "Configured TouchDesigner: ${AVND_FX_TARGET}")
 endfunction()
 
-target_sources(Avendish PRIVATE
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/audio_processor.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/chop/message_processor.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_AUDIO.prototype.cpp.in"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/CHOP_MESSAGE.prototype.cpp.in"
+target_sources(Avendish PRIVATE ${AVND_TD_SOURCES})
 
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/top/texture_processor.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/TOP.prototype.cpp.in"
-
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/configure.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/helpers.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_setup.hpp"
-  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_update.hpp"
+target_include_directories(Avendish
+  SYSTEM
+  PRIVATE
+    "${TOUCHDESIGNER_SDK_PATH}/include"
 )

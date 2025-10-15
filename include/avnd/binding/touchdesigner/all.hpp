@@ -20,7 +20,8 @@
 // DAT bindings
 #include <avnd/binding/touchdesigner/dat/data_processor.hpp>
 
-// TODO: SOP bindings will be added here in future phases
+// SOP bindings
+#include <avnd/binding/touchdesigner/sop/geometry_processor.hpp>
 
 namespace avnd::touchdesigner
 {

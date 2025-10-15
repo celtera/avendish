@@ -191,6 +191,7 @@ private:
   }
 
   template <avnd::xy_parameter Field>
+    requires (!avnd::xy_parameter<Field>)
   void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
@@ -259,6 +260,7 @@ private:
   }
 
   template <avnd::uv_parameter Field>
+    requires (!avnd::uvw_parameter<Field>)
   void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
@@ -327,6 +329,7 @@ private:
   }
 
   template <avnd::rgb_parameter Field>
+    requires (!avnd::rgba_parameter<Field>)
   void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);

@@ -152,6 +152,7 @@ struct parameter_update
   }
 
   template <avnd::xy_parameter Field>
+    requires (!avnd::xyz_parameter<Field>)
   void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
     using type = std::decay_t<decltype(field.value.x)>;
@@ -186,6 +187,7 @@ struct parameter_update
   }
 
   template <avnd::uv_parameter Field>
+    requires (!avnd::uvw_parameter<Field>)
   void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
     using type = std::decay_t<decltype(field.value.u)>;
@@ -220,6 +222,7 @@ struct parameter_update
   }
 
   template <avnd::rgb_parameter Field>
+    requires (!avnd::rgba_parameter<Field>)
   void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
     using type = std::decay_t<decltype(field.value.r)>;
