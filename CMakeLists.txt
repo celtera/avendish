@@ -5,6 +5,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(avendish LANGUAGES C CXX)
 option(AVENDISH_INCLUDE_SOURCE_ONLY "Create a simple Avendish target for including headers" OFF)
 
+# find_package look in BOOST_ROOT
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
+# do not skip BOOST_ROOT
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)
 endif()
