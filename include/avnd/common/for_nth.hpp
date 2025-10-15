@@ -166,8 +166,46 @@ constexpr void for_each_field_function_table(T&& value, R func)
   }(std::make_index_sequence<fields_count_val>{});
 }
 */
+
+// https://stackoverflow.com/questions/79757242/converting-pointer-to-member-to-member-index-using-boost-pfr-without-creating-an
+
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-internal"
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
+
+template <class T>
+struct fake_object_wrapper { T const value; };
+
+template <class T>
+extern const fake_object_wrapper<T> fake_object_for_indices;
+
+template<class T>
+static constexpr auto fake_object_member_ptrs = std::apply([](auto const&... ref) {
+  return std::array{static_cast<void const*>(std::addressof(ref))...};
+}, boost::pfr::structure_tie(fake_object_for_indices<T>.value));
+
+template<auto MemPtr>
+static constexpr size_t index_of = []<class T, class V>(V T::* p) {
+  return std::find(fake_object_member_ptrs<T>.begin(), fake_object_member_ptrs<T>.end(),
+                   std::addressof(fake_object_for_indices<T>.value.*p)) - fake_object_member_ptrs<T>.begin();
+}(MemPtr);
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+template <auto M>
+static constexpr int index_in_struct_static()
+{
+  static constexpr auto idx = index_of<M>;
+  return idx;
+}
+
 constexpr int index_in_struct(const auto& s, auto... member)
 {
+  static_assert(sizeof...(member) > 0);
   int index = -1;
   int k = 0;
 
@@ -181,7 +219,9 @@ constexpr int index_in_struct(const auto& s, auto... member)
     }
     ++k;
   });
+#if !defined(_MSC_VER)
   assert(index >= 0);
+#endif
   return index;
 }
 }
