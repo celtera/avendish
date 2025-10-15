@@ -13,7 +13,7 @@ jobs:
           - {
               name: "Windows",
               os: windows-latest,
-              path: "/c/ossia-sdk/llvm/bin",
+              path: "/c/ossia-sdk-x86_64/llvm/bin",
               common_flags: "-GNinja \
                              -DCMAKE_C_COMPILER=c:/ossia-sdk-x86_64/llvm/bin/clang.exe \
                              -DCMAKE_CXX_COMPILER=c:/ossia-sdk-x86_64/llvm/bin/clang++.exe \
@@ -113,7 +113,7 @@ jobs:
           cd build-debug
 
           if [[ "${{ matrix.config.path }}" != "" ]]; then
-            export PATH=${{ matrix.config.path }}:$PATH
+            export PATH="${{ matrix.config.path }}:$PATH"
           fi
 
           export MAX_SDK=$PWD/../max-sdk-base
@@ -140,7 +140,7 @@ jobs:
           cd build-debug
 
           if [[ "${{ matrix.config.path }}" != "" ]]; then
-            export PATH=${{ matrix.config.path }}:$PATH
+            export PATH="${{ matrix.config.path }}:$PATH"
           fi
 
           cmake --build . --target test
@@ -152,7 +152,7 @@ jobs:
           cd build-release
 
           if [[ "${{ matrix.config.path }}" != "" ]]; then
-            export PATH=${{ matrix.config.path }}:$PATH
+            export PATH="${{ matrix.config.path }}:$PATH"
           fi
 
           export MAX_SDK=$PWD/../max-sdk-base
@@ -179,7 +179,7 @@ jobs:
           cd build-release
 
           if [[ "${{ matrix.config.path }}" != "" ]]; then
-            export PATH=${{ matrix.config.path }}:$PATH
+            export PATH="${{ matrix.config.path }}:$PATH"
           fi
 
           cmake --build . --target test
