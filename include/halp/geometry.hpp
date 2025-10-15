@@ -486,7 +486,7 @@ struct position_normals_texcoords_geometry_volume
 
 // In this example we have one separate buffer per attribute + an index buffer
 // So pretty much everything is defined statically.
-struct position_normals_color_geometry
+struct position_normals_color_index_geometry
 {
   enum
   {
@@ -638,6 +638,145 @@ struct position_normals_color_geometry
     static constexpr int offset() { return 0; }
     enum format { uint32 };
   } index;
+
+  int vertices = 0;
+};
+
+// Same but no index
+struct position_normals_color_geometry
+{
+  enum
+  {
+    triangles,
+    counter_clockwise,
+    cull_back
+  };
+
+  struct buffers
+  {
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } position_buffer;
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } normal_buffer;
+    struct
+    {
+      enum
+      {
+        dynamic,
+        vertex
+      };
+      float* data{};
+      int size{};
+      bool dirty{};
+    } color_buffer;
+  } buffers;
+
+  // This example uses two successive bindings to one buffer.
+  struct bindings
+  {
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } position_binding;
+
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 3 * sizeof(float);
+      int step_rate = 1;
+    } normals_binding;
+
+    struct
+    {
+      enum
+      {
+        per_vertex
+      };
+      int stride = 4 * sizeof(float);
+      int step_rate = 1;
+    } color_binding;
+  };
+
+  struct attributes
+  {
+    struct
+    {
+      enum
+      {
+        position
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 0;
+    } position;
+
+    struct
+    {
+      enum
+      {
+        normal
+      };
+      using datatype = float[3];
+      int32_t offset = 0;
+      int32_t binding = 1;
+    } normal;
+
+    struct
+    {
+      enum
+      {
+        color
+      };
+      using datatype = float[4];
+      int32_t offset = 0;
+      int32_t binding = 2;
+    } texcoord;
+  };
+
+  struct
+  {
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::position_buffer; }
+      static constexpr int offset() { return 0; }
+    } input0;
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::normal_buffer; }
+      static constexpr int offse() { return 0; }
+    } input1;
+    struct
+    {
+      static constexpr auto buffer() { return &buffers::color_buffer; }
+      static constexpr int offset() { return 0; }
+    } input2;
+  } input;
 
   int vertices = 0;
 };

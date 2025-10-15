@@ -7,6 +7,7 @@
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
 #include <avnd/common/export.hpp>
+#include <avnd/common/for_nth.hpp>
 #include <avnd/concepts/gfx.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -18,114 +19,17 @@
 namespace touchdesigner::SOP
 {
 
-// Convert to TD::Vector (normals)
-template <typename V>
-static TD::Vector to_vector(const V& v)
-{
-  if constexpr(requires { v.x; v.y; v.z; })
-  {
-    return TD::Vector{
-                      static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z)};
-  }
-  else if constexpr(requires { v[0]; v[1]; v[2]; })
-  {
-    return TD::Vector{
-                      static_cast<float>(v[0]), static_cast<float>(v[1]), static_cast<float>(v[2])};
-  }
-  else if constexpr(avnd::tuple_ish<V> && std::tuple_size_v<V> >= 3)
-  {
-    return TD::Vector{static_cast<float>(std::get<0>(v)),
-                      static_cast<float>(std::get<1>(v)),
-                      static_cast<float>(std::get<2>(v))};
-  }
-  else
-  {
-    return TD::Vector{0.f, 1.f, 0.f}; // Default up vector
-  }
-}
-
-// Convert to TD::Color
-template <typename C>
-static TD::Color to_color(const C& c)
-{
-  if constexpr(requires { c.r; c.g; c.b; c.a; })
-  {
-    return TD::Color{static_cast<float>(c.r), static_cast<float>(c.g),
-                     static_cast<float>(c.b), static_cast<float>(c.a)};
-  }
-  else if constexpr(requires { c.r; c.g; c.b; })
-  {
-    return TD::Color{static_cast<float>(c.r), static_cast<float>(c.g),
-                     static_cast<float>(c.b), 1.0f};
-  }
-  else if constexpr(requires { c[0]; c[1]; c[2]; c[3]; })
-  {
-    return TD::Color{static_cast<float>(c[0]), static_cast<float>(c[1]),
-                     static_cast<float>(c[2]), static_cast<float>(c[3])};
-  }
-  else if constexpr(requires { c[0]; c[1]; c[2]; })
-  {
-    return TD::Color{
-                     static_cast<float>(c[0]), static_cast<float>(c[1]), static_cast<float>(c[2]),
-                     1.0f};
-  }
-  else if constexpr(avnd::tuple_ish<C>)
-  {
-    if constexpr(std::tuple_size_v<C> >= 4)
-    {
-      return TD::Color{static_cast<float>(std::get<0>(c)),
-                       static_cast<float>(std::get<1>(c)),
-                       static_cast<float>(std::get<2>(c)),
-                       static_cast<float>(std::get<3>(c))};
-    }
-    else if constexpr(std::tuple_size_v<C> >= 3)
-    {
-      return TD::Color{static_cast<float>(std::get<0>(c)),
-                       static_cast<float>(std::get<1>(c)),
-                       static_cast<float>(std::get<2>(c)), 1.0f};
-    }
-  }
-
-  // Default: white
-  return TD::Color{1.0f, 1.0f, 1.0f, 1.0f};
-}
-
-// Convert to TD::TexCoord
-template <typename T>
-static TD::TexCoord to_texcoord(const T& t)
-{
-  if constexpr(requires { t.u; t.v; })
-  {
-    return TD::TexCoord{static_cast<float>(t.u), static_cast<float>(t.v), 0.f};
-  }
-  else if constexpr(requires { t.u; t.v; t.w; })
-  {
-    return TD::TexCoord{
-                        static_cast<float>(t.u), static_cast<float>(t.v), static_cast<float>(t.w)};
-  }
-  else if constexpr(requires { t[0]; t[1]; })
-  {
-    return TD::TexCoord{static_cast<float>(t[0]), static_cast<float>(t[1]), 0.f};
-  }
-  else if constexpr(avnd::tuple_ish<T> && std::tuple_size_v<T> >= 2)
-  {
-    return TD::TexCoord{
-                        static_cast<float>(std::get<0>(t)), static_cast<float>(std::get<1>(t)), 0.f};
-  }
-  else
-  {
-    return TD::TexCoord{0.f, 0.f, 0.f};
-  }
-}
 /**
  * Geometry processor binding for TouchDesigner SOPs
- * Maps Avendish geometry processors to TD's SOP API
+ * Maps Avendish geometry processors (with buffers/bindings/attributes structure)
+ * to TD's SOP API
  *
  * Uses CPU mode (SOP_Output) for geometry that works in SOP networks
  */
 template <typename T>
 struct geometry_processor : public TD::SOP_CPlusPlusBase
 {
+  static_assert(avnd::geometry_output_introspection<T>::size == 1);
   avnd::effect_container<T> implementation;
   parameter_setup<T> param_setup;
 
@@ -233,134 +137,320 @@ private:
     // Find geometry outputs
     if constexpr(avnd::has_outputs<T>)
     {
-      // Iterate over outputs to find geometry ports
-      bool found_geometry = false;
-
-      avnd::output_introspection<T>::for_all(
+      // There's only one but well
+      avnd::geometry_output_introspection<T>::for_all(
           avnd::get_outputs(implementation),
           [&]<typename Field>(Field& field) {
-            if constexpr(avnd::geometry_port<Field>)
-            {
-              write_geometry_port(output, field);
-              found_geometry = true;
-            }
-            else if constexpr(requires { field.mesh; } && avnd::geometry_port<decltype(field.mesh)>)
-            {
-              write_geometry_port(output, field.mesh);
-              found_geometry = true;
-            }
-          });
+        load_geometry(field.mesh, output);
+      });
     }
   }
 
-  // Write a single geometry port to output
+  // Main geometry loading - maps from avnd geometry structure to TD SOP
   template <typename GeomPort>
-  void write_geometry_port(TD::SOP_Output* output, GeomPort& geom)
+    requires(avnd::static_geometry_type<GeomPort> || avnd::dynamic_geometry_type<GeomPort>)
+  void load_geometry(GeomPort& geom, TD::SOP_Output* output)
   {
-    // Add vertices/points
+    // Get vertex count
+    int num_vertices = 0;
     if constexpr(requires { geom.vertices; })
     {
-      using vertex_type = typename std::decay_t<decltype(geom.vertices)>::value_type;
+      num_vertices = geom.vertices;
+    }
 
-      // Add all vertices
-      for(const auto& vertex : geom.vertices)
-      {
-        TD::Position pos = to_position(vertex);
-        output->addPoint(pos);
-      }
+    if(num_vertices == 0)
+      return;
 
-      // Add vertex attributes if they exist
-      if constexpr(requires { geom.attributes; })
-      {
-        write_attributes(output, geom.attributes, geom.vertices.size());
-      }
+    // Build position data
+    add_vertices_from_buffers(geom, output);
 
-      // Add primitives (indices define triangles)
-      if constexpr(requires { geom.indices; })
-      {
-        const auto& indices = geom.indices;
-        const int num_triangles = indices.size() / 3;
-
-        if(num_triangles > 0)
-        {
-          output->addTriangles(indices.data(), num_triangles);
-        }
-      }
+    // Add primitives based on topology
+    if constexpr(requires { geom.index; })
+    {
+      add_triangles(geom, output);
     }
   }
 
-  // Convert various vertex types to TD::Position
-  template <typename V>
-  TD::Position to_position(const V& v)
+  template <typename GeomPort>
+  void add_vertices_from_buffers(GeomPort& geom, TD::SOP_Output* output)
   {
-    if constexpr(requires { v.x; v.y; v.z; })
-    {
-      return TD::Position{
-          static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z)};
-    }
-    else if constexpr(requires { v[0]; v[1]; v[2]; })
-    {
-      return TD::Position{
-          static_cast<float>(v[0]), static_cast<float>(v[1]), static_cast<float>(v[2])};
-    }
-    else if constexpr(avnd::tuple_ish<V> && std::tuple_size_v<V> >= 3)
-    {
-      return TD::Position{static_cast<float>(std::get<0>(v)),
-                          static_cast<float>(std::get<1>(v)),
-                          static_cast<float>(std::get<2>(v))};
-    }
-    else
-    {
-      // Fallback: return origin
-      return TD::Position{0.f, 0.f, 0.f};
-    }
+    int& num_vertices = geom.vertices;
+    // Find the position attribute
+    int position_binding_idx = -1;
+    int position_offset = 0;
+    bool found_position = false;
+
+    avnd::for_each_field_ref(avnd::get_attributes(geom), [&]<typename Attr>(Attr& attr) {
+      // Check if this is a position attribute
+      if constexpr(requires { Attr::position; } || requires { Attr::positions; })
+      {
+        if constexpr(requires { attr.binding(); })
+          position_binding_idx = attr.binding();
+        else if constexpr(requires { attr.binding; })
+          position_binding_idx = attr.binding;
+        else
+          position_binding_idx = 0;
+
+        if constexpr(requires { attr.offset(); })
+          position_offset = attr.offset();
+        else if constexpr(requires { attr.offset; })
+          position_offset = attr.offset;
+        else
+          position_offset = 0;
+
+        found_position = true;
+      }
+    });
+
+    if(!found_position)
+      return;
+
+    // Get the binding for positions to know the stride
+    int position_stride = 0;
+    int binding_idx = 0;
+    avnd::for_each_field_ref(avnd::get_bindings(geom), [&](auto& binding) {
+      if(binding_idx == position_binding_idx)
+      {
+        position_stride = binding.stride;
+      }
+      binding_idx++;
+    });
+
+    // Get the input that references the buffer for positions
+    int buffer_idx = 0;
+    int buffer_offset = 0;
+    int input_idx = 0;
+    avnd::for_each_field_ref(geom.input, [&](auto& input) {
+      if(input_idx == position_binding_idx)
+      {
+        if constexpr(requires { input.buffer(); })
+          buffer_idx = avnd::index_in_struct(geom.buffers, input.buffer());
+        else if constexpr(requires { input.buffer; })
+          buffer_idx = input.buffer;
+
+        if constexpr(requires { input.offset(); })
+          buffer_offset = input.offset();
+        else if constexpr(requires { input.offset; })
+          buffer_offset = input.offset;
+      }
+      input_idx++;
+    });
+
+    // Now read the actual buffer data and add vertices
+    int buf_idx = 0;
+    avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
+      if(buf_idx == buffer_idx)
+      {
+        // We have the buffer - read vertices
+        const char* data_ptr = nullptr;
+
+        if constexpr(std::is_same_v<std::decay_t<decltype(buf.data)>, void*>)
+        {
+          // Dynamic case
+          data_ptr = static_cast<const char*>(buf.data);
+        }
+        else
+        {
+          // Static case - array of typed data
+          using data_type = std::decay_t<decltype(buf.data[0])>;
+          data_ptr = reinterpret_cast<const char*>(buf.data);
+        }
+
+        if(!data_ptr) {
+          buf_idx++;
+          return;
+        }
+
+        // Add vertices
+        for(int i = 0; i < num_vertices; ++i)
+        {
+          const float* vertex_data = reinterpret_cast<const float*>(
+              data_ptr + buffer_offset + position_offset + i * position_stride);
+
+          TD::Position pos{vertex_data[0], vertex_data[1], vertex_data[2]};
+          output->addPoint(pos);
+        }
+
+        // Now add other attributes (normals, colors, texcoords)
+        add_attributes_from_buffers(geom, output, num_vertices);
+      }
+      buf_idx++;
+    });
   }
 
-  // Write vertex attributes (normals, colors, texcoords)
-  template <typename Attribs>
-  void write_attributes(TD::SOP_Output* output, const Attribs& attribs, int num_vertices)
+  template <typename GeomPort>
+  void add_attributes_from_buffers(GeomPort& geom, TD::SOP_Output* output, int num_vertices)
   {
-    // Write normals
-    if constexpr(requires { attribs.normals; })
-    {
-      const auto& normals = attribs.normals;
-      if(normals.size() == num_vertices)
+    // Process each attribute
+    avnd::for_each_field_ref(avnd::get_attributes(geom), [&]<typename Attr>(Attr& attr) {
+      // Skip position (already processed)
+      if constexpr(requires { Attr::position; } || requires { Attr::positions; })
       {
-        for(int i = 0; i < num_vertices; ++i)
-        {
-          output->setNormal(to_vector(normals[i]), i);
-        }
+        return;
       }
-    }
 
-    // Write colors
-    if constexpr(requires { attribs.colors; })
-    {
-      const auto& colors = attribs.colors;
-      if(colors.size() == num_vertices)
-      {
-        for(int i = 0; i < num_vertices; ++i)
-        {
-          output->setColor(to_color(colors[i]), i);
-        }
-      }
-    }
+      // Get attribute metadata
+      int attr_binding = 0;
+      int attr_offset = 0;
 
-    // Write texture coordinates
-    if constexpr(requires { attribs.texcoords; })
-    {
-      const auto& texcoords = attribs.texcoords;
-      if(texcoords.size() == num_vertices)
-      {
-        for(int i = 0; i < num_vertices; ++i)
+      if constexpr(requires { attr.binding; })
+        attr_binding = attr.binding;
+      if constexpr(requires { attr.offset; })
+        attr_offset = attr.offset;
+
+      // Get stride from binding
+      int attr_stride = 0;
+      int binding_idx = 0;
+      avnd::for_each_field_ref(avnd::get_bindings(geom), [&](auto& binding) {
+        if(binding_idx == attr_binding)
         {
-          TD::TexCoord tc = to_texcoord(texcoords[i]);
-          output->setTexCoord(&tc, 1, i);
+          attr_stride = binding.stride;
         }
-      }
-    }
+        binding_idx++;
+      });
+
+      // Get buffer info from input
+      int buffer_idx = 0;
+      int buffer_offset = 0;
+      int input_idx = 0;
+      avnd::for_each_field_ref(geom.input, [&](auto& input) {
+        if(input_idx == attr_binding)
+        {
+          if constexpr(requires { input.buffer(); })
+            buffer_idx = avnd::index_in_struct(geom.buffers, input.buffer());
+          else if constexpr(requires { input.buffer; })
+            buffer_idx = input.buffer;
+
+          if constexpr(requires { input.offset(); })
+            buffer_offset = input.offset();
+          else if constexpr(requires { input.offset; })
+            buffer_offset = input.offset;
+        }
+        input_idx++;
+      });
+
+      // Read buffer and set attribute
+      int buf_idx = 0;
+      avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
+        if(buf_idx == buffer_idx)
+        {
+          const char* data_ptr = nullptr;
+
+          if constexpr(std::is_same_v<std::decay_t<decltype(buf.data)>, void*>)
+          {
+            data_ptr = static_cast<const char*>(buf.data);
+          }
+          else
+          {
+            using data_type = std::decay_t<decltype(buf.data[0])>;
+            data_ptr = reinterpret_cast<const char*>(buf.data);
+          }
+
+          if(!data_ptr) {
+            buf_idx++;
+            return;
+          }
+
+          // Set attribute based on type
+          if constexpr(requires { Attr::normal; } || requires { Attr::normals; })
+          {
+            // Normals
+            for(int i = 0; i < num_vertices; ++i)
+            {
+              const float* normal_data = reinterpret_cast<const float*>(
+                  data_ptr + buffer_offset + attr_offset + i * attr_stride);
+              TD::Vector normal{normal_data[0], normal_data[1], normal_data[2]};
+              output->setNormal(normal, i);
+            }
+          }
+          else if constexpr(requires { Attr::color; } || requires { Attr::colors; })
+          {
+            // Colors
+            for(int i = 0; i < num_vertices; ++i)
+            {
+              const float* color_data = reinterpret_cast<const float*>(
+                  data_ptr + buffer_offset + attr_offset + i * attr_stride);
+
+              // Determine number of components
+              using datatype = typename Attr::datatype;
+              TD::Color color;
+              if constexpr(std::is_same_v<datatype, float[4]>)
+              {
+                color = TD::Color{color_data[0], color_data[1], color_data[2], color_data[3]};
+              }
+              else if constexpr(std::is_same_v<datatype, float[3]>)
+              {
+                color = TD::Color{color_data[0], color_data[1], color_data[2], 1.0f};
+              }
+              else
+              {
+                color = TD::Color{1.0f, 1.0f, 1.0f, 1.0f};
+              }
+              output->setColor(color, i);
+            }
+          }
+          else if constexpr(
+              requires { Attr::texcoord; } || requires { Attr::tex_coord; }
+              || requires { Attr::texcoords; } || requires { Attr::tex_coords; }
+              || requires { Attr::uv; } || requires { Attr::uvs; })
+          {
+            // Texture coordinates
+            for(int i = 0; i < num_vertices; ++i)
+            {
+              const float* uv_data = reinterpret_cast<const float*>(
+                  data_ptr + buffer_offset + attr_offset + i * attr_stride);
+              TD::TexCoord tc{uv_data[0], uv_data[1], 0.0f};
+              output->setTexCoord(&tc, 1, i);
+            }
+          }
+        }
+        buf_idx++;
+      });
+    });
   }
 
+  template <typename GeomPort>
+  void add_triangles(GeomPort& geom, TD::SOP_Output* output)
+  {
+    // Get the input that references the buffer for indices
+    int buffer_idx = -1;
+    int buffer_offset = 0;
+    auto& input = geom.index;
+    {
+      if constexpr(requires { input.buffer(); })
+        buffer_idx = avnd::index_in_struct(geom.buffers, input.buffer());
+      else if constexpr(requires { input.buffer; })
+        buffer_idx = input.buffer;
+
+      if constexpr(requires { input.offset(); })
+        buffer_offset = input.offset();
+      else if constexpr(requires { input.offset; })
+        buffer_offset = input.offset;
+    }
+
+    // Read the indices 3 by 3
+    if(buffer_idx >= 0)
+    {
+      // Now read the actual buffer data and add vertices
+      int buf_idx = 0;
+      avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
+        if(buf_idx == buffer_idx)
+        {
+          // We have the buffer - read vertices
+          const char* data_ptr = nullptr;
+
+          for(int k = 0; k < buf.size - 2; k += 3) {
+            auto i0 = buf.data[k];
+            auto i1 = buf.data[k+1];
+            auto i2 = buf.data[k+2];
+
+            output->addTriangle(i0, i1, i2);
+          }
+        }
+        buf_idx++;
+      });
+    }
+  }
 
   void update_controls(const TD::OP_Inputs* inputs)
   {

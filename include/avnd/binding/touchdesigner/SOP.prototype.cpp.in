@@ -8,7 +8,7 @@
 // clang-format off
 #include <@AVND_MAIN_FILE@>
 #include <avnd/binding/touchdesigner/configure.hpp>
-#include <avnd/binding/touchdesigner/SOP/geometry_processor.hpp>
+#include <avnd/binding/touchdesigner/sop/geometry_processor.hpp>
 
 // Include TouchDesigner headers
 #include "SOP_CPlusPlusBase.h"
