@@ -59,6 +59,11 @@ struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::midi_inlet;
 };
+template <typename N, avnd::buffer_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::texture_inlet;
+};
 template <typename N, avnd::texture_port T>
 struct get_ossia_inlet_type<N, T>
 {
@@ -137,6 +142,11 @@ template <typename N, avnd::midi_port T>
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::midi_outlet;
+};
+template <typename N, avnd::buffer_port T>
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::texture_outlet;
 };
 template <typename N, avnd::texture_port T>
 struct get_ossia_outlet_type<N, T>

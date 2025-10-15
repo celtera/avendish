@@ -65,6 +65,12 @@ struct dynamic_container_midi_output_introspection
 };
 
 template <typename T>
+struct buffer_output_introspection
+    : buffer_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct texture_output_introspection
     : texture_port_introspection<typename outputs_type<T>::type>
 {

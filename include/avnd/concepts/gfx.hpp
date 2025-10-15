@@ -13,6 +13,10 @@ concept cpu_raw_buffer = requires(T t) {
   t.bytes;
   t.bytesize;
   t.changed;
+};
+
+template <typename T>
+concept cpu_typed_buffer = cpu_raw_buffer<T> && requires(T t) {
   typename T::format;
 };
 
@@ -20,6 +24,7 @@ template <typename T>
 concept cpu_buffer_port = requires(T t) {
   t.buffer;
 } && (cpu_raw_buffer<std::decay_t<decltype(std::declval<T>().buffer)>>);
+
 
 template <typename T>
 concept cpu_fixed_format_texture = requires(T t) {
@@ -39,7 +44,7 @@ concept cpu_dynamic_format_texture = requires(T t) {
 };
 template <typename T>
 concept cpu_texture
-    = cpu_raw_buffer<T> || cpu_fixed_format_texture<T> || cpu_dynamic_format_texture<T>;
+    = cpu_typed_buffer<T> || cpu_fixed_format_texture<T> || cpu_dynamic_format_texture<T>;
 
 template <typename T>
 concept cpu_texture_port = requires(T t) {
@@ -58,6 +63,9 @@ concept attachment_port = requires { T::attachment(); };
 template <typename T>
 concept texture_port
     = cpu_texture_port<T> || sampler_port<T> || attachment_port<T> || image_port<T>;
+
+template <typename T>
+concept buffer_port = cpu_buffer_port<T>; // FIXME SSBO
 
 template <typename T>
 concept uniform_port = requires { T::uniform(); };

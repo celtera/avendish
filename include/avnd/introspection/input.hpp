@@ -88,6 +88,12 @@ struct midi_input_introspection : midi_port_introspection<typename inputs_type<T
 };
 
 template <typename T>
+struct buffer_input_introspection
+    : buffer_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct texture_input_introspection
     : texture_port_introspection<typename inputs_type<T>::type>
 {

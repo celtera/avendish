@@ -12,6 +12,38 @@
 HALP_MODULE_EXPORT
 namespace halp
 {
+template <static_string lit>
+struct buffer_input
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  operator const halp::raw_buffer&() const noexcept { return buffer; }
+  operator halp::raw_buffer&() noexcept { return buffer; }
+
+  halp::raw_buffer buffer{};
+};
+
+template <static_string lit>
+struct buffer_output
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  halp::raw_buffer buffer{};
+
+  void create(int64_t sz)
+  {
+    storage.resize(sz, boost::container::default_init);
+    buffer.changed = false;
+    buffer.bytes = storage.data();
+    buffer.bytesize = sz;
+  }
+
+  void upload() noexcept { buffer.changed = true; }
+
+  using uninitialized_bytes = boost::container::vector<unsigned char>;
+  uninitialized_bytes storage;
+};
+
 
 template <static_string lit, typename TextureType = rgba_texture>
 struct texture_input;

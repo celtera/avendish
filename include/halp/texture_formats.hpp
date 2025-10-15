@@ -9,6 +9,13 @@
 HALP_MODULE_EXPORT
 namespace halp
 {
+struct raw_buffer
+{
+  unsigned char* bytes;
+  int64_t bytesize;
+  bool changed;
+};
+
 struct r8_texture
 {
   static constexpr auto bytes_per_pixel = sizeof(unsigned char);
