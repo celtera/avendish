@@ -55,7 +55,7 @@ struct inputs<T>
     if constexpr(first_parameter_is_explicit)
     {
       for(int i = 1; i < refl::size; i++)
-        proxies[i] = proxy_new(&x_obj, 1024 + refl::size - i - 1, 0L);
+        proxies[i-1] = proxy_new(&x_obj, 1024 + refl::size - i - 1, 0L);
     }
     else
     {
