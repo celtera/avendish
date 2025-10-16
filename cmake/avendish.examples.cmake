@@ -289,24 +289,11 @@ set(TEXTURE_EXAMPLES
   TextureGeneratorExample
 )
 foreach(theTarget ${TEXTURE_EXAMPLES})
-  avnd_make_gstreamer(
+  avnd_make_texture(
     TARGET Tutorial_${theTarget}
     MAIN_FILE examples/Tutorial/${theTarget}.hpp
     MAIN_CLASS examples::${theTarget}
     C_NAME oscr_${theTarget}
-  )
-  avnd_make_ossia(
-    TARGET Tutorial_${theTarget}
-    MAIN_FILE examples/Tutorial/${theTarget}.hpp
-    MAIN_CLASS examples::${theTarget}
-    C_NAME oscr_${theTarget}
-  )
-  avnd_make_touchdesigner(
-    TARGET Tutorial_${theTarget}
-    MAIN_FILE examples/Tutorial/${theTarget}.hpp
-    MAIN_CLASS examples::${theTarget}
-    C_NAME oscr_${theTarget}
-    OPTYPE TOP
   )
 endforeach()
 
