@@ -311,6 +311,25 @@ struct message_processor
 
 };
 
+#include <ext.h>
+#include <jit.common.h>
+
+template<typename T, typename... Args>
+T* jit_new(t_class* cls, Args&&... args)
+{
+  auto obj = jit_object_alloc(cls);
+  if(obj)
+  {
+    t_object tmp;
+    memcpy(&tmp, obj, sizeof(t_object));
+    auto x = new(obj) T{std::forward<Args>(args)...};
+    memcpy(x, &tmp, sizeof(t_object));
+
+    return x;
+  }
+  return nullptr;
+}
+
 template <typename T>
 message_processor_metaclass<T>::message_processor_metaclass()
 {
@@ -323,6 +342,61 @@ message_processor_metaclass<T>::message_processor_metaclass()
   // static_assert(std::is_nothrow_move_constructible_v<instance>);
   // static_assert(std::is_nothrow_move_assignable_v<instance>);
 #endif
+  // Create a jitter object if necessary
+  {
+    t_jit_object	*mop;
+
+    struct t_my_jit_object { };
+    static constexpr auto jit_obj_new = [] () -> t_my_jit_object*
+    {
+      // auto obj = jit_new<t_jit_realsense>(t_my_jit_object::max_class);
+      // obj->rebuild();
+      // return obj;
+      return nullptr;
+    };
+    static constexpr auto jit_obj_free = [] (t_my_jit_object* obj) {
+      std::destroy_at(obj);
+    };
+    static constexpr auto jit_matrix_calc = [] (t_my_jit_object* x, void * inputs, void *outputs)  -> t_jit_err{
+
+      if(!x)
+      {
+        return JIT_ERR_INVALID_PTR;
+      }
+
+      // Rebuild..
+
+      // Process matrix on output 0..
+
+      if (auto matrix = jit_object_method(outputs, _jit_sym_getindex, 0))
+      {
+        auto lock = jit_object_method(matrix, _jit_sym_lock, 1);
+        {
+        t_jit_matrix_info out_minfo{};
+        jit_object_method(matrix, _jit_sym_getinfo, &out_minfo);
+        }
+        jit_object_method(matrix, _jit_sym_lock, lock);
+
+      }
+      return JIT_ERR_NONE;
+    };
+
+
+#if 0
+    auto jit_class = (t_class*)jit_class_new("jit_realsense", (method)jit_obj_new, (method)jit_obj_free, sizeof(t_my_jit_object), 0);
+
+    // add matrix operator (mop)
+    mop = (t_jit_object *)jit_object_new(_jit_sym_jit_mop, 0, 1); // 0 input, 1 output
+    jit_class_addadornment(jit_class, mop);
+
+    // add method(s)
+    jit_class_addmethod(jit_class, (method)jit_matrix_calc, "matrix_calc", A_CANT, 0);
+
+    // finalize class
+    jit_class_register(jit_class);
+#endif
+  }
+
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
