@@ -12,7 +12,7 @@ namespace examples
 struct TrivialGeneratorExample
 {
   halp_meta(name, "My trivial generator");
-  halp_meta(c_name, "trivial_effect_gen");
+  halp_meta(c_name, "oscr_TrivialGeneratorExample")
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");
