@@ -71,21 +71,31 @@ struct avnd_jit_class
       return JIT_ERR_OUT_OF_MEM;
 
     // Create MOP (Matrix Operator) with appropriate inputs/outputs
-    mop = jit_object_new(_jit_sym_jit_mop, texture_input_count, texture_output_count);
+    // For generators (no inputs), we need at least 1 input to receive bangs
+    const int mop_input_count = (texture_input_count == 0) ? 1 : texture_input_count;
+    mop = jit_object_new(_jit_sym_jit_mop, mop_input_count, texture_output_count);
 
     if(mop)
     {
       // Configure MOP inputs
-      for(int i = 0; i < texture_input_count; i++)
+      if(texture_input_count == 0)
       {
-        void* input = jit_object_method(mop, _jit_sym_getinput, i + 1);
-        if(input)
+        // For generators, we have a dummy input for bangs
+        // Don't configure it as a matrix input
+      }
+      else
+      {
+        for(int i = 0; i < texture_input_count; i++)
         {
-          // Set to handle char matrices (RGBA8)
-          jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
-          jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
-          jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
-          jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
+          void* input = jit_object_method(mop, _jit_sym_getinput, i + 1);
+          if(input)
+          {
+            // Set to handle char matrices (RGBA8)
+            jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
+            jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
+            jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
+            jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
+          }
         }
       }
 
@@ -182,7 +192,14 @@ struct avnd_jit_class
     }
 
     // Execute the processor
-    if_possible(x->processor.effect());
+    // Get the actual processor from the container
+    auto& proc = x->processor.effect;
+
+    // Call operator() on the processor
+    if constexpr(requires { proc(); })
+    {
+      proc();
+    }
 
     // Process texture outputs
     if constexpr(texture_output_count > 0)
@@ -270,14 +287,22 @@ struct max_jit_wrapper
     std::string jit_class_name = "jit_avnd_" + max_class_name;
     jclass = (t_class*)jit_class_findbyname(gensym(jit_class_name.c_str()));
 
-    // Add MOP methods using new API
-    max_jit_class_mop_wrap(s_max_class, jclass, 0);
+    // Add MOP methods using new API with flags to prevent issues
+    max_jit_class_mop_wrap(s_max_class, jclass, MAX_JIT_MOP_FLAGS_OWN_BANG | MAX_JIT_MOP_FLAGS_OWN_OUTPUTMATRIX);
 
-    // Standard wrap using new API
-    max_jit_class_wrap_standard(s_max_class, jclass, 0);
+    // Skip standard wrap to avoid attribute recursion issues
+    // Since we don't have custom attributes yet, this avoids the infinite loop
+    // max_jit_class_wrap_standard(s_max_class, jclass, 0);
 
     // Add assist method
     class_addmethod(s_max_class, (method)max_wrapper_assist, "assist", A_CANT, 0);
+
+    // Add message handling methods (since we use MAX_JIT_MOP_FLAGS_OWN_BANG)
+    class_addmethod(s_max_class, (method)max_wrapper_bang, "bang", A_NOTHING, 0);
+    class_addmethod(s_max_class, (method)max_wrapper_int, "int", A_LONG, 0);
+    class_addmethod(s_max_class, (method)max_wrapper_float, "float", A_FLOAT, 0);
+    class_addmethod(s_max_class, (method)max_wrapper_symbol, "symbol", A_SYM, 0);
+    class_addmethod(s_max_class, (method)max_wrapper_anything, "anything", A_GIMME, 0);
 
     // Register the class
     class_register(CLASS_BOX, s_max_class);
@@ -336,6 +361,51 @@ struct max_jit_wrapper
     {
       jit_error_code(jit_ob, err);
     }
+  }
+
+  /**
+   * Bang handler - triggers matrix processing
+   */
+  static void max_wrapper_bang(max_jit_wrapper<T>* x)
+  {
+    // Trigger MOP processing
+    max_jit_mop_outputmatrix(x);
+  }
+
+  /**
+   * Int handler
+   */
+  static void max_wrapper_int(max_jit_wrapper<T>* x, t_atom_long n)
+  {
+    // Could be used to set parameters - for now just trigger processing
+    max_wrapper_bang(x);
+  }
+
+  /**
+   * Float handler
+   */
+  static void max_wrapper_float(max_jit_wrapper<T>* x, t_atom_float f)
+  {
+    // Could be used to set parameters - for now just trigger processing
+    max_wrapper_bang(x);
+  }
+
+  /**
+   * Symbol handler
+   */
+  static void max_wrapper_symbol(max_jit_wrapper<T>* x, t_symbol* s)
+  {
+    // Could be used to set parameters - for now just trigger processing
+    max_wrapper_bang(x);
+  }
+
+  /**
+   * Anything handler for other messages
+   */
+  static void max_wrapper_anything(max_jit_wrapper<T>* x, t_symbol* s, long argc, t_atom* argv)
+  {
+    // Could be used for more complex messages - for now just trigger processing
+    max_wrapper_bang(x);
   }
 
   /**
