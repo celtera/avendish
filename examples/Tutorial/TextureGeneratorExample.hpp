@@ -28,12 +28,12 @@ namespace examples
  */
 struct TextureGeneratorExample
 {
-  halp_meta(name, "My example texture generator");
-  halp_meta(c_name, "texture_gen");
-  halp_meta(category, "Demo");
-  halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
-  halp_meta(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663");
+  halp_meta(name, "My example texture generator")
+  halp_meta(c_name, "oscr_TextureGeneratorExample")
+  halp_meta(category, "Demo")
+  halp_meta(author, "<AUTHOR>")
+  halp_meta(description, "<DESCRIPTION>")
+  halp_meta(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663")
 
   // By know you know the drill: define inputs, outputs...
   struct

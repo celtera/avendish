@@ -13,7 +13,7 @@ namespace examples
 struct AudioSidechainExample
 {
   halp_meta(name, "Sidechain example");
-  halp_meta(c_name, "effect_sidechain");
+  halp_meta(c_name, "oscr_AudioSidechainExample");
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");

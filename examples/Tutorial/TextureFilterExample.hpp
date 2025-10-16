@@ -12,7 +12,7 @@ namespace examples
 struct TextureFilterExample
 {
   halp_meta(name, "My example texture filter");
-  halp_meta(c_name, "texture_filt");
+  halp_meta(c_name, "oscr_TextureFilterExample")
   halp_meta(category, "Demo");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Example texture filter");

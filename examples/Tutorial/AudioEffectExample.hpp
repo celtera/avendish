@@ -13,7 +13,7 @@ namespace examples
 struct AudioEffectExample
 {
   halp_meta(name, "My example effect");
-  halp_meta(c_name, "effect_123");
+  halp_meta(c_name, "oscr_AudioEffectExample");
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");
