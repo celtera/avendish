@@ -18,7 +18,7 @@ struct Distortion
    * UUIDs are important to uniquely identify plug-ins: you can use uuidgen for instance.
    */
   halp_meta(name, "My pretty distortion");
-  halp_meta(c_name, "disto_123");
+  halp_meta(c_name, "oscr_Distortion");
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");

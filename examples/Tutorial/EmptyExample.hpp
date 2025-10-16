@@ -17,7 +17,7 @@ struct EmptyExample
 {
   /** Here are the metadata of the plug-ins, to display to the user **/
   halp_meta(name, "Hello world");
-  halp_meta(c_name, "empty_example");
+  halp_meta(c_name, "oscr_EmptyExample");
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");

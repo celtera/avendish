@@ -23,6 +23,7 @@ struct ZeroDependencyAudioEffect
    *   given how many audio effects are called "Chorus" or "Distortion", the name is not enough.
    */
   static constexpr auto name() { return "My zero-dependency effect"; }
+  static constexpr auto c_name() { return "oscr_ZeroDependencyAudioEffect"; }
   static constexpr auto uuid() { return "99fcf199-280c-4e7f-8be3-c34290073bb9"; }
 
   struct
