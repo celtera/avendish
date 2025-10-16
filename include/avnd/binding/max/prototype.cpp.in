@@ -5,6 +5,7 @@
 #include <avnd/binding/max/audio_processor.hpp>
 #include <avnd/binding/max/message_processor.hpp>
 #include <avnd/binding/max/configure.hpp>
+#include <avnd/binding/max/jitter_processor.hpp>
 #include "commonsyms.h"
 using type = decltype(avnd::configure<max::config, @AVND_MAIN_CLASS@>())::type;
 // clang-format on
@@ -19,6 +20,11 @@ extern "C" AVND_EXPORTED_SYMBOL void ext_main(void* r)
     {
       // If we're an audio effect, make a type with the whole DSP stuff
       static const max::audio_processor_metaclass<T> instance{};
+    }
+    else if constexpr(avnd::texture_input_introspection<T>::size > 0
+                   || avnd::texture_output_introspection<T>::size > 0)
+    {
+      static const max::jitter_processor_metaclass<T> instance{};
     }
     else
     {

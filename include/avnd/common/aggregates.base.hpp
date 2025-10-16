@@ -22,7 +22,9 @@ struct typelist
 #endif
 
 #if defined(_MSC_VER)
+#if (!defined(__clang_major__) || (__clang_major__ < 21))
 #define AVND_USE_BOOST_PFR 1
+#endif
 #endif
 
 #if !defined(AVND_USE_BOOST_PFR)

@@ -20,7 +20,7 @@ struct inputs
 {
   void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
 
-  void for_inlet(int inlet, auto& inputs, auto&& func)
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
   {
   }
 };
@@ -54,8 +54,9 @@ struct inputs<T>
 
     if constexpr(first_parameter_is_explicit)
     {
-      for(int i = 1; i < refl::size; i++)
+      for(int i = 1; i < refl::size; i++) {
         proxies[i-1] = proxy_new(&x_obj, 1024 + refl::size - i - 1, 0L);
+      }
     }
     else
     {
@@ -64,7 +65,7 @@ struct inputs<T>
     }
   }
 
-  void for_inlet(int inlet, auto& self, auto&& func)
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
   {
     if constexpr(first_parameter_is_explicit)
     {
@@ -72,14 +73,14 @@ struct inputs<T>
       if(inlet == 0)
       {
         explicit_parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
           func(field);
         });
       }
       else
       {
         explicit_parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), inlet - 1024 + 1, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), inlet - 1024 + 1, [&func](auto& field) {
           func(field);
         });
       }
@@ -91,14 +92,14 @@ struct inputs<T>
       {
         // Set the first parameter
         avnd::parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
           func(field);
         });
       }
       else
       {
         explicit_parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), inlet - 1024, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), inlet - 1024, [&func](auto& field) {
           func(field);
         });
       }
@@ -112,11 +113,11 @@ struct inputs<T>
 {
   void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
 
-  void for_inlet(int inlet, auto& self, auto&& func)
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
   {
     // Inlet is necessarily 0
     avnd::parameter_input_introspection<T>::for_nth_mapped(
-        avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
+        avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
       func(field);
     });
   }
