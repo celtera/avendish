@@ -105,103 +105,6 @@ struct message_processor : processor_common<T>
     dicts.release(implementation);
   }
 
-  void process_inlet_control(int inlet, auto val)
-  {
-    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
-    {
-      auto& obj = this->implementation.effect;
-      this->input_setup.for_inlet(inlet, *this, [&obj, val] <typename F>(F& field) {
-        if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
-        {
-          t_atom res;
-          value_to_max(res, val);
-          if(from_atoms{1, &res}(field.value))
-          {
-            if_possible(field.update(obj));
-            return true;
-          }
-          else
-          {
-            return false;
-          }
-        }
-      });
-    }
-  }
-
-  void process_inlet_dict(int inlet, struct symbol* val)
-  {
-    if constexpr(max::dict_parameter_inputs_introspection<T>::size > 0)
-    {
-      auto dict = dictobj_findregistered_retain(val);
-      if(!dict)
-        return;
-
-      auto& obj = this->implementation.effect;
-      this->input_setup.for_inlet(inlet, *this, [&obj, dict] <typename F>(F& field) {
-        if constexpr(max::dict_parameter<F>)
-        {
-          from_dict{}(dict, field.value);
-          if_possible(field.update(obj));
-        }
-      });
-      dictobj_release(dict);
-    }
-  }
-
-  template <typename Field>
-  static bool
-  process_inlet_control(T& obj, Field& field, int argc, t_atom* argv)
-  {
-    if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
-    {
-      if(from_atoms{argc, argv}(field.value))
-      {
-        if_possible(field.update(obj));
-        return true;
-      }
-    }
-    else
-    {
-      // FIXME
-    }
-    return false;
-  }
-
-  void process_inlet_control(int inlet, t_symbol* s, int argc, t_atom* argv)
-  {
-    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
-    {
-      auto& obj = this->implementation.effect;
-      this->input_setup.for_inlet(inlet, *this, [&obj, argc, argv] <typename F>(F& field) {
-        process_inlet_control(obj, field, argc, argv);
-      });
-    }
-  }
-
-  bool process_inputs(
-      avnd::effect_container<T>& implementation, t_symbol* s, int argc, t_atom* argv)
-  {
-    // FIXME create static pointer tables instead, implement for_each_field_function_table
-    // FIXME refactor with pd too
-    if constexpr(avnd::parameter_input_introspection<T>::size > 0)
-    {
-      bool ok = false;
-      std::string_view symname = s->s_name;
-      avnd::parameter_input_introspection<T>::for_all(
-          avnd::get_inputs(implementation), [&]<typename M>(M& field) {
-        if(ok)
-          return;
-        if(symname == max::get_name_symbol<M>())
-        {
-          ok = process_inlet_control(implementation.effect, field, argc, argv);
-        }
-      });
-      return ok;
-    }
-    return false;
-  }
-
   void process()
   {
     // Do our stuff if it makes sense - some objects may not
@@ -218,17 +121,18 @@ struct message_processor : processor_common<T>
     const int inlet = proxy_getinlet(&x_obj);
 
     // Process the control
-    process_inlet_control(inlet, value);
+    processor_common<T>::process_inlet_control(this->implementation, this->input_setup, inlet, value);
 
     if(inlet == 0)
       process();
   }
+
   void process_dict(t_symbol* name)
   {
     const int inlet = proxy_getinlet(&x_obj);
 
     // Process the control
-    process_inlet_dict(inlet, name);
+    processor_common<T>::process_inlet_dict(this->implementation, this->input_setup, inlet, name);
 
     if(inlet == 0)
       process();
@@ -244,7 +148,7 @@ struct message_processor : processor_common<T>
     if(inlet == 0 && messages<T>{}.process_messages(implementation, s, argc, argv))
       return;
     // Then try to find if any message matches the name of a port
-    if(inlet == 0 && process_inputs(implementation, s, argc, argv))
+    if(inlet == 0 && processor_common<T>::process_inputs(this->implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
@@ -269,7 +173,7 @@ struct message_processor : processor_common<T>
       default: {
         // Apply the data to the first inlet (other inlets are handled by Max).
         // It will always be the first parameter (attribute or not).
-        process_inlet_control(inlet, s, argc, argv);
+        processor_common<T>::process_inlet_control(this->implementation, this->input_setup, inlet, s, argc, argv);
 
         if(inlet == 0)
         {

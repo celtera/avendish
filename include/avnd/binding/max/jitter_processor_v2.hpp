@@ -22,30 +22,31 @@
 namespace max
 {
 template <typename T>
+struct max_jit_wrapper;
+template <typename T>
 struct avnd_jit_class
 {
-  t_jit_object ob;
+  t_jit_object x_obj;
 
-  avnd::effect_container<T> processor;
+  max_jit_wrapper<T>* wrapper{};
+
+  avnd::effect_container<T> implementation;
 
   std::vector<void*> input_matrices;
   std::vector<void*> output_matrices;
 
-  static constexpr int texture_input_count = avnd::cpu_texture_input_introspection<T>::size ;
+  static constexpr int texture_input_count = avnd::cpu_texture_input_introspection<T>::size;
   static constexpr int texture_output_count = avnd::cpu_texture_output_introspection<T>::size;
 
   void init()
   {
-    avnd::init_controls(processor);
-    avnd::prepare(processor, {});
-
     input_matrices.resize(texture_input_count);
     output_matrices.resize(texture_output_count);
   }
 
-  static t_jit_err matrix_calc_imp(avnd_jit_class<T>* x, void* inputs, void* outputs)
+  t_jit_err process(void* inputs, void* outputs)
   {
-    if(!x || !inputs || !outputs)
+    if(!inputs || !outputs)
       return JIT_ERR_INVALID_PTR;
 
     // Process texture inputs
@@ -53,7 +54,7 @@ struct avnd_jit_class
     {
       int idx = 0;
       avnd::cpu_texture_input_introspection<T>::for_all(
-        avnd::get_inputs(x->processor),
+        avnd::get_inputs(implementation),
         [&](auto& field) {
           if(idx < texture_input_count)
           {
@@ -69,8 +70,8 @@ struct avnd_jit_class
         });
     }
 
-    // Execute the processor
-    auto& proc = x->processor.effect;
+    // Execute the implementation
+    auto& proc = implementation.effect;
     if constexpr(requires { proc(); })
     {
       proc();
@@ -81,7 +82,7 @@ struct avnd_jit_class
     {
       int idx = 0;
       avnd::cpu_texture_output_introspection<T>::for_all(
-        avnd::get_outputs(x->processor),
+        avnd::get_outputs(implementation),
         [&](auto& field) {
           if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, idx))
           {
@@ -92,51 +93,99 @@ struct avnd_jit_class
             }
           }
           idx++;
-        });
+      });
     }
 
     return JIT_ERR_NONE;
-  }
-
-  template<typename Field>
-  static t_symbol* get_jitter_type_for_parameter()
-  {
-    using value_type = std::decay_t<decltype(Field::value)>;
-
-    if constexpr(std::is_same_v<char, value_type>)
-      return _jit_sym_char;
-    else if constexpr(std::is_same_v<unsigned char, value_type>)
-      return _jit_sym_char;
-    else if constexpr(std::is_same_v<signed char, value_type>)
-      return _jit_sym_char;
-    else if constexpr(std::is_integral_v<value_type>)
-      return _jit_sym_long;
-    else if constexpr(std::is_same_v<float, value_type>)
-      return _jit_sym_float32;
-    else if constexpr(std::is_same_v<double, value_type>)
-      return _jit_sym_float64;
-    else if constexpr(avnd::string_ish<value_type>)
-      return _jit_sym_symbol;
-    else
-      return _jit_sym_atom;
   }
 };
 
 template <typename T>
 struct max_jit_wrapper : processor_common<T>
 {
-  t_object ob;
+  t_object x_obj;
   void* obex{};
+  avnd_jit_class<T>* jit{};
+  void* mop{};
+
+  // Setup, storage...for the outputs
+  AVND_NO_UNIQUE_ADDRESS inputs<T> input_setup;
+
+  AVND_NO_UNIQUE_ADDRESS outputs<T> output_setup;
+
+  AVND_NO_UNIQUE_ADDRESS dict_storage<T> dicts;
+
+
+  void init(int argc, t_atom* argv)
+  {
+    this->mop = max_jit_obex_adornment_get(this, _jit_sym_jit_mop);
+    assert(this->mop);
+
+    this->jit = (avnd_jit_class<T>*) max_jit_obex_jitob_get(this);
+    assert(this->jit);
+    this->jit->wrapper = this;
+
+    auto& implementation = this->jit->implementation;
+
+    /// Create internal metadata ///
+    // FIXME parse dict inputs
+    dicts.init(implementation);
+
+    /// Create ports ///
+    // Create inlets
+    input_setup.init(implementation, x_obj);
+
+    // Create outlets
+    output_setup.init(implementation, x_obj);
+
+    /// Initialize controls
+    if constexpr(avnd::has_inputs<T>)
+    {
+      avnd::init_controls(implementation);
+    }
+
+    if constexpr(avnd::has_schedule<T>)
+    {
+      implementation.effect.schedule.schedule_at
+          = [this](int64_t ts, void (*func)(T& self)) {
+        t_atom a[1];
+        a[0].a_type = A_LONG;
+        a[0].a_w.w_long = reinterpret_cast<t_atom_long>(func);
+        static_assert(sizeof(func) == sizeof(t_atom_long));
+        schedule_defer(&x_obj, (method) +[] (max_jit_wrapper<T> *x, t_symbol *s, short ac, t_atom *av) {
+          auto f = reinterpret_cast<decltype(func)>(av->a_w.w_long);
+          f(x->implementation.effect);
+        }, (long)ts, 0, 1, a);
+      };
+    }
+
+    avnd::prepare(implementation, {});
+
+    /// Pass arguments
+    if constexpr(avnd::can_initialize<T>)
+    {
+      init_arguments<T>{}.process(implementation.effect, argc, argv);
+    }
+
+    if constexpr(avnd::attribute_input_introspection<T>::size > 0)
+    {
+      avnd::attribute_input_introspection<T>::for_all_n(
+          avnd::get_inputs(implementation.effect),
+          attribute_object_register<max_jit_wrapper<T>, T>{ &x_obj });
+    }
+  }
+
+
+  void destroy()
+  {
+    auto& implementation = this->jit->implementation;
+    dicts.release(implementation);
+  }
 
   void process()
   {
-    void* mop = max_jit_obex_adornment_get(this, _jit_sym_jit_mop);
-
-    if(!mop)
-      return;
-
     // Since we have MAX_JIT_MOP_FLAGS_OWN_BANG, we need to call mproc ourselves
-    process_mop(mop);
+    process_mop(this->mop);
 
     // Then output the matrix
     max_jit_mop_outputmatrix(this);
@@ -168,26 +217,22 @@ struct max_jit_wrapper : processor_common<T>
 
   void process_mop(void* mop)
   {
-    void* jit_ob = max_jit_obex_jitob_get(this);
-    if(!jit_ob)
-      return;
-
     // Get input and output lists
     void* inputlist = jit_object_method(mop, _jit_sym_getinputlist);
     void* outputlist = jit_object_method(mop, _jit_sym_getoutputlist);
 
     // Process via matrix_calc
     t_jit_err err = (t_jit_err)jit_object_method(
-        jit_ob,
+        this->jit,
         _jit_sym_matrix_calc,
         inputlist,
         outputlist);
 
     if(err)
-      jit_error_code(jit_ob, err);
+      jit_error_code(this->jit, err);
   }
 
-   void process(t_symbol* s, long argc, t_atom* argv)
+  void process(t_symbol* s, long argc, t_atom* argv)
   {
     // FIXME
     process();
@@ -226,6 +271,8 @@ struct jitter_processor_metaclass
   static constexpr int texture_input_count = avnd_jit_class<T>::texture_input_count;
   static constexpr int texture_output_count = avnd_jit_class<T>::texture_output_count;
 
+  static inline const auto jit_class_name = gensym(fmt::format("jit_avnd_{}", avnd::get_c_name<T>()).c_str());
+
   jitter_processor_metaclass()
   {
     instance = this;
@@ -243,13 +290,12 @@ struct jitter_processor_metaclass
     void* attr = nullptr;
     long attrflags = 0;
 
-    // Create Jitter class with unique name
-    const auto jit_class_name = fmt::format("jit_avnd_{}", avnd::get_c_name<T>());
+    // Create Jitter class with unique name;
 
     g_jit_class = (t_class*)jit_class_new(
-        jit_class_name.c_str(),
+        jit_class_name->s_name,
         (method)+[] () { return jit_new<avnd_jit_class<T>>(g_jit_class); },
-        (method)+[] (avnd_jit_class<T>* x) { std::destroy_at(x); },
+        (method)+[] (avnd_jit_class<T>* x) {  std::destroy_at(x); },
         sizeof(avnd_jit_class<T>),
         0L);
 
@@ -302,7 +348,11 @@ struct jitter_processor_metaclass
     }
 
     // Add matrix_calc method (required for MOP)
-    jit_class_addmethod(g_jit_class, (method)avnd_jit_class<T>::matrix_calc_imp, "matrix_calc", A_CANT, 0L);
+
+    static constexpr auto obj_matrix_calc
+        = +[](avnd_jit_class<T>* obj, void* ins, void* outs) -> void { obj->process(ins, outs); };
+
+    jit_class_addmethod(g_jit_class, (method)obj_matrix_calc, "matrix_calc", A_CANT, 0L);
 
     jit_class_register(g_jit_class);
 
@@ -318,17 +368,22 @@ struct jitter_processor_metaclass
 
     static constexpr auto obj_new = +[](t_symbol* s, long argc, t_atom* argv)
     {
-      static const std::string jit_class_name = "jit_avnd_" + std::string(avnd::get_c_name<T>().data());
-
-      auto sym_class_name = gensym(jit_class_name.c_str());
-      auto* x = (max_jit_wrapper<T>*)max_jit_object_alloc(g_class, sym_class_name);
+      auto* x = (max_jit_wrapper<T>*)max_jit_object_alloc(g_class, jit_class_name);
 
       if(x)
       {
-        if(void* jit_ob = jit_object_new(sym_class_name))
+        if(void* o = jit_object_new(jit_class_name))
         {
-          max_jit_mop_setup_simple(x, jit_ob, argc, argv);
+          // max_jit_mop_setup_simple:
+          max_jit_obex_jitob_set(x,o);
+          max_jit_obex_dumpout_set(x, outlet_new(x, NULL));
+          max_jit_mop_setup(x);
+          max_jit_mop_inputs(x);
+          max_jit_mop_outputs(x);
+          max_jit_mop_matrix_args(x, argc, argv);
+
           max_jit_attr_args(x, argc, argv);
+          x->init(argc, argv);
         }
         else
         {
@@ -341,9 +396,11 @@ struct jitter_processor_metaclass
 
     static constexpr auto obj_free = +[](max_jit_wrapper<T>* x) {
       if(x) {
+        x->destroy();
         std::destroy_at(x);
         max_jit_mop_free(x);
-        max_jit_object_free(x);
+        // max_jit_obex_free(x);
+        max_jit_object_free(x); //  jit_object_free(max_jit_obex_jitob_get(x)); ?
       }
     };
 

@@ -211,6 +211,29 @@ const max_texture_spec::Format& texture_spec(const Tex& t) noexcept
     return texture_spec<Tex>();
 }
 
+template<typename Field>
+static t_symbol* get_jitter_type_for_parameter()
+{
+  using value_type = std::decay_t<decltype(Field::value)>;
+
+  if constexpr(std::is_same_v<char, value_type>)
+    return _jit_sym_char;
+  else if constexpr(std::is_same_v<unsigned char, value_type>)
+    return _jit_sym_char;
+  else if constexpr(std::is_same_v<signed char, value_type>)
+    return _jit_sym_char;
+  else if constexpr(std::is_integral_v<value_type>)
+    return _jit_sym_long;
+  else if constexpr(std::is_same_v<float, value_type>)
+    return _jit_sym_float32;
+  else if constexpr(std::is_same_v<double, value_type>)
+    return _jit_sym_float64;
+  else if constexpr(avnd::string_ish<value_type>)
+    return _jit_sym_symbol;
+  else
+    return _jit_sym_atom;
+}
+
 struct matrix_lock
 {
   void* matrix{};

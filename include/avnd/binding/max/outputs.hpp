@@ -657,10 +657,32 @@ struct outputs
     }
   }
 
-  template <typename Out>
-  void setup(Out& out, t_outlet& outlet)
+  template <avnd::audio_port C>
+  static void setup(C& out, t_outlet& outlet)
   {
+
   }
+
+  template <avnd::parameter C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+  template <avnd::midi_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+  template <avnd::texture_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+  template <typename Out>
+  void setup(Out& out, t_outlet& outlet) = delete;
 
   template <typename Self>
   void commit(Self& self)
