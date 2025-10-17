@@ -21,7 +21,7 @@ namespace examples
 struct ControlGallery
 {
   halp_meta(name, "Control gallery");
-  halp_meta(c_name, "control_gallery");
+  halp_meta(c_name, "oscr_ControlGallery");
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");

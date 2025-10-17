@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/max/processor_common.hpp>
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/messages.hpp>
@@ -38,7 +39,7 @@ struct audio_processor_metaclass
 };
 
 template <typename T>
-struct audio_processor
+struct audio_processor : processor_common<T>
 {
   // Metadata
   static constexpr const int input_channels = avnd::input_channels<T>(1);
@@ -309,6 +310,8 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
     obj->process(s, argc, argv);
   };
 
+  static constexpr auto obj_assist = processor_common<T>::obj_assist;
+
   /// Class creation ///
   g_class = class_new(
       avnd::get_c_name<T>().data(), (method)obj_new, (method)obj_free,
@@ -321,6 +324,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   class_addmethod(g_class, (method)obj_dsp, "dsp64", A_CANT, 0);
   class_addmethod(g_class, (method)inputchange, "inputchanged", A_CANT, 0);
   class_addmethod(g_class, (method)outputcount, "multichanneloutputs", A_CANT, 0);
+  class_addmethod(g_class, (method)obj_assist, "assist", A_CANT, 0);
 
   class_addmethod(g_class, (method)obj_process, "anything", A_GIMME, 0);
 }

@@ -226,10 +226,15 @@ struct init_arguments
   {
     using namespace std;
 
+#if !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-requires"
+#endif
     if constexpr(requires { avnd::type_list<decltype(T::initialize)>; })
+
+#if !defined(__clang__)
 #pragma GCC diagnostic pop
+#endif
     {
       if constexpr(avnd::type_list<decltype(T::initialize)>)
       {

@@ -13,7 +13,7 @@ namespace examples
 struct TrivialFilterExample
 {
   halp_meta(name, "My trivial filter");
-  halp_meta(c_name, "trivial_effect_filter");
+  halp_meta(c_name, "oscr_TrivialFilterExample")
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");

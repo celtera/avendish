@@ -205,7 +205,17 @@ function(avnd_make_audioplug)
   avnd_make_clap(${ARGV})
   avnd_make_vst3(${ARGV})
   avnd_make_example_host(${ARGV})
+  avnd_make_gstreamer(${ARGV})
   avnd_make_touchdesigner(${ARGV} OPTYPE CHOP_AUDIO)
+endfunction()
+
+function(avnd_make_texture)
+  avnd_register(${ARGV})
+  
+  avnd_make_ossia(${ARGV})
+  avnd_make_max(${ARGV})
+  avnd_make_gstreamer(${ARGV})
+  avnd_make_touchdesigner(${ARGV} OPTYPE TOP)
 endfunction()
 
 function(avnd_make_all)
