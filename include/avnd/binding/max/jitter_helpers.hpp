@@ -9,48 +9,214 @@
 #include <avnd/introspection/output.hpp>
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 
 namespace max::jitter
 {
 
-/**
- * Helper utilities for Jitter matrix operations
- */
+struct max_texture_spec {
+  struct Format {
+    int planes = 1;
+    t_symbol* type = _jit_sym_char;
+    Format() = delete;
+    Format(const Format&) = delete;
+    Format(Format&&) = delete;
+    Format(int p , t_symbol* s): planes{p}, type{s} {}
+  };
+  static const inline Format ARGB8         { 4, _jit_sym_char };
+  static const inline Format RGBA8         { 4, _jit_sym_char };
+  static const inline Format BGRA8         { 4, _jit_sym_char };
+  static const inline Format R8            { 1, _jit_sym_char };
+  static const inline Format RG8           { 2, _jit_sym_char };
+  static const inline Format R16           { 1, _jit_sym_long }; // :(
+  static const inline Format RG16          { 2, _jit_sym_long }; // :(
+  static const inline Format RED_OR_ALPHA8 { 1, _jit_sym_char };
+  static const inline Format RGBA16F       { 4, _jit_sym_float32 }; // :(
+  static const inline Format RGBA32F       { 4, _jit_sym_float32 };
+  static const inline Format ARGB32F       { 4, _jit_sym_float32 };
+  static const inline Format R16F          { 1, _jit_sym_float32 }; // :(
+  static const inline Format R32F          { 1, _jit_sym_float32 };
+  static const inline Format RGB10A2       { 4, _jit_sym_char }; // :(
+  static const inline Format D16           { 1, _jit_sym_long }; // :(
+  static const inline Format D24           { 1, _jit_sym_long }; // :(
+  static const inline Format D24S8         { 1, _jit_sym_long }; // :(
+  static const inline Format D32F          { 1, _jit_sym_float32 };
+  static const inline Format RGB           { 3, _jit_sym_char };
+};
 
-// Matrix data type mapping
-inline t_symbol* get_matrix_type_symbol(int bytes_per_pixel)
+template <typename F>
+  requires std::is_enum_v<F>
+constexpr const max_texture_spec::Format& texture_spec(F f) noexcept
 {
-  switch(bytes_per_pixel)
+  if constexpr(requires { F::RGBA; } || requires { F::RGBA8; })
+    if(f == F::RGBA8)
+      return max_texture_spec::RGBA8;
+  if constexpr(requires { F::ARGB; } || requires { F::ARGB8; })
+    if(f == F::ARGB8)
+      return max_texture_spec::ARGB8;
+  if constexpr(requires { F::BGRA; } || requires { F::BGRA8; })
+    if(f == F::BGRA8)
+      return max_texture_spec::BGRA8;
+  if constexpr(requires { F::R8; } || requires { F::GRAYSCALE; })
+    if(f == F::R8)
+      return max_texture_spec::R8;
+  if constexpr(requires { F::RG8; })
+    if(f == F::RG8)
+      return max_texture_spec::RG8;
+  if constexpr(requires { F::R16; })
+    if(f == F::R16)
+      return max_texture_spec::R16;
+  if constexpr(requires { F::RG16; })
+    if(f == F::RG16)
+      return max_texture_spec::RG16;
+  if constexpr(requires { F::RED_OR_ALPHA8; })
+    if(f == F::RED_OR_ALPHA8)
+      return max_texture_spec::RED_OR_ALPHA8;
+  if constexpr(requires { F::RGBA16F; })
+    if(f == F::RGBA16F)
+      return max_texture_spec::RGBA16F;
+  if constexpr(requires { F::RGBA32F; })
+    if(f == F::RGBA32F)
+      return max_texture_spec::RGBA32F;
+  if constexpr(requires { F::ARGB32F; })
+    if(f == F::ARGB32F)
+      return max_texture_spec::ARGB32F;
+  if constexpr(requires { F::R16F; })
+    if(f == F::R16F)
+      return max_texture_spec::R16F;
+  if constexpr(requires { F::R32F; })
+    if(f == F::R32F)
+      return max_texture_spec::R32F;
+  if constexpr(requires { F::RGB10A2; })
+    if(f == F::RGB10A2)
+      return max_texture_spec::RGB10A2;
+  if constexpr(requires { F::D16; })
+    if(f == F::D16)
+      return max_texture_spec::D16;
+  if constexpr(requires { F::D24; })
+    if(f == F::D24)
+      return max_texture_spec::D24;
+  if constexpr(requires { F::D24S8; })
+    if(f == F::D24S8)
+      return max_texture_spec::D24S8;
+  if constexpr(requires { F::D32F; })
+    if(f == F::D32F)
+      return max_texture_spec::D32F;
+  if constexpr(requires { F::RGB; })
+    if(f == F::RGB)
+      return max_texture_spec::RGB;
+
+  return max_texture_spec::RGBA8;
+}
+
+template <typename F>
+const max_texture_spec::Format& texture_spec() noexcept
+{
+  if constexpr(requires { std::string_view{F::format()}; })
   {
-    case 1: return _jit_sym_char;
-    case 2: return _jit_sym_long; // Actually 16-bit in Jitter
-    case 4: return _jit_sym_float32;
-    case 8: return _jit_sym_float64;
-    default: return _jit_sym_char;
+    constexpr std::string_view fmt = F::format();
+
+    if(fmt == "rgba" || fmt == "rgba8")
+      return max_texture_spec::RGBA8;
+    if(fmt == "argb" || fmt == "argb8")
+      return max_texture_spec::ARGB8;
+    else if(fmt == "bgra" || fmt == "bgra8")
+      return max_texture_spec::BGRA8;
+    else if(fmt == "r8")
+      return max_texture_spec::R8;
+    else if(fmt == "rg8")
+      return max_texture_spec::RG8;
+    else if(fmt == "r16")
+      return max_texture_spec::R16;
+    else if(fmt == "rg16")
+      return max_texture_spec::RG16;
+    else if(fmt == "red_or_alpha8")
+      return max_texture_spec::RED_OR_ALPHA8;
+    else if(fmt == "rgba16f")
+      return max_texture_spec::RGBA16F;
+    else if(fmt == "rgba32f")
+      return max_texture_spec::RGBA32F;
+    else if(fmt == "argb32f")
+      return max_texture_spec::ARGB32F;
+    else if(fmt == "r16f")
+      return max_texture_spec::R16F;
+    else if(fmt == "r32")
+      return max_texture_spec::R32F;
+    else if(fmt == "rgb10a2")
+      return max_texture_spec::RGB10A2;
+    else if(fmt == "d16")
+      return max_texture_spec::D16;
+    else if(fmt == "d24")
+      return max_texture_spec::D24;
+    else if(fmt == "d24s8")
+      return max_texture_spec::D24S8;
+    else if(fmt == "d32f")
+      return max_texture_spec::D32F;
+    else if(fmt == "rgb")
+      return max_texture_spec::RGB;
+    else
+      return max_texture_spec::RGBA8;
+  }
+  else if constexpr(std::is_enum_v<typename F::format>)
+  {
+    if constexpr(requires { F::RGBA; } || requires { F::RGBA8; })
+      return max_texture_spec::RGBA8;
+    if constexpr(requires { F::ARGB; } || requires { F::ARGB8; })
+      return max_texture_spec::ARGB8;
+    else if constexpr(requires { F::BGRA; } || requires { F::BGRA8; })
+      return max_texture_spec::BGRA8;
+    else if constexpr(requires { F::R8; } || requires { F::GRAYSCALE; })
+      return max_texture_spec::R8;
+    else if constexpr(requires { F::RG8; })
+      return max_texture_spec::RG8;
+    else if constexpr(requires { F::R16; })
+      return max_texture_spec::R16;
+    else if constexpr(requires { F::RG16; })
+      return max_texture_spec::RG16;
+    else if constexpr(requires { F::RED_OR_ALPHA8; })
+      return max_texture_spec::RED_OR_ALPHA8;
+    else if constexpr(requires { F::RGBA16F; })
+      return max_texture_spec::RGBA16F;
+    else if constexpr(requires { F::RGBA32F; })
+      return max_texture_spec::RGBA32F;
+    else if constexpr(requires { F::ARGB32F; })
+      return max_texture_spec::ARGB32F;
+    else if constexpr(requires { F::R16F; })
+      return max_texture_spec::R16F;
+    else if constexpr(requires { F::R32F; })
+      return max_texture_spec::R32F;
+    else if constexpr(requires { F::RGB10A2; })
+      return max_texture_spec::RGB10A2;
+    else if constexpr(requires { F::D16; })
+      return max_texture_spec::D16;
+    else if constexpr(requires { F::D24; })
+      return max_texture_spec::D24;
+    else if constexpr(requires { F::D24S8; })
+      return max_texture_spec::D24S8;
+    else if constexpr(requires { F::D32F; })
+      return max_texture_spec::D32F;
+    else if constexpr(requires { F::RGB; })
+      return max_texture_spec::RGB;
+    else
+      return max_texture_spec::RGBA8;
   }
 }
 
-// Get bytes per pixel from texture format
-template<typename Field>
-constexpr int get_texture_bytes_per_pixel()
+template <avnd::cpu_texture Tex>
+const max_texture_spec::Format& texture_spec(const Tex& t) noexcept
 {
-  if constexpr(requires { typename Field::texture_type; })
-  {
-    using tex_type = typename Field::texture_type;
-    if constexpr(requires { tex_type::bytes_per_pixel; })
-      return tex_type::bytes_per_pixel;
-  }
-  // Default to RGBA8
-  return 4;
+  if constexpr(avnd::cpu_dynamic_format_texture<Tex>)
+    return texture_spec(t.format);
+  else
+    return texture_spec<Tex>();
 }
 
-// Matrix lock helper RAII wrapper
 struct matrix_lock
 {
   void* matrix{};
   void* prev_lock{};
 
-  matrix_lock(void* m) : matrix(m)
+  explicit matrix_lock(void* m) : matrix(m)
   {
     if(matrix)
       prev_lock = jit_object_method(matrix, _jit_sym_lock, 1);
@@ -64,6 +230,8 @@ struct matrix_lock
 
   matrix_lock(const matrix_lock&) = delete;
   matrix_lock& operator=(const matrix_lock&) = delete;
+  matrix_lock(matrix_lock&&) noexcept = delete;
+  matrix_lock& operator=(matrix_lock&&) noexcept = delete;
 };
 
 /**
@@ -216,10 +384,95 @@ inline void matrix_to_texture(void* matrix, Field& field)
   tex.changed = true;
 }
 
-/**
- * Convert Avendish texture to Jitter matrix
- * Creates or resizes output matrix as needed
- */
+inline void resize_matrix(void* matrix, int new_width, int new_height, int planes,  t_symbol* type)
+{
+  // Get current matrix info
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  bool needs_resize = false;
+  if(info.dimcount != 2 ||
+     info.dim[0] != new_width ||
+     info.dim[1] != new_height||
+     info.planecount != planes ||
+     info.type != type)
+  {
+    needs_resize = true;
+    info.dimcount = 2;
+    info.dim[0] = new_width;
+    info.dim[1] = new_height;
+    info.planecount = planes;
+    info.type = type;
+    info.flags = 0;
+
+    jit_object_method(matrix, _jit_sym_setinfo, &info);
+  }
+}
+
+inline
+void copy_texture(const max_texture_spec::Format& fmt, void* matrix_data, void* tex_bytes, int width, int height, int tex_bytesize)
+{
+  const int pixel_count = width * height;
+
+  if(fmt.type == _jit_sym_char)
+  {
+    unsigned char* dst = static_cast<unsigned char*>(matrix_data);
+    const unsigned char* src = static_cast<const unsigned char*>(tex_bytes);
+    const int bytesize = fmt.planes * sizeof(char);
+
+    if(&fmt == &max_texture_spec::RGBA8)
+    {
+      for(int i = 0, N = pixel_count * 4; i < N; i += 4) {
+        dst[i + 0] = src[i + 3];
+        dst[i + 1] = src[i + 0];
+        dst[i + 2] = src[i + 1];
+        dst[i + 3] = src[i + 2];
+      }
+    }
+    else if(&fmt == &max_texture_spec::BGRA8)
+    {
+      for(int i = 0, N = pixel_count * 4; i < N; i += 4) {
+        dst[i + 0] = src[i + 3];
+        dst[i + 1] = src[i + 2];
+        dst[i + 2] = src[i + 1];
+        dst[i + 3] = src[i + 0];
+      }
+    }
+    else
+    {
+      std::memcpy(dst, src, std::min(pixel_count * bytesize, tex_bytesize));
+    }
+  }
+  else if(fmt.type == _jit_sym_float32)
+  {
+    float* dst = static_cast<float*>(matrix_data);
+    const float* src = static_cast<const float*>(tex_bytes);
+    const int bytesize = fmt.planes * sizeof(float);
+    if(&fmt == &max_texture_spec::RGBA32F)
+    {
+      for(int i = 0, N = pixel_count * 4; i < N; i += 4) {
+        dst[i + 0] = src[i + 3];
+        dst[i + 1] = src[i + 0];
+        dst[i + 2] = src[i + 1];
+        dst[i + 3] = src[i + 2];
+      }
+    }
+    else if(&fmt == &max_texture_spec::RGBA32F)
+    {
+      for(int i = 0, N = pixel_count * 4; i < N; i += 4) {
+        dst[i + 0] = src[i + 3];
+        dst[i + 1] = src[i + 0];
+        dst[i + 2] = src[i + 1];
+        dst[i + 3] = src[i + 2];
+      }
+    }
+    else
+    {
+      std::memcpy(dst, src, std::min(pixel_count * bytesize, tex_bytesize));
+    }
+  }
+}
+
 template<typename Field>
 inline void texture_to_matrix(const Field& field, void* matrix)
 {
@@ -227,42 +480,17 @@ inline void texture_to_matrix(const Field& field, void* matrix)
     return;
 
   const auto& tex = field.texture;
+  if constexpr(requires { tex.changed; })
+    if(!tex.changed)
+      return;
 
   // Skip if texture is invalid
   if(!tex.bytes || tex.width <= 0 || tex.height <= 0)
     return;
 
-  // Skip if texture hasn't changed (optimization)
-  if constexpr(requires { tex.changed; })
-  {
-    if(!tex.changed)
-      return;
-  }
-
-  matrix_lock lock(matrix);
-
-  // Get current matrix info
-  t_jit_matrix_info info;
-  jit_object_method(matrix, _jit_sym_getinfo, &info);
-
-  // Update matrix dimensions if needed
-  bool needs_resize = false;
-  if(info.dimcount != 2 ||
-     info.dim[0] != tex.width ||
-     info.dim[1] != tex.height ||
-     info.planecount != 4 ||
-     info.type != _jit_sym_char)
-  {
-    needs_resize = true;
-    info.dimcount = 2;
-    info.dim[0] = tex.width;
-    info.dim[1] = tex.height;
-    info.planecount = 4; // RGBA
-    info.type = _jit_sym_char;
-    info.flags = 0;
-
-    jit_object_method(matrix, _jit_sym_setinfo, &info);
-  }
+  using texture_type = std::decay_t<decltype(tex)>;
+  const auto& fmt = texture_spec(tex);
+  resize_matrix(matrix, tex.width, tex.height, fmt.planes, fmt.type);
 
   // Get pointer to matrix data
   void* matrix_data = nullptr;
@@ -270,13 +498,7 @@ inline void texture_to_matrix(const Field& field, void* matrix)
   if(!matrix_data)
     return;
 
-  // Copy texture data to matrix
-  const int pixel_count = tex.width * tex.height;
-  unsigned char* dst = static_cast<unsigned char*>(matrix_data);
-  const unsigned char* src = static_cast<const unsigned char*>(tex.bytes);
-
-  // Direct copy for RGBA char data
-  std::memcpy(dst, src, pixel_count * 4);
+  copy_texture(fmt, matrix_data, tex.bytes, tex.width, tex.height, tex.bytesize());
 
   // Mark texture as no longer changed
   if constexpr(requires { tex.changed; })
@@ -285,32 +507,4 @@ inline void texture_to_matrix(const Field& field, void* matrix)
   }
 }
 
-/**
- * Count texture inputs in a processor
- */
-template<typename T>
-constexpr size_t count_texture_inputs()
-{
-  return avnd::cpu_texture_input_introspection<T>::size;
 }
-
-/**
- * Count texture outputs in a processor
- */
-template<typename T>
-constexpr size_t count_texture_outputs()
-{
-  return avnd::cpu_texture_output_introspection<T>::size;
-}
-
-/**
- * Check if a processor has any texture ports
- */
-template<typename T>
-constexpr bool has_texture_ports()
-{
-  return count_texture_inputs<T>() > 0 || count_texture_outputs<T>() > 0;
-}
-
-} // namespace jitter
-#define TITI 1234

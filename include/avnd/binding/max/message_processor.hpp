@@ -2,14 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <avnd/binding/max/attributes_setup.hpp>
-#include <avnd/binding/max/helpers.hpp>
-#include <avnd/binding/max/dict.hpp>
-#include <avnd/binding/max/from_dict.hpp>
-#include <avnd/binding/max/init.hpp>
-#include <avnd/binding/max/inputs.hpp>
-#include <avnd/binding/max/messages.hpp>
-#include <avnd/binding/max/outputs.hpp>
+#include <avnd/binding/max/processor_common.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -40,7 +33,7 @@ struct message_processor_metaclass
 };
 
 template <typename T>
-struct message_processor
+struct message_processor : processor_common<T>
 {
   // Head of the Max object
   t_object x_obj;
@@ -288,50 +281,7 @@ struct message_processor
       }
     }
   }
-
-  void get_inlet_description(long index, char *dst)
-  {
-    avnd::input_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
-      if constexpr(avnd::has_description<typename Field::type>) {
-        auto str = avnd::get_description<typename Field::type>();
-        strcpy(dst, str.data());
-      }
-    });
-  }
-
-  void get_outlet_description(long index, char *dst)
-  {
-    avnd::output_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
-      if constexpr(avnd::has_description<typename Field::type>) {
-        auto str = avnd::get_description<typename Field::type>();
-        strcpy(dst, str.data());
-      }
-    });
-  }
-
 };
-
-// // Include Jitter processor for texture support
-// #include <avnd/binding/max/jitter_processor.hpp>
-//
-// #include <ext.h>
-// #include <jit.common.h>
-//
-// template<typename T, typename... Args>
-// T* jit_new(t_class* cls, Args&&... args)
-// {
-//   auto obj = jit_object_alloc(cls);
-//   if(obj)
-//   {
-//     t_object tmp;
-//     memcpy(&tmp, obj, sizeof(t_object));
-//     auto x = new(obj) T{std::forward<Args>(args)...};
-//     memcpy(x, &tmp, sizeof(t_object));
-//
-//     return x;
-//   }
-//   return nullptr;
-// }
 
 template <typename T>
 message_processor_metaclass<T>::message_processor_metaclass()
@@ -345,61 +295,6 @@ message_processor_metaclass<T>::message_processor_metaclass()
   // static_assert(std::is_nothrow_move_constructible_v<instance>);
   // static_assert(std::is_nothrow_move_assignable_v<instance>);
 #endif
-//   // Create a jitter object if necessary
-//   {
-//     t_jit_object	*mop;
-//
-//     struct t_my_jit_object { };
-//     static constexpr auto jit_obj_new = [] () -> t_my_jit_object*
-//     {
-//       // auto obj = jit_new<t_jit_my_object>(t_my_jit_object::max_class);
-//       // obj->rebuild();
-//       // return obj;
-//       return nullptr;
-//     };
-//     static constexpr auto jit_obj_free = [] (t_my_jit_object* obj) {
-//       std::destroy_at(obj);
-//     };
-//     static constexpr auto jit_matrix_calc = [] (t_my_jit_object* x, void * inputs, void *outputs)  -> t_jit_err{
-//
-//       if(!x)
-//       {
-//         return JIT_ERR_INVALID_PTR;
-//       }
-//
-//       // Rebuild..
-//
-//       // Process matrix on output 0..
-//
-//       if (auto matrix = jit_object_method(outputs, _jit_sym_getindex, 0))
-//       {
-//         auto lock = jit_object_method(matrix, _jit_sym_lock, 1);
-//         {
-//         t_jit_matrix_info out_minfo{};
-//         jit_object_method(matrix, _jit_sym_getinfo, &out_minfo);
-//         }
-//         jit_object_method(matrix, _jit_sym_lock, lock);
-//
-//       }
-//       return JIT_ERR_NONE;
-//     };
-//
-//
-// #if 0
-//     auto jit_class = (t_class*)jit_class_new("my_jit_object", (method)jit_obj_new, (method)jit_obj_free, sizeof(t_my_jit_object), 0);
-//
-//     // add matrix operator (mop)
-//     mop = (t_jit_object *)jit_object_new(_jit_sym_jit_mop, 0, 1); // 0 input, 1 output
-//     jit_class_addadornment(jit_class, mop);
-//
-//     // add method(s)
-//     jit_class_addmethod(jit_class, (method)jit_matrix_calc, "matrix_calc", A_CANT, 0);
-//
-//     // finalize class
-//     jit_class_register(jit_class);
-// #endif
-//   }
-//
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
@@ -445,17 +340,7 @@ message_processor_metaclass<T>::message_processor_metaclass()
   static constexpr auto obj_process_dict
       = +[](instance* obj, t_symbol* value) -> void { obj->process_dict(value); };
 
-  static constexpr auto obj_assist
-      = +[](instance* obj, void *b, long msg, long arg, char *dst) -> void {
-    switch(msg) {
-      case 1:
-        obj->get_inlet_description(arg, dst);
-        break;
-      default:
-        obj->get_outlet_description(arg, dst);
-        break;
-    }
-  };
+  static constexpr auto obj_assist = processor_common<T>::obj_assist;
 
   /// Class creation ///
   g_class = class_new(
