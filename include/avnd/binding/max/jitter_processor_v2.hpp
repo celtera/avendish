@@ -107,6 +107,7 @@ struct max_jit_wrapper : processor_common<T>
   void* obex{};
   avnd_jit_class<T>* jit{};
   void* mop{};
+  avnd::effect_container<T>& implementation;
 
   // Setup, storage...for the outputs
   AVND_NO_UNIQUE_ADDRESS inputs<T> input_setup;
@@ -114,6 +115,12 @@ struct max_jit_wrapper : processor_common<T>
   AVND_NO_UNIQUE_ADDRESS outputs<T> output_setup;
 
   AVND_NO_UNIQUE_ADDRESS dict_storage<T> dicts;
+
+  max_jit_wrapper(avnd::effect_container<T>& impl)
+      : implementation{impl}
+  {
+
+  }
 
 
   void init(int argc, t_atom* argv)
@@ -189,30 +196,9 @@ struct max_jit_wrapper : processor_common<T>
 
     // Then output the matrix
     max_jit_mop_outputmatrix(this);
-  }
 
-   void process(t_atom_long n)
-  {
-    // FIXME
-    process();
-  }
-
-   void process( t_atom_float f)
-  {
-    // FIXME
-    process();
-  }
-
-   void process( t_symbol* s)
-  {
-    // FIXME
-    process();
-  }
-
-  void process_dict(t_symbol* name)
-  {
-    // FIXME
-    process();
+    // And finally the other ports
+    output_setup.commit(*this);
   }
 
   void process_mop(void* mop)
@@ -232,10 +218,78 @@ struct max_jit_wrapper : processor_common<T>
       jit_error_code(this->jit, err);
   }
 
-  void process(t_symbol* s, long argc, t_atom* argv)
+  template <typename V>
+  void process(V value)
   {
-    // FIXME
-    process();
+    auto& implementation = this->jit->implementation;
+    const int inlet = proxy_getinlet(&x_obj);
+
+    // Process the control
+    processor_common<T>::process_inlet_control(implementation, this->input_setup, inlet, value);
+
+    if(inlet == 0)
+      process();
+  }
+
+  void process_dict(t_symbol* name)
+  {
+    auto& implementation = this->jit->implementation;
+    const int inlet = proxy_getinlet(&x_obj);
+
+    // Process the control
+    processor_common<T>::process_inlet_dict(implementation, this->input_setup, inlet, name);
+
+    if(inlet == 0)
+      process();
+  }
+
+  void process(t_symbol* s, int argc, t_atom* argv)
+  {
+    auto& implementation = this->jit->implementation;
+    // Called when unknown symbol. We only process those
+    // on the first inlet.
+    const int inlet = proxy_getinlet(&x_obj);
+
+    // First try to process messages handled explicitely in the object
+    if(inlet == 0 && messages<T>{}.process_messages(implementation, s, argc, argv))
+      return;
+    // Then try to find if any message matches the name of a port
+    if(inlet == 0 && processor_common<T>::process_inputs(implementation, s, argc, argv))
+      return;
+
+    // Then some default behaviour
+    switch(argc)
+    {
+      case 0: // bang
+      {
+        if(inlet == 0)
+        {
+          if(s == _sym_bang)
+          {
+            process();
+          }
+          else
+          {
+            process_generic_message(implementation, s);
+          }
+          break;
+        }
+        [[fallthrough]];
+      }
+      default: {
+        // Apply the data to the first inlet (other inlets are handled by Max).
+        // It will always be the first parameter (attribute or not).
+        processor_common<T>::process_inlet_control(implementation, this->input_setup, inlet, s, argc, argv);
+
+        if(inlet == 0)
+        {
+          // Bang
+          process();
+        }
+
+        break;
+      }
+    }
   }
 };
 
@@ -365,6 +419,18 @@ struct jitter_processor_metaclass
           }
 
           max_jit_mop_inputs(x);
+          {
+            t_object x_obj = x->x_obj;
+            void* obex = x->obex;
+            avnd_jit_class<T>* jit = x->jit;
+            void* mop = x->mop;
+            std::construct_at(x, jit->implementation);
+            x->x_obj = x_obj;
+            x->obex = obex;
+            x->jit = jit;
+            x->mop = mop;
+          }
+
           x->init(argc, argv);
 
           max_jit_mop_matrix_args(x, argc, argv);
