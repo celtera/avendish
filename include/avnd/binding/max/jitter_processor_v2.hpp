@@ -286,7 +286,6 @@ struct jitter_processor_metaclass
     if(g_jit_class)
       return JIT_ERR_NONE; // Already registered
 
-    void* mop = nullptr;
     void* attr = nullptr;
     long attrflags = 0;
 
@@ -303,47 +302,8 @@ struct jitter_processor_metaclass
       return JIT_ERR_OUT_OF_MEM;
 
     // Create MOP (Matrix Operator) with appropriate inputs/outputs
-    // For generators (no inputs), we need at least 1 input to receive bangs
-    const int mop_input_count = (texture_input_count == 0) ? 1 : texture_input_count;
-    mop = jit_object_new(_jit_sym_jit_mop, mop_input_count, texture_output_count);
-
-    if(mop)
+    if(auto mop = jit_object_new(_jit_sym_jit_mop, -1, -1))
     {
-      // Configure MOP inputs
-      if(texture_input_count == 0)
-      {
-        // For generators, we have a dummy input for bangs
-        // Don't configure it as a matrix input
-      }
-      else
-      {
-        for(int i = 0; i < texture_input_count; i++)
-        {
-          void* input = jit_object_method(mop, _jit_sym_getinput, i + 1);
-          if(input)
-          {
-            jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
-            jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
-            jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
-            jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
-          }
-        }
-      }
-
-      // Configure MOP outputs
-      for(int i = 0; i < texture_output_count; i++)
-      {
-        void* output = jit_object_method(mop, _jit_sym_getoutput, i + 1);
-        if(output)
-        {
-          jit_attr_setsym(output, _jit_sym_type, _jit_sym_char);
-          jit_attr_setlong(output, _jit_sym_planecount, 4); // RGBA
-          jit_attr_setlong(output, _jit_sym_mindimcount, 2); // 2D
-          jit_attr_setlong(output, _jit_sym_maxdimcount, 2); // 2D
-        }
-      }
-
-      // Add MOP to class
       jit_class_addadornment(g_jit_class, (t_jit_object*)mop);
     }
 
@@ -378,12 +338,37 @@ struct jitter_processor_metaclass
           max_jit_obex_jitob_set(x,o);
           max_jit_obex_dumpout_set(x, outlet_new(x, NULL));
           max_jit_mop_setup(x);
-          max_jit_mop_inputs(x);
-          max_jit_mop_outputs(x);
-          max_jit_mop_matrix_args(x, argc, argv);
 
-          max_jit_attr_args(x, argc, argv);
+          // Dynamic inputs
+          // TODO put in inputs_setup
+          {
+            for (int i = texture_input_count; i > 1; i--) {
+              max_jit_obex_proxy_new(x, i - 1);
+            }
+
+            // Add variable inputs if needed
+            if (texture_input_count > 1) {
+              max_jit_mop_variable_addinputs(x, texture_input_count - 1);
+            }
+
+            for(int i = 0; i < texture_input_count; i++)
+            {
+              void *input = max_jit_mop_getinput(x, i+1);
+              if(input)
+              {
+                jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
+                jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
+                jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
+                jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
+              }
+            }
+          }
+
+          max_jit_mop_inputs(x);
           x->init(argc, argv);
+
+          max_jit_mop_matrix_args(x, argc, argv);
+          max_jit_attr_args(x, argc, argv);
         }
         else
         {
