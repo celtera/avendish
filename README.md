@@ -37,7 +37,7 @@ which showcases how with what little reflection modern C++ provides, it is possi
  - Automatically generate OSC / OSCQuery bindings for a C++ class (through [libossia](https://github.com/ossia/libossia)).
  - Automatically generate [user interfaces](https://celtera.github.io/avendish/advanced/ui.html) for C++ classes like e.g. Unity3D does (an example is provided with Qt and Nuklear).
  - Automatically generate audio plug-ins in a legacy API as an example, as well as in VST3 and Clap formats.
- - Automatically generate Max/MSP and PureData objects.
+ - Automatically generate Max/MSP,TouchDesigner and PureData objects.
  - Automatically generate [GPU draw and compute pipelines](https://celtera.github.io/avendish/gpu/draw.html) (for now only supported in the [ossia/score](https://github.com/ossia/score) bindings with the Qt RHI) to create GPU-based media processors with the same syntax.
 
 And some more advanced features:
@@ -79,6 +79,8 @@ Committee if you hear us :)
 - (optional) pybind11.
 - (optional) Max SDK to make Max externals.
 - (optional) PureData headers to make Pd externals.
+- (optional) TouchDesigner headers to make TD objects.
+- (optional) GStreamer headers to make gst nodes.
 - (optional) Steinberg© VST3 SDK to make VST3 plug-ins.
 - (optional) [Clap](https://github.com/free-audio/clap) SDK to make Clap plug-ins.
 - (optional) Qt & [Verdigris](https://github.com/woboq/verdigris) to make QML UIs. Verdigris is a pure-C++ alternative to moc.
@@ -93,6 +95,10 @@ Here is an example of various Max/MSP & PureData objects generated from the exam
 ![Max/MSP example](https://user-images.githubusercontent.com/2772730/139532911-59c101a0-800f-471e-a0be-18c68ce40910.png)
 
 ![PureData example](https://user-images.githubusercontent.com/2772730/141643674-84ad6ddc-3a52-4f83-97e7-dcaf8acd3565.png)
+
+![Jitter example](https://github.com/user-attachments/assets/da5db935-d8b7-4001-945c-420dd4c5dd8e)
+
+![TouchDesigner example](https://github.com/user-attachments/assets/4febcae8-675b-44a8-b835-199ce2c31a5a)
 
 ## Usage
 
@@ -226,7 +232,6 @@ If a mono processor is written, the library will wrap it automatically in the ca
 # Future directions (todo!)
 
  - WebAudio backend.
- - TouchDesigner backend.
  - Krita backend.
  - frei0r backend.
  - VCVRack backend.
@@ -240,6 +245,9 @@ If a mono processor is written, the library will wrap it automatically in the ca
  - Improve the handling of callbacks.
  - Have a basic UI story.
  - Implement concepts for GPU-based processing.
+ - TouchDesigner backend.
+ - Gstreamer backend.
+ - Jitter backend.
 
 # Licensing
 
