@@ -23,36 +23,36 @@
 namespace max
 {
 template<typename T>
-struct input_texture_storage;
+struct input_matrix_storage;
 
 template<typename T>
-  requires (avnd::cpu_texture_input_introspection<T>::size == 0)
-struct input_texture_storage<T>
+  requires (avnd::matrix_input_introspection<T>::size == 0)
+struct input_matrix_storage<T>
 {
 
 };
 template<typename T>
-  requires (avnd::cpu_texture_input_introspection<T>::size > 0)
-struct input_texture_storage<T>
+  requires (avnd::matrix_input_introspection<T>::size > 0)
+struct input_matrix_storage<T>
 {
-  boost::container::vector<unsigned char> bytes[avnd::cpu_texture_input_introspection<T>::size];
-  std::array<void*, avnd::cpu_texture_input_introspection<T>::size> matrices;
+  boost::container::vector<unsigned char> bytes[avnd::matrix_input_introspection<T>::size];
+  std::array<void*, avnd::matrix_input_introspection<T>::size> matrices;
 };
 
 template<typename T>
-struct output_texture_storage;
+struct output_matrix_storage;
 
 template<typename T>
-  requires (avnd::cpu_texture_output_introspection<T>::size == 0)
-struct output_texture_storage<T>
+  requires (avnd::matrix_output_introspection<T>::size == 0)
+struct output_matrix_storage<T>
 {
 
 };
 template<typename T>
-  requires (avnd::cpu_texture_output_introspection<T>::size > 0)
-struct output_texture_storage<T>
+  requires (avnd::matrix_output_introspection<T>::size > 0)
+struct output_matrix_storage<T>
 {
-  std::array<void*, avnd::cpu_texture_output_introspection<T>::size> matrices;
+  std::array<void*, avnd::matrix_output_introspection<T>::size> matrices;
 };
 
 
@@ -67,11 +67,11 @@ struct avnd_jit_class
 
   avnd::effect_container<T> implementation;
 
-  AVND_NO_UNIQUE_ADDRESS input_texture_storage<T> input_textures;
-  AVND_NO_UNIQUE_ADDRESS output_texture_storage<T> output_textures;
+  AVND_NO_UNIQUE_ADDRESS input_matrix_storage<T> input_matrices;
+  AVND_NO_UNIQUE_ADDRESS output_matrix_storage<T> output_matrices;
 
-  static constexpr int texture_input_count = avnd::cpu_texture_input_introspection<T>::size;
-  static constexpr int texture_output_count = avnd::cpu_texture_output_introspection<T>::size;
+  static constexpr int matrix_input_count = avnd::matrix_input_introspection<T>::size;
+  static constexpr int matrix_output_count = avnd::matrix_output_introspection<T>::size;
 
   void init()
   {
@@ -82,14 +82,14 @@ struct avnd_jit_class
     if(!inputs || !outputs)
       return JIT_ERR_INVALID_PTR;
 
-    // Process texture inputs
-    if constexpr(texture_input_count > 0)
+    // Process matrix inputs
+    if constexpr(matrix_input_count > 0)
     {
       int idx = 0;
-      avnd::cpu_texture_input_introspection<T>::for_all_n2(
+      avnd::matrix_input_introspection<T>::for_all_n2(
         avnd::get_inputs(implementation),
         [&](auto& field, auto pred_idx, auto idx) {
-          read_texture(inputs, field, idx);
+          read_matrix(inputs, field, idx);
         });
     }
 
@@ -100,35 +100,57 @@ struct avnd_jit_class
       proc();
     }
 
-    // Process texture outputs
-    if constexpr(texture_output_count > 0)
+    // Process matrix outputs
+    if constexpr(matrix_output_count > 0)
     {
-      avnd::cpu_texture_output_introspection<T>::for_all_n2(
-          avnd::get_outputs(implementation), [&] (auto&& field, auto pred, auto idx) { write_texture(outputs, field, idx); });
+      avnd::matrix_output_introspection<T>::for_all_n2(
+          avnd::get_outputs(implementation), [&] (auto&& field, auto pred, auto idx) { write_matrix(outputs, field, idx); });
     }
 
     return JIT_ERR_NONE;
   }
 
-  template<typename Field, std::size_t Idx>
-  void read_texture(void* inputs, Field& field, avnd::field_index<Idx>)
+  template<avnd::texture_port Field, std::size_t Idx>
+  void read_matrix(void* inputs, Field& field, avnd::field_index<Idx>)
   {
     // Get input matrix
     if(void* in_matrix = jit_object_method(inputs, _jit_sym_getindex, Idx))
     {
       auto& spec = max::jitter::texture_spec(field.texture);
-      max::jitter::matrix_to_texture(in_matrix, field, input_textures.bytes[Idx], spec);
+      max::jitter::matrix_to_texture(in_matrix, field, input_matrices.bytes[Idx], spec);
     }
   }
 
-  template<typename Field, std::size_t Idx>
-  void write_texture(void* outputs, Field& field, avnd::field_index<Idx>)
+  template<avnd::texture_port Field, std::size_t Idx>
+  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
       if(const auto& tex = field.texture; tex.bytes && tex.width > 0 && tex.height > 0)
       {
         max::jitter::texture_to_matrix(field, out_matrix);
+      }
+    }
+  }
+
+  template<avnd::buffer_port Field, std::size_t Idx>
+  void read_matrix(void* inputs, Field& field, avnd::field_index<Idx>)
+  {
+    // Get input matrix
+    if(void* in_matrix = jit_object_method(inputs, _jit_sym_getindex, Idx))
+    {
+      max::jitter::matrix_to_buffer(in_matrix, field);
+    }
+  }
+
+  template<avnd::buffer_port Field, std::size_t Idx>
+  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  {
+    if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
+    {
+      if(const auto& tex = field.buffer; tex.bytes && tex.bytesize > 0)
+      {
+        max::jitter::buffer_to_matrix(field, out_matrix);
       }
     }
   }
@@ -343,8 +365,8 @@ struct jitter_processor_metaclass
   static constexpr int num_attributes = attrs::size;
   static inline std::array<t_object*, num_attributes> attributes;
 
-  static constexpr int texture_input_count = avnd_jit_class<T>::texture_input_count;
-  static constexpr int texture_output_count = avnd_jit_class<T>::texture_output_count;
+  static constexpr int matrix_input_count = avnd_jit_class<T>::matrix_input_count;
+  static constexpr int matrix_output_count = avnd_jit_class<T>::matrix_output_count;
 
   static inline const auto jit_class_name = gensym(fmt::format("jit_avnd_{}", avnd::get_c_name<T>()).c_str());
 
@@ -407,39 +429,16 @@ struct jitter_processor_metaclass
 
       if(x)
       {
+        // Create jitter object (avnd_jit_class)
         if(void* o = jit_object_new(jit_class_name))
         {
-          // max_jit_mop_setup_simple:
-          max_jit_obex_jitob_set(x,o);
+          // Setup MOP extension
+          max_jit_obex_jitob_set(x, o);
+          // FIXME do we want a dump outlet automatically?
           max_jit_obex_dumpout_set(x, outlet_new(x, NULL));
           max_jit_mop_setup(x);
 
-          // Dynamic inputs
-          // TODO put in inputs_setup
-          {
-            for (int i = texture_input_count; i > 1; i--) {
-              max_jit_obex_proxy_new(x, i - 1);
-            }
-
-            // Add variable inputs if needed
-            if (texture_input_count >= 1) {
-              max_jit_mop_variable_addinputs(x, texture_input_count );
-            }
-
-            for(int i = 0; i < texture_input_count; i++)
-            {
-              void *input = max_jit_mop_getinput(x, i);
-              if(input)
-              {
-                jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
-                jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
-                jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
-                jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
-              }
-            }
-          }
-
-          max_jit_mop_inputs(x);
+          // Create the actual C++ object (max_jit_wrapper<T>)
           {
             t_object x_obj = x->x_obj;
             void* obex = x->obex;
@@ -453,8 +452,10 @@ struct jitter_processor_metaclass
             x->obex = obex;
           }
 
+          // Setup I/Os
           x->init(argc, argv);
 
+          // Jitter & MOP finalization
           max_jit_mop_matrix_args(x, argc, argv);
           max_jit_attr_args(x, argc, argv);
         }
@@ -534,7 +535,5 @@ struct jitter_processor_metaclass
 
     class_register(CLASS_BOX, g_class);
   }
-
 };
-
 }

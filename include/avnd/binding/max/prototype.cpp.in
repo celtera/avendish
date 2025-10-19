@@ -21,8 +21,9 @@ extern "C" AVND_EXPORTED_SYMBOL void ext_main(void* r)
       // If we're an audio effect, make a type with the whole DSP stuff
       static const max::audio_processor_metaclass<T> instance{};
     }
-    else if constexpr(avnd::texture_input_introspection<T>::size > 0
-                   || avnd::texture_output_introspection<T>::size > 0)
+    else if constexpr(avnd::matrix_input_introspection<T>::size > 0
+                   || avnd::matrix_output_introspection<T>::size > 0
+                   )
     {
       static const max::jitter_processor_metaclass<T> instance{};
     }

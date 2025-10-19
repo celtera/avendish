@@ -297,6 +297,13 @@ foreach(theTarget ${TEXTURE_EXAMPLES})
   )
 endforeach()
 
+avnd_make_texture(
+  TARGET NoiseBuffer
+  MAIN_FILE examples/Advanced/Utilities/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer
+)
+
 ###### Ports
 
 ## Essentia

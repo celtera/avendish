@@ -8,6 +8,7 @@
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/texture_formats.hpp>
+#include <span>
 
 HALP_MODULE_EXPORT
 namespace halp
@@ -46,7 +47,7 @@ struct buffer_output
     buffer.changed = false;
     buffer.bytes = storage.data();
     buffer.bytesize = storage.size();
-    return std::span<T>{reinterpret_cast<T*>(storage.data()), sz};
+    return std::span<T>{reinterpret_cast<T*>(storage.data()), std::size_t(sz)};
   }
 
   template<typename T>

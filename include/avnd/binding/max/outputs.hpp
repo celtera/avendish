@@ -683,6 +683,13 @@ struct outputs
 
   }
 
+  template <avnd::buffer_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+
   template <typename Out>
   void setup(Out& out, t_outlet& outlet) = delete;
 
@@ -712,23 +719,25 @@ struct outputs
       std::array<t_symbol*, N> names;
       std::array<bool, N> jitter;
 
+      // A. Iterate on all the ports to gather their names
       // outlet_new is right-to-left so we create in reverse order...
       avnd::output_introspection<T>::for_all(
           avnd::get_outputs<T>(implementation), [&names, &jitter, &out_k]<typename C>(C& ctl) {
             names[out_k] = symbol_for_port<C>();
-            jitter[out_k] = avnd::texture_port<C>;
+            jitter[out_k] = avnd::texture_port<C> || avnd::buffer_port<C>;
             out_k++;
           });
 
       out_k = N;
 
+      // B. Create all the outlet objects
       auto it = names.crbegin();
       auto it_jitter = jitter.crbegin();
       int mop_output_k = 0;
       for(; it != names.crend(); ++it, ++it_jitter)
       {
         const auto& name = *it;
-        if constexpr(avnd::texture_output_introspection<T>::size == 0)
+        if constexpr(avnd::matrix_output_introspection<T>::size == 0)
         {
           outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));
         }
@@ -754,23 +763,22 @@ struct outputs
             }
 
             // 2. Create outlet (right-to-left)
-            auto x = &x_obj;
-            auto mop = max_jit_obex_adornment_get(x, _jit_sym_jit_mop);
-            max_jit_mop_matrixout_new(x, --out_k);
+            auto mop = max_jit_obex_adornment_get(&x_obj, _jit_sym_jit_mop);
+            max_jit_mop_matrixout_new(&x_obj, --out_k);
 
             // 3. Set-up jit object (based on max_jit_mop_outputs)
-            auto p = jit_object_method(mop,_jit_sym_getoutput, mop_output_k + 1);
+            auto p = jit_object_method(mop, _jit_sym_getoutput, mop_output_k + 1);
             if (p)
             {
               t_jit_matrix_info info;
               jit_matrix_info_default(&info);
-              max_jit_mop_restrict_info(x,p,&info);
+              max_jit_mop_restrict_info(&x_obj,p,&info);
               auto name = jit_symbol_unique();
-              void* m = jit_object_new(_jit_sym_jit_matrix,&info);
-              m = jit_object_register(m,name);
-              jit_attr_setsym(p,_jit_sym_matrixname,name);
-              jit_object_method(p,_jit_sym_matrix,m);
-              jit_object_attach(name, x);
+              void* m = jit_object_new(_jit_sym_jit_matrix, &info);
+              m = jit_object_register(m, name);
+              jit_attr_setsym(p,_jit_sym_matrixname, name);
+              jit_object_method(p,_jit_sym_matrix, m);
+              jit_object_attach(name, &x_obj);
             }
 
             outlets[out_k] = (t_outlet*)max_jit_mop_io_getoutlet(p);
@@ -779,6 +787,7 @@ struct outputs
         }
       }
 
+      // C. Port-specific setup step
       out_k = 0;
       avnd::output_introspection<T>::for_all(
           avnd::get_outputs<T>(implementation), [this, &out_k](auto& ctl) {

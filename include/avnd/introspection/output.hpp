@@ -83,6 +83,12 @@ struct cpu_texture_output_introspection
 };
 
 template <typename T>
+struct matrix_output_introspection
+    : matrix_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct gpu_attachment_introspection
     : gpu_attachment_port_introspection<typename outputs_type<T>::type>
 {

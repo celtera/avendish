@@ -97,20 +97,18 @@ inline void matrix_to_texture(
   tex.changed = true;
 }
 
-inline void resize_matrix(void* matrix, int new_width, int new_height, int planes,  t_symbol* type)
+inline void resize_matrix(void* matrix, int new_width, int new_height, int planes, t_symbol* type)
 {
   // Get current matrix info
   t_jit_matrix_info info;
   jit_object_method(matrix, _jit_sym_getinfo, &info);
 
-  bool needs_resize = false;
   if(info.dimcount != 2 ||
      info.dim[0] != new_width ||
      info.dim[1] != new_height||
      info.planecount != planes ||
      info.type != type)
   {
-    needs_resize = true;
     info.dimcount = 2;
     info.dim[0] = new_width;
     info.dim[1] = new_height;
@@ -122,7 +120,7 @@ inline void resize_matrix(void* matrix, int new_width, int new_height, int plane
   }
 }
 
-template<typename Field>
+template<avnd::cpu_texture_port Field>
 inline void texture_to_matrix(const Field& field, void* matrix)
 {
   if(!matrix)
@@ -154,6 +152,111 @@ inline void texture_to_matrix(const Field& field, void* matrix)
   {
     const_cast<decltype(tex.changed)&>(tex.changed) = false;
   }
+}
+
+
+inline void resize_buffer(void* matrix, int new_length, int planes, t_symbol* type)
+{
+  // Get current matrix info
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  if(info.dimcount != 1 ||
+     info.dim[0] != new_length ||
+     info.planecount != planes ||
+     info.type != type)
+  {
+    info.dimcount = 1;
+    info.dim[0] = new_length;
+    info.planecount = planes;
+    info.type = type;
+    info.flags = 0;
+
+    jit_object_method(matrix, _jit_sym_setinfo, &info);
+  }
+}
+
+template<avnd::buffer_port Field>
+inline void buffer_to_matrix(const Field& field, void* matrix)
+{
+  if(!matrix)
+    return;
+
+  const auto& tex = field.buffer;
+  if constexpr(requires { tex.changed; })
+    if(!tex.changed)
+      return;
+
+  // Skip if texture is invalid
+  if(!tex.bytes || tex.bytesize <= 0)
+    return;
+
+  using texture_type = std::decay_t<decltype(tex)>;
+  resize_buffer(matrix, tex.bytesize, 1, _jit_sym_char);
+
+  // Get pointer to matrix data
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  std::memcpy(matrix_data, tex.bytes, tex.bytesize);
+
+  // Mark texture as no longer changed
+  if constexpr(requires { tex.changed; })
+  {
+    const_cast<decltype(tex.changed)&>(tex.changed) = false;
+  }
+}
+
+
+template<avnd::buffer_port Field>
+inline void matrix_to_buffer(void* matrix, Field& field)
+{
+  if(!matrix)
+    return;
+
+  matrix_lock lock(matrix);
+
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  if(info.dimcount == 0)
+    return;
+
+  // Get matrix dimensions
+  int64_t num_elements = 1;
+  for(int i = 0; i < info.dimcount; i++)
+    num_elements *= info.dim[i];
+  const int planes = info.planecount;
+
+  if(num_elements == 0)
+    return;
+
+  // Get pointer to matrix data
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  auto& tex = field.buffer;
+  if(info.type == _jit_sym_char) {
+    tex.bytesize = num_elements;
+    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+  }
+  else if(info.type == _jit_sym_long) {
+    tex.bytesize = num_elements * sizeof(long);
+    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+  }
+  else if(info.type == _jit_sym_float32) {
+    tex.bytesize = num_elements * sizeof(float);
+    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+  }
+  else if(info.type == _jit_sym_float64) {
+    tex.bytesize = num_elements * sizeof(double);
+    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+  }
+  tex.changed = true;
 }
 
 }

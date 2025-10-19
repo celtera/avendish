@@ -52,6 +52,9 @@ concept cpu_texture_port = requires(T t) {
 } && (cpu_texture<std::decay_t<decltype(std::declval<T>().texture)>>);
 
 template <typename T>
+concept matrix_port = cpu_buffer_port<T> || cpu_texture_port<T>;
+
+template <typename T>
 concept sampler_port = requires(T t) { T::sampler(); };
 
 template <typename T>
