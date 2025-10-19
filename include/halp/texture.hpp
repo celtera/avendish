@@ -20,6 +20,15 @@ struct buffer_input
   operator const halp::raw_buffer&() const noexcept { return buffer; }
   operator halp::raw_buffer&() noexcept { return buffer; }
 
+  template<typename T>
+  auto cast() {
+    return std::span<T>{reinterpret_cast<T*>(buffer.bytes), buffer.bytesize / sizeof(T)};
+  }
+  template<typename T>
+  auto cast() const noexcept {
+    return std::span<const T>{reinterpret_cast<const T*>(buffer.bytes), buffer.bytesize / sizeof(T)};
+  }
+
   halp::raw_buffer buffer{};
 };
 
@@ -30,12 +39,19 @@ struct buffer_output
 
   halp::raw_buffer buffer{};
 
-  void create(int64_t sz)
+  template<typename T>
+  auto create(int64_t sz)
   {
-    storage.resize(sz, boost::container::default_init);
+    storage.resize(sz * sizeof(T), boost::container::default_init);
     buffer.changed = false;
     buffer.bytes = storage.data();
-    buffer.bytesize = sz;
+    buffer.bytesize = storage.size();
+    return std::span<T>{reinterpret_cast<T*>(storage.data()), sz};
+  }
+
+  template<typename T>
+  auto cast() {
+    return std::span<T>{reinterpret_cast<T*>(storage.data()), storage.size() / sizeof(T)};
   }
 
   void upload() noexcept { buffer.changed = true; }
