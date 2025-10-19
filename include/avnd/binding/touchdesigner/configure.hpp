@@ -141,12 +141,17 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
   else if(optype == "TOP")
   {
-    op.minInputs = avnd::texture_input_introspection<type>::size;
+    op.minInputs = avnd::texture_input_introspection<type>::size + avnd::buffer_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
   else if(optype == "DAT")
   {
     op.minInputs = avnd::value_port_input_introspection<type>::size;
+    op.maxInputs = op.minInputs;
+  }
+  else if(optype == "SOP")
+  {
+    op.minInputs = avnd::geometry_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
 }

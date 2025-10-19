@@ -61,6 +61,42 @@ struct buffer_output
   uninitialized_bytes storage;
 };
 
+template <static_string lit, typename Type>
+struct typed_buffer_input
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  halp::typed_buffer<Type> buffer{};
+
+  operator const halp::typed_buffer<Type>&() const noexcept { return buffer; }
+  operator halp::typed_buffer<Type>&() noexcept { return buffer; }
+  operator std::span<Type>() const noexcept { return buffer; }
+};
+
+template <static_string lit, typename Type>
+struct typed_buffer_output
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  halp::typed_buffer<Type> buffer{};
+
+  auto create(int64_t sz)
+  {
+    storage.resize(sz, boost::container::default_init);
+    buffer.changed = false;
+    buffer.elements = storage.data();
+    buffer.count = sz;
+    return std::span<Type>{storage};
+  }
+
+  operator std::span<Type>() const noexcept { return buffer; }
+
+  void upload() noexcept { buffer.changed = true; }
+
+  using uninitialized_data = boost::container::vector<Type>;
+  uninitialized_data storage;
+};
+
 
 template <static_string lit, typename TextureType = rgba_texture>
 struct texture_input;

@@ -143,12 +143,24 @@ struct avnd_jit_class
     }
   }
 
-  template<avnd::buffer_port Field, std::size_t Idx>
+  template<avnd::cpu_raw_buffer_port Field, std::size_t Idx>
   void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
       if(const auto& tex = field.buffer; tex.bytes && tex.bytesize > 0)
+      {
+        max::jitter::buffer_to_matrix(field, out_matrix);
+      }
+    }
+  }
+
+  template<avnd::cpu_typed_buffer_port Field, std::size_t Idx>
+  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  {
+    if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
+    {
+      if(const auto& tex = field.buffer; tex.elements && tex.count> 0)
       {
         max::jitter::buffer_to_matrix(field, out_matrix);
       }

@@ -18,8 +18,100 @@
 
 namespace touchdesigner::chop
 {
+struct output_length_visitor
+{
+  template<avnd::parameter T>
+  int64_t operator()(const T& port)
+  {
+    using value_type = std::decay_t<decltype(T::value)>;
+    if constexpr(avnd::span_ish<value_type> && !avnd::string_ish<value_type>) {
+      return std::ssize(port.value);
+    }
+    else
+    {
+      return 1;
+    }
+  }
+
+  template<avnd::cpu_raw_buffer_port T>
+  int64_t operator()(const T& port)
+  {
+    return port.buffer.bytesize;
+  }
+
+  template<avnd::cpu_typed_buffer_port T>
+  int64_t operator()(const T& port)
+  {
+    return port.buffer.count;
+  }
+
+  template<avnd::callback T>
+  int64_t operator()(const T& port)
+  {
+    // FIXME in the TD case we have to allocate and store the value that was sent
+    return 0;
+  }
+
+  template<typename T>
+  int64_t operator()(const T& port) = delete; // FIXME
+};
+
+struct output_write_visitor
+{
+  template<avnd::parameter T>
+  void operator()(const T& port, float* channel, int64_t samples)
+  {
+    using value_type = std::decay_t<decltype(T::value)>;
+    if constexpr(avnd::span_ish<value_type> && !avnd::string_ish<value_type>)
+    {
+      using vec_value_type = std::decay_t<decltype(port.value[0])>;
+      if constexpr(std::is_arithmetic_v<vec_value_type>)
+      {
+        for(int i = 0, N = std::min(samples, (int64_t)port.value.size()); i < N; i++) {
+          channel[i] = port.value[i];
+        }
+      }
+      else
+      {
+        // TODO
+      }
+    }
+    else
+    {
+      // samples > 0 is enforced before
+      channel[0] = avnd::map_control_to_double<T>(port.value);
+    }
+  }
+
+  template<avnd::cpu_raw_buffer_port T>
+  void operator()(const T& port, float* channel, int64_t samples)
+  {
+    for(int i = 0, N = std::min(samples, (int64_t)port.buffer.bytesize); i < N; i++) {
+      channel[i] = port.value.bytes[i];
+    }
+  }
+
+  template<avnd::cpu_typed_buffer_port T>
+  void operator()(const T& port, float* channel, int64_t samples)
+  {
+    for(int i = 0, N = std::min(samples, (int64_t)port.buffer.count); i < N; i++) {
+      channel[i] = port.buffer.elements[i];
+    }
+  }
+
+  template<avnd::callback T>
+  void operator()(const T& port, float* channel, int64_t samples)
+  {
+    // FIXME in the TD case we have to allocate and store the value that was sent
+    return ;
+  }
+
+  template<typename T>
+  void operator()(const T& port, float* channel, int64_t samples) = delete; // FIXME
+};
+
 template <typename T>
-struct message_processor  : public TD::CHOP_CPlusPlusBase
+struct message_processor : public TD::CHOP_CPlusPlusBase
 {
   avnd::effect_container<T> implementation;
 
@@ -41,15 +133,58 @@ struct message_processor  : public TD::CHOP_CPlusPlusBase
     info->cookEveryFrameIfAsked = true;
     info->inputMatchIndex = 0;
     info->timeslice = false;
+
+    // Update parameter values from TouchDesigner
+    update_controls(inputs);
+
+    // Update main input values
+
+    if constexpr(avnd::has_inputs<T>)
+    {
+      avnd::value_port_input_introspection<T>::for_all_n2(
+          avnd::get_inputs(implementation),
+          [&]<typename Field, std::size_t P, std::size_t I>(Field& field, avnd::predicate_index<P> pred_idx, avnd::field_index<I>) {
+
+        auto chop_in = inputs->getInputCHOP(P);
+        if(chop_in->numChannels > 0)
+        {
+          if(chop_in->numSamples > 0)
+          {
+            // Update value_port inputs
+            parameter_update<T>{}.chop_in(field, chop_in);
+
+            // Call update callback if it exists
+            if_possible(field.update(implementation.effect));
+          }
+        }
+      });
+    }
+
+
+    // Execute process
+    const TD::OP_TimeInfo* ti = inputs->getTimeInfo();
+    struct tick {
+      int frames = 0;
+    } t{.frames = (int) ti->deltaFrames};
+
+    // Copy outputs in their respective channels
+    invoke_effect(implementation, t);
   }
 
   bool getOutputInfo(TD::CHOP_OutputInfo* info, const TD::OP_Inputs* inputs, void* reserved) override
   {
+    auto ti = inputs->getTimeInfo();
     if constexpr(avnd::has_outputs<T>)
     {
       info->numChannels = avnd::output_introspection<T>::size;
-      info->numSamples = 1;
-      info->sampleRate = 60;
+      int64_t max_channel_length{0};
+      avnd::output_introspection<T>::for_all(
+          avnd::get_outputs(implementation),
+          [&] (auto& field) {
+        max_channel_length = std::max(max_channel_length, output_length_visitor{}(field));
+      });
+      info->numSamples = max_channel_length;
+      info->sampleRate = ti->rate; // FIXME this should be the FPS / audio rate? how to get it ?
       info->startIndex = 0;
     }
     else
@@ -85,32 +220,23 @@ struct message_processor  : public TD::CHOP_CPlusPlusBase
 
   void execute(TD::CHOP_Output* output, const TD::OP_Inputs* inputs, void* reserved) override
   {
-    // Update parameter values from TouchDesigner
-    update_controls(inputs);
-
-    // Execute process
-    struct tick {
-      int frames = 0;
-    } t{.frames = output->numSamples};
-
-    if(output->numSamples == 0)
+    if(output->numSamples <= 0)
       return;
 
-    // Copy outputs in their respective channels
-    invoke_effect(implementation, t);
-
-    if(output->numChannels == avnd::output_introspection<T>::size)
+    if constexpr(avnd::has_outputs<T>)
     {
-      int i = 0;
-      avnd::parameter_output_introspection<T>::for_all(
-          avnd::get_outputs(implementation),
-          [&] <typename Field>(Field& port) {
-        output->channels[i][0] = avnd::map_control_to_double<Field>(port.value);
-      });
-    }
-    else
-    {
-      // TODO
+      if(output->numChannels == avnd::output_introspection<T>::size)
+      {
+        avnd::output_introspection<T>::for_all_n(
+            avnd::get_outputs(implementation),
+            [&] <std::size_t I> (auto& field, avnd::field_index<I>) {
+           output_write_visitor{}(field, output->channels[I], output->numSamples);
+        });
+      }
+      else
+      {
+        // TODO
+      }
     }
   }
 

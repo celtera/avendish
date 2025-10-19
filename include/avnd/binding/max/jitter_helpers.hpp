@@ -176,23 +176,22 @@ inline void resize_buffer(void* matrix, int new_length, int planes, t_symbol* ty
   }
 }
 
-template<avnd::buffer_port Field>
+template<avnd::cpu_raw_buffer_port Field>
 inline void buffer_to_matrix(const Field& field, void* matrix)
 {
   if(!matrix)
     return;
 
-  const auto& tex = field.buffer;
-  if constexpr(requires { tex.changed; })
-    if(!tex.changed)
+  const auto& buf = field.buffer;
+  if constexpr(requires { buf.changed; })
+    if(!buf.changed)
       return;
 
-  // Skip if texture is invalid
-  if(!tex.bytes || tex.bytesize <= 0)
+  // Skip if buffer is invalid
+  if(!buf.bytes || buf.bytesize <= 0)
     return;
 
-  using texture_type = std::decay_t<decltype(tex)>;
-  resize_buffer(matrix, tex.bytesize, 1, _jit_sym_char);
+  resize_buffer(matrix, buf.bytesize, 1, _jit_sym_char);
 
   // Get pointer to matrix data
   void* matrix_data = nullptr;
@@ -200,12 +199,59 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
   if(!matrix_data)
     return;
 
-  std::memcpy(matrix_data, tex.bytes, tex.bytesize);
+  std::memcpy(matrix_data, buf.bytes, buf.bytesize);
 
   // Mark texture as no longer changed
-  if constexpr(requires { tex.changed; })
+  if constexpr(requires { buf.changed; })
   {
-    const_cast<decltype(tex.changed)&>(tex.changed) = false;
+    const_cast<decltype(buf.changed)&>(buf.changed) = false;
+  }
+}
+
+template<avnd::cpu_typed_buffer_port Field>
+inline void buffer_to_matrix(const Field& field, void* matrix)
+{
+  if(!matrix)
+    return;
+
+  const auto& buf = field.buffer;
+  if constexpr(requires { buf.changed; })
+    if(!buf.changed)
+      return;
+
+  // Skip if texture is invalid
+  if(!buf.elements || buf.count <= 0)
+    return;
+
+  using buffer_type = std::decay_t<decltype(buf)>;
+  using value_type = std::decay_t<std::remove_pointer_t<std::decay_t<decltype(buf.elements[0])>>>;
+  t_symbol* sym{};
+  if constexpr(sizeof(value_type) == 1)
+    sym = _jit_sym_char;
+  else if constexpr(std::is_same_v<value_type, float>)
+    sym = _jit_sym_float32;
+  else if constexpr(std::is_same_v<value_type, double>)
+    sym = _jit_sym_float64;
+  else if constexpr(std::is_integral_v<value_type> && sizeof(value_type) == sizeof(long))
+    sym = _jit_sym_long;
+
+  if(!sym)
+    return;
+
+  resize_buffer(matrix, buf.count, 1, sym);
+
+  // Get pointer to matrix data
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  std::memcpy(matrix_data, buf.elements, buf.count * sizeof(value_type));
+
+  // Mark texture as no longer changed
+  if constexpr(requires { buf.changed; })
+  {
+    const_cast<decltype(buf.changed)&>(buf.changed) = false;
   }
 }
 

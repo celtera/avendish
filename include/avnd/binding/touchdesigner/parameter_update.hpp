@@ -91,8 +91,6 @@ struct parameter_update
 
   }
 
-
-
   void update(avnd::effect_container<T>& implementation, const TD::OP_Inputs* inputs)
   {
     if constexpr(avnd::has_inputs<T>) {
@@ -268,6 +266,166 @@ struct parameter_update
     const char* str = inputs->getParFilePath(name);
     if(str)
       field.value.assign(str);
+  }
+
+  //////////////////
+  // We know that input exists and has at least one channel sample
+
+  template <typename Field, typename Value>
+    requires (avnd::fp_ish<Value> || avnd::int_ish<Value> || avnd::bool_ish<Value>)
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    value = input->channelData[0][0];
+  }
+
+  template <typename Field, avnd::enum_ish Value>
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    value = static_cast<Value>(input->channelData[0][0]);
+  }
+
+  template <typename Field, avnd::list_ish Value>
+    requires (!avnd::vector_ish<Value> && !avnd::string_ish<Value>)
+  void chop_value_in(Field& field,  Value& value, const TD::OP_CHOPInput* input)
+  {
+    using value_type = typename Value::value_type;
+    if constexpr(std::is_arithmetic_v<value_type>)
+    {
+      value.clear();
+      auto begin = input->channelData[0];
+      auto end = input->channelData[0] + input->numSamples;
+      value.assign(begin, end);
+      for(auto it = begin; it != end; ++it) {
+        value.push_back(*it);
+      }
+    }
+    else
+    {
+      // TODO?
+    }
+  }
+
+  template <typename Field, avnd::vector_ish Value>
+    requires (!avnd::string_ish<Value>)
+  void chop_value_in(Field& field,  Value& value, const TD::OP_CHOPInput* input)
+  {
+    using value_type = typename Value::value_type;
+    if constexpr(std::is_arithmetic_v<value_type>)
+    {
+      value.resize(input->numSamples);
+      auto begin = input->channelData[0];
+      auto end = input->channelData[0] + input->numSamples;
+      value.assign(begin, end);
+    }
+    else
+    {
+      // TODO?
+    }
+  }
+
+  template <typename Field, avnd::set_ish Value>
+  void chop_value_in(Field& field,  Value& value, const TD::OP_CHOPInput* input)
+  {
+    using value_type = typename Value::value_type;
+    if constexpr(std::is_arithmetic_v<value_type>)
+    {
+      value.clear();
+      auto begin = input->channelData[0];
+      auto end = input->channelData[0] + input->numSamples;
+      value.insert(begin, end);
+    }
+    else
+    {
+      // TODO set<string> ?
+    }
+  }
+
+  template <typename Field, avnd::map_ish Value>
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    // FIXME what behaviour do we want here? one channel for keys, one for value?
+    // or kv kv kv kv ?
+    // or just vvvvv ?
+  }
+
+  template <typename Field, avnd::variant_ish Value>
+  void chop_value_in(Field& field,  Value& value, const TD::OP_CHOPInput* input)
+  {
+    if_possible(value = input->channelData[0][0]);
+  }
+
+  template <typename Field, avnd::optional_ish Value>
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    if_possible(value = input->channelData[0][0]);
+  }
+
+  template <typename Field, typename Value>
+    requires (std::is_aggregate_v<Value> || avnd::tuple_ish<Value>)
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    if constexpr(avnd::pair_ish<Value>)
+    {
+      value.first = input->channelData[0][0];
+      if(input->numSamples > 1)
+        value.first = input->channelData[0][1];
+    }
+    else if constexpr(avnd::static_array_ish<Value>)
+    {
+      using value_type = std::decay_t<decltype(value[0])>;
+      if constexpr(std::is_arithmetic_v<value_type>)
+      {
+        static constexpr int N = std::tuple_size_v<Value>;
+        for(int i = 0, n = std::min(N, (int)input->numSamples); i < n; i++) {
+          value[i] = input->channelData[0][i];
+        }
+      }
+    }
+    else if constexpr(avnd::tuple_ish<Value>)
+    {
+      // TODO
+    }
+    else
+    {
+      // TODO
+    }
+  }
+
+  template <typename Field, typename Value>
+    requires avnd::string_ish<Value>
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    // TODO
+  }
+
+  template <typename Field, typename Value>
+    requires avnd::bitset_ish<Value>
+  void chop_value_in(Field& field, Value& value, const TD::OP_CHOPInput* input)
+  {
+    if constexpr(requires { value.resize(1); }) {
+      value.resize(input->numSamples);
+      for(int i = 0, N = input->numSamples; i < N; i++) {
+        value.set(i, input->channelData[0] != 0);
+      }
+    }
+    else
+    {
+      for(int i = 0, N = std::min((int)value.size(), (int)input->numSamples); i < N; i++) {
+        value.set(i, input->channelData[0] != 0);
+      }
+    }
+  }
+
+  template <avnd::parameter Field>
+  void chop_in(Field& field, const TD::OP_CHOPInput* input)
+  {
+    chop_value_in(field, field.value, input);
+  }
+
+  template <avnd::buffer_port Field>
+  void chop_in(Field& field, const TD::OP_CHOPInput* input)
+  {
+    // TODO
   }
 };
 

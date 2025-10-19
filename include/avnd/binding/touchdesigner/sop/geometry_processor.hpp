@@ -13,11 +13,23 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/common/enums.hpp>
 
 #include <SOP_CPlusPlusBase.h>
 
 namespace touchdesigner::SOP
 {
+enum class TopologyType {
+  triangles, points
+};
+
+template <typename T>
+constexpr auto get_topology(const T& t) -> TopologyType
+{
+  static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
+      topology, (TopologyType::triangles, triangle, triangles), (TopologyType::points, point, points));
+  return m(t, TopologyType::triangles);
+}
 
 /**
  * Geometry processor binding for TouchDesigner SOPs
@@ -165,10 +177,7 @@ private:
     add_vertices_from_buffers(geom, output);
 
     // Add primitives based on topology
-    if constexpr(requires { geom.index; })
-    {
-      add_triangles(geom, output);
-    }
+    add_primitives(geom, output);
   }
 
   template <typename GeomPort>
@@ -262,13 +271,22 @@ private:
         }
 
         // Add vertices
-        for(int i = 0; i < num_vertices; ++i)
+        if(position_stride == 3 * sizeof(float))
         {
-          const float* vertex_data = reinterpret_cast<const float*>(
-              data_ptr + buffer_offset + position_offset + i * position_stride);
+          const TD::Position* vertex_data = reinterpret_cast<const TD::Position*>(
+              data_ptr + buffer_offset + position_offset);
+          output->addPoints(vertex_data, num_vertices);
+        }
+        else
+        {
+          for(int i = 0; i < num_vertices; ++i)
+          {
+            const float* vertex_data = reinterpret_cast<const float*>(
+                data_ptr + buffer_offset + position_offset + i * position_stride);
 
-          TD::Position pos{vertex_data[0], vertex_data[1], vertex_data[2]};
-          output->addPoint(pos);
+            TD::Position pos{vertex_data[0], vertex_data[1], vertex_data[2]};
+            output->addPoint(pos);
+          }
         }
 
         // Now add other attributes (normals, colors, texcoords)
@@ -410,45 +428,65 @@ private:
   }
 
   template <typename GeomPort>
-  void add_triangles(GeomPort& geom, TD::SOP_Output* output)
+  void add_primitives(GeomPort& geom, TD::SOP_Output* output)
   {
-    // Get the input that references the buffer for indices
-    int buffer_idx = -1;
-    int buffer_offset = 0;
-    auto& input = geom.index;
+    const TopologyType topology = get_topology(geom);
+    if(topology == TopologyType::triangles)
     {
-      if constexpr(requires { input.buffer(); })
-        buffer_idx = avnd::index_in_struct_static<input.buffer()>();
-      else if constexpr(requires { input.buffer; })
-        buffer_idx = input.buffer;
-
-      if constexpr(requires { input.offset(); })
-        buffer_offset = input.offset();
-      else if constexpr(requires { input.offset; })
-        buffer_offset = input.offset;
-    }
-
-    // Read the indices 3 by 3
-    if(buffer_idx >= 0)
-    {
-      // Now read the actual buffer data and add vertices
-      int buf_idx = 0;
-      avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
-        if(buf_idx == buffer_idx)
+      if constexpr(requires { geom.index; })
+      {
+        // Get the input that references the buffer for indices
+        int buffer_idx = -1;
+        int buffer_offset = 0;
+        auto& input = geom.index;
         {
-          // We have the buffer - read vertices
-          const char* data_ptr = nullptr;
+          if constexpr(requires { input.buffer(); })
+            buffer_idx = avnd::index_in_struct_static<input.buffer()>();
+          else if constexpr(requires { input.buffer; })
+            buffer_idx = input.buffer;
 
-          for(int k = 0; k < buf.size - 2; k += 3) {
-            auto i0 = buf.data[k];
-            auto i1 = buf.data[k+1];
-            auto i2 = buf.data[k+2];
-
-            output->addTriangle(i0, i1, i2);
-          }
+          if constexpr(requires { input.offset(); })
+            buffer_offset = input.offset();
+          else if constexpr(requires { input.offset; })
+            buffer_offset = input.offset;
         }
-        buf_idx++;
-      });
+
+        // Read the indices 3 by 3
+        if(buffer_idx >= 0)
+        {
+          // Now read the actual buffer data and add vertices
+          int buf_idx = 0;
+          avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
+            if(buf_idx == buffer_idx)
+            {
+              // We have the buffer - read vertices
+              const char* data_ptr = nullptr;
+
+              for(int k = 0; k < buf.size - 2; k += 3) {
+                auto i0 = buf.data[k];
+                auto i1 = buf.data[k+1];
+                auto i2 = buf.data[k+2];
+
+                output->addTriangle(i0, i1, i2);
+              }
+            }
+            buf_idx++;
+          });
+          // Index buffer used successfully
+          return;
+        }
+      }
+
+      // If we're here it means we could not add the triangles through an index,
+      // so instead let's add them manually
+      for(int i = 0; i < geom.vertices - 2; i += 3)
+      {
+        output->addTriangle(i+0, i+1, i+2);
+      }
+    }
+    else
+    {
+      output->addParticleSystem(geom.vertices, 0);
     }
   }
 
@@ -459,4 +497,4 @@ private:
   }
 };
 
-} // namespace touchdesigner::SOP
+}

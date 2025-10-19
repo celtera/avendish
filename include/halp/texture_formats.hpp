@@ -5,6 +5,7 @@
 #include <boost/container/vector.hpp>
 #include <halp/modules.hpp>
 #include <halp/value_types.hpp>
+#include <span>
 
 HALP_MODULE_EXPORT
 namespace halp
@@ -14,6 +15,18 @@ struct raw_buffer
   unsigned char* bytes;
   int64_t bytesize;
   bool changed;
+
+  operator std::span<unsigned char>() const noexcept { return { bytes, std::size_t(bytesize) }; }
+};
+
+template<typename T>
+struct typed_buffer
+{
+  T* elements;
+  int64_t count;
+  bool changed;
+
+  operator std::span<T>() const noexcept { return { elements, std::size_t(count) }; }
 };
 
 struct r8_texture

@@ -23,6 +23,12 @@ struct control_output_introspection
 };
 
 template <typename T>
+struct value_port_output_introspection
+    : value_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct linear_timed_parameter_output_introspection
     : linear_timed_parameter_introspection<typename outputs_type<T>::type>
 {

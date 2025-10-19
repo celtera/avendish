@@ -304,6 +304,30 @@ avnd_make_texture(
   C_NAME avnd_noisebuffer
 )
 
+avnd_make_touchdesigner(
+  TARGET NoiseBuffer_chop
+  MAIN_FILE examples/Advanced/Utilities/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer_chop
+  OPTYPE CHOP_MESSAGE
+)
+
+avnd_make_touchdesigner(
+  TARGET DoubleArray
+  MAIN_FILE examples/Raw/DoubleArray.hpp
+  MAIN_CLASS examples::DoubleArray
+  C_NAME avnd_doublearray
+  OPTYPE DAT
+)
+
+avnd_make_touchdesigner(
+  TARGET CubeGenerator
+  MAIN_FILE examples/Tutorial/CubeGenerator.hpp
+  MAIN_CLASS examples::CubeGenerator
+  C_NAME avnd_cube
+  OPTYPE SOP
+)
+
 ###### Ports
 
 ## Essentia
@@ -323,7 +347,7 @@ avnd_make_object(
 )
 
 ## vb-objects
-avnd_make_object(
+avnd_make_audioplug(
   TARGET VB_fourses_tilde
   MAIN_FILE examples/Ports/VB/vb.fourses_tilde.hpp
   MAIN_CLASS vb_ports::fourses_tilde
