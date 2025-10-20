@@ -23,6 +23,9 @@ concept cpu_typed_buffer = requires(T t) {
 };
 
 template <typename T>
+concept cpu_buffer = cpu_raw_buffer<T> || cpu_typed_buffer<T>;
+
+template <typename T>
 concept cpu_formatted_buffer = cpu_raw_buffer<T> && requires(T t) {
   typename T::format;
 };
