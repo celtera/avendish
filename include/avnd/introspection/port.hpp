@@ -110,6 +110,16 @@ struct midi_port_introspection : predicate_introspection<T, is_midi_port_t>
 };
 
 template <typename Field>
+using is_cpu_buffer_port_t = boost::mp11::mp_bool<cpu_buffer_port<Field>>;
+template <typename T>
+using cpu_buffer_port_introspection = predicate_introspection<T, is_cpu_buffer_port_t>;
+
+template <typename Field>
+using is_gpu_buffer_port_t = boost::mp11::mp_bool<gpu_buffer_port<Field>>;
+template <typename T>
+using gpu_buffer_port_introspection = predicate_introspection<T, is_gpu_buffer_port_t>;
+
+template <typename Field>
 using is_buffer_port_t = boost::mp11::mp_bool<buffer_port<Field>>;
 template <typename T>
 using buffer_port_introspection = predicate_introspection<T, is_buffer_port_t>;

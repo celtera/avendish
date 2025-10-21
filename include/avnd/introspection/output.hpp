@@ -71,6 +71,18 @@ struct dynamic_container_midi_output_introspection
 };
 
 template <typename T>
+struct cpu_buffer_output_introspection
+    : cpu_buffer_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
+struct gpu_buffer_output_introspection
+    : gpu_buffer_port_introspection<typename outputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct buffer_output_introspection
     : buffer_port_introspection<typename outputs_type<T>::type>
 {

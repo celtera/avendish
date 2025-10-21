@@ -71,6 +71,116 @@ constexpr auto get_cull_mode(const T& t) -> decltype(ossia::geometry::cull_mode)
 }
 
 template <typename T>
+  requires requires (T t) { t.data; t.size; }
+void load_buffer(T& buf, std::size_t buf_k, ossia::geometry& geom)
+{
+  using ptr_type = std::decay_t<decltype(buf.data)>;
+  if constexpr(std::is_same_v<ptr_type, void*>)
+  {
+    // using data_type = float[4];
+    // Dynamic case
+    if(buf_k >= geom.buffers.size())
+    {
+      ossia::geometry::cpu_buffer cpu_buf;
+      auto data = std::make_unique<char[]>(buf.size);
+      std::copy_n((char*)buf.data, buf.size, data.get());
+      cpu_buf.data = std::move(data);
+      cpu_buf.size = buf.size;
+      ossia::geometry::buffer in{.data = std::move(cpu_buf), .dirty = true};
+      buf.dirty = false;
+      in.dirty = true;
+      geom.buffers.push_back(std::move(in));
+    }
+    else if(buf.dirty)
+    {
+      ossia::geometry::cpu_buffer cpu_buf;
+      auto data = std::make_unique<char[]>(buf.size);
+      std::copy_n((char*)buf.data, buf.size, data.get());
+      cpu_buf.data = std::move(data);
+      cpu_buf.size = buf.size;
+
+      // FIXME recycle old in.data
+      auto& in = geom.buffers[buf_k];
+      in.data = std::move(cpu_buf);
+      buf.dirty = false;
+      in.dirty = true;
+    }
+  }
+  else
+  {
+    // Static case
+    using data_type = std::decay_t<decltype(buf.data[0])>;
+    static_assert(!std::is_reference_v<data_type>);
+    static_assert(!std::is_const_v<data_type>);
+
+    if(buf_k >= geom.buffers.size())
+    {
+      ossia::geometry::cpu_buffer cpu_buf;
+      // FIXME find a way to do it with some linear allocator or whatever
+      // - we need to handle cleanly both static and dynamic geometry
+      // if constexpr(is_shared_ptr<ptr_type>::value)
+      // {
+      //   cpu_buf.data = buf.data;
+      // }
+      // else
+      {
+        auto data = std::make_unique<data_type[]>(buf.size);
+        std::copy_n(buf.data, buf.size, data.get());
+        cpu_buf.data = std::move(data);
+        cpu_buf.size = buf.size * sizeof(data_type);
+      }
+
+      ossia::geometry::buffer in{.data = std::move(cpu_buf), .dirty = true};
+      buf.dirty = false;
+
+      geom.buffers.push_back(std::move(in));
+    }
+    else if(buf.dirty)
+    {
+      ossia::geometry::cpu_buffer cpu_buf;
+      auto data = std::make_unique<data_type[]>(buf.size);
+      std::copy_n(buf.data, buf.size, data.get());
+      cpu_buf.data = std::move(data);
+      cpu_buf.size = buf.size * sizeof(data_type);
+
+      // FIXME recycle old in.data
+      auto& in = geom.buffers[buf_k];
+      in.data = std::move(cpu_buf);
+      buf.dirty = false;
+      in.dirty = true;
+    }
+  }
+}
+
+template <typename T>
+  requires requires (T t) { t.handle; }
+void load_buffer(T& buf, std::size_t buf_k, ossia::geometry& geom)
+{
+  // Dynamic case
+  if(buf_k >= geom.buffers.size())
+  {
+    ossia::geometry::gpu_buffer gpu_buf;
+    gpu_buf.handle = buf.handle;
+
+    ossia::geometry::buffer in{.data = std::move(gpu_buf), .dirty = true};
+    buf.dirty = false;
+    in.dirty = true;
+    geom.buffers.push_back(std::move(in));
+  }
+  else
+  {
+    ossia::geometry::gpu_buffer gpu_buf;
+    gpu_buf.handle = buf.handle;
+
+    // FIXME recycle old in.data
+    auto& in = geom.buffers[buf_k];
+    in.data = gpu_buf;
+    buf.dirty = false;
+    in.dirty = true;
+  }
+}
+
+template <typename T>
   requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
 void load_geometry(T& ctrl, ossia::geometry& geom)
 {
@@ -83,88 +193,9 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
   geom.front_face = get_front_face(ctrl);
   geom.cull_mode = get_cull_mode(ctrl);
 
-  {
-    std::size_t buf_k = 0;
-    avnd::for_each_field_ref(ctrl.buffers, [&](auto& buf) {
-      using ptr_type = std::decay_t<decltype(buf.data)>;
-      if constexpr(std::is_same_v<ptr_type, void*>)
-      {
-        // using data_type = float[4];
-        // Dynamic case
-        if(buf_k >= geom.buffers.size())
-        {
-          ossia::geometry::cpu_buffer cpu_buf;
-          auto data = std::make_unique<char[]>(buf.size);
-          std::copy_n((char*)buf.data, buf.size, data.get());
-          cpu_buf.data = std::move(data);
-          cpu_buf.size = buf.size;
-          ossia::geometry::buffer in{.data = std::move(cpu_buf), .dirty = true};
-          buf.dirty = false;
-          in.dirty = true;
-          geom.buffers.push_back(std::move(in));
-        }
-        else if(buf.dirty)
-        {
-          ossia::geometry::cpu_buffer cpu_buf;
-          auto data = std::make_unique<char[]>(buf.size);
-          std::copy_n((char*)buf.data, buf.size, data.get());
-          cpu_buf.data = std::move(data);
-          cpu_buf.size = buf.size;
-
-          // FIXME recycle old in.data
-          auto& in = geom.buffers[buf_k];
-          in.data = std::move(cpu_buf);
-          buf.dirty = false;
-          in.dirty = true;
-        }
-      }
-      else
-      {
-        // Static case
-        using data_type = std::decay_t<decltype(buf.data[0])>;
-        static_assert(!std::is_reference_v<data_type>);
-        static_assert(!std::is_const_v<data_type>);
-
-        if(buf_k >= geom.buffers.size())
-        {
-          ossia::geometry::cpu_buffer cpu_buf;
-          // FIXME find a way to do it with some linear allocator or whatever
-          // - we need to handle cleanly both static and dynamic geometry
-          // if constexpr(is_shared_ptr<ptr_type>::value)
-          // {
-          //   cpu_buf.data = buf.data;
-          // }
-          // else
-          {
-            auto data = std::make_unique<data_type[]>(buf.size);
-            std::copy_n(buf.data, buf.size, data.get());
-            cpu_buf.data = std::move(data);
-            cpu_buf.size = buf.size * sizeof(data_type);
-          }
-
-          ossia::geometry::buffer in{.data = std::move(cpu_buf), .dirty = true};
-          buf.dirty = false;
-
-          geom.buffers.push_back(std::move(in));
-        }
-        else if(buf.dirty)
-        {
-          ossia::geometry::cpu_buffer cpu_buf;
-          auto data = std::make_unique<data_type[]>(buf.size);
-          std::copy_n(buf.data, buf.size, data.get());
-          cpu_buf.data = std::move(data);
-          cpu_buf.size = buf.size * sizeof(data_type);
-
-          // FIXME recycle old in.data
-          auto& in = geom.buffers[buf_k];
-          in.data = std::move(cpu_buf);
-          buf.dirty = false;
-          in.dirty = true;
-        }
-      }
-      buf_k++;
-    });
-  }
+  avnd::for_each_field_ref_n(ctrl.buffers, [&geom](auto& buf, std::size_t buf_k) {
+    load_buffer(buf, buf_k, geom);
+  });
 
   geom.input.clear();
   avnd::for_each_field_ref(ctrl.input, [&](auto& input) {
@@ -312,6 +343,112 @@ void load_geometry(T& ctrl, ossia::mesh_list& geom)
   {
     load_geometry(ctrl.mesh[i], geom.meshes[i]);
   }
+  geom.dirty_index++;
+}
+
+template <typename T>
+  requires requires (T t) { t.data; t.size; }
+void update_buffer(T& buf, std::size_t buf_k, ossia::geometry& geom, bool& need_reload)
+{
+  if(buf.dirty)
+  {
+    auto& in = geom.buffers[buf_k];
+
+    if(auto cpu = ossia::get_if<ossia::geometry::cpu_buffer>(&in.data))
+    {
+      using ptr_type = std::decay_t<decltype(buf.data)>;
+      if constexpr(std::is_same_v<ptr_type, void*>)
+      {
+        if(cpu->size == buf.size)
+        {
+          std::memcpy(cpu->data.get(), buf.data, buf.size);
+        }
+        else
+        {
+          need_reload = true;
+          return;
+        }
+      }
+      else
+      {
+        using data_type = std::decay_t<decltype(buf.data[0])>;
+        if(cpu->size == buf.size * sizeof(data_type))
+        {
+          std::memcpy(cpu->data.get(), buf.data, buf.size * sizeof(data_type));
+        }
+        else
+        {
+          need_reload = true;
+          return;
+        }
+      }
+    }
+    else if(auto gpu = ossia::get_if<ossia::geometry::gpu_buffer>(&in.data))
+    {
+      need_reload = true;
+      return;
+    }
+
+    buf.dirty = false;
+    in.dirty = true;
+  }
+  buf_k++;
+}
+
+
+template <typename T>
+  requires requires (T t) { t.handle; }
+void update_buffer(T& buf, std::size_t buf_k, ossia::geometry& geom, bool& need_reload)
+{
+  ossia::geometry::gpu_buffer gpu_buf;
+  gpu_buf.handle = buf.handle;
+
+  auto& in = geom.buffers[buf_k];
+  in.data = gpu_buf;
+  buf.dirty = false;
+  in.dirty = true;
+}
+
+template <typename T>
+  requires(avnd::static_geometry_type<T> || avnd::dynamic_geometry_type<T>)
+bool update_geometry(T& ctrl, ossia::geometry& geom)
+{
+  // return true -> needs a reload
+  if constexpr(requires { ctrl.vertices; })
+    if(geom.vertices != ctrl.vertices)
+      return true;
+  if constexpr(requires { ctrl.indices; })
+    if(geom.indices != ctrl.indices)
+      return true;
+
+  bool need_reload = false;
+  avnd::for_each_field_ref_n(ctrl.buffers, [&](auto& buf, std::size_t buf_k) {
+    if(need_reload)
+      return;
+
+    update_buffer(buf, buf_k, geom, need_reload);
+  });
+  return need_reload;
+}
+
+template <typename T>
+  requires(
+      avnd::static_geometry_type<typename decltype(T::mesh)::value_type>
+      || avnd::dynamic_geometry_type<typename decltype(T::mesh)::value_type>)
+bool update_geometry(T& ctrl, ossia::mesh_list& geom)
+{
+  const auto N = ctrl.mesh.size();
+  if(N != geom.meshes.size())
+    return true;
+
+  for(int i = 0; i < N; i++)
+  {
+    bool need_reload = update_geometry(ctrl.mesh[i], geom.meshes[i]);
+    if(need_reload)
+      return true;
+  }
+  geom.dirty_index++;
+  return false;
 }
 
 template <typename T>

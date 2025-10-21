@@ -37,6 +37,16 @@ concept cpu_typed_buffer_port = cpu_typed_buffer<std::decay_t<decltype(std::decl
 template <typename T>
 concept cpu_buffer_port = cpu_raw_buffer_port<T> || cpu_typed_buffer_port<T>;
 
+template <typename T>
+concept gpu_buffer = requires (T t) {
+  t.handle;
+  t.bytesize;
+};
+
+template <typename T>
+concept gpu_buffer_port = gpu_buffer<std::decay_t<decltype(std::declval<T>().buffer)>>;
+template <typename T>
+concept buffer_port = cpu_buffer_port<T> || gpu_buffer_port<T>; // FIXME SSBO
 
 template <typename T>
 concept cpu_fixed_format_texture = requires(T t) {
@@ -76,9 +86,6 @@ concept attachment_port = requires { T::attachment(); };
 template <typename T>
 concept texture_port
     = cpu_texture_port<T> || sampler_port<T> || attachment_port<T> || image_port<T>;
-
-template <typename T>
-concept buffer_port = cpu_buffer_port<T>; // FIXME SSBO
 
 template <typename T>
 concept matrix_port = buffer_port<T> || texture_port<T>;

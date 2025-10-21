@@ -122,6 +122,14 @@ constexpr void for_each_field_ref_n(T&& value, F&& func)
 }
 
 template <class T, class F>
+  requires(avnd::vector_ish<std::decay_t<T>>)
+constexpr void for_each_field_ref_n(T&& value, F&& func)
+{
+  std::size_t i = 0;
+  for(auto& v : value) func(v, i++);
+}
+
+template <class T, class F>
 void for_each_field_ref(avnd::member_iterator<T>&& value, F&& func)
 {
   for(auto& v : value)
