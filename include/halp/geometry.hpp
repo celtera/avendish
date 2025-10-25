@@ -7,6 +7,90 @@
 HALP_MODULE_EXPORT
 namespace halp
 {
+enum class binding_classification : uint8_t
+{
+  per_vertex,
+  per_instance
+};
+enum class attribute_location : uint32_t
+{
+  position = 0,
+  tex_coord = 1,
+  color = 2,
+  normal = 3,
+  tangent = 4
+};
+enum class attribute_format: uint8_t
+{
+  float4,
+  float3,
+  float2,
+  float1,
+  uint4,
+  uint2,
+  uint1
+};
+enum class index_format : uint8_t
+{
+  uint16,
+  uint32
+};
+
+enum class primitive_topology : uint8_t
+{
+  triangles,
+  triangle_strip,
+  triangle_fan,
+  lines,
+  line_strip,
+  points
+};
+enum class cull_mode : uint8_t
+{
+  none,
+  front,
+  back
+};
+enum class front_face : uint8_t
+{
+  counter_clockwise,
+  clockwise
+};
+
+struct geometry_cpu_buffer
+{
+  void* data{};
+  int64_t size{};
+  bool dirty{};
+};
+
+struct geometry_gpu_buffer
+{
+  void* handle{};
+  int64_t size{};
+  bool dirty{};
+};
+
+struct geometry_binding
+{
+  int stride{};
+  int step_rate{};
+  halp::binding_classification classification{};
+};
+
+struct geometry_attribute
+{
+  int binding = 0;
+  halp::attribute_location location{};
+  halp::attribute_format format{};
+  int32_t offset{};
+};
+
+struct geometry_input
+{
+  int buffer{}; // Index of the buffer to use
+  int64_t offset{};
+};
 
 template <typename T>
 struct rect2d
@@ -785,90 +869,42 @@ struct position_normals_color_geometry
 
 struct dynamic_geometry
 {
-  struct buffer
-  {
-    void* data{};
-    int64_t size{};
-    bool dirty{};
-  };
+  std::vector<geometry_cpu_buffer> buffers;
+  std::vector<geometry_binding> bindings;
+  std::vector<geometry_attribute> attributes;
+  std::vector<geometry_input> input;
 
-  struct binding
-  {
-    int stride{};
-    int step_rate{};
-    enum
-    {
-      per_vertex,
-      per_instance
-    } classification{};
-  };
-
-  struct attribute
-  {
-    int binding = 0;
-    enum : uint32_t
-    {
-      position = 0,
-      tex_coord = 1,
-      color = 2,
-      normal = 3,
-      tangent = 4
-    } location{};
-    enum
-    {
-      float4,
-      float3,
-      float2,
-      float1,
-      uint4,
-      uint2,
-      uint1
-    } format{};
-    int32_t offset{};
-  };
-
-  struct input
-  {
-    int buffer{}; // Index of the buffer to use
-    int64_t offset{};
-  };
-
-  std::vector<buffer> buffers;
-  std::vector<binding> bindings;
-  std::vector<attribute> attributes;
-  std::vector<input> input;
   int vertices = 0;
-  enum
-  {
-    triangles,
-    triangle_strip,
-    triangle_fan,
-    lines,
-    line_strip,
-    points
-  } topology;
-  enum
-  {
-    none,
-    front,
-    back
-  } cull_mode;
-  enum
-  {
-    counter_clockwise,
-    clockwise
-  } front_face;
+  halp::primitive_topology topology{};
+  halp::cull_mode cull_mode{};
+  halp::front_face front_face{};
 
   struct
   {
     int buffer{-1};
     int64_t offset{};
-    enum
-    {
-      uint16,
-      uint32
-    } format{};
+    halp::index_format format{};
   } index;
 };
 
+// Likewise but with GPU buffers
+struct dynamic_gpu_geometry
+{
+  std::vector<geometry_gpu_buffer> buffers;
+  std::vector<geometry_binding> bindings;
+  std::vector<geometry_attribute> attributes;
+  std::vector<geometry_input> input;
+
+  int vertices = 0;
+  halp::primitive_topology topology{};
+  halp::cull_mode cull_mode{};
+  halp::front_face front_face{};
+
+  struct
+  {
+    int buffer{-1};
+    int64_t offset{};
+    halp::index_format format{};
+  } index;
+};
 }
