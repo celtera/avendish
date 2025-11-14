@@ -1,6 +1,5 @@
 #include <catch2/catch_all.hpp>
-
-#include <examples/Advanced/Utilities/Gain.hpp>
+#include <examples/Advanced/Audio/Gain.hpp>
 TEST_CASE("Gain test", "[gain]")
 {
   ao::Gain gain;

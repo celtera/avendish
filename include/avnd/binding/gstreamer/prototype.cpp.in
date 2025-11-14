@@ -45,13 +45,13 @@ static const GstPluginDesc gst_plugin_desc
        {nullptr}};
 
 AVND_EXPORTED_SYMBOL
-const GstPluginDesc* gst_plugin_ @AVND_C_NAME @_get_desc(void)
+const GstPluginDesc* gst_plugin_@AVND_C_NAME@_get_desc(void)
 {
   return &gst_plugin_desc;
 }
 
 AVND_EXPORTED_SYMBOL
-void gst_plugin_ @AVND_C_NAME @_register(void)
+void gst_plugin_@AVND_C_NAME@_register(void)
 {
   gst_plugin_register_static(
       GST_VERSION_MAJOR, GST_VERSION_MINOR, "@AVND_C_NAME@", "description", plugin_init,

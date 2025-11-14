@@ -194,8 +194,8 @@ static void init_properties(Self& self, std::string_view classification)
 {
   using T = typename Self::type;
   static constexpr auto c_name = avnd::get_static_symbol<T>();
-  static std::string author = avnd::get_author<T>();
-  static std::string_view desc = avnd::get_description<T>();
+  static std::string author = std::string{avnd::get_author<T>()};
+  static constexpr std::string_view desc = avnd::get_description<T>();
 
   GObjectClass* gobject_class = G_OBJECT_CLASS(&self);
   gst_element_class_set_static_metadata(

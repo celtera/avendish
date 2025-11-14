@@ -299,17 +299,17 @@ endforeach()
 
 avnd_make_texture(
   TARGET NoiseBuffer
-  MAIN_FILE examples/Advanced/Utilities/NoiseBuffer.hpp
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
   MAIN_CLASS uo::NoiseBuffer
   C_NAME avnd_noisebuffer
 )
 
 avnd_make_touchdesigner(
   TARGET NoiseBuffer_chop
-  MAIN_FILE examples/Advanced/Utilities/NoiseBuffer.hpp
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
   MAIN_CLASS uo::NoiseBuffer
   C_NAME avnd_noisebuffer_chop
-  OPTYPE CHOP_MESSAGE
+  PROCESSOR_TYPE CHOP_MESSAGE
 )
 
 avnd_make_touchdesigner(
@@ -317,7 +317,7 @@ avnd_make_touchdesigner(
   MAIN_FILE examples/Raw/DoubleArray.hpp
   MAIN_CLASS examples::DoubleArray
   C_NAME avnd_doublearray
-  OPTYPE DAT
+  PROCESSOR_TYPE DAT
 )
 
 avnd_make_touchdesigner(
@@ -325,7 +325,7 @@ avnd_make_touchdesigner(
   MAIN_FILE examples/Tutorial/CubeGenerator.hpp
   MAIN_CLASS examples::CubeGenerator
   C_NAME avnd_cube
-  OPTYPE SOP
+  PROCESSOR_TYPE SOP
 )
 
 ###### Ports

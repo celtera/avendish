@@ -31,7 +31,7 @@ set(AVND_TD_SOURCES
 
 # Function to create a TouchDesigner Custom operator OP from an Avendish processor
 function(avnd_make_touchdesigner)
-  cmake_parse_arguments(AVND "" "OPTYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
+  cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
 
   if(MINGW OR CYGWIN OR MSYS OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(FATAL_ERROR "Will not build ${AVND_TARGET} (touchdesigner): MinGW is not supported, use a compiler compatible with the MSVC ABI.")
@@ -51,17 +51,17 @@ function(avnd_make_touchdesigner)
   endif()
 
   # Generate the binding cpp file from prototype template
-  string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
+  string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}_${AVND_PROCESSOR_TYPE}" MAIN_OUT_FILE)
 
   configure_file(
-    "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/${AVND_OPTYPE}.prototype.cpp.in"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/${AVND_PROCESSOR_TYPE}.prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_touchdesigner.cpp"
     @ONLY
     NEWLINE_STYLE LF
   )
 
   # Create the plugin library
-  set(AVND_FX_TARGET "${AVND_TARGET}_${AVND_OPTYPE}_td")
+  set(AVND_FX_TARGET "${AVND_TARGET}_${AVND_PROCESSOR_TYPE}_td")
 
   add_library(${AVND_FX_TARGET} MODULE)
 

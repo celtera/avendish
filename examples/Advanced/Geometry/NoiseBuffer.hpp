@@ -6,7 +6,11 @@
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <halp/texture.hpp>
+
+#include <random>
+#if __has_include(<rnd/random.hpp>)
 #include <rnd/random.hpp>
+#endif
 
 #include <algorithm>
 #include <execution>
@@ -52,7 +56,11 @@ public:
 
     std::generate(std::execution::par_unseq, points.begin(), points.end(), [] {
       static thread_local std::random_device dev;
-      static thread_local rnd::pcg engine(dev);
+#if __has_include(<rnd/random.hpp>)
+      static thread_local rnd::pcg engine{dev};
+#else
+      static thread_local std::mt19937 engine{dev()};
+#endif
       return (float(engine()) / float(UINT32_MAX));
     });
 
