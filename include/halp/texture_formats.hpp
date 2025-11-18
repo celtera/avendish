@@ -84,6 +84,60 @@ struct r8_texture
   }
 };
 
+struct r32f_texture
+{
+  static constexpr auto bytes_per_pixel = sizeof(float);
+  using uninitialized_bytes = boost::container::vector<float>;
+  enum format
+  {
+    R32F
+  };
+  float* bytes;
+  int width;
+  int height;
+  bool changed;
+
+  constexpr auto bytesize() const noexcept { return width * height * bytes_per_pixel; }
+
+  /* FIXME the allocation should not be managed by the plug-in */
+  static auto allocate(int width, int height)
+  {
+    using namespace boost::container;
+    return uninitialized_bytes(width * height, default_init);
+  }
+
+  void update(float* data, int w, int h) noexcept
+  {
+    bytes = data;
+    width = w;
+    height = h;
+    changed = true;
+  }
+
+  void set(int x, int y, int r) noexcept
+  {
+    assert(x >= 0 && x < width);
+    assert(y >= 0 && y < height);
+
+    const int pixel_index = y * width + x;
+    const int byte_index = pixel_index;
+
+    auto* pixel_ptr = bytes + byte_index;
+    pixel_ptr[0] = r;
+  }
+
+  void set(int x, int y, r_color col) noexcept
+  {
+    assert(x >= 0 && x < width);
+    assert(y >= 0 && y < height);
+
+    const int pixel_index = y * width + x;
+    const int byte_index = pixel_index;
+
+    auto* pixel_ptr = bytes + byte_index;
+    pixel_ptr[0] = col.r;
+  }
+};
 struct rgba_texture
 {
   static constexpr auto bytes_per_pixel = 4 * sizeof(unsigned char);

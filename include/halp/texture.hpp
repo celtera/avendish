@@ -203,6 +203,14 @@ struct rgb_texture_input : texture_input<lit, rgb_texture>
 {
 };
 
+template <static_string lit>
+struct texture_input<lit, r32f_texture>
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  r32f_texture texture;
+};
+
 template <static_string lit, typename TextureType = rgba_texture>
 struct fixed_texture_input : texture_input<lit, TextureType>
 {
