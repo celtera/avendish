@@ -29,6 +29,25 @@ struct enum_t
     combobox
   };
 
+#if MAGIC_ENUM_SUPPORTED
+  // FIXME eventually we would like to be able to handle
+  // enum Foo { first = 120, last = -840 };
+  // but so far the code expects contiguousness and starting at 0 in many places
+  static consteval bool enum_is_contiguous() noexcept
+  {
+    constexpr auto values = magic_enum::enum_values<Enum>();
+    int i = 0;
+    for(auto val : values)
+    {
+      if(magic_enum::enum_underlying(val) != i)
+        return false;
+      i++;
+    }
+    return true;
+  }
+  static_assert(enum_is_contiguous());
+#endif
+
   struct range
   {
 #if MAGIC_ENUM_SUPPORTED
