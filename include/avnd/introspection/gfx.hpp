@@ -6,17 +6,17 @@ namespace avnd
 {
 AVND_INLINE auto get_bytesize(const avnd::cpu_raw_buffer auto& field)
 {
-  return field.bytesize;
+  return field.byte_size;
 }
 
 AVND_INLINE auto get_bytesize(const avnd::cpu_typed_buffer auto& field)
 {
-  return field.count * sizeof(std::decay_t<decltype(field.elements[0])>);
+  return field.element_count * sizeof(std::decay_t<decltype(field.elements[0])>);
 }
 
 AVND_INLINE auto get_bytes(const avnd::cpu_raw_buffer auto& field)
 {
-  return field.bytes;
+  return field.raw_data;
 }
 
 AVND_INLINE auto get_bytes(const avnd::cpu_typed_buffer auto& field)
@@ -26,7 +26,7 @@ AVND_INLINE auto get_bytes(const avnd::cpu_typed_buffer auto& field)
 
 AVND_INLINE auto get_bytes(avnd::cpu_raw_buffer auto& field)
 {
-  return field.bytes;
+  return field.raw_data;
 }
 
 AVND_INLINE auto get_bytes(avnd::cpu_typed_buffer auto& field)

@@ -8,17 +8,37 @@
 
 namespace avnd
 {
+// When buffers are inside geometries, offset are
+// in the attributes & binding specs.
 template <typename T>
-concept cpu_raw_buffer = requires(T t) {
-  t.bytes;
-  t.bytesize;
+concept geometry_cpu_buffer = requires(T t) {
+  t.raw_data;
+  t.byte_size;
+};
+
+template <typename T>
+concept geometry_cpu_typed_buffer = requires(T t) {
+  t.elements;
+  t.element_count;
+};
+
+template <typename T>
+concept geometry_gpu_buffer = requires(T t) {
+  t.handle;
+  t.byte_size;
+};
+
+// When buffers are passed around independently, we need to pass the
+// offset to the relevant data as well, both in CPU and GPU case.
+template <typename T>
+concept cpu_raw_buffer = geometry_cpu_buffer<T> && requires(T t) {
+  t.byte_offset;
   t.changed;
 };
 
 template <typename T>
-concept cpu_typed_buffer = requires(T t) {
-  t.elements;
-  t.count;
+concept cpu_typed_buffer = geometry_cpu_typed_buffer<T> && requires(T t) {
+  t.byte_offset;
   t.changed;
 };
 
@@ -31,17 +51,14 @@ concept cpu_formatted_buffer = cpu_raw_buffer<T> && requires(T t) {
 };
 
 template <typename T>
+concept gpu_buffer = geometry_gpu_buffer<T> && requires(T t) { t.byte_offset; };
+
+template <typename T>
 concept cpu_raw_buffer_port = cpu_raw_buffer<std::decay_t<decltype(std::declval<T>().buffer)>>;
 template <typename T>
 concept cpu_typed_buffer_port = cpu_typed_buffer<std::decay_t<decltype(std::declval<T>().buffer)>>;
 template <typename T>
 concept cpu_buffer_port = cpu_raw_buffer_port<T> || cpu_typed_buffer_port<T>;
-
-template <typename T>
-concept gpu_buffer = requires (T t) {
-  t.handle;
-  t.bytesize;
-};
 
 template <typename T>
 concept gpu_buffer_port = gpu_buffer<std::decay_t<decltype(std::declval<T>().buffer)>>;

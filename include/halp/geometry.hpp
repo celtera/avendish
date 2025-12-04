@@ -20,15 +20,35 @@ enum class attribute_location : uint32_t
   normal = 3,
   tangent = 4
 };
-enum class attribute_format: uint8_t
+enum class attribute_format : uint8_t
 {
   float4,
   float3,
   float2,
   float1,
+  unormbyte4,
+  unormbyte2,
+  unormbyte1,
   uint4,
+  uint3,
   uint2,
-  uint1
+  uint1,
+  sint4,
+  sint3,
+  sint2,
+  sint1,
+  half4,
+  half3,
+  half2,
+  half1,
+  ushort4,
+  ushort3,
+  ushort2,
+  ushort1,
+  sshort4,
+  sshort3,
+  sshort2,
+  sshort1,
 };
 enum class index_format : uint8_t
 {
@@ -59,15 +79,15 @@ enum class front_face : uint8_t
 
 struct geometry_cpu_buffer
 {
-  void* data{};
-  int64_t size{};
+  void* raw_data{};
+  int64_t byte_size{};
   bool dirty{};
 };
 
 struct geometry_gpu_buffer
 {
   void* handle{};
-  int64_t size{};
+  int64_t byte_size{};
   bool dirty{};
 };
 
@@ -83,13 +103,13 @@ struct geometry_attribute
   int binding = 0;
   halp::attribute_location location{};
   halp::attribute_format format{};
-  int32_t offset{};
+  int32_t byte_offset{};
 };
 
 struct geometry_input
 {
   int buffer{}; // Index of the buffer to use
-  int64_t offset{};
+  int64_t byte_offset{};
 };
 
 template <typename T>
@@ -118,8 +138,8 @@ struct position_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } main_buffer;
   } buffers;
@@ -147,7 +167,7 @@ struct position_geometry
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
   };
@@ -157,7 +177,7 @@ struct position_geometry
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input0;
   } input;
 
@@ -183,8 +203,8 @@ struct position_color_packed_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } main_buffer;
   } buffers;
@@ -221,7 +241,7 @@ struct position_color_packed_geometry
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
 
@@ -232,7 +252,7 @@ struct position_color_packed_geometry
         color
       };
       using datatype = float[3];
-      int32_t offset = 3 * sizeof(float);
+      int32_t byte_offset = 3 * sizeof(float);
       int32_t binding = 0;
     } color;
   };
@@ -242,7 +262,7 @@ struct position_color_packed_geometry
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input0;
   } input;
 
@@ -267,8 +287,8 @@ struct position_normals_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } main_buffer;
   } buffers;
@@ -306,7 +326,7 @@ struct position_normals_geometry
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
 
@@ -317,7 +337,7 @@ struct position_normals_geometry
         normal
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 1;
     } normal;
   };
@@ -327,12 +347,12 @@ struct position_normals_geometry
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input0;
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input1;
   } input;
 
@@ -358,8 +378,8 @@ struct position_texcoords_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } main_buffer;
   } buffers;
@@ -397,7 +417,7 @@ struct position_texcoords_geometry
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
 
@@ -408,7 +428,7 @@ struct position_texcoords_geometry
         texcoord
       };
       using datatype = float[2];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 1;
     } texcoord;
   };
@@ -418,12 +438,12 @@ struct position_texcoords_geometry
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input0;
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input1;
   } input;
 
@@ -449,8 +469,8 @@ struct position_normals_texcoords_geometry_base
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } main_buffer;
   } buffers;
@@ -498,7 +518,7 @@ struct position_normals_texcoords_geometry_base
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
 
@@ -509,7 +529,7 @@ struct position_normals_texcoords_geometry_base
         normal
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 1;
     } normal;
     struct
@@ -519,7 +539,7 @@ struct position_normals_texcoords_geometry_base
         texcoord
       };
       using datatype = float[2];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 2;
     } texcoord;
   };
@@ -529,17 +549,17 @@ struct position_normals_texcoords_geometry_base
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input0;
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0; // Offset has to be set correctly by the user at runtime
+      int byte_offset = 0; // Offset has to be set correctly by the user at runtime
     } input1;
     struct
     {
       static constexpr auto buffer() { return &buffers::main_buffer; }
-      int offset = 0;
+      int byte_offset = 0;
     } input2;
   } input;
 
@@ -588,8 +608,8 @@ struct position_normals_color_index_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } position_buffer;
     struct
@@ -599,8 +619,8 @@ struct position_normals_color_index_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } normal_buffer;
     struct
@@ -610,8 +630,8 @@ struct position_normals_color_index_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } color_buffer;
     struct
@@ -621,8 +641,8 @@ struct position_normals_color_index_geometry
         dynamic,
         vertex
       };
-      uint32_t* data{};
-      int size{};
+      uint32_t* elements{};
+      int element_count{};
       bool dirty{};
     } index_buffer;
   } buffers;
@@ -670,7 +690,7 @@ struct position_normals_color_index_geometry
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
 
@@ -681,7 +701,7 @@ struct position_normals_color_index_geometry
         normal
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 1;
     } normal;
 
@@ -692,7 +712,7 @@ struct position_normals_color_index_geometry
         color
       };
       using datatype = float[4];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 2;
     } texcoord;
   };
@@ -702,24 +722,24 @@ struct position_normals_color_index_geometry
     struct
     {
       static constexpr auto buffer() { return &buffers::position_buffer; }
-      static constexpr int offset() { return 0; }
+      static constexpr int byte_offset() { return 0; }
     } input0;
     struct
     {
       static constexpr auto buffer() { return &buffers::normal_buffer; }
-      static constexpr int offse() { return 0; }
+      static constexpr int byte_offset() { return 0; }
     } input1;
     struct
     {
       static constexpr auto buffer() { return &buffers::color_buffer; }
-      static constexpr int offset() { return 0; }
+      static constexpr int byte_offset() { return 0; }
     } input2;
   } input;
 
   struct
   {
     static constexpr auto buffer() { return &buffers::index_buffer; }
-    static constexpr int offset() { return 0; }
+    static constexpr int byte_offset() { return 0; }
     enum format { uint32 };
   } index;
 
@@ -745,8 +765,8 @@ struct position_normals_color_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } position_buffer;
     struct
@@ -756,8 +776,8 @@ struct position_normals_color_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } normal_buffer;
     struct
@@ -767,8 +787,8 @@ struct position_normals_color_geometry
         dynamic,
         vertex
       };
-      float* data{};
-      int size{};
+      float* elements{};
+      int element_count{};
       bool dirty{};
     } color_buffer;
   } buffers;
@@ -816,7 +836,7 @@ struct position_normals_color_geometry
         position
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 0;
     } position;
 
@@ -827,7 +847,7 @@ struct position_normals_color_geometry
         normal
       };
       using datatype = float[3];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 1;
     } normal;
 
@@ -838,7 +858,7 @@ struct position_normals_color_geometry
         color
       };
       using datatype = float[4];
-      int32_t offset = 0;
+      int32_t byte_offset = 0;
       int32_t binding = 2;
     } texcoord;
   };
@@ -848,17 +868,17 @@ struct position_normals_color_geometry
     struct
     {
       static constexpr auto buffer() { return &buffers::position_buffer; }
-      static constexpr int offset() { return 0; }
+      static constexpr int byte_offset() { return 0; }
     } input0;
     struct
     {
       static constexpr auto buffer() { return &buffers::normal_buffer; }
-      static constexpr int offse() { return 0; }
+      static constexpr int byte_offset() { return 0; }
     } input1;
     struct
     {
       static constexpr auto buffer() { return &buffers::color_buffer; }
-      static constexpr int offset() { return 0; }
+      static constexpr int byte_offset() { return 0; }
     } input2;
   } input;
 
@@ -875,6 +895,8 @@ struct dynamic_geometry
   std::vector<geometry_input> input;
 
   int vertices = 0;
+  int indices = 0;
+  int instances = 1;
   halp::primitive_topology topology{};
   halp::cull_mode cull_mode{};
   halp::front_face front_face{};
@@ -882,7 +904,7 @@ struct dynamic_geometry
   struct
   {
     int buffer{-1};
-    int64_t offset{};
+    int64_t byte_offset{};
     halp::index_format format{};
   } index;
 };
@@ -896,6 +918,8 @@ struct dynamic_gpu_geometry
   std::vector<geometry_input> input;
 
   int vertices = 0;
+  int indices = 0;
+  int instances = 1;
   halp::primitive_topology topology{};
   halp::cull_mode cull_mode{};
   halp::front_face front_face{};
@@ -903,7 +927,7 @@ struct dynamic_gpu_geometry
   struct
   {
     int buffer{-1};
-    int64_t offset{};
+    int64_t byte_offset{};
     halp::index_format format{};
   } index;
 };

@@ -200,10 +200,10 @@ private:
         else
           position_binding_idx = 0;
 
-        if constexpr(requires { attr.offset(); })
-          position_offset = attr.offset();
-        else if constexpr(requires { attr.offset; })
-          position_offset = attr.offset;
+        if constexpr(requires { attr.byte_offset(); })
+          position_offset = attr.byte_offset();
+        else if constexpr(requires { attr.byte_offset; })
+          position_offset = attr.byte_offset;
         else
           position_offset = 0;
 
@@ -237,10 +237,10 @@ private:
         else if constexpr(requires { input.buffer; })
           buffer_idx = input.buffer;
 
-        if constexpr(requires { input.offset(); })
-          buffer_offset = input.offset();
-        else if constexpr(requires { input.offset; })
-          buffer_offset = input.offset;
+        if constexpr(requires { input.byte_offset(); })
+          buffer_offset = input.byte_offset();
+        else if constexpr(requires { input.byte_offset; })
+          buffer_offset = input.byte_offset;
       }
       input_idx++;
     });
@@ -313,8 +313,8 @@ private:
 
       if constexpr(requires { attr.binding; })
         attr_binding = attr.binding;
-      if constexpr(requires { attr.offset; })
-        attr_offset = attr.offset;
+      if constexpr(requires { attr.byte_offset; })
+        attr_offset = attr.byte_offset;
 
       // Get stride from binding
       int attr_stride = 0;
@@ -339,10 +339,10 @@ private:
           else if constexpr(requires { input.buffer; })
             buffer_idx = input.buffer;
 
-          if constexpr(requires { input.offset(); })
-            buffer_offset = input.offset();
-          else if constexpr(requires { input.offset; })
-            buffer_offset = input.offset;
+          if constexpr(requires { input.byte_offset(); })
+            buffer_offset = input.byte_offset();
+          else if constexpr(requires { input.byte_offset; })
+            buffer_offset = input.byte_offset;
         }
         input_idx++;
       });
@@ -445,10 +445,10 @@ private:
           else if constexpr(requires { input.buffer; })
             buffer_idx = input.buffer;
 
-          if constexpr(requires { input.offset(); })
-            buffer_offset = input.offset();
-          else if constexpr(requires { input.offset; })
-            buffer_offset = input.offset;
+          if constexpr(requires { input.byte_offset(); })
+            buffer_offset = input.byte_offset();
+          else if constexpr(requires { input.byte_offset; })
+            buffer_offset = input.byte_offset;
         }
 
         // Read the indices 3 by 3
