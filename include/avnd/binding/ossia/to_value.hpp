@@ -93,6 +93,13 @@ struct to_ossia_value_impl
     val = (float)f;
   }
 
+  template <typename F>
+    requires(std::is_enum_v<F>)
+  void operator()(const F& f)
+  {
+    val = (int)f;
+  }
+
   void operator()(std::string_view f) { val = std::string(f); }
 
   void operator()(const std::string& f) { val = f; }
