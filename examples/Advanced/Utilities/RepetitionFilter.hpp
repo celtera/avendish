@@ -24,7 +24,7 @@ struct RepetitionFilter
 
   struct
   {
-    halp::val_port<"Input", ossia::value> input;
+    halp::val_port<"Input", std::optional<ossia::value>> input;
   } inputs;
 
   struct
@@ -36,14 +36,17 @@ struct RepetitionFilter
 
   void operator()()
   {
-    if(!previous_value || inputs.input.value != *previous_value)
+    if(inputs.input.value)
     {
-      outputs.output.value = inputs.input.value;
-      previous_value = inputs.input.value;
-    }
-    else
-    {
-      outputs.output.value = std::nullopt;
+      if(!previous_value || *inputs.input.value != *previous_value)
+      {
+        outputs.output.value = *inputs.input.value;
+        previous_value = *inputs.input.value;
+      }
+      else
+      {
+        outputs.output.value = std::nullopt;
+      }
     }
   }
 };
