@@ -125,6 +125,15 @@ struct string_enum_t
   }
 };
 
+template <static_string lit, typename Enum>
+struct combobox_t : enum_t<Enum, lit>
+{
+  enum widget
+  {
+    combobox
+  };
+};
+
 /* the science isn't there yet...
  * last try: https://gcc.godbolt.org/z/4Y8hvcqch 
 template<typename T>
