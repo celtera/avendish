@@ -72,6 +72,7 @@ struct MidiFilter
     } index;
     halp::enum_t<Mode, "Mode"> mode;
     halp::toggle<"Note off to zero"> note_off_to_zero;
+    halp::toggle<"Zero to note off"> zero_to_note_off;
   } inputs;
 
   struct
@@ -185,78 +186,110 @@ struct MidiFilter
       if(inputs.channel != 0 && m.get_channel() == inputs.channel)
         continue;
 
+      auto add_note_on = [this, &m] {
+        running[m.bytes[1]] = m.bytes[2];
+        output_2_bytes(m);
+        push_poly(m.timestamp);
+      };
+      auto remove_note_off = [this, &m] {
+        running.erase(m.bytes[1]);
+        output_2_bytes(m);
+        push_poly(m.timestamp);
+      };
+      auto process_note_on = [&] {
+        if(inputs.zero_to_note_off && m.bytes[2] == 0)
+          remove_note_off();
+        else
+          add_note_on();
+      };
+
+      auto process_note_off_running = [&] {
+        const int pitch = (int)m.bytes[1];
+        running.erase(pitch);
+
+        if(inputs.index == 0 || inputs.index == m.bytes[1])
+        {
+          outputs.midi.push_back(m);
+          if(inputs.note_off_to_zero)
+          {
+            switch(inputs.mode)
+            {
+              case Both: {
+                outputs.raw(m.timestamp, note_int{pitch, 0});
+                outputs.normalized(m.timestamp, note_float{pitch, 0.f});
+                break;
+              }
+              case Index: {
+                outputs.raw(m.timestamp, pitch);
+                outputs.normalized(m.timestamp, 0.);
+                break;
+              }
+              case Value: {
+                outputs.raw(m.timestamp, 0);
+                outputs.normalized(m.timestamp, 0.);
+                break;
+              }
+            }
+            push_poly_with_note_offs(m.timestamp, pitch);
+          }
+          else
+          {
+            push_poly(m.timestamp);
+          }
+        }
+      };
+
       const auto t = m.get_message_type();
       switch(inputs.filter)
       {
         case Type::NoteOn:
-        note_on:
           if(t == libremidi::message_type::NOTE_ON)
           {
-            running[m.bytes[1]] = m.bytes[2];
-            output_2_bytes(m);
-            push_poly(m.timestamp);
+            if(inputs.zero_to_note_off && m.bytes[2] == 0)
+            {
+              running.erase(m.bytes[1]);
+              push_poly(m.timestamp);
+            }
+            else
+            {
+              add_note_on();
+            }
           }
           break;
+
         case Type::NoteOff:
-        note_off:
-          if(t == libremidi::message_type::NOTE_OFF)
+          if(t == libremidi::message_type::NOTE_ON)
           {
-            running.erase(m.bytes[1]);
-            output_2_bytes(m);
-            push_poly(m.timestamp);
+            if(inputs.zero_to_note_off && m.bytes[2] == 0)
+              remove_note_off();
           }
+          else if(t == libremidi::message_type::NOTE_OFF)
+            remove_note_off();
           break;
 
         // In this case we transmit note ons / note offs normally
         case Type::NoteAny:
           if(t == libremidi::message_type::NOTE_ON)
-            goto note_on;
+            process_note_on();
           else if(t == libremidi::message_type::NOTE_OFF)
-            goto note_off;
+            remove_note_off();
+          break;
 
         // In this case we want the poly array to inform us about the running notes
         // In particular we take note off into account but we don't output them other than at zero if requested.
         // They will still be output from the midi out.
         case Type::NoteRunning:
           if(t == libremidi::message_type::NOTE_ON)
-            goto note_on;
-          else if(t == libremidi::message_type::NOTE_OFF)
           {
-            const int pitch = (int)m.bytes[1];
-            running.erase(pitch);
-
-            if(inputs.index == 0 || inputs.index == m.bytes[1])
-            {
-              outputs.midi.push_back(m);
-              if(inputs.note_off_to_zero)
-              {
-                switch(inputs.mode)
-                {
-                  case Both: {
-                    outputs.raw(m.timestamp, note_int{pitch, 0});
-                    outputs.normalized(m.timestamp, note_float{pitch, 0.f});
-                    break;
-                  }
-                  case Index: {
-                    outputs.raw(m.timestamp, pitch);
-                    outputs.normalized(m.timestamp, 0.);
-                    break;
-                  }
-                  case Value: {
-                    outputs.raw(m.timestamp, 0);
-                    outputs.normalized(m.timestamp, 0.);
-                    break;
-                  }
-                }
-                push_poly_with_note_offs(m.timestamp, pitch);
-              }
-              else
-              {
-                push_poly(m.timestamp);
-              }
-            }
+            if(inputs.zero_to_note_off && m.bytes[2] == 0)
+              process_note_off_running();
+            else
+              process_note_on();
           }
+          else if(t == libremidi::message_type::NOTE_OFF)
+            process_note_off_running();
           break;
+
         case Type::AfterTouch:
           if(t == libremidi::message_type::AFTERTOUCH)
           {
