@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/audio.hpp>
+#include <halp/buffer.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
-#include <halp/texture.hpp>
 
 namespace uo
 {
@@ -27,15 +27,16 @@ public:
 
   struct
   {
-    halp::buffer_output<"Output"> main;
+    halp::cpu_buffer_output<"Output"> main;
   } outputs;
 
   void operator()() noexcept
   {
     const int num_elements = inputs.main.value.size();
-    outputs.main.create<float>(num_elements);
-    memcpy(outputs.main.buffer.bytes, inputs.main.value.data(), outputs.main.buffer.bytesize);
-    outputs.main.upload();
+    outputs.main.buffer.raw_data = (unsigned char*)inputs.main.value.data();
+    outputs.main.buffer.byte_size = inputs.main.value.size() * sizeof(float);
+    outputs.main.buffer.byte_offset = 0;
+    outputs.main.buffer.changed = true;
   }
 };
 }

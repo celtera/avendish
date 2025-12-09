@@ -798,9 +798,11 @@ void meshes_from_ossia(const ossia::mesh_list_ptr& src, T& dst)
 template <typename T>
 void geometry_from_ossia(
     const ossia::geometry_port& src, T& dst, auto&& cpu_to_gpu, auto&& gpu_to_cpu)
+    = delete;
+/*
 {
   meshes_from_ossia(src.geometry.meshes, dst.mesh, cpu_to_gpu, gpu_to_cpu);
   static_assert(sizeof(dst.transform) / sizeof(dst.transform[0]) == 16);
   std::copy_n(src.transform.matrix, std::ssize(src.transform.matrix), dst.transform);
-}
+}*/
 }

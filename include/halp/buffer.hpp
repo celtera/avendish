@@ -4,6 +4,7 @@
 #include <halp/static_string.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <string_view>
 
@@ -21,6 +22,11 @@ struct raw_buffer
   {
     return {raw_data + byte_offset, std::size_t(byte_size - byte_offset)};
   }
+};
+
+struct raw_output_buffer : raw_buffer
+{
+  std::function<void(const char* data, int64_t offset, int64_t bytesize)> upload;
 };
 
 template <typename T>
@@ -72,7 +78,7 @@ struct cpu_buffer_output
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  halp::raw_buffer buffer{};
+  halp::raw_output_buffer buffer{};
 
   template <typename T>
   auto create(int64_t sz)
