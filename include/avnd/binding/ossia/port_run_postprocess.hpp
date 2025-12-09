@@ -237,9 +237,12 @@ struct process_after_run
   {
   }
 
+  // Only done on gpu nodes now.
   template <avnd::geometry_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::geometry_outlet& port, avnd::field_index<Idx>) const noexcept
+      = delete;
+  /*
   {
     using namespace avnd;
     bool mesh_dirty{};
@@ -286,6 +289,7 @@ struct process_after_run
     if(tform_dirty)
       port.data.flags = port.data.flags | ossia::geometry_port::dirty_transform;
   }
+*/
 };
 
 }

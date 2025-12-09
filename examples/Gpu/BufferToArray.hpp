@@ -1,11 +1,10 @@
 #pragma once
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-
 #include <halp/audio.hpp>
+#include <halp/buffer.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
-#include <halp/texture.hpp>
 
 namespace uo
 {
@@ -22,7 +21,7 @@ public:
 
   struct
   {
-    halp::buffer_input<"Input"> main;
+    halp::cpu_buffer_input<"Input"> main;
   } inputs;
 
   struct
@@ -32,10 +31,10 @@ public:
 
   void operator()() noexcept
   {
-    auto sz = inputs.main.buffer.bytesize;
+    auto sz = inputs.main.buffer.byte_size;
     if((sz % sizeof(float)) == 0) {
       outputs.main.value.resize(sz / sizeof(float));
-      memcpy(outputs.main.value.data(), inputs.main.buffer.bytes, sz);
+      memcpy(outputs.main.value.data(), inputs.main.buffer.raw_data, sz);
     }
   }
 };
