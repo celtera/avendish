@@ -20,9 +20,22 @@ public:
   halp_meta(author, "ossia score")
   halp_meta(uuid, "3127c11b-61d3-4d5e-a896-8b56e628dfbc")
 
+  enum Type
+  {
+    Float32,
+    Float64,
+    SInt32,
+    UInt32,
+    SInt16,
+    UInt16,
+    SInt8,
+    UInt8,
+  };
+
   struct
   {
     halp::val_port<"Input", std::vector<float>> main;
+    halp::enum_t<Type, "Type"> type;
   } inputs;
 
   struct
@@ -30,13 +43,47 @@ public:
     halp::cpu_buffer_output<"Output"> main;
   } outputs;
 
+  template <typename T>
+  void process()
+  {
+    if constexpr(std::is_same_v<T, decltype(inputs.main.value)::value_type>)
+    {
+      // Direct reuse of the buffer
+      outputs.main.buffer.raw_data = (unsigned char*)inputs.main.value.data();
+      outputs.main.buffer.byte_size = inputs.main.value.size() * sizeof(float);
+      outputs.main.buffer.byte_offset = 0;
+      outputs.main.buffer.changed = true;
+    }
+    else
+    {
+      // Allocation and copy :'(
+      auto span = outputs.main.create<T>(inputs.main.value.size());
+      std::copy_n(inputs.main.value.data(), inputs.main.value.size(), span.data());
+      outputs.main.buffer.changed = true;
+    }
+  }
+
   void operator()() noexcept
   {
-    const int num_elements = inputs.main.value.size();
-    outputs.main.buffer.raw_data = (unsigned char*)inputs.main.value.data();
-    outputs.main.buffer.byte_size = inputs.main.value.size() * sizeof(float);
-    outputs.main.buffer.byte_offset = 0;
-    outputs.main.buffer.changed = true;
+    switch(inputs.type)
+    {
+      case Type::Float32:
+        return process<float>();
+      case Type::Float64:
+        return process<double>();
+      case Type::SInt32:
+        return process<int32_t>();
+      case Type::UInt32:
+        return process<uint32_t>();
+      case Type::SInt16:
+        return process<int16_t>();
+      case Type::UInt16:
+        return process<uint16_t>();
+      case Type::SInt8:
+        return process<int8_t>();
+      case Type::UInt8:
+        return process<uint8_t>();
+    }
   }
 };
 }
