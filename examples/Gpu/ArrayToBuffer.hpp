@@ -32,9 +32,11 @@ public:
     UInt8,
   };
 
+  using input_value_type = float;
+
   struct
   {
-    halp::val_port<"Input", std::vector<float>> main;
+    halp::val_port<"Input", std::vector<input_value_type>> main;
     halp::enum_t<Type, "Type"> type;
   } inputs;
 
@@ -46,7 +48,7 @@ public:
   template <typename T>
   void process()
   {
-    if constexpr(std::is_same_v<T, decltype(inputs.main.value)::value_type>)
+    if constexpr(std::is_same_v<T, input_value_type>)
     {
       // Direct reuse of the buffer
       outputs.main.buffer.raw_data = (unsigned char*)inputs.main.value.data();
