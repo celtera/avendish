@@ -1,14 +1,10 @@
 #pragma once
+#include <avnd/binding/ossia/metadatas.hpp>
 #include <halp/polyfill.hpp>
 #include <score/plugins/UuidKey.hpp>
 
 namespace oscr
 {
-inline QString fromStringView(std::string_view v)
-{
-  return QString::fromUtf8(v.data(), v.size());
-}
-
 template <typename N>
 consteval score::uuid_t uuid_from_string()
 {
