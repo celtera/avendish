@@ -35,6 +35,7 @@ enum class widget_type
   xyz_spinbox,
   color,
   time_chooser,
+  folder,
   bargraph,
   range_slider,
   range_spinbox,
@@ -92,6 +93,8 @@ struct widget_reflection
         return "color";
       case widget_type::time_chooser:
         return "time_chooser";
+      case widget_type::folder:
+        return "folder";
       case widget_type::bargraph:
         return "bargraph";
       case widget_type::range_slider:
@@ -204,6 +207,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::time_chooser; })
   {
     return time_chooser_reflection<float>{slider_orientation::horizontal};
+  }
+  else if constexpr(requires { T::widget::folder; })
+  {
+    return widget_reflection<std::string>{widget_type::folder};
   }
   else if constexpr(requires { T::widget::multi_slider; })
   {

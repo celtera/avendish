@@ -51,4 +51,16 @@ struct file_port
 
   FileType file;
 };
+
+template <halp::static_string lit>
+struct folder_port
+{
+  enum widget { folder };
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  HALP_INLINE_FLATTEN operator std::string_view() noexcept { return value; }
+  HALP_INLINE_FLATTEN operator bool() const noexcept { return !value.empty(); }
+
+  std::string value;
+};
 }
