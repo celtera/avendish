@@ -15,6 +15,12 @@
 
 namespace oscr
 {
+static inline auto& thread_local_midi_1to2_converter_instance()
+{
+  static thread_local libremidi::midi1_to_midi2 conv;
+  return conv;
+}
+
 template <typename Exec_T, typename Obj_T>
 struct process_after_run
 {
@@ -176,23 +182,32 @@ struct process_after_run
   {
     const int N = ctrl.midi_messages.size;
     port.data.messages.clear();
-    port.data.messages.reserve(N);
-    for(int i = 0; i < N; i++)
+    if(N > 0)
     {
-      auto& m = ctrl.midi_messages[i];
-      using msg_type = std::remove_reference_t<decltype(m)>;
-      if constexpr(std::is_same_v<msg_type, libremidi::message>)
+      auto& conv = thread_local_midi_1to2_converter_instance();
+      cmidi2_midi_conversion_context_initialize(&conv.context);
+      port.data.messages.reserve(N);
+      for(int i = 0; i < N; i++)
       {
-        m.timestamp += start;
-        port.data.messages.push_back(std::move(m));
-      }
-      else
-      {
-        libremidi::ump ms;
-        cmidi2_midi1_channel_voice_to_midi2(m.bytes.data(), m.bytes.size(), ms.data);
-        ms.timestamp = start + m.timestamp;
-
-        port.data.messages.push_back(std::move(ms));
+        avnd::midi_message auto& m = ctrl.midi_messages[i];
+        using msg_type = std::remove_reference_t<decltype(m)>;
+        if constexpr(std::is_same_v<msg_type, libremidi::message>)
+        {
+          m.timestamp += start;
+          port.data.messages.push_back(std::move(m));
+        }
+        else
+        {
+          conv.convert(
+              m.data(), m.size(), start + m.timestamp,
+              [&](const uint32_t* ump, int count, int64_t ts) {
+            libremidi::ump u;
+            std::copy_n(ump, std::min(count, 4), u.data);
+            u.timestamp = ts;
+            port.data.messages.push_back(std::move(u));
+            return stdx::error{};
+          });
+        }
       }
     }
   }
@@ -204,23 +219,34 @@ struct process_after_run
   void operator()(
       Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    const int N = ctrl.midi_messages.size();
     port.data.messages.clear();
-    port.data.messages.reserve(ctrl.midi_messages.size());
-    for(auto& m : ctrl.midi_messages)
-    {
-      using msg_type = std::remove_reference_t<decltype(m)>;
-      if constexpr(std::is_same_v<msg_type, libremidi::message>)
-      {
-        m.timestamp += start;
-        port.data.messages.push_back(libremidi::ump_from_midi1(m));
-      }
-      else
-      {
-        libremidi::ump ms;
-        cmidi2_midi1_channel_voice_to_midi2(m.bytes.data(), m.bytes.size(), ms.data);
-        ms.timestamp = start + m.timestamp;
 
-        port.data.messages.push_back(std::move(ms));
+    if(N > 0)
+    {
+      auto& conv = thread_local_midi_1to2_converter_instance();
+      cmidi2_midi_conversion_context_initialize(&conv.context);
+      port.data.messages.reserve(N);
+      for(auto& m : ctrl.midi_messages)
+      {
+        using msg_type = std::remove_reference_t<decltype(m)>;
+        if constexpr(std::is_same_v<msg_type, libremidi::message>)
+        {
+          m.timestamp += start;
+          port.data.messages.push_back(libremidi::ump_from_midi1(m));
+        }
+        else
+        {
+          conv.convert(
+              m.bytes.data(), m.bytes.size(), start + m.timestamp,
+              [&](const uint32_t* ump, int count, int64_t ts) {
+            libremidi::ump u;
+            std::copy_n(ump, std::min(count, 4), u.data);
+            u.timestamp = ts;
+            port.data.messages.push_back(std::move(u));
+            return stdx::error{};
+          });
+        }
       }
     }
   }
