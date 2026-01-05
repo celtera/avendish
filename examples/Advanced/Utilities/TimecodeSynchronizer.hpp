@@ -14,9 +14,9 @@
 namespace ao
 {
 
-struct SmoothTimecodeSynchronizer
+struct TimecodeSynchronizer
 {
-  halp_meta(name, "Smooth Timecode Synchronizer")
+  halp_meta(name, "Timecode Synchronizer")
   halp_meta(c_name, "smooth_timecode_synchronizer")
   halp_meta(category, "Control/Timing")
   halp_meta(author, "Jean-Michaël Celerier")
@@ -25,8 +25,7 @@ struct SmoothTimecodeSynchronizer
       "Converts timecode and/or speed inputs into smooth speed variations "
       "with minimal position jumps, optimized for audio resampling.")
   halp_meta(
-      manual_url,
-      "https://ossia.io/score-docs/processes/smooth-timecode-synchronizer.html")
+      manual_url, "https://ossia.io/score-docs/processes/timecode-synchronizer.html")
   halp_meta(uuid, "d479d5cc-d4cb-4180-80b1-44ec1786bca3")
 
   enum TimeFormat
@@ -40,21 +39,29 @@ struct SmoothTimecodeSynchronizer
 
   enum SyncMode
   {
-    TimecodeAndSpeed,
-    SpeedOnly,
-    TimecodeOnly,
+    Both,
+    Speed,
+    Timecode,
+  };
+
+  enum NoSyncBehaviour
+  {
+    Stall,
+    Zero,
+    KeepSpeed,
   };
 
   struct
   {
     // Input values
-    halp::val_port<"Speed", double> estimatedSpeed{1.0};
     halp::val_port<"Timecode", double> estimatedTimecode{0.0};
+    halp::val_port<"Speed", double> estimatedSpeed{1.0};
     halp::val_port<"Validity", bool> validInput{false};
 
     // Sync configuration
-    halp::combobox_t<"Sync Mode", SyncMode> syncMode{SyncMode::TimecodeAndSpeed};
+    halp::combobox_t<"Sync Mode", SyncMode> syncMode{SyncMode::Both};
     halp::combobox_t<"Input format", TimeFormat> inputFormat{TimeFormat::Seconds};
+    halp::combobox_t<"If no sync", NoSyncBehaviour> noSyncBehaviour{Stall};
 
     // Algorithm parameters
     halp::knob_f32<"Jump threshold", halp::range{0.001, 10, 1.}> positionJumpThreshold{
@@ -82,8 +89,7 @@ struct SmoothTimecodeSynchronizer
     halp::val_port<"Speed", double> speed{1.0};
     halp::val_port<"Tempo", double> tempo{120.0};
     halp::val_port<"Timecode", std::optional<double>> timecode{};
-    halp::val_port<"Estimated Speed", double> estimatedSpeed{
-        1.0}; // For debugging timecode-only mode
+    halp::val_port<"Estimated Speed", double> estimatedSpeed{1.0};
   } outputs;
 
   halp::setup config;
@@ -91,7 +97,7 @@ struct SmoothTimecodeSynchronizer
   {
     config = s;
     // Clear history when setup changes
-    timecodeHistory_.clear();
+    m_timecode_history.clear();
   }
 
   using tick = halp::tick_flicks;
@@ -101,35 +107,35 @@ struct SmoothTimecodeSynchronizer
       return;
 
     auto deltaTime = tk.frames / config.rate;
-    systemTime_ += deltaTime;
+    m_system_time += deltaTime;
 
-    if(!initialized_)
+    if(!m_initialized)
     {
       initialize();
-      outputs.speed = currentSpeed_;
+      outputs.speed = m_current_speed;
       outputs.tempo = currentOutputTempo();
-      outputs.timecode = currentOutputTimecode(currentPosition_);
-      outputs.estimatedSpeed = derivedSpeed_;
+      outputs.timecode = currentOutputTimecode(m_current_position);
+      outputs.estimatedSpeed = m_derived_speed;
       return;
     }
 
     // Update our position based on current speed
-    currentPosition_ += currentSpeed_ * deltaTime;
+    m_current_position += m_current_speed * deltaTime;
 
     // Process based on sync mode
     bool hasValidInput = false;
 
     switch(inputs.syncMode)
     {
-      case SyncMode::SpeedOnly:
+      case SyncMode::Speed:
         hasValidInput = processSpeedOnly(deltaTime);
         break;
 
-      case SyncMode::TimecodeOnly:
+      case SyncMode::Timecode:
         hasValidInput = processTimecodeOnly(deltaTime);
         break;
 
-      case SyncMode::TimecodeAndSpeed:
+      case SyncMode::Both:
         hasValidInput = processTimecodeAndSpeed(deltaTime);
         break;
     }
@@ -140,30 +146,30 @@ struct SmoothTimecodeSynchronizer
     }
 
     // Apply speed smoothing
-    currentSpeed_ = inputs.speedSmoothingFactor * currentSpeed_
-                    + (1.0 - inputs.speedSmoothingFactor) * targetSpeed_;
+    m_current_speed = inputs.speedSmoothingFactor * m_current_speed
+                      + (1.0 - inputs.speedSmoothingFactor) * m_target_speed;
 
     // Update outputs
-    outputs.speed = currentSpeed_;
+    outputs.speed = m_current_speed;
     outputs.tempo = currentOutputTempo();
-    outputs.estimatedSpeed = derivedSpeed_;
+    outputs.estimatedSpeed = m_derived_speed;
   }
 
   void reset()
   {
-    currentPosition_ = 0.0;
-    currentSpeed_ = 1.0;
-    targetSpeed_ = 1.0;
-    derivedSpeed_ = 1.0;
-    lastValidInputTime_ = 0.0;
-    positionError_ = 0.0;
-    initialized_ = false;
-    inDeadReckoning_ = false;
-    systemTime_ = 0.0;
-    timecodeHistory_.clear();
-    lastTimecodeValue_ = 0.0;
-    lastTimecodeTime_ = 0.0;
-    hasLastTimecode_ = false;
+    m_current_position = 0.0;
+    m_current_speed = 0.0;
+    m_target_speed = 0.0;
+    m_derived_speed = 1.0;
+    m_last_valid_input_time = 0.0;
+    m_position_error = 0.0;
+    m_initialized = false;
+    m_in_dead_reckoning = false;
+    m_system_time = 0.0;
+    m_timecode_history.clear();
+    m_last_timecode_value = 0.0;
+    m_last_timecode_time = 0.0;
+    m_has_last_timecode = false;
   }
 
 private:
@@ -210,37 +216,37 @@ private:
     }
   }
 
-  double currentOutputTempo() { return currentSpeed_ * 120.; }
+  double currentOutputTempo() { return m_current_speed * 120.; }
 
   void initialize()
   {
     if(inputs.validInput)
     {
-      currentPosition_ = currentInputTimecode();
+      m_current_position = currentInputTimecode();
 
       switch(inputs.syncMode)
       {
-        case SyncMode::SpeedOnly:
-          currentSpeed_ = inputs.estimatedSpeed;
-          targetSpeed_ = inputs.estimatedSpeed;
+        case SyncMode::Speed:
+          m_current_speed = inputs.estimatedSpeed;
+          m_target_speed = inputs.estimatedSpeed;
           break;
 
-        case SyncMode::TimecodeOnly:
+        case SyncMode::Timecode:
           // Start with normal speed, will derive from timecode changes
-          currentSpeed_ = 1.0;
-          targetSpeed_ = 1.0;
-          lastTimecodeValue_ = currentPosition_;
-          lastTimecodeTime_ = systemTime_;
-          hasLastTimecode_ = true;
+          m_current_speed = 1.0;
+          m_target_speed = 1.0;
+          m_last_timecode_value = m_current_position;
+          m_last_timecode_time = m_system_time;
+          m_has_last_timecode = true;
           break;
 
-        case SyncMode::TimecodeAndSpeed:
-          currentSpeed_ = inputs.estimatedSpeed;
-          targetSpeed_ = inputs.estimatedSpeed;
+        case SyncMode::Both:
+          m_current_speed = inputs.estimatedSpeed;
+          m_target_speed = inputs.estimatedSpeed;
           break;
       }
 
-      initialized_ = true;
+      m_initialized = true;
     }
   }
 
@@ -250,9 +256,9 @@ private:
       return false;
 
     // Simply follow the input speed
-    targetSpeed_ = inputs.estimatedSpeed;
-    lastValidInputTime_ = 0.0;
-    inDeadReckoning_ = false;
+    m_target_speed = inputs.estimatedSpeed;
+    m_last_valid_input_time = 0.0;
+    m_in_dead_reckoning = false;
 
     return true;
   }
@@ -265,78 +271,68 @@ private:
     double currentTimecode = currentInputTimecode();
 
     // Add to history
-    timecodeHistory_.push_back({currentTimecode, systemTime_});
+    m_timecode_history.push_back({currentTimecode, m_system_time});
 
     // Remove old entries outside the estimation window
-    while(!timecodeHistory_.empty()
-          && (systemTime_ - timecodeHistory_.front().time)
+    while(!m_timecode_history.empty()
+          && (m_system_time - m_timecode_history.front().time)
                  > inputs.speedEstimationWindow)
     {
-      timecodeHistory_.pop_front();
+      m_timecode_history.pop_front();
     }
 
     // Estimate speed from timecode history
-    if(timecodeHistory_.size() >= 2)
+    if(m_timecode_history.size() >= 2)
     {
       // Use linear regression or simple slope calculation
       double estimatedSpeed = estimateSpeedFromHistory();
 
       // Apply filtering to smooth the estimated speed
-      derivedSpeed_ = inputs.speedFilterStrength * derivedSpeed_
-                      + (1.0 - inputs.speedFilterStrength) * estimatedSpeed;
+      m_derived_speed = inputs.speedFilterStrength * m_derived_speed
+                        + (1.0 - inputs.speedFilterStrength) * estimatedSpeed;
 
       // Now use this derived speed for position correction
-      double positionError = currentTimecode - currentPosition_;
+      double positionError = currentTimecode - m_current_position;
 
       if(std::abs(positionError) > inputs.positionJumpThreshold)
       {
         // Large error: jump to new position
-        currentPosition_ = currentTimecode;
-        outputs.timecode = currentOutputTimecode(currentPosition_);
-        targetSpeed_ = derivedSpeed_;
-        positionError_ = 0.0;
+        m_current_position = currentTimecode;
+        outputs.timecode = currentOutputTimecode(m_current_position);
+        m_target_speed = m_derived_speed;
+        m_position_error = 0.0;
       }
       else
       {
         // Small error: correct via speed adjustment
-        double baseSpeed = derivedSpeed_;
+        double baseSpeed = m_derived_speed;
         double correctionSpeed = positionError / inputs.correctionTimeConstant;
 
         // Limit correction magnitude
-        if(baseSpeed >= 0)
-        {
-          correctionSpeed = std::clamp(
-              correctionSpeed, -inputs.maxSpeedCorrection * std::abs(baseSpeed),
-              inputs.maxSpeedCorrection * std::abs(baseSpeed));
-        }
-        else
-        {
-          correctionSpeed = std::clamp(
-              correctionSpeed, -inputs.maxSpeedCorrection * std::abs(baseSpeed),
-              inputs.maxSpeedCorrection * std::abs(baseSpeed));
-        }
+        double maxCorrection = inputs.maxSpeedCorrection * std::abs(baseSpeed);
+        correctionSpeed = std::clamp(correctionSpeed, -maxCorrection, maxCorrection);
 
-        targetSpeed_ = baseSpeed + correctionSpeed;
-        positionError_ = positionError;
+        m_target_speed = baseSpeed + correctionSpeed;
+        m_position_error = positionError;
       }
     }
-    else if(hasLastTimecode_)
+    else if(m_has_last_timecode)
     {
       // Simple two-point speed estimation for initial samples
-      double timeDiff = systemTime_ - lastTimecodeTime_;
+      double timeDiff = m_system_time - m_last_timecode_time;
       if(timeDiff > 0.001) // Avoid division by very small numbers
       {
-        double timecodeDiff = currentTimecode - lastTimecodeValue_;
-        derivedSpeed_ = timecodeDiff / timeDiff;
-        targetSpeed_ = derivedSpeed_;
+        double timecodeDiff = currentTimecode - m_last_timecode_value;
+        m_derived_speed = timecodeDiff / timeDiff;
+        m_target_speed = m_derived_speed;
       }
     }
 
-    lastTimecodeValue_ = currentTimecode;
-    lastTimecodeTime_ = systemTime_;
-    hasLastTimecode_ = true;
-    lastValidInputTime_ = 0.0;
-    inDeadReckoning_ = false;
+    m_last_timecode_value = currentTimecode;
+    m_last_timecode_time = m_system_time;
+    m_has_last_timecode = true;
+    m_last_valid_input_time = 0.0;
+    m_in_dead_reckoning = false;
 
     return true;
   }
@@ -344,18 +340,30 @@ private:
   bool processTimecodeAndSpeed(double deltaTime)
   {
     if(!inputs.validInput)
-      return false;
+    {
+      // Speed is generally still valid, just timecode must be ignored
+      if(inputs.estimatedSpeed > -10. && inputs.estimatedSpeed < 10.)
+      {
+        m_target_speed = inputs.estimatedSpeed;
+        m_last_valid_input_time = 0.0;
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+    }
 
     // When both inputs are available
-    double newError = currentInputTimecode() - currentPosition_;
+    double newError = currentInputTimecode() - m_current_position;
 
     if(std::abs(newError) > inputs.positionJumpThreshold)
     {
       // Large error: jump to new position
-      currentPosition_ = currentInputTimecode();
-      outputs.timecode = currentOutputTimecode(currentPosition_);
-      targetSpeed_ = inputs.estimatedSpeed;
-      positionError_ = 0.0;
+      m_current_position = currentInputTimecode();
+      outputs.timecode = currentOutputTimecode(m_current_position);
+      m_target_speed = inputs.estimatedSpeed;
+      m_position_error = 0.0;
     }
     else
     {
@@ -376,39 +384,56 @@ private:
             -inputs.maxSpeedCorrection * baseSpeed);
       }
 
-      targetSpeed_ = baseSpeed + correctionSpeed;
-      positionError_ = newError;
+      m_target_speed = baseSpeed + correctionSpeed;
+      m_position_error = newError;
     }
 
-    lastValidInputTime_ = 0.0;
-    inDeadReckoning_ = false;
+    m_last_valid_input_time = 0.0;
+    m_in_dead_reckoning = false;
 
     return true;
   }
 
   void processInvalidInput(double deltaTime)
   {
-    lastValidInputTime_ += deltaTime;
+    m_last_valid_input_time += deltaTime;
 
-    if(lastValidInputTime_ > inputs.deadReckoningTimeout)
+    switch(inputs.noSyncBehaviour)
     {
-      // Timeout: gradually return to normal speed
-      targetSpeed_ = 1.0;
-      inDeadReckoning_ = true;
+      case NoSyncBehaviour::Zero:
+        // Immediately stop when sync is lost
+        m_target_speed = 0.0;
+        m_in_dead_reckoning = true;
+        break;
+
+      case NoSyncBehaviour::Stall:
+        // Dead reckoning until timeout, then stop
+        if(m_last_valid_input_time > inputs.deadReckoningTimeout)
+        {
+          m_target_speed = 0.0;
+          m_in_dead_reckoning = true;
+        }
+        // Otherwise maintain current speed (dead reckoning)
+        break;
+
+      case NoSyncBehaviour::KeepSpeed:
+        // Maintain current speed indefinitely (true dead reckoning)
+        // Never change target speed, just keep going
+        m_in_dead_reckoning = true;
+        break;
     }
-    // Otherwise maintain current speed (dead reckoning)
   }
 
   double estimateSpeedFromHistory()
   {
-    if(timecodeHistory_.size() < 2)
+    if(m_timecode_history.size() < 2)
       return 1.0;
 
     // Simple linear regression for speed estimation
     double sumT = 0.0, sumTC = 0.0, sumT2 = 0.0, sumTTC = 0.0;
-    double t0 = timecodeHistory_.front().time;
+    double t0 = m_timecode_history.front().time;
 
-    for(const auto& entry : timecodeHistory_)
+    for(const auto& entry : m_timecode_history)
     {
       double t = entry.time - t0; // Relative time
       double tc = entry.timecode;
@@ -419,16 +444,15 @@ private:
       sumTTC += t * tc;
     }
 
-    size_t n = timecodeHistory_.size();
+    size_t n = m_timecode_history.size();
     double denominator = n * sumT2 - sumT * sumT;
 
     if(std::abs(denominator) < 1e-9) // Avoid division by zero
-      return derivedSpeed_;          // Keep previous estimate
+      return m_derived_speed;        // Keep previous estimate
 
     // Slope = speed
     double speed = (n * sumTTC - sumT * sumTC) / denominator;
 
-    // Sanity check - limit to reasonable range
     speed = std::clamp(speed, -10.0, 10.0);
 
     return speed;
@@ -436,25 +460,25 @@ private:
 
 private:
   // Core state
-  double currentPosition_ = 0.0;
-  double currentSpeed_ = 1.0;
-  double targetSpeed_ = 1.0;
-  double lastValidInputTime_ = 0.0;
-  double positionError_ = 0.0;
+  double m_current_position = 0.0;
+  double m_current_speed = 1.0;
+  double m_target_speed = 1.0;
+  double m_last_valid_input_time = 0.0;
+  double m_position_error = 0.0;
 
   // State flags
-  bool initialized_ = false;
-  bool inDeadReckoning_ = false;
+  bool m_initialized = false;
+  bool m_in_dead_reckoning = false;
 
   // System time tracking
-  double systemTime_ = 0.0;
+  double m_system_time = 0.0;
 
   // Timecode-only mode state
-  std::deque<TimecodeEntry> timecodeHistory_;
-  double lastTimecodeValue_ = 0.0;
-  double lastTimecodeTime_ = 0.0;
-  bool hasLastTimecode_ = false;
-  double derivedSpeed_ = 1.0; // Speed derived from timecode changes
+  std::deque<TimecodeEntry> m_timecode_history;
+  double m_last_timecode_value = 0.0;
+  double m_last_timecode_time = 0.0;
+  bool m_has_last_timecode = false;
+  double m_derived_speed = 1.0; // Speed derived from timecode changes
 };
 
 } // namespace ao
