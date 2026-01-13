@@ -7,6 +7,8 @@
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
+#include <ossia/detail/pod_vector.hpp>
+#include <ossia/detail/small_vector.hpp>
 
 #include <array>
 #include <optional>
@@ -118,8 +120,10 @@ struct MIDISyncIn
     std::chrono::steady_clock::time_point last_mtc_timestamp;
 
     // Clock tick tracking
+    static constexpr size_t max_interval_history = 24; // 1 beat worth at 24 PPQN
     std::chrono::steady_clock::time_point last_clock_tick;
-    std::deque<double> tick_intervals; // Recent tick intervals for tempo estimation
+    ossia::small_pod_vector<double, max_interval_history>
+        tick_intervals; // Recent tick intervals for tempo estimation
     double estimated_tempo = 120.0;
     double filtered_tempo = 120.0;
     uint32_t ticks_since_mtc = 0;
@@ -130,13 +134,12 @@ struct MIDISyncIn
     uint16_t song_position_pointer = 0;  // MIDI Song Position (in 16th notes)
     bool transport_running = false;
 
-    static constexpr size_t max_interval_history = 24; // 1 beat worth at 24 PPQN
-
     void reset()
     {
       active = false;
       ticks_since_mtc = 0;
       tick_intervals.clear();
+
       estimated_tempo = 120.0;
       filtered_tempo = 120.0;
       clock_position_seconds = 0.0;
@@ -446,7 +449,7 @@ struct MIDISyncIn
       // Keep only recent history
       while(clock_interp.tick_intervals.size() > clock_interp.max_interval_history)
       {
-        clock_interp.tick_intervals.pop_front();
+        clock_interp.tick_intervals.erase(clock_interp.tick_intervals.begin());
       }
 
       // Estimate tempo from tick intervals
