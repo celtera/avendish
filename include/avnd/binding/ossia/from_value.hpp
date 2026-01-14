@@ -1460,7 +1460,7 @@ inline bool from_ossia_value(const ossia::value& src, std::string& dst)
   }
   else
   {
-    dst = "";
+    dst = ossia::convert<std::string>(src);
     return false;
   }
 }
