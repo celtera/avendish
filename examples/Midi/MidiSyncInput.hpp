@@ -11,6 +11,7 @@
 #include <ossia/detail/small_vector.hpp>
 
 #include <array>
+#include <chrono>
 #include <optional>
 
 namespace mo

@@ -35,12 +35,21 @@ public:
   struct inputs_t
   {
     halp::val_port<"In", std::optional<float>> in;
-    struct : halp::impulse_button<"Reset">
+    struct : halp::toggle<"Reset">
     {
       void update(Accumulator& self)
       {
         std::destroy_at(&self.minmax);
         std::construct_at(&self.minmax);
+        self.outputs.count.value = 0;
+        self.outputs.sum.value = 0;
+        self.outputs.diff.value = 0;
+        self.outputs.min.value = 0;
+        self.outputs.max.value = 0;
+        self.outputs.mean.value = 0;
+        self.outputs.variance.value = 0;
+        self.outputs.median.value = 0;
+        self.outputs.kurtosis.value = 0;
       }
     } reset;
   } inputs;

@@ -7,6 +7,8 @@
 #include <halp/texture.hpp>
 
 #include <chrono>
+#include <algorithm>
+
 namespace vo
 {
 // Graphical item which will display the texture

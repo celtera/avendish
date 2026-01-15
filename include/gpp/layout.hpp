@@ -121,8 +121,8 @@ consteval int std140_size()
 */
 
 #if defined(_MSC_VER)
-#define MSVC_BUGGY_CONSTEVAL
-#define MSVC_BUGGY_CONSTEXPR
+#define MSVC_BUGGY_CONSTEVAL consteval
+#define MSVC_BUGGY_CONSTEXPR constexpr
 #else
 #define MSVC_BUGGY_CONSTEVAL consteval
 #define MSVC_BUGGY_CONSTEXPR constexpr
