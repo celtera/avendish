@@ -135,6 +135,11 @@ template <typename T>
 using cpu_texture_port_introspection = predicate_introspection<T, is_cpu_texture_port_t>;
 
 template <typename Field>
+using is_gpu_texture_port_t = boost::mp11::mp_bool<gpu_texture_port<Field>>;
+template <typename T>
+using gpu_texture_port_introspection = predicate_introspection<T, is_gpu_texture_port_t>;
+
+template <typename Field>
 using is_matrix_port_t = boost::mp11::mp_bool<matrix_port<Field>>;
 template <typename T>
 using matrix_port_introspection = predicate_introspection<T, is_matrix_port_t>;

@@ -118,6 +118,12 @@ struct cpu_texture_input_introspection
 };
 
 template <typename T>
+struct gpu_texture_input_introspection
+    : gpu_texture_port_introspection<typename inputs_type<T>::type>
+{
+};
+
+template <typename T>
 struct matrix_input_introspection
     : matrix_port_introspection<typename inputs_type<T>::type>
 {
