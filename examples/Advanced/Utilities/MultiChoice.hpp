@@ -29,11 +29,18 @@ public:
 
   struct ins
   {
-    struct : halp::val_port<"Inputs", std::vector<float>>
+    struct : halp::spinbox_i32<"Input count", halp::range{0, 1024, 2}>
     {
-    } nodes;
+      static std::function<void(MultiChoice&, int)> on_controller_interaction()
+      {
+        return [](MultiChoice& object, int value) {
+          object.inputs.nodes.request_port_resize(value);
+        };
+      }
+    } controller;
+    halp::dynamic_port<halp::val_port<"In {}", float>> nodes;
 
-    halp::knob_f32<"Smooth", halp::range{.min = 0.01, .max = 1.0, .init = 0.1}> smooth;
+    halp::knob_f32<"Smooth", halp::range{.min = 0.001, .max = 0.1, .init = 0.05}> smooth;
     halp::knob_f32<"Threshold", halp::range{.min = 0.0, .max = 1.0, .init = 0.8}> threshold;
     halp::knob_f32<"Margin", halp::range{.min = 0.0, .max = 1.0, .init = 0.15}> margin;
   } inputs;
@@ -44,6 +51,7 @@ public:
     halp::val_port<"Current Weights", std::vector<float>> weights;
   } outputs;
 
+  ossia::small_pod_vector<float, 8> m_input;
   std::vector<float> m_state;
   std::optional<int> m_last_index;
 
@@ -51,11 +59,14 @@ public:
   void operator()(halp::tick t)
   {
     const float alpha = this->inputs.smooth.value;
-    const float threshold = 0.8f;
-    const float margin = 0.15f;
+    const float threshold = this->inputs.threshold.value;
+    const float margin = this->inputs.margin.value;
 
-    const std::vector<float>& input = this->inputs.nodes.value;
-    if(input.empty())
+    m_input.clear();
+    for(auto& port : this->inputs.nodes.ports) {
+      m_input.push_back(port.value);
+    }
+    if(m_input.empty())
     {
       m_last_index = std::nullopt;
       outputs.index = std::nullopt;
@@ -63,15 +74,15 @@ public:
       return;
     }
 
-    if(m_state.size() != input.size())
+    if(m_state.size() != m_input.size())
     {
-      m_state.resize(input.size(), 0.0f);
-      outputs.weights.value.resize(input.size(), 0.0f);
+      m_state.resize(m_input.size(), 0.0f);
+      outputs.weights.value.resize(m_input.size(), 0.0f);
     }
 
-    for(size_t i = 0; i < input.size(); ++i)
+    for(size_t i = 0; i < m_input.size(); ++i)
     {
-      m_state[i] += (input[i] - m_state[i]) * alpha;
+      m_state[i] += (m_input[i] - m_state[i]) * alpha;
       outputs.weights.value[i] = m_state[i];
     }
 

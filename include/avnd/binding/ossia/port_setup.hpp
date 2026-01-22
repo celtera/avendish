@@ -421,7 +421,7 @@ struct setup_inlets
     while(port.size() < expected)
       port.push_back(new ossia::value_inlet); // FIXME not freed
     while(port.size() > expected)
-      port.erase(port.rbegin().base());
+      port.pop_back();
 
     for(auto& p : port)
       (*this)(ctrl, *p);
@@ -486,7 +486,7 @@ struct setup_outlets
     while(port.size() < expected)
       port.push_back(new ossia::value_outlet); // FIXME not freed
     while(port.size() > expected)
-      port.erase(port.rbegin().base());
+      port.pop_back();
 
     for(auto& p : port)
       (*this)(ctrl, *p);
