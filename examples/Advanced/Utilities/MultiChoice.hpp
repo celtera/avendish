@@ -4,6 +4,7 @@
 
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 
