@@ -661,7 +661,17 @@ template <typename T>
 concept ossia_compatible_audio_processor
     = !avnd::tag_cv<T>
       && (avnd::poly_sample_array_input_port_count<double, T> > 0
-          || avnd::poly_sample_array_output_port_count<double, T> > 0);
+          || avnd::poly_sample_array_output_port_count<double, T> > 0)
+      && avnd::dynamic_ports_input_introspection<T>::size == 0
+      && avnd::dynamic_ports_output_introspection<T>::size == 0;
+
+template <typename T>
+concept ossia_compatible_dynamic_audio_processor
+    = !avnd::tag_cv<T>
+      && (avnd::poly_sample_array_input_port_count<double, T> > 0
+          || avnd::poly_sample_array_output_port_count<double, T> > 0)
+      && (avnd::dynamic_ports_input_introspection<T>::size != 0
+          || avnd::dynamic_ports_output_introspection<T>::size != 0);
 
 template <typename T>
 class safe_node;

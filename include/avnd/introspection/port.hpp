@@ -20,46 +20,49 @@ using concept_to_mp_bool = boost::mp11::mp_bool<F.template operator()<T>()>;
 static_assert(check<CONCEPT(std::floating_point), float>::value);
 */
 
-#define AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(Concept)                            \
-                                                                                        \
-  template <typename Field>                                                             \
-  using is_##Concept##_t = boost::mp11::mp_bool<Concept<Field>>;                        \
-  template <typename T>                                                                 \
-  struct Concept##_introspection : predicate_introspection<T, is_##Concept##_t>         \
-  {                                                                                     \
-  };                                                                                    \
-  template <typename T>                                                                 \
-  struct Concept##_input_introspection                                                  \
-      : Concept##_introspection<typename inputs_type<T>::type>                          \
-  {                                                                                     \
-  };                                                                                    \
-  template <typename T>                                                                 \
-  struct Concept##_output_introspection                                                 \
-      : Concept##_introspection<typename outputs_type<T>::type>                         \
-  {                                                                                     \
-  };                                                                                    \
-                                                                                        \
-  template <typename Field>                                                             \
-  using is_dynamic_##Concept##_t = boost::mp11::mp_or<                                  \
-      boost::mp11::mp_bool<Concept<Field>>,                                             \
-      boost::mp11::mp_and<                                                              \
-          boost::mp11::mp_bool<dynamic_ports_port<Field>>,                              \
-          boost::mp11::mp_bool<Concept<typename decltype(Field::ports)::value_type>>>>; \
-                                                                                        \
-  template <typename T>                                                                 \
-  struct dynamic_##Concept##_introspection                                              \
-      : predicate_introspection<T, is_dynamic_##Concept##_t>                            \
-  {                                                                                     \
-  };                                                                                    \
-  template <typename T>                                                                 \
-  struct dynamic_##Concept##_input_introspection                                        \
-      : dynamic_##Concept##_introspection<typename inputs_type<T>::type>                \
-  {                                                                                     \
-  };                                                                                    \
-  template <typename T>                                                                 \
-  struct dynamic_##Concept##_output_introspection                                       \
-      : dynamic_##Concept##_introspection<typename outputs_type<T>::type>               \
-  {                                                                                     \
+#define AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(Concept)                    \
+                                                                                \
+  template <typename Field>                                                     \
+  using is_##Concept##_t = boost::mp11::mp_bool<Concept<Field>>;                \
+  template <typename T>                                                         \
+  struct Concept##_introspection : predicate_introspection<T, is_##Concept##_t> \
+  {                                                                             \
+  };                                                                            \
+  template <typename T>                                                         \
+  struct Concept##_input_introspection                                          \
+      : Concept##_introspection<typename inputs_type<T>::type>                  \
+  {                                                                             \
+  };                                                                            \
+  template <typename T>                                                         \
+  struct Concept##_output_introspection                                         \
+      : Concept##_introspection<typename outputs_type<T>::type>                 \
+  {                                                                             \
+  };                                                                            \
+                                                                                \
+  template <typename Field>                                                     \
+  concept check_dynamic_##Concept                                               \
+      = Concept<Field>                                                          \
+        || (dynamic_ports_port<Field>                                           \
+            && Concept<typename decltype(Field::ports)::value_type>);           \
+                                                                                \
+  template <typename Field>                                                     \
+  using is_dynamic_##Concept##_t                                                \
+      = boost::mp11::mp_bool<check_dynamic_##Concept<Field>>;                   \
+                                                                                \
+  template <typename T>                                                         \
+  struct dynamic_##Concept##_introspection                                      \
+      : predicate_introspection<T, is_dynamic_##Concept##_t>                    \
+  {                                                                             \
+  };                                                                            \
+  template <typename T>                                                         \
+  struct dynamic_##Concept##_input_introspection                                \
+      : dynamic_##Concept##_introspection<typename inputs_type<T>::type>        \
+  {                                                                             \
+  };                                                                            \
+  template <typename T>                                                         \
+  struct dynamic_##Concept##_output_introspection                               \
+      : dynamic_##Concept##_introspection<typename outputs_type<T>::type>       \
+  {                                                                             \
   };
 
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(parameter_port)
