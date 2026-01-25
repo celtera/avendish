@@ -416,7 +416,7 @@ struct parameter_update
     }
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
   void chop_in(Field& field, const TD::OP_CHOPInput* input)
   {
     chop_value_in(field, field.value, input);

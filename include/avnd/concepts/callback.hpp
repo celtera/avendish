@@ -29,11 +29,11 @@ concept view_callback = function_view_ish<std::decay_t<decltype(T{}.call)>>;
 // Used to store std::function and similar types which handle their
 // allocations on their own
 template <typename T>
-concept dynamic_callback = function_ish<std::decay_t<decltype(T{}.call)>> && !
-view_callback<T>;
+concept stored_callback
+    = function_ish<std::decay_t<decltype(T{}.call)>> && !view_callback<T>;
 
 template <typename T>
-concept callback = dynamic_callback<T> || view_callback<T>;
+concept callback = stored_callback<T> || view_callback<T>;
 }
 
 // clang-format: on

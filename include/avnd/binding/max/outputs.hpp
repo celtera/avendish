@@ -571,14 +571,14 @@ struct value_writer
 {
   T& self;
 
-  template <avnd::parameter Field, std::size_t Idx>
+  template <avnd::parameter_port Field, std::size_t Idx>
     requires(!avnd::sample_accurate_parameter<Field>)
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     value_to_max_dispatch<Field>(self, avnd::field_index<Idx>{}, port, ctrl.value);
   }
 
-  template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::linear_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     // FIXME
@@ -604,7 +604,7 @@ struct value_writer
 #endif
   }
 
-  template <avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::dynamic_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     for(auto& [timestamp, val] : ctrl.values)
@@ -615,7 +615,7 @@ struct value_writer
   }
 
   // does not make sense as output, only as input
-  template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::span_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept = delete;
 
   void operator()(auto&&...) const noexcept { }
@@ -665,7 +665,7 @@ struct outputs
 
   }
 
-  template <avnd::parameter C>
+  template <avnd::parameter_port C>
   static void setup(C& out, t_outlet& outlet)
   {
 

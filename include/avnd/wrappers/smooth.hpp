@@ -85,7 +85,7 @@ struct smooth_storage : smooth_param_storage<T>
     }
   }
 
-  template <avnd::smooth_parameter Field, typename Val, std::size_t NField>
+  template <avnd::smooth_parameter_port Field, typename Val, std::size_t NField>
   void update_target(Field& field, const Val& next, avnd::field_index<NField> idx)
   {
     static constexpr auto npredicate = smooth_in::template unmap<NField>();

@@ -11,7 +11,7 @@ struct time_control_state
 template <typename Field>
 struct time_control_state_type;
 
-template <avnd::time_control Field>
+template <avnd::time_control_port Field>
 struct time_control_state_type<Field> : time_control_state
 {
 };

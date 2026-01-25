@@ -36,7 +36,7 @@ struct do_callback<Self, Idx, Field, R, Args...>
     }
 
     // FIXME handle control feedback !
-    // if constexpr(avnd::control<Field>)
+    // if constexpr(avnd::control_port<Field>)
     // {
     //   // Get the index of the control in [0; N[
     //   using type = typename Exec_T::processor_type;

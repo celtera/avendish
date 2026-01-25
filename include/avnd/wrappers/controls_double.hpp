@@ -96,7 +96,7 @@ static constexpr auto map_control_to_double(const auto& value)
   return 0.;
 }
 
-template <avnd::parameter T>
+template <avnd::parameter_port T>
 static constexpr auto map_control_to_double(const T& ctl)
 {
   return map_control_to_double<T>(ctl.value);

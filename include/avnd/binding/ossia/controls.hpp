@@ -12,8 +12,8 @@ namespace oscr
 template <typename Field>
 struct controls_type;
 
-template <avnd::parameter Field>
-  requires avnd::control<Field>
+template <avnd::parameter_port Field>
+  requires avnd::control_port<Field>
 struct controls_type<Field>
 {
   using type = std::decay_t<decltype(Field::value)>;
@@ -23,7 +23,7 @@ template <typename Field>
 using controls_type_t = typename controls_type<Field>::type;
 
 template <avnd::callback Field>
-  requires avnd::control<Field>
+  requires avnd::control_port<Field>
 struct controls_type<Field>
 {
   // FIXME maybe the tuple of arguments?

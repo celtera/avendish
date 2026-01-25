@@ -58,6 +58,12 @@ struct process_after_run
       Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
+  template <typename Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::audio_inlet*>& port,
+      avnd::field_index<Idx>) const noexcept
+  {
+  }
 
   template <typename Field, std::size_t Idx>
   void
@@ -77,14 +83,14 @@ struct process_after_run
   {
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
+  template <avnd::parameter_port Field, std::size_t Idx>
     requires ossia_port<Field>
   void write_value(
       Field& ctrl, auto& port, auto& val, int64_t ts,
       avnd::field_index<Idx>) const noexcept
   {
   }
-  template <avnd::parameter Field, std::size_t Idx>
+  template <avnd::parameter_port Field, std::size_t Idx>
     requires(!ossia_port<Field>)
   void write_value(
       Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
@@ -94,7 +100,7 @@ struct process_after_run
     {
       port->write_value(std::move(v), ts);
 
-      if constexpr(avnd::control<Field>)
+      if constexpr(avnd::control_port<Field>)
       {
         // Get the index of the control in [0; N[
         using type = typename Exec_T::processor_type;
@@ -107,8 +113,8 @@ struct process_after_run
     }
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field> && !ossia_port<Field>)
+  template <avnd::parameter_port Field, std::size_t Idx>
+    requires(!avnd::sample_accurate_parameter_port<Field> && !ossia_port<Field>)
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
@@ -130,7 +136,7 @@ struct process_after_run
     }
   }
 
-  template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::linear_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx> idx) const noexcept
   {
@@ -153,7 +159,7 @@ struct process_after_run
     }
   }
 
-  template <avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::dynamic_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
@@ -165,7 +171,7 @@ struct process_after_run
   }
 
   // does not make sense as output, only as input
-  template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::span_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
       = delete;
@@ -173,6 +179,12 @@ struct process_after_run
   template <typename Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::audio_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
+  template <typename Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::audio_outlet*>& port,
+      avnd::field_index<Idx>) const noexcept
   {
   }
 

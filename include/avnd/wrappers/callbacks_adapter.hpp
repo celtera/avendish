@@ -68,7 +68,7 @@ struct callback_storage : callback_storage_views<T>
   {
     using outputs_t = typename avnd::outputs_type<T>::type;
 
-    if constexpr(dynamic_callback_introspection<outputs_t>::size > 0)
+    if constexpr(stored_callback_introspection<outputs_t>::size > 0)
     {
       auto setup_dyn = [callback_handler]<auto Idx, auto IdxGlob, typename C>(
           C & cb, avnd::predicate_index<Idx>, avnd::field_index<IdxGlob>)
@@ -87,7 +87,7 @@ struct callback_storage : callback_storage_views<T>
         cb.call = callback_handler(cb, typelist{}, avnd::num<IdxGlob>{});
       };
 
-      avnd::dynamic_callback_introspection<outputs_t>::for_all_n2(
+      avnd::stored_callback_introspection<outputs_t>::for_all_n2(
           effect.outputs(), setup_dyn);
     }
 

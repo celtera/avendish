@@ -46,7 +46,7 @@ struct oscquery_mapper
     create_ports();
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
     requires(!avnd::enum_parameter<Field>)
   void setup_control(Field& field, ossia::net::parameter_base& param)
   {
@@ -111,7 +111,7 @@ struct oscquery_mapper
     });
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
   void create_control(Field& field)
   {
     ossia::net::node_base& node = m_dev.get_root_node();
@@ -463,7 +463,7 @@ struct oscquery_mapper
     }
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
   void create_output(Field& field)
   {
     ossia::net::node_base& node = m_dev.get_root_node();

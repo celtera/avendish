@@ -20,7 +20,7 @@ namespace touchdesigner::chop
 {
 struct output_length_visitor
 {
-  template<avnd::parameter T>
+  template<avnd::parameter_port T>
   int64_t operator()(const T& port)
   {
     using value_type = std::decay_t<decltype(T::value)>;
@@ -58,7 +58,7 @@ struct output_length_visitor
 
 struct output_write_visitor
 {
-  template<avnd::parameter T>
+  template<avnd::parameter_port T>
   void operator()(const T& port, float* channel, int64_t samples)
   {
     using value_type = std::decay_t<decltype(T::value)>;

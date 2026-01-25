@@ -280,7 +280,7 @@ static constexpr auto map_control_to_01(const auto& value) = delete;
 //   static_assert(std::is_void_v<T>, "Error: unhandled control type");
 // }
 
-template <avnd::parameter T>
+template <avnd::parameter_port T>
   requires requires(T t) { map_control_to_01(t.value); }
 static constexpr auto map_control_to_01(const T& ctl)
 {

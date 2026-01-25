@@ -564,7 +564,7 @@ public:
     return true;
   }
 
-  template <avnd::smooth_parameter Field, typename Val, std::size_t NField>
+  template <avnd::smooth_parameter_port Field, typename Val, std::size_t NField>
   inline bool from_ossia_value(
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
   {
@@ -575,7 +575,7 @@ public:
   }
 
   // Special case: this one may require the current tempo information
-  template <avnd::time_control Field, typename Val, std::size_t NField>
+  template <avnd::time_control_port Field, typename Val, std::size_t NField>
   inline bool from_ossia_value(
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
   {
