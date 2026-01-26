@@ -165,6 +165,31 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
+  void operator()(const std::array<int, 2>& f)
+  {
+    val = std::vector<ossia::value>{f[0], f[1]};
+  }
+  void operator()(const std::array<int, 3>& f)
+  {
+    val = std::vector<ossia::value>{f[0], f[1], f[2]};
+  }
+  void operator()(const std::array<int, 4>& f)
+  {
+    val = std::vector<ossia::value>{f[0], f[1], f[2], f[3]};
+  }
+  void operator()(const std::array<int64_t, 2>& f)
+  {
+    val = std::vector<ossia::value>{(int)f[0], (int)f[1]};
+  }
+  void operator()(const std::array<int64_t, 3>& f)
+  {
+    val = std::vector<ossia::value>{(int)f[0], (int)f[1], (int)f[2]};
+  }
+  void operator()(const std::array<int64_t, 4>& f)
+  {
+    val = std::vector<ossia::value>{(int)f[0], (int)f[1], (int)f[2], (int)f[3]};
+  }
+
   void operator()(const std::array<float, 2>& f) { val = f; }
   void operator()(const std::array<float, 3>& f) { val = f; }
   void operator()(const std::array<float, 4>& f) { val = f; }
@@ -436,11 +461,11 @@ ossia::value to_ossia_value(const avnd::bitset_ish auto& v)
 
 ossia::value to_ossia_value(const std::integral auto& v)
 {
-  return v;
+  return (int)v;
 }
 ossia::value to_ossia_value(const std::floating_point auto& v)
 {
-  return v;
+  return (float)v;
 }
 ossia::value to_ossia_value(const avnd::variant_ish auto& v)
 {
