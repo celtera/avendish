@@ -18,7 +18,7 @@ struct TimecodeSynchronizer
 {
   halp_meta(name, "Timecode Synchronizer")
   halp_meta(c_name, "smooth_timecode_synchronizer")
-  halp_meta(category, "Control/Timing")
+  halp_meta(category, "Timing/Control")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(
       description,
