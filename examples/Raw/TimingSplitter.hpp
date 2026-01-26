@@ -9,7 +9,7 @@ struct TimingSplitter
   static consteval auto name() { return "Beat metronome"; }
   static consteval auto c_name() { return "avnd_timing_splitter"; }
   static consteval auto author() { return "Jean-Michaël Celerier"; }
-  static consteval auto category() { return "Control/Timing"; }
+  static consteval auto category() { return "Timing/Control"; }
   static consteval auto manual_url()
   {
     return "https://ossia.io/score-docs/processes/"

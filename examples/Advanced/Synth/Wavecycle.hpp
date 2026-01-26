@@ -15,7 +15,7 @@ struct Wavecycle
 public:
   halp_meta(name, "Wavecycle")
   halp_meta(c_name, "wavecycle")
-  halp_meta(category, "Audio/Generator")
+  halp_meta(category, "Audio/Generators")
   halp_meta(description, "Generate audio cycles from hand-drawn waveshapes")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/wavecycle.html")
   halp_meta(author, "Jean-Michaël Celerier")

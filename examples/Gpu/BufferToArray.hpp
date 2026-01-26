@@ -13,7 +13,7 @@ struct BufferToArray
 public:
   halp_meta(name, "Buffer to array")
   halp_meta(c_name, "avnd_buffertoarray")
-  halp_meta(category, "Visuals")
+  halp_meta(category, "Visuals/Utilities")
   halp_meta(description, "GPU buffer -> CPU buffer")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/buffer_to_array.html")
   halp_meta(author, "ossia score")

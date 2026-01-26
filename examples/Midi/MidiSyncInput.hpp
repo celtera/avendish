@@ -26,7 +26,7 @@ struct MIDISyncIn
 {
   halp_meta(name, "MIDI Sync In")
   halp_meta(c_name, "midi_sync_input")
-  halp_meta(category, "Midi/Timing")
+  halp_meta(category, "Timing/Midi")
   halp_meta(author, "ossia team")
   halp_meta(description, "Extract timecode from MIDI Time Code messages")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-timecode-input.html")
