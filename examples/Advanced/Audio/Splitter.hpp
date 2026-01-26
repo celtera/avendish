@@ -6,6 +6,7 @@
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
+#include <algorithm>
 
 namespace ao
 {
