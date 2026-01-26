@@ -7,6 +7,8 @@
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 
+#include <algorithm>
+
 namespace uo
 {
 struct ArrayToBuffer
