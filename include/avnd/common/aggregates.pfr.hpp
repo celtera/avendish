@@ -124,7 +124,7 @@ static constexpr size_t index_of = []<class T, class V>(V T::* p) {
 template <auto M>
 static constexpr int index_in_struct_static()
 {
-  static constexpr auto idx = index_of<M>;
+  static_constexpr auto idx = index_of<M>;
   return idx;
 }
 
