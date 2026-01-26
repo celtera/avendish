@@ -437,6 +437,14 @@ struct from_ossia_value_impl
   }
 
   template <typename... T>
+  bool operator()(const ossia::value& src, ossia::value& f)
+  {
+    // Used in cases where we have e.g. a tuple<int, ossia::value>
+    f = src;
+    return true;
+  }
+
+  template <typename... T>
   bool operator()(const ossia::value& src, std::tuple<T...>& f)
   {
     if(auto vec = src.target<std::vector<ossia::value>>();

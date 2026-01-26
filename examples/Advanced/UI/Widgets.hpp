@@ -162,4 +162,180 @@ public:
 
   void operator()() noexcept { outputs.out = inputs.v.value; }
 };
+
+struct Vec2i
+{
+  halp_meta(name, "Vec2i")
+  halp_meta(c_name, "avnd_vec2i")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send an integer pair whenever there is an input message")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#vec")
+  halp_meta(uuid, "4d20454d-de79-4be9-8b50-d288f3ecc33c")
+
+  struct
+  {
+    halp::spinbox_i32<"X", halp::free_range_max<int>> v1;
+    halp::spinbox_i32<"Y", halp::free_range_max<int>> v2;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Pair", std::array<int, 2>> out;
+  } outputs;
+
+  void operator()() noexcept
+  {
+    outputs.out(std::array<int, 2>{inputs.v1.value, inputs.v2.value});
+  }
+};
+
+struct Vec3i
+{
+  halp_meta(name, "Vec3i")
+  halp_meta(c_name, "avnd_vec3i")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send a Vec3i whenever there is an input message")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#vec")
+  halp_meta(uuid, "f8a894c7-9f8e-42f3-9a6e-ccee1ab5b20d")
+
+  struct
+  {
+    halp::spinbox_i32<"X", halp::free_range_max<int>> v1;
+    halp::spinbox_i32<"Y", halp::free_range_max<int>> v2;
+    halp::spinbox_i32<"Z", halp::free_range_max<int>> v3;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Pair", std::array<int, 3>> out;
+  } outputs;
+
+  void operator()() noexcept
+  {
+    outputs.out(std::array<int, 3>{inputs.v1.value, inputs.v2.value, inputs.v3.value});
+  }
+};
+struct Vec4i
+{
+  halp_meta(name, "Vec4i")
+  halp_meta(c_name, "avnd_vec4i")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send a Vec4i whenever there is an input message")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#vec")
+  halp_meta(uuid, "b2e60c29-2b9b-41ea-9721-5aa3b994a82f")
+
+  struct
+  {
+    halp::spinbox_i32<"X", halp::free_range_max<int>> v1;
+    halp::spinbox_i32<"Y", halp::free_range_max<int>> v2;
+    halp::spinbox_i32<"Z", halp::free_range_max<int>> v3;
+    halp::spinbox_i32<"W", halp::free_range_max<int>> v4;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Pair", std::array<int, 4>> out;
+  } outputs;
+
+  void operator()() noexcept
+  {
+    outputs.out(
+        std::array<int, 4>{
+            inputs.v1.value, inputs.v2.value, inputs.v3.value, inputs.v4.value});
+  }
+};
+
+struct Vec2f
+{
+  halp_meta(name, "Vec2f")
+  halp_meta(c_name, "avnd_vec2f")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send a float pair whenever there is an input message")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#vec")
+  halp_meta(uuid, "d4e4574c-02c0-4b3e-9409-833837ff0921")
+
+  struct
+  {
+    halp::spinbox_f32<"X", halp::free_range_max<float>> v1;
+    halp::spinbox_f32<"Y", halp::free_range_max<float>> v2;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Pair", std::array<float, 2>> out;
+  } outputs;
+
+  void operator()() noexcept
+  {
+    outputs.out(std::array<float, 2>{inputs.v1.value, inputs.v2.value});
+  }
+};
+
+struct Vec3f
+{
+  halp_meta(name, "Vec3f")
+  halp_meta(c_name, "avnd_vec3f")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send a Vec3f whenever there is an input message")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#vec")
+  halp_meta(uuid, "6e74b962-b102-4d2d-b6f1-850917e8c747")
+
+  struct
+  {
+    halp::spinbox_f32<"X", halp::free_range_max<float>> v1;
+    halp::spinbox_f32<"Y", halp::free_range_max<float>> v2;
+    halp::spinbox_f32<"Z", halp::free_range_max<float>> v3;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Pair", std::array<float, 3>> out;
+  } outputs;
+
+  void operator()() noexcept
+  {
+    outputs.out(std::array<float, 3>{inputs.v1.value, inputs.v2.value, inputs.v3.value});
+  }
+};
+struct Vec4f
+{
+  halp_meta(name, "Vec4f")
+  halp_meta(c_name, "avnd_vec4f")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send a Vec4f whenever there is an input message")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#vec")
+  halp_meta(uuid, "5ccd5c1f-5614-4c98-9c5b-f0d7e3dfe49f")
+
+  struct
+  {
+    halp::spinbox_f32<"X", halp::free_range_max<float>> v1;
+    halp::spinbox_f32<"Y", halp::free_range_max<float>> v2;
+    halp::spinbox_f32<"Z", halp::free_range_max<float>> v3;
+    halp::spinbox_f32<"W", halp::free_range_max<float>> v4;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Pair", std::array<float, 4>> out;
+  } outputs;
+
+  void operator()() noexcept
+  {
+    outputs.out(
+        std::array<float, 4>{
+            inputs.v1.value, inputs.v2.value, inputs.v3.value, inputs.v4.value});
+  }
+};
 }
