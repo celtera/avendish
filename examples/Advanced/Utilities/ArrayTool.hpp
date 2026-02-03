@@ -90,9 +90,14 @@ struct ArrayTool
     halp::enum_t<ArrayToolStrideMode, "Stride"> stridemode;
     halp::spinbox_i32<"Post-padding L", halp::range{-256, 256, 0}> out_pad_l;
     halp::spinbox_i32<"Post-padding R", halp::range{-256, 256, 0}> out_pad_r;
-    halp::spinbox_i32<"Insert", halp::free_range_min<int>> insert;
+
+    halp::spinbox_i32<"Insert Value", halp::free_range_min<int>> insert;
     halp::spinbox_i32<"From", halp::range{0, 256, 0}> insert_offset;
     halp::spinbox_i32<"Every", halp::range{1, 256, 0}> insert_stride;
+
+    halp::spinbox_i32<"Erase", halp::free_range_min<int>> erase;
+    halp::spinbox_i32<"From", halp::range{0, 256, 0}> erase_offset;
+    halp::spinbox_i32<"Every", halp::range{1, 256, 1}> erase_stride;
 
     halp::toggle<"Normalize"> normalize;
   } inputs;
@@ -114,6 +119,47 @@ struct ArrayTool
   {
     halp::callback<"Array", std::vector<float>> v;
   } outputs;
+
+  void strided_erase(
+      std::vector<float>& v, int erase_offset, int erase_count, int erase_stride)
+  {
+    if(erase_count <= 0 || v.empty())
+      return;
+    if(erase_offset >= static_cast<int>(v.size()))
+      return;
+
+    // If stride is less than count, we effectively erase everything after offset
+    // because the keep window is negative or zero.
+    if(erase_stride < erase_count)
+    {
+      v.resize(erase_offset);
+      return;
+    }
+
+    size_t write_idx = erase_offset;
+    size_t read_idx = erase_offset;
+    const size_t n = v.size();
+
+    while(read_idx < n)
+    {
+      // Skip the elements we want to erase
+      read_idx += erase_count;
+
+      // Copy the elements we want to keep
+      int items_to_keep = erase_stride - erase_count;
+
+      size_t available = (read_idx < n) ? (n - read_idx) : 0;
+      size_t to_copy = std::min(static_cast<size_t>(items_to_keep), available);
+
+      for(size_t i = 0; i < to_copy; ++i)
+      {
+        v[write_idx++] = v[read_idx++];
+      }
+    }
+
+    // Shrink vector to new size
+    v.resize(write_idx);
+  }
 
   void process(std::vector<float>& v)
   {
@@ -184,6 +230,14 @@ struct ArrayTool
           continue;
         v.insert(v.begin() + i, inputs.insert.value);
       }
+    }
+    if(inputs.erase_stride > 1)
+    {
+      // How many values we erase:
+      const int erase_count = inputs.erase.value;
+      const int erase_stride = inputs.erase_stride.value;
+      const int erase_offset = inputs.erase_offset.value;
+      strided_erase(v, erase_offset, erase_count, erase_stride);
     }
 
     if(int stride = inputs.stride; stride > 1)
