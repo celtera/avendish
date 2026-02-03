@@ -66,15 +66,15 @@ function(avnd_make_gstreamer)
     ${AVND_FX_TARGET}
     PRIVATE
       "${AVND_MAIN_FILE}"
-      include/avnd/binding/gstreamer/audio_source.hpp
-      include/avnd/binding/gstreamer/audio_sink.hpp
-      include/avnd/binding/gstreamer/audio_filter.hpp
-      include/avnd/binding/gstreamer/element.hpp
-      include/avnd/binding/gstreamer/parameters.hpp
-      include/avnd/binding/gstreamer/texture_source.hpp
-      include/avnd/binding/gstreamer/texture_sink.hpp
-      include/avnd/binding/gstreamer/texture_filter.hpp
-      include/avnd/binding/gstreamer/utils.hpp
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/audio_source.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/audio_sink.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/audio_filter.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/element.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/parameters.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/texture_source.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/texture_sink.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/texture_filter.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/utils.hpp"
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_gstreamer.cpp"
   )
 
