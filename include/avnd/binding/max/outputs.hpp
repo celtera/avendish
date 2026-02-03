@@ -572,7 +572,7 @@ struct value_writer
   T& self;
 
   template <avnd::parameter_port Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field>)
+    requires(!avnd::sample_accurate_parameter_port<Field>)
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     value_to_max_dispatch<Field>(self, avnd::field_index<Idx>{}, port, ctrl.value);

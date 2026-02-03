@@ -148,7 +148,7 @@ struct avnd_jit_class
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
-      if(const auto& tex = field.buffer; tex.bytes && tex.bytesize > 0)
+      if(const auto& tex = field.buffer; tex.raw_data && tex.byte_size > 0)
       {
         max::jitter::buffer_to_matrix(field, out_matrix);
       }

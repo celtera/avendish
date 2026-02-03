@@ -295,11 +295,11 @@ void print_parameter(nlohmann::json& obj)
 
   if constexpr(avnd::sample_accurate_parameter_port<type>)
   {
-    if constexpr(avnd::linear_sample_accurate_parameter<type>)
+    if constexpr(avnd::linear_sample_accurate_parameter_port<type>)
     {
       obj["sample_accurate"] = "linear";
     }
-    else if constexpr(avnd::span_sample_accurate_parameter<type>)
+    else if constexpr(avnd::span_sample_accurate_parameter_port<type>)
     {
       obj["sample_accurate"] = "span";
     }
@@ -337,7 +337,7 @@ void print_parameter(nlohmann::json& obj)
     obj["widget"] = p2;
   }
 
-  if constexpr(avnd::smooth_parameter<type>)
+  if constexpr(avnd::smooth_parameter_port<type>)
   {
     obj["smooth"] = true;
   }

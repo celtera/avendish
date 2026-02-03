@@ -11,7 +11,7 @@ namespace max
 {
 template <typename T>
 concept dict_parameter
-    = avnd::parameter<T> &&
+    = avnd::parameter_port<T> &&
       (avnd::has_field_names<decltype(T::value)> || avnd::dict_ish<decltype(T::value)>);
 
 generate_predicate_introspection(dict_parameter);

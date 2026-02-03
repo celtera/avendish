@@ -41,8 +41,10 @@ public:
     struct buf {
       halp_meta(name, "Buffer")
       struct {
-        void* handle;
-        int bytesize;
+        void* raw_data;
+        int byte_size;
+        int byte_offset;
+        bool changed;
         std::function<void(const char*, int, int)> upload;
       } buffer;
     } buffer;

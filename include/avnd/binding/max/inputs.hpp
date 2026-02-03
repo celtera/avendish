@@ -13,7 +13,8 @@ namespace max
 {
 
 template <typename Field>
-using is_explicit_parameter_t = boost::mp11::mp_bool<avnd::parameter<Field> && !avnd::attribute_port<Field>>;
+using is_explicit_parameter_t
+    = boost::mp11::mp_bool<avnd::parameter_port<Field> && !avnd::attribute_port<Field>>;
 template<typename T>
 using explicit_parameter_input_introspection = avnd::predicate_introspection<typename avnd::inputs_type<T>::type, is_explicit_parameter_t>;
 

@@ -54,9 +54,6 @@ static_assert(avnd::audio_sample_port<float, object::O::P1>);
 static_assert(avnd::mono_audio_port<object::I::P1>);
 static_assert(avnd::mono_audio_port<object::I::P2>);
 static_assert(avnd::mono_audio_port<object::O::P1>);
-static_assert(avnd::is_audio_channel_t<object::I::P1>::value);
-static_assert(avnd::is_audio_channel_t<object::I::P2>::value);
-static_assert(avnd::is_audio_channel_t<object::O::P1>::value);
 
 static_assert(avnd::audio_channel_introspection<object::I>::size == 2);
 static_assert(avnd::audio_channel_input_introspection<object>::size == 2);

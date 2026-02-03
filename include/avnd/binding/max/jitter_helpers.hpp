@@ -188,10 +188,10 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
       return;
 
   // Skip if buffer is invalid
-  if(!buf.bytes || buf.bytesize <= 0)
+  if(!buf.raw_data || buf.byte_size <= 0)
     return;
 
-  resize_buffer(matrix, buf.bytesize, 1, _jit_sym_char);
+  resize_buffer(matrix, buf.byte_size, 1, _jit_sym_char);
 
   // Get pointer to matrix data
   void* matrix_data = nullptr;
@@ -199,7 +199,7 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
   if(!matrix_data)
     return;
 
-  std::memcpy(matrix_data, buf.bytes, buf.bytesize);
+  std::memcpy(matrix_data, buf.raw_data, buf.byte_size);
 
   // Mark texture as no longer changed
   if constexpr(requires { buf.changed; })
@@ -287,20 +287,20 @@ inline void matrix_to_buffer(void* matrix, Field& field)
 
   auto& tex = field.buffer;
   if(info.type == _jit_sym_char) {
-    tex.bytesize = num_elements;
-    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+    tex.byte_size = num_elements;
+    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
   }
   else if(info.type == _jit_sym_long) {
-    tex.bytesize = num_elements * sizeof(long);
-    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+    tex.byte_size = num_elements * sizeof(long);
+    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
   }
   else if(info.type == _jit_sym_float32) {
-    tex.bytesize = num_elements * sizeof(float);
-    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+    tex.byte_size = num_elements * sizeof(float);
+    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
   }
   else if(info.type == _jit_sym_float64) {
-    tex.bytesize = num_elements * sizeof(double);
-    tex.bytes = reinterpret_cast<const char*>(matrix_data);
+    tex.byte_size = num_elements * sizeof(double);
+    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
   }
   tex.changed = true;
 }
