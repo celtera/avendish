@@ -14,6 +14,14 @@ HALP_MODULE_EXPORT
 namespace halp
 {
 // TODO look into using the LLFIO concepts instead for maximum power
+struct binary_file_view
+{
+  std::string_view bytes;
+
+  // std::fs::path would be great but limits to macOS 10.15+
+  std::string_view filename;
+};
+
 struct text_file_view
 {
   std::string_view bytes;
