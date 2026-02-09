@@ -45,8 +45,8 @@ struct typed_buffer
 struct gpu_buffer
 {
   void* handle{};
-  int byte_size{};
-  int byte_offset{};
+  int64_t byte_size{};
+  int64_t byte_offset{};
   bool changed{};
 };
 template <static_string lit>
