@@ -283,4 +283,19 @@ struct bus_introspection<T>
   static constexpr const auto output_busses = audio_bus_output_introspection<T>::size;
 };
 
+// struct { float frame[N]; }; or struct { float* frame; };
+template <typename T>
+  requires(frame_input_port_count<float, T> != 0)
+          || (frame_output_port_count<float, T> != 0)
+          || (frame_input_port_count<double, T> != 0)
+          || (frame_output_port_count<double, T> != 0)
+struct bus_introspection<T>
+{
+  using inputs = audio_bus_input_introspection<T>;
+  using outputs = audio_bus_output_introspection<T>;
+
+  static constexpr const auto input_busses = audio_bus_input_introspection<T>::size;
+  static constexpr const auto output_busses = audio_bus_output_introspection<T>::size;
+};
+
 }

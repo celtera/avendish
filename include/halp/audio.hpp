@@ -48,6 +48,71 @@ struct audio_channel
 };
 
 template <static_string lit, typename FP, int WantedChannels, static_string Desc = "">
+struct fixed_audio_frame
+{
+  static consteval auto name() { return std::string_view{lit.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
+  static constexpr int channels() { return WantedChannels; }
+
+  FP frame[WantedChannels]{};
+  HALP_INLINE_FLATTEN operator FP*() const noexcept { return frame; }
+  HALP_INLINE_FLATTEN auto get() const noexcept { return *this; }
+  HALP_INLINE_FLATTEN const FP& operator[](int i) const noexcept { return frame[i]; }
+  HALP_INLINE_FLATTEN FP& operator[](int i) noexcept { return frame[i]; }
+  HALP_INLINE_FLATTEN FP channel(std::size_t i) const noexcept
+  {
+    if(i < WantedChannels)
+      return frame[i];
+    else
+      return {};
+  }
+
+  FP* begin() noexcept { return frame; }
+  FP* end() noexcept { return frame + WantedChannels; }
+  const FP* begin() const noexcept { return frame; }
+  const FP* end() const noexcept { return frame + WantedChannels; }
+  const FP* cbegin() noexcept { return frame; }
+  const FP* cend() noexcept { return frame + WantedChannels; }
+  const FP* cbegin() const noexcept { return frame; }
+  const FP* cend() const noexcept { return frame + WantedChannels; }
+};
+
+template <typename FP>
+struct dynamic_audio_frame_base
+{
+  FP* frame{};
+  int channels{};
+
+  HALP_INLINE_FLATTEN operator FP**() const noexcept { return frame; }
+  HALP_INLINE_FLATTEN auto get() const noexcept { return *this; }
+  HALP_INLINE_FLATTEN const FP& operator[](int i) const noexcept { return frame[i]; }
+  HALP_INLINE_FLATTEN FP& operator[](int i) noexcept { return frame[i]; }
+  HALP_INLINE_FLATTEN FP channel(std::size_t i, std::size_t frames) const noexcept
+  {
+    if(i < channels)
+      return frame[i];
+    else
+      return {};
+  }
+
+  FP* begin() noexcept { return frame; }
+  FP* end() noexcept { return frame + channels; }
+  FP* begin() const noexcept { return frame; }
+  FP* end() const noexcept { return frame + channels; }
+  FP* cbegin() noexcept { return frame; }
+  FP* cend() noexcept { return frame + channels; }
+  FP* cbegin() const noexcept { return frame; }
+  FP* cend() const noexcept { return frame + channels; }
+};
+
+template <static_string Name, typename FP, static_string Desc = "">
+struct dynamic_audio_frame : dynamic_audio_frame_base<FP>
+{
+  static consteval auto name() { return std::string_view{Name.value}; }
+  static consteval auto description() { return std::string_view{Desc.value}; }
+};
+
+template <static_string lit, typename FP, int WantedChannels, static_string Desc = "">
 struct fixed_audio_bus
 {
   static consteval auto name() { return std::string_view{lit.value}; }
@@ -66,6 +131,15 @@ struct fixed_audio_bus
     else
       return {};
   }
+
+  FP** begin() noexcept { return samples; }
+  FP** end() noexcept { return samples + channels; }
+  FP* const* begin() const noexcept { return samples; }
+  FP* const* end() const noexcept { return samples + channels; }
+  FP* const* cbegin() noexcept { return samples; }
+  FP* const* cend() noexcept { return samples + channels; }
+  FP* const* cbegin() const noexcept { return samples; }
+  FP* const* cend() const noexcept { return samples + channels; }
 };
 
 template <typename FP>

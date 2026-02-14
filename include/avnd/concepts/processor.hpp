@@ -29,6 +29,13 @@ static constexpr int sample_output_port_count = boost::mp11::
     mp_count_if_q<typename outputs_type<T>::tuple, is_audio_sample_port_q<FP>>::value;
 
 template <typename FP, typename T>
+static constexpr int frame_input_port_count = boost::mp11::
+    mp_count_if_q<typename inputs_type<T>::tuple, is_audio_frame_port_q<FP>>::value;
+template <typename FP, typename T>
+static constexpr int frame_output_port_count = boost::mp11::
+    mp_count_if_q<typename outputs_type<T>::tuple, is_audio_frame_port_q<FP>>::value;
+
+template <typename FP, typename T>
 static constexpr int mono_sample_array_input_port_count = boost::mp11::mp_count_if_q<
     typename inputs_type<T>::tuple,
     is_mono_array_sample_port_q<FP>>::value;
@@ -49,38 +56,38 @@ static constexpr int poly_sample_array_output_port_count = boost::mp11::mp_count
 template <typename FP, typename T>
 concept sample_port_based
     = (sample_input_port_count<FP, T> > 0 || sample_output_port_count<FP, T> > 0);
+
+template <typename FP, typename T>
+concept frame_port_based
+    = (frame_input_port_count<FP, T> > 0 || frame_output_port_count<FP, T> > 0);
+
 template <typename FP, typename T>
 concept mono_array_port_based
     = (mono_sample_array_input_port_count<FP, T> > 0
        || mono_sample_array_output_port_count<FP, T> > 0);
+
 template <typename FP, typename T>
 concept poly_array_port_based
     = (poly_sample_array_input_port_count<FP, T> > 0
        || poly_sample_array_output_port_count<FP, T> > 0);
 
 template <typename FP, typename T>
-concept effect_is_sane = (sample_port_based<
-       FP,
-       T> && !(mono_array_port_based<FP, T> || poly_array_port_based<FP, T>))
-      || (mono_array_port_based<
-              FP,
-              T> && !(sample_port_based<FP, T> || poly_array_port_based<FP, T>))
-      || (poly_array_port_based<
-              FP,
-              T> && !(mono_array_port_based<FP, T> || sample_port_based<FP, T>))
-      || (!sample_port_based<
-              FP,
-              T> && !poly_array_port_based<FP, T> && !mono_array_port_based<FP, T>);
-;
+concept nonaudio_object
+    = !sample_port_based<FP, T> && !frame_port_based<FP, T> && !mono_array_port_based<FP, T> && !poly_array_port_based<FP, T>;
+
+template <typename FP, typename T>
+concept effect_is_sane = nonaudio_object<FP, T>
+  || bool((sample_port_based<FP, T> || frame_port_based<FP, T>) ^ (mono_array_port_based<FP, T> || poly_array_port_based<FP,T>));
 
 /// Definition of what is an audio effect ///
 template <typename FP, typename T>
-concept monophonic_port_audio_effect = mono_sample_array_input_port_count<FP, T> >
-0 || mono_sample_array_output_port_count<FP, T> > 0;
+concept monophonic_port_audio_effect = mono_array_port_based<FP, T>;
 
 template <typename FP, typename T>
-concept polyphonic_port_audio_effect = poly_sample_array_input_port_count<FP, T> >
-0 || poly_sample_array_output_port_count<FP, T> > 0;
+concept frame_port_audio_effect = frame_port_based<FP, T>;
+
+template <typename FP, typename T>
+concept polyphonic_port_audio_effect = poly_array_port_based<FP, T>;
 
 template <typename FP, typename T>
 concept monophonic_single_port_audio_effect = mono_sample_array_input_port_count<FP, T>
@@ -148,6 +155,13 @@ concept mono_per_sample_port_processor
     = (sample_input_port_count<FP, T> == 1)
    && (sample_output_port_count<FP, T> == 1)
    && per_sample_port_invocations<FP, T>;
+
+template <typename FP, typename T>
+concept per_frame_port_processor =
+    ((frame_input_port_count<FP, T> >= 1)
+     || (frame_output_port_count<FP, T> >= 1))
+    && per_sample_port_invocations<FP, T>;
+
 template <typename FP, typename T>
 concept poly_per_sample_port_processor =
     ((sample_input_port_count<FP, T> > 1)
@@ -230,6 +244,7 @@ concept monophonic_processor = effect_is_sane<FP, T> && (
 template <typename FP, typename T>
 concept polyphonic_processor =
    polyphonic_arg_audio_effect<FP, T>
+|| frame_port_based<FP, T>
 || poly_array_port_based<FP, T>
 || poly_per_sample_port_processor<FP, T>;
 
@@ -242,6 +257,7 @@ concept typed_processor
     = sample_port_based<FP, T>
 || mono_array_port_based<FP, T>
 || poly_array_port_based<FP, T>
+|| frame_port_based<FP, T>
 || mono_per_sample_arg_processor<FP, T>
 || mono_per_channel_arg_processor<FP, T>
 || poly_per_sample_port_processor<FP, T>
@@ -281,8 +297,13 @@ concept sample_port_processor =
 ;
 
 template <typename T>
+concept frame_port_processor 
+    = frame_port_audio_effect<float, T> || frame_port_audio_effect<double, T>;
+
+template <typename T>
 concept channel_port_processor
     = monophonic_port_audio_effect<float, T> || monophonic_port_audio_effect<double, T>;
+
 template <typename T>
 concept bus_port_processor
     = polyphonic_port_audio_effect<float, T> || polyphonic_port_audio_effect<double, T>;
@@ -296,6 +317,7 @@ concept audio_argument_processor =
 template<typename T>
 concept audio_port_processor =
      (sample_port_processor<T>
+  || frame_port_processor<T>
   || channel_port_processor<T>
   || bus_port_processor<T>) && !tag_cv<T>
 ;
