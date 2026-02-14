@@ -118,8 +118,13 @@ template <typename T>
 concept variable_poly_audio_port
     = dynamic_poly_audio_port<T> && requires(T t) { t.request_channels = {}; };
 
+// Most general audio port concept
 template <typename T>
 concept audio_port = mono_audio_port<T> || poly_audio_port<T>;
+
+// Number of channels known at compile time, either structurally or because constexpr
+template <typename T>
+concept fixed_audio_port = mono_audio_port<T> || fixed_poly_audio_port<T>;
 
 int get_channels(fixed_poly_audio_port auto& port)
 {

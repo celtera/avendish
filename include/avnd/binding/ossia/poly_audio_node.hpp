@@ -64,6 +64,14 @@ public:
         },
         this->ossia_inlets.ports);
 
+    // If all our inputs are fixed inputs, we don't want to do any change.
+    if constexpr(
+        avnd::audio_port_input_introspection<T>::size
+        == avnd::fixed_audio_port_input_introspection<T>::size)
+    {
+      ok = true;
+    }
+
     // Ensure that we have enough output space
     tuplet::apply(
         [&](auto&&... ports) {
