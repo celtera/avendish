@@ -113,6 +113,7 @@ public:
   int frame_count_for_this_tick = 0;
 
   int buffer_size{};
+  bool audio_channels_changed{false};
   double sample_rate{};
   double tempo{ossia::root_tempo};
 
@@ -464,6 +465,8 @@ public:
       this->buffer_size = frames;
       changed = true;
     }
+
+    changed |= std::exchange(this->audio_channels_changed, false);
 
     if(changed)
     {

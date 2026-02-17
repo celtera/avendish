@@ -545,6 +545,7 @@ struct setup_variable_audio_ports
     ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
       s.channels.set_input_channels(s.impl, in_refl::template unmap<Idx>(), x);
+      s.audio_channels_changed = true;
     };
   }
 
@@ -555,6 +556,7 @@ struct setup_variable_audio_ports
     ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
       s.channels.set_output_channels(s.impl, out_refl::template unmap<Idx>(), x);
+      s.audio_channels_changed = true;
     };
   }
 
