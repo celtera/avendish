@@ -42,8 +42,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
           = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
       // Convert inputs and outputs to double
-      in_port.samples = (input_fp_type**)alloca(sizeof(DstFP*) * input_channels);
-      out_port.samples = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
+      in_port.samples = (input_fp_type**)alloca(sizeof(DstFP*) * (1 + input_channels));
+      out_port.samples = (DstFP**)alloca(sizeof(DstFP*) * (1 + output_channels));
 
       if_possible(in_port.channels = input_channels);
       if_possible(out_port.channels = output_channels);
@@ -137,7 +137,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
           = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
       // Convert inputs and outputs to double
-      in_port.samples = (input_fp_type**)alloca(sizeof(DstFP*) * input_channels);
+      in_port.samples = (input_fp_type**)alloca(sizeof(DstFP*) * (1 + input_channels));
 
       if_possible(in_port.channels = input_channels);
 
@@ -310,7 +310,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
             = audio_buffer_storage<T>::input_buffer_for(needed_type{});
 
         // Convert inputs to the right FP type, init outputs
-        auto i_conv = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
+        auto i_conv = (DstFP**)alloca(sizeof(DstFP*) * (1 + input_channels));
         for(int c = 0; c < input_channels; ++c)
         {
           i_conv[c] = dsp_buffer_input.data() + c * n;
@@ -327,7 +327,7 @@ struct process_adapter<T> : audio_buffer_storage<T>
         auto& dsp_buffer_output
             = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
-        auto o_conv = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
+        auto o_conv = (DstFP**)alloca(sizeof(DstFP*) * (1 + output_channels));
         for(int c = 0; c < output_channels; ++c)
         {
           o_conv[c] = dsp_buffer_output.data() + c * n;

@@ -66,7 +66,7 @@ struct process_adapter<T>
     const int channels = input_channels;
     const auto n = get_frames(tick);
 
-    auto input_buf = (FP*)alloca(channels * sizeof(FP));
+    auto input_buf = (FP*)alloca((1 + channels) * sizeof(FP));
 
     for(int32_t i = 0; i < n; i++)
     {

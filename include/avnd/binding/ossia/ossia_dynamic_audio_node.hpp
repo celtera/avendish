@@ -227,7 +227,7 @@ public:
           total_input_channels += port->channels();
         });
 
-    double** in_ptr = (double**)alloca(sizeof(double*) * total_input_channels);
+    double** in_ptr = (double**)alloca(sizeof(double*) * (1 + total_input_channels));
     in_busses::for_all_n2(
         this->impl.inputs(), [&]<std::size_t NPred, std::size_t NField>(
                                  auto& field, avnd::predicate_index<NPred> pred_idx,
@@ -250,19 +250,30 @@ public:
           in_ptr += port->channels();
         });
 
-    int output_channels = 0;
+    // 1. Set & compute the expected channels
+    int expected_output_channels = 0;
     out_busses::for_all_n2(
         this->impl.outputs(), [&]<std::size_t NPred, std::size_t NField>(
                                   auto& field, avnd::predicate_index<NPred> pred_idx,
                                   avnd::field_index<NField> f_idx) {
-          output_channels += this->template compute_output_channels<NPred>(field);
-        });
+      expected_output_channels += this->template compute_output_channels<NPred>(field);
+    });
 
+    // 2. Apply prepare
     if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
     }
+
+    // 3. Check the number of channels we aactually got
+    int output_channels = 0;
+    out_busses::for_all_n2(
+        this->impl.outputs(), [&]<std::size_t NPred, std::size_t NField>(
+                                  auto& field, avnd::predicate_index<NPred> pred_idx,
+                                  avnd::field_index<NField> f_idx) {
+      output_channels += this->template compute_output_channels<NPred>(field);
+    });
 
     // Smooth
     this->process_smooth();
@@ -296,7 +307,7 @@ public:
       }
     });
 
-    double** out_ptr = (double**)alloca(sizeof(double*) * output_channels);
+    double** out_ptr = (double**)alloca(sizeof(double*) * (1 + output_channels));
 
     out_busses::for_all_n2(
         this->impl.outputs(), [&]<typename Field, std::size_t NPred, std::size_t NField>(
