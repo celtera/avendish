@@ -321,6 +321,7 @@ concept audio_port_processor =
   || channel_port_processor<T>
   || bus_port_processor<T>) && !tag_cv<T>
 ;
+
 }
 
 // clang-format on

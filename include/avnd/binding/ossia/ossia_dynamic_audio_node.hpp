@@ -133,6 +133,16 @@ public:
   using out_busses = avnd::dynamic_poly_audio_port_output_introspection<T>;
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 
+  static inline std::vector<double> zeros_in, zeros_out;
+
+  template <typename... Args>
+  safe_node(Args&&... args)
+      : safe_node_base<T, safe_node<T>>{std::forward<Args>(args)...}
+  {
+    zeros_in.resize(4096);
+    zeros_out.resize(4096);
+  }
+
   bool scan_audio_input_channels() { return false; }
 
   template <std::size_t NPred>
@@ -213,42 +223,51 @@ public:
     auto start = tm.start_sample;
     auto frames = tm.length;
 
-    // Compute channel count
+    // Compute input channel count (from busses)
     int total_input_channels = 0;
     in_busses::for_all_n2(
         this->impl.inputs(), [&]<std::size_t NPred, std::size_t NField>(
                                  auto& field, avnd::predicate_index<NPred> pred_idx,
                                  avnd::field_index<NField> f_idx) {
-          ossia::audio_inlet& port = tuplet::get<NField>(this->ossia_inlets.ports);
+      ossia::audio_inlet& port = tuplet::get<NField>(this->ossia_inlets.ports);
 
-          if constexpr(requires { field.channels(); })
-            port->set_channels(field.channels());
+      if constexpr(requires { field.channels(); })
+        port->set_channels(field.channels());
 
-          total_input_channels += port->channels();
-        });
+      total_input_channels += port->channels();
+    });
 
-    double** in_ptr = (double**)alloca(sizeof(double*) * (1 + total_input_channels));
-    in_busses::for_all_n2(
-        this->impl.inputs(), [&]<std::size_t NPred, std::size_t NField>(
-                                 auto& field, avnd::predicate_index<NPred> pred_idx,
+    // Compute input channel count (from mono channels / dynamic ports)
+    in_channels::for_all_n2(
+        this->impl.inputs(), [&]<typename Field, std::size_t NPred, std::size_t NField>(
+                                 Field& field, avnd::predicate_index<NPred> pred_idx,
                                  avnd::field_index<NField> f_idx) {
-          ossia::audio_inlet& port = get<NField>(this->ossia_inlets.ports);
-          auto cur_ptr = in_ptr;
+      if constexpr(avnd::dynamic_ports_port<Field>)
+      {
+        const auto& ports = tuplet::get<NField>(this->ossia_inlets.ports);
+        int port_min = std::min(field.ports.size(), ports.size());
+        for(int port_index = 0; port_index < port_min; port_index++)
+        {
+          ossia::inlet* out = ports[port_index];
+          ossia::audio_port& ossia_port = out->cast<ossia::audio_port>();
+          // FIXME in the future maybe we want multiple dynamic_ports ?
+          ossia_port.set_channels(1);
+          ossia_port.channel(0).resize(st.bufferSize());
 
-          for(int i = 0; i < port->channels(); i++)
-          {
-            port->channel(i).resize(st.bufferSize());
-            cur_ptr[i] = port->channel(i).data() + start;
-          }
+          field.ports[port_index].channel = ossia_port.channel(0).data() + start;
+          total_input_channels++;
+        }
+      }
+      else
+      {
+        ossia::audio_inlet& port = tuplet::get<NField>(this->ossia_outlets.ports);
+        port->set_channels(1);
 
-          if_possible(field.samples = cur_ptr) else if_possible(
-              field.samples
-              = (const double**)cur_ptr) else static_assert(field.samples.wrong_type);
-
-          if_possible(field.channels = port->channels());
-
-          in_ptr += port->channels();
-        });
+        port->channel(0).resize(st.bufferSize());
+        field.channel = port->channel(0).data() + start;
+        total_input_channels++;
+      }
+    });
 
     // 1. Set & compute the expected channels
     int expected_output_channels = 0;
@@ -266,7 +285,77 @@ public:
       return;
     }
 
-    // 3. Check the number of channels we aactually got
+    // 3. Check the number of channels we aactually got and set the pointers
+
+    double** in_ptr = (double**)alloca(sizeof(double*) * (1 + total_input_channels));
+    // Set the pointers in the input ports: for busses
+    in_busses::for_all_n2(
+        this->impl.inputs(), [&]<typename Field, std::size_t NPred, std::size_t NField>(
+                                 Field& field, avnd::predicate_index<NPred> pred_idx,
+                                 avnd::field_index<NField> f_idx) {
+      if constexpr(avnd::dynamic_ports_port<Field>)
+      {
+        // TODO
+      }
+      else
+      {
+        ossia::audio_inlet& port = get<NField>(this->ossia_inlets.ports);
+
+        auto cur_ptr = in_ptr;
+
+        for(int i = 0; i < port->channels(); i++)
+        {
+          port->channel(i).resize(st.bufferSize());
+          cur_ptr[i] = port->channel(i).data() + start;
+        }
+
+        // clang-format off
+        if_possible(field.samples = cur_ptr)
+            else if_possible(field.samples = (const double**)cur_ptr)
+            else static_assert(field.samples.wrong_type);
+        // clang-format on
+
+        if_possible(field.channels = port->channels());
+
+        in_ptr += port->channels();
+      }
+    });
+
+    // For channels:
+
+    in_channels::for_all_n2(
+        this->impl.inputs(), [&]<typename Field, std::size_t NPred, std::size_t NField>(
+                                 Field& field, avnd::predicate_index<NPred> pred_idx,
+                                 avnd::field_index<NField> f_idx) {
+      if constexpr(avnd::dynamic_ports_port<Field>)
+      {
+        const auto& ports = tuplet::get<NField>(this->ossia_inlets.ports);
+        int port_min = std::min(field.ports.size(), ports.size());
+        for(int port_index = 0; port_index < port_min; port_index++)
+        {
+          ossia::inlet* out = ports[port_index];
+          ossia::audio_port& port = out->cast<ossia::audio_port>();
+          // FIXME in the future maybe we want multiple dynamic_ports ?
+          port.set_channels(1);
+          port.channel(0).resize(st.bufferSize());
+
+          field.ports[port_index].channel = port.channel(0).data() + start;
+        }
+        for(int port_index = port_min; port_index < field.ports.size(); port_index++)
+        {
+          field.ports[port_index].channel = this->zeros_in.data();
+        }
+      }
+      else
+      {
+        ossia::audio_inlet& port = tuplet::get<NField>(this->ossia_outlets.ports);
+        port->set_channels(1);
+
+        port->channel(0).resize(st.bufferSize());
+        field.channel = port->channel(0).data() + start;
+      }
+    });
+
     int output_channels = 0;
     out_busses::for_all_n2(
         this->impl.outputs(), [&]<std::size_t NPred, std::size_t NField>(
@@ -295,6 +384,10 @@ public:
           ossia_port.channel(0).resize(st.bufferSize());
 
           field.ports[port_index].channel = ossia_port.channel(0).data() + start;
+        }
+        for(int port_index = port_min; port_index < field.ports.size(); port_index++)
+        {
+          field.ports[port_index].channel = this->zeros_out.data();
         }
       }
       else

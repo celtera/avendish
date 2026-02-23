@@ -139,6 +139,10 @@ using dynamic_ports_output_introspection
     = dynamic_ports_port_introspection<typename outputs_type<T>::type>;
 
 template <typename T>
+concept has_dynamic_ports = avnd::dynamic_ports_input_introspection<T>::size > 0
+                            || avnd::dynamic_ports_output_introspection<T>::size > 0;
+
+template <typename T>
 using audio_bus_introspection = poly_audio_port_introspection<T>;
 template <typename T>
 using audio_bus_input_introspection
