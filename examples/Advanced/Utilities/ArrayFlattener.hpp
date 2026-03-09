@@ -33,7 +33,7 @@ struct ArrayFlattener
   {
     std::vector<ossia::value>& out;
     void operator()(ossia::impulse& v) const noexcept { out.emplace_back(v); }
-    void operator()(int& v) const noexcept { out.emplace_back(v); }
+    void operator()(int32_t& v) const noexcept { out.emplace_back(v); }
     void operator()(float& v) const noexcept { out.emplace_back(v); }
     void operator()(bool& v) const noexcept { out.emplace_back(v); }
     void operator()(std::string& v) const noexcept { out.emplace_back(std::move(v)); }
@@ -70,7 +70,7 @@ struct ArrayFlattener
     std::vector<ossia::value>& out;
     bool recursive{};
     void operator()(ossia::impulse& v) const noexcept { out.emplace_back(v); }
-    void operator()(int& v) const noexcept { out.emplace_back(v); }
+    void operator()(int32_t& v) const noexcept { out.emplace_back(v); }
     void operator()(float& v) const noexcept { out.emplace_back(v); }
     void operator()(bool& v) const noexcept { out.emplace_back(v); }
     void operator()(std::string& v) const noexcept { out.emplace_back(std::move(v)); }

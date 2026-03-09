@@ -8,7 +8,7 @@
 namespace ao
 {
 
-struct RangeFilter
+struct RangeMapper // FIXME implement me
 {
 public:
   halp_meta(name, "Range Mapper")

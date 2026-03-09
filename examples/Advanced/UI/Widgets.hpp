@@ -29,7 +29,8 @@ struct Impulse
   {
     bool operator()() { return false; }
     bool operator()(ossia::impulse) { return true; }
-    bool operator()(int v) { return v != 0; }
+    bool operator()(bool v) { return v != 0; }
+    bool operator()(int32_t v) { return v != 0; }
     bool operator()(float v) { return v != 0; }
     bool operator()(ossia::vec2f) { return true; }
     bool operator()(ossia::vec3f) { return true; }

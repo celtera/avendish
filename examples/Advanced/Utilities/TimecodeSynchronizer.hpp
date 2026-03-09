@@ -453,7 +453,7 @@ private:
     // Slope = speed
     double speed = (n * sumTTC - sumT * sumTC) / denominator;
 
-    speed = std::clamp(speed, -10.0, 10.0);
+    speed = std::clamp(speed, (double)-10.0, (double)10.0);
 
     return speed;
   }

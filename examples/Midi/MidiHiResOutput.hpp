@@ -36,8 +36,8 @@ struct MidiHiResOutput
   {
     for(auto& [t, v] : inputs.integer.values)
     {
-      const int32_t m = ossia::clamp(int32_t(v / 127), 0, 127);
-      const int32_t l = ossia::clamp(int32_t(v - m * 127), 0, 127);
+      const int32_t m = ossia::clamp(int32_t(v / 127), (int32_t)0, (int32_t)127);
+      const int32_t l = ossia::clamp(int32_t(v - m * 127), (int32_t)0, (int32_t)127);
 
       outputs.msb(t, m);
       outputs.lsb(t, l);
@@ -45,8 +45,8 @@ struct MidiHiResOutput
     for(auto& [t, val] : inputs.fp.values)
     {
       const double v = val * (128. * 128.);
-      const int32_t m = ossia::clamp(int32_t(v / 127.), 0, 127);
-      const int32_t l = ossia::clamp(int32_t(v - m * 127.), 0, 127);
+      const int32_t m = ossia::clamp(int32_t(v / 127.), (int32_t)0, (int32_t)127);
+      const int32_t l = ossia::clamp(int32_t(v - m * 127.), (int32_t)0, (int32_t)127);
 
       outputs.msb(t, m);
       outputs.lsb(t, l);

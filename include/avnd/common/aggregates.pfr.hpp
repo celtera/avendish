@@ -129,5 +129,4 @@ static constexpr int index_in_struct_static()
   static_constexpr auto idx = index_of<M>;
   return idx;
 }
-
 }
