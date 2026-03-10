@@ -30,46 +30,85 @@ public:
     UInt8,
   };
 
+  enum Mode
+  {
+    FloatArray,
+    IntArray,
+    String
+  };
+
   struct
   {
     halp::cpu_buffer_input<"Input"> main;
     halp::enum_t<Type, "Type"> type;
+    halp::combobox_t<"Mode", Mode> mode;
   } inputs;
 
   struct
   {
-    halp::val_port<"Output", std::vector<float>> main;
+    halp::val_port<
+        "Output", std::variant<std::vector<float>, std::vector<int>, std::string>>
+        main;
   } outputs;
 
   template <typename T>
-  void process()
+  void process(auto& v)
   {
+    v.clear();
     auto sz = inputs.main.buffer.byte_size;
     auto elements = sz / sizeof(T);
     auto ptr = (T*)inputs.main.buffer.raw_data;
-    outputs.main.value.assign(ptr, ptr + elements);
+    v.assign(ptr, ptr + elements);
   }
 
-  void operator()() noexcept
+  void do_process(auto& v)
   {
     switch(inputs.type)
     {
       case Type::Float32:
-        return process<float>();
+        return process<float>(v);
       case Type::Float64:
-        return process<double>();
+        return process<double>(v);
       case Type::SInt32:
-        return process<int32_t>();
+        return process<int32_t>(v);
       case Type::UInt32:
-        return process<uint32_t>();
+        return process<uint32_t>(v);
       case Type::SInt16:
-        return process<int16_t>();
+        return process<int16_t>(v);
       case Type::UInt16:
-        return process<uint16_t>();
+        return process<uint16_t>(v);
       case Type::SInt8:
-        return process<int8_t>();
+        return process<int8_t>(v);
       case Type::UInt8:
-        return process<uint8_t>();
+        return process<uint8_t>(v);
+    }
+  }
+
+  void operator()() noexcept
+  {
+    switch(inputs.mode)
+    {
+      case Mode::FloatArray: {
+        if(auto ptr = std::get_if<std::vector<float>>(&outputs.main.value))
+          return do_process(*ptr);
+        else
+          return do_process(outputs.main.value.emplace<0>());
+        break;
+      }
+      case Mode::IntArray: {
+        if(auto ptr = std::get_if<std::vector<int>>(&outputs.main.value))
+          return do_process(*ptr);
+        else
+          return do_process(outputs.main.value.emplace<1>());
+        break;
+      }
+      case Mode::String: {
+        if(auto ptr = std::get_if<std::string>(&outputs.main.value))
+          return do_process(*ptr);
+        else
+          return do_process(outputs.main.value.emplace<2>());
+        break;
+      }
     }
   }
 };

@@ -8,6 +8,7 @@
 #include <halp/meta.hpp>
 
 #include <algorithm>
+#include <variant>
 
 namespace uo
 {
@@ -38,7 +39,8 @@ public:
 
   struct
   {
-    halp::val_port<"Input", std::vector<input_value_type>> main;
+    halp::val_port<"Input", std::variant<std::vector<input_value_type>, std::string>>
+        main;
     halp::enum_t<Type, "Type"> type;
   } inputs;
 
@@ -48,46 +50,80 @@ public:
   } outputs;
 
   template <typename T>
-  void process()
+  void process(const std::vector<input_value_type>& v)
   {
     if constexpr(std::is_same_v<T, input_value_type>)
     {
       // Direct reuse of the buffer
-      outputs.main.buffer.raw_data = (unsigned char*)inputs.main.value.data();
-      outputs.main.buffer.byte_size = inputs.main.value.size() * sizeof(float);
+      outputs.main.buffer.raw_data = (unsigned char*)v.data();
+      outputs.main.buffer.byte_size = v.size() * sizeof(float);
       outputs.main.buffer.byte_offset = 0;
       outputs.main.buffer.changed = true;
     }
     else
     {
       // Allocation and copy :'(
-      auto span = outputs.main.create<T>(inputs.main.value.size());
-      std::copy_n(inputs.main.value.data(), inputs.main.value.size(), span.data());
+      auto span = outputs.main.create<T>(v.size());
+      std::copy_n(v.data(), v.size(), span.data());
+      outputs.main.buffer.changed = true;
+    }
+  }
+
+  template <typename T>
+  static constexpr int align_up(int n)
+  {
+    constexpr int alignment = sizeof(T);
+    return (n + alignment - 1) & ~(alignment - 1);
+  }
+
+  template <typename T>
+  void process(std::string_view v)
+  {
+    if((v.size() % sizeof(T)) == 0)
+    {
+      // Direct reuse of the buffer
+      outputs.main.buffer.raw_data = (unsigned char*)v.data();
+      outputs.main.buffer.byte_size = v.size();
+      outputs.main.buffer.byte_offset = 0;
+      outputs.main.buffer.changed = true;
+    }
+    else
+    {
+      // Allocation and copy :'(
+      const auto size = v.size();
+      const auto buffer_size = align_up<T>(size);
+
+      auto span = outputs.main.create<T>(buffer_size);
+      std::copy_n(v.data(), v.size(), span.data());
+      for(auto n = size; n < buffer_size; ++n)
+        span[n] = 0;
       outputs.main.buffer.changed = true;
     }
   }
 
   void operator()() noexcept
   {
-    switch(inputs.type)
-    {
-      case Type::Float32:
-        return process<float>();
-      case Type::Float64:
-        return process<double>();
-      case Type::SInt32:
-        return process<int32_t>();
-      case Type::UInt32:
-        return process<uint32_t>();
-      case Type::SInt16:
-        return process<int16_t>();
-      case Type::UInt16:
-        return process<uint16_t>();
-      case Type::SInt8:
-        return process<int8_t>();
-      case Type::UInt8:
-        return process<uint8_t>();
-    }
+    std::visit([&](auto& v) {
+      switch(inputs.type)
+      {
+        case Type::Float32:
+          return process<float>(v);
+        case Type::Float64:
+          return process<double>(v);
+        case Type::SInt32:
+          return process<int32_t>(v);
+        case Type::UInt32:
+          return process<uint32_t>(v);
+        case Type::SInt16:
+          return process<int16_t>(v);
+        case Type::UInt16:
+          return process<uint16_t>(v);
+        case Type::SInt8:
+          return process<int8_t>(v);
+        case Type::UInt8:
+          return process<uint8_t>(v);
+      }
+    }, inputs.main.value);
   }
 };
 }
