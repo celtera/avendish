@@ -24,7 +24,10 @@ struct ValueMixer
     Weight,
     Min,
     Max,
-    Multiply
+    Multiply,
+    Sum,
+    Difference,
+    AltSum
   };
   struct ins
   {
@@ -154,6 +157,47 @@ struct ValueMixer
     outputs.out.value = any_active ? product : 0.0f;
   }
 
+  void combine_add(int n, std::span<int> solo_indices)
+  {
+    float sum = 0.0f;
+    bool any_active = false;
+
+    foreach_active(n, solo_indices, [&](int i) {
+      sum += (inputs.in_i.ports[i].value * inputs.mix_i.ports[i].value);
+      any_active = true;
+    });
+
+    outputs.out.value = any_active ? sum : 0.0f;
+  }
+
+  void combine_difference(int n, std::span<int> solo_indices)
+  {
+    float sum = 0.0f;
+    bool any_active = false;
+
+    foreach_active(n, solo_indices, [&](int i) {
+      sum -= (inputs.in_i.ports[i].value * inputs.mix_i.ports[i].value);
+      any_active = true;
+    });
+
+    outputs.out.value = any_active ? sum : 0.0f;
+  }
+
+  void combine_altsum(int n, std::span<int> solo_indices)
+  {
+    float sum = 0.0f;
+    bool any_active = false;
+
+    foreach_active(n, solo_indices, [&](int i) {
+      if(i % 2 == 0)
+        sum += (inputs.in_i.ports[i].value * inputs.mix_i.ports[i].value);
+      else
+        sum -= (inputs.in_i.ports[i].value * inputs.mix_i.ports[i].value);
+      any_active = true;
+    });
+
+    outputs.out.value = any_active ? sum : 0.0f;
+  }
   void operator()()
   {
     outputs.out.value = 0.;
@@ -182,6 +226,12 @@ struct ValueMixer
         return combine_max(n, solo_indices);
       case Mode::Multiply:
         return combine_multiply(n, solo_indices);
+      case Mode::Sum:
+        return combine_add(n, solo_indices);
+      case Mode::Difference:
+        return combine_difference(n, solo_indices);
+      case Mode::AltSum:
+        return combine_altsum(n, solo_indices);
     }
   }
 };
