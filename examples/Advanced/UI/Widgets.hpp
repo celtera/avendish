@@ -136,7 +136,7 @@ struct String
     halp::callback<"Out", std::string> out;
   } outputs;
 
-  void operator()() noexcept { }
+  void operator()() noexcept { outputs.out(inputs.v.value); }
 };
 
 class Knob
