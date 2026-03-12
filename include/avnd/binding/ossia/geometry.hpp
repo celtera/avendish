@@ -21,34 +21,160 @@ struct is_shared_ptr<std::shared_ptr<T>> : std::true_type
 };
 
 template <typename Attr>
+constexpr ossia::attribute_semantic semantic_for_attribute(const Attr& attr)
+{
+  // clang-format off
+  static constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(semantic,
+    // Core geometry
+    (ossia::attribute_semantic::position, position, positions, pos, P),
+    (ossia::attribute_semantic::normal, normal, normals, norm, N),
+    (ossia::attribute_semantic::tangent, tangent, tangents, tang, T),
+    (ossia::attribute_semantic::bitangent, bitangent, bitangents, binormal, binormals, B),
+
+    // Basic materials
+    (ossia::attribute_semantic::texcoord0, texcoord, tex_coord, texcoords, texcoord0, tex_coord0, uv, uv0),
+    (ossia::attribute_semantic::texcoord1, texcoord1, tex_coord1, uv1, map1),
+    (ossia::attribute_semantic::texcoord2, texcoord2, tex_coord2, uv2, map2),
+    (ossia::attribute_semantic::texcoord3, texcoord3, tex_coord3, uv3, map3),
+    (ossia::attribute_semantic::texcoord4, texcoord4, tex_coord4, uv4, map4),
+    (ossia::attribute_semantic::texcoord5, texcoord5, tex_coord5, uv5, map5),
+    (ossia::attribute_semantic::texcoord6, texcoord6, tex_coord6, uv6, map6),
+    (ossia::attribute_semantic::texcoord7, texcoord7, tex_coord7, uv7, map7),
+
+    (ossia::attribute_semantic::color0, color, colors, color0, col, Cd),
+    (ossia::attribute_semantic::color1, color1, colors1, col1),
+    (ossia::attribute_semantic::color2, color2, colors2, col2),
+    (ossia::attribute_semantic::color3, color3, colors3, col3),
+
+    // Skinning / skeletal animation 
+    (ossia::attribute_semantic::joints0, joints, joints0, bone_indices, blendindices, blendindices0),
+    (ossia::attribute_semantic::joints1, joints1, bone_indices1, blendindices1),
+    (ossia::attribute_semantic::weights0, weights, weights0, bone_weights, blendweights, blendweights0),
+    (ossia::attribute_semantic::weights1, weights1, bone_weights1, blendweights1),
+
+    // Morph targets / blend shapes
+    (ossia::attribute_semantic::morph_position, morph_position, blendshape_position, morph_pos),
+    (ossia::attribute_semantic::morph_normal, morph_normal, blendshape_normal, morph_norm),
+    (ossia::attribute_semantic::morph_tangent, morph_tangent, blendshape_tangent, morph_tang),
+    (ossia::attribute_semantic::morph_texcoord, morph_texcoord, morph_uv, blendshape_uv),
+    (ossia::attribute_semantic::morph_color, morph_color, blendshape_color),
+
+    // Transform / instancing
+    (ossia::attribute_semantic::rotation, rotation, rot, quaternion, orient, orientation),
+    (ossia::attribute_semantic::rotation_extra, rotation_extra, rot_extra),
+    (ossia::attribute_semantic::scale, scale, scales),
+    (ossia::attribute_semantic::uniform_scale, uniform_scale, pscale),
+    (ossia::attribute_semantic::up, up, up_vector, upvector),
+    (ossia::attribute_semantic::pivot, pivot, origin),
+    (ossia::attribute_semantic::transform_matrix, transform_matrix, transform, matrix, model_matrix),
+    (ossia::attribute_semantic::translation, translation, trans, offset),
+
+    // Particle dynamics
+    (ossia::attribute_semantic::velocity, velocity, vel, v),
+    (ossia::attribute_semantic::acceleration, acceleration, accel),
+    (ossia::attribute_semantic::force, force, forces, f),
+    (ossia::attribute_semantic::mass, mass, m),
+    (ossia::attribute_semantic::age, age),
+    (ossia::attribute_semantic::lifetime, lifetime, life),
+    (ossia::attribute_semantic::birth_time, birth_time, creation_time),
+    (ossia::attribute_semantic::particle_id, particle_id, pid),
+    (ossia::attribute_semantic::drag, drag, air_resistance),
+    (ossia::attribute_semantic::angular_velocity, angular_velocity, ang_vel, w),
+    (ossia::attribute_semantic::previous_position, previous_position, prev_pos, ppos),
+    (ossia::attribute_semantic::rest_position, rest_position, rest, Pref),
+    (ossia::attribute_semantic::target_position, target_position, target, goal),
+    (ossia::attribute_semantic::previous_velocity, previous_velocity, prev_vel, pvel),
+    (ossia::attribute_semantic::state, state, status),
+    (ossia::attribute_semantic::collision_count, collision_count, num_collisions),
+    (ossia::attribute_semantic::collision_normal, collision_normal, hit_normal),
+    (ossia::attribute_semantic::sleep, sleep, sleeping, dormant),
+
+    // Rendering hints
+    (ossia::attribute_semantic::sprite_size, sprite_size, size, dimensions),
+    (ossia::attribute_semantic::sprite_rotation, sprite_rotation, sprite_rot),
+    (ossia::attribute_semantic::sprite_facing, sprite_facing, facing),
+    (ossia::attribute_semantic::sprite_index, sprite_index, frame, frame_index),
+    (ossia::attribute_semantic::width, width, curve_thickness, radius),
+    (ossia::attribute_semantic::opacity, opacity, alpha),
+    (ossia::attribute_semantic::emissive, emissive, emission, incandescence),
+    (ossia::attribute_semantic::emissive_strength, emissive_strength, emission_strength, emission_multiplier),
+
+    // Material / PBR
+    (ossia::attribute_semantic::roughness, roughness, rough),
+    (ossia::attribute_semantic::metallic, metallic, metalness, metal),
+    (ossia::attribute_semantic::ambient_occlusion, ambient_occlusion, ao, occlusion),
+    (ossia::attribute_semantic::specular, specular, spec),
+    (ossia::attribute_semantic::subsurface, subsurface, sss, subsurface_scattering),
+    (ossia::attribute_semantic::clearcoat, clearcoat, clear_coat),
+    (ossia::attribute_semantic::clearcoat_roughness, clearcoat_roughness, clear_coat_roughness),
+    (ossia::attribute_semantic::anisotropy, anisotropy, aniso),
+    (ossia::attribute_semantic::anisotropy_direction, anisotropy_direction, aniso_dir, anisotropy_rotation),
+    (ossia::attribute_semantic::ior, ior, index_of_refraction),
+    (ossia::attribute_semantic::transmission, transmission, transm),
+    (ossia::attribute_semantic::thickness, thickness, material_thickness, volume_thickness),
+    (ossia::attribute_semantic::material_id, material_id, mat_id, material_index),
+
+    // Gaussian splatting
+    (ossia::attribute_semantic::sh_dc, sh_dc, f_dc, dc),
+    (ossia::attribute_semantic::sh_coeffs, sh_coeffs, f_rest, sh, spherical_harmonics),
+    (ossia::attribute_semantic::covariance_3d, covariance_3d, covariance, cov3d),
+    (ossia::attribute_semantic::sh_degree, sh_degree, degree),
+
+    // Volumetric / field data
+    (ossia::attribute_semantic::density, density, dens),
+    (ossia::attribute_semantic::temperature, temperature, temp),
+    (ossia::attribute_semantic::fuel, fuel),
+    (ossia::attribute_semantic::pressure, pressure),
+    (ossia::attribute_semantic::divergence, divergence, div),
+    (ossia::attribute_semantic::sdf_distance, sdf_distance, sdf, distance),
+    (ossia::attribute_semantic::voxel_color, voxel_color, vcolor),
+
+    // Topology / connectivity
+    (ossia::attribute_semantic::name, name, string_name),
+    (ossia::attribute_semantic::piece_id, piece_id, piece),
+    (ossia::attribute_semantic::line_id, line_id, curve_id),
+    (ossia::attribute_semantic::prim_id, prim_id, primitive_id),
+    (ossia::attribute_semantic::point_id, point_id, ptnum, id),
+    (ossia::attribute_semantic::group_mask, group_mask, group),
+    (ossia::attribute_semantic::instance_id, instance_id, instance),
+
+    // UI
+    (ossia::attribute_semantic::selection, selection, selected, soft_selection),
+
+    // User / general purpose
+    (ossia::attribute_semantic::fx0, fx0),
+    (ossia::attribute_semantic::fx1, fx1),
+    (ossia::attribute_semantic::fx2, fx2),
+    (ossia::attribute_semantic::fx3, fx3),
+    (ossia::attribute_semantic::fx4, fx4),
+    (ossia::attribute_semantic::fx5, fx5),
+    (ossia::attribute_semantic::fx6, fx6),
+    (ossia::attribute_semantic::fx7, fx7)
+  );
+  // clang-format on
+  return m(attr, ossia::attribute_semantic::custom);
+}
+
+template <typename Attr>
 constexpr int standard_location_for_attribute(int k)
 {
-  if constexpr(requires { Attr::position; } || requires { Attr::positions; })
-    return 0;
-  else if constexpr(requires { Attr::texcoord; } || requires {
-                      Attr::tex_coord;
-                    } || requires { Attr::texcoords; } || requires {
-                      Attr::tex_coords;
-                    } || requires { Attr::uv; } || requires { Attr::uvs; })
-    return 1;
-  else if constexpr(requires { Attr::color; } || requires { Attr::colors; })
-    return 2;
-  else if constexpr(requires { Attr::normal; } || requires { Attr::normals; })
-    return 3;
-  else if constexpr(requires { Attr::tangent; } || requires { Attr::tangents; })
-    return 4;
-  else
-    return k;
+  // Location is assigned linearly by the caller (k = index in the attribute list).
+  // Semantic matching is done by the ossia::attribute_semantic enum, not by location.
+  return k;
 }
 
 template <typename T>
 constexpr auto get_topology(const T& t) -> decltype(ossia::geometry::topology)
 {
+  // clang-format off
   static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
-      topology, (ossia::geometry::triangles, triangle, triangles),
+      topology,
+      (ossia::geometry::triangles, triangle, triangles),
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
       (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
-      (ossia::geometry::lines, line, lines), (ossia::geometry::points, point, points));
+      (ossia::geometry::lines, line, lines),
+      (ossia::geometry::points, point, points));
+  // clang-format on
   return m(t, ossia::geometry::triangles);
 }
 
@@ -298,11 +424,40 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
     avnd::for_each_field_ref(avnd::get_attributes(ctrl), [&]<typename A>(A& attr) {
       ossia::geometry::attribute a;
 
+      a.semantic = semantic_for_attribute(attr);
+      // FIXME support string semantic attributes for the custom case
+
       // FIXME very brittle
       if constexpr(requires { a.location = static_cast<int>(attr.location); })
         a.location = static_cast<int>(attr.location);
       else
         a.location = standard_location_for_attribute<A>(k++);
+
+      // Infer semantic from halp::attribute_location for backward compatibility
+      // halp::attribute_location values: position=0, tex_coord=1, color=2, normal=3, tangent=4
+      if(a.semantic == ossia::attribute_semantic::custom)
+      {
+        switch(a.location)
+        {
+          case 0: // halp::attribute_location::position
+            a.semantic = ossia::attribute_semantic::position;
+            break;
+          case 1: // halp::attribute_location::tex_coord
+            a.semantic = ossia::attribute_semantic::texcoord0;
+            break;
+          case 2: // halp::attribute_location::color
+            a.semantic = ossia::attribute_semantic::color0;
+            break;
+          case 3: // halp::attribute_location::normal
+            a.semantic = ossia::attribute_semantic::normal;
+            break;
+          case 4: // halp::attribute_location::tangent
+            a.semantic = ossia::attribute_semantic::tangent;
+            break;
+          default:
+            break;
+        }
+      }
 
       if constexpr(requires { attr.binding; })
         a.binding = attr.binding;
@@ -756,14 +911,15 @@ void mesh_from_ossia(
   {
     using value_type = typename decltype(dst.attributes)::value_type;
     using binding_type = decltype(value_type::binding);
-    using location_type = decltype(value_type::location);
+    using semantic_type = decltype(value_type::semantic);
     using format_type = decltype(value_type::format);
     using offset_type = decltype(value_type::byte_offset);
-    dst.attributes.push_back(
-        {.binding = static_cast<binding_type>(in.binding),
-         .location = static_cast<location_type>(in.location),
-         .format = static_cast<format_type>(in.format),
-         .byte_offset = static_cast<offset_type>(in.byte_offset)});
+    auto& a = dst.attributes.emplace_back(
+        value_type{
+            .binding = static_cast<binding_type>(in.binding),
+            .semantic = static_cast<semantic_type>(in.semantic),
+            .format = static_cast<format_type>(in.format),
+            .byte_offset = static_cast<offset_type>(in.byte_offset)});
   }
 }
 
