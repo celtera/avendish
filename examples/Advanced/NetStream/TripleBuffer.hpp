@@ -3,99 +3,122 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <atomic>
-#include <new>
+#include <span>
 #include <vector>
 
 namespace netstream
 {
 
-/**
- * Lock-free triple buffer for passing data between threads.
- *
- * The triple buffer allows one thread to write while another reads,
- * with a third buffer for swapping. This avoids locks in the critical path.
- *
- * Thread safety:
- * - One producer thread calls write()
- * - One consumer thread calls read() and new_data_available()
- * - Uses atomic operations for synchronization
- */
-template <typename T>
+template <typename T, typename Container = std::vector<T>>
 class TripleBuffer
 {
+  static_assert(
+      std::is_nothrow_swappable_v<Container>, "Container must be nothrow swappable");
+
+private:
+  static constexpr uint8_t INDEX_MASK = 0x03;
+  static constexpr uint8_t DIRTY_BIT = 0x04;
+
+  struct alignas(64) Slot
+  {
+    Container data;
+
+    Slot() = default;
+
+    template <typename U>
+    explicit Slot(U&& val)
+        : data(std::forward<U>(val))
+    {
+    }
+  };
+
+  std::array<Slot, 3> buffers_;
+
+  alignas(64) std::atomic<uint8_t> mid_state_;
+  alignas(64) uint8_t write_idx_;
+  alignas(64) uint8_t read_idx_;
+
+  TripleBuffer(const TripleBuffer&) = delete;
+  TripleBuffer& operator=(const TripleBuffer&) = delete;
+  TripleBuffer(TripleBuffer&&) = delete;
+  TripleBuffer& operator=(TripleBuffer&&) = delete;
+
 public:
-  TripleBuffer() = default;
-
-  // Producer: Write new data (called from I/O thread)
-  void write(T&& data)
+  TripleBuffer() noexcept(std::is_nothrow_default_constructible_v<Container>)
+      : buffers_{}
+      , mid_state_{1}
+      , write_idx_{0}
+      , read_idx_{2}
   {
-    // Write to the current write buffer
-    int write_idx = m_write_index.load(std::memory_order_relaxed);
-    std::swap(m_buffers[write_idx], data);
-
-    // Swap write buffer with swap buffer
-    int swap_idx = m_swap_index.load(std::memory_order_relaxed);
-    m_write_index.store(swap_idx, std::memory_order_relaxed);
-    m_swap_index.store(write_idx, std::memory_order_release);
-
-    // Signal that new data is available
-    m_new_data.store(true, std::memory_order_release);
   }
 
-  // Consumer: Check if new data is available (called from processing thread)
-  bool new_data_available() const noexcept
+  // Pre-allocate each slot with a given capacity.
+  explicit TripleBuffer(std::size_t initial_capacity)
+      : buffers_{}
+      , mid_state_{1}
+      , write_idx_{0}
+      , read_idx_{2}
   {
-    return m_new_data.load(std::memory_order_acquire);
+    for(auto& slot : buffers_)
+      slot.data.reserve(initial_capacity);
   }
 
-  // Consumer: Read the latest data (called from processing thread)
-  // Returns true if new data was read
-  bool read(T& out)
+  // Direct access to the write slot. The producer writes into this
+  // container however it likes, then calls publish().
+  Container& write_buffer() noexcept { return buffers_[write_idx_].data; }
+
+  // Publish the current write buffer: swap it into the middle slot
+  // and pick up a new (stale) write slot.
+  void publish() noexcept
   {
-    if(!m_new_data.load(std::memory_order_acquire))
+    const uint8_t new_mid = static_cast<uint8_t>(write_idx_ | DIRTY_BIT);
+    const uint8_t old_mid = mid_state_.exchange(new_mid, std::memory_order_acq_rel);
+    write_idx_ = old_mid & INDEX_MASK;
+  }
+
+  // Convenience: assign from an iterator range, then publish.
+  template <typename InputIt>
+  void produce(InputIt first, InputIt last)
+  {
+    buffers_[write_idx_].data.assign(first, last);
+    publish();
+  }
+
+  // Convenience: assign from a span, then publish.
+  void produce(std::span<const T> src)
+  {
+    buffers_[write_idx_].data.assign(src.begin(), src.end());
+    publish();
+  }
+
+  // Attempt to consume. Returns true if new data was swapped in.
+  // After a successful consume(), read_span() / read_buffer()
+  // reflect the new data.
+  bool consume() noexcept
+  {
+    const uint8_t state = mid_state_.load(std::memory_order_acquire);
+    if(!(state & DIRTY_BIT))
       return false;
 
-    // Swap read buffer with swap buffer
-    int read_idx = m_read_index.load(std::memory_order_relaxed);
-    int swap_idx = m_swap_index.load(std::memory_order_acquire);
-
-    m_read_index.store(swap_idx, std::memory_order_relaxed);
-    m_swap_index.store(read_idx, std::memory_order_relaxed);
-
-    // Mark data as read
-    m_new_data.store(false, std::memory_order_relaxed);
-
-    // Copy the data
-    auto& buf = m_buffers[m_read_index.load(std::memory_order_relaxed)];
-    std::swap(out, buf);
+    const uint8_t new_mid = read_idx_;
+    const uint8_t old_mid = mid_state_.exchange(new_mid, std::memory_order_acq_rel);
+    read_idx_ = old_mid & INDEX_MASK;
     return true;
   }
 
-  // Consumer: Get reference to current read buffer without copying
-  // Only call this after checking new_data_available()
-  const T& read_ref()
+  // View of the consumer's current slot.
+  std::span<const T> read_span() const noexcept
   {
-    if(m_new_data.load(std::memory_order_acquire))
-    {
-      // Swap read buffer with swap buffer
-      int read_idx = m_read_index.load(std::memory_order_relaxed);
-      int swap_idx = m_swap_index.load(std::memory_order_acquire);
-
-      m_read_index.store(swap_idx, std::memory_order_relaxed);
-      m_swap_index.store(read_idx, std::memory_order_relaxed);
-
-      m_new_data.store(false, std::memory_order_relaxed);
-    }
-
-    return m_buffers[m_read_index.load(std::memory_order_relaxed)];
+    const auto& c = buffers_[read_idx_].data;
+    return {c.data(), c.size()};
   }
 
-private:
-  T m_buffers[3];                             // Three buffers
-  alignas(std::hardware_destructive_interference_size) std::atomic<int> m_write_index{0};          // Current write buffer index
-  alignas(std::hardware_destructive_interference_size) std::atomic<int> m_read_index{1};           // Current read buffer index
-  alignas(std::hardware_destructive_interference_size) std::atomic<int> m_swap_index{2};           // Swap buffer index
-  alignas(std::hardware_destructive_interference_size) std::atomic<bool> m_new_data{false};        // New data available flag
+  const Container& read_buffer() const noexcept { return buffers_[read_idx_].data; }
+
+  bool has_new_data() const noexcept
+  {
+    return mid_state_.load(std::memory_order_acquire) & DIRTY_BIT;
+  }
 };
 
 } // namespace netstream

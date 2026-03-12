@@ -7,8 +7,6 @@
 #include <span>
 #include <string>
 #include <system_error>
-#include <iostream>
-
 // Platform-specific includes
 #if defined(_WIN32)
 #include <Windows.h>
@@ -65,6 +63,20 @@ inline void set_blocking(socket_t sock)
 #endif
 }
 
+// Unblock any threads blocked in recv()/send() on this socket.
+// Unlike close(), shutdown() is guaranteed to wake them up.
+inline void shutdown_socket(socket_t sock)
+{
+  if(sock != INVALID_SOCKET_VALUE)
+  {
+#if defined(_WIN32)
+    shutdown(sock, SD_BOTH);
+#else
+    shutdown(sock, SHUT_RDWR);
+#endif
+  }
+}
+
 inline void close_socket(socket_t sock)
 {
   if(sock != INVALID_SOCKET_VALUE)
@@ -113,6 +125,14 @@ public:
   bool is_valid() const noexcept { return m_socket != INVALID_SOCKET_VALUE; }
 
   socket_t native_handle() const noexcept { return m_socket; }
+
+  // Unblock threads blocked in recv/send, but keep the fd valid
+  // so close() can still clean up after thread join.
+  void shutdown()
+  {
+    if(is_valid())
+      shutdown_socket(m_socket);
+  }
 
   void close()
   {
@@ -358,19 +378,43 @@ inline bool send_all(socket_t sock, std::span<const uint8_t> data)
   size_t total_sent = 0;
   while(total_sent < data.size())
   {
-    int sent = send(
+    const auto remaining = data.size() - total_sent;
+#if defined(_WIN32)
+    const int chunk = static_cast<int>(std::min(remaining, static_cast<size_t>(INT_MAX)));
+#else
+    const size_t chunk = remaining;
+#endif
+    auto sent = send(
         sock, reinterpret_cast<const char*>(data.data() + total_sent),
-        static_cast<int>(data.size() - total_sent), 0);
+        chunk, 0);
 
-    if(sent <= 0)
+    if(sent < 0)
     {
+#if defined(_WIN32)
+      if(WSAGetLastError() == WSAEINTR)
+        continue;
+#else
+      if(errno == EINTR)
+        continue;
+#endif
       return false;
     }
+    if(sent == 0)
+      return false;
 
     total_sent += sent;
   }
 
   return true;
+}
+
+// Re-enable TCP_QUICKACK (Linux only, resets after each ACK)
+inline void refresh_quickack([[maybe_unused]] socket_t sock)
+{
+#if !defined(_WIN32) && defined(TCP_QUICKACK)
+  int flag = 1;
+  setsockopt(sock, IPPROTO_TCP, TCP_QUICKACK, &flag, sizeof(flag));
+#endif
 }
 
 // Receive data with blocking I/O
@@ -379,14 +423,30 @@ inline bool recv_all(socket_t sock, std::span<uint8_t> buffer)
   size_t total_received = 0;
   while(total_received < buffer.size())
   {
-    int received = recv(
+    const auto remaining = buffer.size() - total_received;
+#if defined(_WIN32)
+    // Winsock recv takes int; clamp to INT_MAX for >2GB buffers
+    const int chunk = static_cast<int>(std::min(remaining, static_cast<size_t>(INT_MAX)));
+#else
+    const size_t chunk = remaining;
+#endif
+    auto received = recv(
         sock, reinterpret_cast<char*>(buffer.data() + total_received),
-        static_cast<int>(buffer.size() - total_received), 0);
+        chunk, MSG_WAITALL);
 
-    if(received <= 0)
+    if(received < 0)
     {
+#if defined(_WIN32)
+      if(WSAGetLastError() == WSAEINTR)
+        continue;
+#else
+      if(errno == EINTR)
+        continue;
+#endif
       return false;
     }
+    if(received == 0)
+      return false;
 
     total_received += received;
   }
@@ -398,63 +458,97 @@ inline bool recv_all(socket_t sock, std::span<uint8_t> buffer)
 #if defined(_WIN32)
 inline bool send_scatter(socket_t sock, std::span<WSABUF> buffers)
 {
-  DWORD bytes_sent = 0;
-  if(WSASend(sock, buffers.data(), (DWORD)buffers.size(), &bytes_sent, 0, nullptr, nullptr)
-     == SOCKET_ERROR)
+  ULONG total_size = 0;
+  for(const auto& buf : buffers)
+    total_size += buf.len;
+
+  WSABUF* wsabuf = buffers.data();
+  DWORD count = static_cast<DWORD>(buffers.size());
+
+  ULONG remaining = total_size;
+  while(remaining > 0)
   {
+    DWORD bytes_sent = 0;
+    if(WSASend(sock, wsabuf, count, &bytes_sent, 0, nullptr, nullptr) == SOCKET_ERROR)
     {
       int err = WSAGetLastError();
-
-
-      char
-          msgbuf [512] { 0 };   // for a message up to 255 bytes.
-
-
-      msgbuf [0] = '\0';    // Microsoft doesn't guarantee this on man page.
-
-      err = WSAGetLastError ();
-
-      FormatMessageA (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,   // flags
-                    NULL,                // lpsource
-                    err,                 // message id
-                    MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),    // languageid
-                    msgbuf,              // output buffer
-                    sizeof (msgbuf),     // size of msgbuf, bytes
-                    NULL);               // va_list of arguments
-
-      if (! *msgbuf)
-        sprintf (msgbuf, "%d", err);  // provide error # if no string available
-      std::cerr <<msgbuf << std::endl;
+      if(err == WSAEINTR)
+        continue;
+      return false;
     }
-    return false;
+    if(bytes_sent == 0)
+      return false;
+
+    remaining -= bytes_sent;
+
+    // Advance past fully-sent WSABUF entries
+    DWORD sent = bytes_sent;
+    while(sent > 0 && count > 0)
+    {
+      if(sent >= wsabuf->len)
+      {
+        sent -= wsabuf->len;
+        ++wsabuf;
+        --count;
+      }
+      else
+      {
+        wsabuf->buf += sent;
+        wsabuf->len -= sent;
+        sent = 0;
+      }
+    }
   }
+
   return true;
 }
 #else
 inline bool send_scatter(socket_t sock, std::span<struct iovec> buffers)
 {
-  ssize_t total_sent = 0;
   size_t total_size = 0;
   for(const auto& buf : buffers)
-  {
     total_size += buf.iov_len;
-  }
 
-  while(total_sent < total_size)
+  // Pointer and count into the iovec array, advanced past fully-sent entries
+  struct iovec* iov = buffers.data();
+  int iovcnt = static_cast<int>(buffers.size());
+
+  size_t remaining = total_size;
+  while(remaining > 0)
   {
-    ssize_t sent = writev(sock, buffers.data(), buffers.size());
-    if(sent <= 0)
+    ssize_t sent = writev(sock, iov, iovcnt);
+    if(sent < 0)
     {
+      if(errno == EINTR)
+        continue;
       return false;
     }
-    total_sent += sent;
+    if(sent == 0)
+      return false;
 
-    // If not all data was sent, we'd need to adjust the buffers
-    // For simplicity, we assume writev sends all data in one call
-    break;
+    remaining -= sent;
+
+    // Advance past fully-sent iovec entries
+    while(sent > 0 && iovcnt > 0)
+    {
+      if(static_cast<size_t>(sent) >= iov->iov_len)
+      {
+        // This entry was fully sent, skip it
+        sent -= iov->iov_len;
+        ++iov;
+        --iovcnt;
+      }
+      else
+      {
+        // Partial send within this entry, adjust base and len
+        iov->iov_base = static_cast<char*>(iov->iov_base) + sent;
+        iov->iov_len -= sent;
+        sent = 0;
+      }
+    }
   }
 
-  return total_sent == total_size;
+  return true;
 }
 #endif
 

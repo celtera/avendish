@@ -27,6 +27,13 @@ inline uint32_t ntohl_portable(uint32_t netlong)
   return htonl_portable(netlong); // Same operation
 }
 
+// Protocol type
+enum class ProtocolType : uint32_t
+{
+  Multi,
+  Raw_XYZ_F32
+};
+
 // Data format enumeration
 enum class DataFormat : uint32_t
 {
@@ -86,6 +93,17 @@ struct PacketHeader
   {
     return magic == MAGIC && version == VERSION && format > 0
            && num_elements > 0 && payload_bytes > 0;
+  }
+};
+
+struct XYZFloat32PacketHeader
+{
+  uint32_t payload_bytes;
+  bool is_valid() const
+  {
+    // Very likely that a >2GB packet is not something we want to process
+    // even if the payload is 4GB
+    return payload_bytes < INT32_MAX;
   }
 };
 
@@ -164,36 +182,4 @@ inline void convert_to_float(
     std::memcpy(output.data(), data.data(), data.size());
   }
 }
-
-// Convert float vector to raw data
-inline std::vector<uint8_t> convert_from_float(DataFormat fmt, std::span<const float> data)
-{
-  const int comp_per_elem = components_per_element(fmt);
-  const int bytes_per_comp = bytes_per_component(fmt);
-
-  if(comp_per_elem == 0 || bytes_per_comp == 0)
-  {
-    return {};
-  }
-
-  std::vector<uint8_t> output;
-
-  if(bytes_per_comp == 1) // unsigned char formats
-  {
-    output.resize(data.size());
-    for(size_t i = 0; i < data.size(); ++i)
-    {
-      float clamped = std::clamp(data[i], 0.0f, 1.0f);
-      output[i] = static_cast<uint8_t>(clamped * 255.0f);
-    }
-  }
-  else if(bytes_per_comp == 4) // float32 formats
-  {
-    output.resize(data.size() * sizeof(float));
-    std::memcpy(output.data(), data.data(), output.size());
-  }
-
-  return output;
-}
-
 } // namespace netstream
