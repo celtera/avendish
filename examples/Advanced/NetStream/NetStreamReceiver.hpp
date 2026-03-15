@@ -135,6 +135,8 @@ struct NetStreamReceiverBase
           if(failed)
             break;
 
+          self.m_bytes_received.fetch_add(
+              self.m_last_payload_bytes, std::memory_order_relaxed);
           refresh_quickack(self.m_client_socket.native_handle());
         }
 
@@ -204,6 +206,7 @@ struct NetStreamReceiverBase
                + " elements)";
 
     m_triple_buffer.publish();
+    m_last_payload_bytes = header.payload_bytes;
 
     return true;
   }
@@ -244,6 +247,7 @@ struct NetStreamReceiverBase
     m_format = "XYZ F32";
 
     m_triple_buffer.publish();
+    m_last_payload_bytes = header.payload_bytes;
 
     return true;
   }
@@ -286,12 +290,15 @@ struct NetStreamReceiverBase
 
   std::atomic<bool> m_running{false};
   std::atomic<bool> m_connected{false};
+  alignas(std::hardware_destructive_interference_size)
+      std::atomic<int64_t> m_bytes_received{0};
   std::thread m_thread;
   Socket m_listen_socket;
   Socket m_client_socket;
   TripleBuffer<float> m_triple_buffer;
   std::string m_status_message{"Idle"};
   std::string m_format;
+  int64_t m_last_payload_bytes{0};
   std::vector<uint8_t> m_payload_storage;
   std::vector<float> m_float_data_storage;
 };

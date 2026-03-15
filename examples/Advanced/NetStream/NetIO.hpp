@@ -23,6 +23,7 @@ constexpr socket_t INVALID_SOCKET_VALUE = INVALID_SOCKET;
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <unistd.h>
 using socket_t = int;
 constexpr socket_t INVALID_SOCKET_VALUE = -1;
