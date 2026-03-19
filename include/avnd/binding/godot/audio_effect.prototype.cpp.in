@@ -1,0 +1,61 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/godot/configure.hpp>
+#include <avnd/binding/godot/audio_effect.hpp>
+
+#include <gdextension_interface.h>
+#include <godot_cpp/core/defs.hpp>
+#include <godot_cpp/godot.hpp>
+
+using type = decltype(avnd::configure<godot_binding::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+struct avnd_godot_audio_effect;
+
+struct avnd_godot_audio_instance final
+    : godot_binding::godot_audio_effect_instance<type>
+{
+  GDCLASS(avnd_godot_audio_instance, godot::AudioEffectInstance);
+  AVND_GODOT_AUDIO_EFFECT_INSTANCE_OVERRIDES
+
+protected:
+  static void _bind_methods() { }
+};
+
+struct avnd_godot_audio_effect final
+    : godot_binding::godot_audio_effect<type, avnd_godot_audio_instance>
+{
+  GDCLASS(avnd_godot_audio_effect, godot::AudioEffect);
+  AVND_GODOT_AUDIO_EFFECT_OVERRIDES
+
+protected:
+  static void _bind_methods() { }
+};
+
+extern "C"
+{
+  GDExtensionBool GDE_EXPORT avnd_@AVND_C_NAME@_init(
+      GDExtensionInterfaceGetProcAddress p_get_proc_address,
+      GDExtensionClassLibraryPtr p_library,
+      GDExtensionInitialization* r_initialization)
+  {
+    godot::GDExtensionBinding::InitObject init_obj(
+        p_get_proc_address, p_library, r_initialization);
+
+    init_obj.set_minimum_library_initialization_level(
+        godot::MODULE_INITIALIZATION_LEVEL_SCENE);
+
+    init_obj.register_initializer([](godot::ModuleInitializationLevel p_level) {
+      if(p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE)
+        return;
+      godot::ClassDB::register_class<avnd_godot_audio_instance>();
+      godot::ClassDB::register_class<avnd_godot_audio_effect>();
+    });
+
+    init_obj.register_terminator([](godot::ModuleInitializationLevel p_level) {});
+
+    return init_obj.init();
+  }
+}
