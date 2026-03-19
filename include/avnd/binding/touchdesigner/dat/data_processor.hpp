@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <DAT_CPlusPlusBase.h>
 #include <avnd/binding/touchdesigner/configure.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
@@ -13,8 +14,7 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
 
-#include <DAT_CPlusPlusBase.h>
-
+#include <charconv>
 namespace touchdesigner::DAT
 {
 
@@ -169,7 +169,7 @@ private:
     }
     else if constexpr(avnd::bool_ish<value_type>)
     {
-      bool val;
+      int val{};
       if(auto res = std::from_chars(str, str + strlen(str), val); res.ec == std::errc{})
         return static_cast<value_type>(val);
       else if(std::strcmp(str, "true") == 0)

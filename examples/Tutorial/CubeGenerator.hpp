@@ -2,9 +2,12 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <cmath>
 #include <halp/controls.hpp>
-#include <halp/meta.hpp>
 #include <halp/geometry.hpp>
+#include <halp/meta.hpp>
+
+#include <cstring>
 
 namespace examples
 {
@@ -115,17 +118,17 @@ struct CubeGenerator
 
     // Then setup our geometry buffers
     auto& mesh = outputs.geometry.mesh;
-    mesh.buffers.position_buffer.data = reinterpret_cast<float*>(positions.data());
-    mesh.buffers.position_buffer.size = positions.size();
+    mesh.buffers.position_buffer.elements = reinterpret_cast<float*>(positions.data());
+    mesh.buffers.position_buffer.element_count = positions.size();
     mesh.buffers.position_buffer.dirty = true;
-    mesh.buffers.normal_buffer.data = reinterpret_cast<float*>(normals.data());
-    mesh.buffers.normal_buffer.size = normals.size();
+    mesh.buffers.normal_buffer.elements = reinterpret_cast<float*>(normals.data());
+    mesh.buffers.normal_buffer.element_count = normals.size();
     mesh.buffers.normal_buffer.dirty = true;
-    mesh.buffers.color_buffer.data = reinterpret_cast<float*>(colors.data());
-    mesh.buffers.color_buffer.size = colors.size();
+    mesh.buffers.color_buffer.elements = reinterpret_cast<float*>(colors.data());
+    mesh.buffers.color_buffer.element_count = colors.size();
     mesh.buffers.color_buffer.dirty = true;
-    mesh.buffers.index_buffer.data = indices.data();
-    mesh.buffers.index_buffer.size = indices.size();
+    mesh.buffers.index_buffer.elements = indices.data();
+    mesh.buffers.index_buffer.element_count = indices.size();
     mesh.buffers.index_buffer.dirty = true;
 
     mesh.vertices = 8;

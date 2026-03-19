@@ -59,6 +59,20 @@ to_string_view_array(const std::pair<std::string_view, T> (&a)[N])
   }(std::make_index_sequence<N>{});
 }
 
+// For combo_pair<T> and similar types with a .first string_view member
+template <typename T, std::size_t N>
+  requires(!std::is_convertible_v<T, std::string_view> && requires(T t) {
+    { t.first } -> std::convertible_to<std::string_view>;
+  })
+static constexpr std::array<std::string_view, N>
+to_string_view_array(const T (&a)[N])
+{
+  return [&]<std::size_t... I>(
+             std::index_sequence<I...>) -> std::array<std::string_view, N> {
+    return {{a[I].first...}};
+  }(std::make_index_sequence<N>{});
+}
+
 template <std::size_t N>
 static constexpr std::array<std::string_view, N>
 to_string_view_array(const std::array<std::string_view, N>& a)

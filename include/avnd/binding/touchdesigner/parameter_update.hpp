@@ -6,9 +6,11 @@
 #include <avnd/common/aggregates.hpp>
 #include <avnd/concepts/all.hpp>
 #include <avnd/introspection/input.hpp>
-#include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/introspection/range.hpp>
+#include <avnd/introspection/widgets.hpp>
 #include <avnd/wrappers/metadatas.hpp>
+#include <avnd/wrappers/process_adapter.hpp>
+#include <avnd/wrappers/ranges.hpp>
 
 #include <CPlusPlus_Common.h>
 #include <magic_enum/magic_enum.hpp>
@@ -76,10 +78,13 @@ struct parameter_update
       }
       else
       {
-        static constexpr auto range = avnd::get_range<Field>();
-        for(auto& label : range.values)
+        // enum_ish but not enum_parameter: string-list or combo_pair choices.
+        // get_enum_choices handles all variants uniformly via to_string_view_array.
+        static constexpr auto choices = avnd::get_enum_choices<Field>();
+        static constexpr auto count = avnd::get_enum_choices_count<Field>();
+        for(int i = 0; i < count; ++i)
         {
-          info->addMenuEntry(label.data(), label.data());
+          info->addMenuEntry(choices[i].data(), choices[i].data());
         }
       }
     }
@@ -99,7 +104,10 @@ struct parameter_update
           avnd::get_inputs(implementation),
           [&]<typename Field>(Field& field) {
         static constexpr auto name = touchdesigner::get_td_name<Field>();
-        this->update(field, name.data(), inputs);
+        if constexpr(avnd::enum_ish_parameter<Field>)
+          this->update_enum(field, name.data(), inputs);
+        else
+          this->update(field, name.data(), inputs);
 
         // Call update callback if it exists
         if_possible(field.update(implementation.effect));
@@ -134,7 +142,7 @@ struct parameter_update
   }
 
   template <avnd::enum_ish_parameter Field>
-  void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
+  void update_enum(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
     if constexpr(avnd::enum_parameter<Field>)
     {
@@ -143,9 +151,12 @@ struct parameter_update
     }
     else
     {
-      const char* str = inputs->getParString(name);
-      if(str)
-        field.value.assign(str);
+      // Non-enum enum_ish: combo_pair or string-list choices.
+      // TD sends the selected menu index as an integer.
+      int index = inputs->getParInt(name);
+      static constexpr auto count = avnd::get_enum_choices_count<Field>();
+      if(index >= 0 && index < count)
+        field.value = avnd::range_value<Field>(index);
     }
   }
 

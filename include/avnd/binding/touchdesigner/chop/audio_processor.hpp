@@ -17,8 +17,25 @@
 
 namespace touchdesigner::chop
 {
+
 template <typename T>
-struct audio_processor  : public TD::CHOP_CPlusPlusBase
+struct audio_processor;
+
+template <typename T>
+  requires(!avnd::audio_processor<T>)
+struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
+{
+  explicit audio_processor(const TD::OP_NodeInfo* info) { }
+
+  void execute(
+      TD::CHOP_Output* outputs, const TD::OP_Inputs* inputs, void* reserved1) override
+  {
+  }
+};
+
+template <typename T>
+  requires(avnd::audio_processor<T>)
+struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
 {
   static constexpr int input_channels = avnd::input_channels<T>(0);
   static constexpr int output_channels = avnd::output_channels<T>(0);

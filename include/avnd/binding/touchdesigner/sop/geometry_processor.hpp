@@ -253,16 +253,16 @@ private:
         // We have the buffer - read vertices
         const char* data_ptr = nullptr;
 
-        if constexpr(std::is_same_v<std::decay_t<decltype(buf.data)>, void*>)
+        if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
         {
           // Dynamic case
-          data_ptr = static_cast<const char*>(buf.data);
+          data_ptr = static_cast<const char*>(buf.elements);
         }
         else
         {
           // Static case - array of typed data
-          using data_type = std::decay_t<decltype(buf.data[0])>;
-          data_ptr = reinterpret_cast<const char*>(buf.data);
+          using data_type = std::decay_t<decltype(buf.elements[0])>;
+          data_ptr = reinterpret_cast<const char*>(buf.elements);
         }
 
         if(!data_ptr) {
@@ -354,14 +354,14 @@ private:
         {
           const char* data_ptr = nullptr;
 
-          if constexpr(std::is_same_v<std::decay_t<decltype(buf.data)>, void*>)
+          if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
           {
-            data_ptr = static_cast<const char*>(buf.data);
+            data_ptr = static_cast<const char*>(buf.elements);
           }
           else
           {
-            using data_type = std::decay_t<decltype(buf.data[0])>;
-            data_ptr = reinterpret_cast<const char*>(buf.data);
+            using data_type = std::decay_t<decltype(buf.elements[0])>;
+            data_ptr = reinterpret_cast<const char*>(buf.elements);
           }
 
           if(!data_ptr) {
@@ -462,10 +462,11 @@ private:
               // We have the buffer - read vertices
               const char* data_ptr = nullptr;
 
-              for(int k = 0; k < buf.size - 2; k += 3) {
-                auto i0 = buf.data[k];
-                auto i1 = buf.data[k+1];
-                auto i2 = buf.data[k+2];
+              for(int k = 0; k < buf.element_count - 2; k += 3)
+              {
+                auto i0 = buf.elements[k];
+                auto i1 = buf.elements[k + 1];
+                auto i2 = buf.elements[k + 2];
 
                 output->addTriangle(i0, i1, i2);
               }

@@ -33,16 +33,22 @@ struct output_length_visitor
     }
   }
 
+  template <avnd::midi_port T>
+  int64_t operator()(const T& port)
+  {
+    return 0; // FIXME what should we do for MIDI chops?
+  }
+
   template<avnd::cpu_raw_buffer_port T>
   int64_t operator()(const T& port)
   {
-    return port.buffer.bytesize;
+    return port.buffer.byte_size;
   }
 
   template<avnd::cpu_typed_buffer_port T>
   int64_t operator()(const T& port)
   {
-    return port.buffer.count;
+    return port.buffer.element_count;
   }
 
   template<avnd::callback T>
@@ -86,8 +92,12 @@ struct output_write_visitor
   template<avnd::cpu_raw_buffer_port T>
   void operator()(const T& port, float* channel, int64_t samples)
   {
-    for(int i = 0, N = std::min(samples, (int64_t)port.buffer.bytesize); i < N; i++) {
-      channel[i] = port.value.bytes[i];
+    for(int i = 0,
+            N = std::min(samples, (int64_t)(port.buffer.byte_size / sizeof(float)));
+        i < N; i++)
+    {
+      // FIXME we need some actual heuristic
+      channel[i] = ((float*)port.buffer.raw_data)[i];
     }
   }
 
@@ -106,12 +116,34 @@ struct output_write_visitor
     return ;
   }
 
-  template<typename T>
+  template <avnd::midi_port T>
+  int64_t operator()(const T& port, float* channel, int64_t samples)
+  {
+    return 0; // FIXME what should we do for MIDI chops?
+  }
+
+  template <typename T>
   void operator()(const T& port, float* channel, int64_t samples) = delete; // FIXME
 };
 
 template <typename T>
-struct message_processor : public TD::CHOP_CPlusPlusBase
+struct message_processor;
+
+template <typename T>
+  requires(avnd::audio_processor<T>)
+struct message_processor<T> : public TD::CHOP_CPlusPlusBase
+{
+  explicit message_processor(const TD::OP_NodeInfo* info) { }
+
+  void execute(
+      TD::CHOP_Output* outputs, const TD::OP_Inputs* inputs, void* reserved1) override
+  {
+  }
+};
+
+template <typename T>
+  requires(!avnd::audio_processor<T>)
+struct message_processor<T> : public TD::CHOP_CPlusPlusBase
 {
   avnd::effect_container<T> implementation;
 

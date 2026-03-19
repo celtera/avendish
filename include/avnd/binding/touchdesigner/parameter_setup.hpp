@@ -7,6 +7,7 @@
 #include <avnd/concepts/all.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/range.hpp>
+#include <avnd/introspection/widgets.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 
 #include <CPlusPlus_Common.h>
@@ -43,7 +44,10 @@ private:
   {
     static constexpr auto name = get_td_name<Field>();
     static constexpr auto label = get_parameter_label<Field>();
-    setup_parameter<Field>(name.data(), label.data());
+    if constexpr(avnd::enum_ish_parameter<Field>)
+      setup_enum<Field>(name.data(), label.data());
+    else
+      setup_parameter<Field>(name.data(), label.data());
   }
 
   template <avnd::float_parameter Field>
@@ -55,7 +59,7 @@ private:
     // Check if field has range metadata
     if constexpr (avnd::parameter_with_minmax_range<Field>)
     {
-      // FIXME enum
+
       static constexpr auto range = avnd::get_range<Field>();
       param.defaultValues[0] = range.init;
       param.minValues[0] = range.min;
@@ -86,7 +90,7 @@ private:
 
     if constexpr (avnd::parameter_with_minmax_range<Field>)
     {
-      // FIXME enum
+
       static constexpr auto range = avnd::get_range<Field>();
       param.defaultValues[0] = range.init;
       param.minValues[0] = range.min;
@@ -147,7 +151,7 @@ private:
   }
 
   template <avnd::enum_ish_parameter Field>
-  void setup_parameter(const char* name, const char* label)
+  void setup_enum(const char* name, const char* label)
   {
     if constexpr(avnd::enum_parameter<Field>)
     {
@@ -182,11 +186,30 @@ private:
     }
     else
     {
-      // actual enum
-      TD::OP_StringParameter param(name);
-      param.label = label;
+      // enum_ish: string-list or combo_pair-based choices
+      static constexpr auto count = avnd::get_enum_choices_count<Field>();
+      static_assert(count > 0);
 
-      manager->appendDynamicStringMenu(param);
+      TD::OP_NumericParameter param(name);
+      param.label = label;
+      param.minValues[0] = 0;
+      param.maxValues[0] = count - 1;
+      param.minSliders[0] = 0;
+      param.maxSliders[0] = count - 1;
+      param.clampMins[0] = true;
+      param.clampMaxes[0] = true;
+
+      if constexpr(avnd::has_range<Field>)
+      {
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[0] = range.init;
+      }
+      else
+      {
+        param.defaultValues[0] = 0;
+      }
+
+      manager->appendDynamicMenu(param);
     }
   }
 
@@ -201,7 +224,7 @@ private:
     // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-        // FIXME enum
+  
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
@@ -235,7 +258,7 @@ private:
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-        // FIXME enum
+  
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
@@ -270,7 +293,7 @@ private:
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-        // FIXME enum
+  
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
@@ -304,7 +327,7 @@ private:
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-        // FIXME enum
+  
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
@@ -339,7 +362,7 @@ private:
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-        // FIXME enum
+  
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
@@ -373,7 +396,7 @@ private:
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-        // FIXME enum
+  
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
