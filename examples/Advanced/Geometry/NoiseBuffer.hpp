@@ -56,7 +56,11 @@ public:
     // Each point is an x y z value.
     points.resize(inputs.count * 3, boost::container::default_init);
 
-    std::generate(std::execution::par_unseq, points.begin(), points.end(), [] {
+    std::generate(
+#if defined(__cpp_exceptions) && !defined(__clang__)
+        std::execution::par_unseq,
+#endif
+        points.begin(), points.end(), [] {
       static thread_local std::random_device dev;
 #if __has_include(<rnd/random.hpp>)
       static thread_local rnd::pcg engine{dev};
