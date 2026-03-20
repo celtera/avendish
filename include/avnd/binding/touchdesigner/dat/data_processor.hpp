@@ -7,6 +7,7 @@
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
+#include <avnd/binding/touchdesigner/info_output.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -115,22 +116,27 @@ struct data_processor : public TD::DAT_CPlusPlusBase
       parameter_update<T>{}.menu(implementation, inputs, info);
   }
 
-  // Info methods
-  int32_t getNumInfoCHOPChans(void* reserved) override { return 0; }
+  // Info methods — route non-primary outputs to Info CHOP/DAT
+  int32_t getNumInfoCHOPChans(void* reserved) override
+  {
+    return info_output<T>::get_num_info_chop_chans(implementation);
+  }
 
   void getInfoCHOPChan(int32_t index, TD::OP_InfoCHOPChan* chan, void* reserved) override
   {
+    info_output<T>::get_info_chop_chan(implementation, index, chan);
   }
 
   bool getInfoDATSize(TD::OP_InfoDATSize* infoSize, void* reserved) override
   {
-    return false;
+    return info_output<T>::get_info_dat_size(implementation, infoSize);
   }
 
   void getInfoDATEntries(
       int32_t index, int32_t nEntries, TD::OP_InfoDATEntries* entries,
       void* reserved) override
   {
+    info_output<T>::get_info_dat_entries(implementation, index, nEntries, entries);
   }
 
   void getWarningString(TD::OP_String* warning, void* reserved) override {}

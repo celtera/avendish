@@ -7,6 +7,7 @@
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
+#include <avnd/binding/touchdesigner/info_output.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -263,18 +264,19 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
   int32_t
   getNumInfoCHOPChans(void *reserved1) override
   {
-    return 0;
+    return info_output<T>::get_num_info_chop_chans(implementation);
   }
 
   void
   getInfoCHOPChan(int32_t index, TD::OP_InfoCHOPChan* chan, void* reserved1) override
   {
+    info_output<T>::get_info_chop_chan(implementation, index, chan);
   }
 
   bool
   getInfoDATSize(TD::OP_InfoDATSize* infoSize, void *reserved1) override
   {
-    return false;
+    return info_output<T>::get_info_dat_size(implementation, infoSize);
   }
 
   void
@@ -282,6 +284,7 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
                     TD:: OP_InfoDATEntries* entries,
                     void *reserved1) override
   {
+    info_output<T>::get_info_dat_entries(implementation, index, nEntries, entries);
   }
 
   void getWarningString(TD::OP_String *warning, void *reserved1)  override
