@@ -13,21 +13,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
@@ -37,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex.js";
+            window.path_to_searchindex_js = "searchindex-bdc8ee8a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="toc-8fccbf1e.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -54,7 +53,7 @@
             </div>
         </div>
     </div>
-    <div id="body-container">
+    <div id="mdbook-body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
@@ -83,12 +82,12 @@
             html.classList.add("js");
         </script>
 
-        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             let sidebar = null;
-            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -103,39 +102,39 @@
             }
         </script>
 
-        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
                 <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
             </noscript>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
         </nav>
 
-        <div id="page-wrapper" class="page-wrapper">
+        <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                            <i class="fa fa-bars"></i>
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
                         </label>
-                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                            <i class="fa fa-paint-brush"></i>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
                         </button>
-                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
-                            <i class="fa fa-search"></i>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
                         </button>
                     </div>
 
@@ -143,45 +142,45 @@
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
-                            <i id="print-button" class="fa fa-print"></i>
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
                     </div>
                 </div>
 
-                <div id="search-wrapper" class="hidden">
-                    <form id="searchbar-outer" class="searchbar-outer">
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
                         <div class="search-wrapper">
-                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
                             <div class="spinner-wrapper">
-                                <i class="fa fa-spinner fa-spin"></i>
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
                             </div>
                         </div>
                     </form>
-                    <div id="searchresults-outer" class="searchresults-outer hidden">
-                        <div id="searchresults-header" class="searchresults-header"></div>
-                        <ul id="searchresults">
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
                         </ul>
                     </div>
                 </div>
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script>
-                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
-                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
-                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
                         link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
                     });
                 </script>
 
-                <div id="content" class="content">
+                <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="making-media-objects-with-avendish"><a class="header" href="#making-media-objects-with-avendish">Making media objects with <a href="https://github.com/celtera/avendish">Avendish</a></a></h1>
 <p>This book is two things: a tutorial for the usage of <a href="https://github.com/celtera/avendish">Avendish</a>, intertwined with
 an explanation of the concepts and implementation.</p>
 <p>Avendish aims to enable media objects / processors authors to write the processor in the most natural way possible, and then to map this to host softwares or languages with so-called zero-cost abstraction.</p>
 <blockquote>
-<p>By zero-cost abstraction, we mean zero run-time cost. However, we'll see that the system actually enables extremely short compile times compared to the norm in C++.</p>
+<p>By zero-cost abstraction, we mean zero run-time cost. However, we’ll see that the system actually enables extremely short compile times compared to the norm in C++.</p>
 </blockquote>
 <p>The library is borne from:</p>
 <ul>
@@ -191,7 +190,7 @@ an explanation of the concepts and implementation.</p>
 <li>
 <p>Allowing to express the quintessence of a given media processor.</p>
 <ul>
-<li>There should be no compromise at any point: the user of the library must be able to declare all the properties, inputs, outputs of a media processor, whether it processes audio, video, MIDI, asynchronous messages, etc...</li>
+<li>There should be no compromise at any point: the user of the library must be able to declare all the properties, inputs, outputs of a media processor, whether it processes audio, video, MIDI, asynchronous messages, etc…</li>
 <li>UIs must be possible.</li>
 <li>GPU-based processors must be possible.</li>
 <li>The way this is expressed should be the simplest possible way in C++, in the sense that the code should be as natural as possible: just declaring variables should be sufficient. The lack of proper reflection in C++ still limits this in a way, but we will see that it is already possible to get quite far !</li>
@@ -199,12 +198,12 @@ an explanation of the concepts and implementation.</p>
 </ul>
 </li>
 <li>
-<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their "canonic" form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
+<p>The observation that the implementation of a media processor has no reason of depending on any kind of binding library: those are two entirely orthogonal concerns. Yet, due to how the language works, for the longest time writing such a processor necessarily embedded it inside some kind of run-time framework: JUCE, DPF, iPlug, etc. These frameworks are all great, but also all make compromises in terms of what is possible to express. Data types will be limited to a known list, UI will have to be written with a specific UI framework, etc. In contrast, Avendish processors are much more open ; processors can be written in their “canonic” form. The various bindings will then try to map as much as is possible to the environments they are bound to.</p>
 </li>
 </ul>
 <p>In addition, such frameworks are generally not suitable for embedded platforms such as micro-controllers, etc. JUCE does not work on ESP32 :-)</p>
 <p>In contrast, Avendish processors can be written in a way that does not depend on <em>any</em> existing library, not even the standard C or C++ libraries, which makes them trivially portable to such platforms. The only required thing is a C++ compiler, really!</p>
-<p>Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a <code>string</code> output port in a VST plug-in), in other cases just because by lack of time, but it's on the roadmap! In general features are prototyped implemented in the <a href="https://ossia.io">ossia score</a> back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.</p>
+<p>Note that due to limited funding and time of the developer, not all backends support all features. In some cases this is because the backend has no way to implement the feature at all (for instance, a <code>string</code> output port in a VST plug-in), in other cases just because by lack of time, but it’s on the roadmap! In general features are prototyped implemented in the <a href="https://ossia.io">ossia score</a> back-end first. Then they are migrated to the others back-end when the feature has proven useful and the API has been tested with a few different plug-ins and use-cases.</p>
 <h1 id="why-c"><a class="header" href="#why-c">Why C++</a></h1>
 <p>To ease porting of most effects, which are also in C++. Step by step, we will be able to lift them towards maybe higher-level descriptions, but first I believe that having something in C++ is important to allow capturing the semantics of the vast majority of media processors in existence.</p>
 <p>Also because this is the language I know best =p</p>
@@ -218,7 +217,7 @@ an explanation of the concepts and implementation.</p>
 <li>Lots of fun C++20 code !</li>
 </ol>
 <h1 id="gimme-code"><a class="header" href="#gimme-code">GIMME CODE</a></h1>
-<p>Here's an example of a complete audio processor which uses an <strong>optional</strong> library of helper types:
+<p>Here’s an example of a complete audio processor which uses an <strong>optional</strong> library of helper types:
 if one wants, the exact same thing can be written without any macro or pre-existing type ; it is just a tad more verbose.</p>
 <pre><code class="language-cpp">struct MyProcessor {
   // Define generic metadata
@@ -283,8 +282,9 @@ if one wants, the exact same thing can be written without any macro or pre-exist
 };
 </code></pre>
 <p>Here is how it looks like when compiled against the <a href="https://ossia.io">ossia score</a> backend:</p>
-<p><img src="images/example.gif" alt="Gain example" /></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h1>
+<p><img src="images/example.gif" alt="Gain example"></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h1>
 <p>Here is a minimal, self-contained definition of an Avendish processor:</p>
 <pre><code class="language-cpp">import std;
 
@@ -296,8 +296,8 @@ export struct MyProcessor
   }
 };
 </code></pre>
-<p>... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those,
-and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope -- and read until the end of the page!</p>
+<p>… at least, in an alternative universe where C++ has gotten custom attributes and reflection on those,
+and where modules and <code>std::print</code> work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope – and read until the end of the page!</p>
 <h1 id="getting-started-for-good"><a class="header" href="#getting-started-for-good">Getting started, for good</a></h1>
 <p>Here is a minimal, self-contained definition of an Avendish processor, which works on 2022 compilers:</p>
 <pre><code class="language-cpp">#pragma once
@@ -312,7 +312,7 @@ struct MyProcessor
   }
 };
 </code></pre>
-<p>Yes, it's not much. You may even already have some in your codebase without even being aware of it !</p>
+<p>Yes, it’s not much. You may even already have some in your codebase without even being aware of it !</p>
 <p>Now, you may be used to the usual APIs for making audio plug-ins and start wondering about all the things you are used too and that are missing here:</p>
 <ul>
 <li>Inheritance or shelving function pointers in a C struct.</li>
@@ -322,7 +322,7 @@ A central point of the system is that everything can be defined through bare C++
 </ul>
 <pre><code class="language-cpp">void process(double** inputs, double** outpus, int frames);
 </code></pre>
-<p>We'll see how all the usual amenities can be built on top of this and simple C++ constructs such as variables, methods and structures.</p>
+<p>We’ll see how all the usual amenities can be built on top of this and simple C++ constructs such as variables, methods and structures.</p>
 <h2 id="line-by-line"><a class="header" href="#line-by-line">Line by line</a></h2>
 <pre><code class="language-cpp">// This line is used to instruct the compiler to not include a header file multiple times.
 #pragma once
@@ -356,7 +356,7 @@ struct MyProcessor
   }
 };
 </code></pre>
-<h1 id="2025-update-its-happening"><a class="header" href="#2025-update-its-happening">2025 update: it's happening!</a></h1>
+<h1 id="2025-update-its-happening"><a class="header" href="#2025-update-its-happening">2025 update: it’s happening!</a></h1>
 <p>C++ reflection and custom attributes / annotations will be part of C++26!
 The actual syntax once support for it is implemented in Avendish, will certainly look like:</p>
 <pre><code class="language-cpp">import std;
@@ -371,8 +371,9 @@ export struct MyProcessor
   }
 };
 </code></pre>
-<p>Thanks to the library's open-ended approach, all existing code will continue working :-)</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="compiling-our-processor"><a class="header" href="#compiling-our-processor">Compiling our processor</a></h1>
+<p>Thanks to the library’s open-ended approach, all existing code will continue working :-)</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="compiling-our-processor"><a class="header" href="#compiling-our-processor">Compiling our processor</a></h1>
 <h2 id="environment-set-up"><a class="header" href="#environment-set-up">Environment set-up</a></h2>
 <p>Before anything, we need a C++ compiler. The recommandation is to use Clang (at least clang-13). GCC 11 also works with some limitations. Visual Studio is sadly still not competent enough.</p>
 <ul>
@@ -380,7 +381,7 @@ export struct MyProcessor
 <li>On Mac, through Xcode.</li>
 <li>On Linux, through your distribution packages.</li>
 </ul>
-<p>Avendish's code is header-only ; however, CMake automatizes correctly linking to the relevant libraries, and generates a correct entrypoint for the targeted bindings, thus we recommend installing it.</p>
+<p>Avendish’s code is header-only ; however, CMake automatizes correctly linking to the relevant libraries, and generates a correct entrypoint for the targeted bindings, thus we recommend installing it.</p>
 <p>Ninja is recommended: it makes the build faster. Below are a few useful set-up commands for various operating systems.</p>
 <h4 id="archlinux-manjaro-etc"><a class="header" href="#archlinux-manjaro-etc">ArchLinux, Manjaro, etc</a></h4>
 <pre><code>$ sudo pacman -S base-devel cmake ninja clang gcc boost
@@ -412,7 +413,7 @@ $ pacboy -S cmake:p ninja:p toolchain:p boost:p
 </li>
 <li>Python: needs pybind11.
 <ul>
-<li>Installable through most distro's repos.</li>
+<li>Installable through most distro’s repos.</li>
 </ul>
 </li>
 <li>ossia: needs <a href="https://github.com/ossia/libossia">libossia</a>.</li>
@@ -431,7 +432,7 @@ $ pacboy -S cmake:p ninja:p toolchain:p boost:p
 </ul>
 <h2 id="building-the-template"><a class="header" href="#building-the-template">Building the template</a></h2>
 <p>The simplest way to get started is from the <a href="https://github.com/celtera/avendish-audio-processor-template/blob/main/CMakeLists.txt">template repository</a>: simply clear the <a href="https://github.com/celtera/avendish-audio-processor-template/blob/main/src/Processor.cpp">Processor.cpp</a> file for now and put the content in <a href="https://github.com/celtera/avendish-audio-processor-template/blob/main/src/Processor.hpp">Processor.hpp</a>.</p>
-<p>Here's a complete example (from bash):</p>
+<p>Here’s a complete example (from bash):</p>
 <pre><code class="language-bash">$ git clone https://github.com/celtera/avendish-audio-processor-template
 $ mkdir build
 $ cd build
@@ -439,9 +440,10 @@ $ cmake ../avendish-audio-processor-template
 $ ninja # or make -j8
 </code></pre>
 <p>This should produce various binaries in the build folder: for instance, a PureData object (in <code>build/pd</code>), a Python one (in <code>build/python</code>, etc.).</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="running-the-template-in-python"><a class="header" href="#running-the-template-in-python">Running the template in Python</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="running-the-template-in-python"><a class="header" href="#running-the-template-in-python">Running the template in Python</a></h1>
 <p>Once the processor is built, we can for instance run it in Python:</p>
-<p>Let's try to run our processor through the Python bindings:</p>
+<p>Let’s try to run our processor through the Python bindings:</p>
 <pre><code class="language-bash">$ cd build/python
 
 # Check that our processor was built correctly
@@ -467,18 +469,19 @@ my_processor.l_ia64
 $ pd -lib my_processor
 </code></pre>
 <p>Make the following patch:</p>
-<p><img src="getting_started/../images/getting_started/pd-hello-world.png" alt="Hello PureData" /></p>
-<p>When sending a bang, the terminal in which PureData was launched should also print "Henlo".
-We'll see in a later chapter how to print on Pd's own console instead.</p>
+<p><img src="images/getting_started/pd-hello-world.png" alt="Hello PureData"></p>
+<p>When sending a bang, the terminal in which PureData was launched should also print “Henlo”.
+We’ll see in a later chapter how to print on Pd’s own console instead.</p>
 <h1 id="running-in-daws"><a class="header" href="#running-in-daws">Running in DAWs</a></h1>
-<p>We could, but so far our object is not really an object that makes sense in a DAW: it does not process audio in any way. We'll see in further chapters how to make audio objects.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="adding-ports"><a class="header" href="#adding-ports">Adding ports</a></h1>
+<p>We could, but so far our object is not really an object that makes sense in a DAW: it does not process audio in any way. We’ll see in further chapters how to make audio objects.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="adding-ports"><a class="header" href="#adding-ports">Adding ports</a></h1>
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
 <p>Our processor so far does not process much. It just reacts to an external trigger, to invoke a print function.</p>
 <blockquote>
-<p>Note that the way this trigger is invoked varies between environments: in Python, we called a <code>process()</code> function, while in PureData, we sent a bang to our object. That is one of the core philosophies of Avendish: bindings should make it so that the object fits as much as possible with the environment's semantics and idioms.</p>
+<p>Note that the way this trigger is invoked varies between environments: in Python, we called a <code>process()</code> function, while in PureData, we sent a bang to our object. That is one of the core philosophies of Avendish: bindings should make it so that the object fits as much as possible with the environment’s semantics and idioms.</p>
 </blockquote>
 <p>Most actual media processing systems work with the concept of ports to declare inputs and outputs, and Avendish embraces this fully.</p>
 <p>Here is the code of a simple processor, which computes the sum of two numbers.</p>
@@ -501,10 +504,10 @@ We'll see in a later chapter how to print on Pd's own console instead.</p>
 };
 </code></pre>
 <p>Compiling and running this yields for instance a PureData object which can be used like this:</p>
-<p><img src="writing_processors/images/addition.png" alt="Addition" /></p>
-<p>Note that the object respects the usual semantics of PureData: sending a message to the leftmost inlet will trigger the computation. Sending a message to the other inlets will store the value internally but won't trigger the actual computation.</p>
-<p>For some objects, other semantics may make sense: creating an alternative binding to PureData which would implement another behaviour, such as triggering the computation only on "bang" messages, or on any input on any inlet, would be a relatively easy task.</p>
-<p>Let's try in Python:</p>
+<p><img src="writing_processors/images/addition.png" alt="Addition"></p>
+<p>Note that the object respects the usual semantics of PureData: sending a message to the leftmost inlet will trigger the computation. Sending a message to the other inlets will store the value internally but won’t trigger the actual computation.</p>
+<p>For some objects, other semantics may make sense: creating an alternative binding to PureData which would implement another behaviour, such as triggering the computation only on “bang” messages, or on any input on any inlet, would be a relatively easy task.</p>
+<p>Let’s try in Python:</p>
 <pre><code class="language-py">&gt;&gt;&gt; import pymy_processor
 &gt;&gt;&gt; proc = pymy_processor.Addition()
 &gt;&gt;&gt; proc.process()
@@ -514,7 +517,7 @@ We'll see in a later chapter how to print on Pd's own console instead.</p>
 &gt;&gt;&gt; p.output_0
 579.0
 </code></pre>
-<p>Here the semantics follow usual "object" ones. You set some state on the object and call methods on it, which may change this state.</p>
+<p>Here the semantics follow usual “object” ones. You set some state on the object and call methods on it, which may change this state.</p>
 <blockquote>
 <p>One could also make a binding that implements functional semantics, by passing the state of the processor as an immutable object instead. Python is already slow enough, though :p</p>
 </blockquote>
@@ -595,17 +598,18 @@ v.g = 2.0;
 &gt;&gt;&gt; p.out
 579.0
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="refactoring"><a class="header" href="#refactoring">Refactoring</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="refactoring"><a class="header" href="#refactoring">Refactoring</a></h1>
 <p>One can see how writing:</p>
 <pre><code class="language-cpp">struct { 
   static consteval auto name() { return "foobar"; } 
   float value; 
 } foobar;
 </code></pre>
-<p>for 200 controls would get boring quick. In addition, the implementation of our processing function is not as clean as we'd want: in an ideal world, it would be just:</p>
+<p>for 200 controls would get boring quick. In addition, the implementation of our processing function is not as clean as we’d want: in an ideal world, it would be just:</p>
 <pre><code class="language-cpp">void operator()() { outputs.out = inputs.a + inputs.b; }
 </code></pre>
-<p>Thankfully, we can introduce our own custom abstractions without breaking anything: the only thing that matters is that they follow the "shape" of what a parameter is.</p>
+<p>Thankfully, we can introduce our own custom abstractions without breaking anything: the only thing that matters is that they follow the “shape” of what a parameter is.</p>
 <p>This shape is defined (as a first approximation) as follows:</p>
 <pre><code class="language-cpp">template&lt;typename T&gt;
 concept parameter = requires (T t) { t.value = {}; };
@@ -637,7 +641,7 @@ static_assert(!parameter&lt;bad_3&gt;);
 <blockquote>
 <p><code>static_assert</code> is a C++ feature which allows to check a predicate at compile-time. If the predicate is false, the compiler will report an error.</p>
 </blockquote>
-<p>Avendish will simply not recognize them and they won't be accessible anywhere.</p>
+<p>Avendish will simply not recognize them and they won’t be accessible anywhere.</p>
 <p>Here are examples of valid parameters:</p>
 <pre><code class="language-cpp">struct good_1 {
   int value;
@@ -668,7 +672,8 @@ static_assert(parameter&lt;good_2&gt;);
 static_assert(parameter&lt;good_3&gt;);
 </code></pre>
 <p>Avendish provides an helper library, <code>halp</code> (Helper Abstractions for Literate Programming), which match this pattern. However, users are encouraged to develop their own abstractions that fit their preferred coding style :-)</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ports-with-the-helper-library"><a class="header" href="#ports-with-the-helper-library">Ports with the helper library</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ports-with-the-helper-library"><a class="header" href="#ports-with-the-helper-library">Ports with the helper library</a></h1>
 <p>Here is how our processor looks with the current set of helpers:</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;halp/controls.hpp&gt;
@@ -724,10 +729,12 @@ my_value_port(b, std::string)
 } inputs;
 </code></pre>
 <p>into a struct of the right shape, automatically, at compile-time, and all the current bindings will keep working.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="port-metadatas"><a class="header" href="#port-metadatas">Port metadatas</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="port-metadatas"><a class="header" href="#port-metadatas">Port metadatas</a></h1>
 <p>Our ports so far are very simple: floating-point values, without any more information attached than a name to show to the user.</p>
-<p>Most of the time, we'll want to attach some semantic metadata to the ports: for instance, a range of acceptable values, the kind of UI widget that should be shown to the user, etc.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="defining-a-minmax-range"><a class="header" href="#defining-a-minmax-range">Defining a min/max range</a></h1>
+<p>Most of the time, we’ll want to attach some semantic metadata to the ports: for instance, a range of acceptable values, the kind of UI widget that should be shown to the user, etc.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="defining-a-minmax-range"><a class="header" href="#defining-a-minmax-range">Defining a min/max range</a></h1>
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
@@ -761,7 +768,7 @@ my_value_port(b, std::string)
 </code></pre>
 <p>More generally, in most cases, Avendish will try to make sense of the things the author declares, whether they are types, variables or functions. This is not implemented entirely consistently yet, but it is a goal of the library in order to enable various coding styles and as much freedom of expression as possible for the media processor developer.</p>
 <h2 id="keeping-metadata-static"><a class="header" href="#keeping-metadata-static">Keeping metadata static</a></h2>
-<p>Note that we should still be careful in our struct definitions to not declare normal member variables for common metadata, which would take valuable memory and mess with our cache lines. This reduces performance for no good reason: imagine instantiating 10000 "processor" objects, you do not want each processor to carry the overhead of storing the range as a member variable, such as this:</p>
+<p>Note that we should still be careful in our struct definitions to not declare normal member variables for common metadata, which would take valuable memory and mess with our cache lines. This reduces performance for no good reason: imagine instantiating 10000 “processor” objects, you do not want each processor to carry the overhead of storing the range as a member variable, such as this:</p>
 <pre><code class="language-cpp">struct {
   const char* name = "foobar";
 
@@ -828,7 +835,8 @@ static_assert(sizeof(foobar) == sizeof(float));
 <li>Change the back-end to instead expect all messages on the first inlet, as those can be captured. This would certainly yield lower performance as one now would have to pass a symbol indicating the parameter so that the object knows to which port the input should map.</li>
 <li>Implement an abstraction layer which would duplicate the parameters with their clamped version, and perform the clamping on all parameters whenever the process function gets called. This would however be hurtful in terms of performance and memory use.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="defining-ui-widgets"><a class="header" href="#defining-ui-widgets">Defining UI widgets</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="defining-ui-widgets"><a class="header" href="#defining-ui-widgets">Defining UI widgets</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -867,7 +875,8 @@ range_slider, range_spinbox
 </code></pre>
 <p>This kind of widget definition is here to enable host DAWs to automatically generate appropriate UIs automatically.</p>
 <p>A further chapter will present how to create entirely custom painted UIs and widgets.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="defining-a-mapping-function"><a class="header" href="#defining-a-mapping-function">Defining a mapping function</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="defining-a-mapping-function"><a class="header" href="#defining-a-mapping-function">Defining a mapping function</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -950,7 +959,8 @@ struct inverse_mapper
 
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="smoothing-values"><a class="header" href="#smoothing-values">Smoothing values</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="smoothing-values"><a class="header" href="#smoothing-values">Smoothing values</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -1103,11 +1113,12 @@ public:
 };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="widget-helpers"><a class="header" href="#widget-helpers">Widget helpers</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="widget-helpers"><a class="header" href="#widget-helpers">Widget helpers</a></h1>
 <blockquote>
 <p>Supported bindings: depending on the underlying data type</p>
 </blockquote>
-<p>To simplify the common use case of defining a port such as "slider with a range", a set of common helper types is provided.</p>
+<p>To simplify the common use case of defining a port such as “slider with a range”, a set of common helper types is provided.</p>
 <p>Here is our example, now as refined as it can be ; almost no character is superfluous or needlessly repeated except the names of controls:</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;halp/controls.hpp&gt;
@@ -1131,12 +1142,13 @@ struct MyProcessor
 };
 </code></pre>
 <p>This is how an environment such as <em>ossia score</em> renders it:</p>
-<p><img src="writing_processors/images/addition-score.gif" alt="Addition" /></p>
+<p><img src="writing_processors/images/addition-score.gif" alt="Addition"></p>
 <p>Note that even with our helper types, the following holds:</p>
 <pre><code class="language-cpp">static_assert(sizeof(MyProcessor) == 3 * sizeof(float));
 </code></pre>
 <p>That is, an instance of our object weighs in memory exactly the size of its inputs and outputs, nothing else. In addition, the binding libraries try extremely hard to not allocate any memory dynamically, which leads to very concise memory representations of our media objects.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="port-update-callback"><a class="header" href="#port-update-callback">Port update callback</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="port-update-callback"><a class="header" href="#port-update-callback">Port update callback</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -1201,14 +1213,15 @@ struct MyProcessor
   void operator()() { outputs.out = inputs.a + inputs.b; }
 };
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="writing-audio-processors"><a class="header" href="#writing-audio-processors">Writing audio processors</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="writing-audio-processors"><a class="header" href="#writing-audio-processors">Writing audio processors</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
 </blockquote>
-<p>The processors we wrote until now only processed "control" values.</p>
+<p>The processors we wrote until now only processed “control” values.</p>
 <p>As a convention, those are values that change infrequently, relative to the audio rate: every few milliseconds, as opposed to every few dozen microseconds for individual audio samples.</p>
 <h2 id="argument-based-processors"><a class="header" href="#argument-based-processors">Argument-based processors</a></h2>
-<p>Let's see how one can write a simple audio filter in Avendish:</p>
+<p>Let’s see how one can write a simple audio filter in Avendish:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
   static consteval auto name() { return "Distortion"; }
@@ -1219,7 +1232,7 @@ struct MyProcessor
   }
 };
 </code></pre>
-<p>That's it. That's the processor :-)</p>
+<p>That’s it. That’s the processor :-)</p>
 <p>Maybe you are used to writing processors that operate with buffers of samples. Fear not, here is another valid Avendish audio processor, which should reassure most readers:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
@@ -1374,10 +1387,16 @@ halp::dynamic_audio_bus&lt;"D", double&gt; audio;
 </code></pre>
 <h2 id="further-work"><a class="header" href="#further-work">Further work</a></h2>
 <p>We currently have the following matrix of possible forms of audio ports:</p>
-<div class="table-wrapper"><table><thead><tr><th></th><th>1 channel</th><th>N channels</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th>1 channel</th><th>N channels</th></tr>
+</thead>
+<tbody>
 <tr><td>1 frame</td><td><code>float sample;</code></td><td><code>???</code></td></tr>
 <tr><td>N frames</td><td><code>float* channel;</code></td><td><code>float** samples;</code></td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <p>For the N channels / 1 frame case, one could imagine for instance:</p>
 <pre><code class="language-cpp">struct {
@@ -1390,7 +1409,8 @@ halp::dynamic_audio_bus&lt;"D", double&gt; audio;
 }
 </code></pre>
 <p>to indicate a per-sample, multi-channel bus, but this has not been implemented yet.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="monophonic-processors"><a class="header" href="#monophonic-processors">Monophonic processors</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="monophonic-processors"><a class="header" href="#monophonic-processors">Monophonic processors</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max</p>
 </blockquote>
@@ -1403,7 +1423,7 @@ halp::dynamic_audio_bus&lt;"D", double&gt; audio;
 <p>In these three cases, the processor is recognized as polyphony-friendly. That means that in cases 1 and 2, the processor will be instantiated potentially multiple times automatically, if used in e.g. a stereo DAW.</p>
 <p>In case 3, the channels of inputs and outputs will be set to the same count, which comes from the host.</p>
 <h2 id="polyphonic-processors-should-use-types-for-their-io"><a class="header" href="#polyphonic-processors-should-use-types-for-their-io">Polyphonic processors should use types for their I/O</a></h2>
-<p>Let's consider the following processor:</p>
+<p>Let’s consider the following processor:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
   static consteval auto name() { return "Distortion"; }
@@ -1452,7 +1472,7 @@ private:
 };
 </code></pre>
 <p>Here, Avendish will instantiate a single <code>inputs</code> array, which will be shared across all polyphony voices, which will likely use less memory and be more performant in case of large amount of parameters &amp; voices.</p>
-<p>Here is what I would term the "canonic" of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:</p>
+<p>Here is what I would term the “canonic” of this version, with additionally our helpers to reduce typing, and the audio samples passed through ports instead of through arguments:</p>
 <pre><code class="language-cpp">struct MyProcessor
 {
   static consteval auto name() { return "Distortion"; }
@@ -1475,7 +1495,8 @@ private:
 };
 </code></pre>
 <p>Passing inputs and outputs as types is also possible for all the other forms described previously - everything is possible, write your plug-ins as it suits you best :) and who knows, maybe with metaclasses one would also be able to generate the more efficient form directly.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-setup"><a class="header" href="#audio-setup">Audio setup</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="audio-setup"><a class="header" href="#audio-setup">Audio setup</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
 </blockquote>
@@ -1545,7 +1566,8 @@ if constexpr(requires (T t) { t.rate = 44100; })
   t.rate = ... the sample-rate reported by the DAW ...;
 </code></pre>
 <p>This way, only the cost of the variables that are actually used by the algorithm is ever incurred, which is of course not super important but a good reference implementation for this way of doing for other parts of the system where it matters more.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-arguments"><a class="header" href="#audio-arguments">Audio arguments</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="audio-arguments"><a class="header" href="#audio-arguments">Audio arguments</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap, Max, Pd</p>
 </blockquote>
@@ -1595,7 +1617,8 @@ the setup step.</p>
 <li><code>time_since_start</code></li>
 <li>and other similar timing-related things which will all be able to be opt-in.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-fft"><a class="header" href="#audio-fft">Audio FFT</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="audio-fft"><a class="header" href="#audio-fft">Audio FFT</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -1605,7 +1628,7 @@ implementation, which at best duplicates code for no good reason, and at worse m
 issues for FFT libraries which rely on global state shared across the process, such as FFTW.</p>
 <p>With the declarative approach of Avendish, however, we can make it so that the plug-in does not
 directly depend on an FFT implementation: it just requests that a port gets its spectrum computed, and it happens
-automatically outside of the plug-in's code. This allows hosts such as <a href="https://ossia.io">ossia score</a> to provide
+automatically outside of the plug-in’s code. This allows hosts such as <a href="https://ossia.io">ossia score</a> to provide
 their own FFT implementation which will be shared across all Avendish plug-ins, which is strictly better for performance
 and memory usage.</p>
 <h2 id="making-an-fft-port"><a class="header" href="#making-an-fft-port">Making an FFT port</a></h2>
@@ -1645,7 +1668,7 @@ spectrum.phase[1][2]; // The phase of the bin at index 2 for channel 1
 </code></pre>
 <pre><code class="language-cpp">spectrum.bins[0][4]; // The complex value of the bin at index 4 for channel 0
 </code></pre>
-<p>Using complex numbers allows to use the C++ standard math library functions for complex numbers: <code>std::norm</code>, <code>std::proj</code>...</p>
+<p>Using complex numbers allows to use the C++ standard math library functions for complex numbers: <code>std::norm</code>, <code>std::proj</code>…</p>
 <p>Note that the length of the spectrum arrays is always <code>N / 2 + 1</code>, N being the current frame size. Note also that the FFT is normalized - the input is divided by the amount of samples.</p>
 <blockquote>
 <p>WIP: an important upcoming feature is the ability to make configurable buffered processors, so that
@@ -1666,7 +1689,7 @@ halp::fixed_audio_spectrum_bus&lt;"B", double, 2&gt; a_stereo_port;
 halp::audio_spectrum_channel&lt;"C", double&gt; a_channel_port;
 </code></pre>
 <h2 id="accessing-a-fft-object-globally"><a class="header" href="#accessing-a-fft-object-globally">Accessing a FFT object globally</a></h2>
-<p>See <a href="writing_processors/../advanced/fft.html">the section about feature injection</a> to see how a plug-in can be injected with an FFT object which allows to control precisely how the FFT is done.</p>
+<p>See <a href="#fft-feature">the section about feature injection</a> to see how a plug-in can be injected with an FFT object which allows to control precisely how the FFT is done.</p>
 <h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
 <pre><code class="language-cpp">#pragma once
 #include &lt;cmath&gt;
@@ -1766,7 +1789,8 @@ struct PeakBandFFTPort
 
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="messages"><a class="header" href="#messages">Messages</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="messages"><a class="header" href="#messages">Messages</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, Max, Pd, Python</p>
 </blockquote>
@@ -1866,7 +1890,8 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
 }
 </code></pre>
 <p>Here, <code>atom_iterator</code> is what gets passed to <code>my_variadic_message</code>. It allows to deport the iteration of the loop over the arguments into the calling code, but handles the matching from type to union member in a generic way and transforms them into safer <code>std::variant</code> instances on-the-fly, which removes an entire class of possible errors while not costing much : in my experiments for instance, the compiler is able to elide entirely any form of dynamic memory allocation which would normally be required there.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="callbacks"><a class="header" href="#callbacks">Callbacks</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="callbacks"><a class="header" href="#callbacks">Callbacks</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, Max, Pd, Python</p>
 </blockquote>
@@ -1927,13 +1952,14 @@ inline atom_iterator make_atom_iterator(int argc, t_atom* argv)
   halp::basic_callback&lt;void(float)&gt; call;
 } overload;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="initialization"><a class="header" href="#initialization">Initialization</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="initialization"><a class="header" href="#initialization">Initialization</a></h1>
 <blockquote>
 <p>Supported bindings: Max, Pd</p>
 </blockquote>
 <p>Some media systems provide a way for objects to be passed initialization arguments.</p>
-<p>Avendish supports this with a special "initialize" method. Ultimately, I'd like to be able to simply use C++ constructors for this, but haven't managed to yet.</p>
-<p>Here's an example:</p>
+<p>Avendish supports this with a special “initialize” method. Ultimately, I’d like to be able to simply use C++ constructors for this, but haven’t managed to yet.</p>
+<p>Here’s an example:</p>
 <pre><code class="language-cpp">struct MyProcessor {
 void initialize(float a, std::string_view b)
 {
@@ -1948,11 +1974,12 @@ void initialize(float a, std::string_view b)
 [my_processor] // Not OK
 [my_processor 0 0 0 1 2 3] // Not OK
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="midi-io"><a class="header" href="#midi-io">MIDI I/O</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="midi-io"><a class="header" href="#midi-io">MIDI I/O</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, vst, vst3, clap</p>
 </blockquote>
-<p>Some media systems may have a concept of MIDI input / output. Note that currently this is only implemented for DAW-ish bindings: ossia, VST3, CLAP... Max and Pd do not support it yet (but if there is a standard for passing MIDI messages between objects there I'd love to hear about it !).</p>
+<p>Some media systems may have a concept of MIDI input / output. Note that currently this is only implemented for DAW-ish bindings: ossia, VST3, CLAP… Max and Pd do not support it yet (but if there is a standard for passing MIDI messages between objects there I’d love to hear about it !).</p>
 <p>There are a few ways to specify MIDI ports.</p>
 <p>Here is how one specifies unsafe MIDI ports:</p>
 <pre><code class="language-cpp">struct
@@ -1981,7 +2008,7 @@ struct
 } midi_port;
 </code></pre>
 <p>Here, Avendish bindings will allocate a large enough buffer to store MIDI messages ; this is mainly to enable writing dynamic-allocation-free backends where such a buffer may be allocated statically.</p>
-<p>It is also possible to do this if you don't expect to run your code on Arduinos:</p>
+<p>It is also possible to do this if you don’t expect to run your code on Arduinos:</p>
 <pre><code class="language-cpp">struct
 {
   // Using a non-fixed size type here will enable MIDI messages &gt; 3 bytes, if for instance your 
@@ -1999,7 +2026,8 @@ struct
 <p>The type is very simple:</p>
 <pre><code class="language-cpp">halp::midi_bus&lt;"In"&gt; midi;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="midi-synth-example"><a class="header" href="#midi-synth-example">MIDI synth example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="midi-synth-example"><a class="header" href="#midi-synth-example">MIDI synth example</a></h1>
 <p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries:</p>
 <ul>
 <li><a href="https://github.com/jcelerier/libremidi"><code>libremidi</code></a> provides an useful <code>enum</code> of common MIDI messages types.</li>
@@ -2106,7 +2134,8 @@ struct Synth
 };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="image-ports"><a class="header" href="#image-ports">Image ports</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="image-ports"><a class="header" href="#image-ports">Image ports</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -2131,7 +2160,7 @@ Any feedback on this is welcome.</p>
 <p>Note that currently, it is <em>the responsibility of the plug-in author</em> to allocate the texture and set the <code>changed</code> bool for output ports. Input textures come from outside.</p>
 <p>Due to the large cost of uploading a texture, <code>changed</code> is used to indicate both to the plug-in author that input textures have been touched,and for the plug-in author to indicate to the external environment that the output has changed and must be re-uploaded to the GPU.</p>
 <h2 id="gpu-processing"><a class="header" href="#gpu-processing">GPU processing</a></h2>
-<p>Check the <a href="writing_processors/../gpu/draw.html">Writing GPU Processors</a> chapter of this book!</p>
+<p>Check the <a href="#gpu-based-draw-nodes">Writing GPU Processors</a> chapter of this book!</p>
 <h2 id="helpers-3"><a class="header" href="#helpers-3">Helpers</a></h2>
 <p>A few types are provided:</p>
 <ul>
@@ -2153,7 +2182,8 @@ tex.create(100, 100);
 // Call this after making changes to the texture
 tex.upload();
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="image-processor-example"><a class="header" href="#image-processor-example">Image processor example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="image-processor-example"><a class="header" href="#image-processor-example">Image processor example</a></h1>
 <p>This example is a very simple image filter. It takes an input image and downscales &amp; degrades it.</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;cmath&gt;
@@ -2243,7 +2273,8 @@ struct TextureFilterExample
 };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="metadatas"><a class="header" href="#metadatas">Metadatas</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="metadatas"><a class="header" href="#metadatas">Metadatas</a></h1>
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
@@ -2258,12 +2289,12 @@ Here is a list in order of importance; it is recommended that strings are used f
 <ul>
 <li><code>name</code>: the pretty name of the object.</li>
 <li><code>c_name</code>: a C-identifier-compatible name for the object. This is necessary for instance for systems such as Python, PureData or Max which do not support spaces or special characters in names.</li>
-<li><code>uuid</code>: a string such as <code>8a4be4ec-c332-453a-b029-305444ee97a0</code>, generated for instance with the <code>uuidgen</code> command on Linux, Mac and Windows, or with <a href="https://www.uuidgenerator.net/">uuidgenerator.net</a> otherwise. This provides a computer-identifiable unique identifier for your plug-in, to ensure that hosts don't have collisions between plug-ins of the same name and different vendors when reloading them (sadly, on some older APIs this is unavoidable).</li>
+<li><code>uuid</code>: a string such as <code>8a4be4ec-c332-453a-b029-305444ee97a0</code>, generated for instance with the <code>uuidgen</code> command on Linux, Mac and Windows, or with <a href="https://www.uuidgenerator.net/">uuidgenerator.net</a> otherwise. This provides a computer-identifiable unique identifier for your plug-in, to ensure that hosts don’t have collisions between plug-ins of the same name and different vendors when reloading them (sadly, on some older APIs this is unavoidable).</li>
 <li><code>description</code>: a textual description of the processor.</li>
 <li><code>vendor</code>: who distributes the plug-in.</li>
 <li><code>product</code>: product name if the plug-in is part of a larger product.</li>
 <li><code>version</code>: a version string, ideally convertible to an integer as some older APIs expect integer versions.</li>
-<li><code>category</code>: a category for the plug-in. "Audio", "Synth", "Distortion", "Chorus"... there's no standard, but one can check for instance the names used <a href="https://lv2plug.in/ns/lv2core">in LV2</a> or the list mentioned by <a href="https://distrho.github.io/DPF/group__PluginMacros.html">DISTRHO</a>.</li>
+<li><code>category</code>: a category for the plug-in. “Audio”, “Synth”, “Distortion”, “Chorus”… there’s no standard, but one can check for instance the names used <a href="https://lv2plug.in/ns/lv2core">in LV2</a> or the list mentioned by <a href="https://distrho.github.io/DPF/group__PluginMacros.html">DISTRHO</a>.</li>
 <li><code>copyright</code>: <code>(c) the plug-in authors 2022-xxxx</code></li>
 <li><code>license</code>: an <a href="https://spdx.org/licenses/">SPDX identifier</a> for the license or a link towards a license document</li>
 <li><code>url</code>: URL for the plug-in if any.</li>
@@ -2271,7 +2302,8 @@ Here is a list in order of importance; it is recommended that strings are used f
 <li><code>manual_url</code>: an url for a user manual if any.</li>
 <li><code>support_url</code>: an url for user support, a forum, chat etc. if any.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="supported-port-types"><a class="header" href="#supported-port-types">Supported port types</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="supported-port-types"><a class="header" href="#supported-port-types">Supported port types</a></h1>
 <p>The supported port types depend on the back-end. There is, however, some flexibility.</p>
 <h2 id="simple-ports"><a class="header" href="#simple-ports">Simple ports</a></h2>
 <h3 id="float"><a class="header" href="#float">Float</a></h3>
@@ -2409,7 +2441,7 @@ struct {
 <p>An helper is provided, which is sadly a macro as we cannot do proper enum reflection yet:</p>
 <pre><code class="language-cpp">halp__enum("Simple Enum", Peg, Square, Peg, Round, Hole) my_port;
 </code></pre>
-<p>declares a port named "Simple Enum". The default value will be "Peg", the 4 enumerators are Square, Peg, Round, Hole.</p>
+<p>declares a port named “Simple Enum”. The default value will be “Peg”, the 4 enumerators are Square, Peg, Round, Hole.</p>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
 <blockquote>
 <p>Supported bindings: ossia</p>
@@ -2445,7 +2477,7 @@ concept vector_ish = requires(T t)
 } my_port;
 </code></pre>
 <h3 id="c-arrays"><a class="header" href="#c-arrays">C arrays</a></h3>
-<p>C arrays aren't supported due to limitations in the reflection capabilities of C++:</p>
+<p>C arrays aren’t supported due to limitations in the reflection capabilities of C++:</p>
 <pre><code class="language-cpp">struct {
   int value[2]; // Won't work
 } my_port;
@@ -2551,7 +2583,8 @@ struct detected_object
 <h1 id="helper-type"><a class="header" href="#helper-type">Helper type</a></h1>
 <p>To create a port ithout having to declare a struct, you can directly use:</p>
 <p><code>halp::val_port&lt;"My port", std::string&gt; my_port;</code>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="example-2"><a class="header" href="#example-2">Example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="example-2"><a class="header" href="#example-2">Example</a></h1>
 <p>This example shows the various helper types that provide simple definitions matching the supported port types saw before.</p>
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
@@ -2746,13 +2779,14 @@ struct ControlGallery
 
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="file-ports"><a class="header" href="#file-ports">File ports</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="file-ports"><a class="header" href="#file-ports">File ports</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>File ports are currently only supported with the ossia binding.</p>
 <p>They allow to specify that we want the content of a file.
-The host will take care of loading, mmaping, converting, etc... the file in the relevant format - as far as possible outside of DSP / processing threads.</p>
+The host will take care of loading, mmaping, converting, etc… the file in the relevant format - as far as possible outside of DSP / processing threads.</p>
 <p>Every file port should at least conform to the very basic following concept:</p>
 <pre><code class="language-cpp">template &lt;typename T&gt;
 concept file = requires(T t) {
@@ -2773,7 +2807,7 @@ concept file_port = requires(T t) {
 </code></pre>
 <h2 id="features"><a class="header" href="#features">Features</a></h2>
 <h3 id="file-watch"><a class="header" href="#file-watch">File watch</a></h3>
-<p>By adding a <code>file_watch</code> <a href="advanced/../development/flags.html">flag</a> to the class, the host environment will reload the file's data whenever a change is detected on disk.
+<p>By adding a <code>file_watch</code> <a href="#flags">flag</a> to the class, the host environment will reload the file’s data whenever a change is detected on disk.
 Note that this has an obvious performance cost as the host must check regularly for changes: do not overdo it!</p>
 <h3 id="file-filters"><a class="header" href="#file-filters">File filters</a></h3>
 <p>File ports should prompt the host to open a file chooser.
@@ -2791,7 +2825,7 @@ This can be specified in the following ways:</p>
 };
 </code></pre>
 <h4 id="domain-specific-file-filters"><a class="header" href="#domain-specific-file-filters">Domain-specific file filters</a></h4>
-<p>This is for the case where you want a general kind of media and don't care specifically about the extension:
+<p>This is for the case where you want a general kind of media and don’t care specifically about the extension:
 for instance, for audio files you could have .wav, .aiff, .mp3, etc etc ; it is pointless to try to specify a whole list.
 Instead, the host knows which audio file formats it is able to load and should just be able to show its own audio-specific file chooser.</p>
 <pre><code class="language-cpp">struct my_file_port : ... {
@@ -2807,7 +2841,8 @@ Instead, the host knows which audio file formats it is able to load and should j
   static consteval auto filters() { enum { video }; return video; }
 };
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="soundfile-ports"><a class="header" href="#soundfile-ports">Soundfile ports</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="soundfile-ports"><a class="header" href="#soundfile-ports">Soundfile ports</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -2860,7 +2895,8 @@ the simplest way is to make an empty struct which inherits from <code>halp::soun
   }
 } port_name;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="midifle-ports"><a class="header" href="#midifle-ports">Midifle ports</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="midifle-ports"><a class="header" href="#midifle-ports">Midifle ports</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -2932,7 +2968,8 @@ the simplest way is to make an empty struct which inherits from <code>halp::midi
   }
 } port_name;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="raw-file-ports"><a class="header" href="#raw-file-ports">Raw file ports</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="raw-file-ports"><a class="header" href="#raw-file-ports">Raw file ports</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -2978,12 +3015,13 @@ struct : halp::file_port&lt;"My file", mmap_file_view&gt; {
   }
 } port_name;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="code-editors"><a class="header" href="#code-editors">Code editors</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="code-editors"><a class="header" href="#code-editors">Code editors</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
 <p>For live-coding and similar purposes, it is common to embed a domain-specific programming language
-into a host environment: Faust, math expression languages, Javascript, Lisp, etc...</p>
+into a host environment: Faust, math expression languages, Javascript, Lisp, etc…</p>
 <p>If one adds the <code>language</code> metadata to a string port, then the port will be recognized
 as a programming language code input: hosts are encouraged to show some relevant text editor for code
 instead of a simple line edit.</p>
@@ -2994,7 +3032,8 @@ instead of a simple line edit.</p>
 } program;
 </code></pre>
 <p>should show up as a code editor with support for <a href="https://en.wikipedia.org/wiki/INTERCAL">INTERCAL</a> programs.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="creating-user-interfaces"><a class="header" href="#creating-user-interfaces">Creating user interfaces</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="creating-user-interfaces"><a class="header" href="#creating-user-interfaces">Creating user interfaces</a></h1>
 <p>We have seen so far that we can specify widgets for our controls. Multiple back-ends may render these widgets in various ways.
 This is already a good start for making user interfaces, but most media systems generally have more specific user interface needs.</p>
 <p>Avendish allows three levels of UI definition:</p>
@@ -3004,22 +3043,23 @@ This is already a good start for making user interfaces, but most media systems 
 <blockquote>
 <p>Supported bindings: all, not really a feature of Avendish per-se but of the hosts</p>
 </blockquote>
-<p><img src="advanced/images/ui-basic.png" alt="Basic UI" /></p>
+<p><img src="advanced/images/ui-basic.png" alt="Basic UI"></p>
 <ol start="2">
-<li>Giving layout hints. A declarative syntax allows to layout said items and text in usual containers, auomatically and with arbitrary nesting: hbox, vbox, tabs, split view... Here is, again, an example in <em>ossia score</em>.</li>
+<li>Giving layout hints. A declarative syntax allows to layout said items and text in usual containers, auomatically and with arbitrary nesting: hbox, vbox, tabs, split view… Here is, again, an example in <em>ossia score</em>.</li>
 </ol>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p><img src="advanced/images/ui-layout.png" alt="Basic UI" /></p>
+<p><img src="advanced/images/ui-layout.png" alt="Basic UI"></p>
 <ol start="3">
 <li>Creating entirely custom items with a Canvas-based API. It is also possible to load images, make custom animations and handle mouse events.</li>
 </ol>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p><img src="advanced/images/ui-image.gif" alt="Basic UI" /></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="layout-based-uis"><a class="header" href="#layout-based-uis">Layout-based UIs</a></h1>
+<p><img src="advanced/images/ui-image.gif" alt="Basic UI"></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="layout-based-uis"><a class="header" href="#layout-based-uis">Layout-based UIs</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, others are work-in-progress</p>
 </blockquote>
@@ -3141,7 +3181,7 @@ lighter
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
 </code></pre>
 <h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
-<p>In "group" or "container" layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
+<p>In “group” or “container” layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
 <pre><code class="language-cpp">static constexpr auto x() { return 20; }
 static constexpr auto y() { return 20; }
 </code></pre>
@@ -3169,7 +3209,7 @@ static constexpr auto height() { return 50; }
   };
 };
 </code></pre>
-<p>The syntax without helpers currently needs some repeating as C++ does not yet allow <code>auto</code> as member fields, otherwise it'd just be:</p>
+<p>The syntax without helpers currently needs some repeating as C++ does not yet allow <code>auto</code> as member fields, otherwise it’d just be:</p>
 <pre><code class="language-cpp">auto int_widget = &amp;ins::foo;
 </code></pre>
 <h1 id="helpers-4"><a class="header" href="#helpers-4">Helpers</a></h1>
@@ -3206,7 +3246,8 @@ halp::item&lt;&amp;ins::foo&gt; widget{
  } widgets;
 };
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="custom-items"><a class="header" href="#custom-items">Custom items</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="custom-items"><a class="header" href="#custom-items">Custom items</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -3263,7 +3304,7 @@ halp::item&lt;&amp;ins::foo&gt; widget{
 };
 </code></pre>
 <p>This produces the small squares animation here:</p>
-<p><img src="advanced/images/ui-image.gif" alt="Basic UI" /></p>
+<p><img src="advanced/images/ui-image.gif" alt="Basic UI"></p>
 <h2 id="interactive-items-for-controlling-single-ports"><a class="header" href="#interactive-items-for-controlling-single-ports">Interactive items for controlling single ports</a></h2>
 <p>This is <em>even more</em> experimental :)</p>
 <p>Here is what I believe to be the first entirely UI-library-independent UI slider defined in C++.</p>
@@ -3434,7 +3475,8 @@ concept painter = requires(T t) {
                   };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ui-message-bus"><a class="header" href="#ui-message-bus">UI message bus</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ui-message-bus"><a class="header" href="#ui-message-bus">UI message bus</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -3506,7 +3548,8 @@ struct MyProcessor {
 };
 </code></pre>
 <p>So far this has only been tested on a single computer but this could be tried over a network too.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="message-bus-example"><a class="header" href="#message-bus-example">Message bus example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="message-bus-example"><a class="header" href="#message-bus-example">Message bus example</a></h1>
 <pre><code class="language-cpp">﻿#pragma once
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
@@ -3682,12 +3725,13 @@ struct MessageBusUi
 };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="feature-injection"><a class="header" href="#feature-injection">Feature injection</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="feature-injection"><a class="header" href="#feature-injection">Feature injection</a></h1>
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
 <p>Many processors may require some kind of common, cross-cutting algorithm or system for their proper operation.</p>
-<p>Processors can optionally declare a template argument, which will contain the implementations of these "cross-cutting concerns" supported by the backend.</p>
+<p>Processors can optionally declare a template argument, which will contain the implementations of these “cross-cutting concerns” supported by the backend.</p>
 <p>For now, there are two:</p>
 <ul>
 <li>A logging system</li>
@@ -3702,8 +3746,9 @@ struct MyProcessor {
 };
 </code></pre>
 <p>This means that for instance, a processor can log to the Pd or Max console through <code>post(...)</code>, to stdout on Python, etc. and that they are relieved of the need to go look for an FFT algorithm.</p>
-<p>Hosts like <em>ossia score</em> will be able to plug-in their own FFT implementation optimized for the platform on which the plug-in is running (and binaries will stop having 45 duplicate FFT implementations...).</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="logging-feature"><a class="header" href="#logging-feature">Logging feature</a></h1>
+<p>Hosts like <em>ossia score</em> will be able to plug-in their own FFT implementation optimized for the platform on which the plug-in is running (and binaries will stop having 45 duplicate FFT implementations…).</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="logging-feature"><a class="header" href="#logging-feature">Logging feature</a></h1>
 <blockquote>
 <p>Supported bindings: all</p>
 </blockquote>
@@ -3766,7 +3811,8 @@ struct Logger
 <blockquote>
 <p>Avendish currently will look for <code>fmtlib</code> for its logger implementation, until <code>std::format</code> gets implemented by compiler authors.</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="fft-feature"><a class="header" href="#fft-feature">FFT feature</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="fft-feature"><a class="header" href="#fft-feature">FFT feature</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -3851,7 +3897,8 @@ struct PeakBand
 <blockquote>
 <p>Avendish currently provides a very simple and unoptimized FFT for the sake of testing. Contributions of bindings to more efficient FFT libraries are very welcome :-)</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="presets"><a class="header" href="#presets">Presets</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="presets"><a class="header" href="#presets">Presets</a></h1>
 <blockquote>
 <p>Supported bindings: VST</p>
 </blockquote>
@@ -3879,7 +3926,8 @@ static constexpr const program programs[]{
     {.name{"Hi gain"},  .parameters{.preamp = {1.0}, .volume = {1.0}}},
 };
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="sample-accurate-processing"><a class="header" href="#sample-accurate-processing">Sample-accurate processing</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="sample-accurate-processing"><a class="header" href="#sample-accurate-processing">Sample-accurate processing</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -3895,14 +3943,14 @@ stays constant for at least the entire duration of a tick.</p>
 } control;
 </code></pre>
 <ul>
-<li><code>value</code> will always carry the "running" value at the beginning of the tick, like before.</li>
+<li><code>value</code> will always carry the “running” value at the beginning of the tick, like before.</li>
 <li><code>values</code> is a type which should be API-wise more-or-less compatible with <code>std::map&lt;int, type_of_value&gt;</code>.</li>
 </ul>
 <p>For every message received in the tick, <code>values</code> will be set (which means that they can also be empty if no message at all was received on that port).</p>
 <p>There are actually three options for implementing <code>values</code>.</p>
 <ul>
 <li>
-<p>Option A: <code>std::map&lt;int, float&gt; values</code>: the simplest case. Can be slow. A helper which uses <code>boost::small_flat_map</code> is provided: it provides neat performance and won't allocate unless the port is spammed.</p>
+<p>Option A: <code>std::map&lt;int, float&gt; values</code>: the simplest case. Can be slow. A helper which uses <code>boost::small_flat_map</code> is provided: it provides neat performance and won’t allocate unless the port is spammed.</p>
 </li>
 <li>
 <p>Option B: <code>std::optional&lt;float&gt;* values;</code>: here, a <code>std::optional&lt;float&gt;</code> array of the same length than audio channels will be allocated. Indexing is the same than for audio samples.</p>
@@ -3917,14 +3965,15 @@ stays constant for at least the entire duration of a tick.</p>
  };
   std::span&lt;timestamped_value&gt; values;
 </code></pre>
-<p>This is the most efficient storage if you expect to receive few values (and also the most "my device has extremely little RAM"-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
+<p>This is the most efficient storage if you expect to receive few values (and also the most “my device has extremely little RAM”-friendly one), however the ability to just do <code>values[frame_index]</code> is lost as the index now only goes up to the allocated messages (which can be zero if no message was received for this tick).</p>
 <h1 id="helpers-5"><a class="header" href="#helpers-5">Helpers</a></h1>
 <p>A single helper is provided for now: <code>halp::accurate&lt;T&gt;</code>.</p>
 <p>It can be used like this to wrap an existing control type to add it a sample-accurate storage buffer:</p>
 <pre><code>halp::accurate&lt;halp::val_port&lt;"Out", float&gt;&gt; my_port;
 halp::accurate&lt;halp::knob_i32&lt;"Blah", int&gt;&gt; my_widget;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="sample-accurate-processing-example"><a class="header" href="#sample-accurate-processing-example">Sample-accurate processing example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="sample-accurate-processing-example"><a class="header" href="#sample-accurate-processing-example">Sample-accurate processing example</a></h1>
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/concepts/audio_port.hpp&gt;
 #include &lt;avnd/concepts/parameter.hpp&gt;
@@ -3969,7 +4018,8 @@ struct SampleAccurateFilterExample
 };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-channel-mimicking"><a class="header" href="#audio-channel-mimicking">Audio channel mimicking</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="audio-channel-mimicking"><a class="header" href="#audio-channel-mimicking">Audio channel mimicking</a></h1>
 <blockquote>
 <p>Supported bindings: ossia, VST, Clap, Max/MSP</p>
 </blockquote>
@@ -3985,7 +4035,7 @@ struct
   halp::audio_output_bus&lt;"Output"&gt; audio;
 } outputs;
 </code></pre>
-<p>Here, everything is fine: the host can send 1, 2, ... channels to the input, and Avendish will make sure that the audio output matches that.</p>
+<p>Here, everything is fine: the host can send 1, 2, … channels to the input, and Avendish will make sure that the audio output matches that.</p>
 <p>Now imagine that we add another bus:</p>
 <pre><code class="language-cpp">struct ins
 {
@@ -4016,7 +4066,8 @@ struct outs
   halp::mimic_audio_bus&lt;"Output", &amp;ins::audio&gt; audio;
 } outputs;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="workers"><a class="header" href="#workers">Workers</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="workers"><a class="header" href="#workers">Workers</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -4029,7 +4080,7 @@ The host processes the request in a thread. This returns a function which is the
 onto the processor, to update its state with the result of the computations.</p>
 <h2 id="general-worker-api-usage"><a class="header" href="#general-worker-api-usage">General worker API Usage</a></h2>
 <p>In the main class, define a <code>worker</code> struct/instance ; the arguments can be anything.
-Here we'll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple
+Here we’ll have a request that takes an <code>int, std::string</code> set of arguments ; to have multiple
 behaviours one can use a std::variant of potential requests.</p>
 <pre><code class="language-cpp">struct MyObject
 {
@@ -4098,7 +4149,7 @@ return [str = std::move(foo)] (MyObject&amp; obj) mutable {
 </code></pre>
 <p>A complete example is available here: <a href="https://github.com/ossia/score-addon-threedim/blob/main/Threedim/StructureSynth.hpp">https://github.com/ossia/score-addon-threedim/blob/main/Threedim/StructureSynth.hpp</a></p>
 <h2 id="simple-threaded-port-processing-api-usage"><a class="header" href="#simple-threaded-port-processing-api-usage">Simple threaded port-processing API usage</a></h2>
-<p>This API is a "simplified" version of the above one for the common case of wanting
+<p>This API is a “simplified” version of the above one for the common case of wanting
 to pre-process some data which was loaded from the hard drive.</p>
 <p>It is accessed by adding the following to a port:</p>
 <pre><code class="language-cpp">struct : my_file_port {
@@ -4116,8 +4167,9 @@ to pre-process some data which was loaded from the hard drive.</p>
 } my_port;
 </code></pre>
 <p>A complete example is available here: <a href="https://github.com/ossia/score-addon-threedim/blob/main/Threedim/ObjLoader.hpp">https://github.com/ossia/score-addon-threedim/blob/main/Threedim/ObjLoader.hpp</a></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration-with-cmake"><a class="header" href="#configuration-with-cmake">Configuration with CMake</a></h1>
-<p>So far, the "building" side of things has been left under the carpet.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="configuration-with-cmake"><a class="header" href="#configuration-with-cmake">Configuration with CMake</a></h1>
+<p>So far, the “building” side of things has been left under the carpet.</p>
 <p>It is actually not very complicated.</p>
 <p>We have:</p>
 <ul>
@@ -4139,7 +4191,7 @@ PYBIND11_MODULE(py@AVND_C_NAME@, m)
 }
 </code></pre>
 <p>Here, <code>AVND_MAIN_FILE</code>, <code>AVND_C_NAME</code> and <code>AVND_MAIN_CLASS</code> are options that are passed to CMake.
-For an actual processor though, it's likely that you would have to write your own entrypoint.</p>
+For an actual processor though, it’s likely that you would have to write your own entrypoint.</p>
 <p>Here is the Clap entrypoint, which is fairly similar:</p>
 <pre><code class="language-cpp">/* SPDX-License-Identifier: GPL-3.0-or-later */
 
@@ -4241,11 +4293,12 @@ int main()
   MyBinding&lt;plug_type&gt; the_binding;
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="gpu-based-draw-nodes"><a class="header" href="#gpu-based-draw-nodes">GPU-based draw nodes</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="gpu-based-draw-nodes"><a class="header" href="#gpu-based-draw-nodes">GPU-based draw nodes</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of "modern GPU pipeline",
+<p>The techniques shown so far for writing cross-system audio and media processors can be extended to the general ontology of “modern GPU pipeline”,
 in order to define API-independent GPU-based objects.</p>
 <p>Here are some useful readings to get an idea of the problem space:</p>
 <ul>
@@ -4259,8 +4312,8 @@ in order to define API-independent GPU-based objects.</p>
 in order to preserve independence of the written nodes from the underlyling API: stating that one needs to allocate and upload a buffer prior to executing
 a pipeline should not depend on any concrete GPU API and should be doable in the simplest possible way: the code
 should be defined in terms of its absolute minimal requirements in order to enable it to work on the widest range of systems possible.</p>
-<p>Just like we have done so far, we provide "helper types" which are entirely optional but can reduce wrist strain :-)
-Bindings have zero dependency on any of the helper types and namespaces (<code>halp</code>, <code>gpp</code>) shown here -- everything depends on the shape of things.</p>
+<p>Just like we have done so far, we provide “helper types” which are entirely optional but can reduce wrist strain :-)
+Bindings have zero dependency on any of the helper types and namespaces (<code>halp</code>, <code>gpp</code>) shown here – everything depends on the shape of things.</p>
 <h2 id="why-are-we-doing-this"><a class="header" href="#why-are-we-doing-this">Why are we doing this</a></h2>
 <p>To reduce code duplication across projects which define visual plug-ins for media software:</p>
 <ul>
@@ -4268,7 +4321,7 @@ Bindings have zero dependency on any of the helper types and namespaces (<code>h
 <li>A <a href="https://git.sesse.net/?p=movit;a=blob;f=dither_effect.cpp;h=3fa6aebc3fa8f674674ca37e37ac6932be78c6fe;hb=HEAD">Movit plug-in</a></li>
 <li><a href="https://github.com/MeridianPoint/TouchDesignerOpenGLTOP/blob/master/OpenGLTOP/OpenGLTOP.cpp">TouchDesigner TOPs</a></li>
 <li>Max <a href="https://cycling74.com/sdk/max-sdk-8.0.3/html/chapter_jit_ob3dqs.html">jit.gl and OB3D objects</a></li>
-<li>etc...</li>
+<li>etc…</li>
 </ul>
 <p>which are all about the same thing: processing a fixed set of input and output data on the GPU and exposing this as a data flow node
 with cute UI controls to the user.</p>
@@ -4280,14 +4333,14 @@ with cute UI controls to the user.</p>
 <h2 id="defining-a-primitive-pipeline-ontology"><a class="header" href="#defining-a-primitive-pipeline-ontology">Defining a primitive pipeline ontology</a></h2>
 <p>A GPU pipeline carries much more information than the average audio object, as GPUs are pretty configurable and specialized systems, with various possible qualifications on their inputs and outputs that are unfamiliar to the programmer accustomed to working with a CPU.</p>
 <p>The core of a GPU pipeline is the program that will run on it: a shader. Shaders are in themselves very similar to data-flow objects: they define inputs (often the mesh data, textures, and parameters to control the rendering) and outputs (often the color).</p>
-<p>The pipeline may have multiple stages: most commonly and in an extremely broad and inaccurate way, the vertex stage positions triangles in the GPU API's coordinate system, and the fragment stage renders these triangles.</p>
+<p>The pipeline may have multiple stages: most commonly and in an extremely broad and inaccurate way, the vertex stage positions triangles in the GPU API’s coordinate system, and the fragment stage renders these triangles.</p>
 <p>The pipeline has a layout: it is the definition of its inputs and outputs. For instance, such a layout may be:</p>
 <ul>
 <li>
-<p>A <code>vec2</code> attribute input at location 0 representing each vertex's position.</p>
+<p>A <code>vec2</code> attribute input at location 0 representing each vertex’s position.</p>
 </li>
 <li>
-<p>A <code>vec4</code> attribute input at location 1 representing each vertex's color.</p>
+<p>A <code>vec4</code> attribute input at location 1 representing each vertex’s color.</p>
 </li>
 <li>
 <p>A texture at binding 0.</p>
@@ -4361,7 +4414,7 @@ void main() {
   fragColor = brightness * color;
 }
 </code></pre>
-<p>The main problem is ensuring that the pipeline's layout as used from the C++ code matches the pipeline's layout as declared in the shader ; as every time there is an information duplication in a system, there is the possibility for errors there.</p>
+<p>The main problem is ensuring that the pipeline’s layout as used from the C++ code matches the pipeline’s layout as declared in the shader ; as every time there is an information duplication in a system, there is the possibility for errors there.</p>
 <p>Here, we have duplication:</p>
 <ul>
 <li>Between the outputs of the vertex and the input of the fragment - some drivers and APIs are lenient regarding errors here, others are not.</li>
@@ -4375,7 +4428,8 @@ void main() {
 </li>
 </ul>
 <p>The idea is that we can use the same principles than saw before to define our layout through a C++ struct, and get our library to automatically generate the relevant inputs and outputs.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="defining-the-layout"><a class="header" href="#defining-the-layout">Defining the layout</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="defining-the-layout"><a class="header" href="#defining-the-layout">Defining the layout</a></h1>
 <p>Defining the layout of a draw pipeline is fairly similar to defining the inputs and outputs of our nodes:</p>
 <pre><code class="language-cpp">struct layout
 {
@@ -4517,15 +4571,16 @@ akin to:</p>
 <pre><code class="language-cpp">std140_struct { ... } ubo;
 </code></pre>
 <blockquote>
-<p>Note that not everything GLSL feature is supported yet, but is on the roadmap: arrays, ssbos, sampler2DShadow, etc...
+<p>Note that not everything GLSL feature is supported yet, but is on the roadmap: arrays, ssbos, sampler2DShadow, etc…
 Contributions welcome !</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="api-calls"><a class="header" href="#api-calls">API calls</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="api-calls"><a class="header" href="#api-calls">API calls</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
-<p>In general, programming for the GPU involves some level of calling into a graphics API: OpenGL, Vulkan, Metal, or various abstractions on top of them such as the Qt, Unreal, etc... RHIs, libraries such as BGFX, etc.</p>
-<p>Like every non-declarative code, this has the sad side-effect of tying you to said library ; it's pretty hard to migrate to, say, Qt's RHI to pure OpenGL or BGFX.
+<p>In general, programming for the GPU involves some level of calling into a graphics API: OpenGL, Vulkan, Metal, or various abstractions on top of them such as the Qt, Unreal, etc… RHIs, libraries such as BGFX, etc.</p>
+<p>Like every non-declarative code, this has the sad side-effect of tying you to said library ; it’s pretty hard to migrate to, say, Qt’s RHI to pure OpenGL or BGFX.
 Here, we propose a method that aims to keep the algorithms reusable by having them state their needs without making any API calls.</p>
 <p>The API comes with three optional methods that can be implemented in your processor to control behaviour for now:</p>
 <pre><code class="language-cpp">// Allocates ressources and sends data from the CPU to the GPU.
@@ -4575,7 +4630,7 @@ gpp::co_update update()
 }
 </code></pre>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
-<p>Note that there isn't any direct API call here. Instead, we return user-defined structs:
+<p>Note that there isn’t any direct API call here. Instead, we return user-defined structs:
 for instance, <code>texture_allocation</code> is simply defined like this:</p>
 <pre><code class="language-cpp">struct texture_allocation
 {
@@ -4645,18 +4700,18 @@ using update_handle = std::variant&lt;std::monostate, texture_handle&gt;;
 using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 </code></pre>
 <blockquote>
-<p>Of course, we would love this to be performed automatically as part of compiler optimizations... it seems that the science is not there yet though !</p>
+<p>Of course, we would love this to be performed automatically as part of compiler optimizations… it seems that the science is not there yet though !</p>
 </blockquote>
 <ol start="2">
 <li>
 <p>This gives some amount of named-parameter-ness for GPU API calls which is also a good way to reduce bugs :-)</p>
 </li>
 <li>
-<p>As no "library" functions are called, the possibility to have ODR issues due to multiple function definitions is less likely, and can trivially be solved by wrapping the entirety of the user-provided code and command definitions in a custom namespace as the namespaces do not matter at all.</p>
+<p>As no “library” functions are called, the possibility to have ODR issues due to multiple function definitions is less likely, and can trivially be solved by wrapping the entirety of the user-provided code and command definitions in a custom namespace as the namespaces do not matter at all.</p>
 </li>
 </ol>
 <h1 id="how-does-it-work-"><a class="header" href="#how-does-it-work-">How does it work ??</a></h1>
-<p>It's very simple: the code which invokes <code>update()</code> more-or-less looks like this:</p>
+<p>It’s very simple: the code which invokes <code>update()</code> more-or-less looks like this:</p>
 <pre><code class="language-cpp">void invoke_update()
 {
   if constexpr(requires { node.update(); })
@@ -4687,9 +4742,10 @@ using my_co_update = gpp::generator&lt;update_action, update_handle&gt;;
 </code></pre>
 <p>One can check that given the amount of abstraction involved, the compiler can still generate <a href="https://gcc.godbolt.org/z/rcqT91d7f">reasonable amounts of code</a> for this (when provided with a decent std::variant implementation :p).</p>
 <blockquote>
-<p>Note that the implementation does not depend on the variant type being <code>std::variant</code> -- I also tested with <code>boost.variant2</code> and <code>mpark::variant</code> which follow the same concepts.</p>
+<p>Note that the implementation does not depend on the variant type being <code>std::variant</code> – I also tested with <code>boost.variant2</code> and <code>mpark::variant</code> which follow the same concepts.</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="minimal-shaders"><a class="header" href="#minimal-shaders">Minimal shaders</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="minimal-shaders"><a class="header" href="#minimal-shaders">Minimal shaders</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -4772,12 +4828,13 @@ void main() {
 };
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="draw-example"><a class="header" href="#draw-example">Draw example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="draw-example"><a class="header" href="#draw-example">Draw example</a></h1>
 <p>This example draw a triangle with two controls.</p>
 <ul>
 <li>One control is an uniform exposed directly to the object.</li>
 <li>Another is a CPU-only control which the author of the node then maps to another uniform in a custom way.</li>
-<li>The texture also comes from the node's code.</li>
+<li>The texture also comes from the node’s code.</li>
 </ul>
 <pre><code class="language-cpp">#pragma once
 #include &lt;avnd/common/member_reflection.hpp&gt;
@@ -4929,7 +4986,8 @@ private:
 
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="compute-nodes"><a class="header" href="#compute-nodes">Compute nodes</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="compute-nodes"><a class="header" href="#compute-nodes">Compute nodes</a></h1>
 <blockquote>
 <p>Supported bindings: ossia</p>
 </blockquote>
@@ -5171,7 +5229,8 @@ private:
 
 }
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="type-predicates-and-introspection"><a class="header" href="#type-predicates-and-introspection">Type predicates and introspection</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="type-predicates-and-introspection"><a class="header" href="#type-predicates-and-introspection">Type predicates and introspection</a></h1>
 <p>The core enabler of Avendish is the ability to filter struct definitions according to predicates.</p>
 <p>That is, given:</p>
 <pre><code class="language-cpp">struct Foo {
@@ -5242,11 +5301,17 @@ This example is assumed for all the cases below.</p>
 <p><code>predicate_introspection&lt;Foo, is_int&gt;</code> will work within this referential: indices will refer to
 these types. That is, the element 0 will be <code>int16_t</code> and element 1 will be <code>int32_t</code>.
 Multiple methods are provided to go from and to indices in the complete struct, to indices in the filtered version:</p>
-<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th></th><th></th><th></th><th></th></tr>
+</thead>
+<tbody>
 <tr><td>member</td><td>x</td><td>y</td><td>z</td><td>txt</td></tr>
 <tr><td>field index</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
 <tr><td>filtered index</td><td>0</td><td>-</td><td>1</td><td>-</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h3 id="doing-something-for-each-member-of-a-struct-without-an-instance-1"><a class="header" href="#doing-something-for-each-member-of-a-struct-without-an-instance-1">Doing something for each member of a struct without an instance</a></h3>
 <pre><code class="language-cpp">predicate_instrospection&lt;T, P&gt;::for_all(
@@ -5369,7 +5434,8 @@ predicate_instrospection&lt;T, P&gt;::unmap&lt;1&gt;() == compile-error;
 predicate_instrospection&lt;T, P&gt;::unmap&lt;2&gt;() == 1;
 predicate_instrospection&lt;T, P&gt;::unmap&lt;...&gt;() == compile-error;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="flags"><a class="header" href="#flags">Flags</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="flags"><a class="header" href="#flags">Flags</a></h1>
 <p>Flags are a very simple concept in Avendish to declare that a given struct (most of the time a port) has some specific feature.</p>
 <p>It just means that a specific keyword has to be in some way visible inside the struct.</p>
 <p>The simplest way is through an anonymous enumeration:</p>
@@ -5401,14 +5467,15 @@ concept has_bamboozle_flag =
   halp_flags(foo, bar);
 };
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="implementing-a-new-concept"><a class="header" href="#implementing-a-new-concept">Implementing a new concept</a></h1>
-<p>Let's say one wants to implement a new concept / feature that will be
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="implementing-a-new-concept"><a class="header" href="#implementing-a-new-concept">Implementing a new concept</a></h1>
+<p>Let’s say one wants to implement a new concept / feature that will be
 recognized by the Avendish bindings.</p>
 <p>There are a few simple steps which separate concerns.</p>
 <h2 id="1-making-an-example"><a class="header" href="#1-making-an-example">1. Making an example</a></h2>
 <p>The first step is to prototype the expected API through an example.
 This helps making sure the idea is sound and useable.</p>
-<p>For instance, let's say we want to add support for ports with a member variable <code>int color;</code> which would enable
+<p>For instance, let’s say we want to add support for ports with a member variable <code>int color;</code> which would enable
 ports to have an associated color.</p>
 <p>The color could be depending on the object a compile-time constant or a run-time property.</p>
 <p>We will write a simple example object:</p>
@@ -5496,9 +5563,9 @@ avnd::parameter_with_color_input_introspection&lt;MyProcessor&gt;::for_all(
 <h2 id="5-in-bindings-storing-some-ancillary-data-for-each-field-with-a-color"><a class="header" href="#5-in-bindings-storing-some-ancillary-data-for-each-field-with-a-color">5. In bindings, storing some ancillary data for each field with a <code>color</code></a></h2>
 <p>This is one of the most powerful zero-cost abstractions provided by Avendish:
 it is possible to create arrays of data that specifically match the ports with specific properties,
-attached with the binding, in a way that an object without any ports using the feature won't bear a single byte of wasted
+attached with the binding, in a way that an object without any ports using the feature won’t bear a single byte of wasted
 space or instruction generated caused by the implementation of said feature.</p>
-<p>For this, let's define an ancillary state that we want to store for each port that have a color.</p>
+<p>For this, let’s define an ancillary state that we want to store for each port that have a color.</p>
 <pre><code class="language-cpp">template &lt;typename Field&gt;
 struct color_state_type;
 
@@ -5550,6 +5617,11 @@ struct ports_with_color&lt;T&gt;
 
         </div>
 
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
 
 
@@ -5558,13 +5630,13 @@ struct ports_with_color&lt;T&gt;
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-8575899c.js"></script>
+        <script src="book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
 
