@@ -40,6 +40,7 @@ jobs:
             toolchain:p
             cppwinrt:p
             boost:p
+            gstreamer:p
 
       - name: Build debug
         shell: msys2 {0}

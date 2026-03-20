@@ -23,25 +23,25 @@ struct get_ossia_inlet_type<N, T>
   using type = ossia::audio_inlet;
 };
 
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(!ossia_port<T>)
 struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(ossia_value_port<T>)
 struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::value_inlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(ossia_audio_port<T>)
 struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::audio_inlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(ossia_midi_port<T>)
 struct get_ossia_inlet_type<N, T>
 {
@@ -58,6 +58,11 @@ template <typename N, avnd::midi_port T>
 struct get_ossia_inlet_type<N, T>
 {
   using type = ossia::midi_inlet;
+};
+template <typename N, avnd::buffer_port T>
+struct get_ossia_inlet_type<N, T>
+{
+  using type = ossia::texture_inlet;
 };
 template <typename N, avnd::texture_port T>
 struct get_ossia_inlet_type<N, T>
@@ -102,25 +107,25 @@ struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::audio_outlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(!ossia_port<T>)
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::value_outlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(ossia_value_port<T>)
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::value_outlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(ossia_audio_port<T>)
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::audio_outlet;
 };
-template <typename N, avnd::parameter T>
+template <typename N, avnd::parameter_port T>
   requires(ossia_midi_port<T>)
 struct get_ossia_outlet_type<N, T>
 {
@@ -137,6 +142,11 @@ template <typename N, avnd::midi_port T>
 struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::midi_outlet;
+};
+template <typename N, avnd::buffer_port T>
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::texture_outlet;
 };
 template <typename N, avnd::texture_port T>
 struct get_ossia_outlet_type<N, T>
@@ -199,22 +209,29 @@ struct outlet_storage
 
 struct setup_value_port
 {
+
+  static constexpr double min_domain_value = std::numeric_limits<int>::lowest() / 256.;
+  static constexpr double max_domain_value = std::numeric_limits<int>::max() / 256.;
+
   template <avnd::parameter_with_minmax_range_ignore_init T>
   static ossia::domain range_to_domain()
   {
     static constexpr auto dom = avnd::get_range<T>();
     if constexpr(std::is_floating_point_v<decltype(dom.min)>)
-      return ossia::make_domain((float)dom.min, (float)dom.max);
+      if constexpr(dom.min > min_domain_value && dom.max < max_domain_value)
+        return ossia::make_domain((float)dom.min, (float)dom.max);
 
     if constexpr(avnd::parameter_with_minmax_range<T>)
     {
       if constexpr(std::is_same_v<std::decay_t<decltype(dom.init)>, bool>)
         return ossia::domain_base<bool>{};
-      else
+      else if constexpr(dom.min > min_domain_value && dom.max < max_domain_value)
         return ossia::make_domain(dom.min, dom.max);
     }
-    else
+    else if constexpr(dom.min > min_domain_value && dom.max < max_domain_value)
       return ossia::make_domain(dom.min, dom.max);
+
+    return ossia::domain{};
   }
 
   template <avnd::string_parameter T>
@@ -352,7 +369,7 @@ struct setup_value_port
     port.domain = {};
   }
 
-  template <avnd::span_parameter Field>
+  template <avnd::span_parameter_port Field>
   static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
@@ -395,16 +412,16 @@ struct setup_inlets
     }
   }
 
-  template <std::size_t Idx, typename Field>
+  template <std::size_t Idx, typename Field, typename OssiaPortType>
   void operator()(
       avnd::field_reflection<Idx, Field> ctrl,
-      std::vector<ossia::value_inlet*>& port) const noexcept
+      std::vector<OssiaPortType*>& port) const noexcept
   {
     int expected = self.dynamic_ports.num_in_ports(avnd::field_index<Idx>{});
     while(port.size() < expected)
-      port.push_back(new ossia::value_inlet);
+      port.push_back(new OssiaPortType); // FIXME not freed
     while(port.size() > expected)
-      port.erase(port.rbegin().base());
+      port.pop_back();
 
     for(auto& p : port)
       (*this)(ctrl, *p);
@@ -459,17 +476,17 @@ struct setup_outlets
     }
   }
 
-  template <std::size_t Idx, typename Field>
+  template <std::size_t Idx, typename Field, typename OssiaPortType>
   void operator()(
       avnd::field_reflection<Idx, Field> ctrl,
-      std::vector<ossia::value_outlet*>& port) const noexcept
+      std::vector<OssiaPortType*>& port) const noexcept
   {
     const std::size_t expected
         = self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{});
     while(port.size() < expected)
-      port.push_back(new ossia::value_outlet);
+      port.push_back(new OssiaPortType); // FIXME not freed
     while(port.size() > expected)
-      port.erase(port.rbegin().base());
+      port.pop_back();
 
     for(auto& p : port)
       (*this)(ctrl, *p);
@@ -528,6 +545,7 @@ struct setup_variable_audio_ports
     ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
       s.channels.set_input_channels(s.impl, in_refl::template unmap<Idx>(), x);
+      s.audio_channels_changed = true;
     };
   }
 
@@ -538,6 +556,7 @@ struct setup_variable_audio_ports
     ctrl.request_channels = [&ctrl, &s = self](int x) {
       ctrl.channels = x;
       s.channels.set_output_channels(s.impl, out_refl::template unmap<Idx>(), x);
+      s.audio_channels_changed = true;
     };
   }
 

@@ -31,6 +31,7 @@ inline constexpr default_sentinel_t default_sentinel{};
 }
 #endif
 
+#include <cstdlib>
 #include <optional>
 #include <type_traits>
 namespace avnd
@@ -184,12 +185,20 @@ public:
   class iterator
   {
   public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
     explicit iterator(const handle& coroutine) noexcept
         : m_coroutine{coroutine}
     {
     }
 
-    void operator++() noexcept { m_coroutine.resume(); }
+    iterator& operator++() noexcept
+    {
+      m_coroutine.resume();
+      return *this;
+    }
+
+    void operator++(int) { ++*this; }
 
     T& operator*() const noexcept { return m_coroutine.promise().current_value; }
 

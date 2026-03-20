@@ -1,4 +1,6 @@
 #pragma once
+#include <avnd/common/tuple.hpp>
+
 #include <array>
 #include <utility>
 
@@ -22,6 +24,12 @@ struct field_reflection
   using type = Field;
   static const constexpr auto index = Idx;
 };
+
+template <std::size_t... I>
+static constexpr auto field_indices(std::index_sequence<I...>)
+{
+  return tpl::tuple<avnd::field_index<I>...>{};
+}
 
 template <int N, typename T, std::size_t M>
 constexpr int index_of_element(const std::array<T, M>& arr) noexcept

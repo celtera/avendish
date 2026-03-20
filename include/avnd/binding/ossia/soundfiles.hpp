@@ -60,10 +60,10 @@ struct soundfile_input_storage<T>
   using ptr_vectors = boost::mp11::mp_transform<channel_vector, ptr_tuple>;
 
   // std::tuple< std::vector<float*>, std::vector<double*> >
-  [[no_unique_address]] ptr_vectors pointers;
+  AVND_NO_UNIQUE_ADDRESS ptr_vectors pointers;
 
   // std::tuple< ossia::audio_handle, ossia::audio_handle >
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 /**
@@ -198,7 +198,7 @@ struct midifile_input_storage<T>
       midifile_handle_type, avnd::midifile_input_introspection, T>;
 
   // std::tuple< std::shared_ptr<midifile_data> >
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 template <typename T>
@@ -325,7 +325,7 @@ struct raw_file_input_storage<T>
       raw_file_handle_type, avnd::raw_file_input_introspection, T>;
 
   // std::tuple< std::shared_ptr<raw_file_data> >
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 template <typename T>

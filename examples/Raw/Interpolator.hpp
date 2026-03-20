@@ -30,7 +30,7 @@ struct ExponentialSmoothing
       };
       struct range
       {
-        double min{0.01}, max{1.}, init{0.5};
+        double min{0.0001}, max{1.}, init{0.5};
       };
       double value{range{}.init};
     } alpha;

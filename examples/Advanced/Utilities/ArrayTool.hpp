@@ -91,6 +91,14 @@ struct ArrayTool
     halp::spinbox_i32<"Post-padding L", halp::range{-256, 256, 0}> out_pad_l;
     halp::spinbox_i32<"Post-padding R", halp::range{-256, 256, 0}> out_pad_r;
 
+    halp::spinbox_i32<"Insert Value", halp::free_range_min<int>> insert;
+    halp::spinbox_i32<"From", halp::range{0, 256, 0}> insert_offset;
+    halp::spinbox_i32<"Every", halp::range{1, 256, 0}> insert_stride;
+
+    halp::spinbox_i32<"Erase", halp::free_range_min<int>> erase;
+    halp::spinbox_i32<"From", halp::range{0, 256, 0}> erase_offset;
+    halp::spinbox_i32<"Every", halp::range{1, 256, 1}> erase_stride;
+
     halp::toggle<"Normalize"> normalize;
   } inputs;
 
@@ -111,6 +119,47 @@ struct ArrayTool
   {
     halp::callback<"Array", std::vector<float>> v;
   } outputs;
+
+  void strided_erase(
+      std::vector<float>& v, int erase_offset, int erase_count, int erase_stride)
+  {
+    if(erase_count <= 0 || v.empty())
+      return;
+    if(erase_offset >= static_cast<int>(v.size()))
+      return;
+
+    // If stride is less than count, we effectively erase everything after offset
+    // because the keep window is negative or zero.
+    if(erase_stride < erase_count)
+    {
+      v.resize(erase_offset);
+      return;
+    }
+
+    size_t write_idx = erase_offset;
+    size_t read_idx = erase_offset;
+    const size_t n = v.size();
+
+    while(read_idx < n)
+    {
+      // Skip the elements we want to erase
+      read_idx += erase_count;
+
+      // Copy the elements we want to keep
+      int items_to_keep = erase_stride - erase_count;
+
+      size_t available = (read_idx < n) ? (n - read_idx) : 0;
+      size_t to_copy = std::min(static_cast<size_t>(items_to_keep), available);
+
+      for(size_t i = 0; i < to_copy; ++i)
+      {
+        v[write_idx++] = v[read_idx++];
+      }
+    }
+
+    // Shrink vector to new size
+    v.resize(write_idx);
+  }
 
   void process(std::vector<float>& v)
   {
@@ -143,16 +192,24 @@ struct ArrayTool
                              : val * (inputs.in_max - inputs.in_min) + inputs.in_min;
     }
     if(inputs.in_pad_l > 0)
+    {
       v.insert(v.begin(), inputs.in_pad_l, 0.);
+    }
     else if(inputs.in_pad_l < 0)
-      v.erase(v.begin(), v.begin() + std::min(int(v.size()), -inputs.in_pad_l));
+    {
+      const int N = std::min(int(v.size()), -inputs.in_pad_l);
+      v.erase(v.begin(), v.begin() + N);
+    }
 
     if(inputs.in_pad_r > 0)
+    {
       v.resize(v.size() + inputs.in_pad_r, 0.);
+    }
     else if(inputs.in_pad_r < 0)
-      v.erase(
-          v.rbegin().base(),
-          (v.rbegin() + std::min(int(v.size()), -inputs.in_pad_r)).base());
+    {
+      const int N = std::min(int(v.size()), -inputs.in_pad_r);
+      v.erase((v.rbegin() + N).base(), v.rbegin().base());
+    }
 
     if(inputs.reverse)
     {
@@ -163,6 +220,24 @@ struct ArrayTool
        rotate_n > 0 && rotate_n < v.size())
     {
       std::rotate(v.begin(), v.begin() + rotate_n, v.end());
+    }
+
+    if(inputs.insert_stride > 1)
+    {
+      for(int i = inputs.insert_offset; i < v.size(); i += inputs.insert_stride)
+      {
+        if(i < 0)
+          continue;
+        v.insert(v.begin() + i, inputs.insert.value);
+      }
+    }
+    if(inputs.erase_stride > 1)
+    {
+      // How many values we erase:
+      const int erase_count = inputs.erase.value;
+      const int erase_stride = inputs.erase_stride.value;
+      const int erase_offset = inputs.erase_offset.value;
+      strided_erase(v, erase_offset, erase_count, erase_stride);
     }
 
     if(int stride = inputs.stride; stride > 1)
@@ -203,11 +278,14 @@ struct ArrayTool
       v.erase(v.begin(), v.begin() + std::min(int(v.size()), -inputs.out_pad_l));
 
     if(inputs.out_pad_r > 0)
+    {
       v.resize(v.size() + inputs.out_pad_r, 0.);
+    }
     else if(inputs.out_pad_r < 0)
-      v.erase(
-          v.rbegin().base(),
-          (v.rbegin() + std::min(int(v.size()), -inputs.out_pad_r)).base());
+    {
+      int to_remove = std::min(int(v.size()), -inputs.out_pad_r);
+      v.erase(v.begin() + v.size() - to_remove, v.end());
+    }
   }
 };
 }

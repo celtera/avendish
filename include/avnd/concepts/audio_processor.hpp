@@ -15,7 +15,7 @@ template <typename T>
 concept can_bypass = requires(T t) { t.bypass; };
 
 template <typename T>
-concept can_prepare = requires(T t) { t.prepare({}); };
+concept can_prepare = requires(T t) { t.prepare({}); } || requires(T t) { t.prepare(); };
 
 /**
  * This tag indicates that a processor is to be treated 

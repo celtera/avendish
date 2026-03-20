@@ -279,7 +279,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       auto it = v.begin();
-      boost::pfr::for_each_field(f, [&](auto& f) {
+      avnd::pfr::for_each_field(f, [&](auto& f) {
         if(it != v.end())
         {
           from_ossia_value_impl{}(it->second, f);
@@ -293,7 +293,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      boost::pfr::for_each_field(f, [&](auto& f) {
+      avnd::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -304,7 +304,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      boost::pfr::for_each_field(f, [&](auto& f) {
+      avnd::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -315,7 +315,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      boost::pfr::for_each_field(f, [&](auto& f) {
+      avnd::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -326,7 +326,7 @@ struct from_ossia_value_impl
       const auto& v = *ptr;
 
       int k = 0;
-      boost::pfr::for_each_field(f, [&](auto& f) {
+      avnd::pfr::for_each_field(f, [&](auto& f) {
         if(k < v.size())
           from_ossia_value_impl{}(v[k++], f);
       });
@@ -342,7 +342,7 @@ struct from_ossia_value_impl
     requires std::is_aggregate_v<F> bool
   operator()(const ossia::value& src, F& dst)
   {
-    constexpr int sz = boost::pfr::tuple_size_v<F>;
+    constexpr int sz = avnd::pfr::tuple_size_v<F>;
     if constexpr(avnd::vecf_compatible<F>())
     {
       if constexpr(sz == 2)
@@ -434,6 +434,14 @@ struct from_ossia_value_impl
       }
       return false;
     }
+  }
+
+  template <typename... T>
+  bool operator()(const ossia::value& src, ossia::value& f)
+  {
+    // Used in cases where we have e.g. a tuple<int, ossia::value>
+    f = src;
+    return true;
   }
 
   template <typename... T>
@@ -843,6 +851,47 @@ struct from_ossia_value_impl
   {
     switch(src.get_type())
     {
+      case ossia::val_type::FLOAT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<float>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::INT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<int>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::BOOL: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<bool>() ? 1 : 0);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
       case ossia::val_type::VEC2F: {
         if constexpr(float_compatible<typename T::value_type>)
         {
@@ -911,6 +960,48 @@ struct from_ossia_value_impl
   {
     switch(src.get_type())
     {
+      case ossia::val_type::FLOAT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<float>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::INT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<int>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::BOOL: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.push_back(*src.target<bool>() ? 1 : 0);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
       case ossia::val_type::VEC2F: {
         if constexpr(float_compatible<typename T::value_type>)
         {
@@ -1032,12 +1123,6 @@ struct from_ossia_value_impl
     return from_array<N>(src, f);
   }
 
-  template <std::size_t N, typename T>
-  bool operator()(const ossia::value& src, std::array<T, N>& f)
-  {
-    return from_array<N>(src, f);
-  }
-
   template <
       template <typename, std::size_t, typename...> typename T, typename Val,
       std::size_t N>
@@ -1080,6 +1165,47 @@ struct from_ossia_value_impl
   {
     switch(src.get_type())
     {
+      case ossia::val_type::FLOAT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.insert(*src.target<float>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::INT: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.insert(*src.target<int>());
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
+
+      case ossia::val_type::BOOL: {
+        if constexpr(float_compatible<typename T::value_type>)
+        {
+          f.clear();
+          f.insert(*src.target<bool>() ? 1 : 0);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+        break;
+      }
       case ossia::val_type::VEC2F: {
         if constexpr(std::is_constructible_v<typename T::value_type, float>)
         {
@@ -1250,7 +1376,7 @@ bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using type = std::decay_t<T>;
   static_assert(!avnd::type_wrapper<T>);
-  constexpr int sz = boost::pfr::tuple_size_v<T>;
+  constexpr int sz = avnd::pfr::tuple_size_v<T>;
   if constexpr(sz == 0)
   {
     // Impulse case, nothing to do
@@ -1306,6 +1432,19 @@ OSSIA_INLINE bool from_ossia_value(const ossia::value& src, T& dst)
   dst = ossia::convert<std::string>(src);
   return true;
 }
+
+OSSIA_INLINE bool from_ossia_value(const ossia::value& src, std::string_view& dst)
+{
+  auto str = src.target<std::string>();
+  if(!str)
+  {
+    dst = {};
+    return false;
+  }
+  dst = *str; // FIXME make sure that the ossia::value always outlive this
+  return true;
+}
+
 inline bool from_ossia_value(const ossia::value& src, const char*& dst)
 {
   if(auto p = src.target<std::string>())
@@ -1329,7 +1468,7 @@ inline bool from_ossia_value(const ossia::value& src, std::string& dst)
   }
   else
   {
-    dst = "";
+    dst = ossia::convert<std::string>(src);
     return false;
   }
 }

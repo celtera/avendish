@@ -16,6 +16,12 @@ namespace avnd
  * just leaving a blank canvas for the item to draw in.
  */
 AVND_DEFINE_TAG(fully_custom_item)
+/**
+ * @brief no_background tag: 
+ * the host environment shouldn't even draw 
+ * the background of the item.
+ */
+AVND_DEFINE_TAG(no_background)
 
 type_or_value_qualification(ui)
 type_or_value_reflection(ui)

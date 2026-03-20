@@ -29,18 +29,32 @@ struct enum_t
     combobox
   };
 
-  static clang_buggy_consteval auto range()
-  {
-    struct enum_setup
-    {
 #if MAGIC_ENUM_SUPPORTED
-      decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
-#endif
-      Enum init{};
-    };
-
-    return enum_setup{};
+  // FIXME eventually we would like to be able to handle
+  // enum Foo { first = 120, last = -840 };
+  // but so far the code expects contiguousness and starting at 0 in many places
+  static consteval bool enum_is_contiguous() noexcept
+  {
+    constexpr auto values = magic_enum::enum_values<Enum>();
+    int i = 0;
+    for(auto val : values)
+    {
+      if(magic_enum::enum_underlying(val) != i)
+        return false;
+      i++;
+    }
+    return true;
   }
+  static_assert(enum_is_contiguous());
+#endif
+
+  struct range
+  {
+#if MAGIC_ENUM_SUPPORTED
+    decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#endif
+    Enum init{};
+  };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -109,6 +123,15 @@ struct string_enum_t
 #endif
     return *this;
   }
+};
+
+template <static_string lit, typename Enum>
+struct combobox_t : enum_t<Enum, lit>
+{
+  enum widget
+  {
+    combobox
+  };
 };
 
 /* the science isn't there yet...

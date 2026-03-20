@@ -7,6 +7,8 @@
 #include <avnd/binding/max/to_atoms.hpp>
 #include <boost/container/small_vector.hpp>
 #include <commonsyms.h>
+#include <max.jit.mop.h>
+#include <iostream>
 namespace max
 {
 
@@ -569,14 +571,14 @@ struct value_writer
 {
   T& self;
 
-  template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field>)
+  template <avnd::parameter_port Field, std::size_t Idx>
+    requires(!avnd::sample_accurate_parameter_port<Field>)
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     value_to_max_dispatch<Field>(self, avnd::field_index<Idx>{}, port, ctrl.value);
   }
 
-  template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::linear_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     // FIXME
@@ -602,7 +604,7 @@ struct value_writer
 #endif
   }
 
-  template <avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::dynamic_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept
   {
     for(auto& [timestamp, val] : ctrl.values)
@@ -613,7 +615,7 @@ struct value_writer
   }
 
   // does not make sense as output, only as input
-  template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::span_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept = delete;
 
   void operator()(auto&&...) const noexcept { }
@@ -657,10 +659,39 @@ struct outputs
     }
   }
 
-  template <typename Out>
-  void setup(Out& out, t_outlet& outlet)
+  template <avnd::audio_port C>
+  static void setup(C& out, t_outlet& outlet)
   {
+
   }
+
+  template <avnd::parameter_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+  template <avnd::midi_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+  template <avnd::texture_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+  template <avnd::buffer_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
+
+  template <typename Out>
+  void setup(Out& out, t_outlet& outlet) = delete;
 
   template <typename Self>
   void commit(Self& self)
@@ -686,23 +717,82 @@ struct outputs
     {
       int out_k = 0;
       std::array<t_symbol*, N> names;
+      std::array<bool, N> jitter;
 
+      // A. Iterate on all the ports to gather their names
       // outlet_new is right-to-left so we create in reverse order...
       avnd::output_introspection<T>::for_all(
-          avnd::get_outputs<T>(implementation), [&names, &out_k]<typename C>(C& ctl) {
-            names[out_k++] = symbol_for_port<C>();
+          avnd::get_outputs<T>(implementation), [&names, &jitter, &out_k]<typename C>(C& ctl) {
+            names[out_k] = symbol_for_port<C>();
+            jitter[out_k] = avnd::texture_port<C> || avnd::buffer_port<C>;
+            out_k++;
           });
 
       out_k = N;
-      for(auto it = names.crbegin(); it != names.crend(); ++it) {
+
+      // B. Create all the outlet objects
+      auto it = names.crbegin();
+      auto it_jitter = jitter.crbegin();
+      int mop_output_k = 0;
+      for(; it != names.crend(); ++it, ++it_jitter)
+      {
         const auto& name = *it;
-        outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));
+        if constexpr(avnd::matrix_output_introspection<T>::size == 0)
+        {
+          outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));
+        }
+        else
+        {
+          if(!*it_jitter)
+          {
+            outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));
+          }
+          else
+          {
+            // 1. Create MOP output (left-to-right)
+            auto err = max_jit_mop_variable_addoutputs(&x_obj, 1);
+            auto output = max_jit_mop_getoutput(&x_obj, mop_output_k + 1); // starts at 1
+
+            // FIXME do a proper set-up based on texture_type
+            if(output)
+            {
+              jit_attr_setsym(output, _jit_sym_type, _jit_sym_char);
+              jit_attr_setlong(output, _jit_sym_planecount, 4); // RGBA
+              jit_attr_setlong(output, _jit_sym_mindimcount, 2); // 2D
+              jit_attr_setlong(output, _jit_sym_maxdimcount, 2); // 2D
+            }
+
+            // 2. Create outlet (right-to-left)
+            auto mop = max_jit_obex_adornment_get(&x_obj, _jit_sym_jit_mop);
+            max_jit_mop_matrixout_new(&x_obj, --out_k);
+
+            // 3. Set-up jit object (based on max_jit_mop_outputs)
+            auto p = jit_object_method(mop, _jit_sym_getoutput, mop_output_k + 1);
+            if (p)
+            {
+              t_jit_matrix_info info;
+              jit_matrix_info_default(&info);
+              max_jit_mop_restrict_info(&x_obj,p,&info);
+              auto name = jit_symbol_unique();
+              void* m = jit_object_new(_jit_sym_jit_matrix, &info);
+              m = jit_object_register(m, name);
+              jit_attr_setsym(p,_jit_sym_matrixname, name);
+              jit_object_method(p,_jit_sym_matrix, m);
+              jit_object_attach(name, &x_obj);
+            }
+
+            outlets[out_k] = (t_outlet*)max_jit_mop_io_getoutlet(p);
+            mop_output_k++;
+          }
+        }
       }
 
+      // C. Port-specific setup step
       out_k = 0;
       avnd::output_introspection<T>::for_all(
           avnd::get_outputs<T>(implementation), [this, &out_k](auto& ctl) {
-            this->setup(ctl, *outlets[out_k]);
+            if(outlets[out_k])
+              this->setup(ctl, *outlets[out_k]);
             out_k++;
           });
     }

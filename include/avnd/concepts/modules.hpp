@@ -4,7 +4,8 @@
 
 #include <avnd/common/inline.hpp>
 #include <avnd/common/tuple.hpp>
-#include <avnd/concepts/generic.hpp>
+#include <boost/mp11/algorithm.hpp>
+// #include <avnd/concepts/generic.hpp>
 #include <boost/pfr.hpp>
 
 namespace boost::pfr

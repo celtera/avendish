@@ -273,8 +273,6 @@ endforeach()
 set(OSSIA_EXAMPLES
   ControlGallery
   Synth
-  TextureFilterExample
-  TextureGeneratorExample
 )
 foreach(theTarget ${OSSIA_EXAMPLES})
   avnd_make_ossia(
@@ -284,6 +282,51 @@ foreach(theTarget ${OSSIA_EXAMPLES})
     C_NAME oscr_${theTarget}
   )
 endforeach()
+
+# These texture examples work with GStreamer as well
+set(TEXTURE_EXAMPLES
+  TextureFilterExample
+  TextureGeneratorExample
+)
+foreach(theTarget ${TEXTURE_EXAMPLES})
+  avnd_make_texture(
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+  )
+endforeach()
+
+avnd_make_texture(
+  TARGET NoiseBuffer
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer
+)
+
+avnd_make_touchdesigner(
+  TARGET NoiseBuffer_chop
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer_chop
+  PROCESSOR_TYPE CHOP_MESSAGE
+)
+
+avnd_make_touchdesigner(
+  TARGET DoubleArray
+  MAIN_FILE examples/Raw/DoubleArray.hpp
+  MAIN_CLASS examples::DoubleArray
+  C_NAME avnd_doublearray
+  PROCESSOR_TYPE DAT
+)
+
+avnd_make_touchdesigner(
+  TARGET CubeGenerator
+  MAIN_FILE examples/Tutorial/CubeGenerator.hpp
+  MAIN_CLASS examples::CubeGenerator
+  C_NAME avnd_cube
+  PROCESSOR_TYPE SOP
+)
 
 ###### Ports
 
@@ -304,7 +347,7 @@ avnd_make_object(
 )
 
 ## vb-objects
-avnd_make_object(
+avnd_make_audioplug(
   TARGET VB_fourses_tilde
   MAIN_FILE examples/Ports/VB/vb.fourses_tilde.hpp
   MAIN_CLASS vb_ports::fourses_tilde

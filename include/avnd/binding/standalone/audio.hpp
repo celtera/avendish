@@ -26,7 +26,7 @@ struct audio_mapper
   avnd::effect_container<T>& object;
   ossia::audio_engine* audio{};
 
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   explicit audio_mapper(
       avnd::effect_container<T>& object, int in_channels, int out_channels, int bs,

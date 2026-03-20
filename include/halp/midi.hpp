@@ -35,7 +35,7 @@ struct midi_bus
   operator const auto &() const noexcept { return midi_messages; }
 
   auto size() const noexcept { return midi_messages.size(); }
-  auto empty() const noexcept { return midi_messages.size(); }
+  auto empty() const noexcept { return midi_messages.size() == 0; }
 
   auto begin() noexcept { return midi_messages.begin(); }
   auto end() noexcept { return midi_messages.end(); }

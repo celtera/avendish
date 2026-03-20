@@ -154,7 +154,7 @@ t_symbol* symbol_for_port()
   return &s_signal;
 }
 
-template <avnd::parameter P>
+template <avnd::parameter_port P>
 t_symbol* symbol_for_port()
 {
   using type = std::remove_cvref_t<decltype(P::value)>;

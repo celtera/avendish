@@ -14,7 +14,7 @@ class Silence
 public:
   halp_meta(name, "Silence")
   halp_meta(c_name, "silence")
-  halp_meta(category, "Audio")
+  halp_meta(category, "Audio/Utilities")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Enjoy the silence")
   halp_meta(

@@ -61,7 +61,8 @@ struct DrumChannel
 
   halp::knob_f32<"Vel->Amp", halp::range{-1., 1., 0.}> amp_envelop;
 
-  void trigger(int ts, int vel_byte);
+  voice* trigger(int ts, int vel_byte);
+  voice* trigger(int ts, float pitch_ratio, int vel_byte);
 
   void run(int frames, int channels, double** out, double volume);
 
@@ -165,13 +166,13 @@ public:
   {
     halp_meta(name, "Main")
     halp_meta(layout, halp::layouts::hbox)
-    halp_meta(background, halp::colors::mid)
+    halp_meta(background, halp::colors::background_mid)
 
     struct
     {
       halp_meta(name, "Tabs")
       halp_meta(layout, halp::layouts::tabs)
-      halp_meta(background, halp::colors::darker)
+      halp_meta(background, halp::colors::background_darker)
 
       struct : halp::recursive_group_item<&ins::s1, DrumChannel::ui>
       {
@@ -190,19 +191,19 @@ public:
         halp_meta(name, "Drum 4")
       } s4;
 
-      struct : halp::recursive_group_item<&ins::s1, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s5, DrumChannel::ui>
       {
         halp_meta(name, "Drum 5")
       } s5;
-      struct : halp::recursive_group_item<&ins::s2, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s6, DrumChannel::ui>
       {
         halp_meta(name, "Drum 6")
       } s6;
-      struct : halp::recursive_group_item<&ins::s3, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s7, DrumChannel::ui>
       {
         halp_meta(name, "Drum 7")
       } s7;
-      struct : halp::recursive_group_item<&ins::s4, DrumChannel::ui>
+      struct : halp::recursive_group_item<&ins::s8, DrumChannel::ui>
       {
         halp_meta(name, "Drum 8")
       } s8;
@@ -213,7 +214,7 @@ public:
     {
       halp_meta(name, "Global")
       halp_meta(layout, halp::layouts::vbox)
-      halp_meta(background, halp::colors::darker)
+      halp_meta(background, halp::colors::background_darker)
 
       halp::item<&ins::volume> globalvol;
     } global;

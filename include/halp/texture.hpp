@@ -8,13 +8,16 @@
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/texture_formats.hpp>
+#include <span>
 
 HALP_MODULE_EXPORT
 namespace halp
 {
+template <static_string lit, typename TextureType = rgba_texture>
+struct texture_input;
 
 template <static_string lit>
-struct texture_input
+struct texture_input<lit, rgba_texture>
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -53,14 +56,46 @@ struct texture_input
 };
 
 template <static_string lit>
-struct fixed_texture_input : texture_input<lit>
+struct texture_input<lit, rgba32f_texture>
 {
-  int request_width{1};
-  int request_height{1};
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  struct rgba32f_row
+  {
+    float* components;
+  };
+
+  rgba32f_color get(int x, int y) noexcept
+  {
+    assert(x >= 0 && x < texture.width);
+    assert(y >= 0 && y < texture.height);
+
+    const int pixel_index = y * texture.width + x;
+    const int component_index = pixel_index * 4;
+
+    auto* pixel_ptr = texture.bytes + component_index;
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
+  }
+
+  rgba32f_color get(int x, rgba32f_row y) noexcept
+  {
+    assert(x >= 0 && x < texture.width);
+    const int component_index = x * 4;
+    auto* pixel_ptr = y.components + component_index;
+    return {.r = pixel_ptr[0], .g = pixel_ptr[1], .b = pixel_ptr[2], .a = pixel_ptr[3]};
+  }
+
+  rgba32f_row row(int y) noexcept
+  {
+    assert(y >= 0 && y < texture.height);
+    return {texture.bytes + y * texture.width * 4};
+  }
+
+  rgba32f_texture texture;
 };
 
 template <static_string lit>
-struct rgb_texture_input
+struct texture_input<lit, rgb_texture>
 {
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -78,6 +113,41 @@ struct rgb_texture_input
 
   rgb_texture texture;
 };
+template <static_string lit>
+struct rgb_texture_input : texture_input<lit, rgb_texture>
+{
+};
+
+template <static_string lit>
+struct texture_input<lit, r32f_texture>
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  r32f_texture texture;
+};
+
+template <static_string lit>
+struct texture_input<lit, custom_texture>
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  custom_texture texture;
+};
+
+template <static_string lit>
+struct texture_input<lit, custom_variable_texture>
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  custom_variable_texture texture;
+};
+
+template <static_string lit, typename TextureType = rgba_texture>
+struct fixed_texture_input : texture_input<lit, TextureType>
+{
+  int request_width{1};
+  int request_height{1};
+};
 
 template <static_string lit, typename TextureType = rgba_texture>
 struct texture_output
@@ -94,7 +164,16 @@ struct texture_output
 
   void create(int width, int height)
   {
-    storage.resize(width * height * 4, boost::container::default_init);
+    if constexpr(requires { texture.bytes_per_pixel(); })
+    {
+      storage.resize(
+          width * height * texture.bytes_per_pixel(), boost::container::default_init);
+    }
+    else
+    {
+      storage.resize(
+          width * height * TextureType::bytes_per_pixel, boost::container::default_init);
+    }
     texture.width = width;
     texture.height = height;
     texture.changed = false;
@@ -109,10 +188,42 @@ struct texture_output
   }
 
   void set(int x, int y, rgba_color col) noexcept { texture.set(x, y, col); }
+  void set(int x, int y, rgb_color col) noexcept { texture.set(x, y, col); }
 
   TextureType texture;
 
   typename TextureType::uninitialized_bytes storage;
 };
 
+template <static_string lit>
+using rgb_texture_output = texture_output<lit, rgb_texture>;
+
+
+struct gpu_texture
+{
+  enum format { RGBA8, RGBA16F, RFGBA32F, R8, R16, R16F, R32F } format{RGBA8};
+  void* handle{};
+};
+
+template <static_string lit>
+struct gpu_texture_input
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  operator const halp::gpu_texture&() const noexcept { return texture; }
+  operator halp::gpu_texture&() noexcept { return texture; }
+
+  halp::gpu_texture texture{};
+};
+
+template <static_string lit>
+struct gpu_texture_output
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  operator const halp::gpu_texture&() const noexcept { return texture; }
+  operator halp::gpu_texture&() noexcept { return texture; }
+
+  halp::gpu_texture texture{};
+};
 }

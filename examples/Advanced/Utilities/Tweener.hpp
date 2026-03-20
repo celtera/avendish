@@ -130,7 +130,7 @@ public:
 
   void operator()(tick t) noexcept
   {
-    double curve_ease = ease01(t.relative_position);
+    double curve_ease = ease01(std::clamp(t.relative_position, (double)0., (double)1.));
 
     outputs.output
         = ossia::easing::ease{}(inputs.from.value, inputs.to.value, curve_ease);

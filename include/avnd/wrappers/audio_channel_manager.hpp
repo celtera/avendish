@@ -188,18 +188,9 @@ struct audio_channel_manager<T>
 };
 
 template <typename T>
-static constexpr int input_bus_count
-    = avnd::poly_sample_array_input_port_count<float, T>
-      + avnd::poly_sample_array_input_port_count<double, T>;
-template <typename T>
-static constexpr int output_bus_count
-    = avnd::poly_sample_array_output_port_count<float, T>
-      + avnd::poly_sample_array_output_port_count<double, T>;
-
-template <typename T>
   requires(
       (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-      && input_bus_count<T> > 0 && output_bus_count<T> > 0)
+      && bus_introspection<T>::input_busses > 0 && bus_introspection<T>::output_busses > 0)
 struct audio_channel_manager<T>
 {
   using in_refl = avnd::audio_bus_input_introspection<T>;
@@ -457,9 +448,9 @@ struct audio_channel_manager<T>
   }
 
   // One of the two float/double cases will be null necessarily
-  [[no_unique_address]] ebo_array<int, input_bus_count<T>> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::input_busses> input_channels;
 
-  [[no_unique_address]] ebo_array<int, output_bus_count<T>> output_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::output_busses> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
@@ -468,7 +459,7 @@ struct audio_channel_manager<T>
 template <typename T>
   requires(
       (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-      && input_bus_count<T> > 0 && output_bus_count<T> == 0)
+      && bus_introspection<T>::input_busses > 0 && bus_introspection<T>::output_busses == 0)
 struct audio_channel_manager<T>
 {
   using in_refl = avnd::audio_bus_input_introspection<T>;
@@ -570,7 +561,7 @@ struct audio_channel_manager<T>
   int get_output_channels(auto& processor, int output_id) { return 0; }
 
   // One of the two float/double cases will be null necessarily
-  [[no_unique_address]] ebo_array<int, input_bus_count<T>> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::input_busses> input_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;
@@ -579,7 +570,7 @@ struct audio_channel_manager<T>
 template <typename T>
   requires(
       (avnd::poly_array_port_based<float, T> || avnd::poly_array_port_based<double, T>)
-      && input_bus_count<T> == 0)
+      && bus_introspection<T>::input_busses == 0)
 struct audio_channel_manager<T>
 {
   using out_refl = avnd::audio_bus_output_introspection<T>;
@@ -681,7 +672,475 @@ struct audio_channel_manager<T>
   }
 
   // One of the two float/double cases will be null necessarily
-  [[no_unique_address]] ebo_array<int, output_bus_count<T>> output_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::output_busses> output_channels;
+
+  int actual_runtime_inputs = 0;
+  int actual_runtime_outputs = 0;
+};
+
+/**
+ * Frame-port-based processors: struct { float frame[N]; } or struct { float* frame; }
+ * Each frame port is a multichannel port where frame[i] is channel i at the current sample.
+ * Processed per-sample by the per_frame_port process_adapter.
+ */
+template <typename T>
+  requires(
+      (avnd::frame_port_based<float, T> || avnd::frame_port_based<double, T>)
+      && bus_introspection<T>::input_busses > 0 && bus_introspection<T>::output_busses > 0)
+struct audio_channel_manager<T>
+{
+  using in_refl = avnd::audio_bus_input_introspection<T>;
+  using out_refl = avnd::audio_bus_output_introspection<T>;
+
+  explicit audio_channel_manager(avnd::effect_container<T>& eff)
+  {
+    auto& processor = eff.effect;
+    this->input_channels.fill(0);
+    this->output_channels.fill(0);
+    this->actual_runtime_inputs = 0;
+    this->actual_runtime_outputs = 0;
+
+    int i = 0;
+    auto& inputs = avnd::get_inputs(eff);
+    in_refl::for_all(inputs, [this, &i = i]<avnd::audio_port P>(P& p) {
+      if constexpr(avnd::fixed_poly_audio_port<P>)
+      {
+        this->input_channels[i] = p.channels();
+      }
+      else if constexpr(avnd::variable_poly_audio_port<P>)
+      {
+        this->input_channels[i] = p.channels;
+      }
+      else
+      {
+        p.channels = 0;
+        this->input_channels[i] = 0;
+      }
+      this->actual_runtime_inputs += this->input_channels[i];
+      i++;
+    });
+
+    i = 0;
+    auto& outputs = avnd::get_outputs(eff);
+    out_refl::for_all(outputs, [this, &i = i]<avnd::audio_port P>(P& p) {
+      if constexpr(avnd::fixed_poly_audio_port<P>)
+      {
+        this->output_channels[i] = p.channels();
+      }
+      else if constexpr(avnd::variable_poly_audio_port<P>)
+      {
+        this->output_channels[i] = p.channels;
+      }
+      else
+      {
+        p.channels = 0;
+        this->output_channels[i] = 0;
+      }
+      this->actual_runtime_outputs += this->output_channels[i];
+      i++;
+    });
+  }
+
+  void set_input_impl(int id, int count)
+  {
+    this->actual_runtime_inputs -= this->input_channels[id];
+    this->input_channels[id] = count;
+    this->actual_runtime_inputs += count;
+  }
+
+  void set_output_impl(int id, int count)
+  {
+    this->actual_runtime_outputs -= this->output_channels[id];
+    this->output_channels[id] = count;
+    this->actual_runtime_outputs += count;
+  }
+
+  bool
+  set_input_channels(avnd::effect_container<T>& processor, int input_id, int channels)
+  {
+    std::optional<int> ok{};
+    auto& inputs = avnd::get_inputs(processor);
+    in_refl::for_nth_mapped(
+        inputs, input_id, [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
+          if constexpr(avnd::variable_poly_audio_port<P>)
+          {
+            if(bus.channels == channels)
+              ok = bus.channels;
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { bus.channels = channels; })
+          {
+            bus.channels = channels;
+            ok = bus.channels;
+          }
+          else if constexpr(requires { P::channels(); })
+          {
+            if(P::channels() == channels)
+              ok = P::channels();
+            else
+              ok = std::nullopt;
+          }
+          else
+          {
+            AVND_ERROR(decltype(bus), "Should not happen");
+            ok = std::nullopt;
+          }
+        });
+
+    if(ok)
+    {
+      set_input_impl(input_id, *ok);
+      update_outputs_from_input(processor, input_id, *ok);
+    }
+
+    return bool(ok);
+  }
+
+  void mimick_output(auto& inputs, auto& out, int i)
+  {
+    if constexpr(requires { out.mimick_channel; })
+    {
+      auto& mimicked_port = (inputs.*out.mimick_channel);
+      if constexpr(requires { mimicked_port.channels(); })
+      {
+        out.channels = mimicked_port.channels();
+        set_output_impl(i, out.channels);
+      }
+      else if constexpr(requires { mimicked_port.channels; })
+      {
+        out.channels = mimicked_port.channels;
+        set_output_impl(i, out.channels);
+      }
+    }
+  }
+
+  void update_outputs_from_input(
+      avnd::effect_container<T>& processor, int changed_input_id,
+      int new_input_channel_count)
+  {
+    if constexpr(out_refl::size != 0)
+    {
+      auto& outputs = avnd::get_outputs(processor);
+      auto& first = out_refl::template field<0>(outputs);
+      using first_type = std::decay_t<decltype(first)>;
+      if constexpr(
+          avnd::dynamic_poly_audio_port<first_type>
+          && !avnd::variable_poly_audio_port<first_type>)
+      {
+        first.channels = new_input_channel_count;
+        set_output_impl(0, new_input_channel_count);
+        this->output_channels[0] = new_input_channel_count;
+
+        if(out_refl::size > 1)
+        {
+          auto& inputs = avnd::get_inputs(processor);
+          int i = 0;
+          out_refl::for_all(outputs, [this, &inputs, &i]<typename P>(P& out) {
+            if(i == 0)
+            {
+              i++;
+              return;
+            }
+            this->mimick_output(inputs, out, i);
+            i++;
+          });
+        }
+      }
+      else
+      {
+        auto& inputs = avnd::get_inputs(processor);
+        int i = 0;
+        out_refl::for_all(outputs, [this, &inputs, &i](auto& out) {
+          this->mimick_output(inputs, out, i);
+          i++;
+        });
+      }
+    }
+    else
+    {
+      return;
+    }
+  }
+
+  bool
+  set_output_channels(avnd::effect_container<T>& processor, int output_id, int channels)
+  {
+    std::optional<int> ok{};
+    auto& inputs = avnd::get_inputs(processor);
+    auto& outputs = avnd::get_outputs(processor);
+    out_refl::for_nth_mapped(
+        outputs, output_id,
+        [channels, &inputs, &ok]<avnd::audio_port P>(P& bus) -> void {
+          if constexpr(requires { bus.mimick_channel; })
+          {
+            int matching_input_channels{};
+
+            auto& mimicked_port = (inputs.*bus.mimick_channel);
+            if constexpr(requires { mimicked_port.channels(); })
+              matching_input_channels = mimicked_port.channels();
+            else if constexpr(requires { mimicked_port.channels; })
+              matching_input_channels = mimicked_port.channels;
+
+            bus.channels = matching_input_channels;
+
+            if(channels == matching_input_channels)
+              ok = channels;
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(avnd::variable_poly_audio_port<P>)
+          {
+            if(bus.channels == channels)
+              ok = bus.channels;
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { P::channels(); })
+          {
+            if(P::channels() == channels)
+              ok = P::channels();
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { bus.channels = channels; })
+          {
+            bus.channels = channels;
+            ok = bus.channels;
+          }
+          else
+          {
+            AVND_ERROR(decltype(bus), "Should not happen");
+            ok = std::nullopt;
+          }
+        });
+
+    if(ok)
+    {
+      set_output_impl(output_id, *ok);
+    }
+    return bool(ok);
+  }
+
+  int get_input_channels(auto& processor, int input_id)
+  {
+    return input_channels[input_id];
+  }
+
+  int get_output_channels(auto& processor, int output_id)
+  {
+    return output_channels[output_id];
+  }
+
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::input_busses> input_channels;
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::output_busses> output_channels;
+
+  int actual_runtime_inputs = 0;
+  int actual_runtime_outputs = 0;
+};
+
+template <typename T>
+  requires(
+      (avnd::frame_port_based<float, T> || avnd::frame_port_based<double, T>)
+      && bus_introspection<T>::input_busses > 0 && bus_introspection<T>::output_busses == 0)
+struct audio_channel_manager<T>
+{
+  using in_refl = avnd::audio_bus_input_introspection<T>;
+
+  explicit audio_channel_manager(avnd::effect_container<T>& eff)
+  {
+    this->input_channels.fill(0);
+    this->actual_runtime_inputs = 0;
+    this->actual_runtime_outputs = 0;
+
+    int i = 0;
+    auto& inputs = avnd::get_inputs(eff);
+    in_refl::for_all(inputs, [this, &i]<avnd::audio_port P>(P& p) {
+      if constexpr(avnd::fixed_poly_audio_port<P>)
+      {
+        this->input_channels[i] = p.channels();
+      }
+      else if constexpr(avnd::variable_poly_audio_port<P>)
+      {
+        this->input_channels[i] = p.channels;
+      }
+      else
+      {
+        p.channels = 0;
+        this->input_channels[i] = 0;
+      }
+      this->actual_runtime_inputs += this->input_channels[i];
+      i++;
+    });
+  }
+
+  void set_input_impl(int id, int count)
+  {
+    this->actual_runtime_inputs -= this->input_channels[id];
+    this->input_channels[id] = count;
+    this->actual_runtime_inputs += count;
+  }
+
+  bool
+  set_input_channels(avnd::effect_container<T>& processor, int input_id, int channels)
+  {
+    std::optional<int> ok{};
+    auto& inputs = avnd::get_inputs(processor);
+    in_refl::for_nth_mapped(
+        inputs, input_id, [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
+          if constexpr(avnd::variable_poly_audio_port<P>)
+          {
+            if(bus.channels == channels)
+              ok = bus.channels;
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { bus.channels = channels; })
+          {
+            bus.channels = channels;
+            ok = bus.channels;
+          }
+          else if constexpr(requires { P::channels(); })
+          {
+            if(P::channels() == channels)
+              ok = P::channels();
+            else
+              ok = std::nullopt;
+          }
+          else
+          {
+            AVND_ERROR(decltype(bus), "Should not happen");
+            ok = std::nullopt;
+          }
+        });
+
+    if(ok)
+    {
+      set_input_impl(input_id, *ok);
+    }
+
+    return bool(ok);
+  }
+
+  bool
+  set_output_channels(avnd::effect_container<T>& processor, int output_id, int channels)
+  {
+    return false;
+  }
+
+  int get_input_channels(auto& processor, int input_id)
+  {
+    return input_channels[input_id];
+  }
+
+  int get_output_channels(auto& processor, int output_id) { return 0; }
+
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::input_busses> input_channels;
+
+  int actual_runtime_inputs = 0;
+  int actual_runtime_outputs = 0;
+};
+
+template <typename T>
+  requires(
+      (avnd::frame_port_based<float, T> || avnd::frame_port_based<double, T>)
+      && bus_introspection<T>::input_busses == 0)
+struct audio_channel_manager<T>
+{
+  using out_refl = avnd::audio_bus_output_introspection<T>;
+
+  explicit audio_channel_manager(avnd::effect_container<T>& eff)
+  {
+    auto& processor = eff.effect;
+    this->output_channels.fill(0);
+    this->actual_runtime_inputs = 0;
+    this->actual_runtime_outputs = 0;
+
+    int i = 0;
+    auto& outputs = avnd::get_outputs(processor);
+    out_refl::for_all(outputs, [this, &i]<avnd::audio_port P>(P& p) {
+      if constexpr(avnd::fixed_poly_audio_port<P>)
+      {
+        this->output_channels[i] = p.channels();
+      }
+      else if constexpr(avnd::variable_poly_audio_port<P>)
+      {
+        this->output_channels[i] = p.channels;
+      }
+      else
+      {
+        p.channels = 0;
+        this->output_channels[i] = 0;
+      }
+      this->actual_runtime_outputs += this->output_channels[i];
+      i++;
+    });
+  }
+
+  void set_output_impl(int id, int count)
+  {
+    this->actual_runtime_outputs -= this->output_channels[id];
+    this->output_channels[id] = count;
+    this->actual_runtime_outputs += count;
+  }
+
+  bool
+  set_input_channels(avnd::effect_container<T>& processor, int input_id, int channels)
+  {
+    return true;
+  }
+
+  bool
+  set_output_channels(avnd::effect_container<T>& processor, int output_id, int channels)
+  {
+    std::optional<int> ok{};
+    auto& outputs = avnd::get_outputs(processor);
+    out_refl::for_nth_mapped(
+        outputs, output_id, [channels, &ok]<avnd::audio_port P>(P& bus) -> void {
+#if !defined(_MSC_VER)
+          static_assert(!requires { bus.mimick_channel; });
+#endif
+          if constexpr(avnd::variable_poly_audio_port<P>)
+          {
+            if(bus.channels == channels)
+              ok = bus.channels;
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { P::channels(); })
+          {
+            if(P::channels() == channels)
+              ok = P::channels();
+            else
+              ok = std::nullopt;
+          }
+          else if constexpr(requires { bus.channels = channels; })
+          {
+            bus.channels = channels;
+            ok = bus.channels;
+          }
+          else
+          {
+            AVND_ERROR(decltype(bus), "Should not happen");
+            ok = std::nullopt;
+          }
+        });
+
+    if(ok)
+    {
+      set_output_impl(output_id, *ok);
+    }
+    return bool(ok);
+  }
+
+  int get_input_channels(auto& processor, int input_id) { return 0; }
+
+  int get_output_channels(auto& processor, int output_id)
+  {
+    return output_channels[output_id];
+  }
+
+  AVND_NO_UNIQUE_ADDRESS ebo_array<int, bus_introspection<T>::output_busses> output_channels;
 
   int actual_runtime_inputs = 0;
   int actual_runtime_outputs = 0;

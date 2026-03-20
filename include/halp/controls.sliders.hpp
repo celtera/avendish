@@ -100,6 +100,9 @@ struct time_chooser_t
     value = t;
     return *this;
   }
+
+  // false: time in seconds ; true: time in musical denominations
+  bool sync{false};
 };
 
 /// Toggle ///

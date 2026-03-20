@@ -14,7 +14,10 @@ struct ArrayRecombiner
   halp_meta(c_name, "avnd_array_recombiner")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Control/Mappings")
-  halp_meta(description, "Convert a flat input array into a sequence of arrays")
+  halp_meta(
+      description,
+      "Convert a flat input array into a sequence of arrays: [ 1, 2, 3, 4, 5, 6 ] into "
+      "[ [ 1, 2 ], [ 3, 4 ], [ 5, 6 ] ] for instance.")
   halp_meta(
       manual_url, "https://ossia.io/score-docs/processes/array-utilities.html#recombine")
   halp_meta(uuid, "8a833254-04ef-42f0-bd39-a8a3b8ce94c3")
@@ -24,6 +27,7 @@ struct ArrayRecombiner
   struct
   {
     halp::spinbox_i32<"Grouping", halp::irange{1, 128, 3}> elements;
+    halp::toggle<"Transpose"> transpose;
   } inputs;
 
 
@@ -40,13 +44,29 @@ struct ArrayRecombiner
       const auto N = vec.size();
       res.reserve(N / inputs.elements);
 
-      for(std::size_t i = 0; i < N; i += inputs.elements)
+      if(!inputs.transpose)
       {
-        std::vector<ossia::value> sub;
-        for(std::size_t j = 0; j < (std::size_t)inputs.elements && i + j < N;  j++) {
-          sub.push_back(std::move(vec[i + j]));
+        for(std::size_t i = 0; i < N; i += inputs.elements)
+        {
+          std::vector<ossia::value> sub;
+          for(std::size_t j = 0; j < (std::size_t)inputs.elements && i + j < N; j++)
+          {
+            sub.push_back(std::move(vec[i + j]));
+          }
+          res.emplace_back(std::move(sub));
         }
-        res.emplace_back(std::move(sub));
+      }
+      else
+      {
+        for(std::size_t j = 0; j < (std::size_t)inputs.elements; j++)
+        {
+          std::vector<ossia::value> sub;
+          for(std::size_t i = 0; i + j < N; i += inputs.elements)
+          {
+            sub.push_back(std::move(vec[i + j]));
+          }
+          res.emplace_back(std::move(sub));
+        }
       }
     }
 

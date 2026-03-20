@@ -201,7 +201,6 @@ struct Arpeggiator
       this->previous_octave = octave;
       this->previous_arpeggio = arpeggio;
 
-      qDebug() << octave << (int)arpeggio;
       this->update();
     }
 

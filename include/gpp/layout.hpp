@@ -4,7 +4,7 @@
 
 #include <avnd/common/for_nth.hpp>
 #include <avnd/common/member_reflection.hpp>
-#include <boost/pfr/core.hpp>
+#include <avnd/common/struct_reflection.hpp>
 
 /*
 namespace gpp
@@ -120,11 +120,19 @@ consteval int std140_size()
 
 */
 
+#if defined(_MSC_VER)
+#define MSVC_BUGGY_CONSTEVAL consteval
+#define MSVC_BUGGY_CONSTEXPR constexpr
+#else
+#define MSVC_BUGGY_CONSTEVAL consteval
+#define MSVC_BUGGY_CONSTEXPR constexpr
+#endif
+
 namespace gpp
 {
 
 template <typename T, std::size_t Count>
-consteval int std140_offset_impl()
+MSVC_BUGGY_CONSTEVAL int std140_offset_impl()
 {
   int sz = 0;
   auto func = [&](auto field) {
@@ -154,26 +162,26 @@ consteval int std140_offset_impl()
   if constexpr(Count > 0)
   {
     [&func]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-      constexpr T t{};
-      (func(boost::pfr::get<Index>(t)), ...);
-        }(std::make_index_sequence<Count>{});
+      MSVC_BUGGY_CONSTEXPR T t{};
+      (func(avnd::pfr::get<Index>(t)), ...);
+    }(std::make_index_sequence<Count>{});
   }
   return sz;
 }
 
 template <auto F>
-consteval int std140_offset()
+MSVC_BUGGY_CONSTEVAL int std140_offset()
 {
   using ubo_type = typename avnd::member_reflection<F>::class_type;
-  constexpr ubo_type ubo{};
-  constexpr int field_offset = avnd::index_in_struct(ubo, F);
+  MSVC_BUGGY_CONSTEXPR ubo_type ubo{};
+  MSVC_BUGGY_CONSTEXPR int field_offset = avnd::index_in_struct(ubo, F);
   return std140_offset_impl<ubo_type, field_offset>();
 }
 
 template <typename T>
-consteval int std140_size()
+MSVC_BUGGY_CONSTEVAL int std140_size()
 {
-  return std140_offset_impl<T, boost::pfr::tuple_size_v<T>>();
+  return std140_offset_impl<T, avnd::pfr::tuple_size_v<T>>();
 }
 
 }

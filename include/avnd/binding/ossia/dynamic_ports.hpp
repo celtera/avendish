@@ -5,11 +5,24 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 
+namespace avnd
+{
+template <typename T>
+concept controller_setup_port = requires { T::on_controller_setup; };
+template <typename T>
+concept controller_interaction_port = requires { T::on_controller_interaction; };
+AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(controller_setup_port)
+AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(controller_interaction_port)
+}
+
 namespace oscr
 {
 template <typename T>
-concept has_dynamic_ports = avnd::dynamic_ports_input_introspection<T>::size > 0
-                            || avnd::dynamic_ports_output_introspection<T>::size > 0;
+concept has_dynamic_ports = avnd::has_dynamic_ports<T>;
+
+template <typename T>
+concept has_controller_ports
+    = avnd::controller_interaction_port_input_introspection<T>::size > 0;
 
 template <typename Field>
 struct dynamic_ports_state_type;
@@ -46,8 +59,8 @@ struct dynamic_ports_storage<T>
   using out_tuple = avnd::filter_and_apply<
       dynamic_ports_state_type, avnd::dynamic_ports_output_introspection, T>;
 
-  [[no_unique_address]] in_tuple in_handles;
-  [[no_unique_address]] out_tuple out_handles;
+  AVND_NO_UNIQUE_ADDRESS in_tuple in_handles;
+  AVND_NO_UNIQUE_ADDRESS out_tuple out_handles;
 
   template <std::size_t Idx>
   int num_in_ports(avnd::field_index<Idx> f) const noexcept

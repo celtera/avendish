@@ -16,4 +16,19 @@ concept dynamic_ports_port = requires(T t) {
 template <typename T>
 using dynamic_port_type =
     typename std::decay_t<decltype(std::declval<T>().ports)>::value_type;
+
+template <typename T>
+struct concrete_port_type_getter
+{
+  using type = T;
+};
+
+template <avnd::dynamic_ports_port T>
+struct concrete_port_type_getter<T>
+{
+  using type = avnd::dynamic_port_type<T>;
+};
+
+template <typename T>
+using concrete_port_type = typename concrete_port_type_getter<T>::type;
 }

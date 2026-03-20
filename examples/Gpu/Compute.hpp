@@ -18,7 +18,7 @@ struct GpuComputeExample
   // #define halp_meta(name, val) static constexpr auto name() return { val; }
   halp_meta(name, "Average color");
   halp_meta(uuid, "03bce361-a2ca-4959-95b4-6aac3b6c07b5");
-  halp_meta(category, "Visuals/Computer Vision")
+  halp_meta(category, "Visuals/Analysis")
   halp_meta(c_name, "average_color")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(

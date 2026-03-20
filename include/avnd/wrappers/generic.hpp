@@ -70,7 +70,7 @@
     using hdl_tuple                                                                 \
         = avnd::filter_and_apply<State##_type, Concept##_inputs_introspection, T>;  \
                                                                                     \
-    [[no_unique_address]] hdl_tuple handles;                                        \
+    AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;                                        \
   };                                                                                \
                                                                                     \
   template <typename T>                                                             \
@@ -85,5 +85,5 @@
     using hdl_tuple                                                                 \
         = avnd::filter_and_apply<State##_type, Concept##_outputs_introspection, T>; \
                                                                                     \
-    [[no_unique_address]] hdl_tuple handles;                                        \
+    AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;                                        \
   }

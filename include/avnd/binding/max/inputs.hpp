@@ -7,11 +7,14 @@
 #include <avnd/introspection/input.hpp>
 #include <boost/mp11.hpp>
 #include <array>
+#include <jit.common.h>
+#include <max.jit.mop.h>
 namespace max
 {
 
 template <typename Field>
-using is_explicit_parameter_t = boost::mp11::mp_bool<avnd::parameter<Field> && !avnd::attribute_port<Field>>;
+using is_explicit_parameter_t
+    = boost::mp11::mp_bool<avnd::parameter_port<Field> && !avnd::attribute_port<Field>>;
 template<typename T>
 using explicit_parameter_input_introspection = avnd::predicate_introspection<typename avnd::inputs_type<T>::type, is_explicit_parameter_t>;
 
@@ -20,13 +23,14 @@ struct inputs
 {
   void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
 
-  void for_inlet(int inlet, auto& inputs, auto&& func)
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
   {
   }
 };
 
 template <typename T>
-  requires(explicit_parameter_input_introspection<T>::size > 0)
+  requires(explicit_parameter_input_introspection<T>::size > 0
+           && avnd::matrix_input_introspection<T>::size == 0)
 struct inputs<T>
 {
   using refl = explicit_parameter_input_introspection<T>;
@@ -54,8 +58,9 @@ struct inputs<T>
 
     if constexpr(first_parameter_is_explicit)
     {
-      for(int i = 1; i < refl::size; i++)
-        proxies[i] = proxy_new(&x_obj, 1024 + refl::size - i - 1, 0L);
+      for(int i = 1; i < refl::size; i++) {
+        proxies[i-1] = proxy_new(&x_obj, 1024 + refl::size - i - 1, 0L);
+      }
     }
     else
     {
@@ -64,7 +69,7 @@ struct inputs<T>
     }
   }
 
-  void for_inlet(int inlet, auto& self, auto&& func)
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
   {
     if constexpr(first_parameter_is_explicit)
     {
@@ -72,14 +77,14 @@ struct inputs<T>
       if(inlet == 0)
       {
         explicit_parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
           func(field);
         });
       }
       else
       {
         explicit_parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), inlet - 1024 + 1, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), inlet - 1024 + 1, [&func](auto& field) {
           func(field);
         });
       }
@@ -91,14 +96,14 @@ struct inputs<T>
       {
         // Set the first parameter
         avnd::parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
           func(field);
         });
       }
       else
       {
         explicit_parameter_input_introspection<T>::for_nth_mapped(
-            avnd::get_inputs<T>(self.implementation), inlet - 1024, [&func](auto& field) {
+            avnd::get_inputs<T>(implementation), inlet - 1024, [&func](auto& field) {
           func(field);
         });
       }
@@ -107,16 +112,87 @@ struct inputs<T>
 };
 
 template <typename T>
-  requires(avnd::parameter_input_introspection<T>::size > 0 && explicit_parameter_input_introspection<T>::size == 0)
+  requires(avnd::parameter_input_introspection<T>::size > 0
+           && explicit_parameter_input_introspection<T>::size == 0
+           && avnd::matrix_input_introspection<T>::size == 0)
 struct inputs<T>
 {
   void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
 
-  void for_inlet(int inlet, auto& self, auto&& func)
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
   {
     // Inlet is necessarily 0
     avnd::parameter_input_introspection<T>::for_nth_mapped(
-        avnd::get_inputs<T>(self.implementation), 0, [&func](auto& field) {
+        avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
+      func(field);
+    });
+  }
+};
+
+
+template <typename T>
+  requires(avnd::matrix_input_introspection<T>::size > 0)
+struct inputs<T>
+{
+  void init(avnd::effect_container<T>& implementation, t_object& x_obj)
+  {
+    // Setup MOP inputs
+    const auto x = &x_obj;
+    static constexpr auto matrix_input_count = avnd::matrix_input_introspection<T>::size;
+    {
+      for (int i = matrix_input_count; i > 1; i--) {
+        max_jit_obex_proxy_new(x, i - 1);
+      }
+
+      // Add variable inputs if needed
+      if (matrix_input_count > 0) {
+        max_jit_mop_variable_addinputs(x, matrix_input_count);
+      }
+
+      for(int i = 0; i < matrix_input_count; i++)
+      {
+        if(void *input = max_jit_mop_getinput(x, i))
+        {
+          // FIXME
+          jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
+          jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
+          jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
+          jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
+        }
+      }
+    }
+
+    const auto mop = max_jit_obex_adornment_get(x, _jit_sym_jit_mop);
+    const auto incount = jit_attr_getlong(mop, _jit_sym_inputcount);
+
+    // add proxy inlet and internal matrix for
+    // all inputs except leftmost inlet
+    for (int i = 2; i <= incount; i++)
+    {
+      max_jit_obex_proxy_new(x, (incount + 1) - i); // right to left
+      if (auto p = jit_object_method(mop, _jit_sym_getinput, i))
+      {
+        t_jit_matrix_info info;
+        jit_matrix_info_default(&info);
+        max_jit_mop_restrict_info(x, p, &info);
+
+        auto name = jit_symbol_unique();
+        auto m = jit_object_new(_jit_sym_jit_matrix, &info);
+        m = jit_object_register(m,name);
+
+        jit_attr_setsym(p, _jit_sym_matrixname, name);
+        jit_object_method(p, _jit_sym_matrix, m);
+        jit_object_attach(name, x);
+      }
+    }
+  }
+
+  void for_inlet(int inlet, avnd::effect_container<T>& implementation, auto&& func)
+  {
+    // All parameters are on 0
+    // FIXME make sure this does not get called for non-parameter inlets?
+    avnd::parameter_input_introspection<T>::for_nth_mapped(
+        avnd::get_inputs<T>(implementation), 0, [&func](auto& field) {
       func(field);
     });
   }

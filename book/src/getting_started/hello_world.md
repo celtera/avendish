@@ -15,7 +15,7 @@ export struct MyProcessor
 ```
 
 ... at least, in an alternative universe where C++ has gotten custom attributes and reflection on those, 
-and where modules and `std::print` work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope !
+and where modules and `std::print` work consistently across all compilers ; in our universe, this is still a few years away. Keep hope, dear reader, keep hope -- and read until the end of the page!
 
 # Getting started, for good
 
@@ -84,3 +84,24 @@ struct MyProcessor
   }
 };
 ```
+
+# 2025 update: it's happening!
+
+C++ reflection and custom attributes / annotations will be part of C++26!
+The actual syntax once support for it is implemented in Avendish, will certainly look like:
+
+```cpp
+import std;
+import metadata;
+
+[[=metadata::name{"Hello World"}]]
+[[=metadata::description{"An introductory example"}]]
+export struct MyProcessor
+{
+  void operator()() { 
+    std::print("Henlo\n");
+  }
+};
+```
+
+Thanks to the library's open-ended approach, all existing code will continue working :-)

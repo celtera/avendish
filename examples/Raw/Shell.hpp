@@ -13,6 +13,15 @@ struct Shell
   static consteval auto c_name() { return "avnd_shell"; }
   static consteval auto category() { return "Script"; }
   static consteval auto uuid() { return "7e4ae744-1825-4f1c-9fc9-675e41f316bc"; }
+  static consteval auto description()
+  {
+    return "Launch a shell command detached from the host";
+  }
+  static consteval auto manual_url()
+  {
+    return "https://ossia.io/score-docs/processes/process-launcher.html#shell-command";
+  }
+  static consteval auto author() { return "Jean-Michaël Celerier"; }
 
   // This tag is an indication that the operator() should only called on
   // the first tick, not on every tick

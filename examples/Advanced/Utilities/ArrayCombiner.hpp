@@ -13,15 +13,18 @@ enum class ArrayCombinerMode
   Sum,
   Append,
   Product,
-  Intersperse
+  Intersperse,
+  Min,
+  Max,
 };
 struct ArrayCombiner
 {
-  halp_meta(name, "Array Combiner")
+  halp_meta(name, "Array Value Combiner")
   halp_meta(c_name, "avnd_array_combiner")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(category, "Control/Mappings")
-  halp_meta(description, "Combine the input arrays")
+  halp_meta(
+      description, "Combine the values of input arrays element-wise: sum, append, etc.")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/array-utilities.html#sum")
   halp_meta(uuid, "f5b8e20e-a016-4e19-a396-39d780179533")
 
@@ -48,10 +51,16 @@ struct ArrayCombiner
 
   void operator()()
   {
-    if(inputs.in_i.ports.empty())
+    const auto num_ports = inputs.in_i.ports.size();
+    if(num_ports == 0)
       return;
 
     auto& out = outputs.out.value;
+    if(num_ports == 1)
+    {
+      out = inputs.in_i.ports[0].value;
+      return;
+    }
 
     out.clear();
     switch(inputs.mode)
@@ -112,6 +121,68 @@ struct ArrayCombiner
           {
             if(in.size() > i)
               out[i * ports + p] = in[i];
+          }
+        }
+        break;
+      }
+
+      case ao::ArrayCombinerMode::Min: {
+        // 1. Find the longest array
+        int longest_v = 0;
+        int longest_i = 0;
+        for(int port_i = 0; port_i < num_ports; port_i++)
+        {
+          const int sz = inputs.in_i.ports[port_i].value.size();
+          if(longest_v < sz)
+          {
+            longest_v = sz;
+            longest_i = port_i;
+          }
+        }
+
+        out = inputs.in_i.ports[longest_i].value;
+
+        // 2. Min with the other arrays
+        for(int port_i = 0; port_i < num_ports; port_i++)
+        {
+          if(port_i == longest_i)
+            continue;
+
+          auto& v = inputs.in_i.ports[port_i];
+          for(std::size_t i = 0; i < v.value.size(); i++)
+          {
+            out[i] = std::min(out[i], v.value[i]);
+          }
+        }
+        break;
+      }
+
+      case ao::ArrayCombinerMode::Max: {
+        // 1. Find the longest array
+        int longest_v = 0;
+        int longest_i = 0;
+        for(int port_i = 0; port_i < num_ports; port_i++)
+        {
+          const int sz = inputs.in_i.ports[port_i].value.size();
+          if(longest_v < sz)
+          {
+            longest_v = sz;
+            longest_i = port_i;
+          }
+        }
+
+        out = inputs.in_i.ports[longest_i].value;
+
+        // 2. Max with the other arrays
+        for(int port_i = 0; port_i < num_ports; port_i++)
+        {
+          if(port_i == longest_i)
+            continue;
+
+          auto& v = inputs.in_i.ports[port_i];
+          for(std::size_t i = 0; i < v.value.size(); i++)
+          {
+            out[i] = std::max(out[i], v.value[i]);
           }
         }
         break;

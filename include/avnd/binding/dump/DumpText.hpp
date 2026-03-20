@@ -107,7 +107,7 @@ std::string_view port_type(Field f)
     return "Audio port (bus, double)";
   else if constexpr(avnd::midi_port<type>)
     return "MIDI port";
-  else if constexpr(avnd::parameter<type>)
+  else if constexpr(avnd::parameter_port<type>)
     return "Parameter";
   else if constexpr(avnd::message<type>)
     return "Message";

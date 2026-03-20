@@ -9,7 +9,7 @@
 #define clang_buggy_consteval consteval
 #endif
 
-#if __cplusplus >= 202302L
+#if __cplusplus >= 202302L && !defined(_MSC_VER)
 #define static_constexpr static constexpr
 #else
 #define static_constexpr constexpr

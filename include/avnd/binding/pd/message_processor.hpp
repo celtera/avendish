@@ -50,15 +50,15 @@ struct message_processor
   avnd::effect_container<T> implementation;
 
   // Setup, storage...for the outputs
-  [[no_unique_address]] inputs<T> input_setup;
+  AVND_NO_UNIQUE_ADDRESS inputs<T> input_setup;
 
-  [[no_unique_address]] outputs<T> output_setup;
+  AVND_NO_UNIQUE_ADDRESS outputs<T> output_setup;
 
-  [[no_unique_address]] init_arguments<T> init_setup;
+  AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
 
-  [[no_unique_address]] messages<T> messages_setup;
+  AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
-  [[no_unique_address]] avnd::control_storage<T> control_buffers;
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
   t_clock* m_clock{};
   using sched_func = void (*)(T&);

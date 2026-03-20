@@ -103,7 +103,7 @@ struct message_processor
     using F = std::remove_cvref_t<decltype(f)>;
 
     std::apply(
-        [&obj, ... first_args
+        [&obj, &... first_args
                = std::forward<Args>(first_args)]<typename... Ts>(Ts&&... args) mutable {
       if constexpr(std::is_member_function_pointer_v<F>)
       {

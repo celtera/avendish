@@ -4,13 +4,15 @@ namespace oscr
 {
 
 template <typename T>
-  requires(!(
-      real_good_mono_processor<T> || mono_generator<T>
-      || ossia_compatible_audio_processor<T> || ossia_compatible_nonaudio_processor<T>))
+  requires(
+      !(real_good_mono_processor<T> || mono_generator<T>
+        || ossia_compatible_audio_processor<T>
+        || ossia_compatible_dynamic_audio_processor<T>
+        || ossia_compatible_nonaudio_processor<T>))
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 
@@ -61,6 +63,14 @@ public:
       return match.ok;
         },
         this->ossia_inlets.ports);
+
+    // If all our inputs are fixed inputs, we don't want to do any change.
+    if constexpr(
+        avnd::audio_port_input_introspection<T>::size
+        == avnd::fixed_audio_port_input_introspection<T>::size)
+    {
+      ok = true;
+    }
 
     // Ensure that we have enough output space
     tuplet::apply(

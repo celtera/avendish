@@ -34,29 +34,37 @@ void prepare(avnd::effect_container<T>& implementation, process_setup setup)
 {
   if constexpr(avnd::can_prepare<T>)
   {
-    using prepare_type = avnd::first_argument<&T::prepare>;
-    prepare_type t;
-
-    // C++20:
-    // using "requires" to check easily which members are available
-    // in a structure
-    if_possible(t.input_channels = setup.input_channels);
-    if_possible(t.output_channels = setup.output_channels);
-    if_possible(t.channels = setup.output_channels);
-    if_possible(t.frames = setup.frames_per_buffer);
-    if_possible(t.rate = setup.rate);
-    if_possible(t.instance = setup.instance);
-    if_possible(t.samples_to_model = setup.samples_to_model);
-    if_possible(t.model_to_samples = setup.model_to_samples);
-
-    // Coroutines get used here.
-    int k = 0;
-    for(auto& eff : implementation.effects())
+    if constexpr(avnd::function_reflection<&T::prepare>::count == 1)
     {
-      // Individual instance for the polyphonic object case
-      if_possible(t.subinstance = k);
-      k++;
-      eff.prepare(t);
+      using prepare_type = avnd::first_argument<&T::prepare>;
+      prepare_type t;
+
+      // C++20:
+      // using "requires" to check easily which members are available
+      // in a structure
+      if_possible(t.input_channels = setup.input_channels);
+      if_possible(t.output_channels = setup.output_channels);
+      if_possible(t.channels = setup.output_channels);
+      if_possible(t.frames = setup.frames_per_buffer);
+      if_possible(t.rate = setup.rate);
+      if_possible(t.instance = setup.instance);
+      if_possible(t.samples_to_model = setup.samples_to_model);
+      if_possible(t.model_to_samples = setup.model_to_samples);
+
+      // Coroutines get used here.
+      int k = 0;
+      for(auto& eff : implementation.effects())
+      {
+        // Individual instance for the polyphonic object case
+        if_possible(t.subinstance = k);
+        k++;
+        eff.prepare(t);
+      }
+    }
+    else
+    {
+      for(auto& eff : implementation.effects())
+        eff.prepare();
     }
   }
 }
@@ -66,22 +74,29 @@ void prepare(T& implementation, process_setup setup)
 {
   if constexpr(avnd::can_prepare<T>)
   {
-    using prepare_type = avnd::first_argument<&T::prepare>;
-    prepare_type t;
+    if constexpr(avnd::function_reflection<&T::prepare>::count == 1)
+    {
+      using prepare_type = avnd::first_argument<&T::prepare>;
+      prepare_type t;
 
-    // C++20:
-    // using "requires" to check easily which members are available
-    // in a structure
-    if_possible(t.input_channels = setup.input_channels);
-    if_possible(t.output_channels = setup.output_channels);
-    if_possible(t.channels = setup.output_channels);
-    if_possible(t.frames = setup.frames_per_buffer);
-    if_possible(t.rate = setup.rate);
-    if_possible(t.instance = setup.instance);
-    if_possible(t.samples_to_model = setup.samples_to_model);
-    if_possible(t.model_to_samples = setup.model_to_samples);
+      // C++20:
+      // using "requires" to check easily which members are available
+      // in a structure
+      if_possible(t.input_channels = setup.input_channels);
+      if_possible(t.output_channels = setup.output_channels);
+      if_possible(t.channels = setup.output_channels);
+      if_possible(t.frames = setup.frames_per_buffer);
+      if_possible(t.rate = setup.rate);
+      if_possible(t.instance = setup.instance);
+      if_possible(t.samples_to_model = setup.samples_to_model);
+      if_possible(t.model_to_samples = setup.model_to_samples);
 
-    implementation.prepare(t);
+      implementation.prepare(t);
+    }
+    else
+    {
+      implementation.prepare();
+    }
   }
 }
 

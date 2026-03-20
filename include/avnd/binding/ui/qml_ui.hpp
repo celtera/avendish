@@ -139,7 +139,7 @@ Pane {{
     int control_k = 0;
     avnd::input_introspection<T>::for_all(
         avnd::get_inputs(this->implementation), [this, &control_k]<typename C>(C& c) {
-          if constexpr(avnd::parameter<C>)
+          if constexpr(avnd::parameter_port<C>)
             create(*this, c, control_k);
 
           control_k++;

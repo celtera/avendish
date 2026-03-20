@@ -244,8 +244,7 @@ struct from_atoms
   }
 
   template<typename T>
-    requires (std::is_class_v<T> && avnd::pfr::tuple_size_v<T> == 0
-             && std::is_trivial_v<T> && std::is_standard_layout_v<T>)
+    requires (std::is_class_v<T> && std::is_trivial_v<T> && std::is_standard_layout_v<T> && avnd::pfr::tuple_size_v<T> == 0)
   bool operator()(T& v) const noexcept
   {
     // Impulse case, nothing to do

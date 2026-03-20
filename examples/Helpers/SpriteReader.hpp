@@ -20,7 +20,7 @@ struct SpriteReader
 {
   halp_meta(name, "Sprite reader");
   halp_meta(c_name, "sprite_reader");
-  halp_meta(category, "Visuals");
+  halp_meta(category, "Visuals/Textures");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Loads an image file into a texture");
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/sprite-reader.html")
@@ -70,7 +70,6 @@ struct SpriteReader
     const int cur_col = cur % columns;
     const QRect rect(cur_col * sprite_w, cur_row * sprite_h, sprite_w, sprite_h);
     sprite = image_data.copy(rect);
-    sprite.mirror();
     outputs.tex.texture.update(sprite.bits(), inputs.sz.value.x, inputs.sz.value.y);
   }
 };
