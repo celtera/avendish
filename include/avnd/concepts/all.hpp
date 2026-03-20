@@ -15,6 +15,7 @@
 #include <avnd/concepts/file_port.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/gfx.hpp>
+#include <avnd/concepts/gpu_compute.hpp>
 #include <avnd/concepts/init.hpp>
 #include <avnd/concepts/layout.hpp>
 #include <avnd/concepts/logger.hpp>
