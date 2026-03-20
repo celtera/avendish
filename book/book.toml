@@ -1,7 +1,6 @@
 [book]
 authors = ["Jean-Michaël Celerier"]
 language = "en"
-multilingual = false
 src = "src"
 title = "Avendish documentation"
 
