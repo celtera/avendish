@@ -20,6 +20,9 @@ set(AVND_TD_SOURCES
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/sop/geometry_processor.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/SOP.prototype.cpp.in"
 
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/pop/particle_processor.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/POP.prototype.cpp.in"
+
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/configure.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/helpers.hpp"

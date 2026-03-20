@@ -328,6 +328,14 @@ avnd_make_touchdesigner(
   PROCESSOR_TYPE SOP
 )
 
+avnd_make_touchdesigner(
+  TARGET NoiseBuffer_pop
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer_pop
+  PROCESSOR_TYPE POP
+)
+
 ###### Ports
 
 ## Essentia

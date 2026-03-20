@@ -23,6 +23,9 @@
 // SOP bindings
 #include <avnd/binding/touchdesigner/sop/geometry_processor.hpp>
 
+// POP bindings
+#include <avnd/binding/touchdesigner/pop/particle_processor.hpp>
+
 namespace avnd::touchdesigner
 {
   // Re-export main namespace for convenience

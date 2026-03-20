@@ -154,5 +154,10 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
     op.minInputs = avnd::geometry_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
+  else if(optype == "POP")
+  {
+    op.minInputs = avnd::geometry_input_introspection<type>::size;
+    op.maxInputs = op.minInputs;
+  }
 }
 }

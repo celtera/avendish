@@ -218,6 +218,14 @@ function(avnd_make_texture)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE TOP)
 endfunction()
 
+function(avnd_make_geometry)
+  avnd_register(${ARGV})
+
+  avnd_make_ossia(${ARGV})
+  avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE SOP)
+  avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE POP)
+endfunction()
+
 function(avnd_make_all)
   avnd_register(${ARGV})
   avnd_make_ossia(${ARGV})

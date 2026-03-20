@@ -123,6 +123,7 @@ AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(spectrum_split_bus_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(spectrum_complex_bus_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(attribute_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(geometry_port)
+AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(device_memory_port)
 
 template <typename Field>
 using is_dynamic_ports_port_t = boost::mp11::mp_bool<dynamic_ports_port<Field>>;
@@ -214,6 +215,7 @@ template<typename T> using spectrum_split_bus_input_introspection = spectrum_spl
 template<typename T> using spectrum_complex_bus_input_introspection = spectrum_complex_bus_port_input_introspection<T>;
 template<typename T> using attribute_input_introspection = attribute_port_input_introspection<T>;
 template<typename T> using geometry_input_introspection = geometry_port_input_introspection<T>;
+template<typename T> using device_memory_input_introspection = device_memory_port_input_introspection<T>;
 
 
 template<typename T> using parameter_output_introspection = parameter_port_output_introspection<T>;
@@ -262,6 +264,7 @@ template<typename T> using spectrum_split_bus_output_introspection = spectrum_sp
 template<typename T> using spectrum_complex_bus_output_introspection = spectrum_complex_bus_port_output_introspection<T>;
 template<typename T> using attribute_output_introspection = attribute_port_output_introspection<T>;
 template<typename T> using geometry_output_introspection = geometry_port_output_introspection<T>;
+template<typename T> using device_memory_output_introspection = device_memory_port_output_introspection<T>;
 //clang-format on
 
 // template <typename Field>
