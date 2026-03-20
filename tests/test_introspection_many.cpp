@@ -86,7 +86,6 @@ public:
     halp::fixed_audio_bus<"Output", double, 2> audio;
   } outputs;
 };
-
 }
 
 template <std::size_t Index, typename Functor>

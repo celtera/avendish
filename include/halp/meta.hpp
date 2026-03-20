@@ -9,12 +9,12 @@
   }
 
 #define halp_flag(flag) \
-  enum                  \
+  enum : bool           \
   {                     \
     flag                \
   }
 #define halp_flags(...) \
-  enum                  \
+  enum : unsigned char  \
   {                     \
     __VA_ARGS__         \
   }
@@ -25,7 +25,11 @@
 #define HALP_RESTRICT __restrict__
 #endif
 
+#include <halp/modules.hpp>
+
 #include <type_traits>
+
+HALP_MODULE_EXPORT
 namespace halp
 {
 // Extracts the type of x in &Class::x

@@ -2,7 +2,8 @@ add_library(Avendish)
 add_library(Avendish::Avendish ALIAS Avendish)
 
 if(MSVC)
-  target_compile_options(Avendish
+  if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
+    target_compile_options(Avendish
       PUBLIC
        -std:c++latest
        -Zi
@@ -12,7 +13,23 @@ if(MSVC)
        "-Zc:inline"
        "-Zc:preprocessor"
        "-Zc:templateScope"
-       -wd4244)
+       -wd4244 # float -> int lossy conversion warning
+       -wd4068 # disables warning C4068: unknown pragma 'GCC'
+    )
+  else()
+    target_compile_options(Avendish
+      PUBLIC
+       -Zi
+       -std=c++latest
+       -Wno-unknown-argument
+       "-permissive-"
+       "-Zc:__cplusplus"
+       "-Zc:inline"
+       -wd4244 # float -> int lossy conversion warning
+       -wd4068 # disables warning C4068: unknown pragma 'GCC'
+       -Werror=return-type
+    )
+  endif()
   target_compile_definitions(Avendish PUBLIC -DNOMINMAX=1 -DWIN32_LEAN_AND_MEAN=1)
 elseif(APPLE)
   target_compile_options(Avendish
@@ -24,6 +41,7 @@ elseif(APPLE)
       -Wno-cast-function-type
       -Wno-unused-template
       -Wno-unused-local-typedef
+      -Werror=return-type
   )
 endif()
 
@@ -31,6 +49,13 @@ target_sources(Avendish
   PUBLIC
     ${AVENDISH_SOURCES}
     $<TARGET_OBJECTS:avnd_dummy_lib>
+)
+
+target_link_libraries(Avendish
+  PUBLIC
+    Boost::boost
+    magic_enum::magic_enum
+    qlibs::reflect
 )
 
 if(AVENDISH_INCLUDE_SOURCE_ONLY)
@@ -47,7 +72,7 @@ function(avnd_target_setup AVND_FX_TARGET)
   target_compile_features(
       ${AVND_FX_TARGET}
       PUBLIC
-        cxx_std_20
+        cxx_std_23
   )
 
   if(UNIX AND NOT APPLE)
@@ -69,17 +94,19 @@ function(avnd_target_setup AVND_FX_TARGET)
           -fdata-sections
     )
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
-    target_compile_options(
-        ${AVND_FX_TARGET}
-        PUBLIC
-          # -stdlib=libc++
-          # -flto
-          -fno-stack-protector
-          -fno-ident
-          -fno-plt
-          -ffunction-sections
-          -fdata-sections
-    )
+    if(NOT MSVC)
+      target_compile_options(
+          ${AVND_FX_TARGET}
+          PUBLIC
+            # -stdlib=libc++
+            # -flto
+            -fno-stack-protector
+            -fno-ident
+            -fno-plt
+            -ffunction-sections
+            -fdata-sections
+      )
+    endif()
 
     if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL 13.0)
       # target_compile_options(
@@ -135,6 +162,7 @@ function(avnd_target_setup AVND_FX_TARGET)
     target_link_libraries(${AVND_FX_TARGET} PRIVATE
       # -lc++
       -Bsymbolic
+      -Werror=return-type
       # -flto
     )
   endif()
@@ -148,7 +176,7 @@ function(avnd_target_setup AVND_FX_TARGET)
       CXX_VISIBILITY_PRESET internal
   )
 
-  target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost)
+  target_link_libraries(${AVND_FX_TARGET} PUBLIC Boost::boost magic_enum::magic_enum qlibs::reflect)
 endfunction()
 
 function(avnd_common_setup AVND_TARGET AVND_FX_TARGET)

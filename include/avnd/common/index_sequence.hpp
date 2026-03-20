@@ -49,13 +49,13 @@ template <typename T>
 using numbered_index_sequence_t = typename numbered_index_sequence<T>::type;
 
 template <typename T, T... N>
-static constexpr auto integer_sequence_to_array(std::integer_sequence<T, N...>)
+inline constexpr auto integer_sequence_to_array(std::integer_sequence<T, N...>)
 {
   return std::array<T, sizeof...(N)>{N...};
 }
 
 template <typename T, T... N>
-static constexpr auto integer_sequence_to_inverse_array(std::integer_sequence<T, N...>)
+inline constexpr auto integer_sequence_to_inverse_array(std::integer_sequence<T, N...>)
 {
   if constexpr(sizeof...(N) > 0)
   {

@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <exception>
+#include <cstddef>
 
 namespace avnd
 {

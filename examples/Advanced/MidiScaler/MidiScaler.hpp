@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include "StrStream.hpp"
 #include "Tunings.h"
 #include "TuningsImpl.h"
 
@@ -22,7 +23,6 @@
 #include <istream>
 #include <optional>
 #include <sstream>
-#include <strstream>
 
 namespace mtk
 {
@@ -35,6 +35,7 @@ struct MidiScaler
 {
   halp_meta(name, "Midi scaler")
   halp_meta(c_name, "avnd_helpers_midifile_scaled")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-scaler.html")
   halp_meta(uuid, "c43300b0-6c98-4a38-81f2-b549f0297e38")
   halp_meta(category, "Midi")
 
@@ -60,7 +61,7 @@ struct MidiScaler
         {
           try
           {
-            std::istrstream s(
+            compat::istrstream s(
                 (const char*)this->file.bytes.data(),
                 (std::streamsize)this->file.bytes.size());
             self.scale = Tunings::readSCLStream(s);
@@ -90,7 +91,7 @@ struct MidiScaler
         {
           try
           {
-            std::istrstream s(
+            compat::istrstream s(
                 (const char*)this->file.bytes.data(),
                 (std::streamsize)this->file.bytes.size());
             self.mapping = Tunings::readKBMStream(s);

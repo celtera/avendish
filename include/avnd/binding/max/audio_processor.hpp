@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/max/processor_common.hpp>
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/messages.hpp>
@@ -38,7 +39,7 @@ struct audio_processor_metaclass
 };
 
 template <typename T>
-struct audio_processor
+struct audio_processor : processor_common<T>
 {
   // Metadata
   static constexpr const int input_channels = avnd::input_channels<T>(1);
@@ -51,8 +52,8 @@ struct audio_processor
   avnd::effect_container<T> implementation;
   avnd::process_adapter<T> processor;
 
-  [[no_unique_address]] init_arguments<T> init_setup;
-  [[no_unique_address]] messages<T> messages_setup;
+  AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
+  AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
   int m_runtime_input_count{};
   int m_runtime_output_count{};
@@ -134,7 +135,7 @@ struct audio_processor
 
   void process_inlet_control(t_symbol* s, long argc, t_atom* argv)
   {
-    for(auto& state : implementation.full_state())
+    for(auto state : implementation.full_state())
     {
       switch(argv[0].a_type)
       {
@@ -147,7 +148,7 @@ struct audio_processor
                 avnd::float_parameter<C> || avnd::int_parameter<C>
                 || avnd::bool_parameter<C>)
             {
-              constexpr std::string_view control_name = avnd::get_name<C>();
+              static constexpr auto control_name = max::get_name_symbol<C>();
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, res);
@@ -167,13 +168,13 @@ struct audio_processor
                 avnd::int_parameter<C> || avnd::float_parameter<C>
                 || avnd::enum_parameter<C> || avnd::bool_parameter<C>)
             {
-              constexpr std::string_view control_name = avnd::get_name<C>();
+              static constexpr auto control_name = max::get_name_symbol<C>();
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, res);
-                post(
-                    "Apply contorl :%s %s %d", s->s_name, control_name.data(),
-                    ctl.value);
+                // post(
+                //     "Apply contorl :%s %s %d", s->s_name, control_name.data(),
+                //     ctl.value);
                 if_possible(ctl.update(state.effect));
               }
             }
@@ -183,11 +184,11 @@ struct audio_processor
 
         case A_SYM: {
           // TODO ?
-          std::string res = argv[0].a_w.w_sym->s_name;
+          std::string_view res = argv[0].a_w.w_sym->s_name;
           avnd::for_each_field_ref(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
             if constexpr(avnd::string_parameter<C>)
             {
-              constexpr std::string_view control_name = avnd::get_name<C>();
+              static constexpr auto control_name = max::get_name_symbol<C>();
               if(control_name == s->s_name)
               {
                 avnd::apply_control(ctl, std::move(res));
@@ -259,7 +260,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
+  static constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     auto* ptr = object_alloc(g_class);
     t_object tmp;
@@ -276,19 +277,19 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void {
+  static constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // DSP
-  constexpr auto obj_dsp
+  static constexpr auto obj_dsp
       = +[](instance* obj, t_object* dsp64, short* count, double samplerate,
             long maxvectorsize, long flags) -> void {
     obj->dsp(dsp64, count, samplerate, maxvectorsize, flags);
   };
 
-  constexpr auto inputchange = +[](instance* x, long index, long count) -> long {
+  static constexpr auto inputchange = +[](instance* x, long index, long count) -> long {
     if(count != x->m_runtime_input_count)
     {
       x->m_runtime_input_count = count;
@@ -297,16 +298,19 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
     else
       return false;
   };
-  constexpr auto outputcount = +[](instance* x, long index) -> long {
+  static constexpr auto outputcount = +[](instance* x, long index) -> long {
     // TODO check whether the outputs are fixed or dynamic
+    // FIXME compute it better, e.g. use runtime_output_count
     return x->m_runtime_input_count;
   };
 
   // Message processing
-  constexpr auto obj_process
+  static constexpr auto obj_process
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
     obj->process(s, argc, argv);
   };
+
+  static constexpr auto obj_assist = processor_common<T>::obj_assist;
 
   /// Class creation ///
   g_class = class_new(
@@ -320,6 +324,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   class_addmethod(g_class, (method)obj_dsp, "dsp64", A_CANT, 0);
   class_addmethod(g_class, (method)inputchange, "inputchanged", A_CANT, 0);
   class_addmethod(g_class, (method)outputcount, "multichanneloutputs", A_CANT, 0);
+  class_addmethod(g_class, (method)obj_assist, "assist", A_CANT, 0);
 
   class_addmethod(g_class, (method)obj_process, "anything", A_GIMME, 0);
 }

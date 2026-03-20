@@ -147,13 +147,13 @@ struct liblo_recv_binding
       : object{std::move(obj)}
       , root{root}
   {
-    constexpr auto error_handler = [](int num, const char* msg, const char* path) {
+    static constexpr auto error_handler = [](int num, const char* msg, const char* path) {
       std::cerr << "liblo: error: " << num << " in " << path << ": " << msg << '\n';
     };
 
     osc_server = lo_server_thread_new(port.data(), error_handler);
 
-    constexpr auto message_handler
+    static constexpr auto message_handler
         = [](const char* p, const char* types, lo_arg** argv, int argc, lo_message data,
              void* user_data) -> int {
       return static_cast<liblo_recv_binding*>(user_data)->handler(

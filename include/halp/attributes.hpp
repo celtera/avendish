@@ -5,9 +5,56 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <boost/container/small_vector.hpp>
+#include <halp/modules.hpp>
 
 #include <variant>
 
+namespace halp
+{
+
+static constexpr bool
+string_matches_attribute_name(std::string_view string_a, std::string_view string_b)
+{
+  const int N = string_a.length();
+  if(N != string_b.length())
+    return false;
+
+  for(int i = 0; i < N; i++)
+  {
+    unsigned char a = string_a[i];
+    unsigned char b = string_b[i];
+
+    if(a >= 'a' && a <= 'z')
+      a -= 'a' - 'A';
+    if(b >= 'a' && b <= 'z')
+      b -= 'a' - 'A';
+    if(a >= '0' && a <= '9' && a >= 'A' && a <= 'Z')
+    {
+      if(b >= '0' && b <= '9' && b >= 'A' && b <= 'Z')
+      {
+        if(a == b)
+          continue;
+        else
+          return false;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    else
+    {
+      // Let's assume all special chars compare equal for now
+      if(!(b >= '0' && b <= '9' && b >= 'A' && b <= 'Z'))
+        continue;
+    }
+  }
+  return true;
+}
+
+}
+
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <typename T, typename Attr>
@@ -79,46 +126,6 @@ bool parse_attribute(T& object, Attr& attr, auto& arg_begin, auto& arg_end)
     else if(vis.finished)
     {
       return true;
-    }
-  }
-  return true;
-}
-
-static constexpr bool
-string_matches_attribute_name(std::string_view string_a, std::string_view string_b)
-{
-  const int N = string_a.length();
-  if(N != string_b.length())
-    return false;
-
-  for(int i = 0; i < N; i++)
-  {
-    unsigned char a = string_a[i];
-    unsigned char b = string_b[i];
-
-    if(a >= 'a' && a <= 'z')
-      a -= 'a' - 'A';
-    if(b >= 'a' && b <= 'z')
-      b -= 'a' - 'A';
-    if(a >= '0' && a <= '9' && a >= 'A' && a <= 'Z')
-    {
-      if(b >= '0' && b <= '9' && b >= 'A' && b <= 'Z')
-      {
-        if(a == b)
-          continue;
-        else
-          return false;
-      }
-      else
-      {
-        return false;
-      }
-    }
-    else
-    {
-      // Let's assume all special chars compare equal for now
-      if(!(b >= '0' && b <= '9' && b >= 'A' && b <= 'Z'))
-        continue;
     }
   }
   return true;

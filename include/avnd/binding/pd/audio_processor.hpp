@@ -4,6 +4,7 @@
 
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/binding/pd/init.hpp>
+#include <avnd/binding/pd/inputs.hpp>
 #include <avnd/binding/pd/messages.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/concepts/object.hpp>
@@ -58,9 +59,10 @@ struct audio_processor
   avnd::process_adapter<T> processor;
 
   std::array<t_int, dsp_input_count> dsp_inputs;
+  inputs<T> input_setup;
 
-  [[no_unique_address]] init_arguments<T> init_setup;
-  [[no_unique_address]] messages<T> messages_setup;
+  AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
+  AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
@@ -83,6 +85,8 @@ struct audio_processor
 
     for(int i = 0; i < output_channels; i++)
       outlet_new(&x_obj, &s_signal);
+
+    // control_inputs is *not* initialized here, all the messages will go through 1st inlet.
 
     /// Initialize controls
     if constexpr(avnd::has_inputs<T>)
@@ -160,60 +164,12 @@ struct audio_processor
     return ++w;
   }
 
-  void process_inlet_control(t_symbol* s, int argc, t_atom* argv)
-  {
-    for(auto& state : implementation.full_state())
-    {
-      switch(argv[0].a_type)
-      {
-        case A_FLOAT: {
-          // Note: teeeechnically, one could store a map of string -> {void*,typeid} and then cast...
-          // but most pd externals seem to just do a chain of if() so this is equivalent
-          float res = argv[0].a_w.w_float;
-          avnd::for_each_field_ref(state.inputs, [s, res, &state]<typename C>(C& ctl) {
-            if constexpr(
-                avnd::float_parameter<C> || avnd::int_parameter<C>
-                || avnd::bool_parameter<C>)
-            {
-              constexpr std::string_view control_name = avnd::get_name<C>();
-              if(control_name == s->s_name)
-              {
-                avnd::apply_control(ctl, res);
-                if_possible(ctl.update(state.effect));
-              }
-            }
-          });
-          break;
-        }
-
-        case A_SYMBOL: {
-          // TODO ?
-          std::string res = argv[0].a_w.w_symbol->s_name;
-          // thread_local for perf ?
-          avnd::for_each_field_ref(state.inputs, [s, &res, &state]<typename C>(C& ctl) {
-            if constexpr(avnd::string_parameter<C>)
-            {
-              constexpr std::string_view control_name = avnd::get_name<C>();
-              if(control_name == s->s_name)
-              {
-                avnd::apply_control(ctl, std::move(res));
-                if_possible(ctl.update(state.effect));
-              }
-            }
-          });
-          break;
-        }
-
-        default:
-          break;
-      }
-    }
-  }
-
   void process(t_symbol* s, int argc, t_atom* argv)
   {
     // First try to process messages handled explicitely in the object
     if(messages_setup.process_messages(implementation, s, argc, argv))
+      return;
+    if(input_setup.process_inputs(implementation, s, argc, argv))
       return;
 
     // Then some default behaviour
@@ -237,7 +193,7 @@ struct audio_processor
       }
       default: {
         // Apply the data to the inlets.
-        process_inlet_control(s, argc, argv);
+        // process_inlet_control(s, argc, argv); // -> done in input_setup.process_inputs
 
         // Then bang
         // output_setup.commit(implementation);
@@ -265,7 +221,7 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
+  static constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     t_pd* ptr = pd_new(g_class);
 
@@ -277,16 +233,16 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void {
+  static constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // DSP
-  constexpr auto obj_dsp = +[](instance* obj, t_signal** sp) -> void { obj->dsp(sp); };
+  static constexpr auto obj_dsp = +[](instance* obj, t_signal** sp) -> void { obj->dsp(sp); };
 
   // Message processing
-  constexpr auto obj_process
+  static constexpr auto obj_process
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
     obj->process(s, argc, argv);
   };

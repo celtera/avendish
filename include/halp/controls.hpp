@@ -4,6 +4,7 @@
 
 #include <boost/predef.h>
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
@@ -16,14 +17,9 @@
 #include <halp/controls.basic.hpp>
 #include <halp/controls.buttons.hpp>
 #include <halp/controls.enums.hpp>
-
-#if(!BOOST_COMP_GNUC || (BOOST_COMP_GNUC >= 12)) && !defined(ESP8266)
 #include <halp/controls.sliders.hpp>
-#else
-#define HALP_GCC10_SLIDERS_WORKAROUND 1
-#include <halp/controls.sliders.gcc10.hpp>
-#endif
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 
@@ -173,6 +169,15 @@ struct toggle_t : slider_t<T, lit, setup>
 
 template <static_string lit, auto setup = default_range<float>>
 using hslider_f32 = halp::hslider_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<float>>
+struct log_hslider_f32 : halp::hslider_t<float, lit, setup>
+{
+  enum widget
+  {
+    log_slider
+  };
+};
+
 template <static_string lit, auto setup = default_range<int>>
 using hslider_i32 = halp::hslider_t<int, lit, setup>;
 
@@ -238,6 +243,8 @@ using xy_pad_f32 = halp::xy_pad_t<float, lit, setup>;
 
 template <static_string lit, auto setup = default_range<float>>
 using xy_spinboxes_f32 = halp::xy_spinboxes_t<float, lit, setup>;
+template <static_string lit, auto setup = default_range<int>>
+using xy_spinboxes_i32 = halp::xy_spinboxes_t<int, lit, setup>;
 
 template <static_string lit, auto setup = default_range<float>>
 using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;

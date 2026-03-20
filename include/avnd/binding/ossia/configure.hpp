@@ -1,6 +1,6 @@
 #pragma once
 #include <avnd/wrappers/configure.hpp>
-#include <halp/log.hpp>
+// #include <halp/log.hpp>
 //#include <fmt/format.h>
 //#include <ossia/detail/logger.hpp>
 namespace oscr

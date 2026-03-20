@@ -8,10 +8,11 @@
 #endif
 
 #include <cmath>
+#include <halp/modules.hpp>
 
 #include <algorithm>
 #include <vector>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 

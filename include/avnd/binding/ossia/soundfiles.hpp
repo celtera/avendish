@@ -60,10 +60,10 @@ struct soundfile_input_storage<T>
   using ptr_vectors = boost::mp11::mp_transform<channel_vector, ptr_tuple>;
 
   // std::tuple< std::vector<float*>, std::vector<double*> >
-  [[no_unique_address]] ptr_vectors pointers;
+  AVND_NO_UNIQUE_ADDRESS ptr_vectors pointers;
 
   // std::tuple< ossia::audio_handle, ossia::audio_handle >
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 /**
@@ -120,7 +120,7 @@ struct soundfile_storage : soundfile_input_storage<T>
         buf[i] = g->data[i].data();
 
       // Update the port
-      for(auto& state : t.full_state())
+      for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
         port.soundfile.data = buf.data();
@@ -149,7 +149,7 @@ struct soundfile_storage : soundfile_input_storage<T>
       }
 
       // Update the port
-      for(auto& state : t.full_state())
+      for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
         port.soundfile.data = buf.data();
@@ -162,6 +162,9 @@ struct soundfile_storage : soundfile_input_storage<T>
       }
     }
   }
+
+  // std::function<void(std::string& str, int idx)> release_request;
+  std::function<void(std::string& str, int idx)> load_request;
 };
 }
 
@@ -195,7 +198,7 @@ struct midifile_input_storage<T>
       midifile_handle_type, avnd::midifile_input_introspection, T>;
 
   // std::tuple< std::shared_ptr<midifile_data> >
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 template <typename T>
@@ -213,7 +216,7 @@ struct midifile_storage : midifile_input_storage<T>
     // Store the handle to keep the memory from being freed
     std::exchange(g, hdl);
 
-    for(auto& state : t.full_state())
+    for(auto state : t.full_state())
     {
       avnd::midifile_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
@@ -228,7 +231,7 @@ struct midifile_storage : midifile_input_storage<T>
         auto& out = port.midifile.tracks[i];
         using message_type = std::decay_t<decltype(out[0])>;
         using bytes_type = std::remove_reference_t<decltype(message_type::bytes)>;
-        constexpr bool is_c_array = std::is_bounded_array_v<bytes_type>;
+        static constexpr bool is_c_array = std::is_bounded_array_v<bytes_type>;
 
         if constexpr(is_c_array)
           out.reserve(in.size());
@@ -322,7 +325,7 @@ struct raw_file_input_storage<T>
       raw_file_handle_type, avnd::raw_file_input_introspection, T>;
 
   // std::tuple< std::shared_ptr<raw_file_data> >
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 template <typename T>
@@ -340,15 +343,41 @@ struct raw_file_storage : raw_file_input_storage<T>
     // Store the handle to keep the memory from being freed
     std::exchange(g, hdl);
 
-    for(auto& state : t.full_state())
+    for(auto state : t.full_state())
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
+      if(port.file.filename != hdl->filename)
+      {
+        port.file.bytes
+            = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+        port.file.filename = hdl->filename;
+
+        if_possible(port.update(state.effect));
+      }
+    }
+  }
+
+  template <std::size_t N, std::size_t NField>
+  void load(
+      T& state, const std::shared_ptr<raw_file_data>& hdl, avnd::predicate_index<N>,
+      avnd::field_index<NField>)
+  {
+    std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
+
+    // Store the handle to keep the memory from being freed
+    std::exchange(g, hdl);
+
+    // FIXME not generic enough.. GPU should also use effect_container
+    avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
+
+    if(port.file.filename != hdl->filename)
+    {
       port.file.bytes
           = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
       port.file.filename = hdl->filename;
 
-      if_possible(port.update(state.effect));
+      if_possible(port.update(state));
     }
   }
 };

@@ -35,10 +35,17 @@ enum class widget_type
   xyz_spinbox,
   color,
   time_chooser,
+  folder,
   bargraph,
   range_slider,
   range_spinbox,
-  multi_slider
+  multi_slider,
+  multi_slider_xy,
+  path_generator_xy,
+  log_slider,
+  log_knob,
+  control,
+  no_control,
 };
 
 enum class slider_orientation
@@ -50,7 +57,7 @@ enum class slider_orientation
 template <typename T>
 struct widget_reflection
 {
-  constexpr auto name()
+  constexpr std::string_view name() const noexcept
   {
     switch(widget)
     {
@@ -86,6 +93,8 @@ struct widget_reflection
         return "color";
       case widget_type::time_chooser:
         return "time_chooser";
+      case widget_type::folder:
+        return "folder";
       case widget_type::bargraph:
         return "bargraph";
       case widget_type::range_slider:
@@ -94,10 +103,40 @@ struct widget_reflection
         return "range_spinbox";
       case widget_type::multi_slider:
         return "multi_slider";
+      case widget_type::multi_slider_xy:
+        return "multi_slider_xy";
+      case widget_type::path_generator_xy:
+        return "path_generator_xy";
+      case widget_type::log_slider:
+        return "log_slider";
+      case widget_type::log_knob:
+        return "log_knob";
+      case widget_type::control:
+        return "control";
+      case widget_type::no_control:
+        return "no_control";
+      default:
+        return "unknown";
     }
   }
   using value_type = T;
   widget_type widget{widget_type::slider};
+};
+
+template <typename T>
+struct control_reflection
+{
+  static constexpr auto name() { return "control"; }
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::control;
+};
+
+template <typename T>
+struct no_control_reflection
+{
+  static constexpr auto name() { return "no_control"; }
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::no_control;
 };
 
 template <typename T>
@@ -106,6 +145,15 @@ struct slider_reflection
   static constexpr auto name() { return "slider"; }
   using value_type = T;
   static constexpr widget_type widget = widget_type::slider;
+  slider_orientation orientation{slider_orientation::horizontal};
+};
+
+template <typename T>
+struct log_slider_reflection
+{
+  static constexpr auto name() { return "log_slider"; }
+  using value_type = T;
+  static constexpr widget_type widget = widget_type::log_slider;
   slider_orientation orientation{slider_orientation::horizontal};
 };
 
@@ -160,9 +208,32 @@ consteval auto get_widget()
   {
     return time_chooser_reflection<float>{slider_orientation::horizontal};
   }
+  else if constexpr(requires { T::widget::folder; })
+  {
+    return widget_reflection<std::string>{widget_type::folder};
+  }
   else if constexpr(requires { T::widget::multi_slider; })
   {
     return widget_reflection<std::vector<float>>{widget_type::multi_slider};
+  }
+  else if constexpr(requires { T::widget::multi_slider_xy; })
+  {
+    return widget_reflection<std::vector<float>>{widget_type::multi_slider_xy};
+  }
+  else if constexpr(requires { T::widget::path_generator_xy; })
+  {
+    return widget_reflection<std::vector<float>>{widget_type::path_generator_xy};
+  }
+  else if constexpr(requires { T::widget::log_slider; })
+  {
+    if constexpr(requires { T::widget::vslider; })
+    {
+      return log_slider_reflection<float>{slider_orientation::vertical};
+    }
+    else
+    {
+      return log_slider_reflection<float>{slider_orientation::horizontal};
+    }
   }
   else if constexpr(requires { T::widget::hslider; })
   {
@@ -359,6 +430,10 @@ consteval auto get_widget()
   }
 
   // Most general categories at the end
+  else if constexpr(requires { T::widget::control; })
+  {
+    return control_reflection<value_type>{};
+  }
   else if constexpr(std::is_floating_point_v<value_type>)
   {
     return slider_reflection<value_type>{slider_orientation::horizontal};

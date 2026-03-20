@@ -21,6 +21,7 @@ struct MidiFileReader
 {
   halp_meta(name, "Midi file reader")
   halp_meta(c_name, "avnd_helpers_midifile")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-reader.html")
   halp_meta(uuid, "f2972e8f-17c3-40bb-919e-2663fe6fb3a5")
   halp_meta(category, "Midi")
 

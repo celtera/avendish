@@ -7,7 +7,9 @@
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/concepts/callback.hpp>
 #include <avnd/concepts/channels.hpp>
+#include <avnd/concepts/control.hpp>
 #include <avnd/concepts/curve.hpp>
+#include <avnd/concepts/dynamic_ports.hpp>
 #include <avnd/concepts/fft.hpp>
 #include <avnd/concepts/field_names.hpp>
 #include <avnd/concepts/file_port.hpp>
@@ -33,6 +35,7 @@
 #include <avnd/concepts/smooth.hpp>
 #include <avnd/concepts/soundfile.hpp>
 #include <avnd/concepts/synth.hpp>
+#include <avnd/concepts/temporality.hpp>
 #include <avnd/concepts/ui.hpp>
 #include <avnd/concepts/widget.hpp>
 #include <avnd/concepts/worker.hpp>

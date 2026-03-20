@@ -36,7 +36,7 @@ struct event_bus_info
       info.mediaType = MediaTypes::kEvent;
       info.direction = BusDirections::kInput;
       info.channelCount = 1;
-      setStr(info.name, u16 "Event in");
+      setStr(info.name, u16_str "Event in");
       info.busType = BusTypes::kMain;
       info.flags = BusInfo::kDefaultActive;
 
@@ -60,7 +60,7 @@ struct event_bus_info
       info.mediaType = MediaTypes::kEvent;
       info.direction = BusDirections::kOutput;
       info.channelCount = 1;
-      setStr(info.name, u16 "Event Out");
+      setStr(info.name, u16_str "Event Out");
       info.busType = BusTypes::kMain;
       info.flags = BusInfo::kDefaultActive;
 
@@ -234,8 +234,8 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::input_channels<T>(2);
-      setStr(info.name, u16 "Stereo In");
+      info.channelCount = defaultInputChannelCount();
+      setStr(info.name, u16_str "Stereo In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -249,8 +249,8 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::output_channels<T>(2);
-      setStr(info.name, u16 "Stereo Out");
+      info.channelCount = defaultOutputChannelCount();
+      setStr(info.name, u16_str "Stereo Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -262,13 +262,13 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::input_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultInputChannelCount(), arr);
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::output_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultOutputChannelCount(), arr);
   }
 
   Steinberg::tresult setBusArrangements(
@@ -338,8 +338,8 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::input_channels<T>(2);
-      setStr(info.name, u16 "Mono In");
+      info.channelCount = defaultInputChannelCount();
+      setStr(info.name, u16_str "Mono In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -354,7 +354,7 @@ struct audio_bus_info<T>
     if(index == 0)
     {
       info.channelCount = avnd::output_channels<T>(2);
-      setStr(info.name, u16 "Mono Out");
+      setStr(info.name, u16_str "Mono Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -366,13 +366,13 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::input_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultInputChannelCount(), arr);
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::output_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultOutputChannelCount(), arr);
   }
 
   Steinberg::tresult setBusArrangements(
@@ -442,8 +442,8 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::input_channels<T>(2);
-      setStr(info.name, u16 "Mono In");
+      info.channelCount = defaultInputChannelCount();
+      setStr(info.name, u16_str "Mono In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -457,8 +457,8 @@ struct audio_bus_info<T>
   {
     if(index == 0)
     {
-      info.channelCount = avnd::output_channels<T>(2);
-      setStr(info.name, u16 "Mono Out");
+      info.channelCount = defaultOutputChannelCount();
+      setStr(info.name, u16_str "Mono Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -470,13 +470,13 @@ struct audio_bus_info<T>
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::input_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultInputChannelCount(), arr);
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
-    return default_speaker_arrangement(avnd::output_channels<T>(2), arr);
+    return default_speaker_arrangement(defaultOutputChannelCount(), arr);
   }
 
   Steinberg::tresult setBusArrangements(
@@ -549,7 +549,7 @@ struct audio_bus_info<T>
     if(index < input_refl::size)
     {
       info.channelCount = 2;
-      setStr(info.name, u16 "Stereo In");
+      setStr(info.name, u16_str "Stereo In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -564,7 +564,7 @@ struct audio_bus_info<T>
     if(index < output_refl::size)
     {
       info.channelCount = 2;
-      setStr(info.name, u16 "Stereo Out");
+      setStr(info.name, u16_str "Stereo Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -661,7 +661,7 @@ struct audio_bus_info<T>
     if(index < inputCount())
     {
       info.channelCount = 1;
-      setStr(info.name, u16 "Main In");
+      setStr(info.name, u16_str "Main In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -676,7 +676,7 @@ struct audio_bus_info<T>
     if(index < outputCount())
     {
       info.channelCount = 1;
-      setStr(info.name, u16 "Main Out");
+      setStr(info.name, u16_str "Main Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -764,7 +764,7 @@ struct audio_bus_info<T>
     if(index < inputCount())
     {
       info.channelCount = 1;
-      setStr(info.name, u16 "Main In");
+      setStr(info.name, u16_str "Main In");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;
@@ -779,7 +779,7 @@ struct audio_bus_info<T>
     if(index < outputCount())
     {
       info.channelCount = 1;
-      setStr(info.name, u16 "Main Out");
+      setStr(info.name, u16_str "Main Out");
       info.busType = Steinberg::Vst::BusTypes::kMain;
 
       return Steinberg::kResultTrue;

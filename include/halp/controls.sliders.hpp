@@ -1,12 +1,14 @@
 #pragma once
 #include <halp/inline.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
 
+#include <limits>
 #include <string_view>
 #include <type_traits>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 template <typename T>
@@ -22,6 +24,23 @@ template <>
 inline constexpr auto default_range<int> = range{0., 127., 64.};
 template <typename T>
 inline constexpr auto default_irange = irange{0, 127, 64};
+
+// Range still constrained as many ui widgets bail out past some ~2^24 value
+template <typename T = long double>
+inline constexpr auto positive_range_min
+    = range{0., std::numeric_limits<int>::max() / 256., 0.};
+template <typename T = long double>
+inline constexpr auto positive_range_max
+    = range{0., std::numeric_limits<int>::max() / 256., 1.};
+
+template <typename T = long double>
+inline constexpr auto free_range_min = range{
+    std::numeric_limits<int>::lowest() / 256., std::numeric_limits<int>::max() / 256.,
+    0.};
+template <typename T = long double>
+inline constexpr auto free_range_max = range{
+    std::numeric_limits<int>::lowest() / 256., std::numeric_limits<int>::max() / 256.,
+    1.};
 
 template <typename T>
 struct init_range_t
@@ -81,6 +100,9 @@ struct time_chooser_t
     value = t;
     return *this;
   }
+
+  // false: time in seconds ; true: time in musical denominations
+  bool sync{false};
 };
 
 /// Toggle ///
@@ -96,6 +118,7 @@ struct toggle_setup
 };
 
 inline constexpr auto default_toggle = toggle_setup{.init = false};
+inline constexpr auto default_on_toggle = toggle_setup{.init = false};
 
 /// XY position ///
 template <typename T, static_string lit, range setup>
@@ -112,7 +135,7 @@ struct xy_pad_t
   }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  value_type value = {setup.init, setup.init};
+  value_type value = {T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -141,7 +164,7 @@ struct xy_spinboxes_t
     return std::string_view{lit.value};
   }
 
-  value_type value = {setup.init, setup.init};
+  value_type value = {T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -170,7 +193,7 @@ struct xyz_spinboxes_t
     return std::string_view{lit.value};
   }
 
-  value_type value = {setup.init, setup.init, setup.init};
+  value_type value = {T(setup.init), T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -199,7 +222,7 @@ struct range_editor_t
     return std::string_view{lit.value};
   }
 
-  value_type value{setup.init.start, setup.init.end};
+  value_type value{T(setup.init.start), T(setup.init.end)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }

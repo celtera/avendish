@@ -56,13 +56,3 @@ struct process_adapter<T>
   }
 };
 }
-#pragma once
-
-/* SPDX-License-Identifier: GPL-3.0-or-later */
-
-#include <avnd/wrappers/process/base.hpp>
-
-namespace avnd
-{
-
-}

@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include <avnd/binding/ossia/geometry.hpp>
+#include <avnd/binding/ossia/port_base.hpp>
 #include <avnd/binding/ossia/to_value.hpp>
 #include <avnd/common/struct_reflection.hpp>
+#include <libremidi/detail/conversion.hpp>
 // #include <halp/midi.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -13,13 +15,25 @@
 
 namespace oscr
 {
+static inline auto& thread_local_midi_1to2_converter_instance()
+{
+  static thread_local libremidi::midi1_to_midi2 conv;
+  return conv;
+}
+
 template <typename Exec_T, typename Obj_T>
 struct process_after_run
 {
   Exec_T& self;
   Obj_T& impl;
-  int start{};
-  int frames{};
+  int& start = self.start_frame_for_this_tick;
+  int& frames = self.frame_count_for_this_tick;
+
+  template <typename Field, std::size_t Idx>
+    requires ossia_port<Field>
+  void operator()(Field& ctrl, auto& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
 
   template <typename Field, std::size_t Idx>
   void operator()(
@@ -30,7 +44,24 @@ struct process_after_run
 
   template <typename Field, std::size_t Idx>
   void operator()(
+      Field& ctrl, std::vector<ossia::value_inlet*>& port,
+      avnd::field_index<Idx>) const noexcept
+  {
+    for(auto& port_value : ctrl.ports)
+    {
+      if_possible(port_value.reset());
+    }
+  }
+
+  template <typename Field, std::size_t Idx>
+  void operator()(
       Field& ctrl, ossia::audio_inlet& port, avnd::field_index<Idx>) const noexcept
+  {
+  }
+  template <typename Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::audio_inlet*>& port,
+      avnd::field_index<Idx>) const noexcept
   {
   }
 
@@ -52,18 +83,15 @@ struct process_after_run
   {
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::control<Field>)
+  template <avnd::parameter_port Field, std::size_t Idx>
+    requires ossia_port<Field>
   void write_value(
-      Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
+      Field& ctrl, auto& port, auto& val, int64_t ts,
       avnd::field_index<Idx>) const noexcept
   {
-    if(auto v = to_ossia_value(ctrl, val); v.valid())
-      port->write_value(std::move(v), ts);
   }
-
-  template <avnd::parameter Field, std::size_t Idx>
-    requires(avnd::control<Field>)
+  template <avnd::parameter_port Field, std::size_t Idx>
+    requires(!ossia_port<Field>)
   void write_value(
       Field& ctrl, ossia::value_outlet& port, auto& val, int64_t ts,
       avnd::field_index<Idx> idx) const noexcept
@@ -72,25 +100,43 @@ struct process_after_run
     {
       port->write_value(std::move(v), ts);
 
-      // Get the index of the control in [0; N[
-      using type = typename Exec_T::processor_type;
-      using controls = avnd::control_output_introspection<type>;
-      constexpr int control_index = controls::field_index_to_index(idx);
+      if constexpr(avnd::control_port<Field>)
+      {
+        // Get the index of the control in [0; N[
+        using type = typename Exec_T::processor_type;
+        using controls = avnd::control_output_introspection<type>;
+        constexpr int control_index = controls::field_index_to_index(idx);
 
-      // Mark the control as changed
-      self.control.outputs_set.set(control_index);
+        // Mark the control as changed
+        self.control.outputs_set.set(control_index);
+      }
     }
   }
 
-  template <avnd::parameter Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter<Field>)
+  template <avnd::parameter_port Field, std::size_t Idx>
+    requires(!avnd::sample_accurate_parameter_port<Field> && !ossia_port<Field>)
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
     write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
   }
 
-  template <avnd::linear_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::dynamic_ports_port Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::value_outlet*>& port,
+      avnd::field_index<Idx>) const noexcept
+  {
+    int N = port.size();
+    assert(N == ctrl.ports.size());
+    for(int i = 0; i < N; i++)
+    {
+      // FIXME double-check all the "0", most likely they should be the tick start timestamp instead
+      write_value(
+          ctrl.ports[i], *port[i], ctrl.ports[i].value, 0, avnd::field_index<Idx>{});
+    }
+  }
+
+  template <avnd::linear_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx> idx) const noexcept
   {
@@ -113,7 +159,7 @@ struct process_after_run
     }
   }
 
-  template <avnd::dynamic_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::dynamic_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
@@ -125,7 +171,7 @@ struct process_after_run
   }
 
   // does not make sense as output, only as input
-  template <avnd::span_sample_accurate_parameter Field, std::size_t Idx>
+  template <avnd::span_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
       = delete;
@@ -135,6 +181,12 @@ struct process_after_run
       Field& ctrl, ossia::audio_outlet& port, avnd::field_index<Idx>) const noexcept
   {
   }
+  template <typename Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, std::vector<ossia::audio_outlet*>& port,
+      avnd::field_index<Idx>) const noexcept
+  {
+  }
 
   template <avnd::raw_container_midi_port Field, std::size_t Idx>
   void operator()(
@@ -142,29 +194,72 @@ struct process_after_run
   {
     const int N = ctrl.midi_messages.size;
     port.data.messages.clear();
-    port.data.messages.reserve(N);
-    for(int i = 0; i < N; i++)
+    if(N > 0)
     {
-      auto& m = ctrl.midi_messages[i];
-      libremidi::message ms;
-      ms.bytes.assign(m.bytes.begin(), m.bytes.end());
-      ms.timestamp = start + m.timestamp;
-      port.data.messages.push_back(std::move(ms));
+      auto& conv = thread_local_midi_1to2_converter_instance();
+      cmidi2_midi_conversion_context_initialize(&conv.context);
+      port.data.messages.reserve(N);
+      for(int i = 0; i < N; i++)
+      {
+        avnd::midi_message auto& m = ctrl.midi_messages[i];
+        using msg_type = std::remove_reference_t<decltype(m)>;
+        if constexpr(std::is_same_v<msg_type, libremidi::message>)
+        {
+          m.timestamp += start;
+          port.data.messages.push_back(std::move(m));
+        }
+        else
+        {
+          conv.convert(
+              m.data(), m.size(), start + m.timestamp,
+              [&](const uint32_t* ump, int count, int64_t ts) {
+            libremidi::ump u;
+            std::copy_n(ump, std::min(count, 4), u.data);
+            u.timestamp = ts;
+            port.data.messages.push_back(std::move(u));
+            return stdx::error{};
+          });
+        }
+      }
     }
   }
+
+  // TODO UMP ports
+  // TODO note ports
 
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
+    const int N = ctrl.midi_messages.size();
     port.data.messages.clear();
-    port.data.messages.reserve(ctrl.midi_messages.size());
-    for(auto& m : ctrl.midi_messages)
+
+    if(N > 0)
     {
-      libremidi::message ms;
-      ms.bytes.assign(m.bytes.begin(), m.bytes.end());
-      ms.timestamp = start + m.timestamp;
-      port.data.messages.push_back(std::move(ms));
+      auto& conv = thread_local_midi_1to2_converter_instance();
+      cmidi2_midi_conversion_context_initialize(&conv.context);
+      port.data.messages.reserve(N);
+      for(auto& m : ctrl.midi_messages)
+      {
+        using msg_type = std::remove_reference_t<decltype(m)>;
+        if constexpr(std::is_same_v<msg_type, libremidi::message>)
+        {
+          m.timestamp += start;
+          port.data.messages.push_back(libremidi::ump_from_midi1(m));
+        }
+        else
+        {
+          conv.convert(
+              m.bytes.data(), m.bytes.size(), start + m.timestamp,
+              [&](const uint32_t* ump, int count, int64_t ts) {
+            libremidi::ump u;
+            std::copy_n(ump, std::min(count, 4), u.data);
+            u.timestamp = ts;
+            port.data.messages.push_back(std::move(u));
+            return stdx::error{};
+          });
+        }
+      }
     }
   }
 
@@ -180,9 +275,12 @@ struct process_after_run
   {
   }
 
+  // Only done on gpu nodes now.
   template <avnd::geometry_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::geometry_outlet& port, avnd::field_index<Idx>) const noexcept
+      = delete;
+  /*
   {
     using namespace avnd;
     bool mesh_dirty{};
@@ -191,8 +289,8 @@ struct process_after_run
 
     if(ctrl.dirty_mesh)
     {
-      port.data.meshes = std::make_shared<ossia::mesh_list>();
-      auto& ossia_meshes = *port.data.meshes;
+      port.data.geometry.meshes = std::make_shared<ossia::mesh_list>();
+      auto& ossia_meshes = *port.data.geometry.meshes;
       if constexpr(static_geometry_type<Field> || dynamic_geometry_type<Field>)
       {
         ossia_meshes.meshes.resize(1);
@@ -229,6 +327,7 @@ struct process_after_run
     if(tform_dirty)
       port.data.flags = port.data.flags | ossia::geometry_port::dirty_transform;
   }
+*/
 };
 
 }

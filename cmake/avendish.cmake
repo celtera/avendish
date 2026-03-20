@@ -1,12 +1,13 @@
 include(CMakeFindDependencyMacro)
 
 set(CMAKE_INCLUDE_CURRENT_DIR 1)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(AVND_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
-find_package(Boost QUIET REQUIRED)
+find_package(Boost 1.87 QUIET REQUIRED)
 find_package(Threads QUIET)
 find_package(fmt QUIET)
 find_package(ossia QUIET)
@@ -44,6 +45,23 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/introspection/port.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/introspection/widgets.hpp"
 
+
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/base.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_channel_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_channel_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_sample_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/per_sample_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/poly_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process/poly_port.hpp"
+
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/base.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_channel_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_channel_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_sample_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/per_sample_port.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/poly_arg.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_bus/poly_port.hpp"
+
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/audio_channel_manager.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/avnd.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/bus_host_process_adapter.hpp"
@@ -60,20 +78,24 @@ set(AVENDISH_SOURCES
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/process_execution.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/wrappers/widgets.hpp"
 
+    "${AVND_SOURCE_DIR}/include/avnd/common/arithmetic.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/aggregates.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/concepts_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/coroutines.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/dummy.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/errors.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/enum_reflection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/export.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/for_nth.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/function_reflection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/index_sequence.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/limited_string.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/limited_string_view.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/no_unique_address.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/span_polyfill.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/struct_reflection.hpp"
     "${AVND_SOURCE_DIR}/include/avnd/common/widechar.hpp"
+    "${AVND_SOURCE_DIR}/include/avnd/common/init_cpp_with_c_object_header.hpp"
 
     "${AVND_SOURCE_DIR}/include/halp/attributes.hpp"
     "${AVND_SOURCE_DIR}/include/halp/audio.hpp"
@@ -123,10 +145,12 @@ add_library(avnd_dummy_lib OBJECT "${AVND_SOURCE_DIR}/src/dummy.cpp")
 include(avendish.dependencies)
 include(avendish.disableexceptions)
 include(avendish.sources)
+include(avendish.tools)
 
 include(avendish.ui.qt)
 include(avendish.dump)
 include(avendish.max)
+include(avendish.gstreamer)
 include(avendish.pd)
 include(avendish.python)
 include(avendish.vintage)
@@ -134,8 +158,8 @@ include(avendish.vst3)
 include(avendish.clap)
 include(avendish.ossia)
 include(avendish.standalone)
+include(avendish.touchdesigner)
 include(avendish.example)
-include(avendish.tools)
 
 # Used for getting completion in IDEs...
 function(avnd_register)
@@ -168,6 +192,7 @@ function(avnd_make_object)
   avnd_make_max(${ARGV})
   avnd_make_standalone(${ARGV})
   avnd_make_example_host(${ARGV})
+  avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE CHOP_MESSAGE)
 endfunction()
 
 # Bindings to audio plug-in APIs
@@ -180,6 +205,17 @@ function(avnd_make_audioplug)
   avnd_make_clap(${ARGV})
   avnd_make_vst3(${ARGV})
   avnd_make_example_host(${ARGV})
+  avnd_make_gstreamer(${ARGV} PROCESSOR_TYPE AUDIO)
+  avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE CHOP_AUDIO)
+endfunction()
+
+function(avnd_make_texture)
+  avnd_register(${ARGV})
+  
+  avnd_make_ossia(${ARGV})
+  avnd_make_max(${ARGV})
+  avnd_make_gstreamer(${ARGV} PROCESSOR_TYPE TEXTURE)
+  avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE TOP)
 endfunction()
 
 function(avnd_make_all)
@@ -188,6 +224,7 @@ function(avnd_make_all)
   avnd_make_example_host(${ARGV})
   avnd_make_object(${ARGV})
   avnd_make_audioplug(${ARGV})
+  avnd_make_gstreamer(${ARGV} PROCESSOR_TYPE AUDIO)
 endfunction()
 
 function(avnd_make)

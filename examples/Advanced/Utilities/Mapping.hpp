@@ -91,6 +91,7 @@ public:
   halp_meta(category, "Mappings")
   halp_meta(description, "Mapping curve")
   halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/mapping-curve.html")
   halp_meta(uuid, "3fa0eb4b-f280-420a-9674-c2696ddf17ff")
 
   Mapping()

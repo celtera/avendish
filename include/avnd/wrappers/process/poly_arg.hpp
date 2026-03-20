@@ -33,8 +33,8 @@ struct process_adapter<T> : audio_buffer_storage<T>
           = audio_buffer_storage<T>::output_buffer_for(needed_type{});
 
       // Convert inputs and outputs to double
-      auto in_samples = (DstFP**)alloca(sizeof(DstFP*) * input_channels);
-      auto out_samples = (DstFP**)alloca(sizeof(DstFP*) * output_channels);
+      auto in_samples = (DstFP**)alloca(sizeof(DstFP*) * (1 + input_channels));
+      auto out_samples = (DstFP**)alloca(sizeof(DstFP*) * (1 + output_channels));
 
       // Copy & convert input channels
       for(int c = 0; c < input_channels; ++c)

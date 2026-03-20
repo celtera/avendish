@@ -60,7 +60,6 @@ struct Spigot : Base
 
 struct Stutter : Base
 {
-
   static consteval auto name() { return "Stutter"; }
   static consteval auto c_name() { return "stutter"; }
   static consteval auto uuid() { return "073a983b-abcb-42f1-afa4-49172a044d6c"; }
@@ -88,7 +87,6 @@ struct Stutter : Base
     } a;
   } outputs;
 
-  int counter = 0;
   void operator()()
   {
 

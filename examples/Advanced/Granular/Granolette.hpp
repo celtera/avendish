@@ -44,7 +44,10 @@ public:
       return;
 
     if(outputs.audio.channels != inputs.sound.channels())
+    {
       outputs.audio.request_channels(inputs.sound.channels());
+      return;
+    }
 
     // Just take the first channel of the soundfile.
     // in is a std::span

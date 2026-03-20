@@ -79,7 +79,7 @@ public:
   template <avnd::float_control C>
   void create(C& control, int idx)
   {
-    constexpr auto rng = avnd::get_range<C>();
+    static constexpr auto rng = avnd::get_range<C>();
     nk_layout_row_dynamic(ctx, row_height, 2);
     nk_label(ctx, avnd::get_name<C>().data(), NK_TEXT_LEFT);
     nk_slider_float(ctx, rng.min, &control.value, rng.max, 0.1);
@@ -87,7 +87,7 @@ public:
   template <avnd::int_control C>
   void create(C& control, int idx)
   {
-    constexpr auto rng = avnd::get_range<C>();
+    static constexpr auto rng = avnd::get_range<C>();
     nk_layout_row_dynamic(ctx, row_height, 2);
     nk_label(ctx, avnd::get_name<C>().data(), NK_TEXT_LEFT);
     nk_slider_int(ctx, rng.min, &control.value, rng.max, 1);

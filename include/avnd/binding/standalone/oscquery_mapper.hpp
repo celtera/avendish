@@ -47,7 +47,7 @@ struct oscquery_mapper
     create_ports();
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
     requires(!avnd::enum_parameter<Field>)
   void setup_control(Field& field, ossia::net::parameter_base& param)
   {
@@ -56,7 +56,7 @@ struct oscquery_mapper
     // Set-up the metadata
     if constexpr(avnd::parameter_with_minmax_range<Field>)
     {
-      constexpr auto ctl = avnd::get_range<Field>();
+      static constexpr auto ctl = avnd::get_range<Field>();
       param.set_domain(ossia::make_domain(ctl.min, ctl.max));
       param.set_value(ctl.init);
     }
@@ -91,7 +91,7 @@ struct oscquery_mapper
     });
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
   void create_control(Field& field)
   {
     ossia::net::node_base& node = m_dev.get_root_node();
@@ -254,7 +254,7 @@ struct oscquery_mapper
   template <auto f>
   void call_message_n_arg_impl(const std::vector<ossia::value>& argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<f>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<f>::count;
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
 
     // Check if all arguments passed are convertible to the expected
@@ -281,7 +281,7 @@ struct oscquery_mapper
   template <auto f>
   void call_message_n_arg(const ossia::value& in)
   {
-    constexpr auto arg_counts = avnd::function_reflection<f>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<f>::count;
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
 
     if(in.get_type() != ossia::val_type::LIST)
@@ -300,7 +300,7 @@ struct oscquery_mapper
   template <auto f>
   void call_message(const ossia::value& in)
   {
-    constexpr auto arg_counts = avnd::function_reflection<f>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<f>::count;
     using arg_list_t = typename avnd::function_reflection<f>::arguments;
 
     if constexpr(arg_counts == 0)
@@ -410,7 +410,7 @@ struct oscquery_mapper
     }
   }
 
-  template <avnd::parameter Field>
+  template <avnd::parameter_port Field>
   void create_output(Field& field)
   {
     ossia::net::node_base& node = m_dev.get_root_node();
@@ -422,7 +422,7 @@ struct oscquery_mapper
       param->set_value_type(oscr::type_for_arg<decltype(Field::value)>());
       if constexpr(avnd::has_range<Field>)
       {
-        constexpr auto ctl = avnd::get_range<Field>();
+        static constexpr auto ctl = avnd::get_range<Field>();
         param->set_domain(ossia::make_domain(ctl.min, ctl.max));
       }
 

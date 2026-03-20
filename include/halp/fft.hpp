@@ -1,13 +1,11 @@
 #pragma once
 #include <avnd/concepts/fft.hpp>
 #include <cmath>
+#include <halp/modules.hpp>
 
 #include <complex>
 #include <vector>
-
-namespace halp
-{
-namespace detail
+namespace halp::detail
 {
 // Minimal implementation taken from https://gist.github.com/lukicdarkoo/3f0d056e9244784f8b4a
 // Instead go use fftw, MKL, KFR or whatever !
@@ -47,6 +45,9 @@ static void fft_rec(std::complex<FP>* x, int N)
 }
 }
 
+HALP_MODULE_EXPORT
+namespace halp
+{
 template <typename FP>
 class fft
 {

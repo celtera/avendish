@@ -1,3 +1,16 @@
+avnd_make_object(
+  TARGET Aggregate
+  MAIN_FILE examples/Raw/Aggregate.hpp
+  MAIN_CLASS examples::Aggregate
+  C_NAME avnd_aggregate
+)
+
+avnd_make_object(
+  TARGET AllPortsTypes
+  MAIN_FILE examples/Raw/AllPortsTypes.hpp
+  MAIN_CLASS examples::AllPortsTypes
+  C_NAME avnd_all_ports_types
+)
 
 avnd_make_object(
   TARGET Construct
@@ -40,6 +53,14 @@ avnd_make_all(
   MAIN_CLASS examples::Modular
   C_NAME avnd_modular
   )
+
+avnd_make_object(
+  TARGET Variant
+  MAIN_FILE examples/Raw/Variant.hpp
+  MAIN_CLASS examples::Variant
+  C_NAME avnd_variant
+)
+
 
 avnd_make_all(
   TARGET Ui
@@ -104,6 +125,22 @@ avnd_make_object(
   MAIN_FILE examples/Helpers/Peak.hpp
   MAIN_CLASS examples::helpers::Peak
   C_NAME avnd_peak
+)
+
+avnd_make_object(
+  TARGET Poles
+  MAIN_FILE examples/Helpers/Poles.hpp
+  MAIN_CLASS examples::helpers::Poles
+  C_NAME avnd_poles
+)
+
+
+
+avnd_make_object(
+  TARGET CompleteMessageExample
+  MAIN_FILE examples/Complete/CompleteMessageExample.hpp
+  MAIN_CLASS examples::helpers::CompleteMessageExample
+  C_NAME avnd_complete_message_example
 )
 
 
@@ -236,8 +273,6 @@ endforeach()
 set(OSSIA_EXAMPLES
   ControlGallery
   Synth
-  TextureFilterExample
-  TextureGeneratorExample
 )
 foreach(theTarget ${OSSIA_EXAMPLES})
   avnd_make_ossia(
@@ -247,6 +282,51 @@ foreach(theTarget ${OSSIA_EXAMPLES})
     C_NAME oscr_${theTarget}
   )
 endforeach()
+
+# These texture examples work with GStreamer as well
+set(TEXTURE_EXAMPLES
+  TextureFilterExample
+  TextureGeneratorExample
+)
+foreach(theTarget ${TEXTURE_EXAMPLES})
+  avnd_make_texture(
+    TARGET Tutorial_${theTarget}
+    MAIN_FILE examples/Tutorial/${theTarget}.hpp
+    MAIN_CLASS examples::${theTarget}
+    C_NAME oscr_${theTarget}
+  )
+endforeach()
+
+avnd_make_texture(
+  TARGET NoiseBuffer
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer
+)
+
+avnd_make_touchdesigner(
+  TARGET NoiseBuffer_chop
+  MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp
+  MAIN_CLASS uo::NoiseBuffer
+  C_NAME avnd_noisebuffer_chop
+  PROCESSOR_TYPE CHOP_MESSAGE
+)
+
+avnd_make_touchdesigner(
+  TARGET DoubleArray
+  MAIN_FILE examples/Raw/DoubleArray.hpp
+  MAIN_CLASS examples::DoubleArray
+  C_NAME avnd_doublearray
+  PROCESSOR_TYPE DAT
+)
+
+avnd_make_touchdesigner(
+  TARGET CubeGenerator
+  MAIN_FILE examples/Tutorial/CubeGenerator.hpp
+  MAIN_CLASS examples::CubeGenerator
+  C_NAME avnd_cube
+  PROCESSOR_TYPE SOP
+)
 
 ###### Ports
 
@@ -267,7 +347,7 @@ avnd_make_object(
 )
 
 ## vb-objects
-avnd_make_object(
+avnd_make_audioplug(
   TARGET VB_fourses_tilde
   MAIN_FILE examples/Ports/VB/vb.fourses_tilde.hpp
   MAIN_CLASS vb_ports::fourses_tilde

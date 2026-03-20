@@ -19,6 +19,10 @@ struct GradientScrub
   halp_meta(name, "Gradient scrubber")
   halp_meta(c_name, "avnd_gradient_scrub")
   halp_meta(category, "Control/Color")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/"
+      "gradient-scrubber.html")
   halp_meta(uuid, "27da6372-a349-4b32-a030-23e6e0a6ab59")
 
   struct

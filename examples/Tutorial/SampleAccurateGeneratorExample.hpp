@@ -12,7 +12,7 @@ namespace examples
 struct SampleAccurateGeneratorExample
 {
   halp_meta(name, "My sample-accurate generator");
-  halp_meta(c_name, "sample_acc_gen");
+  halp_meta(c_name, "oscr_SampleAccurateGeneratorExample")
   halp_meta(category, "Demo");
   halp_meta(author, "<AUTHOR>");
   halp_meta(description, "<DESCRIPTION>");

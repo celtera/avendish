@@ -55,6 +55,9 @@ struct Arpeggiator
   halp_meta(category, "Midi");
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Basic MIDI arpeggiator")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/midi-utilities.html#arpeggiator")
   halp_meta(uuid, "0b98c7cd-f831-468f-81e3-706d6a97d706")
 
   struct
@@ -198,7 +201,6 @@ struct Arpeggiator
       this->previous_octave = octave;
       this->previous_arpeggio = arpeggio;
 
-      qDebug() << octave << (int)arpeggio;
       this->update();
     }
 

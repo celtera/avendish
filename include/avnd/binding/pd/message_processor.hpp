@@ -50,15 +50,15 @@ struct message_processor
   avnd::effect_container<T> implementation;
 
   // Setup, storage...for the outputs
-  [[no_unique_address]] inputs<T> input_setup;
+  AVND_NO_UNIQUE_ADDRESS inputs<T> input_setup;
 
-  [[no_unique_address]] outputs<T> output_setup;
+  AVND_NO_UNIQUE_ADDRESS outputs<T> output_setup;
 
-  [[no_unique_address]] init_arguments<T> init_setup;
+  AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
 
-  [[no_unique_address]] messages<T> messages_setup;
+  AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
-  [[no_unique_address]] avnd::control_storage<T> control_buffers;
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
   t_clock* m_clock{};
   using sched_func = void (*)(T&);
@@ -120,29 +120,6 @@ struct message_processor
 
   void destroy() { }
 
-  template <typename C>
-  void set_inlet(C& port, t_atom& arg)
-  {
-    switch(arg.a_type)
-    {
-      case A_FLOAT: {
-        // This is the float that is supposed to go inside the first inlet if any ?
-        if constexpr(requires { port.value = 0.f; })
-          avnd::apply_control(port, arg.a_w.w_float);
-        break;
-      }
-
-      case A_SYMBOL: {
-        if constexpr(requires { port.value = "string"; })
-          avnd::apply_control(port, arg.a_w.w_symbol->s_name);
-        break;
-      }
-
-      default:
-        break;
-    }
-  }
-
   void process_first_inlet_control(t_symbol* s, int argc, t_atom* argv)
   {
     if constexpr(avnd::has_inputs<T>)
@@ -152,7 +129,7 @@ struct message_processor
         auto& first_inlet = avnd::pfr::get<0>(avnd::get_inputs<T>(implementation));
         if(argc > 0)
         {
-          set_inlet(first_inlet, argv[0]);
+          this->input_setup.process_inlet_control(this->implementation.effect, first_inlet, argc, argv);
         }
         else
         {
@@ -190,6 +167,8 @@ struct message_processor
     // First try to process messages handled explicitely in the object
     if(messages_setup.process_messages(implementation, s, argc, argv))
       return;
+    if(input_setup.process_inputs(implementation, s, argc, argv))
+      return;
 
     // Then some default behaviour
     switch(argc)
@@ -224,7 +203,7 @@ message_processor_metaclass<T>::message_processor_metaclass()
   /// Small wrapper methods which will call into our actual type ///
 
   // Ctor
-  constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
+  static constexpr auto obj_new = +[](t_symbol* s, int argc, t_atom* argv) -> void* {
     // Initializes the t_object
     t_pd* ptr = pd_new(g_class);
 
@@ -236,13 +215,13 @@ message_processor_metaclass<T>::message_processor_metaclass()
   };
 
   // Dtor
-  constexpr auto obj_free = +[](instance* obj) -> void {
+  static constexpr auto obj_free = +[](instance* obj) -> void {
     obj->destroy();
     obj->~instance();
   };
 
   // Message processing
-  constexpr auto obj_process
+  static constexpr auto obj_process
       = +[](instance* obj, t_symbol* s, int argc, t_atom* argv) -> void {
     obj->process(s, argc, argv);
   };

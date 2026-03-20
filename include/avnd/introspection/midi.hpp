@@ -40,7 +40,7 @@ struct midi_input_storage<T>
   using midi_in_messages_vectors
       = boost::mp11::mp_transform<std::vector, midi_in_messages_tuple>;
 
-  [[no_unique_address]] midi_in_messages_vectors inputs_storage;
+  AVND_NO_UNIQUE_ADDRESS midi_in_messages_vectors inputs_storage;
 };
 
 template <typename T>
@@ -52,7 +52,7 @@ struct midi_output_storage<T>
   using midi_out_messages_vectors
       = boost::mp11::mp_transform<std::vector, midi_out_messages_tuple>;
 
-  [[no_unique_address]] midi_out_messages_vectors outputs_storage;
+  AVND_NO_UNIQUE_ADDRESS midi_out_messages_vectors outputs_storage;
 };
 
 template <typename T>

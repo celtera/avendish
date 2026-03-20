@@ -4,8 +4,10 @@
 
 #include <avnd/common/coroutines.hpp>
 #include <avnd/concepts/generic.hpp>
+#include <halp/polyfill.hpp>
 
 #include <array>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,6 +23,67 @@ namespace avnd
 #else
 #define AVND_IF_CONSTEVAL (std::is_constant_evaluated())
 #endif
+
+#define define_get_property_auto(PropName, Default)                       \
+  template <typename T>                                                   \
+  constexpr auto get_##PropName()                                         \
+  {                                                                       \
+    if constexpr(requires { T::PropName(); })                             \
+      return T::PropName();                                               \
+    else if constexpr(requires { T::PropName; })                          \
+      return T::PropName;                                                 \
+    else                                                                  \
+      return Default;                                                     \
+  }                                                                       \
+                                                                          \
+  template <typename T>                                                   \
+  constexpr auto get_##PropName(const T& t)                               \
+  {                                                                       \
+    if AVND_IF_CONSTEVAL                                                  \
+    {                                                                     \
+      return get_##PropName<T>();                                         \
+    }                                                                     \
+    else                                                                  \
+    {                                                                     \
+      if constexpr(requires { T::PropName(); })                           \
+        return T::PropName();                                             \
+      else if constexpr(requires { T::PropName; })                        \
+        return T::PropName;                                               \
+      else if constexpr(requires { t.PropName(); })                       \
+        return t.PropName();                                              \
+      else if constexpr(requires { t.PropName; })                         \
+        return t.PropName;                                                \
+      else                                                                \
+        return get_##PropName<T>();                                       \
+    }                                                                     \
+  }                                                                       \
+                                                                          \
+  template <typename T>                                                   \
+  concept has_##PropName                                                  \
+      = requires(T t) { t.PropName(); } || requires(T t) { t.PropName; }; \
+                                                                          \
+  struct prop_##PropName                                                  \
+  {                                                                       \
+    template <typename T>                                                 \
+    static constexpr bool has() noexcept                                  \
+    {                                                                     \
+      return has_##PropName<T>;                                           \
+    }                                                                     \
+                                                                          \
+    static constexpr std::string_view name() noexcept                     \
+    {                                                                     \
+      return #PropName;                                                   \
+    }                                                                     \
+                                                                          \
+    template <typename T>                                                 \
+    static constexpr auto get()                                           \
+    {                                                                     \
+      if constexpr(has_##PropName<T>)                                     \
+        return get_##PropName<T>();                                       \
+      else                                                                \
+        return Default;                                                   \
+    }                                                                     \
+  };
 
 #define define_get_property(PropName, Type, Default)                                  \
   template <typename T>                                                               \
@@ -105,13 +168,23 @@ constexpr std::string_view get_typeid_name()
 }
 #endif
 
+// Public-facing display name of objects, ports, etc.
 define_get_property(name, std::string_view, get_typeid_name<T>())
+
+// Name used for interoperability, message-passing, etc. No spaces or special characters except underscore.
 define_get_property(c_name, std::string_view, "(c name)")
+
+// Define an explicit optional symbol for messages in Max / Pd
+define_get_property(symbol, std::string_view, "(symbol)")
+
+// Uniquely identifies an object
+define_get_property(uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
+
+// Multiple common product metadatas
 define_get_property(vendor, std::string_view, "(vendor)")
 define_get_property(product, std::string_view, "(product)")
 define_get_property(version, std::string_view, "(version)")
 define_get_property(label, std::string_view, "(label)")
-define_get_property(uuid, std::string_view, "00000000-0000-0000-0000-000000000000")
 define_get_property(short_label, std::string_view, "(short label)")
 define_get_property(category, std::string_view, "(category)")
 define_get_property(copyright, std::string_view, "(copyright)")
@@ -121,11 +194,13 @@ define_get_property(email, std::string_view, "(email)")
 define_get_property(manual_url, std::string_view, "(manual_url)")
 define_get_property(support_url, std::string_view, "(support_url)")
 define_get_property(description, std::string_view, "(description)")
-define_get_property(short_description, std::string_view, "(module)")
+define_get_property(short_description, std::string_view, "(short_description)")
 define_get_property(module, std::string_view, "(module)")
 
-template <typename T>
-constexpr std::string_view default_osc_path()
+define_get_property_auto(pixmaps, std::span<const char*>{})
+
+    template <typename T>
+    constexpr std::string_view default_osc_path()
 {
   return get_name<T>();
 }
@@ -152,28 +227,76 @@ static constexpr bool valid_char_for_c_identifier(char c)
          || (c == '_');
 }
 
-template <avnd::has_c_name T>
-constexpr auto get_c_identifier()
+template<auto Symtab>
+static constexpr bool validate_name(std::string_view name)
 {
-  return avnd::get_c_name<T>();
+  // FIXME we could replace with underscore with some compile-time string library
+  for(char c : name)
+    if(!Symtab(c))
+      return false;
+  return true;
 }
 
-template <avnd::has_name T>
-  requires(!avnd::has_c_name<T>)
-auto get_c_identifier()
+template<std::size_t Sz>
+struct static_identifier: std::array<char, Sz + 1>
 {
-  std::string name{avnd::get_name<T>()};
-  for(char& c : name)
-  {
-    if(!valid_char_for_c_identifier(c))
-      c = '_';
+// operator std::string_view() const noexcept {
+//   return std::string_view{data(), Sz};
+// }
+  constexpr bool operator==(std::string_view other) const noexcept {
+    return std::string_view{this->data(), Sz} == other;
   }
-  return name;
+};
+
+template <typename T, auto Symtab = valid_char_for_c_identifier>
+static constexpr auto fixup_identifier()
+{
+  static_constexpr auto nm = avnd::get_name<T>();
+  static_constexpr auto sz = nm.size();
+  static_identifier<sz> storage;
+  for(std::size_t i = 0; i < sz; i++)
+    storage[i] = Symtab(nm[i]) ? nm[i] : '_';
+  storage[sz] = 0;
+  return storage;
 }
 
-template <typename T>
-  requires(!avnd::has_c_name<T> && !avnd::has_name<T>)
-auto get_c_identifier() = delete;
+template <typename T, auto Symtab = valid_char_for_c_identifier>
+static constexpr auto get_c_identifier()
+{
+  if constexpr(avnd::has_c_name<T>)
+  {
+    return avnd::get_c_name<T>();
+  }
+  else if constexpr(avnd::has_name<T>)
+  {
+    constexpr auto name = avnd::get_name<T>();
+    if constexpr(validate_name<Symtab>(name))
+    {
+      return name;
+    }
+    else
+    {
+      return fixup_identifier<T, Symtab>();
+    }
+  }
+  else
+  {
+    using namespace std::literals;
+    // FIXME variable name with pfr
+    return "unnamed"sv;
+  }
+}
+
+template <typename T, auto Symtab = valid_char_for_c_identifier>
+static constexpr auto get_static_symbol()
+{
+  if constexpr(avnd::has_symbol<T>)
+    return avnd::get_symbol<T>();
+  else
+    return avnd::get_c_identifier<T, Symtab>();
+}
+
+
 
 template <typename T>
 concept has_author
@@ -185,12 +308,16 @@ concept has_author
       || requires { std::string_view{T::creator}; } || requires { T::creators(); }
       || requires { T::creators; };
 template <typename T>
-/* constexpr */ auto get_author()
+/* constexpr */ std::string_view get_author()
 {
   if constexpr(requires { T::author(); })
     return T::author();
   else if constexpr(requires { T::author; })
     return T::author;
+  else if constexpr(requires { std::string_view(T::authors()); })
+    return T::authors();
+  else if constexpr(requires { std::string_view(T::authors); })
+    return T::authors;
   else if constexpr(requires { T::authors(); })
     return array_to_string(T::authors());
   else if constexpr(requires { T::authors; })
@@ -199,6 +326,10 @@ template <typename T>
     return T::developer();
   else if constexpr(requires { T::developer; })
     return T::developer;
+  else if constexpr(requires { std::string_view(T::developers()); })
+    return T::developers();
+  else if constexpr(requires { std::string_view(T::developers); })
+    return T::developers;
   else if constexpr(requires { T::developers(); })
     return array_to_string(T::developers());
   else if constexpr(requires { T::developers; })
@@ -207,6 +338,10 @@ template <typename T>
     return T::creator();
   else if constexpr(requires { T::creator; })
     return T::creator;
+  else if constexpr(requires { std::string_view(T::creators()); })
+    return T::creators();
+  else if constexpr(requires { std::string_view(T::creators); })
+    return T::creators;
   else if constexpr(requires { T::creators(); })
     return array_to_string(T::creators());
   else if constexpr(requires { T::creators; })
@@ -246,30 +381,22 @@ template <typename T>
 /* constexpr */ int get_int_version()
 {
   if constexpr(requires {
-                 {
-                   T::version()
-                 } -> std::integral;
+                 { T::version() } -> std::integral;
                })
   {
     return T::version();
   }
   else if constexpr(requires {
-                      {
-                        std::declval<T>().version
-                      } -> std::integral;
+                      { std::declval<T>().version } -> std::integral;
                     })
   {
     return T::version;
   }
   else if constexpr(requires {
-                      {
-                        T::version()
-                        } -> avnd::string_ish;
+                      { T::version() } -> avnd::string_ish;
                     } || requires {
-             {
-               std::declval<T>().version
-               } -> avnd::string_ish;
-           })
+                      { std::declval<T>().version } -> avnd::string_ish;
+                    })
   {
     auto str = avnd::get_version<T>();
     if(str.empty())
@@ -288,13 +415,14 @@ template <typename T>
     return 1;
   }
 }
+
 template <typename T, char Sep>
 constexpr std::array<char, 256> get_keywords()
 {
   if constexpr(requires { T::keywords(); })
   {
     const auto& w = T::keywords();
-    constexpr auto n = std::ssize(w);
+    static_constexpr auto n = std::ssize(w);
     if(n > 0)
     {
       constexpr int cmax = 255;
@@ -344,7 +472,7 @@ inline std::vector<std::string_view> get_tags()
 {
   if constexpr(requires { T::tags(); })
   {
-    constexpr auto t = T::tags();
+    static_constexpr auto t = T::tags();
     return std::vector<std::string_view>(std::begin(t), std::end(t));
   }
   else if constexpr(requires { T::tags; })

@@ -1,9 +1,10 @@
 include(FetchContent)
+
 if(NOT TARGET fmt::fmt)
   FetchContent_Declare(
     fmt
     GIT_REPOSITORY "https://github.com/fmtlib/fmt"
-    GIT_TAG master
+    GIT_TAG 12.0.0
     GIT_PROGRESS true
   )
   FetchContent_MakeAvailable(fmt)
@@ -30,6 +31,7 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
 endif()
 
 if(NOT TARGET pantor::inja)
+  block()
   set(BUILD_TESTING 0)
   set(BUILD_BENCHMARK 0)
   set(INJA_USE_EMBEDDED_JSON 0)
@@ -40,6 +42,31 @@ if(NOT TARGET pantor::inja)
     GIT_PROGRESS true
   )
   FetchContent_MakeAvailable(pantor_inja)
+  endblock()
+endif()
+
+if(NOT TARGET qlibs::reflect)
+  FetchContent_Declare(
+    qlibs_reflect
+    GIT_REPOSITORY "https://github.com/qlibs/reflect"
+    GIT_TAG main
+    GIT_PROGRESS true
+  )
+  FetchContent_MakeAvailable(qlibs_reflect)
+  add_library(qlibs_reflect INTERFACE)
+  add_library(qlibs::reflect ALIAS qlibs_reflect)
+  target_include_directories(qlibs_reflect INTERFACE "${qlibs_reflect_SOURCE_DIR}")
+  include_directories("${qlibs_reflect_SOURCE_DIR}")
+endif()
+
+if(NOT TARGET magic_enum::magic_enum)
+  FetchContent_Declare(
+    magic_enum
+    GIT_REPOSITORY "https://github.com/Neargye/magic_enum"
+    GIT_TAG master
+    GIT_PROGRESS true
+  )
+  FetchContent_MakeAvailable(magic_enum)
 endif()
 
 if(APPLE)

@@ -11,7 +11,7 @@ struct time_control_state
 template <typename Field>
 struct time_control_state_type;
 
-template <avnd::time_control Field>
+template <avnd::time_control_port Field>
 struct time_control_state_type<Field> : time_control_state
 {
 };
@@ -28,7 +28,7 @@ struct time_control_input_storage<T>
   using hdl_tuple = avnd::filter_and_apply<
       time_control_state_type, avnd::time_control_input_introspection, T>;
 
-  [[no_unique_address]] hdl_tuple handles;
+  AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
 static constexpr float to_seconds(float ratio, float tempo) noexcept
@@ -54,7 +54,7 @@ struct time_control_storage : time_control_input_storage<T>
     auto& g = get<N>(this->handles);
     if(g.sync)
     {
-      for(auto& state : t.full_state())
+      for(auto state : t.full_state())
       {
         auto& port = avnd::pfr::get<NField>(state.inputs);
         port.value = to_seconds(g.value, new_tempo);
@@ -67,8 +67,8 @@ struct time_control_storage : time_control_input_storage<T>
   void update_control(
       avnd::effect_container<T>& t, avnd::field_index<NField>, float value, bool sync)
   {
-    constexpr std::size_t NPred
-        = avnd::time_control_input_introspection<T>::template field_index_to_index(
+    static constexpr std::size_t NPred
+        = avnd::time_control_input_introspection<T>::field_index_to_index(
             avnd::field_index<NField>{});
 
     time_control_state& g = get<NPred>(this->handles);

@@ -15,12 +15,12 @@ struct to_ossia_value_impl
   template <typename F>
   void to_vector(const F& f)
   {
-    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    constexpr int fields = avnd::pfr::tuple_size_v<F>;
     std::vector<ossia::value> v;
     v.resize(fields);
 
     int k = 0;
-    boost::pfr::for_each_field(
+    avnd::pfr::for_each_field(
         f, [&](const auto& f) { to_ossia_value_impl{v[k++]}(f); });
 
     val = std::move(v);
@@ -29,13 +29,13 @@ struct to_ossia_value_impl
   template <typename F>
   void to_map(const F& f)
   {
-    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    constexpr int fields = avnd::pfr::tuple_size_v<F>;
     ossia::value_map_type v;
     v.reserve(fields);
 
-    constexpr auto field_names = F::field_names();
+    static constexpr auto field_names = F::field_names();
     int k = 0;
-    boost::pfr::for_each_field(
+    avnd::pfr::for_each_field(
         f, [&](const auto& f) { to_ossia_value_impl{v[field_names[k++]]}(f); });
 
     val = std::move(v);
@@ -45,13 +45,13 @@ struct to_ossia_value_impl
     requires(std::is_aggregate_v<F> && !avnd::vector_ish<F>)
   void operator()(const F& f)
   {
-    constexpr int fields = boost::pfr::tuple_size_v<F>;
+    constexpr int fields = avnd::pfr::tuple_size_v<F>;
     if constexpr(requires { F::field_names()[0][0]; })
     {
       static_assert(fields == F::field_names().size());
       to_map(f);
     }
-    else if constexpr(vecf_compatible<F>())
+    else if constexpr(avnd::vecf_compatible<F>())
     {
       if constexpr(fields == 2)
       {
@@ -93,6 +93,13 @@ struct to_ossia_value_impl
     val = (float)f;
   }
 
+  template <typename F>
+    requires(std::is_enum_v<F>)
+  void operator()(const F& f)
+  {
+    val = (int)f;
+  }
+
   void operator()(std::string_view f) { val = std::string(f); }
 
   void operator()(const std::string& f) { val = f; }
@@ -125,6 +132,20 @@ struct to_ossia_value_impl
     val = std::move(res);
   }
 
+  // FIXME try to std::move always in this case?
+  void operator()(const std::vector<ossia::value>& f) { val = f; }
+  void operator()(std::vector<ossia::value>& f) { val = std::move(f); }
+  void operator()(std::vector<ossia::value>&& f) { val = std::move(f); }
+
+  void operator()(const avnd::vector_v_strict<float> auto& f)
+  {
+    val = std::vector<ossia::value>(f.begin(), f.end());
+  }
+  void operator()(const avnd::vector_v_strict<int> auto& f)
+  {
+    val = std::vector<ossia::value>(f.begin(), f.end());
+  }
+
   void operator()(const avnd::vector_ish auto& f)
   {
     std::vector<ossia::value> v;
@@ -142,6 +163,31 @@ struct to_ossia_value_impl
     for(int i = 0; i < N; i++)
       to_ossia_value_impl{v[i]}(f[i]);
     val = std::move(v);
+  }
+
+  void operator()(const std::array<int, 2>& f)
+  {
+    val = std::vector<ossia::value>{f[0], f[1]};
+  }
+  void operator()(const std::array<int, 3>& f)
+  {
+    val = std::vector<ossia::value>{f[0], f[1], f[2]};
+  }
+  void operator()(const std::array<int, 4>& f)
+  {
+    val = std::vector<ossia::value>{f[0], f[1], f[2], f[3]};
+  }
+  void operator()(const std::array<int64_t, 2>& f)
+  {
+    val = std::vector<ossia::value>{(int)f[0], (int)f[1]};
+  }
+  void operator()(const std::array<int64_t, 3>& f)
+  {
+    val = std::vector<ossia::value>{(int)f[0], (int)f[1], (int)f[2]};
+  }
+  void operator()(const std::array<int64_t, 4>& f)
+  {
+    val = std::vector<ossia::value>{(int)f[0], (int)f[1], (int)f[2], (int)f[3]};
   }
 
   void operator()(const std::array<float, 2>& f) { val = f; }
@@ -180,7 +226,7 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
-  void operator()(const oscr::type_wrapper auto& f)
+  void operator()(const avnd::type_wrapper auto& f)
   {
     auto& [obj] = f;
     (*this)(obj);
@@ -287,31 +333,57 @@ ossia::value to_ossia_value(const T& v)
   return {};
 }
 
+template <typename T, std::size_t N>
+ossia::value to_ossia_value(const T (&v)[N])
+{
+  using type = std::decay_t<T>;
+  if constexpr(N == 0)
+  {
+    return ossia::impulse{};
+  }
+  else if constexpr(N == 2 && std::is_floating_point_v<type>)
+  {
+    return ossia::vec2f{(float)v[0], (float)v[1]};
+  }
+  else if constexpr(N == 3 && std::is_floating_point_v<type>)
+  {
+    return ossia::vec3f{(float)v[0], (float)v[1], (float)v[2]};
+  }
+  else if constexpr(N == 4 && std::is_floating_point_v<type>)
+  {
+    return ossia::vec4f{(float)v[0], (float)v[1], (float)v[2], (float)v[3]};
+  }
+  else
+  {
+    return to_ossia_value_rec(v);
+  }
+}
+
 template <typename T>
 ossia::value to_ossia_value(const T& v)
 {
   using type = std::decay_t<T>;
-  constexpr int sz = boost::pfr::tuple_size_v<type>;
+  constexpr int sz = avnd::pfr::tuple_size_v<type>;
   if constexpr(sz == 0)
   {
     return ossia::impulse{};
   }
-  else if constexpr(vecf_compatible<type>())
+  else if constexpr(avnd::vecf_compatible<type>())
   {
     if constexpr(sz == 2)
     {
       auto [x, y] = v;
-      return ossia::vec2f{x, y};
+      return ossia::vec2f{(float)x, (float)y};
     }
     else if constexpr(sz == 3)
     {
       auto [x, y, z] = v;
-      return ossia::vec3f{x, y, z};
+      return ossia::vec3f{(float)x, (float)y, (float)z};
     }
     else if constexpr(sz == 4)
     {
       auto [x, y, z, w] = v;
-      return ossia::vec4f{x, y, z, w};
+      return ossia::vec4f{(float)x, (float)y, (float)z, (float)w};
     }
     else
     {
@@ -333,17 +405,17 @@ ossia::value to_ossia_value(const T& v)
     if constexpr(N == 2)
     {
       auto [x, y] = v;
-      return ossia::vec2f{x, y};
+      return ossia::vec2f{(float)x, (float)y};
     }
     else if constexpr(N == 3)
     {
       auto [x, y, z] = v;
-      return ossia::vec3f{x, y, z};
+      return ossia::vec3f{(float)x, (float)y, (float)z};
     }
     else if constexpr(N == 4)
     {
       auto [x, y, z, w] = v;
-      return ossia::vec4f{x, y, z, w};
+      return ossia::vec4f{(float)x, (float)y, (float)z, (float)w};
     }
     else
     {
@@ -389,17 +461,19 @@ ossia::value to_ossia_value(const avnd::bitset_ish auto& v)
 
 ossia::value to_ossia_value(const std::integral auto& v)
 {
-  return v;
+  return (int)v;
 }
 ossia::value to_ossia_value(const std::floating_point auto& v)
 {
-  return v;
+  return (float)v;
 }
 ossia::value to_ossia_value(const avnd::variant_ish auto& v)
 {
   return to_ossia_value_rec(v);
 }
-ossia::value to_ossia_value(const avnd::optional_ish auto& v)
+template <avnd::optional_ish T>
+  requires(!std::is_same_v<std::optional<ossia::value>, T>)
+ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);
 }
@@ -423,7 +497,7 @@ ossia::value to_ossia_value(const T& v)
   return to_ossia_value_rec(v);
 }
 
-ossia::value to_ossia_value(const oscr::type_wrapper auto& v)
+ossia::value to_ossia_value(const avnd::type_wrapper auto& v)
 {
   auto& [obj] = v;
   return to_ossia_value_rec(obj);
@@ -449,6 +523,13 @@ template <typename T>
 inline ossia::value to_ossia_value(const T& v)
 {
   return v;
+}
+
+template <typename T>
+  requires std::is_same_v<std::optional<ossia::value>, T>
+inline ossia::value to_ossia_value(const T& v)
+{
+  return v ? *v : ossia::value{};
 }
 
 inline ossia::value to_ossia_value(auto& field, const auto& src)

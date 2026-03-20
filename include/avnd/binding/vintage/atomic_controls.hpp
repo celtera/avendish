@@ -82,7 +82,7 @@ struct Controls<T>
       auto& sink = this->parameters;
 
       auto do_store = [&]<std::size_t N> {
-        constexpr auto idx = inputs_info_t::index_map[N];
+        static constexpr auto idx = inputs_info_t::index_map[N];
         if constexpr(requires { avnd::map_control_to_01(avnd::pfr::get<idx>(source)); })
           sink[N].store(
               avnd::map_control_to_01(avnd::pfr::get<idx>(source)),
@@ -113,15 +113,13 @@ struct Controls<T>
   {
     std::atomic_thread_fence(std::memory_order_acquire);
 
-    [ this, &implementation ]<std::size_t... Index>(
-        std::integer_sequence<std::size_t, Index...>)
-    {
-      for(auto& state : implementation.full_state())
+    [this, &implementation]<std::size_t... Index>(
+        std::integer_sequence<std::size_t, Index...>) {
+      for(auto state : implementation.full_state())
       {
         (this->write_control<Index>(state.effect, state.inputs), ...);
       }
-    }
-    (std::make_index_sequence<parameter_count>());
+    }(std::make_index_sequence<parameter_count>());
   }
 
   template <typename Effect_T>

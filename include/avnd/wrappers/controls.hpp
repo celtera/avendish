@@ -8,11 +8,48 @@
 #include <avnd/wrappers/ranges.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <cmath>
+#include <halp/polyfill.hpp>
 
 #include <string>
 
 namespace avnd
 {
+// Was a lambda but turned into a function
+// because MSVC:
+// error C2039: 'effect': is not a member of 'examples::helpers::SpriteReader'
+
+template <typename F, typename T>
+static constexpr inline void init_controls_impl(F& state, T& ctl)
+{
+  if constexpr(avnd::has_range<T>)
+  {
+    static_constexpr auto c = avnd::get_range<T>();
+    // clang-format off
+        if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
+            else if_possible(ctl.value = c.values[c.init])   // For string enums
+            else if_possible(ctl.value = c.init);            // Default case
+    // clang-format on
+  }
+
+  if_possible(ctl.update(state.effect));
+}
+
+template <typename F>
+static constexpr void init_controls(F& state)
+{
+  if constexpr(avnd::tag_skip_init<F>)
+  {
+    avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
+      if_possible(ctl.update(state.effect));
+    });
+  }
+  else
+  {
+    avnd::for_each_field_ref(
+        state.inputs, [&]<typename T>(T& ctl) { init_controls_impl(state, ctl); });
+  }
+}
+
 /**
  * @brief Used to set the initial value for controls when
  * the plug-in is first loaded.
@@ -20,35 +57,9 @@ namespace avnd
 template <typename F>
 static constexpr void init_controls(avnd::effect_container<F>& effect)
 {
-  if constexpr(avnd::tag_skip_init<F>)
+  for(auto state : effect.full_state())
   {
-    // Used to call update on all the inputs of a plug-in to trigger initial callbacks
-    // when the plug-in is first loaded and does not want manual init.
-    for(auto& state : effect.full_state())
-    {
-      avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
-        if_possible(ctl.update(state.effect));
-      });
-    }
-  }
-  else
-  {
-    for(auto& state : effect.full_state())
-    {
-      avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
-        if constexpr(avnd::has_range<T>)
-        {
-          constexpr auto c = avnd::get_range<T>();
-          // clang-format off
-               if_possible(ctl.value = c.values[c.init].second) // For {string,value} enums
-          else if_possible(ctl.value = c.values[c.init])   // For string enums
-          else if_possible(ctl.value = c.init);            // Default case
-          // clang-format on
-        }
-
-        if_possible(ctl.update(state.effect));
-      });
-    }
+    init_controls(state);
   }
 }
 
@@ -67,7 +78,7 @@ static constexpr void apply_control(T& ctl, V v)
   // Clamp
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     if(ctl.value < c.min)
       ctl.value = c.min;
     else if(ctl.value > c.max)
@@ -85,7 +96,7 @@ static void apply_control(T& ctl, avnd::string_ish auto&& v)
   // Clamp in range if there's one
   if constexpr(avnd::parameter_with_values_range<T>)
   {
-    constexpr auto range = avnd::get_range<T>();
+    static_constexpr auto range = avnd::get_range<T>();
     static_assert(std::ssize(range.values) > 0);
     int k = 0;
     for(const auto& range_v : range.values)
@@ -113,6 +124,12 @@ static void apply_control(T& ctl, avnd::string_ish auto&& v)
   }
 }
 
+template <typename T>
+static void apply_control(T& ctl, const char* v)
+{
+  return apply_control(ctl, std::string_view(v));
+}
+
 /**
  * @brief Used for the case where the "host" works in a fixed [0. ; 1.] range
  */
@@ -121,7 +138,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 {
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else if constexpr(avnd::parameter_with_values_range<T>)
@@ -145,7 +162,7 @@ static constexpr auto map_control_from_01(std::floating_point auto v)
 {
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
     return c.min + v * (c.max - c.min);
   }
   else if constexpr(avnd::parameter_with_values_range<T>)
@@ -196,7 +213,7 @@ static constexpr auto map_control_to_01(const auto& value)
   double v{};
   if constexpr(avnd::parameter_with_minmax_range<T>)
   {
-    constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
@@ -221,7 +238,7 @@ static constexpr auto map_control_to_01(const auto& value)
   {
     // TODO generalize
     static_assert(avnd::get_range<T>().max != avnd::get_range<T>().min);
-    constexpr auto c = avnd::get_range<T>();
+    static_constexpr auto c = avnd::get_range<T>();
 
     v = (value - c.min) / double(c.max - c.min);
   }
@@ -263,7 +280,7 @@ static constexpr auto map_control_to_01(const auto& value) = delete;
 //   static_assert(std::is_void_v<T>, "Error: unhandled control type");
 // }
 
-template <avnd::parameter T>
+template <avnd::parameter_port T>
   requires requires(T t) { map_control_to_01(t.value); }
 static constexpr auto map_control_to_01(const T& ctl)
 {

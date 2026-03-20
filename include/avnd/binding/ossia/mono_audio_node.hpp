@@ -7,7 +7,7 @@ template <real_good_mono_processor T>
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 
@@ -72,7 +72,7 @@ public:
     // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -103,7 +103,7 @@ public:
         avnd::span<double*>{
             const_cast<double**>(audio_ins), std::size_t(current_input_channels)},
         avnd::span<double*>{audio_outs, std::size_t(current_output_channels)},
-        tick_info{tk, st, frames}, this->smooth);
+        tick_info{*this, tk, st, frames}, this->smooth);
 
     this->finish_run();
   }
@@ -113,7 +113,7 @@ template <mono_generator T>
 class safe_node<T> : public safe_node_base<T, safe_node<T>>
 {
 public:
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 
@@ -141,7 +141,7 @@ public:
     // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
-    if(!this->prepare_run(tk, start, frames))
+    if(!this->prepare_run(tk, st, start, frames))
     {
       this->finish_run();
       return;
@@ -156,7 +156,7 @@ public:
     // Run
     this->processor.process(
         this->impl, avnd::span<double*>{}, avnd::span<double*>{audio_outs, 1},
-        tick_info{tk, st, frames}, this->smooth);
+        tick_info{*this, tk, st, frames}, this->smooth);
 
     this->finish_run();
   }

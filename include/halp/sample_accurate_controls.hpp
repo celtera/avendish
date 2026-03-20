@@ -5,9 +5,11 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/small_vector.hpp>
 #include <halp/controls.hpp>
+#include <halp/modules.hpp>
 
 #include <map>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 

@@ -4,12 +4,24 @@
 
 #include <avnd/common/concepts_polyfill.hpp>
 #include <avnd/common/function_reflection.hpp>
+#include <avnd/common/tag.hpp>
 #include <avnd/concepts/generic.hpp>
-
-#include <string_view>
 
 namespace avnd
 {
+
+/**
+ * @brief fully_custom_item tag: the host environment 
+ * should draw as little decoration & chrome as possible, ideally 
+ * just leaving a blank canvas for the item to draw in.
+ */
+AVND_DEFINE_TAG(fully_custom_item)
+/**
+ * @brief no_background tag: 
+ * the host environment shouldn't even draw 
+ * the background of the item.
+ */
+AVND_DEFINE_TAG(no_background)
 
 type_or_value_qualification(ui)
 type_or_value_reflection(ui)
@@ -52,5 +64,7 @@ concept custom_control_layout = (T::layout() == decltype(T::layout())::custom_co
 template <typename T>
 concept custom_layout = (T::layout() == decltype(T::layout())::custom)
                         || (T::layout == decltype(T::layout)::custom);
-
+template <typename T>
+concept dynamic_controls = (T::layout() == decltype(T::layout())::dynamic_controls)
+                           || (T::layout == decltype(T::layout)::dynamic_controls);
 }

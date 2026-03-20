@@ -49,17 +49,16 @@ namespace avnd
 
 // Concepts related to inputs / outputs
 template <typename T>
-concept parameter = std::is_default_constructible_v<decltype(T::value)>;
+concept parameter_port = std::is_default_constructible_v<decltype(T::value)>;
 
 template <typename T>
-concept int_parameter = requires(T t) {
-                          {
-                            t.value
-                            } -> int_ish;
-                        };
+concept int_parameter = parameter_port<T> && requires(T t) {
+  { t.value } -> int_ish;
+};
 
 template <typename T>
-concept enum_parameter = std::is_enum_v<std::decay_t<decltype(T::value)>>;
+concept enum_parameter
+    = parameter_port<T> && std::is_enum_v<std::decay_t<decltype(T::value)>>;
 
 template <typename Field>
 concept enum_ish_parameter
@@ -67,25 +66,19 @@ concept enum_ish_parameter
       || (avnd::has_range<Field> && AVND_REQUIREMENT_ON_MEMBER(Field, range, values[0]));
 
 template <typename T>
-concept float_parameter = requires(T t) {
-                            {
-                              t.value
-                              } -> fp_ish;
-                          };
+concept float_parameter = parameter_port<T> && requires(T t) {
+  { t.value } -> fp_ish;
+};
 
 template <typename T>
-concept bool_parameter = requires(T t) {
-                           {
-                             t.value
-                             } -> bool_ish;
-                         };
+concept bool_parameter = parameter_port<T> && requires(T t) {
+  { t.value } -> bool_ish;
+};
 
 template <typename T>
-concept string_parameter = requires(T t) {
-                             {
-                               t.value
-                               } -> std::convertible_to<std::string>;
-                           };
+concept string_parameter = parameter_port<T> && requires(T t) {
+  { t.value } -> std::convertible_to<std::string>;
+};
 
 template <typename T>
 concept xy_value = requires(T t) {
@@ -93,7 +86,43 @@ concept xy_value = requires(T t) {
                      t.y;
                    };
 template <typename T>
-concept xy_parameter = xy_value<decltype(T::value)>;
+concept xy_parameter = parameter_port<T> && xy_value<decltype(T::value)>;
+
+template <typename T>
+concept xyz_value = requires(T t) {
+  t.x;
+  t.y;
+  t.z;
+};
+template <typename T>
+concept xyz_parameter = parameter_port<T> && xyz_value<decltype(T::value)>;
+
+template <typename T>
+concept uv_value = requires(T t) {
+  t.u;
+  t.v;
+};
+template <typename T>
+concept uv_parameter = parameter_port<T> && uv_value<decltype(T::value)>;
+
+template <typename T>
+concept uvw_value = requires(T t) {
+  t.u;
+  t.v;
+  t.w;
+};
+template <typename T>
+concept uvw_parameter = parameter_port<T> && uvw_value<decltype(T::value)>;
+
+template <typename T>
+concept xyzw_value = requires(T t) {
+  t.x;
+  t.y;
+  t.z;
+  t.w;
+};
+template <typename T>
+concept xyzw_parameter = parameter_port<T> && xyzw_value<decltype(T::value)>;
 
 template <typename T>
 concept rgb_value = requires(T t) {
@@ -102,11 +131,25 @@ concept rgb_value = requires(T t) {
                       t.b;
                     };
 template <typename T>
-concept rgb_parameter = rgb_value<decltype(T::value)>;
+concept rgb_parameter = parameter_port<T> && rgb_value<decltype(T::value)>;
+
+template <typename T>
+concept rgba_value = requires(T t) {
+  t.r;
+  t.g;
+  t.b;
+  t.a;
+};
+template <typename T>
+concept rgba_parameter = parameter_port<T> && rgba_value<decltype(T::value)>;
 
 template <typename C>
-concept parameter_with_minmax_range = AVND_REQUIREMENT_ON_MEMBER(C, range, min)
-                                      && AVND_REQUIREMENT_ON_MEMBER(C, range, max)
+concept parameter_with_minmax_range_ignore_init
+    = parameter_port<C> && AVND_REQUIREMENT_ON_MEMBER(C, range, min)
+      && AVND_REQUIREMENT_ON_MEMBER(C, range, max);
+
+template <typename C>
+concept parameter_with_minmax_range = parameter_with_minmax_range_ignore_init<C>
                                       && AVND_REQUIREMENT_ON_MEMBER(C, range, init);
 
 template <typename C>
@@ -115,7 +158,7 @@ concept integer_or_enum
 
 template <typename C>
 concept parameter_with_values_range
-    = AVND_REQUIREMENT_ON_MEMBER(C, range, values[0])
+    = parameter_port<C> && AVND_REQUIREMENT_ON_MEMBER(C, range, values[0])
       && AVND_CONCEPT_CHECK_ON_MEMBER(integer_or_enum, C, range, init);
 
 // Used for defining process which take programs in some lang as input
@@ -126,67 +169,6 @@ concept program_parameter
                                  T::language()
                                  } -> std::convertible_to<std::string>;
                              };
-
-/**
- * A "control" is a parameter + some metadata:
- *
- * struct
- * {
- *   // see widgets.hpp
- *   enum widget { slider };
- *
- *
- *   static consteval auto range() {
- *     struct {
- *       float min = 0.;
- *       float max = 1.;
- *       float init = 0.25;
- *     } r;
- *     return r;
- *   }
- *
- *   float value;
- * };
- */
-
-template <typename T>
-concept control = parameter<T> && (has_range<T> || has_widget<T>);
-
-template <typename T>
-concept int_control = int_parameter<T> && control<T>;
-template <typename T>
-concept enum_control = enum_parameter<T> && control<T>;
-template <typename T>
-concept float_control = float_parameter<T> && control<T>;
-template <typename T>
-concept bool_control = bool_parameter<T> && control<T>;
-template <typename T>
-concept string_control = string_parameter<T> && control<T>;
-template <typename T>
-concept time_control = float_control<T> && requires { T::time_chooser; };
-
-template <typename T>
-concept int_value_port = int_parameter<T> && !
-control<T>;
-template <typename T>
-concept enum_value_port = enum_parameter<T> && !
-control<T>;
-template <typename T>
-concept float_value_port = float_parameter<T> && !
-control<T>;
-template <typename T>
-concept bool_value_port = bool_parameter<T> && !
-control<T>;
-template <typename T>
-concept string_value_port = string_parameter<T> && !
-control<T>;
-
-/**
- * A value port is a parameter which is not a control.
- */
-template <typename T>
-concept value_port = parameter<T> && !
-control<T>;
 
 /**
  * Here T is a e.g. std::span<T>
@@ -201,11 +183,8 @@ concept span_value
         t.size();
       } && std::is_constructible_v<T, typename T::value_type*, std::size_t> && std::is_trivially_copy_constructible_v<T>;
 template <typename T>
-concept span_parameter = parameter<T> && span_value<std::decay_t<decltype(T::value)>>;
-template <typename T>
-concept span_control = span_parameter<T> && control<T>;
-template <typename T>
-concept span_value_port = span_parameter<T> && value_port<T>;
+concept span_parameter_port
+    = parameter_port<T> && span_value<std::decay_t<decltype(T::value)>>;
 
 /**
  * Timed values are used for sample-accurate ports.
@@ -245,48 +224,33 @@ template <typename T>
 concept dynamic_timed_values = requires(T t) { typename T::allocator_type; };
 
 /**
- * A sample-accurate parameter has an additional "values" member
+ * A sample-accurate parameter_port has an additional "values" member
  * which allows to know at which sample did a control change
  */
 template <typename T>
-concept sample_accurate_parameter
-    = parameter<T>
-      && (
-          requires(T t) { t.value = *t.values[1]; }               // linear map
+concept sample_accurate_parameter_port
+    = parameter_port<T>
+      && (requires(T t) { t.value = *t.values[1]; }               // linear map
           || requires(T t) { t.value = t.values[1]; }             // dynamic map
           || requires(T t) { t.value = t.values.begin()->value; } // span
       );
 
-/**
- * Like control but sample-accurate
- */
 template <typename T>
-concept sample_accurate_control = sample_accurate_parameter<T> && control<T>;
-
-/**
- * Like value_port but sample-accurate
- */
-template <typename T>
-concept sample_accurate_value_port = sample_accurate_parameter<T> && !
-control<T>;
-
-template <typename T>
-concept linear_sample_accurate_parameter
-    = sample_accurate_parameter<T>
+concept linear_sample_accurate_parameter_port
+    = sample_accurate_parameter_port<T>
       && linear_timed_values<std::decay_t<decltype(T::values)>>;
 template <typename T>
-concept span_sample_accurate_parameter
-    = sample_accurate_parameter<T>
+concept span_sample_accurate_parameter_port
+    = sample_accurate_parameter_port<T>
       && span_timed_values<std::decay_t<decltype(T::values)>>;
 template <typename T>
-concept dynamic_sample_accurate_parameter
-    = sample_accurate_parameter<T>
+concept dynamic_sample_accurate_parameter_port
+    = sample_accurate_parameter_port<T>
       && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
 
 /**
  * Parameters that want to be smoothed (range is needed)
  */
 template <typename T>
-concept smooth_parameter = parameter<T> && has_range<T> && has_smooth<T>;
-
+concept smooth_parameter_port = parameter_port<T> && has_range<T> && has_smooth<T>;
 }

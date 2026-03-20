@@ -11,9 +11,13 @@ struct GpuSolidColorExample
 {
   halp_meta(name, "Solid color");
   halp_meta(uuid, "c9a5fd8e-b66e-41ff-8feb-bca2cdab4990");
-  halp_meta(category, "Visuals")
+  halp_meta(category, "Visuals/Textures")
   halp_meta(c_name, "solid_color")
   halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/"
+      "graphics-utilities.html#solid-color")
   halp_meta(description, "Render a solid color")
 
   struct layout

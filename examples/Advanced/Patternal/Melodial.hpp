@@ -21,6 +21,7 @@ struct Processor
   halp_meta(name, "Melodial")
   halp_meta(c_name, "melodial")
   halp_meta(category, "Midi")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/melodial.html")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(
       description,

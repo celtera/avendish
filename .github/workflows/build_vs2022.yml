@@ -47,7 +47,7 @@ jobs:
           export VERBOSE=1
 
           cmake .. \
-            -DBOOST_ROOT=/c/ossia-sdk/boost \
+            -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
@@ -73,7 +73,7 @@ jobs:
           export VERBOSE=1
 
           cmake .. \
-            -DBOOST_ROOT=/c/ossia-sdk/boost \
+            -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \

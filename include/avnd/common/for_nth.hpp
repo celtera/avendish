@@ -23,7 +23,7 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = boost::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = boost::pfr::detail::tie_as_tuple(
@@ -74,7 +74,7 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
 
   auto t = avnd::pfr::detail::tie_as_tuple(value);
@@ -91,15 +91,21 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 }
 
 template <class T, class F>
+  requires(avnd::vector_ish<std::decay_t<T>>)
+constexpr void for_each_field_ref(T&& value, F&& func)
+{
+  for(auto& v : value) func(v);
+}
+
+template <class T, class F>
   requires(!avnd::vector_ish<T>)
 constexpr void for_each_field_ref_n(T&& value, F&& func)
 {
 #if AVND_USE_BOOST_PFR
   using namespace pfr;
   using namespace pfr::detail;
-  constexpr std::size_t fields_count_val
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
       = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
-
   auto t = avnd::pfr::detail::tie_as_tuple(value);
 
   [&]<std::size_t... I>(std::index_sequence<I...>)
@@ -109,8 +115,18 @@ constexpr void for_each_field_ref_n(T&& value, F&& func)
   (std::make_index_sequence<fields_count_val>{});
 #else
   auto&& [... elts] = value;
-  (func(elts), ...);
+  const auto [... Is] = field_indices(std::make_index_sequence<sizeof...(elts)>{});
+
+  (func(elts, Is), ...);
 #endif
+}
+
+template <class T, class F>
+  requires(avnd::vector_ish<std::decay_t<T>>)
+constexpr void for_each_field_ref_n(T&& value, F&& func)
+{
+  std::size_t i = 0;
+  for(auto& v : value) func(v, i++);
 }
 
 template <class T, class F>
@@ -138,8 +154,32 @@ void for_each_field_ref(const avnd::member_iterator<T>& value, F&& func)
   }
 }
 
+/* FIXME TBD
+template <typename T, typename R>
+constexpr void for_each_field_function_table(T&& value, R func)
+{
+#if !defined(_MSC_VER)
+  static_assert(!requires { value.size(); });
+#endif
+  using namespace avnd::pfr;
+  using namespace avnd::pfr::detail;
+  AVND_STATIC_CONSTEXPR std::size_t fields_count_val
+      = avnd::pfr::tuple_size_v<std::remove_reference_t<T>>;
+
+  auto t = avnd::pfr::detail::tie_as_tuple(value);
+
+  return [&]<std::size_t... I>(std::index_sequence<I...>) {
+    return std::make_tuple(
+        []<typename... Args>(Args... args) { R{}(get<I>(t), std::forward<Args>(args)...); }...);
+  }(std::make_index_sequence<fields_count_val>{});
+}
+*/
+
+// https://stackoverflow.com/questions/79757242/converting-pointer-to-member-to-member-index-using-boost-pfr-without-creating-an
+
 constexpr int index_in_struct(const auto& s, auto... member)
 {
+  static_assert(sizeof...(member) > 0);
   int index = -1;
   int k = 0;
 
@@ -153,7 +193,9 @@ constexpr int index_in_struct(const auto& s, auto... member)
     }
     ++k;
   });
+#if !defined(_MSC_VER)
   assert(index >= 0);
+#endif
   return index;
 }
 }

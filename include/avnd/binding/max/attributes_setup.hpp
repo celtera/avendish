@@ -13,14 +13,6 @@
 
 namespace max
 {
-template<typename F>
-constexpr std::string_view attribute_name()
-{
-  if constexpr(avnd::has_c_name<F>)
-    return avnd::get_c_name<F>();
-  else
-    return avnd::get_name<F>();
-}
 
 template <typename Processor, typename T>
 struct attribute_register;
@@ -58,9 +50,16 @@ struct attribute_register<Processor, T>
     auto& ins = avnd::get_inputs(obj);
     auto& field = avnd::input_introspection<T>::template field<I>(ins);
     if (ac && av) {
-      if(from_atoms{ac, av}(field.value))
+      if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
       {
-        if_possible(field.update(obj));
+        if(from_atoms{ac, av}(field.value))
+        {
+          if_possible(field.update(obj));
+        }
+      }
+      else
+      {
+        // FIXME TODO
       }
     }
     else
@@ -82,7 +81,7 @@ struct attribute_register<Processor, T>
     if(t_symbol* sym = get_atoms_sym<V>())
     {
       static constexpr auto attr_idx = attrs::template unmap<I>();
-      static constexpr auto attr_name = attribute_name<F>();
+      static constexpr auto attr_name = max::get_name_symbol<F>();
       static constexpr auto label = avnd::get_name<F>();
       static constexpr auto get = &attribute_register::getter<I>;
       static constexpr auto set = &attribute_register::setter<I>;
@@ -138,15 +137,73 @@ struct attribute_object_register<Processor, T>
   template<typename F, std::size_t I>
   void operator()(F& field, avnd::predicate_index<I>)
   {
-    static constexpr auto attr_name = attribute_name<F>();
+    using value_type = std::remove_cvref_t<decltype(F::value)>;
+    static const auto attr_name = max::symbol_from_name<F>();
 
-    if constexpr(std::is_arithmetic_v<decltype(F::value)>)
+    if constexpr(std::is_integral_v<value_type>)
     {
-      object_attr_setlong(o, gensym(attr_name.data()), field.value);
+      object_attr_setlong(o, attr_name, field.value);
     }
-    else if constexpr(avnd::string_ish<decltype(F::value)>)
+    else if constexpr(std::is_floating_point_v<value_type>)
     {
-      object_attr_setsym(o, gensym(attr_name.data()), gensym(field.value.data()));
+      object_attr_setfloat(o, attr_name, field.value);
+    }
+    else if constexpr(avnd::string_ish<value_type>)
+    {
+      object_attr_setsym(o, attr_name, gensym(field.value.data()));
+    }
+    else if constexpr(std::is_enum_v<value_type>)
+    {
+      object_attr_setsym(
+          o, attr_name, gensym(magic_enum::enum_name(field.value).data()));
+    }
+    else if constexpr(avnd::iterable_ish<value_type>)
+    {
+      using span_val_type = typename value_type::value_type;
+
+      if constexpr(std::is_integral_v<span_val_type>)
+      {
+        using namespace std;
+        boost::container::small_vector<t_atom_long, 512> vec;
+        vec.assign(begin(field.value), end(field.value));
+        object_attr_setlong_array(o, attr_name, vec.size(), vec.data());
+      }
+      else if constexpr(std::is_same_v<float, span_val_type>)
+      {
+        using namespace std;
+        boost::container::small_vector<float, 512> vec;
+        vec.assign(begin(field.value), end(field.value));
+        object_attr_setfloat_array(o, attr_name, vec.size(), vec.data());
+      }
+      else if constexpr(std::is_floating_point_v<span_val_type>)
+      {
+        using namespace std;
+        boost::container::small_vector<double, 512> vec;
+        vec.assign(begin(field.value), end(field.value));
+        object_attr_setdouble_array(o, attr_name, vec.size(), vec.data());
+      }
+      else if constexpr(avnd::string_ish<span_val_type>)
+      {
+        boost::container::small_vector<t_symbol*, 512> vec;
+        for(auto& v : field.value)
+          vec.push_back(gensym(v.data()));
+        object_attr_setsym_array(o, attr_name, vec.size(), vec.data());
+      }
+      else if constexpr(std::is_enum_v<span_val_type>)
+      {
+        boost::container::small_vector<t_symbol*, 512> vec;
+        for(auto& v : field.value)
+          vec.push_back(gensym(magic_enum::enum_name(v).data()));
+        object_attr_setsym_array(o, attr_name, vec.size(), vec.data());
+      }
+      else
+      {
+        static_assert(F::error_in_attribute, "Unhandled attribute type");
+      }
+    }
+    else
+    {
+      static_assert(F::error_in_attribute, "Unhandled attribute type");
     }
   }
 };

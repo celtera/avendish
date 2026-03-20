@@ -6,7 +6,8 @@
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/object.hpp>
-#include <boost/container/small_vector.hpp>
+
+#include <string_view>
 #include <variant>
 
 namespace max
@@ -17,7 +18,7 @@ struct init_arguments
 {
   static void call_noargs(T& implementation)
   {
-    constexpr auto f = &T::initialize;
+    static constexpr auto f = &T::initialize;
     if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       return (implementation.*f)();
     else
@@ -26,14 +27,16 @@ struct init_arguments
 
   static auto call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    boost::container::small_vector<std::variant<float, std::string_view>, 64> ctor;
+    static thread_local std::vector<std::variant< float, std::string_view>> ctor;
+    ctor.clear();
+    ctor.reserve(64);
 
     for(int i = 0; i < argc; i++)
     {
       if(argv[i].a_type == A_FLOAT)
         ctor.emplace_back((float)argv[i].a_w.w_float);
       else if(argv[i].a_type == A_LONG)
-        ctor.emplace_back((float)argv[i].a_w.w_long); // FIXME
+        ctor.emplace_back((float)argv[i].a_w.w_long); // FIXME long support
       else if(argv[i].a_type == A_SYM)
         ctor.emplace_back(std::string_view(argv[i].a_w.w_sym->s_name));
     }
@@ -68,8 +71,8 @@ struct init_arguments
   static void
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::initialize;
-    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
+    static constexpr auto f = &T::initialize;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if(arg_counts != argc)
     {
@@ -105,8 +108,8 @@ struct init_arguments
   static void
   call_simple(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::initialize;
-    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
+    static constexpr auto f = &T::initialize;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if constexpr(arg_counts == 0)
     {
@@ -122,7 +125,7 @@ struct init_arguments
         call_vec(implementation, name, argc, argv);
         return;
       }
-      else if constexpr(avnd::span_ish<main_arg_type>)
+      else if constexpr(avnd::iterable_ish<main_arg_type>)
       {
         call_span(implementation, name, argc, argv);
         return;
@@ -151,7 +154,7 @@ struct init_arguments
   static bool
   call_instance(F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
 
     using arg_list_t = typename avnd::function_reflection<decltype(+f){}>::arguments;
 
@@ -181,7 +184,7 @@ struct init_arguments
   static bool call_overloaded_impl(
       F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
     if(arg_counts != (argc + 1))
       return false;
 
@@ -222,7 +225,16 @@ struct init_arguments
   static void call(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using namespace std;
+
+#if !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-requires"
+#endif
     if constexpr(requires { avnd::type_list<decltype(T::initialize)>; })
+
+#if !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
     {
       if constexpr(avnd::type_list<decltype(T::initialize)>)
       {

@@ -24,6 +24,7 @@ public:
   halp_meta(category, "Automations")
   halp_meta(description, "Automation curve")
   halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/automation.html")
   halp_meta(uuid, "77a96254-7348-4cb5-9513-3e16c41e80f0")
 
   struct

@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+/**
+ * TouchDesigner DAT plugin entry point template
+ * This file is processed by CMake to instantiate the binding for a specific processor
+ */
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/dat/data_processor.hpp>
+
+// Include TouchDesigner headers
+#include "DAT_CPlusPlusBase.h"
+
+using type = decltype(avnd::configure<touchdesigner::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+namespace td = touchdesigner::DAT;
+
+// Plugin export functions required by TouchDesigner
+extern "C"
+{
+
+DLLEXPORT
+void FillDATPluginInfo(TD::DAT_PluginInfo* info)
+{
+  info->apiVersion = TD::DATCPlusPlusAPIVersion;
+  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_OPTYPE@");
+}
+
+DLLEXPORT
+TD::DAT_CPlusPlusBase* CreateDATInstance(const TD::OP_NodeInfo* info)
+{
+  return new td::data_processor<type>(info);
+}
+
+DLLEXPORT
+void DestroyDATInstance(TD::DAT_CPlusPlusBase* instance)
+{
+  delete static_cast<td::data_processor<type>*>(instance);
+}
+
+}

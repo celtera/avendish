@@ -4,6 +4,7 @@
 #include <halp/meta.hpp>
 #include <rnd/random.hpp>
 
+#include <algorithm>
 #include <numbers>
 #include <random>
 
@@ -32,7 +33,6 @@ struct LFO
           "Waveform", Sin, Sin, Triangle, Saw, Square, SampleAndHold, Noise1, Noise2,
           Noise3)
     } waveform;
-
   } inputs;
   struct
   {

@@ -13,6 +13,13 @@ namespace examples
 {
 /**
  * This example showcases using user-defined aggregates for value ports.
+ *
+ * Note that it only makes sense in environments that support hierarchic data structures:
+ * - ossia
+ * - Max/MSP with a dict as input
+ * - programming languages like Python
+ *
+ * For instance, it does not make sense in PureData or audio plugins
  */
 struct Aggregate
 {

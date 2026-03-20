@@ -6,6 +6,16 @@
 
 #include <string_view>
 #include <type_traits>
+#if __has_include(<magic_enum.hpp>)
+#include <magic_enum.hpp>
+#elif __has_include(<magic_enum/magic_enum.hpp>)
+#include <magic_enum/magic_enum.hpp>
+#else
+#error magic_enum is required
+#endif
+
+#include <halp/modules.hpp>
+HALP_MODULE_EXPORT
 namespace halp
 {
 /// ComboBox / Enum ///
@@ -19,15 +29,32 @@ struct enum_t
     combobox
   };
 
-  static clang_buggy_consteval auto range()
+#if MAGIC_ENUM_SUPPORTED
+  // FIXME eventually we would like to be able to handle
+  // enum Foo { first = 120, last = -840 };
+  // but so far the code expects contiguousness and starting at 0 in many places
+  static consteval bool enum_is_contiguous() noexcept
   {
-    struct enum_setup
+    constexpr auto values = magic_enum::enum_values<Enum>();
+    int i = 0;
+    for(auto val : values)
     {
-      Enum init{};
-    };
-
-    return enum_setup{};
+      if(magic_enum::enum_underlying(val) != i)
+        return false;
+      i++;
+    }
+    return true;
   }
+  static_assert(enum_is_contiguous());
+#endif
+
+  struct range
+  {
+#if MAGIC_ENUM_SUPPORTED
+    decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#endif
+    Enum init{};
+  };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
@@ -39,9 +66,76 @@ struct enum_t
     value = t;
     return *this;
   }
+  auto& operator=(std::string_view t) noexcept
+  {
+#if MAGIC_ENUM_SUPPORTED
+    if(auto res = magic_enum::enum_cast<Enum>(t))
+      value = *res;
+#endif
+    return *this;
+  }
+};
+
+template <typename Enum, static_string lit>
+struct string_enum_t
+{
+  enum widget
+  {
+    enumeration,
+    list,
+    combobox
+  };
+
+  static clang_buggy_consteval auto range()
+  {
+    struct enum_setup
+    {
+#if MAGIC_ENUM_SUPPORTED
+      decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#endif
+      Enum init{};
+    };
+
+    return enum_setup{};
+  }
+
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  std::string value{};
+  operator std::string&() noexcept { return value; }
+  operator const std::string&() const noexcept { return value; }
+  auto& operator=(std::string t) noexcept
+  {
+    value = std::move(t);
+    return *this;
+  }
+  auto& operator=(Enum t) noexcept
+  {
+#if MAGIC_ENUM_SUPPORTED
+    value = magic_enum::enum_name(t);
+#endif
+    return *this;
+  }
+  auto& operator=(std::integral auto t) noexcept
+  {
+#if MAGIC_ENUM_SUPPORTED
+    value = magic_enum::enum_name(static_cast<Enum>(t));
+#endif
+    return *this;
+  }
+};
+
+template <static_string lit, typename Enum>
+struct combobox_t : enum_t<Enum, lit>
+{
+  enum widget
+  {
+    combobox
+  };
 };
 
 /* the science isn't there yet...
+ * last try: https://gcc.godbolt.org/z/4Y8hvcqch 
 template<typename T>
 using combo_init = combo_pair<T>[];
 

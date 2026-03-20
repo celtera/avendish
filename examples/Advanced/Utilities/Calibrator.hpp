@@ -25,6 +25,7 @@ public:
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Calibrate a value with unknown range")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/calibrator.html")
   halp_meta(uuid, "b9187d76-207c-4e28-b603-9d88d927f59d")
 
   struct inputs_t

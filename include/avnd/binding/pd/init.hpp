@@ -17,7 +17,7 @@ struct init_arguments
 {
   static void call_noargs(T& implementation)
   {
-    constexpr auto f = &T::initialize;
+    static constexpr auto f = &T::initialize;
     if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       return (implementation.*f)();
     else
@@ -26,14 +26,24 @@ struct init_arguments
 
   static void call_vec(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    // TODO std::vector<variant<float, string>>
-    AVND_STATIC_TODO(T);
+    static thread_local std::vector<std::variant<float, std::string_view>> ctor;
+    ctor.clear();
+    ctor.reserve(64);
+
+    for(int i = 0; i < argc; i++)
+    {
+      if(argv[i].a_type == A_FLOAT)
+        ctor.emplace_back((float)argv[i].a_w.w_float);
+      else if(argv[i].a_type == A_SYMBOL)
+        ctor.emplace_back(std::string_view(argv[i].a_w.w_symbol->s_name));
+    }
+
+    return implementation.initialize(ctor);
   }
 
   static void call_span(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    // TODO avnd::span<variant<float, string>>
-    AVND_STATIC_TODO(T);
+    return call_vec(implementation, name, argc, argv);
   }
 
   static void
@@ -57,8 +67,8 @@ struct init_arguments
   static void
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::initialize;
-    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
+    static constexpr auto f = &T::initialize;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if(arg_counts != argc)
     {
@@ -96,8 +106,8 @@ struct init_arguments
   static void
   call_simple(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto f = &T::initialize;
-    constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
+    static constexpr auto f = &T::initialize;
+    static constexpr auto arg_counts = avnd::function_reflection<&T::initialize>::count;
 
     if constexpr(arg_counts == 0)
     {
@@ -113,7 +123,7 @@ struct init_arguments
         call_vec(implementation, name, argc, argv);
         return;
       }
-      else if constexpr(avnd::span_ish<main_arg_type>)
+      else if constexpr(avnd::iterable_ish<main_arg_type>)
       {
         call_span(implementation, name, argc, argv);
         return;
@@ -142,7 +152,7 @@ struct init_arguments
   static bool
   call_instance(F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
 
     using arg_list_t = typename avnd::function_reflection<decltype(+f){}>::arguments;
 
@@ -172,7 +182,7 @@ struct init_arguments
   static bool call_overloaded_impl(
       F f, T& implementation, std::string_view name, int argc, t_atom* argv)
   {
-    constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
+    static constexpr auto arg_counts = avnd::function_reflection<decltype(+f){}>::count;
     if(arg_counts != (argc + 1))
       return false;
 

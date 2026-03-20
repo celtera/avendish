@@ -14,15 +14,25 @@ elseif(EXISTS "${AVND_MAXSDK_PATH}/c74support/max-includes")
   set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/max-includes")
   set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/msp-includes")
   set(MAXSDK_JIT_INCLUDE_DIR "${AVND_MAXSDK_PATH}/c74support/jit-includes")
+elseif(EXISTS "${AVND_MAXSDK_PATH}/source/max-sdk-base/c74support/max-includes")
+  set(MAXSDK_MAX_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/max-sdk-base/c74support/max-includes")
+  set(MAXSDK_MSP_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/max-sdk-base/c74support/msp-includes")
+  set(MAXSDK_JIT_INCLUDE_DIR "${AVND_MAXSDK_PATH}/source/max-sdk-base/c74support/jit-includes")
 endif()
 
 if(APPLE)
   find_library(MAXSDK_API_LIBRARY NAMES MaxAPI HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
+  find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
+  find_library(JITTER_API_LIBRARY NAMES JitterAPI HINTS "${MAXSDK_JIT_INCLUDE_DIR}")
 elseif(WIN32)
   if("${CMAKE_SIZEOF_VOID_P}" MATCHES "4")
     find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
+    find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
+    find_library(JITTER_API_LIBRARY NAMES jitlib.lib HINTS "${MAXSDK_JIT_INCLUDE_DIR}")
   else()
     find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}/x64")
+    find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}/x64")
+    find_library(JITTER_API_LIBRARY NAMES jitlib.lib HINTS "${MAXSDK_JIT_INCLUDE_DIR}/x64")
   endif()
 endif()
 
@@ -33,6 +43,8 @@ set(MAXSDK_MAX_INCLUDE_DIR  "${MAXSDK_MAX_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_M
 set(MAXSDK_MSP_INCLUDE_DIR  "${MAXSDK_MSP_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_MSP_INCLUDE_DIR")
 set(MAXSDK_JIT_INCLUDE_DIR  "${MAXSDK_JIT_INCLUDE_DIR}" CACHE INTERNAL "MAXSDK_JIT_INCLUDE_DIR")
 set(MAXSDK_API_LIBRARY  "${MAXSDK_API_LIBRARY}" CACHE INTERNAL "MAXSDK_API_LIBRARY")
+set(MAXSDK_MSP_LIBRARY  "${MAXSDK_MSP_LIBRARY}" CACHE INTERNAL "MAXSDK_MSP_LIBRARY")
+set(JITTER_API_LIBRARY  "${JITTER_API_LIBRARY}" CACHE INTERNAL "JITTER_API_LIBRARY")
 set(MAXSDK_LINKER_FLAGS  "${MAXSDK_LINKER_FLAGS}" CACHE INTERNAL "MAXSDK_LINKER_FLAGS")
 
 # Commonsyms from max
@@ -47,7 +59,7 @@ target_compile_definitions(
     C74_USE_STRICT_TYPES=1
 )
 
-target_include_directories(maxmsp_commonsyms PRIVATE
+target_include_directories(maxmsp_commonsyms SYSTEM PRIVATE
     "${MAXSDK_MAX_INCLUDE_DIR}"
     "${MAXSDK_MSP_INCLUDE_DIR}"
     "${MAXSDK_JIT_INCLUDE_DIR}"
@@ -107,8 +119,10 @@ function(avnd_make_max)
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/atom_iterator.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/audio_processor.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/configure.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/dict.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/dsp.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/from_atoms.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/from_dict.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/helpers.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/init.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/max/inputs.hpp"
@@ -126,7 +140,7 @@ function(avnd_make_max)
       C74_USE_STRICT_TYPES=1
   )
 
-  target_include_directories(${AVND_FX_TARGET} PRIVATE
+  target_include_directories(${AVND_FX_TARGET} SYSTEM PRIVATE
       "${MAXSDK_MAX_INCLUDE_DIR}"
       "${MAXSDK_MSP_INCLUDE_DIR}"
       "${MAXSDK_JIT_INCLUDE_DIR}"
@@ -135,6 +149,9 @@ function(avnd_make_max)
   target_link_libraries(
     ${AVND_FX_TARGET}
     PUBLIC
+      Boost::boost
+      magic_enum::magic_enum
+      qlibs::reflect
       Avendish::Avendish_max
       DisableExceptions
       maxmsp_commonsyms
@@ -144,7 +161,11 @@ function(avnd_make_max)
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC MAC_VERSION)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE True)
     set_property(TARGET ${AVND_FX_TARGET} PROPERTY BUNDLE_EXTENSION "mxo")
-    target_link_libraries(${AVND_FX_TARGET} PUBLIC ${MAXSDK_LINKER_FLAGS} -Wl,-U,_class_dspinit -Wl,-U,_dsp_add64  -Wl,-U,_z_dsp_setup)
+    target_link_libraries(${AVND_FX_TARGET} PUBLIC
+      ${MAXSDK_LINKER_FLAGS}
+      ${JITTER_API_LIBRARY}
+      -Wl,-U,_class_dspinit -Wl,-U,_dsp_add64  -Wl,-U,_z_dsp_setup
+    )
     file(COPY "${AVND_SOURCE_DIR}/include/avnd/binding/max/resources/PkgInfo" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/max/${AVND_C_NAME}.mxo/Contents/")
 
     # We only export ext_main to prevent conflicts in e.g. Max4Live.
@@ -152,34 +173,41 @@ function(avnd_make_max)
   elseif(WIN32)
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC WIN_VERSION _CRT_SECURE_NO_WARNINGS)
     if("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
-        set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe64")
-        find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}/x64")
-        find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}/x64")
-        find_library(MAXSDK_MSP_LIBRARY NAMES jitlib.lib HINTS "${MAXSDK_JIT_INCLUDE_DIR}/x64")
+      set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe64")
     else()
-        set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe")
-        find_library(MAXSDK_API_LIBRARY NAMES MaxAPI.lib HINTS "${MAXSDK_MAX_INCLUDE_DIR}")
-        find_library(MAXSDK_MSP_LIBRARY NAMES MaxAudio.lib HINTS "${MAXSDK_MSP_INCLUDE_DIR}")
-        find_library(MAXSDK_MSP_LIBRARY NAMES jitlib.lib HINTS "${MAXSDK_JIT_INCLUDE_DIR}")
+      set_target_properties(${AVND_FX_TARGET} PROPERTIES SUFFIX ".mxe")
     endif()
-    target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY})
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE ${MAXSDK_API_LIBRARY} ${MAXSDK_MSP_LIBRARY} ${JITTER_API_LIBRARY})
     # FIXME only export ext_main here too
+    if(MSVC)
+      target_link_options(${AVND_FX_TARGET} PRIVATE /EXPORT:ext_main)
+    else()
+      file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${AVND_FX_TARGET}.def" CONTENT "
+LIBRARY $<TARGET_FILE_NAME:${AVND_FX_TARGET}>
+EXPORTS
+  ext_main
+")
+      target_sources(${AVND_FX_TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${AVND_FX_TARGET}.def")
+    endif()
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
-  if(TARGET json_to_maxref)
+  if(TARGET json_to_maxref AND NOT "${AVND_DISABLE_AUTOMAXREF}")
     message(STATUS "json_to_maxref found")
     get_target_property(_dump_path ${AVND_TARGET} AVND_DUMP_PATH)
     if(_dump_path)
       message(STATUS "_dump_path: ${_dump_path}")
       set(_maxref_template "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml")
       set(_maxref_destination "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml")
-      add_custom_command(
-          TARGET ${AVND_FX_TARGET}
-          COMMAND json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
-          POST_BUILD
-      )
+      add_custom_target(dump_maxref_${AVND_FX_TARGET} ALL
+          json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
+          DEPENDS
+            "${_dump_path}"
+            json_to_maxref
+          BYPRODUCTS
+            "${_maxref_destination}"
+        )
       set_target_properties(${AVND_FX_TARGET}
         PROPERTIES
           AVND_MAX_MAXREF_XML "${_maxref_destination}"
@@ -249,6 +277,7 @@ function(avnd_create_max_package)
 
     # Copy the doc
     if(_maxref_xml)
+      add_dependencies("${_external}" "dump_maxref_${_external}")
       add_custom_command(TARGET ${_external} POST_BUILD
         COMMAND echo "=== copy doc === ${_maxref_xml}"
         COMMAND ${CMAKE_COMMAND} -E copy "${_maxref_xml}" "${_pkg}/docs/refpages/"

@@ -1,7 +1,10 @@
 #pragma once
+#include <halp/modules.hpp>
+
 #include <memory>
 #include <mutex>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 /**

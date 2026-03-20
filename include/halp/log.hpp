@@ -15,6 +15,9 @@
 #include <cstdio>
 #endif
 
+#include <halp/modules.hpp>
+
+HALP_MODULE_EXPORT
 namespace halp
 {
 #if defined(FMT_PRINTF_H_)

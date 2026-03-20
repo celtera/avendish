@@ -72,13 +72,13 @@ struct Component final
 
   avnd::effect_container<T> effect;
 
-  [[no_unique_address]] avnd::process_adapter<T> processor;
+  AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
-  [[no_unique_address]] avnd::midi_storage<T> midi;
+  AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi;
 
-  [[no_unique_address]] stv3::audio_bus_info<T> audio_busses;
+  AVND_NO_UNIQUE_ADDRESS stv3::audio_bus_info<T> audio_busses;
 
-  [[no_unique_address]] stv3::event_bus_info<T> event_busses;
+  AVND_NO_UNIQUE_ADDRESS stv3::event_bus_info<T> event_busses;
 
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;

@@ -16,8 +16,8 @@ struct messages
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
-    constexpr auto f = avnd::message_get_func<M>();
-    constexpr auto arg_counts = refl::count;
+    static constexpr auto f = avnd::message_get_func<M>();
+    static constexpr auto arg_counts = refl::count;
 
     if(arg_counts != argc)
     {
@@ -44,7 +44,7 @@ struct messages
     // Call the method
     [&]<typename... Args, std::size_t... I>(
         boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
-      constexpr auto f = avnd::message_get_func<M>();
+      static constexpr auto f = avnd::message_get_func<M>();
       if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       {
         if constexpr(requires(M m) { m(convert<Args>(argv[I])...); })
@@ -62,8 +62,8 @@ struct messages
   call_instance(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
-    constexpr auto f = avnd::message_get_func<M>();
-    constexpr auto arg_counts = refl::count;
+    static constexpr auto f = avnd::message_get_func<M>();
+    static constexpr auto arg_counts = refl::count;
 
     if(arg_counts != (argc + 1))
     {
@@ -111,7 +111,7 @@ struct messages
   {
     if constexpr(!std::is_void_v<avnd::message_reflection<M>>)
     {
-      constexpr auto arg_count = avnd::message_reflection<M>::count;
+      static constexpr auto arg_count = avnd::message_reflection<M>::count;
       if constexpr(arg_count == 0)
       {
         call_static<M>(implementation, sym, argc, argv);
@@ -166,6 +166,8 @@ struct messages
     {
       bool ok = false;
       std::string_view symname = s->s_name;
+
+      // First try to locate explicit messages
       avnd::messages_introspection<T>::for_all(
           avnd::get_messages(implementation), [&]<typename M>(M& field) {
             if(ok)
@@ -175,6 +177,27 @@ struct messages
               ok = process_message(implementation.effect, field, symname, argc, argv);
             }
           });
+
+      // If that fails try to look for a sink message which accepts anything
+      if(!ok)
+      {
+        avnd::messages_introspection<T>::for_all(
+            avnd::get_messages(implementation), [&]<typename M>(M& field) {
+          if(ok)
+            return;
+          if(avnd::tag_process_any_message<M>)
+          {
+            static thread_local std::vector<t_atom> atoms;
+            atoms.clear();
+            atoms.resize(argc + 1);
+            atoms[0] = t_atom{.a_type = A_SYM, .a_w = std::bit_cast<word>(s)};
+            for(int i = 0; i < argc; i++)
+              atoms[i + 1] = *argv;
+            ok = process_message(
+                implementation.effect, field, symname, atoms.size(), atoms.data());
+          }
+        });
+      }
       return ok;
     }
     return false;

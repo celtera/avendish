@@ -17,8 +17,8 @@ struct messages
   call_static(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
-    constexpr auto f = avnd::message_get_func<M>();
-    constexpr auto arg_counts = refl::count;
+    static constexpr auto f = avnd::message_get_func<M>();
+    static constexpr auto arg_counts = refl::count;
 
     if(arg_counts != argc)
     {
@@ -49,7 +49,7 @@ struct messages
     // Call the method
     [&]<typename... Args, std::size_t... I>(
         boost::mp11::mp_list<Args...>, std::index_sequence<I...>) {
-      constexpr auto f = avnd::message_get_func<M>();
+      static constexpr auto f = avnd::message_get_func<M>();
       if constexpr(std::is_member_function_pointer_v<std::decay_t<decltype(f)>>)
       {
         if constexpr(requires(M m) { m(convert<Args>(argv[I])...); })
@@ -67,8 +67,8 @@ struct messages
   call_instance(T& implementation, std::string_view name, int argc, t_atom* argv)
   {
     using refl = avnd::message_reflection<M>;
-    constexpr auto f = avnd::message_get_func<M>();
-    constexpr auto arg_counts = refl::count;
+    static constexpr auto f = avnd::message_get_func<M>();
+    static constexpr auto arg_counts = refl::count;
 
     if(arg_counts != (argc + 1))
     {
@@ -99,7 +99,7 @@ struct messages
     // Call the method
     [&]<typename... Args, std::size_t... I>(
         boost::mp11::mp_list<T&, Args...>, std::index_sequence<I...>) {
-      constexpr auto f = avnd::message_get_func<M>();
+      static constexpr auto f = avnd::message_get_func<M>();
       if constexpr(std::is_member_function_pointer_v<decltype(f)>)
       {
         if constexpr(requires(M m) { m(implementation, convert<Args>(argv[I])...); })
@@ -123,7 +123,7 @@ struct messages
   {
     if constexpr(!std::is_void_v<avnd::message_reflection<M>>)
     {
-      constexpr auto arg_count = avnd::message_reflection<M>::count;
+      static constexpr auto arg_count = avnd::message_reflection<M>::count;
       if constexpr(arg_count == 0)
       {
         call_static<M>(implementation, sym, argc, argv);
@@ -175,19 +175,20 @@ struct messages
   static bool process_messages(
       avnd::effect_container<T>& implementation, t_symbol* s, int argc, t_atom* argv)
   {
+    // FIXME create static pointer tables instead
     if constexpr(avnd::has_messages<T>)
     {
       bool ok = false;
       std::string_view symname = s->s_name;
       avnd::messages_introspection<T>::for_all(
           avnd::get_messages(implementation), [&]<typename M>(M& field) {
-            if(ok)
-              return;
-            if(symname == M::name())
-            {
-              ok = process_message(implementation.effect, field, symname, argc, argv);
-            }
-          });
+        if(ok)
+          return;
+        if(symname == pd::get_name_symbol<M>())
+        {
+          ok = process_message(implementation.effect, field, symname, argc, argv);
+        }
+      });
       return ok;
     }
     return false;

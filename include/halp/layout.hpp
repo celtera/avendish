@@ -3,12 +3,13 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/meta.hpp>
+#include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
 #include <functional>
 #include <string_view>
-
+HALP_MODULE_EXPORT
 namespace halp
 {
 
@@ -25,15 +26,31 @@ enum class layouts
   control,
   widget,
   custom,
-  custom_control
+  custom_control,
+  multi_control
 };
+
 enum class colors
 {
   darker,
   dark,
   mid,
   light,
-  lighter
+  lighter,
+
+  background_darker,
+  background_dark,
+  background_mid,
+  background_light,
+  background_lighter,
+
+  runtime_value_light,
+  runtime_value_mid,
+  runtime_value_dark,
+
+  editable_value_light,
+  editable_value_mid,
+  editable_value_dark,
 };
 
 struct spacing
@@ -41,6 +58,7 @@ struct spacing
   halp_meta(layout, layouts::spacing)
   int width{}, height{};
 };
+
 struct label
 {
   halp_meta(layout, layouts::widget)
@@ -69,7 +87,7 @@ struct control : item_base
   decltype(F) model = F;
   using control_member_type = halp::member_type_t<decltype(F)>;
   using control_value_type = decltype(control_member_type::value);
-  control_value_type value;
+  control_value_type value{};
 };
 
 struct image_item_base
@@ -125,6 +143,19 @@ template <typename T, auto F>
 struct custom_control : T
 {
   halp_meta(layout, halp::layouts::custom_control)
+
+  double x = 0.0;
+  double y = 0.0;
+  double scale = 1.0;
+
+  decltype(F) model = F;
+};
+
+
+template <typename T, auto F>
+struct multi_control : T
+{
+  halp_meta(layout, halp::layouts::multi_control)
 
   double x = 0.0;
   double y = 0.0;

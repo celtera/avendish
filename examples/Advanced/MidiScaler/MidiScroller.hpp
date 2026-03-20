@@ -24,6 +24,7 @@ struct MidiScroller
 {
   halp_meta(name, "Midi file scroller")
   halp_meta(c_name, "avnd_helpers_scroller")
+  halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-scroller.html")
   halp_meta(uuid, "6a1429f8-f466-4748-ad1d-4fdd644e2359")
   halp_meta(category, "Midi")
 
@@ -68,8 +69,8 @@ struct MidiScroller
 
     if(track < 0)
       track = 0;
-    if(track >= inputs.midi.midifile.tracks.size())
-      track = inputs.midi.midifile.tracks.size() - 1;
+    if(track >= tracks)
+      track = tracks - 1;
 
     for(const auto& ev : inputs.midi.midifile.tracks[track])
     {

@@ -50,6 +50,10 @@ struct FFTDisplay
 {
   static consteval auto name() { return "FFT Display"; }
   static consteval auto c_name() { return "avnd_fft_display"; }
+  halp_meta(
+      manual_url,
+      "https://ossia.io/score-docs/processes/"
+      "display-utilities.html#fft-display")
   static consteval auto uuid() { return "9eeadb52-209a-46ff-b4c6-d6c31d25aad6"; }
 
   // I/O

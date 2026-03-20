@@ -44,17 +44,16 @@ function(avnd_make_dump)
       Avendish::Avendish_dump nlohmann_json::nlohmann_json
   )
 
+  set(_dump_file_path "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json")
   add_custom_command(
-      TARGET ${AVND_FX_TARGET}
-      COMMAND ${AVND_FX_TARGET} "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
-      POST_BUILD
+    DEPENDS ${AVND_FX_TARGET}
+    COMMAND ${AVND_FX_TARGET} "${_dump_file_path}"
+    OUTPUT  "${_dump_file_path}"
+    VERBATIM
   )
-  add_custom_command(
-    OUTPUT  "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
-    COMMAND ${AVND_FX_TARGET} "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
-  )
+
   set_target_properties(${AVND_TARGET} PROPERTIES
-    AVND_DUMP_PATH "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json"
+    AVND_DUMP_PATH "${_dump_file_path}"
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")

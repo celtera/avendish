@@ -23,7 +23,7 @@ struct process_adapter<T>
 
   // Here we know that we at least have one in and one out
   template <typename FP>
-  FP process_0(avnd::effect_container<T>& implementation, FP in, auto& ref, auto&& tick)
+  FP process_0(avnd::effect_container<T>& implementation, FP in, auto ref, auto&& tick)
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
@@ -44,7 +44,7 @@ struct process_adapter<T>
   }
 
   template <typename FP>
-  FP process_0(avnd::effect_container<T>& implementation, FP in, auto& ref)
+  FP process_0(avnd::effect_container<T>& implementation, FP in, auto ref)
   {
     auto& [fx, ins, outs] = ref;
     // Copy the input
@@ -71,7 +71,7 @@ struct process_adapter<T>
     assert(input_channels == output_channels);
     const int channels = input_channels;
 
-    auto input_buf = (FP*)alloca(channels * sizeof(FP));
+    auto input_buf = (FP*)alloca((1 + channels) * sizeof(FP));
 
     const auto n = get_frames(tick);
     for(int32_t i = 0; i < n; i++)

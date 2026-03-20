@@ -3,12 +3,88 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/coroutines.hpp>
+#include <avnd/common/no_unique_address.hpp>
 #include <avnd/concepts/all.hpp>
 
 #include <vector>
 
 namespace avnd
 {
+
+template <typename T>
+struct member_iterator_one_effect
+{
+  T & self;
+  int i = 0;
+  explicit member_iterator_one_effect(T& self) noexcept
+      : self{self}
+  {
+  }
+
+  void operator++() noexcept { i++; }
+  auto& operator*() const noexcept { return self.effect; }
+  bool operator==(std::default_sentinel_t) const noexcept
+  {
+    return i > 0;
+  }
+  member_iterator_one_effect begin() const noexcept {
+    return *this;
+  }
+  auto end() const noexcept {
+    return std::default_sentinel;
+  }
+};
+
+template <typename T>
+struct member_iterator_poly_effect
+{
+  T & self;
+  int i = 0;
+  explicit member_iterator_poly_effect(T& self) noexcept
+      : self{self}
+  {
+  }
+
+  void operator++() noexcept { i++; }
+  auto& operator*() const noexcept
+  {
+    if constexpr(std::is_same_v<decltype(self.effect), typename T::type>)
+      return self.effect[i];
+    else
+      return self.effect[i].effect;
+  }
+  bool operator==(std::default_sentinel_t) const noexcept
+  {
+    return i >= self.effect.size();
+  }
+  member_iterator_poly_effect begin() const noexcept {
+    return *this;
+  }
+  auto end() const noexcept {
+    return std::default_sentinel;
+  }
+};
+
+template <typename T>
+struct full_state_iterator
+{
+  T& self;
+  int i = 0;
+  explicit full_state_iterator(T& self) noexcept
+      : self{self}
+  {
+  }
+
+  void operator++() noexcept { i++; }
+  auto operator*() const noexcept { return self.full_state(i); }
+  bool operator==(std::default_sentinel_t) const noexcept
+  {
+    return i >= self.effect.size();
+  }
+  full_state_iterator begin() const noexcept { return *this; }
+  auto end() const noexcept { return std::default_sentinel; }
+};
+
 template <typename T>
 struct inputs_storage
 {
@@ -47,12 +123,12 @@ struct effect_container
 
   T effect;
 
-  void init_channels(int input, int output)
+  inline constexpr void init_channels(int input, int output)
   {
     // TODO maybe a runtime check
   }
 
-  auto& inputs() noexcept
+  inline constexpr auto& inputs() noexcept
   {
     if constexpr(has_inputs<T>)
     {
@@ -64,7 +140,8 @@ struct effect_container
     else
       return dummy_instance;
   }
-  auto& inputs() const noexcept
+
+  inline constexpr auto& inputs() const noexcept
   {
     if constexpr(has_inputs<T>)
     {
@@ -76,7 +153,8 @@ struct effect_container
     else
       return dummy_instance;
   }
-  auto& outputs() noexcept
+
+  inline constexpr auto& outputs() noexcept
   {
     if constexpr(has_outputs<T>)
     {
@@ -88,7 +166,8 @@ struct effect_container
     else
       return dummy_instance;
   }
-  auto& outputs() const noexcept
+
+  inline constexpr auto& outputs() const noexcept
   {
     if constexpr(has_outputs<T>)
     {
@@ -108,16 +187,20 @@ struct effect_container
     decltype(std::declval<effect_container>().outputs())& outputs;
   };
 
-  std::array<ref, 1> full_state() noexcept
+  inline std::array<ref, 1> full_state() noexcept
   {
     return {ref{effect, this->inputs(), this->outputs()}};
   }
 
-  member_iterator<T> effects() { co_yield effect; }
+  inline auto effects() noexcept
+  {
+    return member_iterator_one_effect<effect_container>{*this};
+  }
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T>)
+  requires(
+      !has_inputs<T> && !has_outputs<T> && !monophonic_audio_processor<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -138,22 +221,23 @@ struct effect_container<T>
   auto& outputs() noexcept { return dummy_instance; }
   auto& outputs() const noexcept { return dummy_instance; }
 
-  member_iterator<T> effects() { co_yield effect; }
+  auto effects() { return member_iterator_one_effect<effect_container>{*this}; }
 
   struct ref
   {
     T& effect;
 
-    [[no_unique_address]] dummy inputs;
+    AVND_NO_UNIQUE_ADDRESS dummy inputs;
 
-    [[no_unique_address]] dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS dummy outputs;
   };
 
   std::array<ref, 1> full_state() noexcept { return {ref{effect, {}, {}}}; }
 };
 
 template <typename T>
-  requires(!has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T>)
+  requires(
+      !has_inputs<T> && !has_outputs<T> && monophonic_audio_processor<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -181,19 +265,18 @@ struct effect_container<T>
   auto& outputs() noexcept { return dummy_instance; }
   auto& outputs() const noexcept { return dummy_instance; }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& eff : effect)
-      co_yield eff;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   struct ref
   {
     T& effect;
 
-    [[no_unique_address]] dummy inputs;
+    AVND_NO_UNIQUE_ADDRESS dummy inputs;
 
-    [[no_unique_address]] dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS dummy outputs;
   };
 
   member_iterator<ref> full_state()
@@ -207,7 +290,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T>)
+  requires(avnd::inputs_is_type<T> && !avnd::has_outputs<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -232,27 +315,23 @@ struct effect_container<T>
     T& effect;
     typename T::inputs& inputs;
 
-    [[no_unique_address]] avnd::dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS avnd::dummy outputs;
   };
 
-  member_iterator<ref> full_state()
+  ref full_state(int i) { return {effect[i], this->inputs_storage, dummy_instance}; }
+  full_state_iterator<effect_container> full_state()
   {
-    for(T& e : effect)
-    {
-      ref r{e, this->inputs_storage, dummy_instance};
-      co_yield r;
-    }
+    return full_state_iterator<effect_container>{*this};
   }
 
-  member_iterator<T> effects()
+  auto effects()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_type<T> && avnd::outputs_is_type<T>
+  requires(avnd::inputs_is_type<T> && avnd::outputs_is_type<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -283,19 +362,19 @@ struct effect_container<T>
     typename T::outputs& outputs;
   };
 
-  member_iterator<ref> full_state()
+  ref full_state(int i)
   {
-    for(state& e : effect)
-    {
-      ref r{e.effect, this->inputs_storage, e.outputs_storage};
-      co_yield r;
-    }
+    return {effect[i].effect, this->inputs_storage, effect[i].outputs_storage};
   }
 
-  member_iterator<T> effects()
+  full_state_iterator<effect_container> full_state()
   {
-    for(auto& e : effect)
-      co_yield e.effect;
+    return full_state_iterator<effect_container>{*this};
+  }
+
+  auto effects()
+  {
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<typename T::outputs> outputs()
@@ -306,7 +385,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_type<T> && avnd::outputs_is_value<T>
+  requires(avnd::inputs_is_type<T> && avnd::outputs_is_value<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -334,19 +413,20 @@ struct effect_container<T>
     typename T::inputs& inputs;
     decltype(T::outputs)& outputs;
   };
-  member_iterator<ref> full_state()
+
+  ref full_state(int i)
   {
-    for(T& e : effect)
-    {
-      ref r{e.effect, this->inputs_storage, e.effect.outputs};
-      co_yield r;
-    }
+    return {effect[i].effect, this->inputs_storage, effect[i].effect.outputs};
   }
 
-  member_iterator<T> effects()
+  full_state_iterator<effect_container> full_state()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return full_state_iterator<effect_container>{*this};
+  }
+
+  auto effects()
+  {
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<typename T::outputs> outputs()
@@ -357,7 +437,7 @@ struct effect_container<T>
 };
 
 template <avnd::monophonic_audio_processor T>
-  requires avnd::inputs_is_value<T> && avnd::outputs_is_value<T>
+  requires(avnd::inputs_is_value<T> && avnd::outputs_is_value<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -389,20 +469,15 @@ struct effect_container<T>
     decltype(T::inputs)& inputs;
     decltype(T::outputs)& outputs;
   };
-  member_iterator<ref> full_state()
+
+  ref full_state(int i) { return {effect[i], effect[i].inputs, effect[i].outputs}; }
+
+  full_state_iterator<effect_container> full_state()
   {
-    for(T& e : effect)
-    {
-      ref r{e, e.inputs, e.outputs};
-      co_yield r;
-    }
+    return full_state_iterator<effect_container>{*this};
   }
 
-  member_iterator<T> effects()
-  {
-    for(auto& e : effect)
-      co_yield e;
-  }
+  auto effects() { return member_iterator_poly_effect<effect_container>{*this}; }
 
   member_iterator<decltype(T::inputs)> inputs()
   {
@@ -416,7 +491,7 @@ struct effect_container<T>
   }
 };
 template <avnd::monophonic_audio_processor T>
-  requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T>)
+  requires(avnd::inputs_is_value<T> && !avnd::has_outputs<T> && !tag_cv<T>)
 struct effect_container<T>
 {
   using type = T;
@@ -447,21 +522,22 @@ struct effect_container<T>
     T& effect;
     decltype(T::inputs)& inputs;
 
-    [[no_unique_address]] avnd::dummy outputs;
+    AVND_NO_UNIQUE_ADDRESS avnd::dummy outputs;
   };
-  member_iterator<ref> full_state()
+
+  ref full_state(int i)
   {
-    for(T& e : effect)
-    {
-      ref r{e.effect, e.effect.inputs, avnd::dummy_instance};
-      co_yield r;
-    }
+    return {effect[i].effect, effect[i].inputs, avnd::dummy_instance};
   }
 
-  member_iterator<T> effects()
+  full_state_iterator<effect_container> full_state()
   {
-    for(auto& e : effect)
-      co_yield e;
+    return full_state_iterator<effect_container>{*this};
+  }
+
+  auto effects()
+  {
+    return member_iterator_poly_effect<effect_container>{*this};
   }
 
   member_iterator<decltype(T::inputs)> inputs()

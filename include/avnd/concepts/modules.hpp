@@ -4,7 +4,8 @@
 
 #include <avnd/common/inline.hpp>
 #include <avnd/common/tuple.hpp>
-#include <avnd/concepts/generic.hpp>
+#include <boost/mp11/algorithm.hpp>
+// #include <avnd/concepts/generic.hpp>
 #include <boost/pfr.hpp>
 
 namespace boost::pfr
@@ -120,6 +121,14 @@ struct has_recursive_groups_impl
   static constexpr bool value = boost::mp11::mp_any_of<
       decltype(avnd::structure_to_tpltuple(std::declval<std::decay_t<T>>())),
       is_recursive_group>::value;
+};
+
+// Quick fix to catch std::array which otherwise causes a compile error with MSVC
+// instead of just making the concept return false
+template <typename T, std::size_t N, template<typename TT, std::size_t NN> class Arr>
+struct has_recursive_groups_impl<Arr<T,N>>
+{
+  static constexpr bool value = false;
 };
 
 template <typename T>

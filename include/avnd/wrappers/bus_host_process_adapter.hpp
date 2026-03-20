@@ -26,24 +26,6 @@ concept audio_arg_output
     = avnd::sample_arg_processor<T> || avnd::channel_arg_processor<T>
       || avnd::bus_arg_processor<T>;
 
-template <typename T>
-consteval int total_input_count()
-{
-  if(audio_arg_input<T>)
-    return avnd::inputs_type<T>::size + 1;
-  else
-    return avnd::inputs_type<T>::size;
-}
-
-template <typename T>
-consteval int total_output_count()
-{
-  if(audio_arg_output<T>)
-    return avnd::outputs_type<T>::size + 1;
-  else
-    return avnd::outputs_type<T>::size;
-}
-
 // !! Important, keep this in sync with safe_node constructor order
 template <typename T>
 void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
@@ -51,7 +33,29 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   // Handle "virtual" audio ports for simple processors
   // which pass things by arguments
 
-  if constexpr(avnd::mono_per_sample_arg_processor<double, T>)
+  if constexpr(avnd::tag_cv<T>)
+  {
+    using input_value_type = std::remove_cvref_t<
+        boost::mp11::mp_first<typename avnd::function_reflection_o<T>::arguments>>;
+    using operator_ret = typename avnd::function_reflection_o<T>::return_type;
+    struct
+    {
+      static consteval auto name() { return "Value In"; }
+      input_value_type value;
+    } fake_in;
+    func_inlets(fake_in, avnd::field_index<0>{});
+
+    if constexpr(!std::is_void_v<operator_ret>)
+    {
+      struct
+      {
+        static consteval auto name() { return "Value Out"; }
+        operator_ret value;
+      } fake_out;
+      func_outlets(fake_out, avnd::field_index<0>{});
+    }
+  }
+  else if constexpr(avnd::mono_per_sample_arg_processor<double, T>)
   {
     struct
     {
@@ -145,7 +149,8 @@ void port_visit_dispatcher(auto&& func_inlets, auto&& func_outlets)
   // Handle message inputs
   if constexpr(avnd::messages_type<T>::size > 0)
   {
-    avnd::messages_introspection<T>::for_all([&](auto m) { func_inlets(m); });
+    avnd::messages_introspection<T>::for_all(
+        [&](auto m) { func_inlets(m, avnd::field_index<0>{}); });
   }
 
   if constexpr(avnd::has_inputs<T>)

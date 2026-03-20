@@ -2,12 +2,14 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <halp/modules.hpp>
 #include <halp/static_string.hpp>
 
 #include <cassert>
-#include <cinttypes>
+#include <cstdint>
 #include <string_view>
 
+HALP_MODULE_EXPORT
 namespace halp
 {
 
@@ -19,7 +21,10 @@ struct basic_callback<R(Args...)>
 {
   using type = R(Args...);
   using func_t = R (*)(void*, Args...);
-  func_t function{};
+  func_t function = +[](void*, Args...) -> R {
+    if constexpr(!std::is_void_v<R>)
+      return {};
+  };
   void* context{};
 
   operator bool() const noexcept { return function; }

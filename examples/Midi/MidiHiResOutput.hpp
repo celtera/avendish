@@ -16,6 +16,8 @@ struct MidiHiResOutput
   halp_meta(category, "Midi");
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Creates MIDI LSB/MSB from a 0-16384 or 0-1 value")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/midi-utilities.html#midi-hires")
   halp_meta(uuid, "d6f5173b-b823-4571-b31f-660832b6132b")
 
   struct
@@ -34,8 +36,8 @@ struct MidiHiResOutput
   {
     for(auto& [t, v] : inputs.integer.values)
     {
-      const int32_t m = ossia::clamp(int32_t(v / 127), 0, 127);
-      const int32_t l = ossia::clamp(int32_t(v - m * 127), 0, 127);
+      const int32_t m = ossia::clamp(int32_t(v / 127), (int32_t)0, (int32_t)127);
+      const int32_t l = ossia::clamp(int32_t(v - m * 127), (int32_t)0, (int32_t)127);
 
       outputs.msb(t, m);
       outputs.lsb(t, l);
@@ -43,8 +45,8 @@ struct MidiHiResOutput
     for(auto& [t, val] : inputs.fp.values)
     {
       const double v = val * (128. * 128.);
-      const int32_t m = ossia::clamp(int32_t(v / 127.), 0, 127);
-      const int32_t l = ossia::clamp(int32_t(v - m * 127.), 0, 127);
+      const int32_t m = ossia::clamp(int32_t(v / 127.), (int32_t)0, (int32_t)127);
+      const int32_t l = ossia::clamp(int32_t(v - m * 127.), (int32_t)0, (int32_t)127);
 
       outputs.msb(t, m);
       outputs.lsb(t, l);

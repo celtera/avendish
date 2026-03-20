@@ -177,7 +177,7 @@ std::string_view port_type(Field f)
     return "texture";
   else if constexpr(avnd::image_port<type>)
     return "image";
-  else if constexpr(avnd::parameter<type>)
+  else if constexpr(avnd::parameter_port<type>)
     return "parameter";
   else if constexpr(avnd::message<type>)
     return "message";
@@ -227,8 +227,8 @@ void print_callback(nlohmann::json& obj)
   using type = typename Field::type;
   if constexpr(avnd::view_callback<type>)
     obj["type"] = "view";
-  else if constexpr(avnd::dynamic_callback<type>)
-    obj["type"] = "dynamic";
+  else if constexpr(avnd::stored_callback<type>)
+    obj["type"] = "stored";
   else
     obj["type"] = "unknown";
 
@@ -288,22 +288,22 @@ void print_parameter(nlohmann::json& obj)
   using type = typename Field::type;
   obj["value_type"] = parameter_value_type(Field{});
 
-  if constexpr(avnd::control<type>)
+  if constexpr(avnd::control_port<type>)
     obj["control"] = true;
   else
     obj["value_port"] = true;
 
-  if constexpr(avnd::sample_accurate_parameter<type>)
+  if constexpr(avnd::sample_accurate_parameter_port<type>)
   {
-    if constexpr(avnd::linear_sample_accurate_parameter<type>)
+    if constexpr(avnd::linear_sample_accurate_parameter_port<type>)
     {
       obj["sample_accurate"] = "linear";
     }
-    else if constexpr(avnd::span_sample_accurate_parameter<type>)
+    else if constexpr(avnd::span_sample_accurate_parameter_port<type>)
     {
       obj["sample_accurate"] = "span";
     }
-    else if constexpr(avnd::dynamic_sample_accurate_parameter<type>)
+    else if constexpr(avnd::dynamic_sample_accurate_parameter_port<type>)
     {
       obj["sample_accurate"] = "dynamic";
     }
@@ -312,7 +312,7 @@ void print_parameter(nlohmann::json& obj)
   if constexpr(avnd::parameter_with_minmax_range<type>)
   {
     nlohmann::json range;
-    constexpr auto ctl = avnd::get_range<type>();
+    static constexpr auto ctl = avnd::get_range<type>();
     if constexpr(requires { ctl.min; })
       range["min"] = ctl.min;
     if constexpr(requires { ctl.max; })
@@ -332,10 +332,12 @@ void print_parameter(nlohmann::json& obj)
 
   if constexpr(avnd::has_widget<type>)
   {
-    obj["widget"] = avnd::get_widget<type>().name();
+    const auto& p1  = avnd::get_widget<type>();
+    const auto& p2 = p1.name();
+    obj["widget"] = p2;
   }
 
-  if constexpr(avnd::smooth_parameter<type>)
+  if constexpr(avnd::smooth_parameter_port<type>)
   {
     obj["smooth"] = true;
   }
@@ -422,7 +424,7 @@ void print_inputs(nlohmann::json::array_t& arr)
     print_metadatas<type>(obj);
     obj["type"] = port_type(wrap);
 
-    if constexpr(avnd::parameter<type>)
+    if constexpr(avnd::parameter_port<type>)
     {
       print_parameter<Field>(obj["parameter"]);
     }
