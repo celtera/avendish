@@ -26,6 +26,7 @@ set(AVND_TD_SOURCES
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/all.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/configure.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/helpers.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/info_output.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_setup.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/parameter_update.hpp"
 
