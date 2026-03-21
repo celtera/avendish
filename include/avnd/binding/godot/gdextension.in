@@ -1,11 +1,11 @@
 [configuration]
-entry_symbol = "avnd_@AVND_C_NAME@_init"
+entry_symbol = "avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_init"
 compatibility_minimum = "4.2"
 
 [libraries]
-linux.debug.x86_64 = "res://bin/@AVND_C_NAME@.so"
-linux.release.x86_64 = "res://bin/@AVND_C_NAME@.so"
-windows.debug.x86_64 = "res://bin/@AVND_C_NAME@.dll"
-windows.release.x86_64 = "res://bin/@AVND_C_NAME@.dll"
-macos.debug = "res://bin/lib@AVND_C_NAME@.dylib"
-macos.release = "res://bin/lib@AVND_C_NAME@.dylib"
+linux.debug.x86_64 = "res://bin/@AVND_C_NAME@@_AVND_GODOT_SUFFIX@.so"
+linux.release.x86_64 = "res://bin/@AVND_C_NAME@@_AVND_GODOT_SUFFIX@.so"
+windows.debug.x86_64 = "res://bin/@AVND_C_NAME@@_AVND_GODOT_SUFFIX@.dll"
+windows.release.x86_64 = "res://bin/@AVND_C_NAME@@_AVND_GODOT_SUFFIX@.dll"
+macos.debug = "res://bin/lib@AVND_C_NAME@@_AVND_GODOT_SUFFIX@.dylib"
+macos.release = "res://bin/lib@AVND_C_NAME@@_AVND_GODOT_SUFFIX@.dylib"

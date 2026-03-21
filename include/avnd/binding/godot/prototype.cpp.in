@@ -12,22 +12,22 @@
 using type = decltype(avnd::configure<godot_binding::config, @AVND_MAIN_CLASS@>())::type;
 // clang-format on
 
-struct avnd_godot_node final : godot_binding::godot_node<type>
+struct avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@ final : godot_binding::godot_node<type>
 {
-  GDCLASS(avnd_godot_node, godot::Node);
+  GDCLASS(avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@, godot::Node);
   AVND_GODOT_NODE_OVERRIDES
 
 protected:
   static void _bind_methods()
   {
     godot::ClassDB::bind_method(
-        godot::D_METHOD("process"), &avnd_godot_node::process);
+        godot::D_METHOD("process"), &avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@::process);
   }
 };
 
 extern "C"
 {
-  GDExtensionBool GDE_EXPORT avnd_@AVND_C_NAME@_init(
+  GDExtensionBool GDE_EXPORT avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_init(
       GDExtensionInterfaceGetProcAddress p_get_proc_address,
       GDExtensionClassLibraryPtr p_library,
       GDExtensionInitialization* r_initialization)
@@ -41,7 +41,7 @@ extern "C"
     init_obj.register_initializer([](godot::ModuleInitializationLevel p_level) {
       if(p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE)
         return;
-      godot::ClassDB::register_class<avnd_godot_node>();
+      godot::ClassDB::register_class<avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@>();
     });
 
     init_obj.register_terminator([](godot::ModuleInitializationLevel p_level) {});
