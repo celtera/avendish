@@ -12,22 +12,22 @@
 using type = decltype(avnd::configure<godot_binding::config, @AVND_MAIN_CLASS@>())::type;
 // clang-format on
 
-struct avnd_godot_audio_effect;
+struct avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@;
 
-struct avnd_godot_audio_instance final
+struct avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_instance final
     : godot_binding::godot_audio_effect_instance<type>
 {
-  GDCLASS(avnd_godot_audio_instance, godot::AudioEffectInstance);
+  GDCLASS(avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_instance, godot::AudioEffectInstance);
   AVND_GODOT_AUDIO_EFFECT_INSTANCE_OVERRIDES
 
 protected:
   static void _bind_methods() { }
 };
 
-struct avnd_godot_audio_effect final
-    : godot_binding::godot_audio_effect<type, avnd_godot_audio_instance>
+struct avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@ final
+    : godot_binding::godot_audio_effect<type, avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_instance>
 {
-  GDCLASS(avnd_godot_audio_effect, godot::AudioEffect);
+  GDCLASS(avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@, godot::AudioEffect);
   AVND_GODOT_AUDIO_EFFECT_OVERRIDES
 
 protected:
@@ -36,7 +36,7 @@ protected:
 
 extern "C"
 {
-  GDExtensionBool GDE_EXPORT avnd_@AVND_C_NAME@_init(
+  GDExtensionBool GDE_EXPORT avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_init(
       GDExtensionInterfaceGetProcAddress p_get_proc_address,
       GDExtensionClassLibraryPtr p_library,
       GDExtensionInitialization* r_initialization)
@@ -50,8 +50,8 @@ extern "C"
     init_obj.register_initializer([](godot::ModuleInitializationLevel p_level) {
       if(p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE)
         return;
-      godot::ClassDB::register_class<avnd_godot_audio_instance>();
-      godot::ClassDB::register_class<avnd_godot_audio_effect>();
+      godot::ClassDB::register_class<avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@_instance>();
+      godot::ClassDB::register_class<avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@>();
     });
 
     init_obj.register_terminator([](godot::ModuleInitializationLevel p_level) {});

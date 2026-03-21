@@ -101,12 +101,11 @@ template <typename C>
 godot::String enum_hint_string()
 {
   static constexpr auto choices = avnd::get_enum_choices<C>();
-  static constexpr auto count = avnd::get_enum_choices_count<C>();
 
-  if constexpr(count > 0)
+  if constexpr(choices.size() > 0)
   {
     godot::String hint;
-    for(int i = 0; i < count; ++i)
+    for(int i = 0; i < std::ssize(choices); ++i)
     {
       if(i > 0)
         hint += ",";
@@ -436,10 +435,14 @@ bool property_get_revert(const godot::StringName& p_name, godot::Variant& r_prop
 }
 
 /// Invoke the processor's operator()
+/// Only call signatures meaningful for a Godot Node (_process with delta).
+/// Audio processors with operator()(int N) are handled by godot_audio_effect.
 template <typename T>
 void invoke_process(avnd::effect_container<T>& effect, double delta)
 {
-  if constexpr(requires { effect.effect(delta); })
+  // Use brace-init to prevent implicit narrowing conversions (e.g. double -> int),
+  // so that operator()(int N) audio signatures are not accidentally matched.
+  if constexpr(requires { effect.effect({delta}); })
     effect.effect(delta);
   else if constexpr(requires { effect.effect(); })
     effect.effect();
@@ -471,8 +474,23 @@ struct godot_node : public godot::Node
 
   godot_node()
   {
+    // Only set default values; do not call update() during construction
+    // as the Godot node is not yet fully initialized.
     if constexpr(avnd::has_inputs<T>)
-      avnd::init_controls(effect);
+    {
+      for(auto state : effect.full_state())
+      {
+        avnd::for_each_field_ref(state.inputs, [&]<typename Ctl>(Ctl& ctl) {
+          if constexpr(avnd::has_range<Ctl>)
+          {
+            static_constexpr auto c = avnd::get_range<Ctl>();
+            if_possible(ctl.value = c.values[c.init].second)
+                else if_possible(ctl.value = c.values[c.init])
+                else if_possible(ctl.value = c.init);
+          }
+        });
+      }
+    }
   }
 
   ~godot_node() override = default;
@@ -503,6 +521,20 @@ struct godot_node : public godot::Node
     return godot_binding::property_get_revert<T>(p_name, r_property);
   }
 
+  void do_ready()
+  {
+    // Now that Godot has fully initialized the node, trigger update() callbacks
+    if constexpr(avnd::has_inputs<T>)
+    {
+      for(auto state : effect.full_state())
+      {
+        avnd::for_each_field_ref(state.inputs, [&]<typename Ctl>(Ctl& ctl) {
+          if_possible(ctl.update(state.effect));
+        });
+      }
+    }
+  }
+
   void do_process(double delta)
   {
     godot_binding::invoke_process<T>(effect, delta);
@@ -519,7 +551,9 @@ struct godot_node : public godot::Node
 // clang-format off
 #define AVND_GODOT_NODE_OVERRIDES                                                       \
 public:                                                                                 \
+  void _ready() override { this->do_ready(); }                                          \
   void _process(double delta) override { this->do_process(delta); }                     \
+  void process() { this->do_process(0.0); }                                             \
   void _get_property_list(godot::List<godot::PropertyInfo>* p) const                    \
   { this->do_get_property_list(p); }                                                    \
   bool _set(const godot::StringName& n, const godot::Variant& v)                       \
