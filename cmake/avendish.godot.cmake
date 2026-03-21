@@ -61,15 +61,19 @@ set(AVND_GODOT_SOURCES
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/node.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/audio_effect.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/texture_node.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/godot/buffer_node.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/godot/geometry_node.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/prototype.cpp.in"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/audio_effect.prototype.cpp.in"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/texture_node.prototype.cpp.in"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/godot/buffer_node.prototype.cpp.in"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/godot/geometry_node.prototype.cpp.in"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/gdextension.in"
 
   CACHE "" INTERNAL
 )
 
-# PROCESSOR_TYPE: NODE (default), AUDIO_EFFECT, or TEXTURE
+# PROCESSOR_TYPE: NODE (default), AUDIO_EFFECT, TEXTURE, BUFFER, or GEOMETRY
 function(avnd_make_godot)
   cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
 
@@ -85,6 +89,12 @@ function(avnd_make_godot)
   elseif(AVND_PROCESSOR_TYPE STREQUAL "TEXTURE")
     set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/texture_node.prototype.cpp.in")
     set(_AVND_GODOT_SUFFIX "_tex")
+  elseif(AVND_PROCESSOR_TYPE STREQUAL "BUFFER")
+    set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/buffer_node.prototype.cpp.in")
+    set(_AVND_GODOT_SUFFIX "_buf")
+  elseif(AVND_PROCESSOR_TYPE STREQUAL "GEOMETRY")
+    set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/geometry_node.prototype.cpp.in")
+    set(_AVND_GODOT_SUFFIX "_geo")
   else()
     set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/prototype.cpp.in")
     set(_AVND_GODOT_SUFFIX "")

@@ -336,6 +336,32 @@ avnd_make_touchdesigner(
   PROCESSOR_TYPE POP
 )
 
+###### Godot geometry & buffer examples
+
+avnd_make_godot(
+  TARGET GenerateGeometry_godot
+  MAIN_FILE examples/Gpu/GenerateGeometry.hpp
+  MAIN_CLASS examples::GenerateGeometry
+  C_NAME avnd_generate_geometry
+  PROCESSOR_TYPE GEOMETRY
+)
+
+avnd_make_godot(
+  TARGET CubeGenerator_godot
+  MAIN_FILE examples/Tutorial/CubeGenerator.hpp
+  MAIN_CLASS examples::CubeGenerator
+  C_NAME avnd_cube
+  PROCESSOR_TYPE GEOMETRY
+)
+
+# avnd_make_godot(
+#   TARGET NoiseBuffer_godot
+#   MAIN_FILE examples/Advanced/Geometry/NoiseBuffer_raw_cpu.hpp
+#   MAIN_CLASS uo::NoiseBuffer_raw_cpu
+#   C_NAME avnd_noisebuffer
+#   PROCESSOR_TYPE BUFFER
+# )
+
 ###### Ports
 
 ## Essentia
