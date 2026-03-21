@@ -214,11 +214,12 @@ endfunction()
 
 function(avnd_make_texture)
   avnd_register(${ARGV})
-  
+
   avnd_make_ossia(${ARGV})
   avnd_make_max(${ARGV})
   avnd_make_gstreamer(${ARGV} PROCESSOR_TYPE TEXTURE)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE TOP)
+  avnd_make_godot(${ARGV} PROCESSOR_TYPE TEXTURE)
 endfunction()
 
 function(avnd_make_geometry)
