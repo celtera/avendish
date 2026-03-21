@@ -60,14 +60,16 @@ set(AVND_GODOT_SOURCES
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/configure.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/node.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/audio_effect.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/godot/texture_node.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/prototype.cpp.in"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/audio_effect.prototype.cpp.in"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/godot/texture_node.prototype.cpp.in"
   "${AVND_SOURCE_DIR}/include/avnd/binding/godot/gdextension.in"
 
   CACHE "" INTERNAL
 )
 
-# PROCESSOR_TYPE: NODE (default) or AUDIO_EFFECT
+# PROCESSOR_TYPE: NODE (default), AUDIO_EFFECT, or TEXTURE
 function(avnd_make_godot)
   cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
 
@@ -80,6 +82,9 @@ function(avnd_make_godot)
   if(AVND_PROCESSOR_TYPE STREQUAL "AUDIO_EFFECT")
     set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/audio_effect.prototype.cpp.in")
     set(_AVND_GODOT_SUFFIX "_fx")
+  elseif(AVND_PROCESSOR_TYPE STREQUAL "TEXTURE")
+    set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/texture_node.prototype.cpp.in")
+    set(_AVND_GODOT_SUFFIX "_tex")
   else()
     set(_AVND_GODOT_PROTOTYPE "${AVND_SOURCE_DIR}/include/avnd/binding/godot/prototype.cpp.in")
     set(_AVND_GODOT_SUFFIX "")
