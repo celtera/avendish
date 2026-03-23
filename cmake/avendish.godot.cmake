@@ -14,7 +14,7 @@
 
 # Try to find godot-cpp
 set(_GODOT_CPP_FOUND FALSE)
-
+set(GODOTCPP_DEBUG_CRT "$<CONFIG:Debug>")
 if(GODOT_CPP_PATH)
   if(IS_DIRECTORY "${GODOT_CPP_PATH}" AND NOT TARGET godot-cpp)
     add_subdirectory("${GODOT_CPP_PATH}" godot-cpp EXCLUDE_FROM_ALL)
