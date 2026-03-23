@@ -159,6 +159,7 @@ include(avendish.clap)
 include(avendish.ossia)
 include(avendish.standalone)
 include(avendish.touchdesigner)
+include(avendish.godot)
 include(avendish.example)
 
 # Used for getting completion in IDEs...
@@ -193,6 +194,7 @@ function(avnd_make_object)
   avnd_make_standalone(${ARGV})
   avnd_make_example_host(${ARGV})
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE CHOP_MESSAGE)
+  avnd_make_godot(${ARGV} PROCESSOR_TYPE NODE)
 endfunction()
 
 # Bindings to audio plug-in APIs
@@ -207,15 +209,23 @@ function(avnd_make_audioplug)
   avnd_make_example_host(${ARGV})
   avnd_make_gstreamer(${ARGV} PROCESSOR_TYPE AUDIO)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE CHOP_AUDIO)
+  avnd_make_godot(${ARGV} PROCESSOR_TYPE AUDIO_EFFECT)
 endfunction()
 
 function(avnd_make_texture)
   avnd_register(${ARGV})
-  
+
   avnd_make_ossia(${ARGV})
   avnd_make_max(${ARGV})
   avnd_make_gstreamer(${ARGV} PROCESSOR_TYPE TEXTURE)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE TOP)
+  avnd_make_godot(${ARGV} PROCESSOR_TYPE TEXTURE)
+endfunction()
+
+function(avnd_make_buffer)
+  avnd_register(${ARGV})
+
+  avnd_make_godot(${ARGV} PROCESSOR_TYPE BUFFER)
 endfunction()
 
 function(avnd_make_geometry)
@@ -224,6 +234,7 @@ function(avnd_make_geometry)
   avnd_make_ossia(${ARGV})
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE SOP)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE POP)
+  avnd_make_godot(${ARGV} PROCESSOR_TYPE GEOMETRY)
 endfunction()
 
 function(avnd_make_all)
