@@ -115,7 +115,7 @@ godot::Array build_mesh_arrays(const Geom& geom)
         // Get the buffer via the input's buffer() pointer-to-member
         if constexpr(requires { inp.buffer(); })
         {
-          constexpr auto buf_ptr = inp.buffer();
+          constexpr auto buf_ptr = Input::buffer();
           auto& buf
               = const_cast<std::decay_t<decltype(geom)>&>(geom).buffers.*buf_ptr;
 
