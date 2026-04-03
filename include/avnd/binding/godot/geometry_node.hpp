@@ -284,12 +284,11 @@ godot::Array build_mesh_arrays(const Geom& geom)
  * Each frame, runs the processor and rebuilds the mesh from geometry outputs.
  */
 template <typename T>
-struct godot_geometry_node : public godot::Node3D
+struct godot_geometry_node : public godot::MeshInstance3D
 {
   mutable avnd::effect_container<T> effect;
 
   godot::Ref<godot::ArrayMesh> mesh;
-  godot::MeshInstance3D* mesh_instance{nullptr};
 
   godot_geometry_node()
   {
@@ -317,9 +316,7 @@ struct godot_geometry_node : public godot::Node3D
   void do_ready()
   {
     // Create the MeshInstance3D child
-    mesh_instance = memnew(godot::MeshInstance3D);
-    mesh_instance->set_mesh(mesh);
-    add_child(mesh_instance);
+    set_mesh(mesh);
 
     if constexpr(avnd::has_inputs<T>)
     {

@@ -15,7 +15,7 @@ using type = decltype(avnd::configure<godot_binding::config, @AVND_MAIN_CLASS@>(
 struct avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@ final
     : godot_binding::godot_geometry_node<type>
 {
-  GDCLASS(avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@, godot::Node3D);
+  GDCLASS(avnd_@AVND_C_NAME@@_AVND_GODOT_SUFFIX@, godot::MeshInstance3D);
   AVND_GODOT_GEOMETRY_NODE_OVERRIDES
 
 protected:
