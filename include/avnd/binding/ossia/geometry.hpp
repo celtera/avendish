@@ -418,6 +418,20 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
     });
   }
 
+  // Auxiliary buffers (palettes, lookup tables, etc.)
+  if constexpr(requires { ctrl.auxiliary; })
+  {
+    geom.auxiliary.clear();
+    for(const auto& aux : ctrl.auxiliary)
+    {
+      geom.auxiliary.push_back({
+          .name = aux.name,
+          .buffer = aux.buffer,
+          .byte_offset = aux.byte_offset,
+          .byte_size = aux.byte_size});
+    }
+  }
+
   if(geom.attributes.empty())
   {
     std::size_t k = 0;
@@ -425,39 +439,17 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
       ossia::geometry::attribute a;
 
       a.semantic = semantic_for_attribute(attr);
-      // FIXME support string semantic attributes for the custom case
+
+      // Propagate custom name for string-based matching
+      if constexpr(requires { attr.name; })
+        if(!attr.name.empty())
+          a.name = attr.name;
 
       // FIXME very brittle
       if constexpr(requires { a.location = static_cast<int>(attr.location); })
         a.location = static_cast<int>(attr.location);
       else
         a.location = standard_location_for_attribute<A>(k++);
-
-      // Infer semantic from halp::attribute_location for backward compatibility
-      // halp::attribute_location values: position=0, tex_coord=1, color=2, normal=3, tangent=4
-      if(a.semantic == ossia::attribute_semantic::custom)
-      {
-        switch(a.location)
-        {
-          case 0: // halp::attribute_location::position
-            a.semantic = ossia::attribute_semantic::position;
-            break;
-          case 1: // halp::attribute_location::tex_coord
-            a.semantic = ossia::attribute_semantic::texcoord0;
-            break;
-          case 2: // halp::attribute_location::color
-            a.semantic = ossia::attribute_semantic::color0;
-            break;
-          case 3: // halp::attribute_location::normal
-            a.semantic = ossia::attribute_semantic::normal;
-            break;
-          case 4: // halp::attribute_location::tangent
-            a.semantic = ossia::attribute_semantic::tangent;
-            break;
-          default:
-            break;
-        }
-      }
 
       if constexpr(requires { attr.binding; })
         a.binding = attr.binding;
