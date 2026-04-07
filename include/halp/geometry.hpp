@@ -236,12 +236,23 @@ struct geometry_attribute
   halp::attribute_semantic semantic{};
   halp::attribute_format format{};
   int32_t byte_offset{};
+  std::string name; // For custom semantics; empty = use semantic name
 };
 
 struct geometry_input
 {
   int buffer{}; // Index of the buffer to use
   int64_t byte_offset{};
+};
+
+// Named reference to a buffer that is not a vertex attribute.
+// Used for lookup tables, palettes, indirect args, etc.
+struct geometry_auxiliary_buffer
+{
+  std::string name;       // Shader-visible name for matching
+  int buffer{-1};         // Index into the buffers array
+  int64_t byte_offset{};
+  int64_t byte_size{};
 };
 
 template <typename T>
@@ -1025,6 +1036,7 @@ struct dynamic_geometry
   std::vector<geometry_binding> bindings;
   std::vector<geometry_attribute> attributes;
   std::vector<geometry_input> input;
+  std::vector<geometry_auxiliary_buffer> auxiliary;
 
   int vertices = 0;
   int indices = 0;
