@@ -158,6 +158,11 @@ struct get_ossia_outlet_type<N, T>
 {
   using type = ossia::texture_outlet;
 };
+template <typename N, avnd::gpu_render_target_output_port T>
+struct get_ossia_outlet_type<N, T>
+{
+  using type = ossia::texture_outlet;
+};
 template <typename N, avnd::callback T>
 struct get_ossia_outlet_type<N, T>
 {
