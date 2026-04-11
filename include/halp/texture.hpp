@@ -201,8 +201,23 @@ using rgb_texture_output = texture_output<lit, rgb_texture>;
 
 struct gpu_texture
 {
-  enum format { RGBA8, RGBA16F, RFGBA32F, R8, R16, R16F, R32F } format{RGBA8};
+  enum format_t
+  {
+    RGBA8,
+    RGBA16F,
+    RGBA32F,
+    R8,
+    R16,
+    R16F,
+    R32F
+  } format{RGBA8};
   void* handle{};
+
+  // Used when in render target output ports, to
+  // know the size of the destination render target.
+  // TODO maybe split it ?
+  int width{};
+  int height{};
 };
 
 template <static_string lit>
@@ -225,5 +240,12 @@ struct gpu_texture_output
   operator halp::gpu_texture&() noexcept { return texture; }
 
   halp::gpu_texture texture{};
+};
+
+template <static_string lit>
+struct gpu_render_target_output
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  static constexpr void render_target_output() { }
 };
 }

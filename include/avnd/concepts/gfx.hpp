@@ -117,6 +117,10 @@ template <typename T>
 concept attachment_port = requires { T::attachment(); };
 
 template <typename T>
+concept gpu_render_target_output_port
+    = requires { T::render_target_output(); };
+
+template <typename T>
 concept texture_port
     = cpu_texture_port<T> || gpu_texture_port<T> || sampler_port<T> || attachment_port<T> || image_port<T>;
 
