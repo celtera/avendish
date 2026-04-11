@@ -61,6 +61,7 @@ enum LEDInputMode
   RGBW,
   Lightness01,
   Lightness8bit,
+  RGB01
 };
 struct LEDView
 {
@@ -173,6 +174,17 @@ struct LEDView
               }
               break;
             }
+            case LEDInputMode::RGB01: {
+              auto& vec = *list;
+              for(int i = 0, N = vec.size() - 2; i < N; i += 3)
+              {
+                const auto r = std::clamp(ossia::convert<float>(vec[i]), 0.f, 1.f);
+                const auto g = std::clamp(ossia::convert<float>(vec[i + 1]), 0.f, 1.f);
+                const auto b = std::clamp(ossia::convert<float>(vec[i + 2]), 0.f, 1.f);
+                m_pixels.push_back(QColor::fromRgbF(r, g, b));
+              }
+              break;
+            }
             case LEDInputMode::RGBW: {
               auto& vec = *list;
               for(int i = 0, N = vec.size() - 3; i < N; i += 4)
@@ -236,6 +248,8 @@ struct LEDView
         m_display_mode = LEDInputMode::RGB;
       else if(m_mode == "RGBW")
         m_display_mode = LEDInputMode::RGBW;
+      else if(m_mode == "RGB01")
+        m_display_mode = LEDInputMode::RGB01;
       else if(m_mode == "Lightness01")
         m_display_mode = LEDInputMode::Lightness01;
       else if(m_mode == "Lightness8bit")
