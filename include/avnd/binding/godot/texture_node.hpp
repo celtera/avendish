@@ -13,22 +13,62 @@ namespace godot_binding
 {
 
 /// Map an Avendish texture format enum to a Godot Image::Format.
-template <typename Tex>
-constexpr godot::Image::Format godot_image_format()
+///
+template <typename F>
+godot::Image::Format godot_image_format() noexcept
 {
-  using format_t = typename Tex::format;
-  if constexpr(std::is_same_v<format_t, typename halp::rgba_texture::format>)
-    return godot::Image::FORMAT_RGBA8;
-  else if constexpr(std::is_same_v<format_t, typename halp::rgb_texture::format>)
-    return godot::Image::FORMAT_RGB8;
-  else if constexpr(std::is_same_v<format_t, typename halp::r8_texture::format>)
-    return godot::Image::FORMAT_R8;
-  else if constexpr(std::is_same_v<format_t, typename halp::rgba32f_texture::format>)
-    return godot::Image::FORMAT_RGBAF;
-  else if constexpr(std::is_same_v<format_t, typename halp::r32f_texture::format>)
-    return godot::Image::FORMAT_RF;
-  else
-    return godot::Image::FORMAT_RGBA8;
+  if constexpr(requires { std::string_view{F::format()}; })
+  {
+    constexpr std::string_view fmt = F::format();
+
+    if(fmt == "rgba" || fmt == "rgba8")
+      return godot::Image::FORMAT_RGBA8;
+    else if(fmt == "r8" || fmt == "grayscale")
+      return godot::Image::FORMAT_R8;
+    else if(fmt == "rg8")
+      return godot::Image::FORMAT_RG8;
+    else if(fmt == "rgba16f")
+      return godot::Image::FORMAT_RGBAH;
+    else if(fmt == "rgba32f")
+      return godot::Image::FORMAT_RGBAF;
+    else if(fmt == "r16f")
+      return godot::Image::FORMAT_RH;
+    else if(fmt == "r32f")
+      return godot::Image::FORMAT_RF;
+    else if(fmt == "rg16f")
+      return godot::Image::FORMAT_RGH;
+    else if(fmt == "rg32f")
+      return godot::Image::FORMAT_RGF;
+    else if(fmt == "rgb" || fmt == "rgb8")
+      return godot::Image::FORMAT_RGB8;
+    else
+      return godot::Image::FORMAT_RGBA8;
+  }
+  else if constexpr(std::is_enum_v<typename F::format>)
+  {
+    if constexpr(requires { F::RGBA; } || requires { F::RGBA8; })
+      return godot::Image::FORMAT_RGBA8;
+    else if constexpr(requires { F::R8; } || requires { F::GRAYSCALE; })
+      return godot::Image::FORMAT_R8;
+    else if constexpr(requires { F::RG8; })
+      return godot::Image::FORMAT_RG8;
+    else if constexpr(requires { F::RGBA16F; })
+      return godot::Image::FORMAT_RGBAH;
+    else if constexpr(requires { F::RGBA32F; })
+      return godot::Image::FORMAT_RGBAF;
+    else if constexpr(requires { F::R16F; })
+      return godot::Image::FORMAT_RH;
+    else if constexpr(requires { F::R32F; })
+      return godot::Image::FORMAT_RF;
+    else if constexpr(requires { F::RG16F; })
+      return godot::Image::FORMAT_RGH;
+    else if constexpr(requires { F::RG32F; })
+      return godot::Image::FORMAT_RGF;
+    else if constexpr(requires { F::RGB; } || requires { F::RGB8; })
+      return godot::Image::FORMAT_RGB8;
+    else
+      return godot::Image::FORMAT_RGBA8;
+  }
 }
 
 /**

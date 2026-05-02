@@ -139,11 +139,11 @@ const max_texture_spec::Format& texture_spec() noexcept
 
     if(fmt == "rgba" || fmt == "rgba8")
       return max_texture_spec::RGBA8;
-    if(fmt == "argb" || fmt == "argb8")
+    else if(fmt == "argb" || fmt == "argb8")
       return max_texture_spec::ARGB8;
     else if(fmt == "bgra" || fmt == "bgra8")
       return max_texture_spec::BGRA8;
-    else if(fmt == "r8")
+    else if(fmt == "r8" || fmt == "grayscale")
       return max_texture_spec::R8;
     else if(fmt == "rg8")
       return max_texture_spec::RG8;
