@@ -1,24 +1,24 @@
-name: VS2022 build
+name: VS2026 build
 
 on: push
 
 jobs:
   build:
-    name: VS2022
-    runs-on: windows-2022
+    name: VS2026
+    runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Checkout dependencies
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: ossia/score
           submodules: "recursive"
           path: score
 
       - name: Checkout Max SDK
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: jcelerier/max-sdk-base
           submodules: "recursive"
@@ -45,6 +45,8 @@ jobs:
           export MAX_SDK=$PWD/../max-sdk-base
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
+          export PATH=/c/ossia-sdk-x86_64/cmake/bin:$PATH
+          cmake --version
 
           cmake .. \
             -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
@@ -52,7 +54,7 @@ jobs:
             -DAVND_MAXSDK_PATH=$MAX_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
-            -G "Visual Studio 17 2022"
+            -G "Visual Studio 18 2026"
 
           cmake --build . --config Debug
 
@@ -71,6 +73,7 @@ jobs:
           export MAX_SDK=$PWD/../max-sdk-base
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
+          export PATH=/c/ossia-sdk-x86_64/cmake/bin:$PATH
 
           cmake .. \
             -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
@@ -78,7 +81,7 @@ jobs:
             -DAVND_MAXSDK_PATH=$MAX_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
-            -G "Visual Studio 17 2022"
+            -G "Visual Studio 18 2026"
 
           cmake --build . --config Release
 
