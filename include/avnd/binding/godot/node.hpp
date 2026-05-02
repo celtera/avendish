@@ -29,7 +29,18 @@
 
 namespace godot_binding
 {
-
+/// Detects if we have an unnamed struct:
+/// struct { int foo; } bar;
+template <typename T>
+consteval bool is_unnamed_struct() {
+#if defined(_MSC_VER) && !defined(__clang__)
+  std::string_view name = __FUNCSIG__;
+#else
+  std::string_view name = __PRETTY_FUNCTION__;
+#endif
+  return name.find("unnamed") != std::string_view::npos ||
+         name.find("<lambda") != std::string_view::npos;
+}
 /// Get the property name for a field.
 /// Uses the explicit name() if the field type declares one,
 /// otherwise falls back to the PFR struct member name (e.g. "a", "b").
@@ -42,9 +53,22 @@ template <auto Idx, typename C, typename Parent>
 constexpr std::string_view field_name()
 {
   if constexpr(avnd::has_name<C>)
+  {
     return avnd::get_name<C>();
+  }
   else
+  {
+#if defined(_MSC_VER)
+    if constexpr(is_unnamed_struct<Parent>()) {
+      return "unnamed";
+    }
+    else {
+      return boost::pfr::get_name<Idx, Parent>();
+    }
+#else
     return boost::pfr::get_name<Idx, Parent>();
+#endif
+  }
 }
 
 /// Map an Avendish parameter field to a Godot Variant::Type

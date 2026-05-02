@@ -5,7 +5,7 @@ on: push
 jobs:
   build:
     name: VS2026
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -47,6 +47,8 @@ jobs:
           export VERBOSE=1
           export PATH=/c/ossia-sdk-x86_64/cmake/bin:$PATH
           cmake --version
+          which cmake
+          find /c/ossia-sdk-x86_64 -name cmake.exe
 
           cmake .. \
             -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
