@@ -116,7 +116,7 @@ struct Distortion
       out_l[j] = int(out_l[j] * 4.) / 4.;
 
       // Invert phase on the right side
-      out_r[j] = 1. - out_l[j];
+      out_r[j] = -out_l[j];
     }
   }
 };
