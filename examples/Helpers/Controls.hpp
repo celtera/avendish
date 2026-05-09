@@ -58,7 +58,7 @@ struct Controls
 
       struct range
       {
-        halp::combo_pair<float> values[3]{{"Foo", 0.1f}, {"Bar", 0.5f}, {"Baz", 0.8f}};
+        halp::combo_pair<float> values[3]{{"A", 0.1f}, {"B", 0.5f}, {"C", 0.8f}};
         int init{1}; // Bar
       };
 

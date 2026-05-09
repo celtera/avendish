@@ -67,8 +67,21 @@ function(avnd_make_ossia)
     PUBLIC
       Avendish::Avendish
       ossia::ossia
-      SDL2
   )
+
+  if(TARGET SDL2::SDL2)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        SDL2::SDL2
+    )
+  elseif(TARGET SDL2::SDL2-static)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        SDL2::SDL2-static
+    )
+  endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
