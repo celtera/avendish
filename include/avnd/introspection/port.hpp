@@ -98,6 +98,7 @@ AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(buffer_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(texture_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(cpu_texture_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(gpu_texture_port)
+AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(gpu_render_target_output_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(matrix_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(sampler_port)
 AVND_PORT_INTROSPECTION_FOR_DYNAMIC_CONCEPT(image_port)
@@ -236,6 +237,7 @@ template<typename T> using buffer_output_introspection = buffer_port_output_intr
 template<typename T> using texture_output_introspection = texture_port_output_introspection<T>;
 template<typename T> using cpu_texture_output_introspection = cpu_texture_port_output_introspection<T>;
 template<typename T> using gpu_texture_output_introspection = gpu_texture_port_output_introspection<T>;
+template<typename T> using gpu_render_target_output_output_introspection = gpu_render_target_output_port_output_introspection<T>;
 template<typename T> using matrix_output_introspection = matrix_port_output_introspection<T>;
 template<typename T> using gpu_matrix_output_introspection = matrix_port_output_introspection<T>;
 template<typename T> using sampler_output_introspection = sampler_port_output_introspection<T>;
