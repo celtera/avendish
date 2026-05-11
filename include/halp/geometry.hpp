@@ -255,6 +255,16 @@ struct geometry_auxiliary_buffer
   int64_t byte_size{};
 };
 
+// Textures that ride along with a geometry (useful for cubemaps, LUTs, etc.)
+struct geometry_auxiliary_texture
+{
+  std::string name;
+  void* handle{};
+
+  // Optional backend-owned sampler associated with this texture.
+  void* sampler_handle{};
+};
+
 template <typename T>
 struct rect2d
 {
@@ -1060,6 +1070,8 @@ struct dynamic_gpu_geometry
   std::vector<geometry_binding> bindings;
   std::vector<geometry_attribute> attributes;
   std::vector<geometry_input> input;
+  std::vector<geometry_auxiliary_buffer> auxiliary;
+  std::vector<geometry_auxiliary_texture> auxiliary_textures;
 
   int vertices = 0;
   int indices = 0;

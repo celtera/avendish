@@ -32,14 +32,14 @@ constexpr ossia::attribute_semantic semantic_for_attribute(const Attr& attr)
     (ossia::attribute_semantic::bitangent, bitangent, bitangents, binormal, binormals, B),
 
     // Basic materials
-    (ossia::attribute_semantic::texcoord0, texcoord, tex_coord, texcoords, texcoord0, tex_coord0, uv, uv0),
-    (ossia::attribute_semantic::texcoord1, texcoord1, tex_coord1, uv1, map1),
-    (ossia::attribute_semantic::texcoord2, texcoord2, tex_coord2, uv2, map2),
-    (ossia::attribute_semantic::texcoord3, texcoord3, tex_coord3, uv3, map3),
-    (ossia::attribute_semantic::texcoord4, texcoord4, tex_coord4, uv4, map4),
-    (ossia::attribute_semantic::texcoord5, texcoord5, tex_coord5, uv5, map5),
-    (ossia::attribute_semantic::texcoord6, texcoord6, tex_coord6, uv6, map6),
-    (ossia::attribute_semantic::texcoord7, texcoord7, tex_coord7, uv7, map7),
+    (ossia::attribute_semantic::texcoord0, texcoord, tex_coord, texcoords, texcoord0, texcoord_0, tex_coord0,  uv, uv0, uv_0),
+    (ossia::attribute_semantic::texcoord1,                                 texcoord1, texcoord_1, tex_coord1,      uv1, uv_1, map1),
+    (ossia::attribute_semantic::texcoord2,                                 texcoord2, texcoord_2, tex_coord2,      uv2, uv_2, map2),
+    (ossia::attribute_semantic::texcoord3,                                 texcoord3, texcoord_3, tex_coord3,      uv3, uv_3, map3),
+    (ossia::attribute_semantic::texcoord4,                                 texcoord4, texcoord_4, tex_coord4,      uv4, uv_4, map4),
+    (ossia::attribute_semantic::texcoord5,                                 texcoord5, texcoord_5, tex_coord5,      uv5, uv_5, map5),
+    (ossia::attribute_semantic::texcoord6,                                 texcoord6, texcoord_6, tex_coord6,      uv6, uv_6, map6),
+    (ossia::attribute_semantic::texcoord7,                                 texcoord7, texcoord_7, tex_coord7,      uv7, uv_7, map7),
 
     (ossia::attribute_semantic::color0, color, colors, color0, col, Cd),
     (ossia::attribute_semantic::color1, color1, colors1, col1),
@@ -912,6 +912,47 @@ void mesh_from_ossia(
             .semantic = static_cast<semantic_type>(in.semantic),
             .format = static_cast<format_type>(in.format),
             .byte_offset = static_cast<offset_type>(in.byte_offset)});
+  }
+
+  if constexpr(requires { dst.auxiliary; })
+  {
+    dst.auxiliary.clear();
+    for(const ossia::geometry::auxiliary_buffer& in : src.auxiliary)
+    {
+      using value_type = typename decltype(dst.auxiliary)::value_type;
+      dst.auxiliary.push_back(
+          value_type{
+              .name = in.name,
+              .buffer = in.buffer,
+              .byte_offset = in.byte_offset,
+              .byte_size = in.byte_size});
+    }
+  }
+
+  if constexpr(requires { dst.auxiliary_textures; })
+  {
+    dst.auxiliary_textures.clear();
+    for(const ossia::geometry::auxiliary_texture& in : src.auxiliary_textures)
+    {
+      using value_type =
+          typename decltype(dst.auxiliary_textures)::value_type;
+
+      if constexpr(requires(value_type v) { v.sampler_handle; })
+      {
+        dst.auxiliary_textures.push_back(
+            value_type{
+                .name = in.name,
+                .handle = in.native_handle,
+                .sampler_handle = in.sampler_handle});
+      }
+      else
+      {
+        dst.auxiliary_textures.push_back(
+            value_type{
+                .name = in.name,
+                .handle = in.native_handle});
+      }
+    }
   }
 }
 
