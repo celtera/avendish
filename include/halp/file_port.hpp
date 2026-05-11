@@ -8,8 +8,10 @@
 #include <halp/static_string.hpp>
 
 #include <cstddef>
+#include <string>
 #include <string_view>
 #include <vector>
+
 HALP_MODULE_EXPORT
 namespace halp
 {

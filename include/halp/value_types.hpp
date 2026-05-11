@@ -49,6 +49,21 @@ struct xyz_type
   }
 };
 
+template <typename T>
+struct xyzw_type
+{
+  T x, y, z, w;
+
+  constexpr xyzw_type& operator=(T single) noexcept
+  {
+    x = single;
+    y = single;
+    z = single;
+    w = single;
+    return *this;
+  }
+};
+
 struct color_type
 {
   float r, g, b, a;

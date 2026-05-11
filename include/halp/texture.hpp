@@ -4,10 +4,13 @@
 
 #include <boost/container/vector.hpp>
 #include <halp/controls.hpp>
+#include <halp/meta.hpp>
 #include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/texture_formats.hpp>
+
+#include <cstdint>
 #include <span>
 
 HALP_MODULE_EXPORT
