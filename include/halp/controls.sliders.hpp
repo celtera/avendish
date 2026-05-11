@@ -204,6 +204,35 @@ struct xyz_spinboxes_t
   }
 };
 
+template <typename T, static_string lit, range setup>
+struct xyzw_spinboxes_t
+{
+  using value_type = xyzw_type<T>;
+  enum widget
+  {
+    xyzw,
+    spinbox
+  };
+  static clang_buggy_consteval auto range() noexcept
+  {
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+  }
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{lit.value};
+  }
+
+  value_type value = {T(setup.init), T(setup.init), T(setup.init)};
+
+  operator value_type&() noexcept { return value; }
+  operator const value_type&() const noexcept { return value; }
+  auto& operator=(value_type t) noexcept
+  {
+    value = t;
+    return *this;
+  }
+};
+
 /// 1D range ///
 
 struct range_slider_range

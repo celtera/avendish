@@ -33,6 +33,8 @@ enum class widget_type
   xy_spinbox,
   xyz,
   xyz_spinbox,
+  xyzw,
+  xyzw_spinbox,
   color,
   time_chooser,
   folder,
@@ -89,6 +91,10 @@ struct widget_reflection
         return "xyz";
       case widget_type::xyz_spinbox:
         return "xyz_spinbox";
+      case widget_type::xyz:
+        return "xyzw";
+      case widget_type::xyz_spinbox:
+        return "xyzw_spinbox";
       case widget_type::color:
         return "color";
       case widget_type::time_chooser:
@@ -316,6 +322,10 @@ consteval auto get_widget()
       return widget_reflection<float>{widget_type::range_spinbox};
     }
   }
+  else if constexpr(requires { T::widget::xyzw_spinbox; })
+  {
+    return widget_reflection<float>{widget_type::xyzw_spinbox};
+  }
   else if constexpr(requires { T::widget::xyz_spinbox; })
   {
     return widget_reflection<float>{widget_type::xyz_spinbox};
@@ -326,7 +336,11 @@ consteval auto get_widget()
   }
   else if constexpr(requires { T::widget::spinbox; })
   {
-    if constexpr(requires { T::widget::xyz; })
+    if constexpr(requires { T::widget::xyzw; })
+    {
+      return widget_reflection<float>{widget_type::xyzw_spinbox};
+    }
+    else if constexpr(requires { T::widget::xyz; })
     {
       return widget_reflection<float>{widget_type::xyz_spinbox};
     }
@@ -371,6 +385,10 @@ consteval auto get_widget()
       requires { T::widget::combobox; } || requires { T::widget::list; })
   {
     return widget_reflection<value_type>{widget_type::combobox};
+  }
+  else if constexpr(requires { T::widget::xyzw; })
+  {
+    return widget_reflection<value_type>{widget_type::xyzw};
   }
   else if constexpr(requires { T::widget::xyz; })
   {
