@@ -21,10 +21,9 @@ struct LightnessComputerTextureDisplay
 
   void paint(auto ctx)
   {
-    if(m_w <= 0 || m_h <= 0)
+    if(m_w <= 0 || m_h <= 0 || !m_bytes.get())
       return;
 
-    // Render the texture
     ctx.draw_bytes(0, 0, width(), height(), m_bytes.get(), m_w, m_h);
 
     ctx.update();
@@ -780,7 +779,11 @@ public:
       {
         if(m_last_ui_buffer_size != in_tex.bytesize())
         {
-          ui_buffer = std::make_shared<float[]>(in_tex.width * in_tex.height * 4);
+          const std::size_t n = std::size_t(in_tex.width) * in_tex.height * 4;
+          ui_buffer = std::shared_ptr<float[]>{
+              static_cast<float*>(
+                  ::operator new[](n * sizeof(float), std::align_val_t{16})),
+              [](float* p) { ::operator delete[](p, std::align_val_t{16}); }};
           m_last_ui_buffer_size = in_tex.bytesize();
         }
 
