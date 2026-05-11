@@ -250,6 +250,9 @@ template <static_string lit, auto setup = default_range<float>>
 using xyz_spinboxes_f32 = halp::xyz_spinboxes_t<float, lit, setup>;
 
 template <static_string lit, auto setup = default_range<float>>
+using xyzw_spinboxes_f32 = halp::xyzw_spinboxes_t<float, lit, setup>;
+
+template <static_string lit, auto setup = default_range<float>>
 using hbargraph_f32 = halp::hbargraph_t<float, lit, setup>;
 template <static_string lit, auto setup = default_range<int>>
 using hbargraph_i32 = halp::hbargraph_t<int, lit, setup>;

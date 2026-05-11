@@ -4,10 +4,13 @@
 
 #include <boost/container/vector.hpp>
 #include <halp/controls.hpp>
+#include <halp/meta.hpp>
 #include <halp/modules.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 #include <halp/texture_formats.hpp>
+
+#include <cstdint>
 #include <span>
 
 HALP_MODULE_EXPORT
@@ -199,10 +202,90 @@ template <static_string lit>
 using rgb_texture_output = texture_output<lit, rgb_texture>;
 
 
+enum class texture_kind : std::uint8_t
+{
+  texture_2d = 0,
+  texture_array,
+  cubemap,
+  texture_3d,
+};
+
+template <typename F>
+constexpr texture_kind texture_kind_of() noexcept
+{
+  if constexpr(requires { F::texture_target(); })
+    return F::texture_target();
+  else
+    return texture_kind::texture_2d;
+}
+
+// Opt-in for the upstream's depth attachment to surface on this
+// input's `texture.depth_handle`. Reads halp_meta(samplable_depth, true).
+template <typename F>
+constexpr bool samplable_depth_of() noexcept
+{
+  if constexpr(requires { F::samplable_depth(); })
+    return F::samplable_depth();
+  else
+    return false;
+}
+
 struct gpu_texture
 {
-  enum format { RGBA8, RGBA16F, RFGBA32F, R8, R16, R16F, R32F } format{RGBA8};
+  enum format_t
+  {
+    RGBA8,
+    BGRA8,
+    R8,
+    RG8,
+
+    R16,
+    RG16,
+
+    RGBA16F,
+    RGBA32F,
+    R16F,
+    R32F,
+
+    RGB10A2,
+
+    R8UI,
+    R32UI,
+    RG32UI,
+    RGBA32UI,
+
+    R8SI,
+    R32SI,
+    RG32SI,
+    RGBA32SI
+  } format{RGBA8};
   void* handle{};
+
+  // Optional companion depth attachment.
+  enum class depth_format_t : std::uint8_t
+  {
+    D16,
+    D24,
+    D24S8,
+    D32F
+  } depth_format{depth_format_t::D32F};
+  void* depth_handle{};
+
+  // Used when in render target output ports, to
+  // know the size of the destination render target.
+  // TODO maybe split it ?
+  int width{};
+  int height{};
+
+  // Producers that allocate non-2D textures (cube, array, 3D) should set this so
+  // consumers which don't care about the specific port type can still route correctly.
+  texture_kind kind{texture_kind::texture_2d};
+
+  // For arrays / 3D / cube the depth-or-layer count. Cube == 6
+  int layers_or_depth{1};
+
+  // Optional backend-owned sampler handle to pair with this texture.
+  void* sampler_handle{};
 };
 
 template <static_string lit>
@@ -225,5 +308,70 @@ struct gpu_texture_output
   operator halp::gpu_texture&() noexcept { return texture; }
 
   halp::gpu_texture texture{};
+};
+
+template <static_string lit>
+struct gpu_cubemap_input : gpu_texture_input<lit>
+{
+  halp_meta(texture_target, halp::texture_kind::cubemap)
+};
+
+template <static_string lit>
+struct gpu_sampleable_depth_input : gpu_texture_input<lit>
+{
+  halp_meta(samplable_depth, true)
+};
+
+template <static_string lit>
+struct gpu_cubemap_output : gpu_texture_output<lit>
+{
+  halp_meta(texture_target, halp::texture_kind::cubemap)
+
+  gpu_cubemap_output() noexcept
+  {
+    this->texture.kind = halp::texture_kind::cubemap;
+    this->texture.layers_or_depth = 6;
+  }
+};
+
+template <static_string lit>
+struct gpu_texture_array_input : gpu_texture_input<lit>
+{
+  halp_meta(texture_target, halp::texture_kind::texture_array)
+};
+
+template <static_string lit>
+struct gpu_texture_array_output : gpu_texture_output<lit>
+{
+  halp_meta(texture_target, halp::texture_kind::texture_array)
+
+  gpu_texture_array_output() noexcept
+  {
+    this->texture.kind = halp::texture_kind::texture_array;
+  }
+};
+
+template <static_string lit>
+struct gpu_texture_3d_input : gpu_texture_input<lit>
+{
+  halp_meta(texture_target, halp::texture_kind::texture_3d)
+};
+
+template <static_string lit>
+struct gpu_texture_3d_output : gpu_texture_output<lit>
+{
+  halp_meta(texture_target, halp::texture_kind::texture_3d)
+
+  gpu_texture_3d_output() noexcept
+  {
+    this->texture.kind = halp::texture_kind::texture_3d;
+  }
+};
+
+template <static_string lit>
+struct gpu_render_target_output
+{
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+  static constexpr void render_target_output() { }
 };
 }
