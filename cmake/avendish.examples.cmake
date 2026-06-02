@@ -328,6 +328,15 @@ avnd_make_touchdesigner(
   PROCESSOR_TYPE SOP
 )
 
+# Max/MSP geometry object (Jitter ob3d). Only built on macOS / Windows.
+avnd_make_max(
+  TARGET CubeGeometry
+  MAIN_FILE examples/Tutorial/CubeGenerator.hpp
+  MAIN_CLASS examples::CubeGenerator
+  C_NAME avnd_cube_geom
+  PROCESSOR_TYPE GEOMETRY
+)
+
 avnd_make_touchdesigner(
   TARGET NoiseBuffer_pop
   MAIN_FILE examples/Advanced/Geometry/NoiseBuffer.hpp

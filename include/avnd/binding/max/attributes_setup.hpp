@@ -71,6 +71,10 @@ struct attribute_register<Processor, T>
         field.update(obj);
       }
     }
+    // Opt-in per-binding hook: lets e.g. the geometry (ob3d) wrapper mark itself
+    // dirty so the next render recomputes. No-op for bindings that don't define it.
+    if constexpr(requires { x->on_attribute_changed(); })
+      x->on_attribute_changed();
     return MAX_ERR_NONE;
   }
 

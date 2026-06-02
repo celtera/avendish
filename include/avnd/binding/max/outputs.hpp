@@ -689,6 +689,14 @@ struct outputs
 
   }
 
+  // Geometry output ports are rendered by the ob3d / jit.gl.mesh path
+  // (jitter_gl_geometry_processor), not through a message outlet: no-op here.
+  template <avnd::geometry_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
 
   template <typename Out>
   void setup(Out& out, t_outlet& outlet) = delete;
@@ -718,13 +726,18 @@ struct outputs
       int out_k = 0;
       std::array<t_symbol*, N> names;
       std::array<bool, N> jitter;
+      // Geometry ports are rendered through the ob3d / jit.gl path, never through
+      // a message outlet, so they must not get an outlet of their own here.
+      std::array<bool, N> geom;
 
       // A. Iterate on all the ports to gather their names
       // outlet_new is right-to-left so we create in reverse order...
       avnd::output_introspection<T>::for_all(
-          avnd::get_outputs<T>(implementation), [&names, &jitter, &out_k]<typename C>(C& ctl) {
+          avnd::get_outputs<T>(implementation),
+          [&names, &jitter, &geom, &out_k]<typename C>(C& ctl) {
             names[out_k] = symbol_for_port<C>();
             jitter[out_k] = avnd::texture_port<C> || avnd::buffer_port<C>;
+            geom[out_k] = avnd::geometry_port<C>;
             out_k++;
           });
 
@@ -733,10 +746,17 @@ struct outputs
       // B. Create all the outlet objects
       auto it = names.crbegin();
       auto it_jitter = jitter.crbegin();
+      auto it_geom = geom.crbegin();
       int mop_output_k = 0;
-      for(; it != names.crend(); ++it, ++it_jitter)
+      for(; it != names.crend(); ++it, ++it_jitter, ++it_geom)
       {
         const auto& name = *it;
+        // Geometry ports do not own an outlet (rendered via ob3d / jit.gl).
+        if(*it_geom)
+        {
+          outlets[--out_k] = nullptr;
+          continue;
+        }
         if constexpr(avnd::matrix_output_introspection<T>::size == 0)
         {
           outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));

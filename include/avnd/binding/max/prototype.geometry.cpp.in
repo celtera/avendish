@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// Max prototype for geometry / mesh objects: instantiates the Jitter OpenGL 3D
+// (ob3d) metaclass. Used by avnd_make_max(... PROCESSOR_TYPE GEOMETRY) so that
+// only geometry objects pull in jit.gl.h and the OpenGL dependency.
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/max/configure.hpp>
+#include <avnd/binding/max/jitter_gl_geometry_processor.hpp>
+#include "commonsyms.h"
+using type = decltype(avnd::configure<max::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+extern "C" AVND_EXPORTED_SYMBOL void ext_main(void* r)
+{
+  common_symbols_init();
+
+  static const max::jitter_gl_geometry_metaclass<type> instance{};
+}
