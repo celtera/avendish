@@ -21,7 +21,7 @@ namespace godot_binding
 
 /// Map avendish topology enum tags to Godot primitive types
 template <typename Geom>
-constexpr godot::Mesh::PrimitiveType godot_primitive_type()
+godot::Mesh::PrimitiveType godot_primitive_type(const Geom& geom)
 {
   static_constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(
       topology,
@@ -30,8 +30,7 @@ constexpr godot::Mesh::PrimitiveType godot_primitive_type()
       (godot::Mesh::PRIMITIVE_LINES, line, lines),
       (godot::Mesh::PRIMITIVE_LINE_STRIP, line_strip),
       (godot::Mesh::PRIMITIVE_POINTS, point, points));
-  Geom g{};
-  return m(g, godot::Mesh::PRIMITIVE_TRIANGLES);
+  return m(geom, godot::Mesh::PRIMITIVE_TRIANGLES);
 }
 
 /// Detect the attribute location from an avendish attribute struct.
@@ -62,6 +61,7 @@ constexpr int attribute_location()
 /// position (float3), normal (float3), texcoord (float2), color (float3/4).
 /// Read the raw float data from the corresponding buffer + offset.
 template <typename Geom>
+  requires(avnd::static_geometry_type<Geom>)
 godot::Array build_mesh_arrays(const Geom& geom)
 {
   godot::Array arrays;
@@ -277,6 +277,264 @@ godot::Array build_mesh_arrays(const Geom& geom)
   return arrays;
 }
 
+/// build_mesh_arrays overload for dynamic geometry types.
+/// Iterates attributes/buffers/bindings at runtime (they are std::vectors).
+template <typename Geom>
+  requires(avnd::dynamic_geometry_type<Geom>)
+godot::Array build_mesh_arrays(const Geom& geom)
+{
+  godot::Array arrays;
+  arrays.resize(godot::Mesh::ARRAY_MAX);
+
+  const int vertex_count = [&] {
+    if constexpr(requires { geom.vertices; })
+      return geom.vertices;
+    else
+      return 0;
+  }();
+
+  if(vertex_count <= 0)
+    return arrays;
+
+  // Runtime format → float component count matcher (for color attributes)
+  static_constexpr auto fmt_components = AVND_ENUM_MATCHER(
+      (4, float4, vec4),
+      (3, float3, vec3),
+      (2, float2, vec2),
+      (1, float1));
+
+  for(const auto& attr : geom.attributes)
+  {
+    // For dynamic geometry, attribute location is a runtime integer/enum value.
+    // By convention: position=0, tex_coord=1, color=2, normal=3, tangent=4.
+    const int loc = [&] {
+      if constexpr(requires { attr.location; })
+        return static_cast<int>(attr.location);
+      else
+        return -1;
+    }();
+
+    if(loc < 0)
+      continue;
+
+    const int binding_idx = [&] {
+      if constexpr(requires { attr.binding; })
+        return attr.binding;
+      else
+        return 0;
+    }();
+
+    const int attr_byte_offset = [&] {
+      if constexpr(requires { attr.byte_offset; })
+        return static_cast<int>(attr.byte_offset);
+      else if constexpr(requires { attr.offset; })
+        return static_cast<int>(attr.offset);
+      else
+        return 0;
+    }();
+
+    // Find buffer data from input binding
+    if(binding_idx < 0 || binding_idx >= static_cast<int>(geom.input.size()))
+      continue;
+
+    const auto& inp = geom.input[binding_idx];
+
+    const int buf_idx = [&] {
+      if constexpr(requires { inp.buffer; })
+        return inp.buffer;
+      else
+        return 0;
+    }();
+
+    if(buf_idx < 0 || buf_idx >= static_cast<int>(geom.buffers.size()))
+      continue;
+
+    const auto& buf = geom.buffers[buf_idx];
+
+    const void* buf_data = nullptr;
+    if constexpr(requires { buf.raw_data; })
+      buf_data = buf.raw_data;
+    else if constexpr(requires { buf.data; })
+      buf_data = buf.data;
+    else if constexpr(requires { buf.elements; })
+      buf_data = buf.elements;
+
+    if(!buf_data)
+      continue;
+
+    const int buf_byte_offset = [&] {
+      if constexpr(requires { inp.byte_offset; })
+        return static_cast<int>(inp.byte_offset);
+      else if constexpr(requires { inp.offset; })
+        return static_cast<int>(inp.offset);
+      else
+        return 0;
+    }();
+
+    const float* data_start = reinterpret_cast<const float*>(
+        reinterpret_cast<const char*>(buf_data) + buf_byte_offset + attr_byte_offset);
+
+    // Get stride from bindings
+    int stride_floats = 0;
+    if(binding_idx < static_cast<int>(geom.bindings.size()))
+      stride_floats = geom.bindings[binding_idx].stride / sizeof(float);
+
+    switch(loc)
+    {
+      case 0: // position — float3
+      {
+        if(stride_floats == 0)
+          stride_floats = 3;
+        godot::PackedVector3Array positions;
+        positions.resize(vertex_count);
+        auto* dst = positions.ptrw();
+        for(int i = 0; i < vertex_count; ++i)
+        {
+          const float* v = data_start + i * stride_floats;
+          dst[i] = godot::Vector3(v[0], v[1], v[2]);
+        }
+        arrays[godot::Mesh::ARRAY_VERTEX] = positions;
+        break;
+      }
+      case 3: // normal — float3
+      {
+        if(stride_floats == 0)
+          stride_floats = 3;
+        godot::PackedVector3Array normals;
+        normals.resize(vertex_count);
+        auto* dst = normals.ptrw();
+        for(int i = 0; i < vertex_count; ++i)
+        {
+          const float* v = data_start + i * stride_floats;
+          dst[i] = godot::Vector3(v[0], v[1], v[2]);
+        }
+        arrays[godot::Mesh::ARRAY_NORMAL] = normals;
+        break;
+      }
+      case 1: // texcoord — float2
+      {
+        if(stride_floats == 0)
+          stride_floats = 2;
+        godot::PackedVector2Array uvs;
+        uvs.resize(vertex_count);
+        auto* dst = uvs.ptrw();
+        for(int i = 0; i < vertex_count; ++i)
+        {
+          const float* v = data_start + i * stride_floats;
+          dst[i] = godot::Vector2(v[0], v[1]);
+        }
+        arrays[godot::Mesh::ARRAY_TEX_UV] = uvs;
+        break;
+      }
+      case 2: // color — float3 or float4
+      {
+        const int components = [&] {
+          if constexpr(requires { attr.format; })
+            return fmt_components(attr.format, 3);
+          else
+            return 3;
+        }();
+
+        if(stride_floats == 0)
+          stride_floats = components;
+        godot::PackedColorArray colors;
+        colors.resize(vertex_count);
+        auto* dst = colors.ptrw();
+        for(int i = 0; i < vertex_count; ++i)
+        {
+          const float* v = data_start + i * stride_floats;
+          if(components >= 4)
+            dst[i] = godot::Color(v[0], v[1], v[2], v[3]);
+          else
+            dst[i] = godot::Color(v[0], v[1], v[2], 1.0f);
+        }
+        arrays[godot::Mesh::ARRAY_COLOR] = colors;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  // Handle index buffer if present
+  if constexpr(requires { geom.index; })
+  {
+    const int idx_buf = [&] {
+      if constexpr(requires { geom.index.buffer; })
+        return geom.index.buffer;
+      else
+        return -1;
+    }();
+
+    if(idx_buf >= 0 && idx_buf < static_cast<int>(geom.buffers.size()))
+    {
+      const int index_count = [&] {
+        if constexpr(requires { geom.indices; })
+          return geom.indices;
+        else
+          return 0;
+      }();
+
+      if(index_count > 0)
+      {
+        const auto& idx_buffer = geom.buffers[idx_buf];
+        const void* idx_data = nullptr;
+        if constexpr(requires { idx_buffer.raw_data; })
+          idx_data = idx_buffer.raw_data;
+        else if constexpr(requires { idx_buffer.data; })
+          idx_data = idx_buffer.data;
+        else if constexpr(requires { idx_buffer.elements; })
+          idx_data = idx_buffer.elements;
+
+        if(idx_data)
+        {
+          const int idx_offset = [&] {
+            if constexpr(requires { geom.index.byte_offset; })
+              return static_cast<int>(geom.index.byte_offset);
+            else if constexpr(requires { geom.index.offset; })
+              return static_cast<int>(geom.index.offset);
+            else
+              return 0;
+          }();
+
+          const char* base = static_cast<const char*>(idx_data) + idx_offset;
+
+          // Determine if uint16 format
+          bool is_uint16 = false;
+          if constexpr(requires { geom.index.format; })
+          {
+            static_constexpr auto fmt_m = AVND_ENUM_MATCHER(
+                (true, uint16),
+                (false, uint32));
+            is_uint16 = fmt_m(geom.index.format, false);
+          }
+
+          godot::PackedInt32Array indices;
+          indices.resize(index_count);
+          auto* dst = indices.ptrw();
+
+          if(is_uint16)
+          {
+            const uint16_t* src = reinterpret_cast<const uint16_t*>(base);
+            for(int i = 0; i < index_count; ++i)
+              dst[i] = src[i];
+          }
+          else
+          {
+            const uint32_t* src = reinterpret_cast<const uint32_t*>(base);
+            for(int i = 0; i < index_count; ++i)
+              dst[i] = src[i];
+          }
+
+          arrays[godot::Mesh::ARRAY_INDEX] = indices;
+        }
+      }
+    }
+  }
+
+  return arrays;
+}
+
 /**
  * Godot Node3D wrapping an Avendish geometry generator/processor.
  *
@@ -390,7 +648,7 @@ private:
 
     mesh->clear_surfaces();
 
-    constexpr auto prim = godot_primitive_type<std::decay_t<Geom>>();
+    auto prim = godot_primitive_type(geom);
     mesh->add_surface_from_arrays(prim, arrays);
 
     if constexpr(requires { geom.dirty; })
