@@ -106,8 +106,21 @@ using as_typelist = typename pfr::pfr_impl_helper<T>::as_typelist;
 template <class T>
 struct fake_object_wrapper { T const value; };
 
+#if defined(_MSC_VER) && !defined(__clang__)
+// MSVC materializes fake_object_member_ptrs<T> as a static array of pointers into
+// fake_object_for_indices<T> and emits an external reference to that symbol; with an
+// `extern` (undefined) declaration this then fails to link (LNK2001). Give it an actual
+// definition instead. The object is never read, only its members' addresses are taken to
+// compute member indices at compile time, so value-initialization is enough.
+template <class T>
+inline const fake_object_wrapper<T> fake_object_for_indices{};
+#else
+// Clang/GCC fold the address arithmetic down to integer indices at compile time and never
+// ODR-use the variable, so it is intentionally left undefined (cf. the
+// -Wundefined-var-template suppression above) to avoid having to construct a T.
 template <class T>
 extern const fake_object_wrapper<T> fake_object_for_indices;
+#endif
 
 template<class T>
 static constexpr auto fake_object_member_ptrs = std::apply([](auto const&... ref) {
