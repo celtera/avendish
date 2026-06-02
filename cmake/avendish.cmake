@@ -232,6 +232,7 @@ function(avnd_make_geometry)
   avnd_register(${ARGV})
 
   avnd_make_ossia(${ARGV})
+  avnd_make_max(${ARGV} PROCESSOR_TYPE GEOMETRY)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE SOP)
   avnd_make_touchdesigner(${ARGV} PROCESSOR_TYPE POP)
   avnd_make_godot(${ARGV} PROCESSOR_TYPE GEOMETRY)

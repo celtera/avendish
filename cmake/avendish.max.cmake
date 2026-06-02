@@ -79,12 +79,27 @@ function(avnd_make_max)
     return()
   endif()
 
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;PROCESSOR_TYPE" "" ${ARGN})
+
+  if(AVND_PROCESSOR_TYPE STREQUAL "GEOMETRY" AND NOT (APPLE OR WIN32))
+    return()
+  endif()
+
+  if(NOT TARGET ${AVND_TARGET})
+    avnd_register(${ARGV})
+  endif()
+  avnd_make_dump(${ARGV})
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
+  if(AVND_PROCESSOR_TYPE STREQUAL "GEOMETRY")
+    set(AVND_MAX_PROTOTYPE "prototype.geometry.cpp.in")
+  else()
+    set(AVND_MAX_PROTOTYPE "prototype.cpp.in")
+  endif()
+
   configure_file(
-    "${AVND_SOURCE_DIR}/include/avnd/binding/max/prototype.cpp.in"
+    "${AVND_SOURCE_DIR}/include/avnd/binding/max/${AVND_MAX_PROTOTYPE}"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_max.cpp"
     @ONLY
     NEWLINE_STYLE LF
@@ -156,6 +171,20 @@ function(avnd_make_max)
       DisableExceptions
       maxmsp_commonsyms
   )
+
+  # Geometry objects render through Jitter ob3d, which calls fixed-function GL
+  # (the transform multiply) -> the external must link the system OpenGL.
+  if(AVND_PROCESSOR_TYPE STREQUAL "GEOMETRY")
+    target_sources(${AVND_FX_TARGET} PRIVATE
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/jitter_geometry_chunk.hpp"
+      "${AVND_SOURCE_DIR}/include/avnd/binding/max/jitter_gl_geometry_processor.hpp"
+    )
+    if(APPLE)
+      target_link_libraries(${AVND_FX_TARGET} PUBLIC "-framework OpenGL")
+    elseif(WIN32)
+      target_link_libraries(${AVND_FX_TARGET} PUBLIC opengl32)
+    endif()
+  endif()
 
   if(APPLE)
     target_compile_definitions(${AVND_FX_TARGET} PUBLIC MAC_VERSION)
