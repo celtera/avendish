@@ -652,7 +652,7 @@ private:
 
     set_pop_attribute(
         output, "P",
-        static_cast<const char*>(buf.raw_data),
+        reinterpret_cast<const char*>(buf.raw_data),
         num_particles, components, components * sizeof(float));
 
     return num_particles;
