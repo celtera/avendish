@@ -6,6 +6,7 @@
 
 // clang-format off
 #include <@AVND_MAIN_FILE@>
+#include <avnd/common/export.hpp> // AVND_EXPORTED_SYMBOL
 #include <avnd/binding/max/configure.hpp>
 #include <avnd/binding/max/jitter_gl_geometry_processor.hpp>
 #include "commonsyms.h"
