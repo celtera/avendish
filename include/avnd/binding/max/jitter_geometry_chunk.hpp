@@ -70,6 +70,15 @@ constexpr int static_attribute_location() noexcept
     return -1;
 }
 
+template <typename Attr, int Loc>
+constexpr int static_attribute_components() noexcept
+{
+  if constexpr(requires { typename Attr::datatype; })
+    return (int)(sizeof(typename Attr::datatype) / sizeof(float));
+  else
+    return gl_plane_for_location(Loc).max_components;
+}
+
 // Normalised, backend-agnostic description of one vertex attribute stream.
 struct gathered_attribute
 {
@@ -154,12 +163,7 @@ inline gathered_geometry gather_geometry(const Geom& geom)
         else
           return 0;
       }();
-      constexpr int components = [] {
-        if constexpr(requires { typename Attr::datatype; })
-          return (int)(sizeof(typename Attr::datatype) / sizeof(float));
-        else
-          return gl_plane_for_location(loc).max_components;
-      }();
+      constexpr int components = static_attribute_components<Attr, loc>();
 
       // Find buffer pointer + byte offset by walking the input bindings.
       const float* buf_data = nullptr;
