@@ -243,4 +243,26 @@ constexpr std::size_t rank_of(const T& t) noexcept
   return std::ranges::size(avnd::shape_of(t));
 }
 
+// Compile-time rank, picked up from common conventions
+// (Eigen::Tensor::NumDimensions, boost::multi_array::dimensionality,
+// xtensor::rank). Returns dynamic_rank otherwise.
+template <typename T>
+constexpr std::size_t container_static_rank() noexcept
+{
+  using C = std::remove_cvref_t<T>;
+  if constexpr(requires { { C::NumDimensions } -> std::convertible_to<std::size_t>; })
+    return static_cast<std::size_t>(C::NumDimensions);
+  else if constexpr(requires { { C::dimensionality } -> std::convertible_to<std::size_t>; })
+    return static_cast<std::size_t>(C::dimensionality);
+  else if constexpr(requires { { C::rank } -> std::convertible_to<std::size_t>; })
+    return static_cast<std::size_t>(C::rank);
+  else
+    return dynamic_rank;
+}
+
+template <typename Field>
+concept tensor_port
+    = requires { typename std::remove_cvref_t<decltype(Field::value)>; }
+      && tensor_like<std::remove_cvref_t<decltype(Field::value)>>;
+
 }  // namespace avnd

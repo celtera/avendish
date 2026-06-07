@@ -37,6 +37,7 @@
 #include <avnd/concepts/soundfile.hpp>
 #include <avnd/concepts/synth.hpp>
 #include <avnd/concepts/temporality.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/concepts/ui.hpp>
 #include <avnd/concepts/widget.hpp>
 #include <avnd/concepts/worker.hpp>
