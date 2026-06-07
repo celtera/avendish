@@ -9,13 +9,19 @@
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
 #include <avnd/binding/touchdesigner/info_output.hpp>
 #include <avnd/common/export.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
+#include <halp/tensor_port.hpp>
 
 #include <charconv>
+#include <cstring>
+#include <memory>
+#include <string>
+#include <vector>
 namespace touchdesigner::DAT
 {
 
@@ -245,9 +251,142 @@ private:
           field.value.first = read_dat_cell<arr_val_type>(str);
         if(const char* str = dat_input->getCell(0, 1))
           field.value.second = read_dat_cell<arr_val_type>(str);
+      }
+      else if constexpr(avnd::tensor_like<value_type>)
+      {
+        read_dat_input_tensor<Field>(dat_input, field);
+      }
+    }
+    // TODO do it in a more advanced way, like Max and ossia
+  }
+
+  template <typename Field>
+  void read_dat_input_tensor(const TD::OP_DATInput* dat_input, Field& field)
+  {
+    using value_type = std::remove_cvref_t<decltype(field.value)>;
+    using elem_t = avnd::tensor_element<value_type>;
+    constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+
+    const int rows = dat_input->numRows;
+    const int cols = dat_input->numCols;
+    if(rows <= 0 || cols <= 0)
+      return;
+
+    constexpr bool wire_rank_1 = (static_rank == 1);
+
+    if constexpr(halp::is_tensor_view_v<value_type>)
+    {
+      if constexpr(wire_rank_1)
+      {
+        const std::size_t N = static_cast<std::size_t>(cols);
+        auto buf = std::shared_ptr<elem_t[]>(new elem_t[N]);
+        for(int c = 0; c < cols; ++c)
+        {
+          if(const char* str = dat_input->getCell(0, c))
+            buf[c] = read_dat_cell<elem_t>(str);
+          else
+            buf[c] = elem_t{};
+        }
+        field.value.data_ptr = buf.get();
+        field.value.shape_v = {N};
+        field.value.strides_v = {1};
+        field.value.keep_alive = std::shared_ptr<void>(buf, buf.get());
+      }
+      else
+      {
+        const std::size_t R = static_cast<std::size_t>(rows);
+        const std::size_t C = static_cast<std::size_t>(cols);
+        const std::size_t N = R * C;
+        auto buf = std::shared_ptr<elem_t[]>(new elem_t[N]);
+        for(int r = 0; r < rows; ++r)
+        {
+          for(int c = 0; c < cols; ++c)
+          {
+            if(const char* str = dat_input->getCell(r, c))
+              buf[r * C + c] = read_dat_cell<elem_t>(str);
+            else
+              buf[r * C + c] = elem_t{};
+          }
+        }
+        field.value.data_ptr = buf.get();
+        field.value.shape_v = {R, C};
+        field.value.strides_v = {C, 1};
+        field.value.keep_alive = std::shared_ptr<void>(buf, buf.get());
+      }
+    }
+    else if constexpr(avnd::resizable_tensor_like<value_type>)
+    {
+      if constexpr(wire_rank_1)
+      {
+        std::vector<std::size_t> shape{static_cast<std::size_t>(cols)};
+        avnd::resize_to(field.value, shape);
+        elem_t* data = avnd::data_of(field.value);
+        for(int c = 0; c < cols; ++c)
+        {
+          if(const char* str = dat_input->getCell(0, c))
+            data[c] = read_dat_cell<elem_t>(str);
+          else
+            data[c] = elem_t{};
         }
       }
-      // TODO do it in a more advanced way, like Max and ossia
+      else
+      {
+        std::vector<std::size_t> shape{
+            static_cast<std::size_t>(rows), static_cast<std::size_t>(cols)};
+        avnd::resize_to(field.value, shape);
+        elem_t* data = avnd::data_of(field.value);
+        const std::size_t C = static_cast<std::size_t>(cols);
+        for(int r = 0; r < rows; ++r)
+        {
+          for(int c = 0; c < cols; ++c)
+          {
+            if(const char* str = dat_input->getCell(r, c))
+              data[r * C + c] = read_dat_cell<elem_t>(str);
+            else
+              data[r * C + c] = elem_t{};
+          }
+        }
+      }
+    }
+    else
+    {
+      const auto shape = avnd::shape_of(field.value);
+      elem_t* data = avnd::data_of(field.value);
+      if(data == nullptr)
+        return;
+      const std::size_t srank = std::ranges::size(shape);
+      auto it = std::ranges::begin(shape);
+      if(srank == 1)
+      {
+        const std::size_t N = static_cast<std::size_t>(*it);
+        const int lim = std::min(cols, static_cast<int>(N));
+        for(int c = 0; c < lim; ++c)
+        {
+          if(const char* str = dat_input->getCell(0, c))
+            data[c] = read_dat_cell<elem_t>(str);
+          else
+            data[c] = elem_t{};
+        }
+      }
+      else if(srank >= 2)
+      {
+        const std::size_t R = static_cast<std::size_t>(*it);
+        ++it;
+        const std::size_t C = static_cast<std::size_t>(*it);
+        const int rlim = std::min(rows, static_cast<int>(R));
+        const int clim = std::min(cols, static_cast<int>(C));
+        for(int r = 0; r < rlim; ++r)
+        {
+          for(int c = 0; c < clim; ++c)
+          {
+            if(const char* str = dat_input->getCell(r, c))
+              data[r * C + c] = read_dat_cell<elem_t>(str);
+            else
+              data[r * C + c] = elem_t{};
+          }
+        }
+      }
+    }
   }
 
   // Write Avendish outputs to DAT
@@ -289,6 +428,12 @@ private:
           write_cell(output, 0, col_index, first_field.value[col_index]);
         }
       }
+      else if constexpr(avnd::tensor_like<value_type>)
+      {
+        output->setOutputDataType(TD::DAT_OutDataType::Table);
+        write_tensor_to_table<std::decay_t<decltype(first_field)>>(
+            output, first_field.value);
+      }
       else
       {
         // FIXME boost::multiarray, mdspan, mdarray, vector<vector<...>> etc.
@@ -302,21 +447,161 @@ private:
     }
     else
     {
-      // FIXME if we're generating arrays we likely want one value per cell
-      // Create a table with 1 column per output
-      // FIXME find max array length and use that as column size
-      output->setOutputDataType(TD::DAT_OutDataType::Table);
-      output->setTableSize(num_outputs, 1);
+      std::size_t max_cols = 1;
+      avnd::parameter_output_introspection<T>::for_all(
+          avnd::get_outputs(implementation),
+          [&]<typename Field>(Field& field) {
+            using vt = std::decay_t<decltype(field.value)>;
+            if constexpr(avnd::tensor_like<vt>)
+            {
+              const auto sh = avnd::shape_of(field.value);
+              std::size_t total = 1;
+              std::size_t header_cols = 0;
+              std::size_t r0 = 0;
+              std::size_t i = 0;
+              for(auto e : sh)
+              {
+                if(i == 0) r0 = static_cast<std::size_t>(e);
+                total *= static_cast<std::size_t>(e);
+                ++i;
+              }
+              const std::size_t rank = i;
+              std::size_t need_cols = 1;
+              if(rank == 1) need_cols = total;
+              else if(rank == 2 && r0 > 0) need_cols = total / r0;
+              else { header_cols = rank; need_cols = total; }
+              std::size_t mc = std::max(need_cols, header_cols);
+              if(mc > max_cols) max_cols = mc;
+            }
+          });
 
-      // Fill the table with output values
+      output->setOutputDataType(TD::DAT_OutDataType::Table);
+      output->setTableSize(num_outputs, static_cast<int32_t>(max_cols));
+
       int row_index = 0;
       avnd::parameter_output_introspection<T>::for_all(
           avnd::get_outputs(implementation),
           [&]<typename Field>(Field& field) {
-        write_cell(output, row_index, 0, field.value);
-        row_index++;
-      });
+            using vt = std::decay_t<decltype(field.value)>;
+            if constexpr(avnd::tensor_like<vt>)
+            {
+              write_tensor_row(output, row_index, field.value, max_cols);
+            }
+            else
+            {
+              write_cell(output, row_index, 0, field.value);
+              for(std::size_t c = 1; c < max_cols; ++c)
+                output->setCellString(row_index, static_cast<int32_t>(c), "");
+            }
+            row_index++;
+          });
     }
+  }
+
+  template <typename Field, typename Container>
+  void write_tensor_to_table(TD::DAT_Output* output, const Container& v)
+  {
+    using elem_t = avnd::tensor_element<Container>;
+    const auto shape = avnd::shape_of(v);
+    const elem_t* data = avnd::data_of(v);
+    const std::size_t rank = std::ranges::size(shape);
+    constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+
+    if(data == nullptr || rank == 0)
+    {
+      output->setTableSize(0, 0);
+      return;
+    }
+
+    std::size_t total = 1;
+    std::size_t d0 = 0, d1 = 0;
+    std::size_t i = 0;
+    for(auto e : shape)
+    {
+      const auto se = static_cast<std::size_t>(e);
+      total *= se;
+      if(i == 0) d0 = se;
+      else if(i == 1) d1 = se;
+      ++i;
+    }
+
+    if constexpr(static_rank == 1)
+    {
+      output->setTableSize(1, static_cast<int32_t>(d0));
+      for(std::size_t c = 0; c < d0; ++c)
+        write_cell(output, 0, static_cast<int32_t>(c), data[c]);
+    }
+    else if constexpr(static_rank == 2)
+    {
+      output->setTableSize(static_cast<int32_t>(d0), static_cast<int32_t>(d1));
+      for(std::size_t r = 0; r < d0; ++r)
+        for(std::size_t c = 0; c < d1; ++c)
+          write_cell(
+              output, static_cast<int32_t>(r), static_cast<int32_t>(c),
+              data[r * d1 + c]);
+    }
+    else
+    {
+      if(rank == 1)
+      {
+        output->setTableSize(1, static_cast<int32_t>(d0));
+        for(std::size_t c = 0; c < d0; ++c)
+          write_cell(output, 0, static_cast<int32_t>(c), data[c]);
+      }
+      else if(rank == 2)
+      {
+        output->setTableSize(
+            static_cast<int32_t>(d0), static_cast<int32_t>(d1));
+        for(std::size_t r = 0; r < d0; ++r)
+          for(std::size_t c = 0; c < d1; ++c)
+            write_cell(
+                output, static_cast<int32_t>(r), static_cast<int32_t>(c),
+                data[r * d1 + c]);
+      }
+      else
+      {
+        // Rank-erased: shape header on row 0, flat values on row 1.
+        const std::size_t cols = std::max(rank, total);
+        output->setTableSize(2, static_cast<int32_t>(cols));
+        std::size_t j = 0;
+        for(auto e : shape)
+        {
+          output->setCellInt(
+              0, static_cast<int32_t>(j),
+              static_cast<int32_t>(static_cast<std::size_t>(e)));
+          ++j;
+        }
+        for(std::size_t k = j; k < cols; ++k)
+          output->setCellString(0, static_cast<int32_t>(k), "");
+        for(std::size_t k = 0; k < total; ++k)
+          write_cell(output, 1, static_cast<int32_t>(k), data[k]);
+        for(std::size_t k = total; k < cols; ++k)
+          output->setCellString(1, static_cast<int32_t>(k), "");
+      }
+    }
+  }
+
+  template <typename Container>
+  void write_tensor_row(
+      TD::DAT_Output* output, int row, const Container& v, std::size_t row_cols)
+  {
+    using elem_t = avnd::tensor_element<Container>;
+    const auto shape = avnd::shape_of(v);
+    const elem_t* data = avnd::data_of(v);
+    if(data == nullptr)
+    {
+      for(std::size_t c = 0; c < row_cols; ++c)
+        output->setCellString(row, static_cast<int32_t>(c), "");
+      return;
+    }
+    std::size_t total = 1;
+    for(auto e : shape)
+      total *= static_cast<std::size_t>(e);
+    const std::size_t lim = std::min(total, row_cols);
+    for(std::size_t c = 0; c < lim; ++c)
+      write_cell(output, row, static_cast<int32_t>(c), data[c]);
+    for(std::size_t c = lim; c < row_cols; ++c)
+      output->setCellString(row, static_cast<int32_t>(c), "");
   }
 
   // Write a single cell value
