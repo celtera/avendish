@@ -3,11 +3,14 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/pd/helpers.hpp>
+#include <avnd/binding/pd/tensor_atoms.hpp>
 #include <avnd/common/enum_reflection.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/vecf.hpp>
 #include <boost/container/small_vector.hpp>
+#include <halp/tensor_port.hpp>
 
 #include <array>
 #include <vector>
@@ -589,9 +592,20 @@ struct do_value_to_pd_anything
 };
 
 template <typename C, typename... Args>
+concept tensor_output_dispatch
+    = (sizeof...(Args) == 1)
+      && (avnd::tensor_like<std::remove_cvref_t<Args>> && ...);
+
+template <typename C, typename... Args>
 inline void value_to_pd_dispatch(t_outlet* outlet, Args&&... v) noexcept
 {
-  if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
+  if constexpr(tensor_output_dispatch<C, Args...>)
+  {
+    constexpr std::size_t static_rank = halp::static_port_rank<C>();
+    pd::emit_tensor<static_rank>(outlet, std::forward<Args>(v)...);
+    return;
+  }
+  else if constexpr(avnd::has_symbol<C> || avnd::has_c_name<C>)
   {
     static const auto sym = get_message_out_symbol<C>();
     if constexpr((convertible_to_atom_list_statically<Args> && ...))
