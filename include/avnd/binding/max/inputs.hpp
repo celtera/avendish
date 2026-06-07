@@ -3,14 +3,28 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/max/helpers.hpp>
+#include <avnd/binding/max/jitter_helpers.hpp>
 #include <avnd/concepts/all.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/input.hpp>
+#include <halp/tensor_port.hpp>
 #include <boost/mp11.hpp>
 #include <array>
 #include <jit.common.h>
 #include <max.jit.mop.h>
 namespace max
 {
+
+template <typename Field>
+concept max_jit_input
+    = avnd::matrix_port<Field> || avnd::tensor_port<Field>;
+
+template <typename Field>
+using is_max_jit_input_t = boost::mp11::mp_bool<max_jit_input<Field>>;
+
+template <typename T>
+using max_jit_input_introspection
+    = avnd::predicate_introspection<typename avnd::inputs_type<T>::type, is_max_jit_input_t>;
 
 template <typename Field>
 using is_explicit_parameter_t
@@ -30,7 +44,7 @@ struct inputs
 
 template <typename T>
   requires(explicit_parameter_input_introspection<T>::size > 0
-           && avnd::matrix_input_introspection<T>::size == 0)
+           && max_jit_input_introspection<T>::size == 0)
 struct inputs<T>
 {
   using refl = explicit_parameter_input_introspection<T>;
@@ -114,7 +128,7 @@ struct inputs<T>
 template <typename T>
   requires(avnd::parameter_input_introspection<T>::size > 0
            && explicit_parameter_input_introspection<T>::size == 0
-           && avnd::matrix_input_introspection<T>::size == 0)
+           && max_jit_input_introspection<T>::size == 0)
 struct inputs<T>
 {
   void init(avnd::effect_container<T>& implementation, t_object& x_obj) { }
@@ -131,14 +145,49 @@ struct inputs<T>
 
 
 template <typename T>
-  requires(avnd::matrix_input_introspection<T>::size > 0)
+  requires(max_jit_input_introspection<T>::size > 0)
 struct inputs<T>
 {
+  template <typename Field>
+  static void configure_mop_input(void* input)
+  {
+    if(!input)
+      return;
+
+    if constexpr(avnd::tensor_port<Field>)
+    {
+      using value_type = std::remove_cvref_t<decltype(Field::value)>;
+      using element_type = avnd::tensor_element<value_type>;
+      t_symbol* type = jitter::jitter_type_for_element<element_type>();
+
+      constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+      long mindim = 1;
+      long maxdim = jitter::jitter_max_dimcount;
+      if constexpr(static_rank != avnd::dynamic_rank)
+      {
+        mindim = static_cast<long>(static_rank);
+        maxdim = static_cast<long>(static_rank);
+      }
+
+      jit_attr_setsym(input, _jit_sym_type, type);
+      jit_attr_setlong(input, _jit_sym_planecount, 1);
+      jit_attr_setlong(input, _jit_sym_mindimcount, mindim);
+      jit_attr_setlong(input, _jit_sym_maxdimcount, maxdim);
+    }
+    else
+    {
+      jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
+      jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
+      jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
+      jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
+    }
+  }
+
   void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
     // Setup MOP inputs
     const auto x = &x_obj;
-    static constexpr auto matrix_input_count = avnd::matrix_input_introspection<T>::size;
+    static constexpr auto matrix_input_count = max_jit_input_introspection<T>::size;
     {
       for (int i = matrix_input_count; i > 1; i--) {
         max_jit_obex_proxy_new(x, i - 1);
@@ -149,17 +198,14 @@ struct inputs<T>
         max_jit_mop_variable_addinputs(x, matrix_input_count);
       }
 
-      for(int i = 0; i < matrix_input_count; i++)
-      {
-        if(void *input = max_jit_mop_getinput(x, i))
-        {
-          // FIXME
-          jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
-          jit_attr_setlong(input, _jit_sym_planecount, 4); // RGBA
-          jit_attr_setlong(input, _jit_sym_mindimcount, 2); // 2D minimum
-          jit_attr_setlong(input, _jit_sym_maxdimcount, 2); // 2D maximum
-        }
-      }
+      int slot = 0;
+      max_jit_input_introspection<T>::for_all(
+          avnd::get_inputs<T>(implementation),
+          [&]<typename Field>(Field&) {
+            if(void* input = max_jit_mop_getinput(x, slot))
+              configure_mop_input<Field>(input);
+            ++slot;
+          });
     }
 
     const auto mop = max_jit_obex_adornment_get(x, _jit_sym_jit_mop);

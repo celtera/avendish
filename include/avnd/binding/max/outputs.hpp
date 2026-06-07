@@ -4,13 +4,29 @@
 
 #include <avnd/binding/max/dict.hpp>
 #include <avnd/binding/max/helpers.hpp>
+#include <avnd/binding/max/jitter_helpers.hpp>
 #include <avnd/binding/max/to_atoms.hpp>
+#include <avnd/concepts/tensor.hpp>
+#include <halp/tensor_port.hpp>
 #include <boost/container/small_vector.hpp>
+#include <boost/mp11.hpp>
 #include <commonsyms.h>
+#include <jit.common.h>
 #include <max.jit.mop.h>
 #include <iostream>
 namespace max
 {
+
+template <typename Field>
+concept max_jit_output
+    = avnd::matrix_port<Field> || avnd::tensor_port<Field>;
+
+template <typename Field>
+using is_max_jit_output_t = boost::mp11::mp_bool<max_jit_output<Field>>;
+
+template <typename T>
+using max_jit_output_introspection
+    = avnd::predicate_introspection<typename avnd::outputs_type<T>::type, is_max_jit_output_t>;
 
 template <std::integral T>
   requires (!std::is_pointer_v<T>)
@@ -618,6 +634,9 @@ struct value_writer
   template <avnd::span_sample_accurate_parameter_port Field, std::size_t Idx>
   void operator()(Field& ctrl, t_outlet* port, avnd::num<Idx>) const noexcept = delete;
 
+  template <avnd::tensor_port Field, std::size_t Idx>
+  void operator()(Field&, t_outlet*, avnd::num<Idx>) const noexcept { }
+
   void operator()(auto&&...) const noexcept { }
 };
 
@@ -689,14 +708,16 @@ struct outputs
 
   }
 
-  // Geometry output ports are rendered by the ob3d / jit.gl.mesh path
-  // (jitter_gl_geometry_processor), not through a message outlet: no-op here.
   template <avnd::geometry_port C>
   static void setup(C& out, t_outlet& outlet)
   {
 
   }
 
+  template <avnd::tensor_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+  }
 
   template <typename Out>
   void setup(Out& out, t_outlet& outlet) = delete;
@@ -718,6 +739,41 @@ struct outputs
     }
   }
 
+  template <typename Field>
+  static void configure_mop_output(void* output)
+  {
+    if(!output)
+      return;
+
+    if constexpr(avnd::tensor_port<Field>)
+    {
+      using value_type = std::remove_cvref_t<decltype(Field::value)>;
+      using element_type = avnd::tensor_element<value_type>;
+      t_symbol* type = jitter::jitter_type_for_element<element_type>();
+
+      constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+      long mindim = 1;
+      long maxdim = jitter::jitter_max_dimcount;
+      if constexpr(static_rank != avnd::dynamic_rank)
+      {
+        mindim = static_cast<long>(static_rank);
+        maxdim = static_cast<long>(static_rank);
+      }
+
+      jit_attr_setsym(output, _jit_sym_type, type);
+      jit_attr_setlong(output, _jit_sym_planecount, 1);
+      jit_attr_setlong(output, _jit_sym_mindimcount, mindim);
+      jit_attr_setlong(output, _jit_sym_maxdimcount, maxdim);
+    }
+    else
+    {
+      jit_attr_setsym(output, _jit_sym_type, _jit_sym_char);
+      jit_attr_setlong(output, _jit_sym_planecount, 4); // RGBA
+      jit_attr_setlong(output, _jit_sym_mindimcount, 2); // 2D
+      jit_attr_setlong(output, _jit_sym_maxdimcount, 2); // 2D
+    }
+  }
+
   void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
     static constexpr auto N = avnd::output_introspection<T>::size;
@@ -726,18 +782,21 @@ struct outputs
       int out_k = 0;
       std::array<t_symbol*, N> names;
       std::array<bool, N> jitter;
-      // Geometry ports are rendered through the ob3d / jit.gl path, never through
-      // a message outlet, so they must not get an outlet of their own here.
       std::array<bool, N> geom;
+      std::array<void(*)(void*), N> jit_configure{};
 
       // A. Iterate on all the ports to gather their names
       // outlet_new is right-to-left so we create in reverse order...
       avnd::output_introspection<T>::for_all(
           avnd::get_outputs<T>(implementation),
-          [&names, &jitter, &geom, &out_k]<typename C>(C& ctl) {
+          [&names, &jitter, &geom, &jit_configure, &out_k]<typename C>(C& ctl) {
             names[out_k] = symbol_for_port<C>();
-            jitter[out_k] = avnd::texture_port<C> || avnd::buffer_port<C>;
+            jitter[out_k]
+                = avnd::texture_port<C> || avnd::buffer_port<C>
+                  || avnd::tensor_port<C>;
             geom[out_k] = avnd::geometry_port<C>;
+            if(jitter[out_k])
+              jit_configure[out_k] = &outputs::configure_mop_output<C>;
             out_k++;
           });
 
@@ -747,17 +806,17 @@ struct outputs
       auto it = names.crbegin();
       auto it_jitter = jitter.crbegin();
       auto it_geom = geom.crbegin();
+      auto it_configure = jit_configure.crbegin();
       int mop_output_k = 0;
-      for(; it != names.crend(); ++it, ++it_jitter, ++it_geom)
+      for(; it != names.crend(); ++it, ++it_jitter, ++it_geom, ++it_configure)
       {
         const auto& name = *it;
-        // Geometry ports do not own an outlet (rendered via ob3d / jit.gl).
         if(*it_geom)
         {
           outlets[--out_k] = nullptr;
           continue;
         }
-        if constexpr(avnd::matrix_output_introspection<T>::size == 0)
+        if constexpr(max_jit_output_introspection<T>::size == 0)
         {
           outlets[--out_k] = static_cast<t_outlet*>(outlet_new(&x_obj, name->s_name));
         }
@@ -773,14 +832,10 @@ struct outputs
             auto err = max_jit_mop_variable_addoutputs(&x_obj, 1);
             auto output = max_jit_mop_getoutput(&x_obj, mop_output_k + 1); // starts at 1
 
-            // FIXME do a proper set-up based on texture_type
-            if(output)
-            {
-              jit_attr_setsym(output, _jit_sym_type, _jit_sym_char);
-              jit_attr_setlong(output, _jit_sym_planecount, 4); // RGBA
-              jit_attr_setlong(output, _jit_sym_mindimcount, 2); // 2D
-              jit_attr_setlong(output, _jit_sym_maxdimcount, 2); // 2D
-            }
+            // Per-port MOP setup: dispatch on the originating field's
+            // concept (texture / buffer / tensor).
+            if(output && *it_configure)
+              (*it_configure)(output);
 
             // 2. Create outlet (right-to-left)
             auto mop = max_jit_obex_adornment_get(&x_obj, _jit_sym_jit_mop);
