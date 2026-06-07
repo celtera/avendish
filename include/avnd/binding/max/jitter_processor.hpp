@@ -82,38 +82,36 @@ struct avnd_jit_class
     if(!inputs || !outputs)
       return JIT_ERR_INVALID_PTR;
 
-    // Process matrix inputs
     if constexpr(matrix_input_count > 0)
     {
-      int idx = 0;
       max_jit_input_introspection<T>::for_all_n2(
         avnd::get_inputs(implementation),
-        [&](auto& field, auto pred_idx, auto idx) {
-          read_matrix(inputs, field, idx);
+        [&](auto& field, auto pred_idx, auto field_idx) {
+          read_matrix(inputs, field, pred_idx);
         });
     }
 
-    // Execute the implementation
     auto& proc = implementation.effect;
     if constexpr(requires { proc(); })
     {
       proc();
     }
 
-    // Process matrix outputs
     if constexpr(matrix_output_count > 0)
     {
       max_jit_output_introspection<T>::for_all_n2(
-          avnd::get_outputs(implementation), [&] (auto&& field, auto pred, auto idx) { write_matrix(outputs, field, idx); });
+          avnd::get_outputs(implementation),
+          [&](auto&& field, auto pred_idx, auto field_idx) {
+            write_matrix(outputs, field, pred_idx);
+          });
     }
 
     return JIT_ERR_NONE;
   }
 
   template<avnd::texture_port Field, std::size_t Idx>
-  void read_matrix(void* inputs, Field& field, avnd::field_index<Idx>)
+  void read_matrix(void* inputs, Field& field, avnd::predicate_index<Idx>)
   {
-    // Get input matrix
     if(void* in_matrix = jit_object_method(inputs, _jit_sym_getindex, Idx))
     {
       auto& spec = max::jitter::texture_spec(field.texture);
@@ -122,7 +120,7 @@ struct avnd_jit_class
   }
 
   template<avnd::texture_port Field, std::size_t Idx>
-  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  void write_matrix(void* outputs, Field& field, avnd::predicate_index<Idx>)
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
@@ -134,9 +132,8 @@ struct avnd_jit_class
   }
 
   template<avnd::buffer_port Field, std::size_t Idx>
-  void read_matrix(void* inputs, Field& field, avnd::field_index<Idx>)
+  void read_matrix(void* inputs, Field& field, avnd::predicate_index<Idx>)
   {
-    // Get input matrix
     if(void* in_matrix = jit_object_method(inputs, _jit_sym_getindex, Idx))
     {
       max::jitter::matrix_to_buffer(in_matrix, field);
@@ -144,7 +141,7 @@ struct avnd_jit_class
   }
 
   template<avnd::cpu_raw_buffer_port Field, std::size_t Idx>
-  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  void write_matrix(void* outputs, Field& field, avnd::predicate_index<Idx>)
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
@@ -156,7 +153,7 @@ struct avnd_jit_class
   }
 
   template<avnd::cpu_typed_buffer_port Field, std::size_t Idx>
-  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  void write_matrix(void* outputs, Field& field, avnd::predicate_index<Idx>)
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
@@ -168,7 +165,7 @@ struct avnd_jit_class
   }
 
   template<avnd::tensor_port Field, std::size_t Idx>
-  void read_matrix(void* inputs, Field& field, avnd::field_index<Idx>)
+  void read_matrix(void* inputs, Field& field, avnd::predicate_index<Idx>)
   {
     if(void* in_matrix = jit_object_method(inputs, _jit_sym_getindex, Idx))
     {
@@ -177,7 +174,7 @@ struct avnd_jit_class
   }
 
   template<avnd::tensor_port Field, std::size_t Idx>
-  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  void write_matrix(void* outputs, Field& field, avnd::predicate_index<Idx>)
   {
     if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
     {
