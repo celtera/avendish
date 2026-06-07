@@ -1,7 +1,9 @@
 #pragma once
 #include <avnd/binding/pd/helpers.hpp>
+#include <avnd/binding/pd/tensor_atoms.hpp>
 #include <avnd/common/arithmetic.hpp>
 #include <avnd/common/enum_reflection.hpp>
+#include <avnd/concepts/tensor.hpp>
 
 #if !defined(__cpp_lib_to_chars)
 #include <boost/lexical_cast.hpp>
@@ -378,6 +380,14 @@ struct inputs
     if constexpr(convertible_to_atom_list_statically<decltype(field.value)>)
     {
       if(from_atoms{argc, argv}(field.value))
+      {
+        if_possible(field.update(obj));
+        return true;
+      }
+    }
+    else if constexpr(avnd::tensor_like<std::remove_cvref_t<decltype(field.value)>>)
+    {
+      if(pd::apply_atoms_to_tensor(field.value, argc, argv))
       {
         if_possible(field.update(obj));
         return true;
