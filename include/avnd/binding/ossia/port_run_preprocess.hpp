@@ -152,6 +152,18 @@ struct process_before_run
     init_value(ctrl, port, avnd::field_index<Idx>{});
   }
 
+  template <avnd::tensor_port Field, std::size_t Idx>
+    requires(!ossia_port<Field>)
+  void operator()(
+      Field& ctrl, ossia::value_inlet& port, avnd::field_index<Idx> idx) const noexcept
+  {
+    if(port.data.get_data().empty())
+      return;
+    auto& last = port.data.get_data().back().value;
+    if(self.from_ossia_value(ctrl, last, ctrl.value, idx))
+      if_possible(ctrl.update(impl));
+  }
+
   template <avnd::dynamic_ports_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, std::vector<ossia::value_inlet*>& port,

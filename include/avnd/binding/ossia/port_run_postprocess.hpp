@@ -121,6 +121,15 @@ struct process_after_run
     write_value(ctrl, port, ctrl.value, 0, avnd::field_index<Idx>{});
   }
 
+  template <avnd::tensor_port Field, std::size_t Idx>
+    requires(!ossia_port<Field>)
+  void operator()(
+      Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    if(auto v = to_ossia_value(ctrl, ctrl.value); v.valid())
+      port->write_value(std::move(v), 0);
+  }
+
   template <avnd::dynamic_ports_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, std::vector<ossia::value_outlet*>& port,

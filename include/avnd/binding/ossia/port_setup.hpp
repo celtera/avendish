@@ -377,6 +377,13 @@ struct setup_value_port
     port.domain = setup_value_port::range_to_domain<Field>();
   }
 
+  template <avnd::tensor_port Field>
+  static void setup(ossia::value_port& port)
+  {
+    setup_port_is_event<Field>(port);
+    port.type = ossia::list_type();
+  }
+
   template <typename Field>
   static void setup(ossia::value_port& port)
   {
