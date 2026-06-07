@@ -3,10 +3,43 @@
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/curve.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <ossia/network/value/value.hpp>
 
 namespace oscr
 {
+namespace tensor_detail
+{
+template <typename T>
+inline ossia::value build_tensor_value(
+    const T* data, const std::vector<std::size_t>& shape, std::size_t depth) noexcept
+{
+  std::size_t stride = 1;
+  for(std::size_t d = depth + 1; d < shape.size(); ++d)
+    stride *= shape[d];
+  std::vector<ossia::value> result;
+  result.reserve(shape[depth]);
+  if(depth + 1 == shape.size())
+  {
+    for(std::size_t i = 0; i < shape[depth]; ++i)
+    {
+      if constexpr(std::is_integral_v<T> && !std::is_same_v<T, bool>)
+        result.emplace_back(static_cast<int>(data[i]));
+      else if constexpr(std::is_same_v<T, bool>)
+        result.emplace_back(static_cast<bool>(data[i]));
+      else
+        result.emplace_back(static_cast<float>(data[i]));
+    }
+  }
+  else
+  {
+    for(std::size_t i = 0; i < shape[depth]; ++i)
+      result.emplace_back(build_tensor_value(data + i * stride, shape, depth + 1));
+  }
+  return result;
+}
+}  // namespace tensor_detail
+
 
 struct to_ossia_value_impl
 {
@@ -153,6 +186,22 @@ struct to_ossia_value_impl
     for(int i = 0, n = f.size(); i < n; i++)
       to_ossia_value_impl{v[i]}(f[i]);
     val = std::move(v);
+  }
+
+  template <typename T>
+    requires avnd::tensor_like<T>
+  void operator()(const T& t)
+  {
+    const auto sh = avnd::shape_of(t);
+    const auto* data = avnd::data_of(t);
+    std::vector<std::size_t> shape_v(std::begin(sh), std::end(sh));
+    if(shape_v.empty() || data == nullptr)
+    {
+      val = std::vector<ossia::value>{};
+      return;
+    }
+    using elem_t = avnd::tensor_element<T>;
+    val = tensor_detail::build_tensor_value<elem_t>(data, shape_v, 0);
   }
 
   template <typename U, std::size_t N>
@@ -530,6 +579,13 @@ template <typename T>
 inline ossia::value to_ossia_value(const T& v)
 {
   return v ? *v : ossia::value{};
+}
+
+template <typename T>
+  requires avnd::tensor_like<T>
+ossia::value to_ossia_value(const T& t)
+{
+  return to_ossia_value_rec(t);
 }
 
 inline ossia::value to_ossia_value(auto& field, const auto& src)

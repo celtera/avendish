@@ -4,14 +4,18 @@
 #include <avnd/concepts/field_names.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/parameter.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/range.hpp>
 #include <avnd/introspection/type_wrapper.hpp>
 #include <avnd/introspection/vecf.hpp>
+#include <halp/tensor_port.hpp>
 #include <boost/mp11/algorithm.hpp>
 #include <ossia/network/value/value.hpp>
 #include <ossia/network/value/value_conversion.hpp>
 
+#include <memory>
 #include <type_traits>
+#include <vector>
 namespace oscr
 {
 // For interleaving / deinterleaving fft:
@@ -1642,8 +1646,111 @@ inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
 #endif
 }
 
+namespace tensor_detail
+{
+inline void infer_tensor_shape(
+    const ossia::value& v, std::vector<std::size_t>& shape, std::size_t depth) noexcept
+{
+  auto* list = v.target<std::vector<ossia::value>>();
+  if(!list)
+    return;
+  if(shape.size() <= depth)
+    shape.resize(depth + 1, 0);
+  if(list->size() > shape[depth])
+    shape[depth] = list->size();
+  if(!list->empty())
+    infer_tensor_shape((*list)[0], shape, depth + 1);
+}
 
+template <typename T>
+inline void fill_tensor_data(
+    const ossia::value& v, T* data, const std::vector<std::size_t>& shape,
+    std::size_t depth, std::size_t& out_idx) noexcept
+{
+  if(depth >= shape.size())
+    return;
+  auto* list = v.target<std::vector<ossia::value>>();
+  const std::size_t depth_size = shape[depth];
+  if(depth + 1 == shape.size())
+  {
+    if(list)
+    {
+      for(std::size_t i = 0; i < depth_size; ++i)
+        data[out_idx++]
+            = i < list->size()
+                  ? static_cast<T>(ossia::convert<float>((*list)[i]))
+                  : T{};
+    }
+    else
+    {
+      data[out_idx++] = static_cast<T>(ossia::convert<float>(v));
+      for(std::size_t i = 1; i < depth_size; ++i)
+        data[out_idx++] = T{};
+    }
+    return;
+  }
+  std::size_t inner = 1;
+  for(std::size_t d = depth + 1; d < shape.size(); ++d)
+    inner *= shape[d];
+  for(std::size_t i = 0; i < depth_size; ++i)
+  {
+    if(list && i < list->size())
+      fill_tensor_data((*list)[i], data, shape, depth + 1, out_idx);
+    else
+      for(std::size_t k = 0; k < inner; ++k)
+        data[out_idx++] = T{};
+  }
+}
+}  // namespace tensor_detail
 
+template <typename T>
+inline bool from_ossia_value(const ossia::value& src, halp::tensor_view<T>& dst)
+{
+  std::vector<std::size_t> shape;
+  tensor_detail::infer_tensor_shape(src, shape, 0);
+  std::size_t total = 1;
+  for(auto d : shape)
+    total *= d;
+  if(total == 0)
+  {
+    dst.data_ptr = nullptr;
+    dst.shape_v.clear();
+    dst.strides_v.clear();
+    dst.keep_alive.reset();
+    return false;
+  }
+  auto buf = std::make_shared<std::vector<T>>(total);
+  std::size_t idx = 0;
+  tensor_detail::fill_tensor_data(src, buf->data(), shape, 0, idx);
+  dst.data_ptr = buf->data();
+  dst.shape_v = std::move(shape);
+  dst.strides_v.resize(dst.shape_v.size());
+  std::size_t stride = 1;
+  for(std::size_t d = dst.shape_v.size(); d-- > 0;)
+  {
+    dst.strides_v[d] = stride;
+    stride *= dst.shape_v[d];
+  }
+  dst.keep_alive = std::shared_ptr<void>(buf, buf->data());
+  return true;
+}
+
+template <typename T>
+  requires(avnd::tensor_like<T> && !halp::is_tensor_view_v<T>)
+inline bool from_ossia_value(const ossia::value& src, T& dst)
+{
+  using elem_t = avnd::tensor_element<T>;
+  std::vector<std::size_t> shape;
+  tensor_detail::infer_tensor_shape(src, shape, 0);
+  if constexpr(avnd::resizable_tensor_like<T>)
+    avnd::resize_to(dst, shape);
+  elem_t* data = avnd::data_of(dst);
+  if(!data)
+    return false;
+  std::size_t idx = 0;
+  tensor_detail::fill_tensor_data(src, data, shape, 0, idx);
+  return true;
+}
 
 
 template <typename arg_t>
