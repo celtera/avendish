@@ -2,23 +2,31 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/enum_reflection.hpp>
 #include <avnd/common/export.hpp>
 //#include <halp/callback.hpp>
+#include <avnd/concepts/field_names.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <halp/tensor_port.hpp>
 #include <boost/type_index.hpp>
 #include <cmath>
+#include <cstring>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include <span>
 #include <string>
+#include <type_traits>
+#include <vector>
 
 namespace python
 {
@@ -66,11 +74,29 @@ template <typename Arg>
   requires std::is_aggregate_v<Arg>
 struct register_types<Arg>
 {
+  // Sanitise the C++ pretty name into a Python-legal identifier:
+  // strip everything up to and including the last "::" so a type
+  // declared as `avcheck::PowerBands` is exported as `PowerBands`.
+  // Without this, `m.PowerBands` can't reach the type because `::`
+  // is not a valid Python identifier (you'd need
+  // `getattr(m, "avcheck::PowerBands")`, which defeats discovery).
+  static std::string python_name()
+  {
+    auto pn = boost::typeindex::type_id<Arg>().pretty_name();
+    if(const auto pos = pn.rfind("::"); pos != std::string::npos)
+      pn.erase(0, pos + 2);
+    return pn;
+  }
+
   void operator()(pybind11::module_& m)
   {
-    static py::class_<Arg> class_def(
-        m, boost::typeindex::type_id<Arg>().pretty_name().c_str()); // FIXME
+    static py::class_<Arg> class_def(m, python_name().c_str());
     static auto reg = [] {
+      // Default constructor — without this, Python can't instantiate
+      // the aggregate (it can still read instances returned by C++
+      // ports, but `m.PowerBands()` would raise
+      // "No constructor defined").
+      class_def.def(py::init<>());
       Arg a;
       avnd::for_each_field_ref_n(
           a, []<typename M, std::size_t I>(const M&, avnd::field_index<I>) {
@@ -109,6 +135,38 @@ struct register_types<Arg, Args...>
   }
 };
 
+// Ensure a port value type is registered with pybind11 before any
+// def_property tries to convert it. Generic — no halp:: knowledge.
+//
+// - Enums (std::is_enum_v): emit py::enum_<E> populated via magic_enum.
+//   Each module instantiates its own static guard so the registration
+//   happens exactly once per .so.
+// - Aggregates with avnd::has_field_names (i.e. structs annotated via
+//   the halp_field_names macro or any equivalent): delegate to the
+//   existing register_types<V>{} aggregate path.
+// - Everything else: trust pybind11/stl.h (std::map, std::vector,
+//   std::variant, std::string, …).
+template <typename V>
+inline void ensure_value_type_registered(pybind11::module_& m)
+{
+  if constexpr(std::is_enum_v<V>)
+  {
+    static const bool done = [&] {
+      const auto type_name = boost::typeindex::type_id<V>().pretty_name();
+      auto e = py::enum_<V>(m, type_name.c_str());
+      for(const auto& entry : magic_enum::enum_entries<V>())
+        e.value(std::string{entry.second}.c_str(), entry.first);
+      e.export_values();
+      return true;
+    }();
+    (void)done;
+  }
+  else if constexpr(avnd::has_field_names<V>)
+  {
+    register_types<V>{}(m);
+  }
+}
+
 template <typename, typename>
 struct register_arg_types;
 template <typename stdfunc_type, typename R, typename... Args>
@@ -136,9 +194,164 @@ struct processor
   // m: pybind11 module
   py::class_<T> class_def;
 
+  // Tensor-typed port: marshal as py::array_t<Elem> with shape +
+  // strides preserved, zero-copy from numpy when layout matches.
+  //
+  // Two dispatches based on the port's value type:
+  //
+  //   - `halp::tensor_view<T>` — non-owning input view. The setter
+  //     stashes the numpy buffer pointer + shape and holds a
+  //     reference to the array via `keep_alive`. Saves the per-tick
+  //     allocation + memcpy. Forcecast + c_style still apply so a
+  //     non-contiguous source still gets a one-time copy through
+  //     pybind11 internals; the view simply points at that copy.
+  //
+  //   - owning tensor (ndarray<T>, xt::xarray, …) — existing
+  //     resize + memcpy path. Required when ports want to retain
+  //     the input across ticks, or pass through cmake-locked
+  //     backends.
   template <auto Idx, typename C>
-  void setup_input(avnd::field_reflection<Idx, C> refl)
+  void setup_tensor_input(avnd::field_reflection<Idx, C>)
   {
+    using value_type = std::remove_cvref_t<decltype(C::value)>;
+    using elem_t = avnd::tensor_element<value_type>;
+
+    if constexpr(halp::is_tensor_view_v<value_type>)
+    {
+      class_def.def_property(
+          c_str(input_name(avnd::field_reflection<Idx, C>{})),
+          // Reader: rebuild a numpy view from the stored pointer +
+          // shape. Returns None if no input has been set this tick.
+          [](T& self) -> py::object {
+            auto& v = avnd::pfr::get<Idx>(self.inputs).value;
+            if(v.data_ptr == nullptr)
+              return py::none();
+            std::vector<py::ssize_t> sh(v.shape_v.begin(), v.shape_v.end());
+            return py::array_t<elem_t>(
+                       sh,
+                       const_cast<elem_t*>(v.data_ptr),
+                       py::cast(&self, py::return_value_policy::reference));
+          },
+          // Writer: capture the numpy buffer as a view and hold a
+          // ref to keep it alive until the next assignment.
+          // `c_style | forcecast` ensures contiguous + correct dtype;
+          // if the source is already so, no copy happens inside
+          // pybind11. Strides are converted from bytes (numpy) to
+          // elements (our tensor_view convention) at the boundary.
+          [](T& self,
+             py::array_t<elem_t,
+                         py::array::c_style | py::array::forcecast> arr) {
+            auto& v = avnd::pfr::get<Idx>(self.inputs).value;
+            const auto info = arr.request();
+            v.data_ptr = static_cast<const elem_t*>(info.ptr);
+            v.shape_v.assign(info.shape.begin(), info.shape.end());
+            v.strides_v.assign(info.strides.size(), 0);
+            for(std::size_t d = 0; d < info.strides.size(); ++d)
+              v.strides_v[d]
+                  = static_cast<std::size_t>(info.strides[d])
+                    / sizeof(elem_t);
+            // Hold a py::object reference to the (possibly
+            // pybind11-internally-copied) array so its buffer stays
+            // valid until the next setter call. Custom deleter
+            // re-acquires the GIL because the holder may be released
+            // from a C++ destructor on an arbitrary thread.
+            v.keep_alive = std::shared_ptr<void>(
+                new py::object(arr),
+                [](void* p) {
+                  py::gil_scoped_acquire gil;
+                  delete static_cast<py::object*>(p);
+                });
+            auto& inputs = avnd::get_inputs(self);
+            auto& field = boost::pfr::get<Idx>(inputs);
+            if_possible(field.update(self));
+          });
+    }
+    else
+    {
+      class_def.def_property(
+          c_str(input_name(avnd::field_reflection<Idx, C>{})),
+          // Reader: build a numpy view over the C++ tensor's data.
+          // Base object keeps the processor alive while Python holds the array.
+          [](T& self) -> py::array_t<elem_t> {
+            auto& v = avnd::pfr::get<Idx>(self.inputs).value;
+            const auto sh = avnd::shape_of(v);
+            std::vector<py::ssize_t> shape_vec(sh.begin(), sh.end());
+            return py::array_t<elem_t>(
+                shape_vec, avnd::data_of(v),
+                py::cast(&self, py::return_value_policy::reference));
+          },
+          // Writer: accept a numpy array, resize the C++ tensor and
+          // copy. forcecast converts dtype if necessary; c_style ensures
+          // contiguous source so memcpy is sound.
+          [](T& self,
+             py::array_t<elem_t,
+                         py::array::c_style | py::array::forcecast> arr) {
+            auto& v = avnd::pfr::get<Idx>(self.inputs).value;
+            const auto info = arr.request();
+            if constexpr(avnd::resizable_tensor_like<value_type>)
+            {
+              std::vector<std::size_t> sh;
+              sh.reserve(static_cast<std::size_t>(info.ndim));
+              for(auto s : info.shape)
+                sh.push_back(static_cast<std::size_t>(s));
+              avnd::resize_to(v, sh);
+            }
+            std::memcpy(
+                avnd::data_of(v), info.ptr,
+                static_cast<std::size_t>(info.itemsize)
+                    * static_cast<std::size_t>(info.size));
+            auto& inputs = avnd::get_inputs(self);
+            auto& field = boost::pfr::get<Idx>(inputs);
+            if_possible(field.update(self));
+          });
+    }
+  }
+
+  template <auto Idx, typename C>
+  void setup_tensor_output(avnd::field_reflection<Idx, C>)
+  {
+    using value_type = std::remove_cvref_t<decltype(C::value)>;
+    using elem_t = avnd::tensor_element<value_type>;
+
+    class_def.def_property(
+        c_str(output_name(avnd::field_reflection<Idx, C>{})),
+        [](T& self) -> py::array_t<elem_t> {
+          auto& v = avnd::pfr::get<Idx>(self.outputs).value;
+          const auto sh = avnd::shape_of(v);
+          std::vector<py::ssize_t> shape_vec(sh.begin(), sh.end());
+          return py::array_t<elem_t>(
+              shape_vec, avnd::data_of(v),
+              py::cast(&self, py::return_value_policy::reference));
+        },
+        [](T& self,
+           py::array_t<elem_t, py::array::c_style | py::array::forcecast> arr) {
+          auto& v = avnd::pfr::get<Idx>(self.outputs).value;
+          const auto info = arr.request();
+          if constexpr(avnd::resizable_tensor_like<value_type>)
+          {
+            std::vector<std::size_t> sh;
+            sh.reserve(static_cast<std::size_t>(info.ndim));
+            for(auto s : info.shape)
+              sh.push_back(static_cast<std::size_t>(s));
+            avnd::resize_to(v, sh);
+          }
+          std::memcpy(
+              avnd::data_of(v), info.ptr,
+              static_cast<std::size_t>(info.itemsize)
+                  * static_cast<std::size_t>(info.size));
+        });
+  }
+
+  template <auto Idx, typename C>
+  void setup_input(avnd::field_reflection<Idx, C> refl, pybind11::module_& m)
+  {
+    using value_type = std::remove_cvref_t<decltype(C::value)>;
+    if constexpr(avnd::tensor_like<value_type>)
+    {
+      setup_tensor_input<Idx, C>(refl);
+      return;
+    }
+    ensure_value_type_registered<value_type>(m);
     class_def.def_property(c_str(input_name(refl)), [](const T& t) {
       return avnd::pfr::get<Idx>(t.inputs).value;
     }, [](T& t, decltype(C::value) x) {
@@ -150,10 +363,17 @@ struct processor
   }
 
   template <auto Idx, typename C>
-  void setup_output(avnd::field_reflection<Idx, C> refl)
+  void setup_output(avnd::field_reflection<Idx, C> refl, pybind11::module_& m)
   {
     if constexpr(requires { avnd::get_name<C>(); })
     {
+      using value_type = std::remove_cvref_t<decltype(C::value)>;
+      if constexpr(avnd::tensor_like<value_type>)
+      {
+        setup_tensor_output<Idx, C>(refl);
+        return;
+      }
+      ensure_value_type_registered<value_type>(m);
       class_def.def_property(
           c_str(output_name(refl)),
           [](const T& t) { return avnd::pfr::get<Idx>(t.outputs).value; },
@@ -205,13 +425,13 @@ struct processor
     if constexpr(avnd::inputs_is_value<T>)
     {
       avnd::parameter_input_introspection<T>::for_all(
-          [this](auto a) { setup_input(a); });
+          [this, &m](auto a) { setup_input(a, m); });
     }
 
     if constexpr(avnd::outputs_is_value<T>)
     {
       avnd::parameter_output_introspection<T>::for_all(
-          [this](auto a) { setup_output(a); });
+          [this, &m](auto a) { setup_output(a, m); });
       avnd::callback_output_introspection<T>::for_all(
           [this, &m](auto a) { setup_callback(a, m); });
     }
