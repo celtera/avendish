@@ -136,7 +136,8 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
   else if(optype == "CHOP_MESSAGE")
   {
-    op.minInputs = avnd::value_port_input_introspection<type>::size;
+    op.minInputs = avnd::value_port_input_introspection<type>::size
+                 + avnd::tensor_port_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
   else if(optype == "TOP")
@@ -146,7 +147,8 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
   else if(optype == "DAT")
   {
-    op.minInputs = avnd::value_port_input_introspection<type>::size;
+    op.minInputs = avnd::value_port_input_introspection<type>::size
+                 + avnd::tensor_port_input_introspection<type>::size;
     op.maxInputs = op.minInputs;
   }
   else if(optype == "SOP")
