@@ -26,33 +26,33 @@ template<typename T>
 struct input_matrix_storage;
 
 template<typename T>
-  requires (avnd::matrix_input_introspection<T>::size == 0)
+  requires (max_jit_input_introspection<T>::size == 0)
 struct input_matrix_storage<T>
 {
 
 };
 template<typename T>
-  requires (avnd::matrix_input_introspection<T>::size > 0)
+  requires (max_jit_input_introspection<T>::size > 0)
 struct input_matrix_storage<T>
 {
-  boost::container::vector<unsigned char> bytes[avnd::matrix_input_introspection<T>::size];
-  std::array<void*, avnd::matrix_input_introspection<T>::size> matrices;
+  boost::container::vector<unsigned char> bytes[max_jit_input_introspection<T>::size];
+  std::array<void*, max_jit_input_introspection<T>::size> matrices;
 };
 
 template<typename T>
 struct output_matrix_storage;
 
 template<typename T>
-  requires (avnd::matrix_output_introspection<T>::size == 0)
+  requires (max_jit_output_introspection<T>::size == 0)
 struct output_matrix_storage<T>
 {
 
 };
 template<typename T>
-  requires (avnd::matrix_output_introspection<T>::size > 0)
+  requires (max_jit_output_introspection<T>::size > 0)
 struct output_matrix_storage<T>
 {
-  std::array<void*, avnd::matrix_output_introspection<T>::size> matrices;
+  std::array<void*, max_jit_output_introspection<T>::size> matrices;
 };
 
 
@@ -70,8 +70,8 @@ struct avnd_jit_class
   AVND_NO_UNIQUE_ADDRESS input_matrix_storage<T> input_matrices;
   AVND_NO_UNIQUE_ADDRESS output_matrix_storage<T> output_matrices;
 
-  static constexpr int matrix_input_count = avnd::matrix_input_introspection<T>::size;
-  static constexpr int matrix_output_count = avnd::matrix_output_introspection<T>::size;
+  static constexpr int matrix_input_count = max_jit_input_introspection<T>::size;
+  static constexpr int matrix_output_count = max_jit_output_introspection<T>::size;
 
   void init()
   {
@@ -86,7 +86,7 @@ struct avnd_jit_class
     if constexpr(matrix_input_count > 0)
     {
       int idx = 0;
-      avnd::matrix_input_introspection<T>::for_all_n2(
+      max_jit_input_introspection<T>::for_all_n2(
         avnd::get_inputs(implementation),
         [&](auto& field, auto pred_idx, auto idx) {
           read_matrix(inputs, field, idx);
@@ -103,7 +103,7 @@ struct avnd_jit_class
     // Process matrix outputs
     if constexpr(matrix_output_count > 0)
     {
-      avnd::matrix_output_introspection<T>::for_all_n2(
+      max_jit_output_introspection<T>::for_all_n2(
           avnd::get_outputs(implementation), [&] (auto&& field, auto pred, auto idx) { write_matrix(outputs, field, idx); });
     }
 
@@ -164,6 +164,24 @@ struct avnd_jit_class
       {
         max::jitter::buffer_to_matrix(field, out_matrix);
       }
+    }
+  }
+
+  template<avnd::tensor_port Field, std::size_t Idx>
+  void read_matrix(void* inputs, Field& field, avnd::field_index<Idx>)
+  {
+    if(void* in_matrix = jit_object_method(inputs, _jit_sym_getindex, Idx))
+    {
+      max::jitter::matrix_to_tensor(in_matrix, field);
+    }
+  }
+
+  template<avnd::tensor_port Field, std::size_t Idx>
+  void write_matrix(void* outputs, Field& field, avnd::field_index<Idx>)
+  {
+    if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
+    {
+      max::jitter::tensor_to_matrix(field, out_matrix);
     }
   }
 };

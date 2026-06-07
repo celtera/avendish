@@ -7,6 +7,7 @@
 #include <avnd/binding/max/dict.hpp>
 #include <avnd/binding/max/from_dict.hpp>
 #include <avnd/binding/max/messages.hpp>
+#include <avnd/concepts/tensor.hpp>
 
 
 namespace max
@@ -106,6 +107,13 @@ struct processor_common
         if_possible(field.update(obj));
         return true;
       }
+    }
+    else if constexpr(avnd::tensor_port<Field>)
+    {
+      // Tensor-typed fields receive their data via the MOP / jit_matrix
+      // wire (see jitter::matrix_to_tensor in jitter_processor.hpp); the
+      // atom-list control path is not a valid source for tensors. Silently
+      // ignore the incoming message rather than attempt a lossy decode.
     }
     else
     {

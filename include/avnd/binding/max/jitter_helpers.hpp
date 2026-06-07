@@ -5,15 +5,23 @@
 #include <jit.common.h>
 #include <max.jit.mop.h>
 #include <avnd/concepts/gfx.hpp>
+#include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
+#include <halp/tensor_port.hpp>
 #include <algorithm>
 #include <boost/container/vector.hpp>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <vector>
 #include <avnd/binding/max/jitter_texture_format.hpp>
 #include <avnd/binding/max/jitter_texture_conversion.hpp>
 
 namespace max::jitter
 {
+
+inline constexpr int jitter_max_dimcount = 32;
 
 template<typename Field>
 static t_symbol* get_jitter_type_for_parameter()
@@ -303,6 +311,236 @@ inline void matrix_to_buffer(void* matrix, Field& field)
     tex.raw_data = reinterpret_cast<const char*>(matrix_data);
   }
   tex.changed = true;
+}
+
+template <typename T>
+inline t_symbol* jitter_type_for_element() noexcept
+{
+  constexpr avnd::dtype_descriptor d = avnd::dtype_of<T>;
+  if constexpr(d.code == static_cast<uint8_t>(avnd::dtype_code::Float))
+  {
+    if constexpr(d.bits == 32)
+      return _jit_sym_float32;
+    else if constexpr(d.bits == 64)
+      return _jit_sym_float64;
+    else
+      return _jit_sym_float32;
+  }
+  else if constexpr(d.code == static_cast<uint8_t>(avnd::dtype_code::Int)
+                    || d.code == static_cast<uint8_t>(avnd::dtype_code::UInt))
+  {
+    if constexpr(d.bits == 8)
+      return _jit_sym_char;
+    else
+      return _jit_sym_long;
+  }
+  else if constexpr(d.code == static_cast<uint8_t>(avnd::dtype_code::Bool))
+  {
+    return _jit_sym_char;
+  }
+  else
+  {
+    return _jit_sym_float32;
+  }
+}
+
+inline std::size_t jitter_element_size(t_symbol* type) noexcept
+{
+  if(type == _jit_sym_char)
+    return 1;
+  if(type == _jit_sym_long)
+    return sizeof(long);
+  if(type == _jit_sym_float32)
+    return sizeof(float);
+  if(type == _jit_sym_float64)
+    return sizeof(double);
+  return 0;
+}
+
+inline bool resize_tensor_matrix(
+    void* matrix,
+    const std::size_t* shape_data,
+    std::size_t rank,
+    t_symbol* type)
+{
+  if(!matrix)
+    return false;
+  if(rank == 0 || rank > static_cast<std::size_t>(jitter_max_dimcount))
+    return false;
+
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  const int new_dimcount = static_cast<int>(rank);
+  bool needs_update = info.dimcount != new_dimcount
+                      || info.planecount != 1
+                      || info.type != type;
+  if(!needs_update)
+  {
+    for(int i = 0; i < new_dimcount; ++i)
+    {
+      if(info.dim[i] != static_cast<long>(shape_data[i]))
+      {
+        needs_update = true;
+        break;
+      }
+    }
+  }
+
+  if(needs_update)
+  {
+    info.dimcount = new_dimcount;
+    for(int i = 0; i < new_dimcount; ++i)
+      info.dim[i] = static_cast<long>(shape_data[i]);
+    info.planecount = 1;
+    info.type = type;
+    info.flags = 0;
+    jit_object_method(matrix, _jit_sym_setinfo, &info);
+  }
+
+  return true;
+}
+
+template <avnd::tensor_port Field>
+inline void tensor_to_matrix(const Field& field, void* matrix)
+{
+  if(!matrix)
+    return;
+
+  using value_type = std::remove_cvref_t<decltype(Field::value)>;
+  if constexpr(avnd::tensor_like<value_type>)
+  {
+    using element_type = avnd::tensor_element<value_type>;
+
+    const auto* src = avnd::data_of(field.value);
+    if(!src)
+      return;
+
+    auto shape_range = avnd::shape_of(field.value);
+    const std::size_t rank = std::ranges::size(shape_range);
+    if(rank == 0 || rank > static_cast<std::size_t>(jitter_max_dimcount))
+      return;
+
+    std::size_t shape_buf[jitter_max_dimcount];
+    std::size_t total = 1;
+    std::size_t i = 0;
+    for(auto extent : shape_range)
+    {
+      if(i >= rank)
+        break;
+      shape_buf[i] = static_cast<std::size_t>(extent);
+      total *= shape_buf[i];
+      ++i;
+    }
+
+    if(total == 0)
+      return;
+
+    t_symbol* type = jitter_type_for_element<element_type>();
+    if(!resize_tensor_matrix(matrix, shape_buf, rank, type))
+      return;
+
+    void* matrix_data = nullptr;
+    jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+    if(!matrix_data)
+      return;
+
+    std::memcpy(matrix_data, src, total * sizeof(element_type));
+  }
+}
+
+template <avnd::tensor_port Field>
+inline void matrix_to_tensor(void* matrix, Field& field)
+{
+  if(!matrix)
+    return;
+
+  matrix_lock lock(matrix);
+
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  if(info.dimcount <= 0)
+    return;
+
+  const std::size_t rank = static_cast<std::size_t>(info.dimcount);
+  if(rank > static_cast<std::size_t>(jitter_max_dimcount))
+    return;
+
+  std::size_t shape_buf[jitter_max_dimcount];
+  std::size_t total = 1;
+  for(std::size_t i = 0; i < rank; ++i)
+  {
+    shape_buf[i] = static_cast<std::size_t>(info.dim[i]);
+    total *= shape_buf[i];
+  }
+
+  if(info.planecount != 1)
+    return;
+
+  if(total == 0)
+    return;
+
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  using value_type = std::remove_cvref_t<decltype(Field::value)>;
+  using element_type = avnd::tensor_element<value_type>;
+  const std::size_t bytes = total * sizeof(element_type);
+
+  if constexpr(halp::is_tensor_view_v<value_type>)
+  {
+    auto scratch
+        = std::make_shared<std::vector<element_type>>(total);
+    std::memcpy(scratch->data(), matrix_data, bytes);
+
+    field.value.shape_v.assign(shape_buf, shape_buf + rank);
+    field.value.strides_v.resize(rank);
+    if(rank > 0)
+    {
+      field.value.strides_v[rank - 1] = 1;
+      for(std::size_t i = rank - 1; i > 0; --i)
+        field.value.strides_v[i - 1] = field.value.strides_v[i] * shape_buf[i];
+    }
+    field.value.data_ptr = scratch->data();
+    field.value.keep_alive = std::move(scratch);
+  }
+  else if constexpr(avnd::resizable_tensor_like<value_type>)
+  {
+    std::vector<std::size_t> shape_vec(shape_buf, shape_buf + rank);
+    avnd::resize_to(field.value, shape_vec);
+    auto* dst = avnd::data_of(field.value);
+    if(dst)
+      std::memcpy(dst, matrix_data, bytes);
+  }
+  else if constexpr(avnd::mutable_tensor_like<value_type>)
+  {
+    auto cur_shape = avnd::shape_of(field.value);
+    std::size_t cur_total = 1;
+    bool shape_ok = std::ranges::size(cur_shape) == rank;
+    std::size_t i = 0;
+    if(shape_ok)
+    {
+      for(auto extent : cur_shape)
+      {
+        if(i >= rank || static_cast<std::size_t>(extent) != shape_buf[i])
+        {
+          shape_ok = false;
+          break;
+        }
+        cur_total *= static_cast<std::size_t>(extent);
+        ++i;
+      }
+    }
+    if(shape_ok && cur_total == total)
+    {
+      auto* dst = avnd::data_of(field.value);
+      if(dst)
+        std::memcpy(dst, matrix_data, bytes);
+    }
+  }
 }
 
 }
