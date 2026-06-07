@@ -56,6 +56,7 @@ function(avnd_make_clap)
       OUTPUT_NAME "${AVND_C_NAME}.clap"
       LIBRARY_OUTPUT_DIRECTORY clap
       RUNTIME_OUTPUT_DIRECTORY clap
+      ARCHIVE_OUTPUT_DIRECTORY clap
       VS_GLOBAL_IgnoreImportLibrary true
   )
 

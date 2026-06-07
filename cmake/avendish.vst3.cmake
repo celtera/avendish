@@ -56,6 +56,7 @@ function(avnd_make_vst3)
       OUTPUT_NAME "${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY "vst3/${AVND_C_NAME}.vst3/Contents/x86_64-linux"
       RUNTIME_OUTPUT_DIRECTORY "vst3/${AVND_C_NAME}.vst3/Contents/x86_64-linux"
+      ARCHIVE_OUTPUT_DIRECTORY "vst3/${AVND_C_NAME}.vst3/Contents/x86_64-linux"
   )
 
   target_link_libraries(

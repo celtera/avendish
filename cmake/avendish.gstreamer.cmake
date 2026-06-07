@@ -60,6 +60,7 @@ function(avnd_make_gstreamer)
       OUTPUT_NAME "${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY gstreamer
       RUNTIME_OUTPUT_DIRECTORY gstreamer
+      ARCHIVE_OUTPUT_DIRECTORY gstreamer
   )
 
   target_sources(

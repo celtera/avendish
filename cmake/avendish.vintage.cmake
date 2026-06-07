@@ -47,6 +47,7 @@ function(avnd_make_vintage)
       OUTPUT_NAME "${AVND_C_NAME}.vintage"
       LIBRARY_OUTPUT_DIRECTORY vintage
       RUNTIME_OUTPUT_DIRECTORY vintage
+      ARCHIVE_OUTPUT_DIRECTORY vintage
       VS_GLOBAL_IgnoreImportLibrary true
   )
 

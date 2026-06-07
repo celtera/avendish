@@ -83,6 +83,7 @@ function(avnd_make_touchdesigner)
     PROPERTIES
       LIBRARY_OUTPUT_DIRECTORY td
       RUNTIME_OUTPUT_DIRECTORY td
+      ARCHIVE_OUTPUT_DIRECTORY td
       PREFIX ""  # No lib prefix
       CXX_STANDARD 23
       CXX_EXTENSIONS OFF

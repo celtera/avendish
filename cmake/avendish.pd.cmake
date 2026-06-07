@@ -65,6 +65,7 @@ function(avnd_make_pd)
       OUTPUT_NAME "${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY pd
       RUNTIME_OUTPUT_DIRECTORY pd
+      ARCHIVE_OUTPUT_DIRECTORY pd
   )
 
   target_sources(

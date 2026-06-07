@@ -118,6 +118,7 @@ function(avnd_make_max)
       OUTPUT_NAME "${AVND_C_NAME}"
       LIBRARY_OUTPUT_DIRECTORY max
       RUNTIME_OUTPUT_DIRECTORY max
+      ARCHIVE_OUTPUT_DIRECTORY max
       MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
       AVND_C_NAME "${AVND_C_NAME}"
   )
