@@ -162,4 +162,39 @@ struct tensor_port
   operator const Container&() const noexcept { return value; }
 };
 
+constexpr std::size_t kind_to_rank(tensor_kind k) noexcept
+{
+  switch(k)
+  {
+    case tensor_kind::vector:
+    case tensor_kind::spectrum:
+      return 1;
+    case tensor_kind::matrix:
+    case tensor_kind::spectrogram:
+      return 2;
+    case tensor_kind::generic:
+    default:
+      return avnd::dynamic_rank;
+  }
+}
+
+template <typename Port>
+constexpr std::size_t static_port_rank() noexcept
+{
+  if constexpr(requires { { Port::kind } -> std::convertible_to<tensor_kind>; })
+  {
+    constexpr std::size_t from_kind = kind_to_rank(Port::kind);
+    if constexpr(from_kind != avnd::dynamic_rank)
+      return from_kind;
+  }
+  if constexpr(requires { typename Port::value_type; })
+  {
+    return avnd::container_static_rank<typename Port::value_type>();
+  }
+  return avnd::dynamic_rank;
+}
+
+template <typename Port>
+concept has_static_rank = (static_port_rank<Port>() != avnd::dynamic_rank);
+
 }  // namespace halp
