@@ -172,7 +172,7 @@ struct SimpleAudioEffect : clap_plugin
 
       const std::string_view id_sv = id;
       if(id_sv == "clap.params")
-        return &p.params;
+        return p.get_params();
       if(id_sv == "clap.audio-ports")
         return &p.audio_ports;
       if(id_sv == "clap.note-ports")
@@ -491,7 +491,10 @@ struct SimpleAudioEffect : clap_plugin
       .description = avnd::get_description<T>().data(),
       .features = features.data()};
 
-  static constexpr clap_plugin_params params{
+  // wrapped in a function so the class is complete for the self()-> lambdas (MSVC C2027)
+  static const clap_plugin_params* get_params() noexcept
+  {
+    static constexpr clap_plugin_params params{
       .count = [](const clap_plugin* plugin) -> uint32_t { return param_in_info::size; },
 
       .get_info = [](const clap_plugin_t* plugin, uint32_t param_index,
@@ -515,6 +518,8 @@ struct SimpleAudioEffect : clap_plugin
       .flush
       = [](const clap_plugin* plugin, const clap_input_events_t* input_parameter_changes,
            const clap_output_events_t* output_parameter_changes) -> void {}};
+    return &params;
+  }
 
   static constexpr clap_plugin_audio_ports audio_ports{
       .count = [](const clap_plugin* plugin, bool input) -> uint32_t {
