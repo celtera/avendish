@@ -1,0 +1,147 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// AudioWorkletProcessor for "@AVND_WASM_NAME@" (Embind/module base: @AVND_WASM_C_NAME@).
+// No fetch() in the worklet scope: the main thread posts the .wasm bytes via
+// {type:'init', wasmBinary} and we instantiate from them. DSP delegated to AvndProcessor.
+
+import ModuleFactory from "./@AVND_WASM_C_NAME@.mjs";
+import { AvndProcessor } from "./avnd-dsp.js";
+
+const C_NAME = "@AVND_WASM_C_NAME@";
+const RENDER_QUANTUM = 128; // AudioWorklet fixed render quantum
+
+class AvndWorkletProcessor extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    this._proc = null;
+    this._ready = false;
+    this._pendingParams = [];
+    this._opts = options || {};
+    this._declaredOut =
+      (options &&
+        options.outputChannelCount &&
+        options.outputChannelCount[0]) ||
+      2;
+    this._declaredIn = 2; // input channels negotiated at init() (requestedIn)
+
+    this.port.onmessage = (e) => this._onMessage(e.data);
+  }
+
+  async _init(data) {
+    // Shim WorkerGlobalScope so Emscripten detects the worklet as a worker, not
+    // the (disabled) shell environment which would abort at startup.
+    if (typeof globalThis.WorkerGlobalScope === "undefined") {
+      globalThis.WorkerGlobalScope = function WorkerGlobalScope() {};
+    }
+
+    const sr = data.sampleRate || sampleRate; // sampleRate is a worklet global
+    const M = await ModuleFactory({
+      wasmBinary: data.wasmBinary,
+      locateFile: (p) => p,
+    });
+
+    this._proc = new AvndProcessor(M, C_NAME, {
+      blockSize: RENDER_QUANTUM,
+      sampleRate: sr,
+      requestedIn: data.requestedIn ?? this._declaredIn,
+      requestedOut: data.requestedOut ?? this._declaredOut,
+    });
+
+    // Drain params that arrived before init completed.
+    for (const m of this._pendingParams) this._applyParam(m);
+    this._pendingParams.length = 0;
+
+    this._ready = true;
+
+    // Tell the main thread we're live, with config + descriptors for the UI.
+    const params = [];
+    const pc = this._proc.getParameterCount();
+    for (let i = 0; i < pc; i++) params.push(this._proc.getParameterInfo(i));
+    const outputs = [];
+    const oc = this._proc.getOutputCount();
+    for (let i = 0; i < oc; i++) {
+      const info = this._proc.getOutputInfo(i);
+      if (info) outputs.push(info); // null == audio bus, skip
+    }
+    this.port.postMessage({
+      type: "ready",
+      name: this._proc.name,
+      inChannels: this._proc.inChannels,
+      outChannels: this._proc.outChannels,
+      params,
+      outputs,
+    });
+  }
+
+  _onMessage(data) {
+    if (!data) return;
+    switch (data.type) {
+      case "init":
+        this._init(data).catch((err) =>
+          this.port.postMessage({ type: "error", message: String(err && err.stack || err) }),
+        );
+        break;
+      case "setParam":
+      case "setParamNorm":
+        if (this._ready) this._applyParam(data);
+        else this._pendingParams.push(data);
+        break;
+      case "message":
+        if (this._ready && this._proc) {
+          this._proc.sendMessage(data.name, data.args || []);
+          this._flushCallbacks();
+        } else {
+          this._pendingParams.push(data);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  _applyParam(data) {
+    if (!this._proc) return;
+    if (data.type === "message") {
+      this._proc.sendMessage(data.name, data.args || []);
+      this._flushCallbacks();
+    } else if (data.type === "setParam") {
+      this._proc.setParameter(data.index, data.value);
+    } else {
+      this._proc.setParameterNormalized(data.index, data.value);
+    }
+  }
+
+  // Forward emitted callbacks to the main thread.
+  _flushCallbacks() {
+    if (!this._proc) return;
+    const events = this._proc.drainCallbacks();
+    if (events && events.length) {
+      this.port.postMessage({ type: "callbacks", events });
+    }
+  }
+
+  process(inputs, outputs, parameters) {
+    if (!this._ready) {
+      return true; // not initialised: silence, keep node alive
+    }
+
+    const inBus = inputs[0] || []; // bus 0 only
+    const outBus = outputs[0] || [];
+    this._proc.process(inBus, outBus);
+
+    // Throttle output-value reports to ~once per 50ms to avoid flooding.
+    this._frameCounter = (this._frameCounter || 0) + RENDER_QUANTUM;
+    const oc = this._proc.getOutputCount();
+    if (oc > 0 && this._frameCounter >= sampleRate * 0.05) {
+      this._frameCounter = 0;
+      const values = [];
+      for (let i = 0; i < oc; i++) values.push(this._proc.getOutputValue(i));
+      this.port.postMessage({ type: "outputs", values });
+    }
+
+    this._flushCallbacks();
+
+    return true; // keep processor alive
+  }
+}
+
+registerProcessor("@AVND_WASM_C_NAME@-processor", AvndWorkletProcessor);

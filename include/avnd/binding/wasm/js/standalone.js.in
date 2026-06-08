@@ -1,0 +1,416 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// Standalone-page controller for "@AVND_WASM_NAME@" (@AVND_WASM_C_NAME@).
+// Boots an AudioContext + worklet, builds an auto-UI, wires source -> node -> out.
+
+import {
+  buildAutoUI,
+  buildMessagesUI,
+  buildCallbacksLog,
+  drainCallbacksInto,
+} from "./avnd-ui.js";
+import ModuleFactory from "./@AVND_WASM_C_NAME@.mjs";
+
+const C_NAME = "@AVND_WASM_C_NAME@";
+const DISPLAY_NAME = "@AVND_WASM_NAME@";
+
+const els = {
+  banner: document.getElementById("coi-banner"),
+  start: document.getElementById("start"),
+  stop: document.getElementById("stop"),
+  source: document.getElementById("source"),
+  freq: document.getElementById("freq"),
+  file: document.getElementById("file"),
+  params: document.getElementById("params"),
+  outputs: document.getElementById("outputs"),
+  messages: document.getElementById("messages"),
+  callbacks: document.getElementById("callbacks"),
+  status: document.getElementById("status"),
+  title: document.getElementById("title"),
+};
+
+els.title.textContent = DISPLAY_NAME;
+
+// COOP/COEP isolation is not required for this single-threaded path, but warn
+// since the Worker/ring-buffer producer needs SharedArrayBuffer.
+if (!self.crossOriginIsolated) {
+  els.banner.style.display = "block";
+}
+
+function setStatus(s) {
+  els.status.textContent = s;
+}
+
+let ctx = null;
+let node = null;
+let sourceNode = null;
+let micStream = null;
+let paramInfos = [];
+
+// Main-thread plug-in instance used only for UI painting + seeding; params are
+// mirrored from the user's edits. The audio DSP runs in the worklet.
+let uiModule = null;
+let uiInstance = null;
+let uiHandle = null; // { stop() } from buildAutoUI
+const paramValues = {}; // index -> last value set (for mirroring)
+let messageInfos = [];
+let callbackInfos = [];
+let callbacksLog = null;
+let cbPollTimer = null;
+
+async function ensureUIModule() {
+  if (uiModule) return;
+  uiModule = await ModuleFactory({ locateFile: (p) => p });
+  uiInstance = new uiModule[C_NAME]();
+  uiInstance.prepare(2, 2, 128, ctx ? ctx.sampleRate : 48000);
+}
+
+// Read descriptors from the paint instance so the UI shows before audio starts;
+// the worklet's later {type:'ready'} refreshes it.
+function readParamInfosFromInstance() {
+  if (!uiInstance) return [];
+  const infos = [];
+  const n = uiInstance.getParameterCount();
+  for (let i = 0; i < n; i++) infos.push(uiInstance.getParameterInfo(i));
+  return infos;
+}
+
+function readOutputInfosFromInstance() {
+  if (!uiInstance) return [];
+  const infos = [];
+  const n = uiInstance.getOutputCount();
+  for (let i = 0; i < n; i++) {
+    const info = uiInstance.getOutputInfo(i);
+    if (info) infos.push(info); // null == audio bus
+  }
+  return infos;
+}
+
+function readMessageInfosFromInstance() {
+  if (!uiInstance || typeof uiInstance.getMessageCount !== "function") return [];
+  const infos = [];
+  const n = uiInstance.getMessageCount();
+  for (let i = 0; i < n; i++) infos.push(uiInstance.getMessageInfo(i));
+  return infos;
+}
+
+function readCallbackInfosFromInstance() {
+  if (!uiInstance || typeof uiInstance.getCallbackCount !== "function") return [];
+  const infos = [];
+  const n = uiInstance.getCallbackCount();
+  for (let i = 0; i < n; i++) infos.push(uiInstance.getCallbackInfo(i));
+  return infos;
+}
+
+// Build the UI at page load, independent of the audio graph.
+async function initUI() {
+  await ensureUIModule();
+  paramInfos = readParamInfosFromInstance();
+  buildUI(paramInfos);
+  buildOutputUI(readOutputInfosFromInstance());
+  messageInfos = readMessageInfosFromInstance();
+  callbackInfos = readCallbackInfosFromInstance();
+  buildMessagesAndCallbacksUI();
+  tickUIAndReadOutputs(); // seed output values
+  setStatus("ready — press Start to hear audio");
+}
+
+function buildMessagesAndCallbacksUI() {
+  els.messages.innerHTML = "";
+  els.callbacks.innerHTML = "";
+
+  const msgFs = buildMessagesUI(messageInfos, { sendMessage });
+  if (msgFs) els.messages.appendChild(msgFs);
+
+  if (callbackInfos && callbackInfos.length) {
+    callbacksLog = buildCallbacksLog(callbackInfos, { max: 200, height: 160 });
+    els.callbacks.appendChild(callbacksLog.element);
+    startCallbackPolling();
+  } else {
+    callbacksLog = null;
+    stopCallbackPolling();
+  }
+}
+
+// Drain the paint instance's callbacks into the log (primary "poke and see" path;
+// the worklet also forwards its own via {type:'callbacks'}).
+function drainMainThreadCallbacks() {
+  if (uiInstance && callbacksLog) drainCallbacksInto(uiInstance, callbacksLog);
+}
+
+function startCallbackPolling() {
+  stopCallbackPolling();
+  cbPollTimer = setInterval(drainMainThreadCallbacks, 100);
+}
+
+function stopCallbackPolling() {
+  if (cbPollTimer) {
+    clearInterval(cbPollTimer);
+    cbPollTimer = null;
+  }
+}
+
+async function start() {
+  if (ctx) return;
+  ctx = new AudioContext();
+  setStatus("loading worklet…");
+
+  await ctx.audioWorklet.addModule(`./${C_NAME}-worklet.js`);
+
+  // Fetch wasm on the main thread (no fetch in the worklet scope).
+  setStatus("fetching wasm…");
+  const wasmResp = await fetch(`./${C_NAME}.wasm`);
+  const wasmBinary = await wasmResp.arrayBuffer();
+
+  // Lock to stereo at the node level; the plug-in negotiates real channel counts.
+  node = new AudioWorkletNode(ctx, `${C_NAME}-processor`, {
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    outputChannelCount: [2],
+  });
+
+  node.port.onmessage = (e) => onWorkletMessage(e.data);
+  node.onprocessorerror = () => setStatus("processor error (see console)");
+
+  // Hand wasm + config to the worklet; it replies with {type:'ready', params, ...}.
+  node.port.postMessage({
+    type: "init",
+    wasmBinary, // transferable
+    sampleRate: ctx.sampleRate,
+    requestedIn: 2,
+    requestedOut: 2,
+  }, [wasmBinary]);
+
+  node.connect(ctx.destination);
+
+  await rebuildSource();
+
+  els.start.disabled = true;
+  els.stop.disabled = false;
+  setStatus("running");
+}
+
+function onWorkletMessage(data) {
+  if (!data) return;
+  if (data.type === "ready") {
+    setStatus(
+      `running — ${data.name}: in=${data.inChannels} out=${data.outChannels}`,
+    );
+    // Rebuild only if the worklet reports a different parameter set.
+    const workletParams = data.params || [];
+    if (workletParams.length !== paramInfos.length) {
+      paramInfos = workletParams;
+      buildUI(paramInfos);
+      buildOutputUI(data.outputs || []);
+    }
+    // Seed the live DSP with values set before Start.
+    for (const k in paramValues) {
+      node.port.postMessage({ type: "setParam", index: +k, value: paramValues[k] });
+    }
+  } else if (data.type === "outputs") {
+    updateOutputs(data.values || []);
+  } else if (data.type === "callbacks") {
+    if (callbacksLog && Array.isArray(data.events)) {
+      for (const ev of data.events) callbacksLog.append(ev);
+    }
+  } else if (data.type === "error") {
+    setStatus("worklet error: " + data.message);
+    console.error("worklet:", data.message);
+  }
+}
+
+// --- source selection -------------------------------------------------------
+
+async function rebuildSource() {
+  if (!ctx || !node) return;
+  // tear down previous source
+  if (sourceNode) {
+    try { sourceNode.disconnect(); } catch {}
+    if (sourceNode.stop) try { sourceNode.stop(); } catch {}
+    sourceNode = null;
+  }
+  if (micStream) {
+    micStream.getTracks().forEach((t) => t.stop());
+    micStream = null;
+  }
+
+  const kind = els.source.value;
+  els.freq.disabled = kind !== "tone";
+  els.file.disabled = kind !== "file";
+
+  if (kind === "tone") {
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.value = +els.freq.value || 220;
+    osc.connect(node);
+    osc.start();
+    sourceNode = osc;
+  } else if (kind === "mic") {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      sourceNode = ctx.createMediaStreamSource(micStream);
+      sourceNode.connect(node);
+    } catch (e) {
+      setStatus("mic denied: " + e.message);
+      els.source.value = "tone";
+      await rebuildSource();
+    }
+  } else if (kind === "file") {
+    // handled by the file picker change event
+  }
+}
+
+els.source.addEventListener("change", rebuildSource);
+els.freq.addEventListener("input", () => {
+  if (sourceNode && sourceNode.frequency) sourceNode.frequency.value = +els.freq.value;
+});
+
+els.file.addEventListener("change", async () => {
+  if (!ctx || !node) return;
+  const f = els.file.files[0];
+  if (!f) return;
+  const buf = await ctx.decodeAudioData(await f.arrayBuffer());
+  if (sourceNode) { try { sourceNode.disconnect(); } catch {} }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.connect(node);
+  src.start();
+  sourceNode = src;
+});
+
+function stop() {
+  if (sourceNode) { try { sourceNode.disconnect(); sourceNode.stop && sourceNode.stop(); } catch {} }
+  if (micStream) micStream.getTracks().forEach((t) => t.stop());
+  if (node) node.disconnect();
+  if (ctx) ctx.close();
+  ctx = node = sourceNode = micStream = null;
+  // UI stays live: controls operate on the main-thread paint instance.
+  els.start.disabled = false;
+  els.stop.disabled = true;
+  setStatus("stopped — UI still live");
+}
+
+els.start.addEventListener("click", () => start().catch((e) => {
+  console.error(e);
+  setStatus("error: " + e.message);
+}));
+els.stop.addEventListener("click", stop);
+
+initUI().catch((e) => {
+  console.error(e);
+  setStatus("UI init error: " + e.message);
+});
+
+// --- auto-UI ----------------------------------------------------------------
+// Widget mapping + layout renderer live in avnd-ui.js; here we wire them so
+// setParam writes to both the worklet DSP and the main-thread paint instance.
+
+// Write a parameter to the worklet DSP + the paint instance.
+function sendParam(index, value) {
+  paramValues[index] = value;
+  if (node) node.port.postMessage({ type: "setParam", index, value });
+  if (uiInstance) {
+    try { uiInstance.setParameter(index, value); } catch {}
+    tickUIAndReadOutputs(); // refresh outputs even with no audio running
+  }
+}
+
+// Send a named message to the worklet DSP + the paint instance.
+function sendMessage(name, args) {
+  if (node) node.port.postMessage({ type: "message", name, args });
+
+  if (uiInstance && typeof uiInstance.sendMessage === "function") {
+    try {
+      uiInstance.sendMessage(name, args);
+    } catch (e) {
+      console.error("sendMessage failed:", e);
+    }
+    tickUIAndReadOutputs();
+    drainMainThreadCallbacks();
+  }
+}
+
+// Reused scratch heap buffer for the 1-frame tick of the UI instance.
+let uiScratchPtr = 0;
+function tickUIAndReadOutputs() {
+  if (!uiInstance || !uiModule) return;
+  try {
+    if (!uiScratchPtr) uiScratchPtr = uiModule._malloc(8); // tiny in/out
+    uiInstance.process(uiScratchPtr, uiScratchPtr + 4, 1);
+  } catch {
+    /* non-audio plug-ins may not need a real buffer; ignore */
+  }
+  readOutputsFromInstance();
+}
+
+function readOutputsFromInstance() {
+  if (!uiInstance) return;
+  const n = uiInstance.getOutputCount();
+  const values = [];
+  for (let i = 0; i < n; i++) {
+    let v = null;
+    try { v = uiInstance.getOutputValue(i); } catch {}
+    values.push(v);
+  }
+  updateOutputs(values);
+}
+
+// Re-apply known parameter values to the paint instance (called before painting).
+function mirrorParams() {
+  if (!uiInstance) return;
+  for (const k in paramValues) {
+    try { uiInstance.setParameter(+k, paramValues[k]); } catch {}
+  }
+}
+
+async function buildUI(infos) {
+  if (uiHandle) { uiHandle.stop(); uiHandle = null; }
+  await ensureUIModule();
+  const uiCtx = {
+    paramInfos: infos,
+    setParam: sendParam,
+    getParam: (i) => {
+      if (i in paramValues) return paramValues[i];
+      const d = infos[i];
+      return d ? d.init : undefined;
+    },
+    mirror: mirrorParams,
+  };
+  uiHandle = buildAutoUI(els.params, uiInstance, uiCtx);
+}
+
+// --- output readouts ---------------------------------------------------------
+
+// output index -> readout <span> (sparse: audio buses skipped).
+let outputElByIndex = {};
+function buildOutputUI(infos) {
+  els.outputs.innerHTML = "";
+  outputElByIndex = {};
+  if (!infos.length) {
+    els.outputs.parentElement && (els.outputs.parentElement.style.display = "none");
+    return;
+  }
+  els.outputs.parentElement && (els.outputs.parentElement.style.display = "");
+  infos.forEach((info) => {
+    const idx = info && typeof info.index === "number" ? info.index : 0;
+    const row = document.createElement("div");
+    row.className = "param-row";
+    const label = document.createElement("label");
+    label.textContent = (info && (info.name || info.identifier)) || `out ${idx}`;
+    const val = document.createElement("span");
+    val.className = "readout";
+    val.textContent = "—";
+    row.appendChild(label);
+    row.appendChild(val);
+    els.outputs.appendChild(row);
+    outputElByIndex[idx] = val;
+  });
+}
+
+function updateOutputs(values) {
+  values.forEach((v, i) => {
+    const el = outputElByIndex[i];
+    if (!el || v === null || v === undefined) return;
+    el.textContent = typeof v === "number" ? v.toFixed(4) : JSON.stringify(v);
+  });
+}

@@ -1,0 +1,225 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// WamProcessor (audio thread) for "@AVND_WASM_NAME@" (Embind base: @AVND_WASM_C_NAME@).
+// The SDK's addFunctionModule stringifies the default export and runs it in the
+// worklet scope, so its body must be self-contained: no outer imports/closures.
+// No fetch/import there either: the main thread posts the wasm bytes + module
+// source via {type:'avnd/load'} and we evaluate the source to get the factory.
+
+const moduleId = '@AVND_WASM_C_NAME@';
+
+// mid = moduleId the SDK binds when invoking us.
+const getProcessor = (mid) => {
+  const audioWorkletGlobalScope = globalThis;
+  const { registerProcessor } = audioWorkletGlobalScope;
+
+  const ModuleScope = audioWorkletGlobalScope.webAudioModules.getModuleScope(mid);
+  const WamProcessor = ModuleScope.WamProcessor;
+
+  const RENDER_QUANTUM = 128;
+
+  // Inlined planar heap copy (can't import avnd-audio-helper.js from a stringified fn).
+  class HeapBuf {
+    constructor(M, frames, channels) {
+      this.M = M;
+      this.frames = frames;
+      this.channels = Math.max(1, channels);
+      this.total = this.frames * this.channels;
+      this.ptr = M._malloc(this.total * 4);
+      if (this.ptr === 0) throw new Error('avnd: _malloc failed');
+    }
+    all() {
+      const base = this.ptr >>> 2;
+      return this.M.HEAPF32.subarray(base, base + this.total);
+    }
+    copyIn(planes) {
+      const all = this.all();
+      const f = this.frames;
+      const provided = planes ? planes.length : 0;
+      for (let c = 0; c < this.channels; c++) {
+        const d = c * f;
+        if (c < provided && planes[c]) {
+          const src = planes[c];
+          const n = Math.min(f, src.length);
+          all.set(src.subarray(0, n), d);
+          for (let i = n; i < f; i++) all[d + i] = 0;
+        } else {
+          for (let i = 0; i < f; i++) all[d + i] = 0;
+        }
+      }
+    }
+    copyOut(planes) {
+      const all = this.all();
+      const f = this.frames;
+      const out = planes ? planes.length : 0;
+      for (let c = 0; c < out; c++) {
+        const dst = planes[c];
+        if (!dst) continue;
+        if (c < this.channels) {
+          const s = c * f;
+          const n = Math.min(f, dst.length);
+          dst.set(all.subarray(s, s + n));
+          for (let i = n; i < dst.length; i++) dst[i] = 0;
+        } else {
+          dst.fill(0);
+        }
+      }
+    }
+    free() {
+      if (this.ptr) {
+        this.M._free(this.ptr);
+        this.ptr = 0;
+      }
+    }
+  }
+
+  class AvndWamProcessor extends WamProcessor {
+    constructor(options) {
+      super(options);
+      this._M = null;
+      this._plugin = null;
+      this._cls = null;
+      this._inBuf = null;
+      this._outBuf = null;
+      this._inCh = 2;
+      this._outCh = 2;
+      this._ready = false;
+      this._pending = []; // param writes before wasm finished loading
+      this._vec = new Map(); // avndIndex -> partial component vector for compound params
+      this._sr = audioWorkletGlobalScope.sampleRate || (options && options.processorOptions && options.processorOptions.sampleRate) || 48000;
+      this.port.addEventListener('message', (e) => this._onAvndMessage(e.data));
+      this.port.start && this.port.start();
+    }
+
+    // Param info comes via the SDK ParamMgr handshake; no-op DSP-side.
+    _generateWamParameterInfo() {
+      return {};
+    }
+
+    async _loadWasm(data) {
+      const factory = await importModuleFromSource(data.moduleSource);
+      const M = await factory({
+        wasmBinary: data.wasmBinary,
+        locateFile: (p) => p,
+      });
+      const Cls = M[mid];
+      if (!Cls) throw new Error(`avnd: Embind class "${mid}" not found`);
+      this._M = M;
+      this._cls = Cls;
+      this._plugin = new Cls();
+      const reqIn = data.requestedIn ?? 2;
+      const reqOut = data.requestedOut ?? 2;
+      this._plugin.prepare(reqIn, reqOut, RENDER_QUANTUM, this._sr);
+      this._inCh = this._plugin.inputChannels();
+      this._outCh = this._plugin.outputChannels();
+      this._inBuf = new HeapBuf(M, RENDER_QUANTUM, this._inCh);
+      this._outBuf = new HeapBuf(M, RENDER_QUANTUM, this._outCh);
+      this._ready = true;
+
+      for (const p of this._pending) this._applyRaw(p);
+      this._pending.length = 0;
+
+      this.port.postMessage({
+        type: 'avnd/ready',
+        inChannels: this._inCh,
+        outChannels: this._outCh,
+      });
+    }
+
+    _onAvndMessage(data) {
+      if (!data || typeof data !== 'object') return;
+      switch (data.type) {
+        case 'avnd/load':
+          this._loadWasm(data).catch((err) =>
+            this.port.postMessage({
+              type: 'avnd/error',
+              message: String((err && err.stack) || err),
+            }),
+          );
+          break;
+        case 'avnd/setParam':
+          if (this._ready) this._applyRaw(data);
+          else this._pending.push(data);
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Apply a raw param write, recombining compound (vector) params from components.
+    _applyRaw(p) {
+      if (!this._plugin) return;
+      const idx = p.avndIndex;
+      if (p.component != null && p.component >= 0 && p.componentCount > 1) {
+        let vec = this._vec.get(idx);
+        if (!vec) {
+          vec = new Array(p.componentCount).fill(0);
+          this._vec.set(idx, vec);
+        }
+        vec[p.component] = p.value;
+        try {
+          this._plugin.setParameter(idx, vec.slice());
+        } catch (e) {
+          /* ignore */
+        }
+      } else {
+        this._plugin.setParameter(idx, p.value);
+      }
+    }
+
+    _onMidi(_midiData) {
+      this._lastMidi = _midiData; // accepted, not yet acted on
+    }
+
+    // Run the Avendish DSP over the 128-frame quantum.
+    _process(startSample, endSample, inputs, outputs) {
+      if (!this._ready) return; // base class keeps us alive
+      const inBus = (inputs && inputs[0]) || [];
+      const outBus = (outputs && outputs[0]) || [];
+      this._inBuf.copyIn(inBus);
+      this._plugin.process(this._inBuf.ptr, this._outBuf.ptr, RENDER_QUANTUM);
+      this._outBuf.copyOut(outBus);
+    }
+
+    destroy() {
+      if (this._inBuf) this._inBuf.free();
+      if (this._outBuf) this._outBuf.free();
+      if (this._plugin && this._plugin.delete) this._plugin.delete();
+      this._inBuf = this._outBuf = this._plugin = null;
+      super.destroy && super.destroy();
+    }
+  }
+
+  // Evaluate ES module source to its default export via data: URL import,
+  // falling back to Function eval where that import is unavailable.
+  async function importModuleFromSource(src) {
+    try {
+      const url = 'data:text/javascript;base64,' + bytesToBase64(utf8(src));
+      const mod = await import(url);
+      if (mod && mod.default) return mod.default;
+    } catch (e) {
+      /* fall through to Function eval */
+    }
+    // rewrite `export default X` to `return X` and run as a function
+    const body = src.replace(/export\s+default\s+/, 'return ');
+    // eslint-disable-next-line no-new-func
+    const fn = new Function(body);
+    return fn();
+  }
+
+  function utf8(s) {
+    return new TextEncoder().encode(s);
+  }
+  function bytesToBase64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  try {
+    registerProcessor(mid, AvndWamProcessor);
+  } catch (e) {
+    /* already registered (hot reload) */
+  }
+};
+
+export default getProcessor;

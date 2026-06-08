@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/wasm/configure.hpp>
+#include <avnd/binding/wasm/module.hpp>
+
+using type = decltype(avnd::configure<wasm::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+AVND_WASM_MODULE(type, @AVND_C_NAME@)

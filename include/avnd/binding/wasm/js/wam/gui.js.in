@@ -1,0 +1,186 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// Auto-GUI for the WAM "@AVND_WASM_NAME@": a framework-free custom element
+// two-way bound to the node's parameters. WAM2 contract: createElement(plugin).
+
+const STYLE = `
+:host { display:block; font-family: system-ui, sans-serif; font-size:12px;
+        background:#1e1e24; color:#e8e8ee; padding:10px; border-radius:8px;
+        min-width:240px; box-sizing:border-box; }
+.title { font-weight:600; margin-bottom:8px; font-size:13px; }
+.row { display:grid; grid-template-columns: 96px 1fr 56px; gap:8px;
+       align-items:center; margin:4px 0; }
+.row label { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row .val { text-align:right; font-variant-numeric: tabular-nums; opacity:.85; }
+input[type=range] { width:100%; }
+select, input[type=text], input[type=number] { width:100%; box-sizing:border-box;
+       background:#2a2a33; color:#e8e8ee; border:1px solid #3a3a46;
+       border-radius:4px; padding:2px 4px; }
+.unit { opacity:.6; }
+`;
+
+class AvndWamGui extends HTMLElement {
+  constructor(plugin) {
+    super();
+    this._plugin = plugin;
+    this._node = plugin.audioNode;
+    this._controls = new Map(); // id -> {update(value)}
+    this._unsub = null;
+    this.attachShadow({ mode: 'open' });
+  }
+
+  async init() {
+    const root = this.shadowRoot;
+    const style = document.createElement('style');
+    style.textContent = STYLE;
+    root.appendChild(style);
+
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent =
+      (this._plugin.descriptor && this._plugin.descriptor.name) ||
+      '@AVND_WASM_NAME@';
+    root.appendChild(title);
+
+    const infoMap = await this._node.getParameterInfo();
+    const values = await this._node.getParameterValues(false);
+
+    const ids = Object.keys(infoMap);
+    for (const id of ids) {
+      const info = infoMap[id];
+      const cur = values[id] ? values[id].value : info.defaultValue;
+      const row = this._buildRow(id, info, cur);
+      root.appendChild(row);
+    }
+
+    // Poll for host-automation changes.
+    this._poll = setInterval(() => this._refresh(), 100);
+    return this;
+  }
+
+  _set(id, value) {
+    this._node.setParameterValues({ [id]: { id, value, normalized: false } });
+  }
+
+  _buildRow(id, info, cur) {
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const label = document.createElement('label');
+    label.textContent = info.label || id;
+    label.title = id;
+    row.appendChild(label);
+
+    let control;
+    const valOut = document.createElement('span');
+    valOut.className = 'val';
+
+    if (info.type === 'choice') {
+      control = document.createElement('select');
+      const choices =
+        info.choices && info.choices.length
+          ? info.choices
+          : rangeLabels(info.minValue, info.maxValue);
+      choices.forEach((name, i) => {
+        const o = document.createElement('option');
+        o.value = String(info.minValue + i);
+        o.textContent = name;
+        control.appendChild(o);
+      });
+      control.value = String(cur);
+      control.addEventListener('change', () => this._set(id, +control.value));
+      valOut.textContent = '';
+      this._controls.set(id, {
+        update: (v) => {
+          control.value = String(v);
+        },
+      });
+    } else if (info.type === 'boolean') {
+      control = document.createElement('input');
+      control.type = 'checkbox';
+      control.checked = !!cur;
+      control.addEventListener('change', () =>
+        this._set(id, control.checked ? 1 : 0),
+      );
+      valOut.textContent = '';
+      this._controls.set(id, {
+        update: (v) => {
+          control.checked = !!v;
+        },
+      });
+    } else {
+      // float / int -> range slider
+      control = document.createElement('input');
+      control.type = 'range';
+      control.min = info.minValue;
+      control.max = info.maxValue;
+      const isInt = info.type === 'int';
+      control.step =
+        info.discreteStep && info.discreteStep > 0
+          ? info.discreteStep
+          : isInt
+            ? 1
+            : (info.maxValue - info.minValue) / 1000 || 0.001;
+      control.value = cur;
+      const fmt = (v) => (isInt ? String(Math.round(v)) : (+v).toFixed(3));
+      valOut.textContent =
+        fmt(cur) + (info.units ? ' ' + info.units : '');
+      control.addEventListener('input', () => {
+        const v = isInt ? Math.round(+control.value) : +control.value;
+        valOut.textContent = fmt(v) + (info.units ? ' ' + info.units : '');
+        this._set(id, v);
+      });
+      this._controls.set(id, {
+        update: (v) => {
+          control.value = v;
+          valOut.textContent = fmt(v) + (info.units ? ' ' + info.units : '');
+        },
+      });
+    }
+
+    row.appendChild(control);
+    row.appendChild(valOut);
+    return row;
+  }
+
+  async _refresh() {
+    try {
+      const values = await this._node.getParameterValues(false);
+      for (const id of Object.keys(values)) {
+        const c = this._controls.get(id);
+        if (c) c.update(values[id].value);
+      }
+    } catch (e) {
+      /* node gone */
+    }
+  }
+
+  destroy() {
+    if (this._poll) clearInterval(this._poll);
+    this._poll = null;
+  }
+
+  disconnectedCallback() {
+    this.destroy();
+  }
+}
+
+function rangeLabels(min, max) {
+  const out = [];
+  for (let i = min; i <= max; i++) out.push(String(i));
+  return out;
+}
+
+// Unique tag per plug-in so several Avendish WAMs can coexist.
+const TAG = 'avnd-wam-@AVND_WASM_C_NAME@';
+if (typeof customElements !== 'undefined' && !customElements.get(TAG)) {
+  customElements.define(TAG, AvndWamGui);
+}
+
+// WAM2 GUI entry point.
+export async function createElement(plugin) {
+  const el = new AvndWamGui(plugin);
+  await el.init();
+  return el;
+}
+
+export default { createElement };

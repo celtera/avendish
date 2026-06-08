@@ -1,0 +1,134 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// WAM2 main-thread entry point for "@AVND_WASM_NAME@" by "@AVND_WASM_VENDOR@"
+// (Embind base: @AVND_WASM_C_NAME@). The package default export; see wam/README.
+
+import { WebAudioModule, addFunctionModule } from '@webaudiomodules/sdk';
+import getProcessor from './processor.js';
+import AvndWamNode from './node.js';
+
+const C_NAME = '@AVND_WASM_C_NAME@';
+
+// Resolve URLs relative to this module (the WAM package directory).
+const moduleBaseURL = new URL('.', import.meta.url).href;
+
+export default class AvndWebAudioModule extends WebAudioModule {
+  static get isWebAudioModuleConstructor() {
+    return true;
+  }
+
+  _descriptor = {};
+
+  get descriptor() {
+    return this._descriptor;
+  }
+
+  _baseURL = moduleBaseURL;
+
+  async _loadDescriptor() {
+    const url = new URL('descriptor.json', this._baseURL).href;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    Object.assign(this._descriptor, json);
+    return json;
+  }
+
+  async initialize(state) {
+    if (!this._descriptor || !this._descriptor.name) {
+      await this._loadDescriptor();
+    }
+    return super.initialize(state);
+  }
+
+  async createAudioNode(initialState) {
+    const { audioContext } = this;
+
+    await this._bootstrapProcessor(audioContext);
+
+    // Read param descriptors on the main thread via a throwaway Embind instance.
+    const avndParamInfos = await this._readAvndParamInfos();
+
+    const node = new AvndWamNode(this, {
+      processorOptions: {
+        avndParamInfos,
+        sampleRate: audioContext.sampleRate,
+      },
+      numberOfInputs: this._descriptor.hasAudioInput === false ? 0 : 1,
+      numberOfOutputs: this._descriptor.hasAudioOutput === false ? 0 : 1,
+      outputChannelCount:
+        this._descriptor.hasAudioOutput === false ? [] : [2],
+    });
+
+    await node._initialize(); // SDK ParamMgr / port handshake
+
+    // Hand the DSP wasm + module source; the audio thread has no fetch/import.
+    const { moduleSource, wasmBinary } = await this._fetchWasm();
+    node.port.postMessage(
+      {
+        type: 'avnd/load',
+        moduleSource,
+        wasmBinary,
+        requestedIn: 2,
+        requestedOut: 2,
+      },
+      [wasmBinary],
+    );
+
+    if (initialState) await node.setState(initialState);
+    return node;
+  }
+
+  async _bootstrapProcessor(audioContext) {
+    // Register our processor function under moduleId === C_NAME; the SDK base
+    // already installed WamEnv/WamGroup during createInstance.
+    await addFunctionModule(audioContext.audioWorklet, getProcessor, C_NAME);
+  }
+
+  async _readAvndParamInfos() {
+    const Factory = await this._importEmscripten();
+    const M = await Factory();
+    const Cls = M[C_NAME];
+    if (!Cls) throw new Error(`[${C_NAME}] Embind class not found`);
+
+    // Override descriptor.json's CMake-time defaults with the real C++ metadata.
+    try {
+      if (Cls.getName) this._descriptor.name = Cls.getName();
+      if (Cls.getAuthor) this._descriptor.vendor = Cls.getAuthor();
+      if (Cls.getVersion) this._descriptor.version = String(Cls.getVersion());
+    } catch (e) {
+      /* metadata accessors optional */
+    }
+
+    const inst = new Cls();
+    const n = inst.getParameterCount();
+    const infos = [];
+    for (let i = 0; i < n; i++) infos.push(inst.getParameterInfo(i));
+    if (inst.delete) inst.delete();
+    return infos;
+  }
+
+  async _importEmscripten() {
+    const url = new URL(`${C_NAME}.mjs`, this._baseURL).href;
+    const mod = await import(/* webpackIgnore: true */ url);
+    return mod.default;
+  }
+
+  async _fetchWasm() {
+    const moduleURL = new URL(`${C_NAME}.mjs`, this._baseURL).href;
+    const wasmURL = new URL(`${C_NAME}.wasm`, this._baseURL).href;
+    const [moduleSource, wasmBinary] = await Promise.all([
+      fetch(moduleURL).then((r) => r.text()),
+      fetch(wasmURL).then((r) => r.arrayBuffer()),
+    ]);
+    return { moduleSource, wasmBinary };
+  }
+
+  async createGui() {
+    const url = new URL('gui.js', this._baseURL).href;
+    const { createElement } = await import(/* webpackIgnore: true */ url);
+    return createElement(this);
+  }
+
+  async destroyGui(el) {
+    if (el && typeof el.destroy === 'function') el.destroy();
+  }
+}
