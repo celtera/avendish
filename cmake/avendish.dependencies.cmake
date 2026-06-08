@@ -68,3 +68,20 @@ if(NOT TARGET magic_enum::magic_enum)
   )
   FetchContent_MakeAvailable(magic_enum)
 endif()
+
+if(APPLE)
+if(NOT TARGET jthread)
+FetchContent_Declare(
+  jthread
+  GIT_REPOSITORY "https://github.com/StirlingLabs/jthread"
+  GIT_TAG main
+  GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(jthread)
+endif()
+endif()
+
+
+if(NOT TARGET jthread)
+  add_library(jthread INTERFACE)
+endif()

@@ -3,7 +3,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "WAS.*")
   endfunction()
   return()
 endif()
-find_package(ossia)
 find_package(GLEW QUIET)
 find_package(glfw3 QUIET)
 find_package(OpenGL QUIET)
@@ -86,7 +85,20 @@ function(avnd_make_standalone)
       ${AVND_FX_TARGET}
       PUBLIC
         ossia::ossia
-        SDL2
+    )
+  endif()
+
+  if(TARGET SDL2::SDL2)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        SDL2::SDL2
+    )
+  elseif(TARGET SDL2::SDL2-static)
+    target_link_libraries(
+      ${AVND_FX_TARGET}
+      PUBLIC
+        SDL2::SDL2-static
     )
   endif()
 
@@ -148,6 +160,7 @@ function(avnd_make_standalone)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish
+      jthread
   )
 
   if(TARGET ossia::ossia)
