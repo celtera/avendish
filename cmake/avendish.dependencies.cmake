@@ -1,13 +1,26 @@
 include(FetchContent)
 
-if(NOT TARGET fmt::fmt)
+if(NOT TARGET fmt::fmt AND NOT TARGET fmt::fmt_header_only)
   FetchContent_Declare(
     fmt
     GIT_REPOSITORY "https://github.com/fmtlib/fmt"
     GIT_TAG 12.0.0
     GIT_PROGRESS true
   )
-  FetchContent_MakeAvailable(fmt)
+  if(EMSCRIPTEN)
+    # fmt's compiled lib (format.cc) fails against emscripten's libc++ and we
+    # only use it header-only, so expose just a header-only interface target.
+    FetchContent_GetProperties(fmt)
+    if(NOT fmt_POPULATED)
+      FetchContent_Populate(fmt)
+    endif()
+    add_library(fmt_header_only INTERFACE)
+    target_include_directories(fmt_header_only INTERFACE "${fmt_SOURCE_DIR}/include")
+    target_compile_definitions(fmt_header_only INTERFACE FMT_HEADER_ONLY=1)
+    add_library(fmt::fmt_header_only ALIAS fmt_header_only)
+  else()
+    FetchContent_MakeAvailable(fmt)
+  endif()
 endif()
 
 if(NOT TARGET concurrentqueue)

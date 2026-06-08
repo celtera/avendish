@@ -1,0 +1,26 @@
+{
+  "name": "@avendish/wam-@AVND_WASM_C_NAME@",
+  "version": "@AVND_WASM_VERSION@",
+  "description": "@AVND_WASM_NAME@ — a Web Audio Modules 2 plug-in generated from Avendish.",
+  "type": "module",
+  "main": "index.js",
+  "module": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./descriptor.json": "./descriptor.json",
+    "./gui": "./gui.js",
+    "./node": "./node.js",
+    "./processor": "./processor.js"
+  },
+  "wam": {
+    "descriptor": "./descriptor.json",
+    "module": "./index.js"
+  },
+  "keywords": ["webaudio", "wam", "web-audio-modules", "audio", "avendish"],
+  "author": "@AVND_WASM_VENDOR@",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "@webaudiomodules/api": "^2.0.0",
+    "@webaudiomodules/sdk": "^0.0.16"
+  }
+}

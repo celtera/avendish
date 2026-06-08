@@ -1,0 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// Re-export of the SDK WamNode via a local specifier, so tests can rewrite this
+// one import to a stub instead of shimming the bare package.
+
+export { WamNode } from '@webaudiomodules/sdk';

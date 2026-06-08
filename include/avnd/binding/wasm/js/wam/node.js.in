@@ -1,0 +1,152 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+// Main-thread WamNode for "@AVND_WASM_NAME@" (Embind base: @AVND_WASM_C_NAME@).
+// Maps Avendish param descriptors to a WamParameterInfoMap and forwards writes /
+// automation / MIDI to the processor. Descriptors are injected by index.js.
+
+import { buildWamParameterInfo } from './avnd-wam-params.js';
+import { WamNode as SdkWamNode } from './sdk-wamnode.js';
+
+export default class AvndWamNode extends SdkWamNode {
+  // options.processorOptions.avndParamInfos = [...getParameterInfo(i)]
+  constructor(module, options) {
+    super(module, options);
+
+    const avndInfos =
+      (options &&
+        options.processorOptions &&
+        options.processorOptions.avndParamInfos) ||
+      [];
+
+    const { info, order, byId } = buildWamParameterInfo(avndInfos);
+    this._wamInfo = info; // id -> WamParameterInfo
+    this._order = order; // stable id ordering
+    this._routing = byId; // id -> {avndIndex, component, componentCount}
+
+    this._values = {}; // raw value cache, seeded from defaults
+    for (const id of order) this._values[id] = this._wamInfo[id].defaultValue;
+
+    this.port.addEventListener('message', (e) => this._onProcMessage(e.data));
+    this.port.start && this.port.start();
+  }
+
+  _onProcMessage(data) {
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'avnd/ready') {
+      this._procReady = true;
+      this.dispatchEvent(
+        new CustomEvent('wam-ready', { detail: data }),
+      );
+    } else if (data.type === 'avnd/error') {
+      // eslint-disable-next-line no-console
+      console.error('[@AVND_WASM_C_NAME@] processor:', data.message);
+    }
+  }
+
+  // ---- WAM parameter API ---------------------------------------------------
+
+  async getParameterInfo(normalized, ...parameterIdQuery) {
+    const ids =
+      parameterIdQuery && parameterIdQuery.length
+        ? parameterIdQuery
+        : this._order;
+    const out = {};
+    for (const id of ids) if (this._wamInfo[id]) out[id] = this._wamInfo[id];
+    return out;
+  }
+
+  async getParameterValues(normalized, ...parameterIdQuery) {
+    const ids =
+      parameterIdQuery && parameterIdQuery.length
+        ? parameterIdQuery
+        : this._order;
+    const out = {};
+    for (const id of ids) {
+      if (!this._wamInfo[id]) continue;
+      const raw = this._values[id];
+      out[id] = {
+        id,
+        value: normalized ? this._normalize(id, raw) : raw,
+        normalized: !!normalized,
+      };
+    }
+    return out;
+  }
+
+  async setParameterValues(values) {
+    if (!values) return;
+    for (const id of Object.keys(values)) {
+      const v = values[id];
+      if (!this._wamInfo[id]) continue;
+      const raw = v.normalized ? this._denormalize(id, v.value) : v.value;
+      this._writeParam(id, raw);
+    }
+  }
+
+  // ---- WamEvent scheduling -------------------------------------------------
+  // wam-automation applied immediately; wam-midi forwarded to the processor.
+
+  scheduleEvents(...events) {
+    for (const ev of events) {
+      if (!ev) continue;
+      if (ev.type === 'wam-automation' && ev.data) {
+        const { id, value, normalized } = ev.data;
+        if (!this._wamInfo[id]) continue;
+        const raw = normalized ? this._denormalize(id, value) : value;
+        this._writeParam(id, raw);
+      } else if (ev.type === 'wam-midi' && ev.data) {
+        this.port.postMessage({ type: 'avnd/midi', bytes: ev.data.bytes });
+      }
+      // wam-sysex / wam-mpe / wam-osc: accepted, currently ignored.
+    }
+    if (super.scheduleEvents) super.scheduleEvents(...events);
+  }
+
+  clearEvents() {
+    if (super.clearEvents) super.clearEvents();
+  }
+
+  // ---- state ---------------------------------------------------------------
+
+  async getState() {
+    const parameterValues = await this.getParameterValues(false);
+    return { parameterValues };
+  }
+
+  async setState(state) {
+    if (state && state.parameterValues) {
+      await this.setParameterValues(state.parameterValues);
+    }
+  }
+
+  // ---- internals -----------------------------------------------------------
+
+  _writeParam(id, raw) {
+    this._values[id] = raw;
+    const r = this._routing[id];
+    if (!r) return;
+    this.port.postMessage({
+      type: 'avnd/setParam',
+      avndIndex: r.avndIndex,
+      component: r.component,
+      componentCount: r.componentCount,
+      value: raw,
+    });
+  }
+
+  _normalize(id, raw) {
+    const info = this._wamInfo[id];
+    const span = info.maxValue - info.minValue;
+    if (span <= 0) return 0;
+    return (raw - info.minValue) / span;
+  }
+
+  _denormalize(id, n) {
+    const info = this._wamInfo[id];
+    const span = info.maxValue - info.minValue;
+    let raw = info.minValue + n * span;
+    if (info.type === 'int' || info.type === 'choice' || info.type === 'boolean') {
+      raw = Math.round(raw);
+    }
+    return raw;
+  }
+}

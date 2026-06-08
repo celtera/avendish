@@ -1,0 +1,18 @@
+{
+  "name": "@AVND_WASM_NAME@",
+  "vendor": "@AVND_WASM_VENDOR@",
+  "version": "@AVND_WASM_VERSION@",
+  "apiVersion": "2.0.0",
+  "identifier": "@AVND_WASM_C_NAME@",
+  "thumbnail": "",
+  "keywords": ["audio", "effect", "avendish", "wam"],
+  "isInstrument": false,
+  "description": "@AVND_WASM_NAME@ — generated from Avendish for the Web Audio Modules 2 standard.",
+  "website": "@AVND_WASM_VENDOR_URL@",
+  "hasAudioInput": true,
+  "hasAudioOutput": true,
+  "hasMidiInput": false,
+  "hasMidiOutput": false,
+  "hasAutomationInput": true,
+  "hasAutomationOutput": false
+}

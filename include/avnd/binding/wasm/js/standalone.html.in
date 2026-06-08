@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@AVND_WASM_NAME@ — Avendish WASM</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.4;
+      }
+      h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+      #coi-banner {
+        display: none;
+        background: #fde68a;
+        color: #78350f;
+        border: 1px solid #f59e0b;
+        padding: 0.6rem 0.8rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+      }
+      .toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+      button { padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; }
+      button:disabled { opacity: 0.5; cursor: default; }
+      select, input[type="number"], input[type="text"] { padding: 0.25rem; }
+      fieldset { border: 1px solid #8884; border-radius: 8px; margin: 1rem 0; padding: 0.8rem 1rem; }
+      legend { font-weight: 600; padding: 0 0.4rem; }
+      .param-row {
+        display: grid;
+        grid-template-columns: 12rem 1fr;
+        gap: 0.6rem;
+        align-items: center;
+        margin: 0.35rem 0;
+      }
+      .param-row label { text-align: right; font-size: 0.92rem; opacity: 0.9; }
+      .control { display: flex; align-items: center; gap: 0.6rem; }
+      .control input[type="range"] { flex: 1; }
+      .readout { font-variant-numeric: tabular-nums; min-width: 4rem; opacity: 0.8; }
+      #status { margin-top: 1rem; font-size: 0.85rem; opacity: 0.7; }
+      code { background: #8882; padding: 0.05rem 0.3rem; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1 id="title">@AVND_WASM_NAME@</h1>
+    <div>Avendish WebAssembly standalone host (<code>@AVND_WASM_C_NAME@</code>)</div>
+
+    <div id="coi-banner">
+      <strong>Not cross-origin isolated.</strong>
+      <code>crossOriginIsolated</code> is <code>false</code>, so
+      <code>SharedArrayBuffer</code> is unavailable. The single-threaded audio
+      path still works, but a future shared ring-buffer / Worker producer needs
+      the page served with
+      <code>Cross-Origin-Opener-Policy: same-origin</code> and
+      <code>Cross-Origin-Embedder-Policy: require-corp</code>.
+      Use the bundled <code>avnd-dev-server.mjs</code>, which sets these headers.
+    </div>
+
+    <div class="toolbar">
+      <button id="start">Start audio</button>
+      <button id="stop" disabled>Stop</button>
+      <label>
+        Source:
+        <select id="source">
+          <option value="tone">Test tone</option>
+          <option value="mic">Microphone</option>
+          <option value="file">Audio file</option>
+        </select>
+      </label>
+      <label>
+        Tone Hz:
+        <input id="freq" type="number" value="220" min="20" max="8000" step="1" />
+      </label>
+      <input id="file" type="file" accept="audio/*" disabled />
+    </div>
+
+    <fieldset>
+      <legend>Parameters</legend>
+      <div id="params"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Outputs</legend>
+      <div id="outputs"></div>
+    </fieldset>
+
+    <!-- Hosts populated by the controller; hidden when empty. -->
+    <div id="messages"></div>
+    <div id="callbacks"></div>
+
+    <div id="status">idle</div>
+
+    <script type="module" src="./@AVND_WASM_C_NAME@-standalone.js"></script>
+  </body>
+</html>
