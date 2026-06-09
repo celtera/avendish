@@ -91,9 +91,9 @@ struct widget_reflection
         return "xyz";
       case widget_type::xyz_spinbox:
         return "xyz_spinbox";
-      case widget_type::xyz:
+      case widget_type::xyzw:
         return "xyzw";
-      case widget_type::xyz_spinbox:
+      case widget_type::xyzw_spinbox:
         return "xyzw_spinbox";
       case widget_type::color:
         return "color";
