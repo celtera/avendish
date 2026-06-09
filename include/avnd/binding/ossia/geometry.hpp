@@ -23,6 +23,21 @@ struct is_shared_ptr<std::shared_ptr<T>> : std::true_type
 template <typename Attr>
 constexpr ossia::attribute_semantic semantic_for_attribute(const Attr& attr)
 {
+  // Legacy attributes carry a runtime location enum (position = 0, tex_coord,
+  // color, normal, tangent); tag matching cannot see runtime values so convert
+  // the location directly.
+  if constexpr(!requires { attr.semantic; } && requires { attr.location; })
+  {
+    static constexpr auto m = AVND_ENUM_MATCHER(
+        (ossia::attribute_semantic::position, position, positions),
+        (ossia::attribute_semantic::texcoord0, tex_coord, texcoord, texcoords, uv),
+        (ossia::attribute_semantic::color0, color, colors),
+        (ossia::attribute_semantic::normal, normal, normals),
+        (ossia::attribute_semantic::tangent, tangent, tangents));
+    return m(attr.location, ossia::attribute_semantic::custom);
+  }
+  else
+  {
   // clang-format off
   static constexpr auto m = AVND_ENUM_OR_TAG_MATCHER(semantic,
     // Core geometry
@@ -130,7 +145,9 @@ constexpr ossia::attribute_semantic semantic_for_attribute(const Attr& attr)
     (ossia::attribute_semantic::voxel_color, voxel_color, vcolor),
 
     // Topology / connectivity
-    (ossia::attribute_semantic::name, name, string_name),
+    // Note: no bare `name` alias here: a `name` member is how custom
+    // attributes carry their string identifier, it is not a semantic tag.
+    (ossia::attribute_semantic::name, string_name, piece_name),
     (ossia::attribute_semantic::piece_id, piece_id, piece),
     (ossia::attribute_semantic::line_id, line_id, curve_id),
     (ossia::attribute_semantic::prim_id, prim_id, primitive_id),
@@ -153,6 +170,7 @@ constexpr ossia::attribute_semantic semantic_for_attribute(const Attr& attr)
   );
   // clang-format on
   return m(attr, ossia::attribute_semantic::custom);
+  }
 }
 
 template <typename Attr>
@@ -912,6 +930,10 @@ void mesh_from_ossia(
             .semantic = static_cast<semantic_type>(in.semantic),
             .format = static_cast<format_type>(in.format),
             .byte_offset = static_cast<offset_type>(in.byte_offset)});
+
+    // Propagate custom name for string-based matching
+    if constexpr(requires { a.name = in.name; })
+      a.name = in.name;
   }
 
   if constexpr(requires { dst.auxiliary; })
