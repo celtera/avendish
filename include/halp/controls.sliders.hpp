@@ -222,7 +222,8 @@ struct xyzw_spinboxes_t
     return std::string_view{lit.value};
   }
 
-  value_type value = {T(setup.init), T(setup.init), T(setup.init)};
+  value_type value
+      = {T(setup.init), T(setup.init), T(setup.init), T(setup.init)};
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
