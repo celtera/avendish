@@ -22,6 +22,7 @@ endmacro()
 # avnd_addon_object(
 #   BASE <base_target> C_NAME <obj> CLASS <Class> [NAMESPACE <ns>]
 #   SOURCES <a.hpp> [b.cpp ...] [MAIN_FILE <a.hpp>]
+#   [DEPENDENCIES <target> ...]
 #   # standalone back-ends -- pick one of:
 #   [CATEGORY object|audioplug|texture|geometry|buffer|all]   (preset, default: object)
 #   [BACKENDS <backend>[:<PROCESSOR_TYPE>] ...])              (explicit, e.g. touchdesigner:POP)
@@ -30,8 +31,13 @@ endmacro()
 # introspects the object). Standalone, CATEGORY runs an avnd_make_* preset, while
 # BACKENDS emits one avnd_make_<backend> per entry with its optional PROCESSOR_TYPE --
 # so e.g. BACKENDS godot:GEOMETRY touchdesigner:POP builds a POP but not a SOP.
+#
+# DEPENDENCIES are extra targets (typically a small INTERFACE library carrying an addon's
+# include dirs / libs). They are linked to whatever compiles the object -- the score BASE
+# target, or the standalone object library, which propagates them to every back-end (each
+# back-end links the object library PUBLIC). So a single declaration works in both modes.
 macro(avnd_addon_object)
-  cmake_parse_arguments(AA "" "BASE;C_NAME;CLASS;NAMESPACE;CATEGORY;MAIN_FILE" "SOURCES;BACKENDS" ${ARGN})
+  cmake_parse_arguments(AA "" "BASE;C_NAME;CLASS;NAMESPACE;CATEGORY;MAIN_FILE" "SOURCES;BACKENDS;DEPENDENCIES" ${ARGN})
   if(NOT AA_CATEGORY)
     set(AA_CATEGORY object)
   endif()
@@ -49,9 +55,15 @@ macro(avnd_addon_object)
       SOURCES ${AA_SOURCES}
       MAIN_CLASS ${AA_CLASS}
       ${_ns_arg})
+    if(AA_DEPENDENCIES)
+      target_link_libraries(${AA_BASE} PRIVATE ${AA_DEPENDENCIES})
+    endif()
   else()
     if(NOT TARGET ${AA_C_NAME})
       add_library(${AA_C_NAME} STATIC ${AA_SOURCES})
+    endif()
+    if(AA_DEPENDENCIES)
+      target_link_libraries(${AA_C_NAME} PUBLIC ${AA_DEPENDENCIES})
     endif()
     set(_cls "${AA_CLASS}")
     if(AA_NAMESPACE)
