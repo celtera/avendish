@@ -18,6 +18,7 @@
 #include <halp/tensor_port.hpp>
 
 #include <charconv>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -173,8 +174,9 @@ private:
     }
     else if constexpr(avnd::fp_ish<value_type>)
     {
-      double val{};
-      if(auto res = std::from_chars(str, str + strlen(str), val); res.ec == std::errc{})
+      // Apple's libc++ does not provide floating-point std::from_chars
+      char* end{};
+      if(double val = std::strtod(str, &end); end != str)
         return val;
       else
         return 0.;
