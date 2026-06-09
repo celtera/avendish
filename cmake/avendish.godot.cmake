@@ -149,11 +149,21 @@ function(avnd_make_godot)
       ${AVND_GODOT_SOURCES}
   )
 
+  # Resolve the godot-cpp target here: AVND_GODOT_CPP_TARGET is set at directory scope
+  # and is invisible when this function is called from an addon's own scope, which would
+  # drop godot-cpp's generated (gen/include) headers from the GDExtension's include path.
+  if(TARGET godot-cpp::godot-cpp)
+    set(_avnd_godot_cpp godot-cpp::godot-cpp)
+  elseif(TARGET godot-cpp)
+    set(_avnd_godot_cpp godot-cpp)
+  else()
+    set(_avnd_godot_cpp "${AVND_GODOT_CPP_TARGET}")
+  endif()
   target_link_libraries(
     ${AVND_FX_TARGET}
     PRIVATE
       Avendish::Avendish_godot
-      ${AVND_GODOT_CPP_TARGET}
+      ${_avnd_godot_cpp}
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
