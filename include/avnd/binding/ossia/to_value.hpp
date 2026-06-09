@@ -75,7 +75,7 @@ struct to_ossia_value_impl
   }
 
   template <typename F>
-    requires(std::is_aggregate_v<F> && !avnd::vector_ish<F>)
+    requires(std::is_aggregate_v<F> && !avnd::vector_ish<F> && !avnd::tensor_like<F>)
   void operator()(const F& f)
   {
     constexpr int fields = avnd::pfr::tuple_size_v<F>;
