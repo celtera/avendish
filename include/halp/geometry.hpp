@@ -52,15 +52,15 @@ enum class attribute_semantic : uint32_t
 
   // Transform / instancing
   rotation = 600,                      // vec4.  Quaternion (x,y,z,w).
-  rotation_extra = morph_position + 1, // vec4.  Post-orient rotation.
-  scale = morph_position + 2,          // vec3.  Non-uniform scale.
-  uniform_scale = morph_position + 3,  // float. Uniform scale.
-  up = morph_position + 4,             // vec3.  Up vector for LookAt.
-  pivot = morph_position + 5,          // vec3.  Local pivot point.
+  rotation_extra = rotation + 1, // vec4.  Post-orient rotation.
+  scale = rotation + 2,          // vec3.  Non-uniform scale.
+  uniform_scale = rotation + 3,  // float. Uniform scale.
+  up = rotation + 4,             // vec3.  Up vector for LookAt.
+  pivot = rotation + 5,          // vec3.  Local pivot point.
   transform_matrix
-  = morph_position
+  = rotation
     + 6, // mat4.  Full transform, overrides TRS. (note: remember that mat4 takes 4 lanes of attributes)
-  translation = morph_position + 7, // vec3.  Additional translation offset.
+  translation = rotation + 7, // vec3.  Additional translation offset.
 
   // Particle dynamics
   velocity = 1000,                   // vec3.  Velocity in units/sec.
