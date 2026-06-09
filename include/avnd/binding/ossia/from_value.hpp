@@ -1375,7 +1375,7 @@ bool from_ossia_value_rec(const ossia::value& src, T& dst)
 }
 
 template <typename T>
-  requires std::is_aggregate_v<T>
+  requires(std::is_aggregate_v<T> && !avnd::tensor_like<T>)
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using type = std::decay_t<T>;
