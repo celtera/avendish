@@ -239,7 +239,7 @@ private:
       if(input_idx == position_binding_idx)
       {
         if constexpr(requires { input.buffer(); })
-          buffer_idx = avnd::index_in_struct_static<input.buffer()>();
+          buffer_idx = avnd::index_in_struct_static<std::decay_t<decltype(input)>::buffer()>();
         else if constexpr(requires { input.buffer; })
           buffer_idx = input.buffer;
 
@@ -341,7 +341,7 @@ private:
         if(input_idx == attr_binding)
         {
           if constexpr(requires { input.buffer(); })
-            buffer_idx = avnd::index_in_struct_static<input.buffer()>();
+            buffer_idx = avnd::index_in_struct_static<std::decay_t<decltype(input)>::buffer()>();
           else if constexpr(requires { input.buffer; })
             buffer_idx = input.buffer;
 
@@ -447,7 +447,7 @@ private:
         auto& input = geom.index;
         {
           if constexpr(requires { input.buffer(); })
-            buffer_idx = avnd::index_in_struct_static<input.buffer()>();
+            buffer_idx = avnd::index_in_struct_static<std::decay_t<decltype(input)>::buffer()>();
           else if constexpr(requires { input.buffer; })
             buffer_idx = input.buffer;
 
