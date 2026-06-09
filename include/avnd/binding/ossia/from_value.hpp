@@ -343,7 +343,7 @@ struct from_ossia_value_impl
   }
 
   template <typename F>
-    requires std::is_aggregate_v<F> bool
+    requires(std::is_aggregate_v<F> && !avnd::tensor_like<F>) bool
   operator()(const ossia::value& src, F& dst)
   {
     constexpr int sz = avnd::pfr::tuple_size_v<F>;
