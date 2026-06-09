@@ -114,7 +114,8 @@ struct process_after_run
   }
 
   template <avnd::parameter_port Field, std::size_t Idx>
-    requires(!avnd::sample_accurate_parameter_port<Field> && !ossia_port<Field>)
+    requires(!avnd::sample_accurate_parameter_port<Field> && !avnd::tensor_port<Field>
+             && !ossia_port<Field>)
   void operator()(
       Field& ctrl, ossia::value_outlet& port, avnd::field_index<Idx>) const noexcept
   {
