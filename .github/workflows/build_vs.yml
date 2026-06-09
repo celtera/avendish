@@ -24,6 +24,13 @@ jobs:
           submodules: "recursive"
           path: max-sdk-base
 
+      - name: Checkout TouchDesigner SDK
+        uses: actions/checkout@v6
+        with:
+          repository: jcelerier/CustomOperatorSamples
+          ref: add-pop-headers
+          path: touchdesigner-sdk
+
       - name: Install dependencies
         shell: bash
         run: |
@@ -43,6 +50,7 @@ jobs:
           cd build-debug
 
           export MAX_SDK=$PWD/../max-sdk-base
+          export TD_SDK=$PWD/../touchdesigner-sdk
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
           export PATH=/c/ossia-sdk-x86_64/cmake/bin:$PATH
@@ -54,6 +62,7 @@ jobs:
             -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
+            -DTOUCHDESIGNER_SDK_PATH=$TD_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             -G "Visual Studio 18 2026"
@@ -73,6 +82,7 @@ jobs:
           cd build-release
 
           export MAX_SDK=$PWD/../max-sdk-base
+          export TD_SDK=$PWD/../touchdesigner-sdk
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
           export PATH=/c/ossia-sdk-x86_64/cmake/bin:$PATH
@@ -81,6 +91,7 @@ jobs:
             -DBOOST_ROOT=/c/ossia-sdk-x86_64/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
+            -DTOUCHDESIGNER_SDK_PATH=$TD_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             -G "Visual Studio 18 2026"
