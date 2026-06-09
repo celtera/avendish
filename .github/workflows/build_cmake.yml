@@ -94,6 +94,13 @@ jobs:
           submodules: "recursive"
           path: max-sdk-base
 
+      - name: Checkout TouchDesigner SDK
+        uses: actions/checkout@v3
+        with:
+          repository: jcelerier/CustomOperatorSamples
+          ref: add-pop-headers
+          path: touchdesigner-sdk
+
       - name: Install dependencies
         shell: bash
         run: |
@@ -117,6 +124,7 @@ jobs:
           fi
 
           export MAX_SDK=$PWD/../max-sdk-base
+          export TD_SDK=$PWD/../touchdesigner-sdk
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
 
@@ -127,6 +135,7 @@ jobs:
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
+            -DTOUCHDESIGNER_SDK_PATH=$TD_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             ${{ matrix.config.common_flags }} \
@@ -156,6 +165,7 @@ jobs:
           fi
 
           export MAX_SDK=$PWD/../max-sdk-base
+          export TD_SDK=$PWD/../touchdesigner-sdk
           export SDK_3RDPARTY=$PWD/../score/3rdparty
           export VERBOSE=1
 
@@ -166,6 +176,7 @@ jobs:
             -DBOOST_ROOT=${{ matrix.config.sdk }}/boost \
             -Dpybind11_DIR=$SDK_3RDPARTY/libossia/3rdparty/pybind11 \
             -DAVND_MAXSDK_PATH=$MAX_SDK \
+            -DTOUCHDESIGNER_SDK_PATH=$TD_SDK \
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src;$SDK_3RDPARTY/libossia/3rdparty/pybind11" \
             ${{ matrix.config.common_flags }} \
