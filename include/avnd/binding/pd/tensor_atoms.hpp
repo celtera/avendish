@@ -9,7 +9,6 @@
 
 #include <avnd/binding/pd/helpers.hpp>
 #include <avnd/concepts/tensor.hpp>
-#include <halp/tensor_port.hpp>
 #include <m_pd.h>
 
 #include <cstddef>
@@ -95,7 +94,7 @@ inline bool apply_atoms_to_tensor(Container& container, int argc, t_atom* argv) 
     payload_offset = 0;
   }
 
-  if constexpr(halp::is_tensor_view_v<Container>)
+  if constexpr(avnd::view_tensor_like<Container>)
   {
     auto buf = std::make_shared<std::vector<element_type>>(total);
     auto* dst = buf->data();
@@ -103,20 +102,9 @@ inline bool apply_atoms_to_tensor(Container& container, int argc, t_atom* argv) 
     {
       dst[i] = tensor_element_from_atom<element_type>(argv[payload_offset + static_cast<int>(i)]);
     }
-
-    // Row-major contiguous strides (in elements).
-    std::vector<std::size_t> strides(shape.size(), 1);
-    for(std::ptrdiff_t i = static_cast<std::ptrdiff_t>(shape.size()) - 2; i >= 0; --i)
-    {
-      strides[static_cast<std::size_t>(i)]
-          = strides[static_cast<std::size_t>(i) + 1] * shape[static_cast<std::size_t>(i) + 1];
-    }
-
-    container.data_ptr = dst;
-    container.shape_v = std::move(shape);
-    container.strides_v = std::move(strides);
-    container.keep_alive
-        = std::shared_ptr<void>(buf, static_cast<void*>(buf->data()));
+    avnd::set_view_buffer(
+        container, dst, std::move(shape),
+        std::shared_ptr<void>(buf, static_cast<void*>(dst)));
     return true;
   }
   else if constexpr(avnd::resizable_tensor_like<Container>)

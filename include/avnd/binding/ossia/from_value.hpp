@@ -8,7 +8,6 @@
 #include <avnd/introspection/range.hpp>
 #include <avnd/introspection/type_wrapper.hpp>
 #include <avnd/introspection/vecf.hpp>
-#include <halp/tensor_port.hpp>
 #include <boost/mp11/algorithm.hpp>
 #include <ossia/network/value/value.hpp>
 #include <ossia/network/value/value_conversion.hpp>
@@ -1562,11 +1561,12 @@ from_ossia_value(auto& field, const ossia::value& src, std::optional<ossia::valu
 }
 
 // Forward-declared so the generic 3-arg dispatcher below resolves them
-// — they live in oscr:: and ADL on halp::tensor_view can't reach them.
+// at template-definition time.
 template <typename T>
-inline bool from_ossia_value(const ossia::value& src, halp::tensor_view<T>& dst);
+  requires avnd::view_tensor_like<T>
+inline bool from_ossia_value(const ossia::value& src, T& dst);
 template <typename T>
-  requires(avnd::tensor_like<T> && !halp::is_tensor_view_v<T>)
+  requires(avnd::tensor_like<T> && !avnd::view_tensor_like<T>)
 inline bool from_ossia_value(const ossia::value& src, T& dst);
 
 OSSIA_INLINE void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
@@ -1712,8 +1712,10 @@ inline void fill_tensor_data(
 }  // namespace tensor_detail
 
 template <typename T>
-inline bool from_ossia_value(const ossia::value& src, halp::tensor_view<T>& dst)
+  requires avnd::view_tensor_like<T>
+inline bool from_ossia_value(const ossia::value& src, T& dst)
 {
+  using elem_t = avnd::tensor_element<T>;
   std::vector<std::size_t> shape;
   tensor_detail::infer_tensor_shape(src, shape, 0);
   std::size_t total = 1;
@@ -1721,30 +1723,20 @@ inline bool from_ossia_value(const ossia::value& src, halp::tensor_view<T>& dst)
     total *= d;
   if(total == 0)
   {
-    dst.data_ptr = nullptr;
-    dst.shape_v.clear();
-    dst.strides_v.clear();
-    dst.keep_alive.reset();
+    avnd::set_view_buffer(dst, static_cast<elem_t*>(nullptr), {}, {});
     return false;
   }
-  auto buf = std::make_shared<std::vector<T>>(total);
+  auto buf = std::make_shared<std::vector<elem_t>>(total);
   std::size_t idx = 0;
   tensor_detail::fill_tensor_data(src, buf->data(), shape, 0, idx);
-  dst.data_ptr = buf->data();
-  dst.shape_v = std::move(shape);
-  dst.strides_v.resize(dst.shape_v.size());
-  std::size_t stride = 1;
-  for(std::size_t d = dst.shape_v.size(); d-- > 0;)
-  {
-    dst.strides_v[d] = stride;
-    stride *= dst.shape_v[d];
-  }
-  dst.keep_alive = std::shared_ptr<void>(buf, buf->data());
+  avnd::set_view_buffer(
+      dst, buf->data(), std::move(shape),
+      std::shared_ptr<void>(buf, buf->data()));
   return true;
 }
 
 template <typename T>
-  requires(avnd::tensor_like<T> && !halp::is_tensor_view_v<T>)
+  requires(avnd::tensor_like<T> && !avnd::view_tensor_like<T>)
 inline bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using elem_t = avnd::tensor_element<T>;

@@ -12,7 +12,6 @@
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
-#include <halp/tensor_port.hpp>
 #include <boost/type_index.hpp>
 #include <cmath>
 #include <cstring>
@@ -197,70 +196,52 @@ struct processor
   // Tensor-typed port: marshal as py::array_t<Elem> with shape +
   // strides preserved, zero-copy from numpy when layout matches.
   //
-  // Two dispatches based on the port's value type:
-  //
-  //   - `halp::tensor_view<T>` — non-owning input view. The setter
-  //     stashes the numpy buffer pointer + shape and holds a
-  //     reference to the array via `keep_alive`. Saves the per-tick
-  //     allocation + memcpy. Forcecast + c_style still apply so a
-  //     non-contiguous source still gets a one-time copy through
-  //     pybind11 internals; the view simply points at that copy.
-  //
-  //   - owning tensor (ndarray<T>, xt::xarray, …) — existing
-  //     resize + memcpy path. Required when ports want to retain
-  //     the input across ticks, or pass through cmake-locked
-  //     backends.
+  // Dispatch on the port's value type via avnd::view_tensor_like:
+  // view types receive a numpy buffer pointer + shape via
+  // avnd::set_view_buffer (zero-copy when c_style + dtype match);
+  // owning containers go through resize_to + memcpy.
   template <auto Idx, typename C>
   void setup_tensor_input(avnd::field_reflection<Idx, C>)
   {
     using value_type = std::remove_cvref_t<decltype(C::value)>;
     using elem_t = avnd::tensor_element<value_type>;
 
-    if constexpr(halp::is_tensor_view_v<value_type>)
+    if constexpr(avnd::view_tensor_like<value_type>)
     {
       class_def.def_property(
           c_str(input_name(avnd::field_reflection<Idx, C>{})),
-          // Reader: rebuild a numpy view from the stored pointer +
-          // shape. Returns None if no input has been set this tick.
           [](T& self) -> py::object {
             auto& v = avnd::pfr::get<Idx>(self.inputs).value;
-            if(v.data_ptr == nullptr)
+            const auto* data = avnd::data_of(v);
+            if(data == nullptr)
               return py::none();
-            std::vector<py::ssize_t> sh(v.shape_v.begin(), v.shape_v.end());
+            const auto sh = avnd::shape_of(v);
+            std::vector<py::ssize_t> shv(sh.begin(), sh.end());
             return py::array_t<elem_t>(
-                       sh,
-                       const_cast<elem_t*>(v.data_ptr),
+                       shv,
+                       const_cast<elem_t*>(data),
                        py::cast(&self, py::return_value_policy::reference));
           },
-          // Writer: capture the numpy buffer as a view and hold a
-          // ref to keep it alive until the next assignment.
-          // `c_style | forcecast` ensures contiguous + correct dtype;
-          // if the source is already so, no copy happens inside
-          // pybind11. Strides are converted from bytes (numpy) to
-          // elements (our tensor_view convention) at the boundary.
           [](T& self,
              py::array_t<elem_t,
                          py::array::c_style | py::array::forcecast> arr) {
             auto& v = avnd::pfr::get<Idx>(self.inputs).value;
             const auto info = arr.request();
-            v.data_ptr = static_cast<const elem_t*>(info.ptr);
-            v.shape_v.assign(info.shape.begin(), info.shape.end());
-            v.strides_v.assign(info.strides.size(), 0);
+            std::vector<std::size_t> shape(info.shape.begin(), info.shape.end());
+            std::vector<std::size_t> strides(info.strides.size());
             for(std::size_t d = 0; d < info.strides.size(); ++d)
-              v.strides_v[d]
-                  = static_cast<std::size_t>(info.strides[d])
-                    / sizeof(elem_t);
-            // Hold a py::object reference to the (possibly
-            // pybind11-internally-copied) array so its buffer stays
-            // valid until the next setter call. Custom deleter
-            // re-acquires the GIL because the holder may be released
-            // from a C++ destructor on an arbitrary thread.
-            v.keep_alive = std::shared_ptr<void>(
+              strides[d] = static_cast<std::size_t>(info.strides[d]) / sizeof(elem_t);
+            // GIL-acquiring deleter — the holder may be released from
+            // a C++ destructor on an arbitrary thread.
+            std::shared_ptr<void> keep_alive(
                 new py::object(arr),
                 [](void* p) {
                   py::gil_scoped_acquire gil;
                   delete static_cast<py::object*>(p);
                 });
+            avnd::set_view_buffer(
+                v, static_cast<elem_t*>(info.ptr),
+                std::move(shape), std::move(strides), std::move(keep_alive));
             auto& inputs = avnd::get_inputs(self);
             auto& field = boost::pfr::get<Idx>(inputs);
             if_possible(field.update(self));

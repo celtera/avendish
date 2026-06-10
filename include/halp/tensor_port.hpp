@@ -139,29 +139,6 @@ enum class tensor_kind : unsigned char
   spectrogram,
 };
 
-template <static_string Name, typename Container,
-          tensor_kind Kind = tensor_kind::generic>
-struct tensor_port
-{
-  using value_type = Container;
-  static constexpr tensor_kind kind = Kind;
-
-  static clang_buggy_consteval auto name() noexcept
-  {
-    return std::string_view{Name.value};
-  }
-
-  Container value{};
-
-  // Convenience accessors that go through the customization points.
-  auto data() noexcept             { return avnd::data_of(value); }
-  auto data() const noexcept       { return avnd::data_of(value); }
-  auto shape() const noexcept      { return avnd::shape_of(value); }
-
-  operator Container&() noexcept             { return value; }
-  operator const Container&() const noexcept { return value; }
-};
-
 constexpr std::size_t kind_to_rank(tensor_kind k) noexcept
 {
   switch(k)
@@ -178,23 +155,31 @@ constexpr std::size_t kind_to_rank(tensor_kind k) noexcept
   }
 }
 
-template <typename Port>
-constexpr std::size_t static_port_rank() noexcept
+template <static_string Name, typename Container,
+          tensor_kind Kind = tensor_kind::generic>
+struct tensor_port
 {
-  if constexpr(requires { { Port::kind } -> std::convertible_to<tensor_kind>; })
-  {
-    constexpr std::size_t from_kind = kind_to_rank(Port::kind);
-    if constexpr(from_kind != avnd::dynamic_rank)
-      return from_kind;
-  }
-  if constexpr(requires { typename Port::value_type; })
-  {
-    return avnd::container_static_rank<typename Port::value_type>();
-  }
-  return avnd::dynamic_rank;
-}
+  using value_type = Container;
+  static constexpr tensor_kind kind = Kind;
+  static constexpr std::size_t static_rank
+      = kind_to_rank(Kind) != avnd::dynamic_rank
+            ? kind_to_rank(Kind)
+            : avnd::container_static_rank<Container>();
 
-template <typename Port>
-concept has_static_rank = (static_port_rank<Port>() != avnd::dynamic_rank);
+  static clang_buggy_consteval auto name() noexcept
+  {
+    return std::string_view{Name.value};
+  }
+
+  Container value{};
+
+  // Convenience accessors that go through the customization points.
+  auto data() noexcept             { return avnd::data_of(value); }
+  auto data() const noexcept       { return avnd::data_of(value); }
+  auto shape() const noexcept      { return avnd::shape_of(value); }
+
+  operator Container&() noexcept             { return value; }
+  operator const Container&() const noexcept { return value; }
+};
 
 }  // namespace halp
