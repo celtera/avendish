@@ -17,9 +17,14 @@
 namespace max
 {
 
+// GPU texture ports and render-target outputs have no CPU-side pixel data
+// that could be written into a jit matrix: they are ignored by the Max
+// binding for now instead of being treated as MOP matrix outputs.
 template <typename Field>
 concept max_jit_output
-    = avnd::matrix_port<Field> || avnd::tensor_port<Field>;
+    = (avnd::matrix_port<Field> || avnd::tensor_port<Field>)
+      && !avnd::gpu_texture_port<Field>
+      && !avnd::gpu_render_target_output_port<Field>;
 
 template <typename Field>
 using is_max_jit_output_t = boost::mp11::mp_bool<max_jit_output<Field>>;
@@ -702,6 +707,12 @@ struct outputs
 
   }
 
+  template <avnd::gpu_render_target_output_port C>
+  static void setup(C& out, t_outlet& outlet)
+  {
+
+  }
+
   template <avnd::buffer_port C>
   static void setup(C& out, t_outlet& outlet)
   {
@@ -791,9 +802,10 @@ struct outputs
           avnd::get_outputs<T>(implementation),
           [&names, &jitter, &geom, &jit_configure, &out_k]<typename C>(C& ctl) {
             names[out_k] = symbol_for_port<C>();
-            jitter[out_k]
-                = avnd::texture_port<C> || avnd::buffer_port<C>
-                  || avnd::tensor_port<C>;
+            // Must match the max_jit_output set: write_matrix indexes the MOP
+            // outputs by predicate index, so gpu texture / render target ports
+            // must not allocate one.
+            jitter[out_k] = max_jit_output<C>;
             geom[out_k] = avnd::geometry_port<C>;
             if(jitter[out_k])
               jit_configure[out_k] = &outputs::configure_mop_output<C>;

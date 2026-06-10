@@ -49,6 +49,29 @@ inline constexpr gl_plane_layout gl_plane_for_location(int loc) noexcept
   }
 }
 
+// Map a runtime attribute semantic (numerically identical to
+// halp::attribute_semantic: position=0, normal=1, tangent=2, texcoord0..7=
+// 100..107, color0..3=200..203) to the plane group scheme above
+// (0 position, 1 texcoord, 2 color, 3 normal, 4 tangent).
+// All other semantics (joints, weights, morph targets, instancing, particle,
+// PBR, splatting, volumetric, topology, fx, custom...) have no slot in the
+// t_jit_glchunk vertex matrix: they return -1 and must be skipped.
+inline constexpr int gl_plane_group_for_semantic(uint32_t semantic) noexcept
+{
+  switch(semantic)
+  {
+    case 0: return 0; // position
+    case 1: return 3; // normal
+    case 2: return 4; // tangent
+    default: break;
+  }
+  if(semantic >= 100 && semantic <= 107) // texcoord0 .. texcoord7
+    return 1;
+  if(semantic >= 200 && semantic <= 203) // color0 .. color3
+    return 2;
+  return -1;
+}
+
 // Detect the location of a *static* geometry attribute struct (same scheme as
 // the Godot binding): position=0, texcoord=1, color=2, normal=3, tangent=4.
 template <typename Attr>
@@ -254,8 +277,28 @@ inline gathered_geometry gather_geometry(const Geom& geom)
 
   for(const auto& attr : geom.attributes)
   {
-    const int loc = (int)attr.location;
+    // Derive the plane group: semantic if present, else the legacy runtime
+    // location enum (position = 0, tex_coord, color, normal, tangent).
+    int loc = -1;
+    if constexpr(requires { attr.semantic; })
+    {
+      loc = gl_plane_group_for_semantic((uint32_t)attr.semantic);
+    }
+    else if constexpr(requires { attr.location; })
+    {
+      static_constexpr auto m = AVND_ENUM_MATCHER(
+          (0, position, positions), (1, tex_coord, texcoord, texcoords, uv),
+          (2, color, colors), (3, normal, normals), (4, tangent, tangents));
+      // Plain ints / unnamed enums fall back to the numeric value: the legacy
+      // location numbering is the same as the plane group scheme.
+      loc = m(attr.location, (int)attr.location);
+    }
     if(loc < 0 || loc > 4)
+      continue;
+
+    // First attribute of each group wins: additional texcoord/color sets have
+    // no remaining planes in the chunk vertex matrix and are skipped.
+    if(out.by_location[loc].present)
       continue;
 
     const int binding_idx = attr.binding;
