@@ -3,6 +3,7 @@
 
 #include <cinttypes>
 #include <memory>
+#include <string>
 #include <vector>
 HALP_MODULE_EXPORT
 namespace halp
