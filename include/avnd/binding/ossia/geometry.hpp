@@ -158,6 +158,17 @@ constexpr ossia::attribute_semantic semantic_for_attribute(const Attr& attr)
     // UI
     (ossia::attribute_semantic::selection, selection, selected, soft_selection),
 
+    // Per-instance data
+    (ossia::attribute_semantic::instance_color0, instance_color, instance_color0),
+    (ossia::attribute_semantic::instance_color1, instance_color1),
+    (ossia::attribute_semantic::instance_color2, instance_color2),
+    (ossia::attribute_semantic::instance_color3, instance_color3),
+    (ossia::attribute_semantic::instance_custom0, instance_custom, instance_custom0),
+    (ossia::attribute_semantic::instance_custom1, instance_custom1),
+    (ossia::attribute_semantic::instance_custom2, instance_custom2),
+    (ossia::attribute_semantic::instance_custom3, instance_custom3),
+    (ossia::attribute_semantic::instance_draw_id, instance_draw_id, draw_id),
+
     // User / general purpose
     (ossia::attribute_semantic::fx0, fx0),
     (ossia::attribute_semantic::fx1, fx1),
@@ -191,6 +202,7 @@ constexpr auto get_topology(const T& t) -> decltype(ossia::geometry::topology)
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
       (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
       (ossia::geometry::lines, line, lines),
+      (ossia::geometry::line_strip, line_strip, lines_strip),
       (ossia::geometry::points, point, points));
   // clang-format on
   return m(t, ossia::geometry::triangles);
@@ -447,6 +459,21 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
           .buffer = aux.buffer,
           .byte_offset = aux.byte_offset,
           .byte_size = aux.byte_size});
+    }
+  }
+
+  // Auxiliary textures (cubemaps, LUTs, etc.)
+  if constexpr(requires { ctrl.auxiliary_textures; })
+  {
+    geom.auxiliary_textures.clear();
+    for(const auto& aux : ctrl.auxiliary_textures)
+    {
+      ossia::geometry::auxiliary_texture tex;
+      tex.name = aux.name;
+      tex.native_handle = aux.handle;
+      if constexpr(requires { aux.sampler_handle; })
+        tex.sampler_handle = aux.sampler_handle;
+      geom.auxiliary_textures.push_back(std::move(tex));
     }
   }
 
@@ -790,7 +817,9 @@ constexpr auto to_topology(auto v)
       (ossia::geometry::triangles, triangle, triangles),
       (ossia::geometry::triangle_strip, triangle_strip, triangles_strip),
       (ossia::geometry::triangle_fan, triangle_fan, triangles_fan),
-      (ossia::geometry::lines, line, lines), (ossia::geometry::points, point, points));
+      (ossia::geometry::lines, line, lines),
+      (ossia::geometry::line_strip, line_strip, lines_strip),
+      (ossia::geometry::points, point, points));
   return m(v, decltype(T::topology){});
 }
 
