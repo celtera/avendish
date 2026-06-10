@@ -21,6 +21,7 @@
 #include <POP_CPlusPlusBase.h>
 
 #include <string>
+#include <vector>
 
 namespace touchdesigner::POP
 {
@@ -52,6 +53,7 @@ struct particle_processor : public TD::POP_CPlusPlusBase
   avnd::effect_container<T> implementation;
   parameter_setup<T> param_setup;
   TD::POP_Context* context{};
+  std::vector<TD::OP_SmartRef<TD::POP_Buffer>> m_input_buffers;
 
   explicit particle_processor(const TD::OP_NodeInfo* info, TD::POP_Context* ctx)
       : context{ctx}
@@ -788,6 +790,10 @@ private:
     if(!buf.raw_data || buf.byte_size <= 0)
       return 0;
 
+    // Unchanged since last cook: keep the node's current output as-is.
+    if(!buf.changed)
+      return 0;
+
     // Interpret raw buffer as tightly packed float3 xyz positions
     constexpr uint32_t components = 3;
     uint32_t num_particles = buf.byte_size / (components * sizeof(float));
@@ -799,6 +805,7 @@ private:
         reinterpret_cast<const char*>(buf.raw_data),
         num_particles, components, components * sizeof(float));
 
+    buf.changed = false;
     return num_particles;
   }
 
@@ -807,6 +814,9 @@ private:
   {
     auto& buf = field.buffer;
     if(!buf.elements || buf.element_count <= 0)
+      return 0;
+
+    if(!buf.changed)
       return 0;
 
     using elem_type = std::decay_t<decltype(buf.elements[0])>;
@@ -823,6 +833,7 @@ private:
           reinterpret_cast<const char*>(buf.elements),
           num_particles, components, components * sizeof(float));
 
+      buf.changed = false;
       return num_particles;
     }
     else if constexpr(requires { elem_type{}.x; elem_type{}.y; elem_type{}.z; })
@@ -833,6 +844,7 @@ private:
           reinterpret_cast<const char*>(buf.elements),
           buf.element_count, components, sizeof(elem_type));
 
+      buf.changed = false;
       return buf.element_count;
     }
     else
@@ -852,6 +864,9 @@ private:
 
   void read_pop_inputs(const TD::OP_Inputs* inputs)
   {
+    // Release the buffers held for the previous cook.
+    m_input_buffers.clear();
+
     int input_index = 0;
     avnd::geometry_input_introspection<T>::for_all(
         avnd::get_inputs(implementation),
@@ -889,6 +904,10 @@ private:
     const float* pos_data = static_cast<const float*>(pos_buf->getData(nullptr));
     if(!pos_data)
       return;
+
+    // The geometry keeps pointing into this buffer for the rest of the cook:
+    // hold a ref until the next one.
+    m_input_buffers.push_back(std::move(pos_buf));
 
     // Get point count from the PointInfo
     TD::OP_SmartRef<TD::POP_Buffer> pt_info_buf = pop_input->getPointInfo(get_info, nullptr);
