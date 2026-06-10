@@ -1,0 +1,61 @@
+name: Setup Godot
+description: >
+  Download the official Godot editor binary and put it in PATH as `godot`,
+  so that avendish's headless GDExtension smoke tests (and any other
+  godot-based tooling) can run. Usable from any avendish-based repository:
+
+    - uses: celtera/avendish/.github/actions/setup-godot@main
+
+inputs:
+  version:
+    description: "Godot release tag, e.g. 4.5-stable"
+    required: false
+    default: "4.5-stable"
+
+runs:
+  using: composite
+  steps:
+    - name: Download Godot
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION="${{ inputs.version }}"
+        BASE="https://github.com/godotengine/godot/releases/download/$VERSION"
+        DEST="$RUNNER_TEMP/godot-bin"
+        mkdir -p "$DEST"
+        cd "$DEST"
+
+        case "$RUNNER_OS" in
+          Linux)
+            ARCHIVE="Godot_v${VERSION}_linux.$(uname -m).zip"
+            curl -fsSL -o godot.zip "$BASE/$ARCHIVE"
+            unzip -oq godot.zip
+            mv "Godot_v${VERSION}_linux.$(uname -m)" godot
+            chmod +x godot
+            ;;
+          macOS)
+            ARCHIVE="Godot_v${VERSION}_macos.universal.zip"
+            curl -fsSL -o godot.zip "$BASE/$ARCHIVE"
+            unzip -oq godot.zip
+            printf '#!/bin/sh\nexec "%s/Godot.app/Contents/MacOS/Godot" "$@"\n' "$DEST" > godot
+            chmod +x godot
+            ;;
+          Windows)
+            ARCHIVE="Godot_v${VERSION}_win64.exe.zip"
+            curl -fsSL -o godot.zip "$BASE/$ARCHIVE"
+            unzip -oq godot.zip
+            mv "Godot_v${VERSION}_win64.exe" godot.exe
+            ;;
+          *)
+            echo "Unsupported runner OS: $RUNNER_OS" >&2
+            exit 1
+            ;;
+        esac
+
+        rm -f godot.zip
+        echo "$DEST" >> "$GITHUB_PATH"
+        echo "AVND_GODOT_EXECUTABLE=$DEST/godot" >> "$GITHUB_ENV"
+
+    - name: Check Godot
+      shell: bash
+      run: godot --version
