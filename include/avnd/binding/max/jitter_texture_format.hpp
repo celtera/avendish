@@ -5,6 +5,8 @@
 #include <boost/container/vector.hpp>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <type_traits>
 #include <string_view>
 
@@ -309,6 +311,15 @@ const max_texture_spec::Format& texture_spec(const Tex& t) noexcept
 }
 
 
+// Converts an incoming jit matrix (in_planes x in_type cells) into the packed
+// texel layout expected by the avendish input port (out_type).
+// Supported matrix inputs: 1 plane (gray), 2 planes (RG), 3 planes (RGB),
+// 4 planes (ARGB), each as char / long / float32 / float64 cells.
+// Supported conversion targets: R8, RG8, RG16, RGB8, RGBA8, RGBA32F.
+// Long cells are read with the same unsigned-full-range convention as the
+// pre-existing branches (jit long is signed int32, so this is lossy :( ).
+// Anything else (e.g. R16, float16 or 32-bit integer targets) returns nullptr
+// and the input port is left untouched.
 inline
     unsigned char* convert_input_texture(
         void* in_bytes, int in_width, int in_height, int in_planes, t_symbol* in_type,
@@ -329,6 +340,32 @@ inline
         switch(out_type) {
           case max_texture_spec::FormatEnum::R8:
             return (unsigned char*)in_bytes;
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              auto gray = src[i];
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint16_t gray = src[i] * 257; // 0..255 -> 0..65535
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
 
           case max_texture_spec::FormatEnum::RGBA8:
           {
@@ -390,6 +427,32 @@ inline
             for(int i = 0; i < in_n_pixels; i++)
             {
               dst[i] = (uint64_t(src[i]) * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint8_t gray = (uint64_t(src[i]) * 255) / 4294967295UL;
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint16_t gray = (uint64_t(src[i]) * 65535) / 4294967295UL;
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
             }
             return temp_storage.data();
           }
@@ -458,6 +521,32 @@ inline
             return temp_storage.data();
           }
 
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint8_t gray = std::clamp(int(src[i] * 255.0f), 0, 255);
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint16_t gray = std::clamp(int(src[i] * 65535.0f), 0, 65535);
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
+
           case max_texture_spec::FormatEnum::RGBA8:
           {
             temp_storage.resize(in_n_pixels * 4);
@@ -522,6 +611,32 @@ inline
             return temp_storage.data();
           }
 
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint8_t gray = std::clamp(int(src[i] * 255.0), 0, 255);
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              uint16_t gray = std::clamp(int(src[i] * 65535.0), 0, 65535);
+              dst[i * 2 + 0] = gray;
+              dst[i * 2 + 1] = gray;
+            }
+            return temp_storage.data();
+          }
+
           case max_texture_spec::FormatEnum::RGBA8:
           {
             temp_storage.resize(in_n_pixels * 4);
@@ -572,6 +687,344 @@ inline
       }
       break;
 
+    case 2:
+      if(in_type == _jit_sym_char)
+      {
+        // RG8 to max_texture_spec::FormatEnum
+        auto src = (uint8_t*)in_bytes;
+        switch(out_type) {
+          case max_texture_spec::FormatEnum::R8:
+          {
+            // RG -> R: keep the red plane
+            temp_storage.resize(in_n_pixels);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i] = src[i * 2 + 0];
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+            return (unsigned char*)in_bytes;
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = src[i * 2 + 0] * 257; // 0..255 -> 0..65535
+              dst[i * 2 + 1] = src[i * 2 + 1] * 257;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGB8:
+          {
+            temp_storage.resize(in_n_pixels * 3);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 3 + 0] = src[i * 2 + 0];
+              dst[i * 3 + 1] = src[i * 2 + 1];
+              dst[i * 3 + 2] = 0;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA8:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = src[i * 2 + 0];
+              dst[i * 4 + 1] = src[i * 2 + 1];
+              dst[i * 4 + 2] = 0;
+              dst[i * 4 + 3] = 255;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA32F:
+          {
+            temp_storage.resize(in_n_pixels * 16);
+            auto dst = (float*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = src[i * 2 + 0] / 255.0f;
+              dst[i * 4 + 1] = src[i * 2 + 1] / 255.0f;
+              dst[i * 4 + 2] = 0.0f;
+              dst[i * 4 + 3] = 1.0f;
+            }
+            return temp_storage.data();
+          }
+
+          default:
+            break;
+        }
+      }
+      else if(in_type == _jit_sym_long)
+      {
+        // RG32UI to max_texture_spec::FormatEnum
+        auto src = (uint32_t*)in_bytes;
+        switch(out_type) {
+          case max_texture_spec::FormatEnum::R8:
+          {
+            // RG -> R: keep the red plane
+            temp_storage.resize(in_n_pixels);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i] = (uint64_t(src[i * 2 + 0]) * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = (uint64_t(src[i * 2 + 0]) * 255) / 4294967295UL;
+              dst[i * 2 + 1] = (uint64_t(src[i * 2 + 1]) * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = (uint64_t(src[i * 2 + 0]) * 65535) / 4294967295UL;
+              dst[i * 2 + 1] = (uint64_t(src[i * 2 + 1]) * 65535) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGB8:
+          {
+            temp_storage.resize(in_n_pixels * 3);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 3 + 0] = (uint64_t(src[i * 2 + 0]) * 255) / 4294967295UL;
+              dst[i * 3 + 1] = (uint64_t(src[i * 2 + 1]) * 255) / 4294967295UL;
+              dst[i * 3 + 2] = 0;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA8:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = (uint64_t(src[i * 2 + 0]) * 255) / 4294967295UL;
+              dst[i * 4 + 1] = (uint64_t(src[i * 2 + 1]) * 255) / 4294967295UL;
+              dst[i * 4 + 2] = 0;
+              dst[i * 4 + 3] = 255;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA32F:
+          {
+            temp_storage.resize(in_n_pixels * 16);
+            auto dst = (float*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = src[i * 2 + 0] / 4294967295.0f;
+              dst[i * 4 + 1] = src[i * 2 + 1] / 4294967295.0f;
+              dst[i * 4 + 2] = 0.0f;
+              dst[i * 4 + 3] = 1.0f;
+            }
+            return temp_storage.data();
+          }
+
+          default:
+            break;
+        }
+      }
+      else if(in_type == _jit_sym_float32)
+      {
+        // RG32F to max_texture_spec::FormatEnum
+        auto src = (float*)in_bytes;
+        switch(out_type) {
+          case max_texture_spec::FormatEnum::R8:
+          {
+            // RG -> R: keep the red plane
+            temp_storage.resize(in_n_pixels);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i] = std::clamp(int(src[i * 2 + 0] * 255.0f), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 2 + 0] * 255.0f), 0, 255);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 2 + 1] * 255.0f), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 2 + 0] * 65535.0f), 0, 65535);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 2 + 1] * 65535.0f), 0, 65535);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGB8:
+          {
+            temp_storage.resize(in_n_pixels * 3);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 3 + 0] = std::clamp(int(src[i * 2 + 0] * 255.0f), 0, 255);
+              dst[i * 3 + 1] = std::clamp(int(src[i * 2 + 1] * 255.0f), 0, 255);
+              dst[i * 3 + 2] = 0;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA8:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = std::clamp(int(src[i * 2 + 0] * 255.0f), 0, 255);
+              dst[i * 4 + 1] = std::clamp(int(src[i * 2 + 1] * 255.0f), 0, 255);
+              dst[i * 4 + 2] = 0;
+              dst[i * 4 + 3] = 255;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA32F:
+          {
+            temp_storage.resize(in_n_pixels * 16);
+            auto dst = (float*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = src[i * 2 + 0];
+              dst[i * 4 + 1] = src[i * 2 + 1];
+              dst[i * 4 + 2] = 0.0f;
+              dst[i * 4 + 3] = 1.0f;
+            }
+            return temp_storage.data();
+          }
+
+          default:
+            break;
+        }
+      }
+      else if(in_type == _jit_sym_float64)
+      {
+        // RG64F to max_texture_spec::FormatEnum
+        auto src = (double*)in_bytes;
+        switch(out_type) {
+          case max_texture_spec::FormatEnum::R8:
+          {
+            // RG -> R: keep the red plane
+            temp_storage.resize(in_n_pixels);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i] = std::clamp(int(src[i * 2 + 0] * 255.0), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 2 + 0] * 255.0), 0, 255);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 2 + 1] * 255.0), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 2 + 0] * 65535.0), 0, 65535);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 2 + 1] * 65535.0), 0, 65535);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGB8:
+          {
+            temp_storage.resize(in_n_pixels * 3);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 3 + 0] = std::clamp(int(src[i * 2 + 0] * 255.0), 0, 255);
+              dst[i * 3 + 1] = std::clamp(int(src[i * 2 + 1] * 255.0), 0, 255);
+              dst[i * 3 + 2] = 0;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA8:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = std::clamp(int(src[i * 2 + 0] * 255.0), 0, 255);
+              dst[i * 4 + 1] = std::clamp(int(src[i * 2 + 1] * 255.0), 0, 255);
+              dst[i * 4 + 2] = 0;
+              dst[i * 4 + 3] = 255;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RGBA32F:
+          {
+            temp_storage.resize(in_n_pixels * 16);
+            auto dst = (float*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 4 + 0] = (float)src[i * 2 + 0];
+              dst[i * 4 + 1] = (float)src[i * 2 + 1];
+              dst[i * 4 + 2] = 0.0f;
+              dst[i * 4 + 3] = 1.0f;
+            }
+            return temp_storage.data();
+          }
+
+          default:
+            break;
+        }
+      }
+      break;
+
     case 3:
       if(in_type == _jit_sym_char)
       {
@@ -585,6 +1038,30 @@ inline
             for(int i = 0; i < in_n_pixels; i++)
             {
               dst[i] = (src[i * 3 + 0] * 299 + src[i * 3 + 1] * 587 + src[i * 3 + 2] * 114) / 1000;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = src[i * 3 + 0];
+              dst[i * 2 + 1] = src[i * 3 + 1];
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = src[i * 3 + 0] * 257; // 0..255 -> 0..65535
+              dst[i * 2 + 1] = src[i * 3 + 1] * 257;
             }
             return temp_storage.data();
           }
@@ -637,6 +1114,30 @@ inline
             {
               uint64_t gray = (uint64_t(src[i * 3 + 0]) * 299 + uint64_t(src[i * 3 + 1]) * 587 + uint64_t(src[i * 3 + 2]) * 114) / 1000;
               dst[i] = (gray * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = (uint64_t(src[i * 3 + 0]) * 255) / 4294967295UL;
+              dst[i * 2 + 1] = (uint64_t(src[i * 3 + 1]) * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = (uint64_t(src[i * 3 + 0]) * 65535) / 4294967295UL;
+              dst[i * 2 + 1] = (uint64_t(src[i * 3 + 1]) * 65535) / 4294967295UL;
             }
             return temp_storage.data();
           }
@@ -703,6 +1204,30 @@ inline
             return temp_storage.data();
           }
 
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 3 + 0] * 255.0f), 0, 255);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 3 + 1] * 255.0f), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 3 + 0] * 65535.0f), 0, 65535);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 3 + 1] * 65535.0f), 0, 65535);
+            }
+            return temp_storage.data();
+          }
+
           case max_texture_spec::FormatEnum::RGB8:
           {
             temp_storage.resize(in_n_pixels * 3);
@@ -761,6 +1286,30 @@ inline
             {
               double gray = src[i * 3 + 0] * 0.299 + src[i * 3 + 1] * 0.587 + src[i * 3 + 2] * 0.114;
               dst[i] = std::clamp(int(gray * 255.0), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 3 + 0] * 255.0), 0, 255);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 3 + 1] * 255.0), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 3 + 0] * 65535.0), 0, 65535);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 3 + 1] * 65535.0), 0, 65535);
             }
             return temp_storage.data();
           }
@@ -830,6 +1379,32 @@ inline
             return temp_storage.data();
           }
 
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              // ARGB to RG
+              dst[i * 2 + 0] = src[i * 4 + 1]; // R
+              dst[i * 2 + 1] = src[i * 4 + 2]; // G
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              // ARGB to RG, 0..255 -> 0..65535
+              dst[i * 2 + 0] = src[i * 4 + 1] * 257; // R
+              dst[i * 2 + 1] = src[i * 4 + 2] * 257; // G
+            }
+            return temp_storage.data();
+          }
+
           case max_texture_spec::FormatEnum::RGB8:
           {
             temp_storage.resize(in_n_pixels * 3);
@@ -891,6 +1466,30 @@ inline
             {
               uint64_t gray = (uint64_t(src[i * 4 + 1]) * 299 + uint64_t(src[i * 4 + 2]) * 587 + uint64_t(src[i * 4 + 3]) * 114) / 1000;
               dst[i] = (gray * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = (uint64_t(src[i * 4 + 1]) * 255) / 4294967295UL;
+              dst[i * 2 + 1] = (uint64_t(src[i * 4 + 2]) * 255) / 4294967295UL;
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = (uint64_t(src[i * 4 + 1]) * 65535) / 4294967295UL;
+              dst[i * 2 + 1] = (uint64_t(src[i * 4 + 2]) * 65535) / 4294967295UL;
             }
             return temp_storage.data();
           }
@@ -957,6 +1556,30 @@ inline
             return temp_storage.data();
           }
 
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 4 + 1] * 255.0f), 0, 255);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 4 + 2] * 255.0f), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 4 + 1] * 65535.0f), 0, 65535);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 4 + 2] * 65535.0f), 0, 65535);
+            }
+            return temp_storage.data();
+          }
+
           case max_texture_spec::FormatEnum::RGB8:
           {
             temp_storage.resize(in_n_pixels * 3);
@@ -1016,6 +1639,30 @@ inline
             {
               double gray = src[i * 4 + 1] * 0.299 + src[i * 4 + 2] * 0.587 + src[i * 4 + 3] * 0.114;
               dst[i] = std::clamp(int(gray * 255.0), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG8:
+          {
+            temp_storage.resize(in_n_pixels * 2);
+            auto dst = temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 4 + 1] * 255.0), 0, 255);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 4 + 2] * 255.0), 0, 255);
+            }
+            return temp_storage.data();
+          }
+
+          case max_texture_spec::FormatEnum::RG16:
+          {
+            temp_storage.resize(in_n_pixels * 4);
+            auto dst = (uint16_t*)temp_storage.data();
+            for(int i = 0; i < in_n_pixels; i++)
+            {
+              dst[i * 2 + 0] = std::clamp(int(src[i * 4 + 1] * 65535.0), 0, 65535);
+              dst[i * 2 + 1] = std::clamp(int(src[i * 4 + 2] * 65535.0), 0, 65535);
             }
             return temp_storage.data();
           }
@@ -1104,6 +1751,63 @@ inline void copy_texture_to_max(const max_texture_spec::Format& fmt, void* matri
       std::memcpy(dst, src, std::min(pixel_count * bytesize, tex_bytesize));
     }
   }
+  else if(fmt.type == _jit_sym_long)
+  {
+    // jit long cells are signed 32-bit.
+    int32_t* dst = static_cast<int32_t*>(matrix_data);
+
+    if(&fmt == &max_texture_spec::R16 || &fmt == &max_texture_spec::RG16
+       || &fmt == &max_texture_spec::D16)
+    {
+      // u16 -> i32 widening, lossless; single/dual-plane formats don't swizzle.
+      const uint16_t* src = static_cast<const uint16_t*>(tex_bytes);
+      const int N
+          = std::min(pixel_count * fmt.planes, int(tex_bytesize / sizeof(uint16_t)));
+      for(int i = 0; i < N; i++)
+        dst[i] = int32_t(src[i]);
+    }
+    else if(&fmt == &max_texture_spec::RGB10A2)
+    {
+      // Each texel is one packed 32-bit word: R in bits 0-9, G in bits 10-19,
+      // B in bits 20-29, A in bits 30-31. Unpack into the native ARGB plane
+      // order like the other 4-plane branches; values stay in 0-1023
+      // (0-3 for alpha), no rescaling is applied :(
+      const uint32_t* src = static_cast<const uint32_t*>(tex_bytes);
+      const int N = std::min(pixel_count, int(tex_bytesize / sizeof(uint32_t)));
+      for(int i = 0; i < N; i++)
+      {
+        const uint32_t p = src[i];
+        dst[i * 4 + 0] = int32_t((p >> 30) & 0x3);   // A
+        dst[i * 4 + 1] = int32_t((p >> 0) & 0x3FF);  // R
+        dst[i * 4 + 2] = int32_t((p >> 10) & 0x3FF); // G
+        dst[i * 4 + 3] = int32_t((p >> 20) & 0x3FF); // B
+      }
+    }
+    else if(&fmt == &max_texture_spec::RGBA32UI || &fmt == &max_texture_spec::RGBA32SI)
+    {
+      // Same RGBA -> ARGB swizzle as the char / float32 branches.
+      // The 32-bit pattern is copied as-is: RGBA32UI values > INT32_MAX
+      // come out negative since jit long is signed :(
+      const int32_t* src = static_cast<const int32_t*>(tex_bytes);
+      const int N
+          = std::min(pixel_count * 4, int(tex_bytesize / sizeof(int32_t))) & ~3;
+      for(int i = 0; i < N; i += 4)
+      {
+        dst[i + 0] = src[i + 3];
+        dst[i + 1] = src[i + 0];
+        dst[i + 2] = src[i + 1];
+        dst[i + 3] = src[i + 2];
+      }
+    }
+    else
+    {
+      // R32UI, RG32UI, R32SI, RG32SI (and D24 / D24S8, packed in 32-bit
+      // words): direct 32-bit copy per plane, no swizzle. Unsigned values
+      // > INT32_MAX come out negative since jit long is signed :(
+      const int bytesize = fmt.planes * sizeof(int32_t);
+      std::memcpy(dst, tex_bytes, std::min(pixel_count * bytesize, tex_bytesize));
+    }
+  }
   else if(fmt.type == _jit_sym_float32)
   {
     float* dst = static_cast<float*>(matrix_data);
@@ -1128,6 +1832,11 @@ inline void copy_texture_to_max(const max_texture_spec::Format& fmt, void* matri
       std::memcpy(dst, src, std::min(pixel_count * bytesize, tex_bytesize));
     }
   }
+  // Note: no Format in the max_texture_spec table maps to _jit_sym_float64:
+  // every texture format above fits in char / long / float32 planes, so there
+  // is intentionally no float64 branch here. R8UI / R8SI map to char planes
+  // and are handled by the char memcpy above (R8SI is a bit-pattern copy
+  // since jit char is unsigned :( ).
 }
 
 
