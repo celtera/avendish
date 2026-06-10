@@ -1561,6 +1561,14 @@ from_ossia_value(auto& field, const ossia::value& src, std::optional<ossia::valu
   dst = src;
 }
 
+// Forward-declared so the generic 3-arg dispatcher below resolves them
+// — they live in oscr:: and ADL on halp::tensor_view can't reach them.
+template <typename T>
+inline bool from_ossia_value(const ossia::value& src, halp::tensor_view<T>& dst);
+template <typename T>
+  requires(avnd::tensor_like<T> && !halp::is_tensor_view_v<T>)
+inline bool from_ossia_value(const ossia::value& src, T& dst);
+
 OSSIA_INLINE void from_ossia_value(auto& field, const ossia::value& src, auto& dst)
 {
   from_ossia_value(src, dst);
