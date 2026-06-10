@@ -13,7 +13,7 @@ enum class binding_classification : uint8_t
   per_vertex,
   per_instance
 };
-enum class attribute_semantic : uint32_t
+enum class attribute_semantic : uint16_t
 {
   // Core geometry
   position = 0,  // vec3.  Object-space position.
@@ -134,6 +134,17 @@ enum class attribute_semantic : uint32_t
 
   // UI
   selection = 1700, // float. Soft selection weight [0-1].
+
+  // Per-instance data
+  instance_color0 = 1800,                    // vec4. Per-instance color.
+  instance_color1 = instance_color0 + 1,     // vec4.
+  instance_color2 = instance_color0 + 2,     // vec4.
+  instance_color3 = instance_color0 + 3,     // vec4.
+  instance_custom0 = instance_color0 + 4,    // vec4. Per-instance custom data.
+  instance_custom1 = instance_color0 + 5,    // vec4.
+  instance_custom2 = instance_color0 + 6,    // vec4.
+  instance_custom3 = instance_color0 + 7,    // vec4.
+  instance_draw_id = instance_color0 + 8,    // int.  gl_DrawID-style index.
 
   // User / general purpose
   fx0 = 2000,    // float. General-purpose effect control.
