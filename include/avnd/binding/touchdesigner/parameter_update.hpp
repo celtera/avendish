@@ -179,6 +179,7 @@ struct parameter_update
   }
 
   template <avnd::xyz_parameter Field>
+    requires (!avnd::xyzw_parameter<Field>)
   void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
     using type = std::decay_t<decltype(field.value.x)>;
@@ -192,6 +193,23 @@ struct parameter_update
       double res[3];
       inputs->getParDouble3(name, res[0], res[1], res[2]);
       field.value = {(type)res[0], (type)res[1], (type) res[2]};
+    }
+  }
+
+  template <avnd::xyzw_parameter Field>
+  void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
+  {
+    using type = std::decay_t<decltype(field.value.x)>;
+    if constexpr(std::is_integral_v<type>) {
+      int res[4];
+      inputs->getParInt4(name, res[0], res[1], res[2], res[3]);
+      field.value = {(type)res[0], (type)res[1], (type)res[2], (type)res[3]};
+    }
+    else
+    {
+      double res[4];
+      inputs->getParDouble4(name, res[0], res[1], res[2], res[3]);
+      field.value = {(type)res[0], (type)res[1], (type) res[2], (type)res[3]};
     }
   }
 

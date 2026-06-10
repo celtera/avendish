@@ -163,7 +163,7 @@ private:
       static constexpr auto enum_values = magic_enum::enum_values<enum_type>();
       static_assert(std::ssize(enum_values) > 0);
       static constexpr auto enum_min = *std::min_element(std::begin(enum_values), std::end(enum_values));
-      static constexpr auto enum_max = *std::min_element(std::begin(enum_values), std::end(enum_values));
+      static constexpr auto enum_max = *std::max_element(std::begin(enum_values), std::end(enum_values));
       param.minValues[0] = std::to_underlying(enum_min);
       param.maxValues[0] = std::to_underlying(enum_max);
       param.minSliders[0] = std::to_underlying(enum_min);
@@ -214,7 +214,7 @@ private:
   }
 
   template <avnd::xy_parameter Field>
-    requires (!avnd::xy_parameter<Field>)
+    requires (!avnd::xyz_parameter<Field>)
   void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
@@ -249,6 +249,7 @@ private:
   }
 
   template <avnd::xyz_parameter Field>
+    requires (!avnd::xyzw_parameter<Field>)
   void setup_parameter(const char* name, const char* label)
   {
     TD::OP_NumericParameter param(name);
@@ -258,7 +259,7 @@ private:
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {
-  
+
         static constexpr auto range = avnd::get_range<Field>();
         param.defaultValues[i] = range.init;
         param.minValues[i] = range.min;
@@ -280,6 +281,40 @@ private:
     }
 
     manager->appendXYZ(param);
+  }
+
+  template <avnd::xyzw_parameter Field>
+  void setup_parameter(const char* name, const char* label)
+  {
+    TD::OP_NumericParameter param(name);
+    param.label = label;
+
+    for(int i = 0; i < 4; i++) {
+      // Check if field has range metadata
+      if constexpr (avnd::parameter_with_minmax_range<Field>)
+      {
+
+        static constexpr auto range = avnd::get_range<Field>();
+        param.defaultValues[i] = range.init;
+        param.minValues[i] = range.min;
+        param.maxValues[i] = range.max;
+        param.minSliders[i] = range.min;
+        param.maxSliders[i] = range.max;
+        param.clampMins[i] = true;
+        param.clampMaxes[i] = true;
+      }
+      else
+      {
+        // Default float range
+        param.defaultValues[i] = 0.0;
+        param.minValues[i] = 0.0;
+        param.maxValues[i] = 1.0;
+        param.minSliders[i] = 0.0;
+        param.maxSliders[i] = 1.0;
+      }
+    }
+
+    manager->appendXYZW(param);
   }
 
   template <avnd::uv_parameter Field>
@@ -392,7 +427,7 @@ private:
     TD::OP_NumericParameter param(name);
     param.label = label;
 
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < 4; i++) {
       // Check if field has range metadata
       if constexpr (avnd::parameter_with_minmax_range<Field>)
       {

@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/geometry_helpers.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
@@ -18,6 +19,8 @@
 #include <avnd/common/enums.hpp>
 
 #include <POP_CPlusPlusBase.h>
+
+#include <string>
 
 namespace touchdesigner::POP
 {
@@ -321,13 +324,140 @@ private:
     if(num_vertices == 0)
       return 0;
 
-    // Write each attribute as a POP attribute buffer
-    write_geometry_attributes(geom, output, num_vertices);
+    if constexpr(avnd::dynamic_geometry_type<GeomPort>)
+    {
+      // Run-time attribute list (e.g. halp::dynamic_geometry):
+      // attributes are identified by their semantic
+      write_dynamic_geometry_attributes(geom, output, num_vertices);
+      write_dynamic_index_buffer(geom, output);
+    }
+    else
+    {
+      // Write each attribute as a POP attribute buffer
+      write_geometry_attributes(geom, output, num_vertices);
 
-    // Write index buffer if present
-    write_index_buffer(geom, output);
+      // Write index buffer if present
+      write_index_buffer(geom, output);
+    }
 
     return num_vertices;
+  }
+
+  // Dynamic geometry: identify each attribute through its runtime semantic
+  template <typename GeomPort>
+  void write_dynamic_geometry_attributes(
+      GeomPort& geom, TD::POP_Output* output, uint32_t num_vertices)
+  {
+    for(const auto& attr : geom.attributes)
+    {
+      const char* data{};
+      int stride{};
+      if(!resolve_dynamic_attribute(geom, attr, data, stride))
+        continue;
+
+      const auto sem = get_attribute_semantic(attr);
+      const auto fmt = get_attribute_format(attr);
+      const int components = format_components(fmt);
+      const auto kind = format_data_kind(fmt);
+
+      // POP attributes hold float / int32 / uint32 components; bytes,
+      // halves and shorts would need a conversion pass and are skipped.
+      if(kind == attribute_data_kind::unsupported || components <= 0)
+        continue;
+
+      TD::POP_AttributeType type = TD::POP_AttributeType::Float;
+      if(kind == attribute_data_kind::i32)
+        type = TD::POP_AttributeType::Int32;
+      else if(kind == attribute_data_kind::u32)
+        type = TD::POP_AttributeType::UInt32;
+
+      TD::POP_AttributeQualifier qualifier = TD::POP_AttributeQualifier::None;
+      if(sem == attribute_semantic::normal)
+        qualifier = TD::POP_AttributeQualifier::Direction;
+      else if(sem == attribute_semantic::color0)
+        qualifier = TD::POP_AttributeQualifier::Color;
+
+      // Map attribute names following Houdini/TD conventions (P, N, Cd, uv,
+      // pscale, ...); other semantics use the attribute's own name when
+      // given, else the semantic's name
+      std::string name{pop_attribute_name(sem)};
+      if(name.empty())
+      {
+        if constexpr(requires { attr.name; })
+          if(!attr.name.empty())
+            name = attr.name;
+        if(name.empty())
+          name = semantic_name(sem);
+      }
+
+      set_pop_attribute(
+          output, name.c_str(), data, num_vertices, components, stride, qualifier,
+          type);
+    }
+  }
+
+  // Write the index buffer of a dynamic geometry if present
+  template <typename GeomPort>
+  void write_dynamic_index_buffer(GeomPort& geom, TD::POP_Output* output)
+  {
+    if constexpr(!requires { geom.index.buffer; })
+      return;
+    else
+    {
+      const int buffer_idx = geom.index.buffer;
+      if(buffer_idx < 0 || buffer_idx >= int(geom.buffers.size()))
+        return;
+
+      auto& buf = geom.buffers[buffer_idx];
+      const char* data = geometry_buffer_data(buf);
+      if(!data)
+        return;
+      data += geom.index.byte_offset;
+
+      // index_format: uint16 == 0, uint32 == 1
+      const bool idx16 = static_cast<uint32_t>(geom.index.format) == 0;
+      int64_t index_count = 0;
+      if constexpr(requires { geom.indices; })
+        index_count = geom.indices;
+      if(index_count <= 0)
+        index_count
+            = (geometry_buffer_byte_size(buf) - geom.index.byte_offset) / (idx16 ? 2 : 4);
+      if(index_count <= 0)
+        return;
+
+      uint64_t byte_size = static_cast<uint64_t>(index_count) * sizeof(uint32_t);
+
+      TD::POP_BufferInfo buf_info{};
+      buf_info.size = byte_size;
+      buf_info.mode = TD::POP_BufferMode::SequentialWrite;
+      buf_info.usage = TD::POP_BufferUsage::IndexBuffer;
+      buf_info.location = TD::POP_BufferLocation::CPU;
+
+      TD::OP_SmartRef<TD::POP_Buffer> idx_buffer = context->createBuffer(buf_info, nullptr);
+      if(!idx_buffer)
+        return;
+
+      uint32_t* dst = static_cast<uint32_t*>(idx_buffer->getData(nullptr));
+      if(!dst)
+        return;
+
+      if(idx16)
+      {
+        const auto* src = reinterpret_cast<const uint16_t*>(data);
+        for(int64_t k = 0; k < index_count; ++k)
+          dst[k] = src[k];
+      }
+      else
+      {
+        std::memcpy(dst, data, byte_size);
+      }
+
+      TD::POP_IndexBufferInfo idx_info{};
+      idx_info.type = TD::POP_IndexType::UInt32;
+
+      TD::POP_SetBufferInfo set_info{};
+      output->setIndexBuffer(&idx_buffer, idx_info, set_info, nullptr);
+    }
   }
 
   // Extract per-attribute data from geometry and create POP attribute buffers
@@ -361,7 +491,7 @@ private:
         if(input_idx == attr_binding)
         {
           if constexpr(requires { input.buffer(); })
-            buffer_idx = avnd::index_in_struct_static<input.buffer()>();
+            buffer_idx = avnd::index_in_struct_static<std::decay_t<decltype(input)>::buffer()>();
           else if constexpr(requires { input.buffer; })
             buffer_idx = input.buffer;
 
@@ -378,12 +508,9 @@ private:
       avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
         if(buf_idx == buffer_idx)
         {
-          const char* data_ptr = nullptr;
-
-          if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
-            data_ptr = static_cast<const char*>(buf.elements);
-          else
-            data_ptr = reinterpret_cast<const char*>(buf.elements);
+          // Buffers are either raw (raw_data / byte_size) or typed
+          // (elements / element_count).
+          const char* data_ptr = geometry_buffer_data(buf);
 
           if(!data_ptr)
           {
@@ -444,11 +571,14 @@ private:
     });
   }
 
-  // Create a POP attribute buffer, fill it, and assign to POP_Output
+  // Create a POP attribute buffer, fill it, and assign to POP_Output.
+  // Float, Int32 and UInt32 components are all 4 bytes wide so the copy
+  // logic is shared.
   void set_pop_attribute(
       TD::POP_Output* output, const char* name,
       const char* data, uint32_t num_particles, uint32_t components, int stride,
-      TD::POP_AttributeQualifier qualifier = TD::POP_AttributeQualifier::None)
+      TD::POP_AttributeQualifier qualifier = TD::POP_AttributeQualifier::None,
+      TD::POP_AttributeType type = TD::POP_AttributeType::Float)
   {
     if(!context || !output || !data || num_particles == 0)
       return;
@@ -467,7 +597,7 @@ private:
       return;
 
     // Fill the buffer with attribute data
-    float* dst = static_cast<float*>(buffer->getData(nullptr));
+    auto* dst = static_cast<uint32_t*>(buffer->getData(nullptr));
     if(!dst)
       return;
 
@@ -481,7 +611,7 @@ private:
       // Strided source - copy per-particle
       for(uint32_t i = 0; i < num_particles; ++i)
       {
-        const float* src = reinterpret_cast<const float*>(data + i * stride);
+        const uint32_t* src = reinterpret_cast<const uint32_t*>(data + i * stride);
         for(uint32_t c = 0; c < components; ++c)
           dst[i * components + c] = src[c];
       }
@@ -491,7 +621,7 @@ private:
     TD::POP_AttributeInfo attr_info{};
     attr_info.name = name;
     attr_info.numComponents = components;
-    attr_info.type = TD::POP_AttributeType::Float;
+    attr_info.type = type;
     attr_info.qualifier = qualifier;
     attr_info.attribClass = TD::POP_AttributeClass::Point;
 
@@ -512,7 +642,7 @@ private:
       auto& input = geom.index;
 
       if constexpr(requires { input.buffer(); })
-        buffer_idx = avnd::index_in_struct_static<input.buffer()>();
+        buffer_idx = avnd::index_in_struct_static<std::decay_t<decltype(input)>::buffer()>();
       else if constexpr(requires { input.buffer; })
         buffer_idx = input.buffer;
 
@@ -528,7 +658,14 @@ private:
       avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
         if(buf_idx == buffer_idx)
         {
-          uint32_t index_count = buf.element_count;
+          // Buffers are either raw (raw_data / byte_size: packed uint32
+          // indices) or typed (elements / element_count).
+          uint32_t index_count = 0;
+          if constexpr(requires { buf.elements[0]; buf.element_count; })
+            index_count = buf.element_count;
+          else if constexpr(requires { buf.raw_data; buf.byte_size; })
+            index_count = buf.byte_size / sizeof(uint32_t);
+
           if(index_count == 0)
           {
             buf_idx++;
@@ -557,8 +694,15 @@ private:
             return;
           }
 
-          for(uint32_t k = 0; k < index_count; ++k)
-            dst[k] = static_cast<uint32_t>(buf.elements[k]);
+          if constexpr(requires { buf.elements[0]; buf.element_count; })
+          {
+            for(uint32_t k = 0; k < index_count; ++k)
+              dst[k] = static_cast<uint32_t>(buf.elements[k]);
+          }
+          else if constexpr(requires { buf.raw_data; buf.byte_size; })
+          {
+            std::memcpy(dst, buf.raw_data, byte_size);
+          }
 
           TD::POP_IndexBufferInfo idx_info{};
           idx_info.type = TD::POP_IndexType::UInt32;
@@ -767,11 +911,54 @@ private:
 
     // Copy position data into the first buffer
     // This assumes a simple layout where the first buffer holds positions
-    if constexpr(requires { geom.buffers; })
+    if constexpr(avnd::dynamic_geometry_type<std::decay_t<decltype(geom)>>)
+    {
+      // Run-time geometry: describe a single position buffer
+      // (the data stays valid until the next cook)
+      const uint32_t components = pos_attr->info.numComponents;
+
+      geom.buffers.resize(1);
+      auto& buf = geom.buffers[0];
+      if constexpr(requires { buf.raw_data; })
+      {
+        buf.raw_data = const_cast<void*>(static_cast<const void*>(pos_data));
+        buf.byte_size = num_points * components * sizeof(float);
+      }
+      if constexpr(requires { buf.dirty; })
+        buf.dirty = true;
+
+      geom.bindings.resize(1);
+      geom.bindings[0].stride = components * sizeof(float);
+      geom.bindings[0].step_rate = 1;
+
+      geom.input.resize(1);
+      geom.input[0].buffer = 0;
+      geom.input[0].byte_offset = 0;
+
+      geom.attributes.resize(1);
+      auto& attr = geom.attributes[0];
+      attr.binding = 0;
+      attr.byte_offset = 0;
+      attr.semantic = decltype(attr.semantic)(attribute_semantic::position);
+      attr.format = decltype(attr.format)(
+          components >= 4   ? attribute_format::float4
+          : components == 3 ? attribute_format::float3
+          : components == 2 ? attribute_format::float2
+                            : attribute_format::float1);
+      if constexpr(requires { attr.name; })
+        attr.name.clear();
+    }
+    else if constexpr(requires { geom.buffers; })
     {
       uint32_t components = pos_attr->info.numComponents;
       avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
-        if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
+        if constexpr(requires { buf.raw_data; })
+        {
+          // Raw buffer: just point to the data (valid until next cook)
+          buf.raw_data = const_cast<void*>(static_cast<const void*>(pos_data));
+          buf.byte_size = num_points * components * sizeof(float);
+        }
+        else if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
         {
           // Dynamic buffer: just point to the data (valid until next cook)
           buf.elements = const_cast<void*>(static_cast<const void*>(pos_data));

@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/geometry_helpers.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
@@ -17,6 +18,9 @@
 #include <avnd/common/enums.hpp>
 
 #include <SOP_CPlusPlusBase.h>
+
+#include <string>
+#include <vector>
 
 namespace touchdesigner::SOP
 {
@@ -179,11 +183,232 @@ private:
     if(num_vertices == 0)
       return;
 
-    // Build position data
-    add_vertices_from_buffers(geom, output);
+    if constexpr(avnd::dynamic_geometry_type<GeomPort>)
+    {
+      // Run-time attribute list (e.g. halp::dynamic_geometry):
+      // attributes are identified by their semantic
+      add_vertices_from_dynamic_buffers(geom, output);
+      add_dynamic_primitives(geom, output);
+    }
+    else
+    {
+      // Build position data
+      add_vertices_from_buffers(geom, output);
 
-    // Add primitives based on topology
-    add_primitives(geom, output);
+      // Add primitives based on topology
+      add_primitives(geom, output);
+    }
+  }
+
+  // Dynamic geometry: locate the position attribute through its semantic
+  // and add the points, then the remaining attributes
+  template <typename GeomPort>
+  void add_vertices_from_dynamic_buffers(GeomPort& geom, TD::SOP_Output* output)
+  {
+    const int num_vertices = geom.vertices;
+
+    for(const auto& attr : geom.attributes)
+    {
+      if(get_attribute_semantic(attr) != attribute_semantic::position)
+        continue;
+
+      const char* data{};
+      int stride{};
+      if(!resolve_dynamic_attribute(geom, attr, data, stride))
+        return;
+
+      if(stride == 3 * sizeof(float))
+      {
+        const auto* vertex_data = reinterpret_cast<const TD::Position*>(data);
+        output->addPoints(vertex_data, num_vertices);
+      }
+      else
+      {
+        for(int i = 0; i < num_vertices; ++i)
+        {
+          const float* vertex_data = reinterpret_cast<const float*>(data + i * stride);
+          output->addPoint(TD::Position{vertex_data[0], vertex_data[1], vertex_data[2]});
+        }
+      }
+
+      // Now add other attributes (normals, colors, texcoords, customs)
+      add_dynamic_attributes(geom, output, num_vertices);
+      return;
+    }
+  }
+
+  template <typename GeomPort>
+  void add_dynamic_attributes(GeomPort& geom, TD::SOP_Output* output, int num_vertices)
+  {
+    for(const auto& attr : geom.attributes)
+    {
+      const auto sem = get_attribute_semantic(attr);
+      // Skip position (already processed)
+      if(sem == attribute_semantic::position)
+        continue;
+
+      const char* data{};
+      int stride{};
+      if(!resolve_dynamic_attribute(geom, attr, data, stride))
+        continue;
+
+      const auto fmt = get_attribute_format(attr);
+      const int components = format_components(fmt);
+      const auto kind = format_data_kind(fmt);
+
+      switch(sem)
+      {
+        case attribute_semantic::normal: {
+          if(kind != attribute_data_kind::f32 || components < 3)
+            break;
+          for(int i = 0; i < num_vertices; ++i)
+          {
+            const float* normal_data = reinterpret_cast<const float*>(data + i * stride);
+            output->setNormal(TD::Vector{normal_data[0], normal_data[1], normal_data[2]}, i);
+          }
+          break;
+        }
+        case attribute_semantic::color0: {
+          if(kind != attribute_data_kind::f32 || components < 3)
+            break;
+          for(int i = 0; i < num_vertices; ++i)
+          {
+            const float* color_data = reinterpret_cast<const float*>(data + i * stride);
+            const float alpha = components >= 4 ? color_data[3] : 1.0f;
+            output->setColor(TD::Color{color_data[0], color_data[1], color_data[2], alpha}, i);
+          }
+          break;
+        }
+        case attribute_semantic::texcoord0: {
+          if(kind != attribute_data_kind::f32 || components < 2)
+            break;
+          for(int i = 0; i < num_vertices; ++i)
+          {
+            const float* uv_data = reinterpret_cast<const float*>(data + i * stride);
+            TD::TexCoord tc{uv_data[0], uv_data[1], components >= 3 ? uv_data[2] : 0.0f};
+            output->setTexCoord(&tc, 1, i);
+          }
+          break;
+        }
+        default: {
+          // Everything else goes through SOP custom attributes
+          add_dynamic_custom_attribute(
+              output, attr, sem, data, stride, components, kind, num_vertices);
+          break;
+        }
+      }
+    }
+  }
+
+  // SOP custom attributes only support float and int32 data; bytes, halves
+  // and shorts would need a conversion pass and are skipped.
+  template <typename Attr>
+  void add_dynamic_custom_attribute(
+      TD::SOP_Output* output, const Attr& attr, attribute_semantic sem,
+      const char* data, int stride, int components, attribute_data_kind kind,
+      int num_vertices)
+  {
+    if(kind == attribute_data_kind::unsupported || components <= 0)
+      return;
+
+    std::string name;
+    if constexpr(requires { attr.name; })
+      if(!attr.name.empty())
+        name = attr.name;
+    if(name.empty())
+      name = semantic_name(sem);
+
+    TD::SOP_CustomAttribData cu;
+    cu.name = name.c_str();
+    cu.numComponents = components;
+
+    // setCustomAttribute expects tightly packed data
+    std::vector<float> floats;
+    std::vector<int32_t> ints;
+    if(kind == attribute_data_kind::f32)
+    {
+      floats.resize(std::size_t(num_vertices) * components);
+      for(int i = 0; i < num_vertices; ++i)
+      {
+        const float* src = reinterpret_cast<const float*>(data + i * stride);
+        for(int c = 0; c < components; ++c)
+          floats[std::size_t(i) * components + c] = src[c];
+      }
+      cu.attribType = TD::AttribType::Float;
+      cu.floatData = floats.data();
+    }
+    else
+    {
+      ints.resize(std::size_t(num_vertices) * components);
+      for(int i = 0; i < num_vertices; ++i)
+      {
+        const int32_t* src = reinterpret_cast<const int32_t*>(data + i * stride);
+        for(int c = 0; c < components; ++c)
+          ints[std::size_t(i) * components + c] = src[c];
+      }
+      cu.attribType = TD::AttribType::Int;
+      cu.intData = ints.data();
+    }
+
+    output->setCustomAttribute(&cu, num_vertices);
+  }
+
+  template <typename GeomPort>
+  void add_dynamic_primitives(GeomPort& geom, TD::SOP_Output* output)
+  {
+    const TopologyType topology = get_topology(geom);
+    if(topology == TopologyType::triangles)
+    {
+      if constexpr(requires { geom.index.buffer; })
+      {
+        const int buffer_idx = geom.index.buffer;
+        if(buffer_idx >= 0 && buffer_idx < int(geom.buffers.size()))
+        {
+          auto& buf = geom.buffers[buffer_idx];
+          if(const char* data = geometry_buffer_data(buf))
+          {
+            data += geom.index.byte_offset;
+
+            // index_format: uint16 == 0, uint32 == 1
+            const bool idx16 = static_cast<uint32_t>(geom.index.format) == 0;
+            int64_t num_indices = 0;
+            if constexpr(requires { geom.indices; })
+              num_indices = geom.indices;
+            if(num_indices <= 0)
+              num_indices = (geometry_buffer_byte_size(buf) - geom.index.byte_offset)
+                            / (idx16 ? 2 : 4);
+
+            if(num_indices >= 3)
+            {
+              if(idx16)
+              {
+                const auto* indices = reinterpret_cast<const uint16_t*>(data);
+                for(int64_t k = 0; k < num_indices - 2; k += 3)
+                  output->addTriangle(indices[k], indices[k + 1], indices[k + 2]);
+              }
+              else
+              {
+                const auto* indices = reinterpret_cast<const uint32_t*>(data);
+                for(int64_t k = 0; k < num_indices - 2; k += 3)
+                  output->addTriangle(indices[k], indices[k + 1], indices[k + 2]);
+              }
+              // Index buffer used successfully
+              return;
+            }
+          }
+        }
+      }
+
+      // No usable index buffer: add the triangles directly
+      for(int i = 0; i < geom.vertices - 2; i += 3)
+      {
+        output->addTriangle(i + 0, i + 1, i + 2);
+      }
+    }
+    else
+    {
+      output->addParticleSystem(geom.vertices, 0);
+    }
   }
 
   template <typename GeomPort>
@@ -256,20 +481,10 @@ private:
     avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
       if(buf_idx == buffer_idx)
       {
-        // We have the buffer - read vertices
-        const char* data_ptr = nullptr;
-
-        if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
-        {
-          // Dynamic case
-          data_ptr = static_cast<const char*>(buf.elements);
-        }
-        else
-        {
-          // Static case - array of typed data
-          using data_type = std::decay_t<decltype(buf.elements[0])>;
-          data_ptr = reinterpret_cast<const char*>(buf.elements);
-        }
+        // We have the buffer - read vertices.
+        // Buffers are either raw (raw_data / byte_size) or typed
+        // (elements / element_count).
+        const char* data_ptr = geometry_buffer_data(buf);
 
         if(!data_ptr) {
           buf_idx++;
@@ -358,17 +573,7 @@ private:
       avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
         if(buf_idx == buffer_idx)
         {
-          const char* data_ptr = nullptr;
-
-          if constexpr(std::is_same_v<std::decay_t<decltype(buf.elements)>, void*>)
-          {
-            data_ptr = static_cast<const char*>(buf.elements);
-          }
-          else
-          {
-            using data_type = std::decay_t<decltype(buf.elements[0])>;
-            data_ptr = reinterpret_cast<const char*>(buf.elements);
-          }
+          const char* data_ptr = geometry_buffer_data(buf);
 
           if(!data_ptr) {
             buf_idx++;
@@ -465,16 +670,27 @@ private:
           avnd::for_each_field_ref(geom.buffers, [&](auto& buf) {
             if(buf_idx == buffer_idx)
             {
-              // We have the buffer - read vertices
-              const char* data_ptr = nullptr;
-
-              for(int k = 0; k < buf.element_count - 2; k += 3)
+              // We have the buffer - read the indices
+              if constexpr(requires { buf.elements[0]; buf.element_count; })
               {
-                auto i0 = buf.elements[k];
-                auto i1 = buf.elements[k + 1];
-                auto i2 = buf.elements[k + 2];
+                for(int k = 0; k < buf.element_count - 2; k += 3)
+                {
+                  auto i0 = buf.elements[k];
+                  auto i1 = buf.elements[k + 1];
+                  auto i2 = buf.elements[k + 2];
 
-                output->addTriangle(i0, i1, i2);
+                  output->addTriangle(i0, i1, i2);
+                }
+              }
+              else if constexpr(requires { buf.raw_data; buf.byte_size; })
+              {
+                // Raw buffer: interpret as tightly packed uint32 indices
+                if(const auto* indices = static_cast<const uint32_t*>(buf.raw_data))
+                {
+                  const int64_t count = buf.byte_size / int64_t(sizeof(uint32_t));
+                  for(int64_t k = 0; k < count - 2; k += 3)
+                    output->addTriangle(indices[k], indices[k + 1], indices[k + 2]);
+                }
               }
             }
             buf_idx++;
