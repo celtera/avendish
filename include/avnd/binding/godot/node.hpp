@@ -22,6 +22,7 @@
 #include <godot_cpp/variant/variant.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 #include <godot_cpp/variant/vector3.hpp>
+#include <godot_cpp/variant/vector4.hpp>
 #include <magic_enum/magic_enum.hpp>
 
 #include <string>
@@ -80,6 +81,8 @@ constexpr godot::Variant::Type variant_type()
     return godot::Variant::COLOR;
   else if constexpr(avnd::rgb_parameter<C>)
     return godot::Variant::COLOR;
+  else if constexpr(avnd::xyzw_parameter<C>)
+    return godot::Variant::VECTOR4;
   else if constexpr(avnd::xyz_parameter<C>)
     return godot::Variant::VECTOR3;
   else if constexpr(avnd::xy_parameter<C>)
@@ -206,6 +209,15 @@ bool set_from_variant(C& field, const godot::Variant& v)
     field.value.g = static_cast<comp_t>(col.g);
     field.value.b = static_cast<comp_t>(col.b);
   }
+  else if constexpr(avnd::xyzw_parameter<C>)
+  {
+    godot::Vector4 vec = v;
+    using comp_t = std::decay_t<decltype(field.value.x)>;
+    field.value.x = static_cast<comp_t>(vec.x);
+    field.value.y = static_cast<comp_t>(vec.y);
+    field.value.z = static_cast<comp_t>(vec.z);
+    field.value.w = static_cast<comp_t>(vec.w);
+  }
   else if constexpr(avnd::xyz_parameter<C>)
   {
     godot::Vector3 vec = v;
@@ -262,6 +274,11 @@ godot::Variant to_variant(const C& field)
   else if constexpr(avnd::rgb_parameter<C>)
   {
     return godot::Color(field.value.r, field.value.g, field.value.b, 1.0f);
+  }
+  else if constexpr(avnd::xyzw_parameter<C>)
+  {
+    return godot::Vector4(
+        field.value.x, field.value.y, field.value.z, field.value.w);
   }
   else if constexpr(avnd::xyz_parameter<C>)
   {
