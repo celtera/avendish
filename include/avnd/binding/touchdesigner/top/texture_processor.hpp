@@ -153,7 +153,10 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
   void getInfoPopupString(TD::OP_String* info, void* reserved) override {}
 
 private:
-  // Download texture from TD to Avendish texture port
+  // Download texture from TD to Avendish texture port.
+  // Note: the download path only handles 2D textures; OP_TOPInputDownloadOptions
+  // has no texDim / slice selection so arrays / cubemaps / 3D textures cannot
+  // be downloaded meaningfully here.
   template <avnd::cpu_texture_port Field>
   void download_matrix(const TD::OP_TOPInput* top_input, Field& field)
   {
@@ -179,7 +182,7 @@ private:
     // Map TD pixel format to Avendish format
     if constexpr(requires { tex.format; })
     {
-      tex.format = map_pixel_format(download_result->textureDesc.pixelFormat);
+      map_pixel_format(download_result->textureDesc.pixelFormat, tex);
     }
 
     // Keep the download result alive (stored as member if needed)
@@ -196,9 +199,37 @@ private:
     if(!tex.changed || !tex.bytes || tex.width <= 0 || tex.height <= 0)
       return;
 
+    const td_format_info fmt = get_format_info(tex);
+
+    // Formats with no TD TOP equivalent (integer & depth formats): skip
+    if(fmt.format == TD::OP_PixelFormat::Invalid)
+      return;
+
+    // Non-2D textures: producers that allocate arrays / cubemaps / 3D
+    // textures carry a kind + layer count (e.g. halp::texture_kind)
+    TD::OP_TexDim tex_dim = TD::OP_TexDim::e2D;
+    uint32_t depth = 1;
+    if constexpr(requires { tex.kind; })
+    {
+      using kind_type = std::decay_t<decltype(tex.kind)>;
+      if constexpr(requires { kind_type::texture_array; })
+        if(tex.kind == kind_type::texture_array)
+          tex_dim = TD::OP_TexDim::e2DArray;
+      if constexpr(requires { kind_type::cubemap; })
+        if(tex.kind == kind_type::cubemap)
+          tex_dim = TD::OP_TexDim::eCube;
+      if constexpr(requires { kind_type::texture_3d; })
+        if(tex.kind == kind_type::texture_3d)
+          tex_dim = TD::OP_TexDim::e3D;
+
+      if constexpr(requires { tex.layers_or_depth; })
+        if(tex.layers_or_depth > 0)
+          depth = tex.layers_or_depth;
+    }
+
     // Calculate buffer size
-    int bytes_per_pixel = get_bytes_per_pixel(tex);
-    uint64_t buffer_size = static_cast<uint64_t>(tex.width) * tex.height * bytes_per_pixel;
+    const uint64_t num_pixels = static_cast<uint64_t>(tex.width) * tex.height * depth;
+    const uint64_t buffer_size = num_pixels * fmt.dst_bytes_per_pixel;
 
     // Create output buffer
     TD::OP_SmartRef<TD::TOP_Buffer> out_buffer =
@@ -208,14 +239,32 @@ private:
       return;
 
     // Copy texture data to buffer
-    std::memcpy(out_buffer->data, tex.bytes, buffer_size);
+    if(!fmt.expand_rgb_to_rgba)
+    {
+      std::memcpy(out_buffer->data, tex.bytes, num_pixels * fmt.src_bytes_per_pixel);
+    }
+    else
+    {
+      // TD has no 3-byte-per-pixel format: expand RGB8 to RGBA8 with an
+      // opaque alpha channel
+      const auto* src = reinterpret_cast<const unsigned char*>(tex.bytes);
+      auto* dst = static_cast<unsigned char*>(out_buffer->data);
+      for(uint64_t i = 0; i < num_pixels; ++i)
+      {
+        dst[i * 4 + 0] = src[i * 3 + 0];
+        dst[i * 4 + 1] = src[i * 3 + 1];
+        dst[i * 4 + 2] = src[i * 3 + 2];
+        dst[i * 4 + 3] = 255;
+      }
+    }
 
     // Set up upload info
     TD::TOP_UploadInfo upload_info;
     upload_info.textureDesc.width = tex.width;
     upload_info.textureDesc.height = tex.height;
-    upload_info.textureDesc.texDim = TD::OP_TexDim::e2D;
-    upload_info.textureDesc.pixelFormat = map_to_td_pixel_format(tex);
+    upload_info.textureDesc.depth = depth;
+    upload_info.textureDesc.texDim = tex_dim;
+    upload_info.textureDesc.pixelFormat = fmt.format;
     upload_info.textureDesc.aspectX = tex.width;
     upload_info.textureDesc.aspectY = tex.height;
     upload_info.firstPixel = TD::TOP_FirstPixel::BottomLeft;
@@ -240,57 +289,118 @@ private:
     // TODO
   }
 
-  // Helper to get bytes per pixel from Avendish texture
+  // Pixel format mapping between the avnd CPU texture formats and TD's
+  // OP_PixelFormat
+  struct td_format_info
+  {
+    TD::OP_PixelFormat format{TD::OP_PixelFormat::Invalid};
+
+    // Bytes per pixel on the avnd side
+    int src_bytes_per_pixel{0};
+
+    // Bytes per pixel in the TD upload buffer
+    int dst_bytes_per_pixel{0};
+
+    // TD has no 3-byte RGB pixel format: expand to RGBA8 on upload
+    bool expand_rgb_to_rgba{false};
+  };
+
+  // Maps a format enumerator carried by the texture type (matched by the
+  // names used in halp: RGBA8 / RGBA, BGRA8, R8, ... - see
+  // halp/texture_formats.hpp) to the corresponding TD pixel format.
+  // Integer formats (R8UI, R32UI, RG32UI, RGBA32UI, ...) and depth formats
+  // have no TD TOP equivalent and fall through to Invalid.
+  template <typename Tex, typename Fmt>
+  static td_format_info map_format_value(Fmt fmt)
+  {
+#define AVND_TD_PIXEL_FORMAT(Name, Td, Src, Dst, Expand) \
+  if constexpr(requires { Tex::Name; })                  \
+    if(fmt == Tex::Name)                                 \
+      return {TD::OP_PixelFormat::Td, Src, Dst, Expand};
+
+    AVND_TD_PIXEL_FORMAT(RGBA8, RGBA8Fixed, 4, 4, false)
+    AVND_TD_PIXEL_FORMAT(RGBA, RGBA8Fixed, 4, 4, false)
+    AVND_TD_PIXEL_FORMAT(BGRA8, BGRA8Fixed, 4, 4, false)
+    AVND_TD_PIXEL_FORMAT(R8, Mono8Fixed, 1, 1, false)
+    AVND_TD_PIXEL_FORMAT(RG8, RG8Fixed, 2, 2, false)
+    AVND_TD_PIXEL_FORMAT(R16, Mono16Fixed, 2, 2, false)
+    AVND_TD_PIXEL_FORMAT(RG16, RG16Fixed, 4, 4, false)
+    AVND_TD_PIXEL_FORMAT(RED_OR_ALPHA8, Mono8Fixed, 1, 1, false)
+    AVND_TD_PIXEL_FORMAT(RGBA16F, RGBA16Float, 8, 8, false)
+    AVND_TD_PIXEL_FORMAT(RGBA32F, RGBA32Float, 16, 16, false)
+    AVND_TD_PIXEL_FORMAT(R16F, Mono16Float, 2, 2, false)
+    AVND_TD_PIXEL_FORMAT(R32F, Mono32Float, 4, 4, false)
+    AVND_TD_PIXEL_FORMAT(RGB10A2, RGB10A2Fixed, 4, 4, false)
+    AVND_TD_PIXEL_FORMAT(RGB8, RGBA8Fixed, 3, 4, true)
+    AVND_TD_PIXEL_FORMAT(RGB, RGBA8Fixed, 3, 4, true)
+#undef AVND_TD_PIXEL_FORMAT
+
+    return {};
+  }
+
+  // Resolve the TD pixel format of an avnd CPU texture, either from its
+  // run-time format member (e.g. halp::custom_variable_texture) or from its
+  // fixed format type (e.g. halp::rgba_texture)
   template <typename Tex>
-  int get_bytes_per_pixel(const Tex& tex)
+  static td_format_info get_format_info(const Tex& tex)
   {
     if constexpr(requires { tex.format; })
     {
-      // Dynamic format
-      using format_type = std::decay_t<decltype(tex.format)>;
-      if constexpr(std::is_integral_v<format_type>)
-      {
-        // Assume RGBA8 as default
-        return 4;
-      }
-      else
-      {
-        // Try to deduce from format type
-        return 4;
-      }
+      // Run-time format chosen by the host
+      return map_format_value<Tex>(tex.format);
+    }
+    else if constexpr(requires { tex.request_format; })
+    {
+      // Run-time format requested by the plug-in
+      return map_format_value<Tex>(tex.request_format);
     }
     else if constexpr(requires { typename Tex::format; })
     {
-      // Fixed format type
-      using format_type = typename Tex::format;
-
-      // Check for common format types
-      if constexpr(requires { format_type::bytes_per_pixel; })
-        return format_type::bytes_per_pixel;
-      else
-        return 4; // RGBA8 default
+      // Fixed format type: halp's fixed textures have a single enumerator
+      return map_format_value<Tex>(typename Tex::format{});
     }
     else
     {
       // Default to RGBA8
-      return 4;
+      return {TD::OP_PixelFormat::RGBA8Fixed, 4, 4, false};
     }
   }
 
-  // Map Avendish format to TD pixel format
-  TD::OP_PixelFormat map_to_td_pixel_format(const auto& tex)
+  // Map a TD pixel format back to the texture's own format enum, when the
+  // texture exposes a run-time format (e.g. halp::custom_variable_texture)
+  template <typename Tex>
+  static void map_pixel_format(TD::OP_PixelFormat td_format, Tex& tex)
   {
-    // Default to RGBA8Fixed - most common format
-    // Could be extended to detect format from texture metadata
-    return TD::OP_PixelFormat::RGBA8Fixed;
-  }
+#define AVND_TD_PIXEL_FORMAT(Td, Name)        \
+  case TD::OP_PixelFormat::Td:                \
+    if constexpr(requires { Tex::Name; })     \
+    {                                         \
+      tex.format = Tex::Name;                 \
+      return;                                 \
+    }                                         \
+    break;
 
-  // Map TD pixel format to Avendish format enum
-  int map_pixel_format(TD::OP_PixelFormat td_format)
-  {
-    // Return a generic format identifier
-    // Specific mappings would depend on the Avendish texture format enum
-    return 0; // RGBA8 equivalent
+    switch(td_format)
+    {
+      AVND_TD_PIXEL_FORMAT(BGRA8Fixed, BGRA8)
+      AVND_TD_PIXEL_FORMAT(RGBA8Fixed, RGBA8)
+      AVND_TD_PIXEL_FORMAT(Mono8Fixed, R8)
+      AVND_TD_PIXEL_FORMAT(RG8Fixed, RG8)
+      AVND_TD_PIXEL_FORMAT(Mono16Fixed, R16)
+      AVND_TD_PIXEL_FORMAT(RG16Fixed, RG16)
+      AVND_TD_PIXEL_FORMAT(RGBA16Float, RGBA16F)
+      AVND_TD_PIXEL_FORMAT(RGBA32Float, RGBA32F)
+      AVND_TD_PIXEL_FORMAT(Mono16Float, R16F)
+      AVND_TD_PIXEL_FORMAT(Mono32Float, R32F)
+      AVND_TD_PIXEL_FORMAT(RGB10A2Fixed, RGB10A2)
+      default:
+        break;
+    }
+#undef AVND_TD_PIXEL_FORMAT
+
+    // No matching enumerator on the avnd side: fall back to RGBA8 if possible
+    if constexpr(requires { Tex::RGBA8; })
+      tex.format = Tex::RGBA8;
   }
 
   void update_controls(const TD::OP_Inputs* inputs)
