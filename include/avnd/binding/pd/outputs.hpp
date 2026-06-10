@@ -601,7 +601,7 @@ inline void value_to_pd_dispatch(t_outlet* outlet, Args&&... v) noexcept
 {
   if constexpr(tensor_output_dispatch<C, Args...>)
   {
-    constexpr std::size_t static_rank = halp::static_port_rank<C>();
+    constexpr std::size_t static_rank = avnd::static_port_rank<C>();
     pd::emit_tensor<static_rank>(outlet, std::forward<Args>(v)...);
     return;
   }

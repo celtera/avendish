@@ -751,7 +751,7 @@ struct outputs
       using element_type = avnd::tensor_element<value_type>;
       t_symbol* type = jitter::jitter_type_for_element<element_type>();
 
-      constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+      constexpr std::size_t static_rank = avnd::static_port_rank<Field>();
       long mindim = 1;
       long maxdim = jitter::jitter_max_dimcount;
       if constexpr(static_rank != avnd::dynamic_rank)

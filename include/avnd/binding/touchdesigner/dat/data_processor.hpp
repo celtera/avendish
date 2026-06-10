@@ -15,7 +15,6 @@
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
-#include <halp/tensor_port.hpp>
 
 #include <charconv>
 #include <cstring>
@@ -265,7 +264,7 @@ private:
   {
     using value_type = std::remove_cvref_t<decltype(field.value)>;
     using elem_t = avnd::tensor_element<value_type>;
-    constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+    constexpr std::size_t static_rank = avnd::static_port_rank<Field>();
 
     const int rows = dat_input->numRows;
     const int cols = dat_input->numCols;
@@ -274,7 +273,7 @@ private:
 
     constexpr bool wire_rank_1 = (static_rank == 1);
 
-    if constexpr(halp::is_tensor_view_v<value_type>)
+    if constexpr(avnd::view_tensor_like<value_type>)
     {
       if constexpr(wire_rank_1)
       {
@@ -287,10 +286,9 @@ private:
           else
             buf[c] = elem_t{};
         }
-        field.value.data_ptr = buf.get();
-        field.value.shape_v = {N};
-        field.value.strides_v = {1};
-        field.value.keep_alive = std::shared_ptr<void>(buf, buf.get());
+        avnd::set_view_buffer(
+            field.value, buf.get(), std::vector<std::size_t>{N},
+            std::shared_ptr<void>(buf, buf.get()));
       }
       else
       {
@@ -308,10 +306,9 @@ private:
               buf[r * C + c] = elem_t{};
           }
         }
-        field.value.data_ptr = buf.get();
-        field.value.shape_v = {R, C};
-        field.value.strides_v = {C, 1};
-        field.value.keep_alive = std::shared_ptr<void>(buf, buf.get());
+        avnd::set_view_buffer(
+            field.value, buf.get(), std::vector<std::size_t>{R, C},
+            std::shared_ptr<void>(buf, buf.get()));
       }
     }
     else if constexpr(avnd::resizable_tensor_like<value_type>)
@@ -505,7 +502,7 @@ private:
     const auto shape = avnd::shape_of(v);
     const elem_t* data = avnd::data_of(v);
     const std::size_t rank = std::ranges::size(shape);
-    constexpr std::size_t static_rank = halp::static_port_rank<Field>();
+    constexpr std::size_t static_rank = avnd::static_port_rank<Field>();
 
     if(data == nullptr || rank == 0)
     {

@@ -68,9 +68,9 @@ struct output_length_visitor
     if(r == 0)
       return 0;
 
-    if constexpr(halp::has_static_rank<T>)
+    if constexpr(avnd::has_static_rank<T>)
     {
-      constexpr std::size_t static_r = halp::static_port_rank<T>();
+      constexpr std::size_t static_r = avnd::static_port_rank<T>();
       static_assert(static_r <= 2,
                     "TD CHOP cannot lower a tensor of rank > 2");
       if constexpr(static_r == 1)
@@ -123,9 +123,9 @@ struct output_channel_count_visitor
       const std::size_t r = std::ranges::size(sh);
       if(r == 0)
         return 1;
-      if constexpr(halp::has_static_rank<T>)
+      if constexpr(avnd::has_static_rank<T>)
       {
-        constexpr std::size_t static_r = halp::static_port_rank<T>();
+        constexpr std::size_t static_r = avnd::static_port_rank<T>();
         static_assert(static_r <= 2,
                       "TD CHOP cannot lower a tensor of rank > 2.");
         if constexpr(static_r == 1)
@@ -577,16 +577,17 @@ private:
                                   : static_cast<std::size_t>(n_chan)
                                         * static_cast<std::size_t>(n_samp);
 
-    if constexpr(halp::is_tensor_view_v<value_type>)
+    if constexpr(avnd::view_tensor_like<value_type>)
     {
-      using elem_t = typename value_type::element_type;
-
-      if(tensor_input_scratch.size() <= P)
-        tensor_input_scratch.resize(P + 1);
-      auto& scratch_raw = tensor_input_scratch[P];
+      using elem_t = avnd::tensor_element<value_type>;
 
       if constexpr(std::is_same_v<elem_t, double>)
       {
+        // Per-port scratch buffer reused across ticks — no keep_alive
+        // needed since the processor owns it.
+        if(tensor_input_scratch.size() <= P)
+          tensor_input_scratch.resize(P + 1);
+        auto& scratch_raw = tensor_input_scratch[P];
         scratch_raw.resize(total);
         for(int c = 0; c < n_chan; ++c)
         {
@@ -596,7 +597,8 @@ private:
           for(int s = 0; s < n_samp; ++s)
             dst[s] = static_cast<double>(src[s]);
         }
-        field.value.data_ptr = scratch_raw.data();
+        avnd::set_view_buffer(
+            field.value, scratch_raw.data(), shape, {});
       }
       else
       {
@@ -609,15 +611,10 @@ private:
           for(int s = 0; s < n_samp; ++s)
             dst[s] = static_cast<elem_t>(src[s]);
         }
-        field.value.data_ptr = holder->data();
-        field.value.keep_alive
-            = std::shared_ptr<void>(holder, holder.get());
+        avnd::set_view_buffer(
+            field.value, holder->data(), shape,
+            std::shared_ptr<void>(holder, holder.get()));
       }
-
-      field.value.shape_v = shape;
-      field.value.strides_v.assign(shape.size(), 1);
-      if(shape.size() >= 2)
-        field.value.strides_v[0] = shape[1];
     }
     else if constexpr(avnd::resizable_tensor_like<value_type>)
     {

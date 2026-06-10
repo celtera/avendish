@@ -8,7 +8,6 @@
 #include <avnd/concepts/tensor.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
-#include <halp/tensor_port.hpp>
 #include <algorithm>
 #include <boost/container/vector.hpp>
 #include <cstdint>
@@ -490,22 +489,14 @@ inline void matrix_to_tensor(void* matrix, Field& field)
   using element_type = avnd::tensor_element<value_type>;
   const std::size_t bytes = total * sizeof(element_type);
 
-  if constexpr(halp::is_tensor_view_v<value_type>)
+  if constexpr(avnd::view_tensor_like<value_type>)
   {
-    auto scratch
-        = std::make_shared<std::vector<element_type>>(total);
+    auto scratch = std::make_shared<std::vector<element_type>>(total);
     std::memcpy(scratch->data(), matrix_data, bytes);
-
-    field.value.shape_v.assign(shape_buf, shape_buf + rank);
-    field.value.strides_v.resize(rank);
-    if(rank > 0)
-    {
-      field.value.strides_v[rank - 1] = 1;
-      for(std::size_t i = rank - 1; i > 0; --i)
-        field.value.strides_v[i - 1] = field.value.strides_v[i] * shape_buf[i];
-    }
-    field.value.data_ptr = scratch->data();
-    field.value.keep_alive = std::move(scratch);
+    avnd::set_view_buffer(
+        field.value, scratch->data(),
+        std::vector<std::size_t>(shape_buf, shape_buf + rank),
+        std::shared_ptr<void>(scratch, scratch->data()));
   }
   else if constexpr(avnd::resizable_tensor_like<value_type>)
   {

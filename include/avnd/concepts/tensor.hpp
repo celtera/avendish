@@ -42,6 +42,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <ranges>
 #include <type_traits>
 #include <vector>
@@ -214,6 +215,50 @@ template <typename T>
 concept mutable_tensor_like
     = tensor_like<T> && !std::is_const_v<std::remove_pointer_t<detail::data_result_t<T>>>;
 
+// Customization point: install backing buffer + shape + strides into
+// a view type. Default assumes the halp::tensor_view layout; users
+// plug their own view in by overloading in its namespace.
+// `view_tensor_like<T>` resolves true for any T accepted by some
+// `set_view_buffer` candidate.
+template <typename View, typename Elem>
+  requires requires(View& v) { v.data_ptr; v.shape_v; v.strides_v; v.keep_alive; }
+inline void set_view_buffer(
+    View& v, Elem* data,
+    std::vector<std::size_t> shape, std::vector<std::size_t> strides,
+    std::shared_ptr<void> keep_alive)
+{
+  v.data_ptr = data;
+  v.shape_v = std::move(shape);
+  v.strides_v = std::move(strides);
+  v.keep_alive = std::move(keep_alive);
+}
+
+// Convenience: row-major contiguous strides derived from shape.
+template <typename View, typename Elem>
+inline void set_view_buffer(
+    View& v, Elem* data,
+    std::vector<std::size_t> shape, std::shared_ptr<void> keep_alive)
+{
+  std::vector<std::size_t> strides(shape.size());
+  std::size_t stride = 1;
+  for(std::size_t d = shape.size(); d-- > 0;)
+  {
+    strides[d] = stride;
+    stride *= shape[d];
+  }
+  set_view_buffer(
+      v, data, std::move(shape), std::move(strides), std::move(keep_alive));
+}
+
+template <typename T>
+concept view_tensor_like
+    = tensor_like<T>
+      && requires(
+             T t, tensor_element<T>* p, std::vector<std::size_t> sh,
+             std::vector<std::size_t> st, std::shared_ptr<void> ka) {
+           set_view_buffer(t, p, sh, st, ka);
+         };
+
 // -----------------------------------------------------------------
 // Concept: dynamic_tensor_like<T>
 //
@@ -259,6 +304,26 @@ constexpr std::size_t container_static_rank() noexcept
   else
     return dynamic_rank;
 }
+
+// Static port rank — `Port::static_rank` if it exposes one (e.g. via
+// a kind hint computed in the user-facing port template), else the
+// container's compile-time rank.
+template <typename Port>
+constexpr std::size_t static_port_rank() noexcept
+{
+  if constexpr(requires { { Port::static_rank } -> std::convertible_to<std::size_t>; })
+  {
+    constexpr std::size_t r = Port::static_rank;
+    if constexpr(r != dynamic_rank)
+      return r;
+  }
+  if constexpr(requires { typename Port::value_type; })
+    return container_static_rank<typename Port::value_type>();
+  return dynamic_rank;
+}
+
+template <typename Port>
+concept has_static_rank = (static_port_rank<Port>() != dynamic_rank);
 
 template <typename Field>
 concept tensor_port
