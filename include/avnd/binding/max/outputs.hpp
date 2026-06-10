@@ -17,13 +17,15 @@
 namespace max
 {
 
-// GPU texture ports and render-target outputs have no CPU-side pixel data
-// that could be written into a jit matrix: they are ignored by the Max
-// binding for now instead of being treated as MOP matrix outputs.
+// GPU-side ports (textures, samplers, images, render pass attachments) and
+// render-target outputs have no CPU-side pixel data that could be written
+// into a jit matrix: they are ignored by the Max binding for now instead of
+// being treated as MOP matrix outputs.
 template <typename Field>
 concept max_jit_output
     = (avnd::matrix_port<Field> || avnd::tensor_port<Field>)
-      && !avnd::gpu_texture_port<Field>
+      && !avnd::gpu_texture_port<Field> && !avnd::sampler_port<Field>
+      && !avnd::image_port<Field> && !avnd::attachment_port<Field>
       && !avnd::gpu_render_target_output_port<Field>;
 
 template <typename Field>
