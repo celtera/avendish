@@ -363,6 +363,14 @@ avnd_make_godot(
   PROCESSOR_TYPE GEOMETRY
 )
 
+avnd_make_godot(
+  TARGET DynamicGeometry_godot
+  MAIN_FILE examples/Tutorial/DynamicGeometry.hpp
+  MAIN_CLASS examples::DynamicGeometryExample
+  C_NAME avnd_dynamic_geometry
+  PROCESSOR_TYPE GEOMETRY
+)
+
 # avnd_make_godot(
 #   TARGET NoiseBuffer_godot
 #   MAIN_FILE examples/Advanced/Geometry/NoiseBuffer_raw_cpu.hpp
