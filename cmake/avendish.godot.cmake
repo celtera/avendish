@@ -15,6 +15,10 @@
 # Try to find godot-cpp
 set(_GODOT_CPP_FOUND FALSE)
 set(GODOTCPP_DEBUG_CRT "$<CONFIG:Debug>")
+
+# Godot executable used for the headless GDExtension smoke tests.
+# Not required for building; the tests are skipped when it is absent.
+find_program(AVND_GODOT_EXECUTABLE NAMES godot godot4 Godot)
 if(GODOT_CPP_PATH)
   if(IS_DIRECTORY "${GODOT_CPP_PATH}" AND NOT TARGET godot-cpp)
     add_subdirectory("${GODOT_CPP_PATH}" godot-cpp EXCLUDE_FROM_ALL)
@@ -167,6 +171,24 @@ function(avnd_make_godot)
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+
+  # Headless smoke test: load the extension in godot --headless and check
+  # that the class registers. Runs for any project that has a godot
+  # executable available (set AVND_GODOT_EXECUTABLE or put godot in PATH),
+  # so plugins and templates built on avendish get it for free.
+  if(BUILD_TESTING AND AVND_GODOT_EXECUTABLE)
+    add_test(
+      NAME ${AVND_FX_TARGET}_smoke
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -DGODOT=${AVND_GODOT_EXECUTABLE}
+        -DLIBRARY=$<TARGET_FILE:${AVND_FX_TARGET}>
+        -DGDEXTENSION=${CMAKE_BINARY_DIR}/godot/${AVND_C_NAME}${_AVND_GODOT_SUFFIX}.gdextension
+        -DCLASS=avnd_${AVND_C_NAME}${_AVND_GODOT_SUFFIX}
+        -DWORK_DIR=${CMAKE_BINARY_DIR}/godot-smoke/${AVND_FX_TARGET}
+        -P "${AVND_SOURCE_DIR}/cmake/avendish.godot.smoketest.cmake"
+    )
+  endif()
 
   message(STATUS "Configured Godot GDExtension: ${AVND_FX_TARGET}")
 endfunction()

@@ -101,6 +101,10 @@ jobs:
           ref: add-pop-headers
           path: touchdesigner-sdk
 
+      - name: Install Godot
+        if: runner.os != 'Windows'
+        uses: ./.github/actions/setup-godot
+
       - name: Install dependencies
         shell: bash
         run: |
