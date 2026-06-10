@@ -26,6 +26,14 @@ struct max_texture_spec {
     R16F         ,
     R32F         ,
     RGB10A2      ,
+    R8UI         ,
+    R32UI        ,
+    RG32UI       ,
+    RGBA32UI     ,
+    R8SI         ,
+    R32SI        ,
+    RG32SI       ,
+    RGBA32SI     ,
     D16          ,
     D24          ,
     D24S8        ,
@@ -43,6 +51,10 @@ struct max_texture_spec {
     Format(int p , t_symbol* s, FormatEnum e): planes{p}, type{s}, format{e} {}
   };
 
+  // jit matrices only have char/long/float32/float64 cell types, so every
+  // mapping below that does not fit exactly is lossy-but-consistent (":(").
+  // Jitter's native 4-plane char ordering is ARGB; like RGBA8, the BGRA8
+  // mapping keeps 4 char planes and lets copy_texture_to_max do the swizzle.
   static const inline Format ARGB8         { 4, _jit_sym_char   , FormatEnum::ARGB8         };
   static const inline Format RGBA8         { 4, _jit_sym_char   , FormatEnum::RGBA8         };
   static const inline Format BGRA8         { 4, _jit_sym_char   , FormatEnum::BGRA8         };
@@ -56,7 +68,15 @@ struct max_texture_spec {
   static const inline Format ARGB32F       { 4, _jit_sym_float32, FormatEnum::ARGB32F       };
   static const inline Format R16F          { 1, _jit_sym_float32, FormatEnum::R16F          }; // :(
   static const inline Format R32F          { 1, _jit_sym_float32, FormatEnum::R32F          };
-  static const inline Format RGB10A2       { 4, _jit_sym_char   , FormatEnum::RGB10A2       }; // :(
+  static const inline Format RGB10A2       { 4, _jit_sym_long   , FormatEnum::RGB10A2       }; // :( 10/2-bit channels don't fit char planes
+  static const inline Format R8UI          { 1, _jit_sym_char   , FormatEnum::R8UI          };
+  static const inline Format R32UI         { 1, _jit_sym_long   , FormatEnum::R32UI         }; // :( jit long is signed int32
+  static const inline Format RG32UI        { 2, _jit_sym_long   , FormatEnum::RG32UI        }; // :(
+  static const inline Format RGBA32UI      { 4, _jit_sym_long   , FormatEnum::RGBA32UI      }; // :(
+  static const inline Format R8SI          { 1, _jit_sym_char   , FormatEnum::R8SI          }; // :( jit char is unsigned
+  static const inline Format R32SI         { 1, _jit_sym_long   , FormatEnum::R32SI         };
+  static const inline Format RG32SI        { 2, _jit_sym_long   , FormatEnum::RG32SI        };
+  static const inline Format RGBA32SI      { 4, _jit_sym_long   , FormatEnum::RGBA32SI      };
   static const inline Format D16           { 1, _jit_sym_long   , FormatEnum::D16           }; // :(
   static const inline Format D24           { 1, _jit_sym_long   , FormatEnum::D24           }; // :(
   static const inline Format D24S8         { 1, _jit_sym_long   , FormatEnum::D24S8         }; // :(
@@ -111,6 +131,30 @@ constexpr const max_texture_spec::Format& texture_spec(F f) noexcept
   if constexpr(requires { F::RGB10A2; })
     if(f == F::RGB10A2)
       return max_texture_spec::RGB10A2;
+  if constexpr(requires { F::R8UI; })
+    if(f == F::R8UI)
+      return max_texture_spec::R8UI;
+  if constexpr(requires { F::R32UI; })
+    if(f == F::R32UI)
+      return max_texture_spec::R32UI;
+  if constexpr(requires { F::RG32UI; })
+    if(f == F::RG32UI)
+      return max_texture_spec::RG32UI;
+  if constexpr(requires { F::RGBA32UI; })
+    if(f == F::RGBA32UI)
+      return max_texture_spec::RGBA32UI;
+  if constexpr(requires { F::R8SI; })
+    if(f == F::R8SI)
+      return max_texture_spec::R8SI;
+  if constexpr(requires { F::R32SI; })
+    if(f == F::R32SI)
+      return max_texture_spec::R32SI;
+  if constexpr(requires { F::RG32SI; })
+    if(f == F::RG32SI)
+      return max_texture_spec::RG32SI;
+  if constexpr(requires { F::RGBA32SI; })
+    if(f == F::RGBA32SI)
+      return max_texture_spec::RGBA32SI;
   if constexpr(requires { F::D16; })
     if(f == F::D16)
       return max_texture_spec::D16;
@@ -165,6 +209,22 @@ const max_texture_spec::Format& texture_spec() noexcept
       return max_texture_spec::R32F;
     else if(fmt == "rgb10a2")
       return max_texture_spec::RGB10A2;
+    else if(fmt == "r8ui")
+      return max_texture_spec::R8UI;
+    else if(fmt == "r32ui")
+      return max_texture_spec::R32UI;
+    else if(fmt == "rg32ui")
+      return max_texture_spec::RG32UI;
+    else if(fmt == "rgba32ui")
+      return max_texture_spec::RGBA32UI;
+    else if(fmt == "r8si")
+      return max_texture_spec::R8SI;
+    else if(fmt == "r32si")
+      return max_texture_spec::R32SI;
+    else if(fmt == "rg32si")
+      return max_texture_spec::RG32SI;
+    else if(fmt == "rgba32si")
+      return max_texture_spec::RGBA32SI;
     else if(fmt == "d16")
       return max_texture_spec::D16;
     else if(fmt == "d24")
@@ -208,6 +268,22 @@ const max_texture_spec::Format& texture_spec() noexcept
       return max_texture_spec::R32F;
     else if constexpr(requires { F::RGB10A2; })
       return max_texture_spec::RGB10A2;
+    else if constexpr(requires { F::R8UI; })
+      return max_texture_spec::R8UI;
+    else if constexpr(requires { F::R32UI; })
+      return max_texture_spec::R32UI;
+    else if constexpr(requires { F::RG32UI; })
+      return max_texture_spec::RG32UI;
+    else if constexpr(requires { F::RGBA32UI; })
+      return max_texture_spec::RGBA32UI;
+    else if constexpr(requires { F::R8SI; })
+      return max_texture_spec::R8SI;
+    else if constexpr(requires { F::R32SI; })
+      return max_texture_spec::R32SI;
+    else if constexpr(requires { F::RG32SI; })
+      return max_texture_spec::RG32SI;
+    else if constexpr(requires { F::RGBA32SI; })
+      return max_texture_spec::RGBA32SI;
     else if constexpr(requires { F::D16; })
       return max_texture_spec::D16;
     else if constexpr(requires { F::D24; })
@@ -1033,18 +1109,14 @@ inline void copy_texture_to_max(const max_texture_spec::Format& fmt, void* matri
     float* dst = static_cast<float*>(matrix_data);
     const float* src = static_cast<const float*>(tex_bytes);
     const int bytesize = fmt.planes * sizeof(float);
-    if(&fmt == &max_texture_spec::RGBA32F)
+    // RGBA16F is mapped onto float32 planes, so it follows the same
+    // RGBA -> ARGB swizzle as RGBA32F; ARGB32F and the single/dual-channel
+    // formats go through the plain memcpy below.
+    if(&fmt == &max_texture_spec::RGBA32F || &fmt == &max_texture_spec::RGBA16F)
     {
-      for(int i = 0, N = pixel_count * 4; i < N; i += 4) {
-        dst[i + 0] = src[i + 3];
-        dst[i + 1] = src[i + 0];
-        dst[i + 2] = src[i + 1];
-        dst[i + 3] = src[i + 2];
-      }
-    }
-    else if(&fmt == &max_texture_spec::RGBA32F)
-    {
-      for(int i = 0, N = pixel_count * 4; i < N; i += 4) {
+      const int N
+          = std::min(pixel_count * 4, int(tex_bytesize / sizeof(float))) & ~3;
+      for(int i = 0; i < N; i += 4) {
         dst[i + 0] = src[i + 3];
         dst[i + 1] = src[i + 0];
         dst[i + 2] = src[i + 1];
