@@ -15,13 +15,15 @@
 namespace max
 {
 
-// GPU texture ports (halp::gpu_texture_input & co) have no CPU-side pixel data
-// that a jit matrix could be read into: they are ignored by the Max binding
-// for now instead of being treated as MOP matrix inputs.
+// GPU-side ports (halp::gpu_texture_input & co, samplers, images, render
+// pass attachments) have no CPU-side pixel data that a jit matrix could be
+// read into: they are ignored by the Max binding for now instead of being
+// treated as MOP matrix inputs.
 template <typename Field>
 concept max_jit_input
     = (avnd::matrix_port<Field> || avnd::tensor_port<Field>)
-      && !avnd::gpu_texture_port<Field>;
+      && !avnd::gpu_texture_port<Field> && !avnd::sampler_port<Field>
+      && !avnd::image_port<Field> && !avnd::attachment_port<Field>;
 
 template <typename Field>
 using is_max_jit_input_t = boost::mp11::mp_bool<max_jit_input<Field>>;
