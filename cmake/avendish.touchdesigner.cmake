@@ -105,6 +105,12 @@ function(avnd_make_touchdesigner)
       Boost::boost
   )
 
+  # Link the object library (as the other back-ends do) so its usage requirements
+  # propagate to the GDExtension/operator.
+  if(TARGET ${AVND_TARGET})
+    target_link_libraries(${AVND_FX_TARGET} PUBLIC ${AVND_TARGET})
+  endif()
+
   if(AVND_LINK_LIBRARIES)
     target_link_libraries(${AVND_FX_TARGET} PRIVATE ${AVND_LINK_LIBRARIES})
   endif()
