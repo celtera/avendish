@@ -79,12 +79,20 @@ macro(avnd_addon_object)
           list(GET _parts 1 _ptype)
           set(_ptype_arg PROCESSOR_TYPE ${_ptype})
         endif()
-        cmake_language(CALL "avnd_make_${_backend}"
-          TARGET ${AA_C_NAME}
-          MAIN_FILE "${AA_MAIN_FILE}"
-          MAIN_CLASS ${_cls}
-          C_NAME ${AA_C_NAME}
-          ${_ptype_arg})
+        # Respect AVND_ENABLE_<BACKEND> if defined (set by avendish.cmake).
+        string(TOUPPER "${_backend}" _backend_upper)
+        set(_skip 0)
+        if(DEFINED AVND_ENABLE_${_backend_upper} AND NOT AVND_ENABLE_${_backend_upper})
+          set(_skip 1)
+        endif()
+        if(NOT _skip)
+          cmake_language(CALL "avnd_make_${_backend}"
+            TARGET ${AA_C_NAME}
+            MAIN_FILE "${AA_MAIN_FILE}"
+            MAIN_CLASS ${_cls}
+            C_NAME ${AA_C_NAME}
+            ${_ptype_arg})
+        endif()
       endforeach()
     else()
       cmake_language(CALL "avnd_make_${AA_CATEGORY}"
