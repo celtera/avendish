@@ -31,13 +31,28 @@ function(avnd_make_python)
   set(AVND_FX_TARGET "${AVND_TARGET}_python")
   add_library(${AVND_FX_TARGET} SHARED)
 
-  set_target_properties(
-    ${AVND_FX_TARGET}
-    PROPERTIES
-      OUTPUT_NAME "py${AVND_C_NAME}"
-      LIBRARY_OUTPUT_DIRECTORY python
-      RUNTIME_OUTPUT_DIRECTORY python
-  )
+  if(WIN32)
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "py${AVND_C_NAME}"
+        PREFIX ""
+        SUFFIX ".pyd"
+        LIBRARY_OUTPUT_DIRECTORY python
+        RUNTIME_OUTPUT_DIRECTORY python
+    )
+  else()
+    # CPython convention: py<name>.so on both Linux and macOS, no lib prefix.
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "py${AVND_C_NAME}"
+        PREFIX ""
+        SUFFIX ".so"
+        LIBRARY_OUTPUT_DIRECTORY python
+        RUNTIME_OUTPUT_DIRECTORY python
+    )
+  endif()
 
   target_sources(
     ${AVND_FX_TARGET}

@@ -50,14 +50,55 @@ function(avnd_make_vst3)
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vst3.cpp"
   )
 
+  # Compute the per-OS arch subdir per the VST3 spec layout.
+  # https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical+Documentation/Locations+Format/Plugin+Format.html
+  string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _avnd_vst3_proc)
+  if(APPLE)
+    set(_avnd_vst3_archdir "MacOS")
+  elseif(WIN32)
+    if(_avnd_vst3_proc MATCHES "amd64|x86_64|x64")
+      set(_avnd_vst3_archdir "x86_64-win")
+    elseif(_avnd_vst3_proc MATCHES "arm64|aarch64")
+      set(_avnd_vst3_archdir "arm64-win")
+    elseif(_avnd_vst3_proc MATCHES "arm")
+      set(_avnd_vst3_archdir "arm-win")
+    else()
+      set(_avnd_vst3_archdir "x86-win")
+    endif()
+  else()
+    if(_avnd_vst3_proc MATCHES "amd64|x86_64|x64")
+      set(_avnd_vst3_archdir "x86_64-linux")
+    elseif(_avnd_vst3_proc MATCHES "aarch64|arm64")
+      set(_avnd_vst3_archdir "aarch64-linux")
+    elseif(_avnd_vst3_proc MATCHES "armv7|arm")
+      set(_avnd_vst3_archdir "armv7l-linux")
+    elseif(_avnd_vst3_proc MATCHES "i.86")
+      set(_avnd_vst3_archdir "i386-linux")
+    else()
+      set(_avnd_vst3_archdir "${_avnd_vst3_proc}-linux")
+    endif()
+  endif()
+
+  set(_avnd_vst3_outdir "vst3/${AVND_C_NAME}.vst3/Contents/${_avnd_vst3_archdir}")
+
   set_target_properties(
     ${AVND_FX_TARGET}
     PROPERTIES
       OUTPUT_NAME "${AVND_C_NAME}"
-      LIBRARY_OUTPUT_DIRECTORY "vst3/${AVND_C_NAME}.vst3/Contents/x86_64-linux"
-      RUNTIME_OUTPUT_DIRECTORY "vst3/${AVND_C_NAME}.vst3/Contents/x86_64-linux"
-      ARCHIVE_OUTPUT_DIRECTORY "vst3/${AVND_C_NAME}.vst3/Contents/x86_64-linux"
+      LIBRARY_OUTPUT_DIRECTORY "${_avnd_vst3_outdir}"
+      RUNTIME_OUTPUT_DIRECTORY "${_avnd_vst3_outdir}"
+      ARCHIVE_OUTPUT_DIRECTORY "${_avnd_vst3_outdir}"
   )
+
+  # VST3 spec wants <name>.so on Linux (no lib prefix), <name>.vst3 on Windows,
+  # and a plain <name> binary inside MacOS/ on macOS.
+  if(APPLE)
+    set_target_properties(${AVND_FX_TARGET} PROPERTIES PREFIX "" SUFFIX "")
+  elseif(WIN32)
+    set_target_properties(${AVND_FX_TARGET} PROPERTIES PREFIX "" SUFFIX ".vst3")
+  else()
+    set_target_properties(${AVND_FX_TARGET} PROPERTIES PREFIX "" SUFFIX ".so")
+  endif()
 
   target_link_libraries(
     ${AVND_FX_TARGET}

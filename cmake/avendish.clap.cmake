@@ -50,15 +50,42 @@ function(avnd_make_clap)
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_clap.cpp"
   )
 
-  set_target_properties(
-    ${AVND_FX_TARGET}
-    PROPERTIES
-      OUTPUT_NAME "${AVND_C_NAME}.clap"
-      LIBRARY_OUTPUT_DIRECTORY clap
-      RUNTIME_OUTPUT_DIRECTORY clap
-      ARCHIVE_OUTPUT_DIRECTORY clap
-      VS_GLOBAL_IgnoreImportLibrary true
-  )
+  if(APPLE)
+    # macOS: produce a .clap bundle: <C_NAME>.clap/Contents/MacOS/<C_NAME>
+    set(_avnd_clap_plist "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_clap_Info.plist")
+    configure_file(
+      "${AVND_SOURCE_DIR}/include/avnd/binding/clap/Info.plist.in"
+      "${_avnd_clap_plist}"
+      @ONLY
+    )
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}"
+        BUNDLE TRUE
+        BUNDLE_EXTENSION "clap"
+        MACOSX_BUNDLE_INFO_PLIST "${_avnd_clap_plist}"
+        MACOSX_BUNDLE_BUNDLE_NAME "${AVND_C_NAME}"
+        XCODE_ATTRIBUTE_MACH_O_TYPE mh_bundle
+        LIBRARY_OUTPUT_DIRECTORY clap
+        RUNTIME_OUTPUT_DIRECTORY clap
+        ARCHIVE_OUTPUT_DIRECTORY clap
+        VS_GLOBAL_IgnoreImportLibrary true
+    )
+  else()
+    # Linux / Windows: the shared module file IS the .clap
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}.clap"
+        PREFIX ""
+        SUFFIX ""
+        LIBRARY_OUTPUT_DIRECTORY clap
+        RUNTIME_OUTPUT_DIRECTORY clap
+        ARCHIVE_OUTPUT_DIRECTORY clap
+        VS_GLOBAL_IgnoreImportLibrary true
+    )
+  endif()
 
   target_include_directories(
     ${AVND_FX_TARGET}

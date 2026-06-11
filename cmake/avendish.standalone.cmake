@@ -62,12 +62,24 @@ function(avnd_make_standalone)
   )
 
   set(AVND_FX_TARGET "${AVND_TARGET}_standalone")
-  add_executable(${AVND_FX_TARGET})
-
-  set_target_properties(${AVND_FX_TARGET}
-    PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY standalone
-  )
+  if(APPLE)
+    add_executable(${AVND_FX_TARGET} MACOSX_BUNDLE)
+    set_target_properties(${AVND_FX_TARGET}
+      PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "${AVND_MAIN_CLASS}"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "ossia.${AVND_MAIN_CLASS}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+        RUNTIME_OUTPUT_DIRECTORY standalone
+    )
+  else()
+    add_executable(${AVND_FX_TARGET})
+    set_target_properties(${AVND_FX_TARGET}
+      PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY standalone
+    )
+  endif()
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
@@ -131,12 +143,24 @@ function(avnd_make_standalone)
   )
 
   set(AVND_FX_TARGET "${AVND_TARGET}_standalone")
-  add_executable(${AVND_FX_TARGET})
-
-  set_target_properties(${AVND_FX_TARGET}
-    PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY standalone
-  )
+  if(APPLE)
+    add_executable(${AVND_FX_TARGET} MACOSX_BUNDLE)
+    set_target_properties(${AVND_FX_TARGET}
+      PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "${AVND_MAIN_CLASS}"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "ossia.${AVND_MAIN_CLASS}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+        RUNTIME_OUTPUT_DIRECTORY standalone
+    )
+  else()
+    add_executable(${AVND_FX_TARGET})
+    set_target_properties(${AVND_FX_TARGET}
+      PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY standalone
+    )
+  endif()
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
