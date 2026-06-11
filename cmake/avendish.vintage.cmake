@@ -41,15 +41,53 @@ function(avnd_make_vintage)
     )
   endif()
 
-  set_target_properties(
-    ${AVND_FX_TARGET}
-    PROPERTIES
-      OUTPUT_NAME "${AVND_C_NAME}.vintage"
-      LIBRARY_OUTPUT_DIRECTORY vintage
-      RUNTIME_OUTPUT_DIRECTORY vintage
-      ARCHIVE_OUTPUT_DIRECTORY vintage
-      VS_GLOBAL_IgnoreImportLibrary true
-  )
+  if(APPLE)
+    # macOS: produce a .vst bundle: <C_NAME>.vst/Contents/MacOS/<C_NAME>
+    set(_avnd_vintage_plist "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vintage_Info.plist")
+    configure_file(
+      "${AVND_SOURCE_DIR}/include/avnd/binding/vintage/Info.plist.in"
+      "${_avnd_vintage_plist}"
+      @ONLY
+    )
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}"
+        BUNDLE TRUE
+        BUNDLE_EXTENSION "vst"
+        MACOSX_BUNDLE_INFO_PLIST "${_avnd_vintage_plist}"
+        MACOSX_BUNDLE_BUNDLE_NAME "${AVND_C_NAME}"
+        XCODE_ATTRIBUTE_MACH_O_TYPE mh_bundle
+        LIBRARY_OUTPUT_DIRECTORY vintage
+        RUNTIME_OUTPUT_DIRECTORY vintage
+        ARCHIVE_OUTPUT_DIRECTORY vintage
+        VS_GLOBAL_IgnoreImportLibrary true
+    )
+  elseif(WIN32)
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}"
+        PREFIX ""
+        SUFFIX ".dll"
+        LIBRARY_OUTPUT_DIRECTORY vintage
+        RUNTIME_OUTPUT_DIRECTORY vintage
+        ARCHIVE_OUTPUT_DIRECTORY vintage
+        VS_GLOBAL_IgnoreImportLibrary true
+    )
+  else()
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}"
+        PREFIX ""
+        SUFFIX ".so"
+        LIBRARY_OUTPUT_DIRECTORY vintage
+        RUNTIME_OUTPUT_DIRECTORY vintage
+        ARCHIVE_OUTPUT_DIRECTORY vintage
+        VS_GLOBAL_IgnoreImportLibrary true
+    )
+  endif()
 
   target_link_libraries(
     ${AVND_FX_TARGET}
