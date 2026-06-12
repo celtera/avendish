@@ -121,17 +121,45 @@ function(avnd_make_godot)
   set(AVND_FX_TARGET "${AVND_TARGET}_${AVND_PROCESSOR_TYPE}_godot")
   add_library(${AVND_FX_TARGET} SHARED)
 
-  set_target_properties(
-    ${AVND_FX_TARGET}
-    PROPERTIES
-      OUTPUT_NAME "${AVND_C_NAME}${_AVND_GODOT_SUFFIX}"
-      LIBRARY_OUTPUT_DIRECTORY godot
-      RUNTIME_OUTPUT_DIRECTORY godot
-      ARCHIVE_OUTPUT_DIRECTORY godot
-      PREFIX ""
-      CXX_STANDARD 23
-      CXX_EXTENSIONS OFF
-  )
+  if(APPLE)
+    # macOS: emit a .framework bundle so the binary can be codesigned
+    # with --deep --options runtime AND stapled via xcrun stapler staple
+    # (loose .dylibs cannot be stapled).
+    set(_avnd_godot_plist "${CMAKE_BINARY_DIR}/${AVND_C_NAME}${_AVND_GODOT_SUFFIX}_godot_Info.plist")
+    configure_file(
+      "${AVND_SOURCE_DIR}/include/avnd/binding/godot/Framework.Info.plist.in"
+      "${_avnd_godot_plist}"
+      @ONLY
+    )
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}${_AVND_GODOT_SUFFIX}"
+        FRAMEWORK TRUE
+        MACOSX_FRAMEWORK_BUNDLE_VERSION 1.0
+        MACOSX_FRAMEWORK_SHORT_VERSION_STRING 1.0
+        MACOSX_FRAMEWORK_IDENTIFIER "ossia.${AVND_C_NAME}${_AVND_GODOT_SUFFIX}"
+        MACOSX_FRAMEWORK_BUNDLE_NAME "${AVND_C_NAME}${_AVND_GODOT_SUFFIX}"
+        MACOSX_FRAMEWORK_INFO_PLIST "${_avnd_godot_plist}"
+        LIBRARY_OUTPUT_DIRECTORY godot
+        RUNTIME_OUTPUT_DIRECTORY godot
+        ARCHIVE_OUTPUT_DIRECTORY godot
+        CXX_STANDARD 23
+        CXX_EXTENSIONS OFF
+    )
+  else()
+    set_target_properties(
+      ${AVND_FX_TARGET}
+      PROPERTIES
+        OUTPUT_NAME "${AVND_C_NAME}${_AVND_GODOT_SUFFIX}"
+        LIBRARY_OUTPUT_DIRECTORY godot
+        RUNTIME_OUTPUT_DIRECTORY godot
+        ARCHIVE_OUTPUT_DIRECTORY godot
+        PREFIX ""
+        CXX_STANDARD 23
+        CXX_EXTENSIONS OFF
+    )
+  endif()
 
   if(TARGET ${AVND_TARGET})
     target_compile_features(
