@@ -18,9 +18,6 @@ set(AVND_WASM_COMMON_LINK_FLAGS
   "-sALLOW_MEMORY_GROWTH=1"
   "-sEXPORTED_RUNTIME_METHODS=['HEAPF32','HEAPU8','HEAP32','HEAPU32','HEAPF64']"
   "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
-  # embind: modern emscripten links it via -lembind; the old --bind alias no
-  # longer pulls in the library, causing undefined _embind_register_* symbols.
-  "-lembind"
 )
 
 set(AVND_WASM_COMMON_COMPILE_FLAGS
@@ -99,6 +96,11 @@ function(avnd_make_wasm)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish_wasm
+      # embind must be linked AFTER the objects that reference it: modern
+      # emscripten links it via -lembind (the old --bind alias no longer pulls
+      # it in), and with --gc-sections it gets stripped unless it follows the
+      # objects in the link line — hence target_link_libraries, not link_options.
+      "-lembind"
   )
 
   # worklet + standalone page
