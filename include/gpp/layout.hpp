@@ -166,6 +166,20 @@ MSVC_BUGGY_CONSTEVAL int std140_offset_impl()
       (func(avnd::pfr::get<Index>(t)), ...);
     }(std::make_index_sequence<Count>{});
   }
+
+  // std140: the OFFSET of field[Count] must be aligned to that field's own
+  // std140 alignment (scalar=4, vec2=8, vec3/vec4=16). The loop above only
+  // advances sz to the END of field[Count-1]; without this a vec3-after-float
+  // reports offset 4 instead of 16. (std140_size, where Count==field count,
+  // is unaffected.)
+  if constexpr(Count < avnd::pfr::tuple_size_v<T>)
+  {
+    MSVC_BUGGY_CONSTEXPR T t{};
+    MSVC_BUGGY_CONSTEXPR int next = sizeof(avnd::pfr::get<Count>(t).value);
+    MSVC_BUGGY_CONSTEXPR int next_align = (next <= 4) ? 4 : (next == 8 ? 8 : 16);
+    while(sz % next_align != 0)
+      sz += 4;
+  }
   return sz;
 }
 
