@@ -109,7 +109,10 @@ static void apply_control(T& ctl, avnd::string_ish auto&& v)
         }
         else if constexpr(avnd::enum_parameter<T>)
         {
-          using type = typename T::enum_type;
+          // The enum type is the type of the .value member, matching the
+          // enum_parameter concept (std::is_enum_v<decltype(T::value)>).
+          // T::enum_type does not exist on halp::enum_t.
+          using type = std::decay_t<decltype(ctl.value)>;
           ctl.value = static_cast<type>(k);
         }
         break;
