@@ -3,8 +3,13 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/common/coroutines.hpp>
+#include <avnd/common/meta_polyfill.hpp>
 #include <avnd/concepts/generic.hpp>
 #include <halp/polyfill.hpp>
+
+#if AVND_USE_STD_REFLECTION
+#include <avnd/introspection/metadata.p2996.hpp>
+#endif
 
 #include <array>
 #include <span>
@@ -22,6 +27,24 @@ namespace avnd
 #define AVND_IF_CONSTEVAL consteval
 #else
 #define AVND_IF_CONSTEVAL (std::is_constant_evaluated())
+#endif
+
+// Value of a [[=halp::meta("key", ...)]] annotation on T, or "" when reflection
+// is unavailable. Lets the property getters below transparently source metadata
+// from annotations in addition to static members/methods. (Two definitions so
+// the macros need no #if.)
+#if AVND_USE_STD_REFLECTION
+template <typename T>
+consteval std::string_view annotated_or_empty(std::string_view key)
+{
+  return avnd::annotated_metadata<T>(key);
+}
+#else
+template <typename T>
+consteval std::string_view annotated_or_empty(std::string_view)
+{
+  return {};
+}
 #endif
 
 #define define_get_property_auto(PropName, Default)                       \
@@ -93,6 +116,8 @@ namespace avnd
       return T::PropName();                                                           \
     else if constexpr(requires { Type{T::PropName}; })                                \
       return T::PropName;                                                             \
+    else if constexpr(!avnd::annotated_or_empty<T>(#PropName).empty())                \
+      return Type{avnd::annotated_or_empty<T>(#PropName)};                            \
     else                                                                              \
       return Default;                                                                 \
   }                                                                                   \
