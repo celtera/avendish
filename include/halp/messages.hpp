@@ -2,9 +2,11 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/common/message_tag.hpp>
 #include <halp/polyfill.hpp>
 #include <halp/static_string.hpp>
 
+#include <cstddef>
 #include <string_view>
 
 #if defined(_WIN32)
@@ -30,6 +32,20 @@ struct func_ref
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
   static clang_buggy_consteval auto func() { return M; }
 };
+
+/// C++26 reflection annotations: tag a plain member function as a message ///
+//
+//   [[=halp::message]]            void increment(int by);   // name = "increment"
+//   [[=halp::message_named("!")]] void bang();              // name = "!"
+//
+// Introspected by avnd/introspection/messages.p2996.hpp on reflecting compilers.
+inline constexpr avnd::message_annotation message{};
+
+template <std::size_t N>
+consteval auto message_named(const char (&name)[N]) noexcept
+{
+  return avnd::named_message_annotation<N>{name};
+}
 
 }
 
