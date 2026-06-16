@@ -23,7 +23,7 @@
 #include <godot_cpp/variant/vector2.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 #include <godot_cpp/variant/vector4.hpp>
-#include <magic_enum/magic_enum.hpp>
+#include <avnd/common/enum_reflection.hpp>
 
 #include <string>
 #include <type_traits>
@@ -144,7 +144,7 @@ godot::String enum_hint_string()
   {
     // Fallback: true C++ enum without explicit range — use magic_enum
     using enum_type = std::decay_t<decltype(C::value)>;
-    static constexpr auto entries = magic_enum::enum_entries<enum_type>();
+    static constexpr auto entries = avnd::enum_entries<enum_type>();
     godot::String hint;
     for(int i = 0; i < std::ssize(entries); ++i)
     {

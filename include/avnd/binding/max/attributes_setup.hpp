@@ -159,7 +159,7 @@ struct attribute_object_register<Processor, T>
     else if constexpr(std::is_enum_v<value_type>)
     {
       object_attr_setsym(
-          o, attr_name, gensym(magic_enum::enum_name(field.value).data()));
+          o, attr_name, gensym(avnd::enum_name(field.value).data()));
     }
     else if constexpr(avnd::iterable_ish<value_type>)
     {
@@ -197,7 +197,7 @@ struct attribute_object_register<Processor, T>
       {
         boost::container::small_vector<t_symbol*, 512> vec;
         for(auto& v : field.value)
-          vec.push_back(gensym(magic_enum::enum_name(v).data()));
+          vec.push_back(gensym(avnd::enum_name(v).data()));
         object_attr_setsym_array(o, attr_name, vec.size(), vec.data());
       }
       else
