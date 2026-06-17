@@ -26,6 +26,16 @@ option(AVND_ENABLE_STANDALONE    "Enable standalone executable"  ON)
 option(AVND_ENABLE_GSTREAMER     "Enable GStreamer backend"      ON)
 option(AVND_ENABLE_WASM          "Enable WebAssembly backend"    ON)
 
+# Max/MSP externals link the static CRT (/MT) on Windows, as the official
+# max-sdk-base enforces globally. Set it here -- before the dependencies and the
+# addon's object library are created -- so everything linked into the external
+# uses the same runtime; mixing /MT and /MD trips MSVC with LNK2038. Scoped to
+# when the Max backend is actually enabled.
+if(MSVC AND AVND_ENABLE_MAX)
+  cmake_policy(SET CMP0091 NEW)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 # Helper: dispatch to avnd_make_<backend>(...) only if AVND_ENABLE_<BACKEND>
 # is ON. Used by the category presets below and by the standalone BACKENDS
 # form in AvendishAddon.cmake.
