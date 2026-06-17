@@ -1,0 +1,33 @@
+#include <__HEADER__>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
+#include <avnd/introspection/messages.hpp>
+#include <avnd/wrappers/metadatas.hpp>
+#include <cstddef>
+
+using T = __TYPE__;
+static T g_obj{};
+
+template <typename X>
+static void exercise()
+{
+  using IN = avnd::input_introspection<X>;
+  using OUT = avnd::output_introspection<X>;
+  using MSG = avnd::messages_introspection<X>;
+  volatile std::size_t s = IN::size + OUT::size + MSG::size;
+
+  // metadata getters (string scan + requires-cascades / annotations)
+  volatile auto n = avnd::get_name<X>().size() + avnd::get_author<X>().size()
+                    + avnd::get_category<X>().size() + avnd::get_uuid<X>().size();
+
+  // walk every input port (instantiates flattening + per-port template code)
+  if constexpr(IN::size > 0)
+    IN::for_all(avnd::get_inputs(g_obj), [](auto& p) {
+      if constexpr(requires { p.value; }) { volatile auto v = p.value; (void)v; }
+    });
+  if constexpr(OUT::size > 0)
+    OUT::for_all(avnd::get_outputs(g_obj), [](auto& p) { (void)p; });
+  (void)s; (void)n;
+}
+
+int main() { exercise<T>(); }
