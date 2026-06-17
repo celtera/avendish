@@ -29,6 +29,13 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-non-virtual-dtor")
 endif()
 
+# When the Max backend forces the static CRT (/MT -- see avendish.cmake), the
+# VST3 SDK must use it too: it doesn't honour CMAKE_MSVC_RUNTIME_LIBRARY, so its
+# base.lib stays /MD and clashes with the /MT objects at link time (LNK2038).
+if(MSVC AND AVND_ENABLE_MAX)
+  set(SMTG_USE_STATIC_CRT ON CACHE BOOL "" FORCE)
+endif()
+
 add_subdirectory("${VST3_SDK_ROOT}" "${CMAKE_BINARY_DIR}/vst3_sdk")
 
 function(avnd_make_vst3)
