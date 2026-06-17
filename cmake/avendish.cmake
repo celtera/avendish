@@ -25,6 +25,7 @@ option(AVND_ENABLE_GODOT         "Enable Godot GDExtension"      ON)
 option(AVND_ENABLE_STANDALONE    "Enable standalone executable"  ON)
 option(AVND_ENABLE_GSTREAMER     "Enable GStreamer backend"      ON)
 option(AVND_ENABLE_WASM          "Enable WebAssembly backend"    ON)
+option(AVND_ENABLE_FUZZ          "Enable libFuzzer harness (Clang only)" OFF)
 
 # Helper: dispatch to avnd_make_<backend>(...) only if AVND_ENABLE_<BACKEND>
 # is ON. Used by the category presets below and by the standalone BACKENDS
@@ -193,6 +194,7 @@ include(avendish.standalone)
 include(avendish.touchdesigner)
 include(avendish.godot)
 include(avendish.wasm)
+include(avendish.fuzz)
 include(avendish.example)
 
 # Used for getting completion in IDEs...
@@ -220,6 +222,7 @@ function(avnd_make_object)
   avnd_register(${ARGV})
 
   avnd_make_dump(${ARGV})
+  _avnd_dispatch_backend(fuzz ${ARGV})
   avnd_make_ossia(${ARGV})
   _avnd_dispatch_backend(python ${ARGV})
   _avnd_dispatch_backend(pd ${ARGV})
@@ -236,6 +239,7 @@ function(avnd_make_audioplug)
   avnd_register(${ARGV})
 
   avnd_make_dump(${ARGV})
+  _avnd_dispatch_backend(fuzz ${ARGV})
   avnd_make_ossia(${ARGV})
   _avnd_dispatch_backend(vintage ${ARGV})
   _avnd_dispatch_backend(clap ${ARGV})
@@ -250,6 +254,7 @@ endfunction()
 function(avnd_make_texture)
   avnd_register(${ARGV})
 
+  _avnd_dispatch_backend(fuzz ${ARGV})
   avnd_make_ossia(${ARGV})
   _avnd_dispatch_backend(max ${ARGV})
   _avnd_dispatch_backend(gstreamer ${ARGV} PROCESSOR_TYPE TEXTURE)
@@ -260,12 +265,14 @@ endfunction()
 function(avnd_make_buffer)
   avnd_register(${ARGV})
 
+  _avnd_dispatch_backend(fuzz ${ARGV})
   _avnd_dispatch_backend(godot ${ARGV} PROCESSOR_TYPE BUFFER)
 endfunction()
 
 function(avnd_make_geometry)
   avnd_register(${ARGV})
 
+  _avnd_dispatch_backend(fuzz ${ARGV})
   avnd_make_ossia(${ARGV})
   _avnd_dispatch_backend(max ${ARGV} PROCESSOR_TYPE GEOMETRY)
   _avnd_dispatch_backend(touchdesigner ${ARGV} PROCESSOR_TYPE SOP)
