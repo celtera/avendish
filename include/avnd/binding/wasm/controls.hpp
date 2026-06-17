@@ -179,7 +179,9 @@ inline val to_js(const T& v)
 template <avnd::variant_ish T>
 inline val to_js(const T& v)
 {
-  return std::visit([](const auto& alt) { return to_js(alt); }, v);
+  // Unqualified visit (ADL): works for std::variant, boost::variant2, and
+  // variant_ish wrapper types alike -- std::visit would only match std::variant.
+  return visit([](const auto& alt) { return to_js(alt); }, v);
 }
 
 template <avnd::bitset_ish T>
