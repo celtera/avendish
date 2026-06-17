@@ -120,16 +120,28 @@ static constexpr bool compatible(short type)
   return false;
 }
 
-template <typename Arg>
-static Arg convert(t_atom& atom)
+template <typename Arg_>
+static auto convert(t_atom& atom)
 {
-  if constexpr(requires(Arg arg) { arg = "str"; })
-    return atom.a_w.w_sym->s_name;
+  // Decay so a by-ref message parameter (e.g. const value&) still resolves.
+  using Arg = std::remove_cvref_t<Arg_>;
+  if constexpr(avnd::variant_ish<Arg>)
+  {
+    // A variant value (e.g. a JSON-ish value): pick the alternative from the
+    // atom's runtime type (symbol -> string, long -> int, float -> double).
+    if(atom.a_type == A_SYM)
+      return Arg(atom.a_w.w_sym->s_name);
+    else if(atom.a_type == A_LONG)
+      return Arg((std::int64_t)atom.a_w.w_long);
+    else
+      return Arg((double)atom.a_w.w_float);
+  }
+  else if constexpr(requires(Arg arg) { arg = "str"; })
+    return Arg(atom.a_w.w_sym->s_name);
   else if constexpr(std::floating_point<Arg>)
-    return atom.a_type == A_FLOAT ? atom.a_w.w_float : atom.a_w.w_long;
+    return Arg(atom.a_type == A_FLOAT ? atom.a_w.w_float : atom.a_w.w_long);
   else if constexpr(std::integral<Arg>)
-    return atom.a_type == A_LONG ? atom.a_w.w_long : atom.a_w.w_float;
-
+    return Arg(atom.a_type == A_LONG ? atom.a_w.w_long : atom.a_w.w_float);
   else
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");
 }

@@ -121,13 +121,24 @@ static constexpr bool compatible(t_atomtype type)
   return false;
 }
 
-template <typename Arg>
-static Arg convert(t_atom& atom)
+template <typename Arg_>
+static auto convert(t_atom& atom)
 {
-  if constexpr(requires(Arg arg) { arg = "str"; })
-    return atom.a_w.w_symbol->s_name;
+  // Decay so a by-ref message parameter (e.g. const value&) still resolves.
+  using Arg = std::remove_cvref_t<Arg_>;
+  if constexpr(avnd::variant_ish<Arg>)
+  {
+    // A variant value (e.g. a JSON-ish value): pd atoms are symbol or float,
+    // so pick the alternative from the atom's runtime type.
+    if(atom.a_type == A_SYMBOL)
+      return Arg(atom.a_w.w_symbol->s_name);
+    else
+      return Arg(atom.a_w.w_float);
+  }
+  else if constexpr(requires(Arg arg) { arg = "str"; })
+    return Arg(atom.a_w.w_symbol->s_name);
   else if constexpr(requires(Arg arg) { arg = 0.f; })
-    return atom.a_w.w_float;
+    return Arg(atom.a_w.w_float);
   else
     static_assert(std::is_same_v<void, Arg>, "Argument type not handled yet");
 }
