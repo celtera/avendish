@@ -123,15 +123,6 @@ function(avnd_make_max)
       AVND_C_NAME "${AVND_C_NAME}"
   )
 
-  # Max externals link the static CRT (/MT), as the official max-sdk-base
-  # enforces globally. The shared avnd object library is linked into the
-  # external, so it must use the same runtime or MSVC errors with LNK2038.
-  if(MSVC AND TARGET ${AVND_TARGET})
-    set_target_properties(
-      ${AVND_TARGET}
-      PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-  endif()
-
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
