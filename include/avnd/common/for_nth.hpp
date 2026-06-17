@@ -71,7 +71,7 @@ constexpr void for_each_field_ref(T&& value, F&& func)
 #if !defined(_MSC_VER)
   static_assert(!requires { value.size(); });
 #endif
-#if AVND_USE_BOOST_PFR
+#if (AVND_USE_BOOST_PFR || AVND_USE_STD_REFLECTION)
   using namespace pfr;
   using namespace pfr::detail;
   AVND_STATIC_CONSTEXPR std::size_t fields_count_val
@@ -101,7 +101,7 @@ template <class T, class F>
   requires(!avnd::vector_ish<T>)
 constexpr void for_each_field_ref_n(T&& value, F&& func)
 {
-#if AVND_USE_BOOST_PFR
+#if (AVND_USE_BOOST_PFR || AVND_USE_STD_REFLECTION)
   using namespace pfr;
   using namespace pfr::detail;
   AVND_STATIC_CONSTEXPR std::size_t fields_count_val
