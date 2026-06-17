@@ -370,22 +370,28 @@ inline void from_js(T& out, const val& v)
     }
     else if(v.isNumber())
     {
-      // Prefer the first arithmetic alternative.
-      bool done = false;
-      [&]<std::size_t... I>(std::index_sequence<I...>) {
-        (([&] {
-           using Alt = std::variant_alternative_t<I, D>;
-           if(!done && std::is_arithmetic_v<Alt>)
-           {
-             Alt tmp{};
-             if constexpr(std::is_arithmetic_v<Alt>)
-               tmp = static_cast<Alt>(v.as<double>());
-             out = tmp;
-             done = true;
-           }
-         }()),
-         ...);
-      }(std::make_index_sequence<std::variant_size_v<D>>{});
+      if constexpr(requires { out = double{}; })
+      {
+        // Value/variant types assignable from a number directly -- including
+        // variant wrappers that don't model std::variant_size.
+        out = v.as<double>();
+      }
+      else
+      {
+        // std::variant: assign the first arithmetic alternative.
+        bool done = false;
+        [&]<std::size_t... I>(std::index_sequence<I...>) {
+          (([&] {
+             using Alt = std::variant_alternative_t<I, D>;
+             if(!done && std::is_arithmetic_v<Alt>)
+             {
+               out = static_cast<Alt>(v.as<double>());
+               done = true;
+             }
+           }()),
+           ...);
+        }(std::make_index_sequence<std::variant_size_v<D>>{});
+      }
     }
   }
   else if constexpr(avnd::map_ish<D>)
