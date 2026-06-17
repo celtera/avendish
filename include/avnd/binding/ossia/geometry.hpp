@@ -379,7 +379,13 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
     else
       in.buffer = input.buffer;
 
-    in.byte_offset = input.byte_offset;
+    // byte_offset may be a method or a member (mirrors the index path below).
+    if constexpr(requires { input.byte_offset(); })
+      in.byte_offset = input.byte_offset();
+    else if constexpr(requires { input.byte_offset; })
+      in.byte_offset = input.byte_offset;
+    else
+      in.byte_offset = 0;
 
     geom.input.push_back(in);
   });
@@ -391,7 +397,7 @@ void load_geometry(T& ctrl, ossia::geometry& geom)
     {
       geom.index.buffer = avnd::index_in_struct(ctrl.buffers, ctrl.index.buffer());
       using index_buf_type
-          = std::decay_t<decltype((ctrl.buffers.*(ctrl.index.buffer())).data[0])>;
+          = std::decay_t<decltype((ctrl.buffers.*(ctrl.index.buffer())).elements[0])>;
 
       switch(sizeof(index_buf_type))
       {
