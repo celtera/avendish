@@ -108,8 +108,19 @@ template <typename T>
 using flat_tuple_t
     = decltype(detail::flat_tie(std::declval<std::remove_cvref_t<T>&>()));
 
+// tuple_size_v is used in CONSTRAINT EXPRESSIONS on arbitrary port value types
+// (e.g. `requires(avnd::pfr::tuple_size_v<T> > 1)` where T may be a non-aggregate
+// like std::unordered_map). It must therefore be SFINAE-friendly: instantiating
+// flat_tuple_t on a non-aggregate hard-errors (structured-binding decomposition of
+// a type with private members). Mirror the boost.pfr backend: the primary template
+// is a `void*` (so the `> 1` comparison is a clean substitution failure), and only
+// the aggregate-constrained specialization yields the real size_t.
 template <typename T>
-inline constexpr std::size_t tuple_size_v = std::tuple_size_v<flat_tuple_t<T>>;
+inline constexpr void* tuple_size_v{};
+
+template <typename T>
+  requires(aggregate_argument<std::remove_cvref_t<T>>)
+inline constexpr std::size_t tuple_size_v<T> = std::tuple_size_v<flat_tuple_t<T>>;
 
 // Constrained to aggregates so that get<N>(some_std_tuple) falls back to the
 // tuple's own get (matching the boost.pfr backend) instead of re-flattening it.
