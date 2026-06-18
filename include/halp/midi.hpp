@@ -7,7 +7,10 @@
 #include <halp/static_string.hpp>
 
 #include <algorithm>
+#include <cstdint>
+#include <initializer_list>
 #include <string_view>
+#include <type_traits>
 
 HALP_MODULE_EXPORT
 namespace halp
@@ -145,19 +148,41 @@ private:
   };
   static uint8_t make_command(const message_type type, const int channel) noexcept
   {
-    return (uint8_t)((uint8_t)type | std::clamp(channel, 0, channel - 1));
+    // MIDI channels are 0..15 (low nibble of the status byte). The previous
+    // upper bound `channel - 1` was both off-by-one and UB for channel == 0
+    // (std::clamp requires lo <= hi).
+    return (uint8_t)((uint8_t)type | (uint8_t)std::clamp(channel, 0, 15));
+  }
+
+  // Assign bytes whether MessageType::bytes is a resizable container
+  // (e.g. small_vector, the default midi_msg) or a fixed C array (midi_note_msg,
+  // which is not list-assignable).
+  template <typename Bytes>
+  static void assign_bytes(Bytes& bytes, std::initializer_list<uint8_t> vals) noexcept
+  {
+    if constexpr(std::is_array_v<Bytes>)
+    {
+      std::size_t i = 0;
+      for(uint8_t v : vals)
+        if(i < std::extent_v<Bytes>)
+          bytes[i++] = v;
+    }
+    else
+    {
+      bytes.assign(vals);
+    }
   }
 
   MessageType& create(uint8_t b0, uint8_t b1) noexcept
   {
     auto& m = this->midi_messages.emplace_back();
-    m.bytes = {b0, b1};
+    assign_bytes(m.bytes, {b0, b1});
     return m;
   }
   MessageType& create(uint8_t b0, uint8_t b1, uint8_t b2) noexcept
   {
     auto& m = this->midi_messages.emplace_back();
-    m.bytes = {b0, b1, b2};
+    assign_bytes(m.bytes, {b0, b1, b2});
     return m;
   }
 };

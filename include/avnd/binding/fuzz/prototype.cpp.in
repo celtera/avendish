@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <avnd/binding/fuzz/fuzzer.hpp>
+#include <avnd/wrappers/configure.hpp>
+
+namespace fuzz
+{
+struct config
+{
+  using logger_type = fuzz_harness::silent_logger;
+};
+}
+
+#include <@AVND_MAIN_FILE@>
+
+// libFuzzer provides main(); we only supply the per-input entry point.
+extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size)
+{
+  using type = decltype(avnd::configure<fuzz::config, @AVND_MAIN_CLASS@>())::type;
+  return fuzz_harness::run<type>(data, size);
+}
+// clang-format on
