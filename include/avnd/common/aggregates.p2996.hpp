@@ -2,7 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-// C++26 static-reflection aggregates backend.
+// Aggregates backend for C++26-capable compilers (selected when static
+// reflection is available).
 //
 // Provides the avnd::pfr::* port-introspection interface (tie_as_tuple / get /
 // tuple_size_v / tuple_element_t / as_typelist) with a FLATTENED view that
@@ -13,14 +14,21 @@
 //   - raw compile-time arrays of ports (E[N] of class type): expanded to N
 //     leaves, so e.g. `DrumChannel voices[8];` works without manual unrolling.
 //
-// A flat struct with neither behaves exactly like the structured-binding backend.
+// The flattening is built on STRUCTURED-BINDING PACKS (`auto&& [...elts] = v`),
+// not std::meta member enumeration: std::meta member queries are consteval-only
+// so they cannot be cached and get re-evaluated O(N^2) times (the dominant cost
+// in -ftime-trace), whereas structured bindings are a cheap compiler builtin.
+// This makes large objects ~10-20x faster to compile and, as a bonus, works on
+// members of types nested in class templates — which std::meta cannot reflect on
+// the clang-p2996 fork (llvm#138018). Static reflection is still used elsewhere
+// (names, annotations); only the flattening avoids it.
 
 #include <avnd/common/aggregates.base.hpp>
-#include <avnd/common/meta_polyfill.hpp>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -40,98 +48,42 @@ template <typename S>
 concept is_expandable_array
     = std::is_array_v<S> && std::is_class_v<std::remove_extent_t<S>>;
 
+// A plain leaf port: neither a recursive group nor an expandable array.
 template <typename T>
-consteval std::size_t direct_member_count()
-{
-  return std::meta::nonstatic_data_members_of(
-             ^^T, std::meta::access_context::unchecked())
-      .size();
-}
+concept is_leaf = !is_recursive_group<std::remove_cvref_t<T>>
+                  && !is_expandable_array<std::remove_cvref_t<T>>;
 
-template <typename T>
-consteval std::array<std::meta::info, direct_member_count<T>()> direct_members()
-{
-  std::array<std::meta::info, direct_member_count<T>()> a{};
-  std::size_t i = 0;
-  for(std::meta::info m :
-      std::meta::nonstatic_data_members_of(^^T, std::meta::access_context::unchecked()))
-    a[i++] = m;
-  return a;
-}
-
-// Number of leaf ports once groups and port-arrays are expanded.
-template <typename T>
-consteval std::size_t leaf_count()
-{
-  std::size_t n = 0;
-  template for(constexpr std::meta::info m : std::define_static_array(
-                   std::meta::nonstatic_data_members_of(
-                       ^^T, std::meta::access_context::unchecked())))
-  {
-    using S = std::remove_cvref_t<typename[:std::meta::type_of(m):]>;
-    if constexpr(is_expandable_array<S>)
-    {
-      using E = std::remove_extent_t<S>;
-      if constexpr(is_recursive_group<E>)
-        n += std::extent_v<S> * leaf_count<E>();
-      else
-        n += std::extent_v<S>;
-    }
-    else if constexpr(is_recursive_group<S>)
-      n += leaf_count<S>();
-    else
-      n += 1;
-  }
-  return n;
-}
-
-// --- runtime reference tying (members flow as template args: info is consteval-only) ---
 template <typename T>
 constexpr auto flat_tie(T& v);
 
+// Flatten one member reference: recurse into groups, expand arrays, else tie it.
 template <typename E>
-constexpr auto tie_elem(E& e)
+constexpr auto tie_one(E& e)
 {
-  if constexpr(is_recursive_group<E>)
+  using S = std::remove_cvref_t<E>;
+  if constexpr(is_expandable_array<S>)
+    return [&]<std::size_t... J>(std::index_sequence<J...>) {
+      return tpl::tuple_cat(tie_one(e[J])...);
+    }(std::make_index_sequence<std::extent_v<S>>{});
+  else if constexpr(is_recursive_group<S>)
     return flat_tie(e);
   else
     return tpl::tie(e);
 }
 
-template <std::meta::info M, typename T>
-constexpr auto tie_member(T& v)
-{
-  auto& sub = v.[:M:];
-  using S = std::remove_reference_t<decltype(sub)>;
-  if constexpr(is_expandable_array<S>)
-  {
-    return [&]<std::size_t... J>(std::index_sequence<J...>) {
-      return tpl::tuple_cat(tie_elem(sub[J])...);
-    }(std::make_index_sequence<std::extent_v<S>>{});
-  }
-  else if constexpr(is_recursive_group<S>)
-    return flat_tie(sub);
-  else
-    return tpl::tie(sub);
-}
-
-template <std::meta::info... Ms, typename T>
-constexpr auto flat_tie_impl(T& v)
-{
-  return tpl::tuple_cat(tie_member<Ms>(v)...);
-}
-
-template <typename T, std::size_t... I>
-constexpr auto flat_tie_idx(T& v, std::index_sequence<I...>)
-{
-  return flat_tie_impl<direct_members<std::remove_cvref_t<T>>()[I]...>(v);
-}
-
+// The flattened tuple of leaf references, via a structured-binding pack.
 template <typename T>
 constexpr auto flat_tie(T& v)
 {
-  return flat_tie_idx(
-      v, std::make_index_sequence<direct_member_count<std::remove_cvref_t<T>>()>{});
+  auto&& [... elts] = v;
+  if constexpr((is_leaf<decltype(elts)> && ...))
+    // All-leaf level: tie in ONE pack expansion. A wide N-way std::tuple_cat is
+    // ~O(N^2) (catastrophic on libc++); a single std::tie is near-linear.
+    return tpl::tie(elts...);
+  else
+    // Hierarchical level: cat the per-member sub-tuples. Each cat is only as wide
+    // as one struct level, so tuple_cat stays cheap.
+    return tpl::tuple_cat(tie_one(elts)...);
 }
 
 // avnd::pfr::detail::tie_as_tuple — the flattened tuple of leaf references.
@@ -152,8 +104,11 @@ struct flat_typelist<tpl::tuple<Ts...>>
 
 // --- public interface ---
 template <typename T>
-inline constexpr std::size_t tuple_size_v
-    = detail::leaf_count<std::remove_cvref_t<T>>();
+using flat_tuple_t
+    = decltype(detail::flat_tie(std::declval<std::remove_cvref_t<T>&>()));
+
+template <typename T>
+inline constexpr std::size_t tuple_size_v = std::tuple_size_v<flat_tuple_t<T>>;
 
 // Constrained to aggregates so that get<N>(some_std_tuple) falls back to the
 // tuple's own get (matching the boost.pfr backend) instead of re-flattening it.
