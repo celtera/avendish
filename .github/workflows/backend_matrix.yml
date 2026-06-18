@@ -1,0 +1,91 @@
+name: Backend matrix
+
+# Lightweight matrix that compiles avendish's tests + the SDK-free `dump` examples
+# across {clang-22, gcc-16} x {C++23, C++26} x {boost.pfr, P1061}. No `score`, no
+# device SDKs, so it is fast and isolates the introspection backends.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  matrix:
+    name: ${{ matrix.compiler }} c++${{ matrix.std }} ${{ matrix.backend }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [clang-22, gcc-16]
+        std: ["23", "26"]
+        backend: [boost.pfr, p1061]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Install compiler
+        run: |
+          set -e
+          sudo apt-get update
+          if [ "${{ matrix.compiler }}" = "clang-22" ]; then
+            wget -q https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh 22
+            sudo apt-get install -y clang-22 libc++-22-dev libc++abi-22-dev
+            echo "CXX=clang++-22" >> "$GITHUB_ENV"
+            echo "STDLIB=-stdlib=libc++" >> "$GITHUB_ENV"
+          else
+            sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+            sudo apt-get update
+            sudo apt-get install -y gcc-16 g++-16
+            echo "CXX=g++-16" >> "$GITHUB_ENV"
+            echo "STDLIB=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install dependencies
+        run: |
+          set -e
+          sudo apt-get install -y ninja-build libfmt-dev nlohmann-json3-dev
+          git clone --depth 1 https://github.com/Neargye/magic_enum /tmp/magic_enum
+          # Boost 1.90 headers (header-only libs only; works on clang-22, unlike older boost)
+          wget -q https://archives.boost.io/release/1.90.0/source/boost_1_90_0.tar.gz
+          tar xf boost_1_90_0.tar.gz
+          echo "BOOST=$PWD/boost_1_90_0" >> "$GITHUB_ENV"
+
+      - name: Compile tests + dump examples
+        run: |
+          set -e
+          BE=$([ "${{ matrix.backend }}" = "boost.pfr" ] && echo "-DAVND_USE_BOOST_PFR=1" || echo "-DAVND_USE_BOOST_PFR=0")
+          INC="-I include -I . -I /tmp/magic_enum/include -I $BOOST -I /usr/include"
+          STD="-std=c++${{ matrix.std }}"
+          FLAGS="$STD $BE $STDLIB $INC"
+          echo "::group::config"; echo "$CXX $FLAGS"; echo "::endgroup::"
+
+          fail=0
+          echo "::group::static tests"
+          for t in test_introspection test_introspection_rec test_predicate \
+                   test_index_in_struct tests_function_reflection tests_channels \
+                   test_audioprocessor test_reflection; do
+            echo "-- $t"
+            $CXX $FLAGS -c tests/$t.cpp -o /tmp/$t.o || { echo "FAIL $t"; fail=1; }
+          done
+          echo "::endgroup::"
+
+          echo "::group::generate dump TUs"
+          python3 .github/scripts/gen_dump_tus.py /tmp/dump
+          echo "::endgroup::"
+
+          echo "::group::dump examples (SDK-free; SDK-needing ones are allowed to fail)"
+          ok=0; ko=0
+          for c in /tmp/dump/*.cpp; do
+            n=$(basename "$c" .cpp)
+            if $CXX $FLAGS -I examples -O1 -c "$c" -o /tmp/o.o 2>/tmp/e; then
+              ok=$((ok+1))
+            else
+              ko=$((ko+1)); echo "  (skip/fail) $n: $(grep -m1 -E 'fatal error|error:' /tmp/e | head -c 100)"
+            fi
+          done
+          echo "dump examples: OK=$ok FAIL/SKIP=$ko"
+          echo "::endgroup::"
+
+          [ "$fail" = "0" ] || { echo "static tests failed"; exit 1; }
