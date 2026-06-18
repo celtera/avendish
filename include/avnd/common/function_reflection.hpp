@@ -42,7 +42,17 @@ struct function_reflection;
 }
 
 // Backend providing the function_reflection<auto f> specializations / definition.
-#if AVND_USE_STD_REFLECTION
+//
+// We deliberately use the classic (template-decomposition) backend even when
+// static reflection is available: it is already portable to every compiler (it
+// is plain template metaprogramming, not boost.pfr) and, unlike the std::meta
+// backend, it handles member-function *template* instantiations and free
+// functions robustly — the std::meta version recovers a member function by
+// matching it against members_of(), which only yields templates (not their
+// instantiations). The p2996 variant is kept (function_reflection.p2996.hpp)
+// for reference but is not selected. See benchmarks/compile-time and the
+// helpers/Messages example (member templates + free funcs) which exercises this.
+#if AVND_USE_STD_REFLECTION_FUNCTION_REFLECTION
 #include <avnd/common/function_reflection.p2996.hpp>
 #else
 #include <avnd/common/function_reflection.classic.hpp>
