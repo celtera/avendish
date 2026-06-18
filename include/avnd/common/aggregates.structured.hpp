@@ -2,8 +2,9 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-// Aggregates backend for C++26-capable compilers (selected when static
-// reflection is available).
+// Aggregates backend for C++26-capable compilers (clang >= 21 / gcc >= 16).
+// Used for BOTH the P1061 (no reflection) and the reflection configurations:
+// the flattening needs only structured bindings, not std::meta.
 //
 // Provides the avnd::pfr::* port-introspection interface (tie_as_tuple / get /
 // tuple_size_v / tuple_element_t / as_typelist) with a FLATTENED view that
