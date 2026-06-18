@@ -12,10 +12,37 @@ else()
 endif()
 
 # avnd_addon_init(NAME <base_target>)
+#
+# Creates the addon "base target" -- the name addons attach shared sources / link
+# deps / include dirs to (target_sources(<base> PRIVATE shared.cpp),
+# target_link_libraries(<base> ...), etc.). In a score build that is the plugin
+# library. Standalone there is no single shipped artifact, but addons still write
+# the same calls, so we create a real compiled STATIC target that behaves the same
+# in both modes -- each object then links it (see avnd_addon_object) so the shared
+# code / usage requirements reach every object and, transitively, every back-end.
 macro(avnd_addon_init)
   cmake_parse_arguments(AA "" "NAME" "" ${ARGN})
   if(AVND_ADDON_SCORE)
     avnd_score_plugin_init(BASE_TARGET ${AA_NAME})
+  elseif(NOT TARGET ${AA_NAME})
+    # A generated empty TU guarantees a valid STATIC lib even when the addon never
+    # adds sources to it (CMake needs at least one source / a linker language).
+    set(_avnd_base_stub "${CMAKE_CURRENT_BINARY_DIR}/${AA_NAME}_avnd_base_stub.cpp")
+    if(NOT EXISTS "${_avnd_base_stub}")
+      file(WRITE "${_avnd_base_stub}"
+        "// Avendish standalone addon base target (intentionally empty).\n")
+    endif()
+    add_library(${AA_NAME} STATIC "${_avnd_base_stub}")
+    # Back-ends are typically shared objects (pd/max/... externals); the base's
+    # objects get linked into them, so they must be position-independent.
+    set_target_properties(${AA_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    # Carry the addon source root so the addon's own headers resolve by their
+    # in-repo angle path (<Addon/Foo.hpp>) -- in the base's shared sources, in
+    # every object that links it, and (transitively) in every back-end, including
+    # the generated prototype's #include <MAIN_FILE>. Subsumes the per-addon
+    # "deps INTERFACE lib + CMAKE_CURRENT_SOURCE_DIR" shim.
+    target_include_directories(${AA_NAME}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
   endif()
 endmacro()
 
@@ -61,6 +88,23 @@ macro(avnd_addon_object)
   else()
     if(NOT TARGET ${AA_C_NAME})
       add_library(${AA_C_NAME} STATIC ${AA_SOURCES})
+    endif()
+    # Link the addon base so its shared sources / deps / include dirs reach this
+    # object and, since each back-end links the object PUBLIC, every back-end too.
+    if(TARGET ${AA_BASE} AND NOT "${AA_BASE}" STREQUAL "${AA_C_NAME}")
+      target_link_libraries(${AA_C_NAME} PUBLIC ${AA_BASE})
+      # In a score build the objects are compiled *into* the base target, so the
+      # base's own (incl. PRIVATE) include dirs / definitions / options apply to
+      # them. Standalone each object is a separate target linking the base, so
+      # PRIVATE settings would not reach it -- replicate score's behaviour by
+      # inheriting the base's full build interface. PUBLIC so each back-end (which
+      # links the object) compiles its generated prototype + MAIN_FILE the same way.
+      target_include_directories(${AA_C_NAME} PUBLIC
+        $<TARGET_PROPERTY:${AA_BASE},INCLUDE_DIRECTORIES>)
+      target_compile_definitions(${AA_C_NAME} PUBLIC
+        $<TARGET_PROPERTY:${AA_BASE},COMPILE_DEFINITIONS>)
+      target_compile_options(${AA_C_NAME} PUBLIC
+        $<TARGET_PROPERTY:${AA_BASE},COMPILE_OPTIONS>)
     endif()
     if(AA_DEPENDENCIES)
       target_link_libraries(${AA_C_NAME} PUBLIC ${AA_DEPENDENCIES})
