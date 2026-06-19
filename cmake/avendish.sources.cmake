@@ -68,7 +68,14 @@ if(AVENDISH_INCLUDE_SOURCE_ONLY)
 endif()
 
 function(avnd_target_setup AVND_FX_TARGET)
-  target_compile_definitions(${AVND_FX_TARGET} PUBLIC -DFMT_HEADER_ONLY=1)
+  # Prefer the precompiled fmt library: inlining all of fmt/format-inl.h into
+  # every TU (FMT_HEADER_ONLY) costs ~0.2s/TU and fmt is included in ~24 headers.
+  # The compiled fmt::fmt target (built on normal toolchains) is linked below, so
+  # only force header-only when it is unavailable (Emscripten / externally-provided
+  # header-only fmt, whose interface target already self-defines the macro).
+  if(NOT TARGET fmt::fmt)
+    target_compile_definitions(${AVND_FX_TARGET} PUBLIC -DFMT_HEADER_ONLY=1)
+  endif()
   target_compile_features(
       ${AVND_FX_TARGET}
       PUBLIC
