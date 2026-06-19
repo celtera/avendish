@@ -72,9 +72,12 @@ add_library(Avendish_dump INTERFACE)
 target_link_libraries(Avendish_dump INTERFACE Avendish yyjson)
 add_library(Avendish::Avendish_dump ALIAS Avendish_dump)
 
-# Shared PCH for all dump executables: precompiles the dump prototype's fixed
-# cost once and reuses it across every example (the yyjson JSON writer via
-# DumpCBOR.hpp, and fmt via halp/log.hpp).
+# Shared PCH for all dump executables. Precompiles the dump prototype's fixed
+# cost once and reuses it across every example: the yyjson JSON writer (via
+# DumpCBOR.hpp) and fmt (via halp/log.hpp), plus the heavy standard-library
+# headers the generated TUs pull in regardless (vector/map/string/variant/...
+# each carry their own non-trivial parse cost). DumpCBOR.hpp transitively
+# includes the avnd introspection layer too.
 if(NOT MSVC)
   add_library(Avendish_dump_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
   target_link_libraries(Avendish_dump_pch
@@ -83,6 +86,17 @@ if(NOT MSVC)
   )
   target_precompile_headers(Avendish_dump_pch
     PUBLIC
+      <vector>
+      <map>
+      <string>
+      <string_view>
+      <variant>
+      <optional>
+      <tuple>
+      <deque>
+      <iostream>
+      <fstream>
+      <avnd/binding/dump/json_writer.hpp>
       <avnd/binding/dump/DumpCBOR.hpp>
       <halp/log.hpp>
   )
