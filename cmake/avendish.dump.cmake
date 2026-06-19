@@ -41,8 +41,16 @@ function(avnd_make_dump)
   target_link_libraries(
     ${AVND_FX_TARGET}
     PRIVATE
-      Avendish::Avendish_dump nlohmann_json::nlohmann_json
+      Avendish::Avendish_dump yyjson
   )
+
+  # Reuse the shared PCH; skipped on MSVC (cf. pd/gstreamer).
+  if(NOT MSVC)
+    target_precompile_headers(${AVND_FX_TARGET}
+      REUSE_FROM
+        Avendish_dump_pch
+    )
+  endif()
 
   set(_dump_file_path "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json")
   add_custom_command(
@@ -60,6 +68,33 @@ function(avnd_make_dump)
 endfunction()
 
 add_library(Avendish_dump INTERFACE)
-target_link_libraries(Avendish_dump INTERFACE Avendish)
+target_link_libraries(Avendish_dump INTERFACE Avendish yyjson)
 add_library(Avendish::Avendish_dump ALIAS Avendish_dump)
+
+# Shared PCH for all dump executables: the JSON writer, fmt, and the heavy
+# standard-library headers the generated TUs pull in.
+if(NOT MSVC)
+  add_library(Avendish_dump_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
+  target_link_libraries(Avendish_dump_pch
+    PUBLIC
+      Avendish::Avendish_dump
+  )
+  target_precompile_headers(Avendish_dump_pch
+    PUBLIC
+      <vector>
+      <map>
+      <string>
+      <string_view>
+      <variant>
+      <optional>
+      <tuple>
+      <deque>
+      <iostream>
+      <fstream>
+      <avnd/binding/dump/json_writer.hpp>
+      <avnd/binding/dump/DumpCBOR.hpp>
+      <halp/log.hpp>
+  )
+  avnd_common_setup("" "Avendish_dump_pch")
+endif()
 

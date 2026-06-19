@@ -8,8 +8,7 @@ if(NOT TARGET fmt::fmt AND NOT TARGET fmt::fmt_header_only)
     GIT_PROGRESS true
   )
   if(EMSCRIPTEN)
-    # fmt's compiled lib (format.cc) fails against emscripten's libc++ and we
-    # only use it header-only, so expose just a header-only interface target.
+    # fmt's compiled lib fails against emscripten's libc++; expose header-only.
     FetchContent_GetProperties(fmt)
     if(NOT fmt_POPULATED)
       FetchContent_Populate(fmt)
@@ -41,6 +40,21 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
     GIT_PROGRESS true
   )
   FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+# yyjson: lightweight C JSON library used by the dump backend's writer.
+if(NOT TARGET yyjson)
+  block()
+  set(YYJSON_BUILD_TESTS 0)
+  set(YYJSON_BUILD_MISC 0)
+  FetchContent_Declare(
+    yyjson
+    GIT_REPOSITORY "https://github.com/ibireme/yyjson"
+    GIT_TAG 0.12.0
+    GIT_PROGRESS true
+  )
+  FetchContent_MakeAvailable(yyjson)
+  endblock()
 endif()
 
 if(NOT TARGET pantor::inja)

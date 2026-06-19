@@ -8,13 +8,14 @@
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
+#include <avnd/binding/dump/json_writer.hpp>
 #include <boost/core/demangle.hpp>
-#include <nlohmann/json.hpp>
 
 #include <fstream>
-#include <variant>
 #include <iostream>
 #include <tuple>
+#include <variant>
+#include <vector>
 
 namespace dump_cbor
 {
@@ -44,7 +45,7 @@ auto type_name()
 }
 
 template <typename T>
-void print_metadatas(nlohmann::json& j)
+void print_metadatas(dump_json::value j)
 {
   using all_properties = std::tuple<
       avnd::prop_name, avnd::prop_c_name, avnd::prop_uuid, avnd::prop_vendor,
@@ -61,7 +62,7 @@ void print_metadatas(nlohmann::json& j)
 }
 
 template <typename T>
-void print_supported_features(nlohmann::json& j)
+void print_supported_features(dump_json::value j)
 {
 #define check_has_feature(feature)       \
   do                                     \
@@ -222,7 +223,7 @@ std::string_view value_type(Field f)
 }
 
 template <typename Field>
-void print_callback(nlohmann::json& obj)
+void print_callback(dump_json::value obj)
 {
   using type = typename Field::type;
   if constexpr(avnd::view_callback<type>)
@@ -236,14 +237,14 @@ void print_callback(nlohmann::json& obj)
   using refl = avnd::function_reflection_t<std::decay_t<function_type>>;
   using args = typename refl::arguments;
 
-  nlohmann::json::array_t arr;
+  auto arr = obj["arguments"];
+  arr.ensure_array();
   auto add = [&arr]<typename A>(A&& a) { arr.push_back(value_type(a)); };
   boost::mp11::mp_for_each<args>([=]<typename... A>(A&&... a) { (add(a), ...); });
-  obj["arguments"] = arr;
 }
 
 template <typename Field>
-void print_audio(nlohmann::json& obj)
+void print_audio(dump_json::value obj)
 {
   using type = typename Field::type;
   if constexpr(avnd::audio_sample_port<float, type>)
@@ -283,7 +284,7 @@ void print_audio(nlohmann::json& obj)
 }
 
 template <typename Field>
-void print_parameter(nlohmann::json& obj)
+void print_parameter(dump_json::value obj)
 {
   using type = typename Field::type;
   obj["value_type"] = parameter_value_type(Field{});
@@ -311,7 +312,7 @@ void print_parameter(nlohmann::json& obj)
 
   if constexpr(avnd::parameter_with_minmax_range<type>)
   {
-    nlohmann::json range;
+    auto range = obj["range"];
     static constexpr auto ctl = avnd::get_range<type>();
     if constexpr(requires { ctl.min; })
       range["min"] = ctl.min;
@@ -319,7 +320,6 @@ void print_parameter(nlohmann::json& obj)
       range["max"] = ctl.max;
     if constexpr(requires { ctl.init; })
       range["init"] = ctl.init;
-    obj["range"] = range;
   }
   else if constexpr(avnd::enum_parameter<type>)
   {
@@ -348,7 +348,7 @@ void print_parameter(nlohmann::json& obj)
 }
 
 template <typename T>
-bool setup_generated_audio_port(nlohmann::json& obj)
+bool setup_generated_audio_port(dump_json::value obj)
 {
   obj["type"] = "audio";
 
@@ -392,10 +392,10 @@ bool setup_generated_audio_port(nlohmann::json& obj)
 }
 
 template <typename T>
-void print_generated_inputs(nlohmann::json::array_t& arr)
+void print_generated_inputs(dump_json::value arr)
 {
   // Add the implicit first port for audio I/O
-  nlohmann::json obj;
+  auto obj = arr.owner->make_node();
   obj["name"] = "audio in";
   obj["description"] = "audio in";
   if(setup_generated_audio_port<T>(obj))
@@ -403,10 +403,10 @@ void print_generated_inputs(nlohmann::json::array_t& arr)
 }
 
 template <typename T>
-void print_generated_outputs(nlohmann::json::array_t& arr)
+void print_generated_outputs(dump_json::value arr)
 {
   // Add the implicit first port for audio I/O
-  nlohmann::json obj;
+  auto obj = arr.owner->make_node();
   obj["name"] = "audio out";
   obj["description"] = "audio out";
   if(setup_generated_audio_port<T>(obj))
@@ -414,13 +414,13 @@ void print_generated_outputs(nlohmann::json::array_t& arr)
 }
 
 template <typename Processor>
-void print_inputs(nlohmann::json::array_t& arr)
+void print_inputs(dump_json::value arr)
 {
   print_generated_inputs<Processor>(arr);
 
   avnd::input_introspection<Processor>::for_all([&]<typename Field>(Field wrap) {
     using type = typename Field::type;
-    nlohmann::json obj;
+    auto obj = arr.owner->make_node();
     print_metadatas<type>(obj);
     obj["type"] = port_type(wrap);
 
@@ -438,13 +438,13 @@ void print_inputs(nlohmann::json::array_t& arr)
 }
 
 template <typename Processor>
-void print_outputs(nlohmann::json::array_t& arr)
+void print_outputs(dump_json::value arr)
 {
   print_generated_outputs<Processor>(arr);
 
   avnd::output_introspection<Processor>::for_all([&]<typename Field>(Field wrap) {
     using type = typename Field::type;
-    nlohmann::json obj;
+    auto obj = arr.owner->make_node();
     print_metadatas<type>(obj);
     obj["type"] = port_type(wrap);
 
@@ -457,22 +457,22 @@ void print_outputs(nlohmann::json::array_t& arr)
 }
 
 template <typename refl>
-void print_arguments(refl, nlohmann::json& obj)
+void print_arguments(refl, dump_json::value obj)
 {
   using args = typename refl::arguments;
-  nlohmann::json::array_t arr;
+  auto arr = obj["arguments"];
+  arr.ensure_array();
   boost::mp11::mp_for_each<boost::mp11::mp_iota_c<refl::count>>([&](auto I) {
     using arg_type = boost::mp11::mp_at_c<args, I>;
     arr.push_back(type_name<arg_type>());
   });
-  obj["arguments"] = arr;
 
   using ret = typename refl::return_type;
   obj["return"] = type_name<ret>();
 }
 
 template <typename Processor, typename type>
-void print_message(nlohmann::json& obj)
+void print_message(dump_json::value obj)
 {
   using refl_type = decltype(avnd::message_function_reflection<type>());
   if constexpr(!std::is_same_v<refl_type, void>)
@@ -510,12 +510,12 @@ void print_message(nlohmann::json& obj)
 }
 
 template <typename Processor>
-void print_messages(nlohmann::json::array_t& arr)
+void print_messages(dump_json::value arr)
 {
   avnd::messages_introspection<Processor>::for_all([&]<typename Field>(Field wrap) {
     using type = typename Field::type;
 
-    nlohmann::json obj;
+    auto obj = arr.owner->make_node();
     print_metadatas<type>(obj);
     print_message<Processor, type>(obj);
     arr.push_back(obj);
@@ -525,7 +525,8 @@ void print_messages(nlohmann::json::array_t& arr)
 template <typename Processor>
 void dump(std::string_view path)
 {
-  nlohmann::json obj;
+  dump_json::document doc;
+  auto obj = doc.root();
   print_metadatas<Processor>(obj["metadatas"]);
   print_supported_features<Processor>(obj["features"]);
 
@@ -533,24 +534,18 @@ void dump(std::string_view path)
 
   if constexpr(avnd::input_introspection<Processor>::size > 0)
   {
-    nlohmann::json::array_t arr;
-    print_inputs<Processor>(arr);
-    obj["inputs"] = arr;
+    print_inputs<Processor>(obj["inputs"]);
   }
   if constexpr(avnd::output_introspection<Processor>::size > 0)
   {
-    nlohmann::json::array_t arr;
-    print_outputs<Processor>(arr);
-    obj["outputs"] = arr;
+    print_outputs<Processor>(obj["outputs"]);
   }
   if constexpr(avnd::messages_introspection<Processor>::size > 0)
   {
-    nlohmann::json::array_t arr;
-    print_messages<Processor>(arr);
-    obj["messages"] = arr;
+    print_messages<Processor>(obj["messages"]);
   }
 
-  auto res = obj.dump(1);
+  auto res = doc.dump();
 
   if(path.empty())
   {
