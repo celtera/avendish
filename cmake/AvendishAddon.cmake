@@ -16,6 +16,18 @@ macro(avnd_addon_init)
   cmake_parse_arguments(AA "" "NAME" "" ${ARGN})
   if(AVND_ADDON_SCORE)
     avnd_score_plugin_init(BASE_TARGET ${AA_NAME})
+  elseif(NOT TARGET ${AA_NAME})
+    # A generated empty TU guarantees a valid STATIC lib even when the addon never
+    # adds sources to it (CMake needs at least one source / a linker language).
+    set(_avnd_base_stub "${CMAKE_CURRENT_BINARY_DIR}/${AA_NAME}_avnd_base_stub.cpp")
+    if(NOT EXISTS "${_avnd_base_stub}")
+      file(WRITE "${_avnd_base_stub}"
+        "// Avendish standalone addon base target (intentionally empty).\n")
+    endif()
+    add_library(${AA_NAME} STATIC "${_avnd_base_stub}")
+    set_target_properties(${AA_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_include_directories(${AA_NAME}
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
   endif()
 endmacro()
 
@@ -61,6 +73,15 @@ macro(avnd_addon_object)
   else()
     if(NOT TARGET ${AA_C_NAME})
       add_library(${AA_C_NAME} STATIC ${AA_SOURCES})
+    endif()
+    if(TARGET ${AA_BASE} AND NOT "${AA_BASE}" STREQUAL "${AA_C_NAME}")
+      target_link_libraries(${AA_C_NAME} PUBLIC ${AA_BASE})
+      target_include_directories(${AA_C_NAME} PUBLIC
+        $<TARGET_PROPERTY:${AA_BASE},INCLUDE_DIRECTORIES>)
+      target_compile_definitions(${AA_C_NAME} PUBLIC
+        $<TARGET_PROPERTY:${AA_BASE},COMPILE_DEFINITIONS>)
+      target_compile_options(${AA_C_NAME} PUBLIC
+        $<TARGET_PROPERTY:${AA_BASE},COMPILE_OPTIONS>)
     endif()
     if(AA_DEPENDENCIES)
       target_link_libraries(${AA_C_NAME} PUBLIC ${AA_DEPENDENCIES})
