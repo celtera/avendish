@@ -22,7 +22,7 @@
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
 
-#include <magic_enum/magic_enum.hpp>
+#include <avnd/common/enum_reflection.hpp>
 
 #include <cmath>
 #include <cstdint>
@@ -56,7 +56,7 @@ template <typename T>
 inline val to_js(T v)
 {
   // Expose enums by their string name (round-trips through from_js by name).
-  return val(std::string{magic_enum::enum_name(v)});
+  return val(std::string{avnd::enum_name(v)});
 }
 
 inline val to_js(const std::string& v) { return val(v); }
@@ -288,7 +288,7 @@ inline void from_js(T& out, const val& v)
   {
     if(v.isString())
     {
-      if(auto e = magic_enum::enum_cast<D>(v.as<std::string>()))
+      if(auto e = avnd::enum_cast<D>(v.as<std::string>()))
         out = *e;
     }
     else if(v.isNumber())
@@ -618,7 +618,7 @@ inline void fill_range_info(val& o)
       // Plain enum without a values[] range: use magic_enum.
       using E = std::decay_t<decltype(std::declval<Field>().value)>;
       int i = 0;
-      for(auto&& name : magic_enum::enum_names<E>())
+      for(auto&& name : avnd::enum_names<E>())
         choices.set(i++, std::string{name});
     }
     else
@@ -713,7 +713,7 @@ inline void set_field(Field& ctl, Effect& eff, const val& v)
     {
       const std::string s = v.as<std::string>();
       // By enum name; for values[]-range enums fall back to the range-aware setter.
-      if(auto e = magic_enum::enum_cast<E>(s))
+      if(auto e = avnd::enum_cast<E>(s))
         ctl.value = *e;
       else if constexpr(avnd::parameter_with_values_range<Field>)
         avnd::apply_control(ctl, s);

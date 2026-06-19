@@ -70,7 +70,7 @@ template <typename T>
   requires std::is_enum_v<T>
 inline void value_to_max(t_atom& atom, T v) noexcept
 {
-  atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(magic_enum::enum_name(v).data())}};
+  atom = {.a_type = A_SYM, .a_w = {.w_sym = gensym(avnd::enum_name(v).data())}};
 }
 
 struct do_value_to_max_rec
@@ -113,7 +113,7 @@ struct do_value_to_max_rec
   void operator()(T v) noexcept
   {
     atoms.push_back(
-        {.a_type = A_SYM, .a_w = {.w_sym = gensym(magic_enum::enum_name(v).data())}});
+        {.a_type = A_SYM, .a_w = {.w_sym = gensym(avnd::enum_name(v).data())}});
   }
 
   void operator()(const avnd::iterable_ish auto& v) noexcept

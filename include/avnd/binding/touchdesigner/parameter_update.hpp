@@ -13,7 +13,7 @@
 #include <avnd/wrappers/ranges.hpp>
 
 #include <CPlusPlus_Common.h>
-#include <magic_enum/magic_enum.hpp>
+#include <avnd/common/enum_reflection.hpp>
 
 namespace touchdesigner
 {
@@ -58,8 +58,8 @@ struct parameter_update
       if constexpr(avnd::enum_parameter<Field>)
       {
         using enum_type = std::decay_t<decltype(Field::value)>;
-        static constexpr auto enum_values = magic_enum::enum_values<enum_type>();
-        static constexpr auto enum_entries = magic_enum::enum_entries<enum_type>();
+        static constexpr auto enum_values = avnd::enum_values<enum_type>();
+        static constexpr auto enum_entries = avnd::enum_entries<enum_type>();
         if constexpr (avnd::has_range<Field>)
         {
           static constexpr auto range = avnd::get_range<Field>();

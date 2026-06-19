@@ -31,7 +31,7 @@ struct to_list
     requires std::is_enum_v<T>
   void operator()(T arg) noexcept
   {
-    atom_setsym(&atoms.emplace_back(), gensym(magic_enum::enum_name(arg).data()));
+    atom_setsym(&atoms.emplace_back(), gensym(avnd::enum_name(arg).data()));
   }
 
   void operator()(std::string_view v) noexcept
@@ -133,7 +133,7 @@ struct to_dict
     requires std::is_enum_v<T>
   void operator()(t_symbol* k, T&& arg) noexcept
   {
-    dictionary_appendstring(d, k, magic_enum::enum_name(arg).data());
+    dictionary_appendstring(d, k, avnd::enum_name(arg).data());
   }
 
   void operator()(t_symbol* k, const avnd::variant_ish auto& f) noexcept
@@ -245,7 +245,7 @@ struct set_atom
     requires std::is_enum_v<T>
   t_max_err operator()(t_atom* at, T arg) noexcept
   {
-    atom_setsym(at, gensym(magic_enum::enum_name(arg).data()));
+    atom_setsym(at, gensym(avnd::enum_name(arg).data()));
     return MAX_ERR_NONE;
   }
 };
@@ -310,7 +310,7 @@ struct to_atoms
   {
     if(auto atoms = allocate(1, ac, av); !atoms.empty())
     {
-      atom_setsym(&atoms[0], gensym(magic_enum::enum_name(arg).data()));
+      atom_setsym(&atoms[0], gensym(avnd::enum_name(arg).data()));
       return MAX_ERR_NONE;
     }
     return MAX_ERR_OUT_OF_MEM;
@@ -341,7 +341,7 @@ struct to_atoms
       else if constexpr(std::is_enum_v<span_val_type>)
       {
         for(auto& v : arg)
-          atom_setsym(&atoms[i], gensym(magic_enum::enum_name(v).data()));
+          atom_setsym(&atoms[i], gensym(avnd::enum_name(v).data()));
       }
       return MAX_ERR_NONE;
     }

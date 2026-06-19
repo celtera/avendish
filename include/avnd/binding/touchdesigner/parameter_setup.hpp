@@ -11,7 +11,7 @@
 #include <avnd/wrappers/metadatas.hpp>
 
 #include <CPlusPlus_Common.h>
-#include <magic_enum/magic_enum.hpp>
+#include <avnd/common/enum_reflection.hpp>
 
 namespace touchdesigner
 {
@@ -160,7 +160,7 @@ private:
       TD::OP_NumericParameter param(name);
       param.label = label;
 
-      static constexpr auto enum_values = magic_enum::enum_values<enum_type>();
+      static constexpr auto enum_values = avnd::enum_values<enum_type>();
       static_assert(std::ssize(enum_values) > 0);
       static constexpr auto enum_min = *std::min_element(std::begin(enum_values), std::end(enum_values));
       static constexpr auto enum_max = *std::max_element(std::begin(enum_values), std::end(enum_values));

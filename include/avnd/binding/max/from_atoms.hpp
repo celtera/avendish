@@ -55,7 +55,7 @@ struct from_atom
         auto sym = atom_getsym(&av);
         if(sym && sym->s_name)
         {
-          auto color = magic_enum::enum_cast<T>(sym->s_name);
+          auto color = avnd::enum_cast<T>(sym->s_name);
           if (color.has_value()) {
             v = *color;
             return true;

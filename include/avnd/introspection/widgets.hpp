@@ -6,7 +6,7 @@
 #include <avnd/introspection/range.hpp>
 #include <avnd/introspection/smooth.hpp>
 
-#include <magic_enum/magic_enum.hpp>
+#include <avnd/common/enum_reflection.hpp>
 
 #include <array>
 #include <string>
@@ -93,7 +93,7 @@ consteval int get_enum_choices_count()
   }
   else
   {
-    return magic_enum::enum_count<std::decay_t<decltype(T::value)>>();
+    return avnd::enum_count<std::decay_t<decltype(T::value)>>();
   }
 }
 

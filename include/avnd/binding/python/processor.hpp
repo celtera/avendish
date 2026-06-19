@@ -153,7 +153,7 @@ inline void ensure_value_type_registered(pybind11::module_& m)
     static const bool done = [&] {
       const auto type_name = boost::typeindex::type_id<V>().pretty_name();
       auto e = py::enum_<V>(m, type_name.c_str());
-      for(const auto& entry : magic_enum::enum_entries<V>())
+      for(const auto& entry : avnd::enum_entries<V>())
         e.value(std::string{entry.second}.c_str(), entry.first);
       e.export_values();
       return true;

@@ -4,15 +4,10 @@
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
 
+#include <avnd/common/enum_reflection.hpp>
+
 #include <string_view>
 #include <type_traits>
-#if __has_include(<magic_enum.hpp>)
-#include <magic_enum.hpp>
-#elif __has_include(<magic_enum/magic_enum.hpp>)
-#include <magic_enum/magic_enum.hpp>
-#else
-#error magic_enum is required
-#endif
 
 #include <halp/modules.hpp>
 HALP_MODULE_EXPORT
@@ -29,17 +24,17 @@ struct enum_t
     combobox
   };
 
-#if MAGIC_ENUM_SUPPORTED
+#if AVND_ENUM_REFLECTION_SUPPORTED
   // FIXME eventually we would like to be able to handle
   // enum Foo { first = 120, last = -840 };
   // but so far the code expects contiguousness and starting at 0 in many places
   static consteval bool enum_is_contiguous() noexcept
   {
-    constexpr auto values = magic_enum::enum_values<Enum>();
+    constexpr auto values = avnd::enum_values<Enum>();
     int i = 0;
     for(auto val : values)
     {
-      if(magic_enum::enum_underlying(val) != i)
+      if(avnd::enum_underlying(val) != i)
         return false;
       i++;
     }
@@ -50,8 +45,8 @@ struct enum_t
 
   struct range
   {
-#if MAGIC_ENUM_SUPPORTED
-    decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#if AVND_ENUM_REFLECTION_SUPPORTED
+    decltype(avnd::enum_names<Enum>()) values = avnd::enum_names<Enum>();
 #endif
     Enum init{};
   };
@@ -68,8 +63,8 @@ struct enum_t
   }
   auto& operator=(std::string_view t) noexcept
   {
-#if MAGIC_ENUM_SUPPORTED
-    if(auto res = magic_enum::enum_cast<Enum>(t))
+#if AVND_ENUM_REFLECTION_SUPPORTED
+    if(auto res = avnd::enum_cast<Enum>(t))
       value = *res;
 #endif
     return *this;
@@ -90,8 +85,8 @@ struct string_enum_t
   {
     struct enum_setup
     {
-#if MAGIC_ENUM_SUPPORTED
-      decltype(magic_enum::enum_names<Enum>()) values = magic_enum::enum_names<Enum>();
+#if AVND_ENUM_REFLECTION_SUPPORTED
+      decltype(avnd::enum_names<Enum>()) values = avnd::enum_names<Enum>();
 #endif
       Enum init{};
     };
@@ -111,15 +106,15 @@ struct string_enum_t
   }
   auto& operator=(Enum t) noexcept
   {
-#if MAGIC_ENUM_SUPPORTED
-    value = magic_enum::enum_name(t);
+#if AVND_ENUM_REFLECTION_SUPPORTED
+    value = avnd::enum_name(t);
 #endif
     return *this;
   }
   auto& operator=(std::integral auto t) noexcept
   {
-#if MAGIC_ENUM_SUPPORTED
-    value = magic_enum::enum_name(static_cast<Enum>(t));
+#if AVND_ENUM_REFLECTION_SUPPORTED
+    value = avnd::enum_name(static_cast<Enum>(t));
 #endif
     return *this;
   }

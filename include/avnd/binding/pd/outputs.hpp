@@ -32,7 +32,7 @@ template <typename T>
 inline void value_to_pd(t_atom& atom, T v) noexcept
 {
   atom = {
-      .a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(magic_enum::enum_name(v).data())}};
+      .a_type = A_SYMBOL, .a_w = {.w_symbol = gensym(avnd::enum_name(v).data())}};
 }
 inline void value_to_pd(t_atom& atom, const char* v) noexcept
 {
@@ -97,7 +97,7 @@ struct do_value_to_pd_rec
   {
     atoms.push_back(
         {.a_type = A_SYMBOL,
-         .a_w = {.w_symbol = gensym(magic_enum::enum_name(v).data())}});
+         .a_w = {.w_symbol = gensym(avnd::enum_name(v).data())}});
   }
   void operator()(std::string_view v) noexcept
   {
