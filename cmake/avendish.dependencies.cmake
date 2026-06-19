@@ -43,6 +43,24 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
   FetchContent_MakeAvailable(nlohmann_json)
 endif()
 
+# yyjson: a C JSON library whose header is declarations only (~0.05s/TU to
+# include, vs ~1.4s for nlohmann/json's monolithic template header). The `dump`
+# backend writes JSON through it (one TU per registered example, so the floor is
+# paid ~150 times). The format machinery is a single yyjson.c compiled once.
+if(NOT TARGET yyjson)
+  block()
+  set(YYJSON_BUILD_TESTS 0)
+  set(YYJSON_BUILD_MISC 0)
+  FetchContent_Declare(
+    yyjson
+    GIT_REPOSITORY "https://github.com/ibireme/yyjson"
+    GIT_TAG 0.12.0
+    GIT_PROGRESS true
+  )
+  FetchContent_MakeAvailable(yyjson)
+  endblock()
+endif()
+
 if(NOT TARGET pantor::inja)
   block()
   set(BUILD_TESTING 0)

@@ -41,7 +41,7 @@ function(avnd_make_dump)
   target_link_libraries(
     ${AVND_FX_TARGET}
     PRIVATE
-      Avendish::Avendish_dump nlohmann_json::nlohmann_json
+      Avendish::Avendish_dump yyjson
   )
 
   # nlohmann/json (~1.4s/TU) + fmt dominate the dump TU compile; precompile them
@@ -69,16 +69,17 @@ function(avnd_make_dump)
 endfunction()
 
 add_library(Avendish_dump INTERFACE)
-target_link_libraries(Avendish_dump INTERFACE Avendish)
+target_link_libraries(Avendish_dump INTERFACE Avendish yyjson)
 add_library(Avendish::Avendish_dump ALIAS Avendish_dump)
 
-# Shared PCH for all dump executables: the dump prototype's heavy fixed includes
-# (nlohmann/json via DumpCBOR.hpp, fmt via halp/log.hpp). Measured ~-0.68s/TU.
+# Shared PCH for all dump executables: precompiles the dump prototype's fixed
+# cost once and reuses it across every example (the yyjson JSON writer via
+# DumpCBOR.hpp, and fmt via halp/log.hpp).
 if(NOT MSVC)
   add_library(Avendish_dump_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
   target_link_libraries(Avendish_dump_pch
     PUBLIC
-      Avendish::Avendish_dump nlohmann_json::nlohmann_json
+      Avendish::Avendish_dump
   )
   target_precompile_headers(Avendish_dump_pch
     PUBLIC
