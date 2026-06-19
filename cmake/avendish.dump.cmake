@@ -44,6 +44,15 @@ function(avnd_make_dump)
       Avendish::Avendish_dump nlohmann_json::nlohmann_json
   )
 
+  # nlohmann/json (~1.4s/TU) + fmt dominate the dump TU compile; precompile them
+  # once and reuse across every example. Skipped on MSVC (cf. pd/gstreamer).
+  if(NOT MSVC)
+    target_precompile_headers(${AVND_FX_TARGET}
+      REUSE_FROM
+        Avendish_dump_pch
+    )
+  endif()
+
   set(_dump_file_path "dump/$<IF:${multi_config},$<CONFIG>/,>${AVND_TARGET}.json")
   add_custom_command(
     DEPENDS ${AVND_FX_TARGET}
@@ -62,4 +71,20 @@ endfunction()
 add_library(Avendish_dump INTERFACE)
 target_link_libraries(Avendish_dump INTERFACE Avendish)
 add_library(Avendish::Avendish_dump ALIAS Avendish_dump)
+
+# Shared PCH for all dump executables: the dump prototype's heavy fixed includes
+# (nlohmann/json via DumpCBOR.hpp, fmt via halp/log.hpp). Measured ~-0.68s/TU.
+if(NOT MSVC)
+  add_library(Avendish_dump_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
+  target_link_libraries(Avendish_dump_pch
+    PUBLIC
+      Avendish::Avendish_dump nlohmann_json::nlohmann_json
+  )
+  target_precompile_headers(Avendish_dump_pch
+    PUBLIC
+      <avnd/binding/dump/DumpCBOR.hpp>
+      <halp/log.hpp>
+  )
+  avnd_common_setup("" "Avendish_dump_pch")
+endif()
 
