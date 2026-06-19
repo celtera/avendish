@@ -68,7 +68,10 @@ if(AVENDISH_INCLUDE_SOURCE_ONLY)
 endif()
 
 function(avnd_target_setup AVND_FX_TARGET)
-  target_compile_definitions(${AVND_FX_TARGET} PUBLIC -DFMT_HEADER_ONLY=1)
+  # Prefer the compiled fmt; only force header-only when it is unavailable.
+  if(NOT TARGET fmt::fmt)
+    target_compile_definitions(${AVND_FX_TARGET} PUBLIC -DFMT_HEADER_ONLY=1)
+  endif()
   target_compile_features(
       ${AVND_FX_TARGET}
       PUBLIC
