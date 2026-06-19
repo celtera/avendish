@@ -47,6 +47,9 @@ jobs:
           set -e
           sudo apt-get install -y ninja-build libfmt-dev nlohmann-json3-dev
           git clone --depth 1 https://github.com/Neargye/magic_enum /tmp/magic_enum
+          # yyjson: the dump backend's JSON writer (DumpCBOR.hpp includes <yyjson.h>).
+          # Header-only is enough here since the dump TUs are compiled with -c (no link).
+          git clone --depth 1 --branch 0.12.0 https://github.com/ibireme/yyjson /tmp/yyjson
           # Boost 1.90 headers (header-only libs only; works on clang-22, unlike older boost)
           wget -q https://archives.boost.io/release/1.90.0/source/boost_1_90_0.tar.gz
           tar xf boost_1_90_0.tar.gz
@@ -56,7 +59,7 @@ jobs:
         run: |
           set -e
           BE=$([ "${{ matrix.backend }}" = "boost.pfr" ] && echo "-DAVND_USE_BOOST_PFR=1" || echo "-DAVND_USE_BOOST_PFR=0")
-          INC="-I include -I . -I /tmp/magic_enum/include -I $BOOST -I /usr/include"
+          INC="-I include -I . -I /tmp/magic_enum/include -I /tmp/yyjson/src -I $BOOST -I /usr/include"
           STD="-std=c++${{ matrix.std }}"
           FLAGS="$STD $BE $STDLIB $INC"
           echo "::group::config"; echo "$CXX $FLAGS"; echo "::endgroup::"
