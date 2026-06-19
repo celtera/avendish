@@ -63,7 +63,7 @@ struct fields_introspection
   template <typename F>
   static constexpr void for_all(type& fields, F&& func) noexcept
   {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
     if constexpr(size > 0)
     {
       avnd::for_each_field_ref(fields, std::forward<F>(func));
@@ -77,7 +77,7 @@ struct fields_introspection
   template <typename F>
   static constexpr void for_all_n(type& fields, F&& func) noexcept
   {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
     if constexpr(size > 0)
     {
       avnd::for_each_field_ref_n(fields, std::forward<F>(func));
@@ -99,7 +99,7 @@ struct fields_introspection
 
     if constexpr(size > 0)
     {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
       using namespace std;
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
         auto&& ppl = pfr::detail::tie_as_tuple(fields);
@@ -119,7 +119,7 @@ struct fields_introspection
   template <std::size_t N>
   static inline constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
     return pfr::get<N>(unfiltered_fields);
 #else
     auto&& [... elts] = unfiltered_fields;
@@ -132,7 +132,7 @@ struct fields_introspection
   {
     if constexpr(size > 0)
     {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
       auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
         return func(pfr::get<Index>(unfiltered_fields));
       };
@@ -156,7 +156,7 @@ struct fields_introspection
   {
     if constexpr(size > 0)
     {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
       auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
         return func(pfr::get<Index>(unfiltered_fields));
       };
@@ -300,7 +300,7 @@ struct predicate_introspection
   template <std::size_t N>
   static constexpr auto field(type& unfiltered_fields) noexcept -> decltype(auto)
   {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
     return pfr::get<index_map[N]>(unfiltered_fields);
 #else
     auto& [... elts] = unfiltered_fields;
@@ -312,7 +312,7 @@ struct predicate_introspection
   static constexpr auto tie(type& unfiltered_fields)
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
       return tpl::tie(pfr::get<Index>(unfiltered_fields)...);
 #else
       auto&& [... elts] = unfiltered_fields;
@@ -325,7 +325,7 @@ struct predicate_introspection
   static constexpr auto make_tuple(type& unfiltered_fields)
   {
     return [&]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
       return tpl::make_tuple(pfr::get<Index>(unfiltered_fields)...);
 #else
       auto&& [... elts] = unfiltered_fields;
@@ -337,7 +337,7 @@ struct predicate_introspection
   // Gives std::tuple<f(field1), f(field2), etc...>
   static constexpr auto filter_tuple(type& unfiltered_fields, auto filter)
   {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
     auto stack_size_helper = [&]<std::size_t Index>() constexpr noexcept {
       return filter(pfr::get<Index>(unfiltered_fields));
     };
@@ -358,7 +358,7 @@ struct predicate_introspection
     {
       [&func,
        &unfiltered_fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
         (func(pfr::get<Index>(unfiltered_fields)), ...);
 #else
         auto&& [... elts] = unfiltered_fields;
@@ -532,7 +532,7 @@ struct predicate_introspection
     if constexpr(size > 0)
     {
       [n, &func, &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
         (void)((Index == n && (func(pfr::get<Index>(fields)), true)) || ...);
 #else
         auto&& [... elts] = fields;
@@ -548,7 +548,7 @@ struct predicate_introspection
     {
       [k = index_map[n], &func,
        &fields]<typename K, K... Index>(std::integer_sequence<K, Index...>) {
-#if AVND_USE_BOOST_PFR
+#if AVND_PFR_FLATTEN
         (void)((Index == k && (func(pfr::get<Index>(fields)), true)) || ...);
 #else
         auto&& [... elts] = fields;

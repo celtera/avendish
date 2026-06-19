@@ -6,5 +6,8 @@
 #if AVND_USE_BOOST_PFR
 #include <avnd/common/aggregates.pfr.hpp>
 #else
-#include <avnd/common/aggregates.p1061.hpp>
+#include <avnd/common/aggregates.structured.hpp>
 #endif
+
+// All backends expose the flattened avnd::pfr::* interface.
+#define AVND_PFR_FLATTEN 1
