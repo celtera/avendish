@@ -5,6 +5,7 @@
 #include <avnd/common/for_nth.hpp>
 #include <avnd/common/struct_reflection.hpp>
 #include <avnd/concepts/message.hpp>
+#include <avnd/introspection/messages.p2996.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 
 namespace avnd
