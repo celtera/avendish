@@ -25,13 +25,22 @@
 #define HALP_RESTRICT __restrict__
 #endif
 
+#include <avnd/common/metadata_tag.hpp>
 #include <halp/modules.hpp>
 
+#include <cstddef>
 #include <type_traits>
 
 HALP_MODULE_EXPORT
 namespace halp
 {
+// Annotation form of halp_meta: [[=halp::meta("category", "Filters")]].
+template <std::size_t KN, std::size_t VN>
+consteval auto meta(const char (&key)[KN], const char (&value)[VN]) noexcept
+{
+  return avnd::metadata_attribute<KN, VN>{key, value};
+}
+
 // Extracts the type of x in &Class::x
 template <typename T>
 struct member_type_extractor;
