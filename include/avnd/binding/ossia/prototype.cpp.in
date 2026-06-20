@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 #include <avnd/binding/ossia/all.hpp>
 #include <avnd/binding/ossia/configure.hpp>
 

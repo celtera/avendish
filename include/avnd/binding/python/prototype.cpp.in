@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 #include <avnd/binding/python/configure.hpp>
 #include <avnd/binding/python/processor.hpp>
 

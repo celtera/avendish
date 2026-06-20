@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 #include <avnd/binding/example/example_processor.hpp>
 
 using type = decltype(avnd::configure<exhs::config, @AVND_MAIN_CLASS@>())::type;

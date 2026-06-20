@@ -47,6 +47,10 @@ function(_avnd_dispatch_backend backend)
   if(DEFINED ${_flag} AND NOT ${${_flag}})
     return()
   endif()
+  # Compute the prototype's object-pull-in line once; the called backend's
+  # configure_file picks up AVND_MAIN_IMPORT from this (calling) scope.
+  cmake_parse_arguments(AVND "" "MAIN_FILE;C_NAME" "" ${ARGN})
+  avnd_main_import(AVND_MAIN_IMPORT "${AVND_MAIN_FILE}" "${AVND_C_NAME}")
   cmake_language(CALL "avnd_make_${backend}" ${ARGN})
 endfunction()
 

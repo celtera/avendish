@@ -63,10 +63,10 @@ function(avnd_make_gstreamer)
       ARCHIVE_OUTPUT_DIRECTORY gstreamer
   )
 
+  avnd_add_object_to_backend(${AVND_FX_TARGET} ${AVND_TARGET} "${AVND_MAIN_FILE}")
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
-      "${AVND_MAIN_FILE}"
       "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/audio_source.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/audio_sink.hpp"
       "${AVND_SOURCE_DIR}/include/avnd/binding/gstreamer/audio_filter.hpp"

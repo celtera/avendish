@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 // clang-format off
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 #include <avnd/binding/max/audio_processor.hpp>
 #include <avnd/binding/max/message_processor.hpp>
 #include <avnd/binding/max/configure.hpp>

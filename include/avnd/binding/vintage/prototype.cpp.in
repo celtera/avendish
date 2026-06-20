@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 #include <avnd/binding/vintage/audio_effect.hpp>
 #include <avnd/binding/vintage/configure.hpp>
 

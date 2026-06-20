@@ -6,7 +6,7 @@
 
 #include <thread>
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 
 #if AVND_STANDALONE_QML
 #include <QCommandLineOption>
