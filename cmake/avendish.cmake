@@ -287,7 +287,7 @@ function(avnd_register)
     add_library("${AVND_TARGET}" STATIC $<TARGET_OBJECTS:avnd_dummy_lib>)
   endif()
 
-  target_sources("${AVND_TARGET}" PRIVATE "${AVND_MAIN_FILE}")
+  avnd_add_object_to_base("${AVND_TARGET}" "${AVND_MAIN_FILE}")
   if(AVND_COMPILE_OPTIONS)
     target_compile_options("${AVND_TARGET}" PUBLIC "${AVND_COMPILE_OPTIONS}")
   endif()

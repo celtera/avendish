@@ -13,7 +13,7 @@ struct config
 };
 }
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 int main(int argc, char** argv)
 {
   using type = decltype(avnd::configure<dump::config, @AVND_MAIN_CLASS@>())::type;
