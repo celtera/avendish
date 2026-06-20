@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-@AVND_MAIN_IMPORT@
 #include <avnd/binding/vintage/audio_effect.hpp>
 #include <avnd/binding/vintage/configure.hpp>
+
+@AVND_MAIN_IMPORT@
 
 extern "C"
 AVND_EXPORTED_SYMBOL vintage::Effect* VSTPluginMain(
