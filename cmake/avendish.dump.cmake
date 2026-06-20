@@ -44,8 +44,8 @@ function(avnd_make_dump)
       Avendish::Avendish_dump yyjson
   )
 
-  # Reuse the shared PCH; skipped on MSVC (cf. pd/gstreamer).
-  if(NOT MSVC)
+  # Reuse the shared PCH when it exists (only in avendish's own builds).
+  if(NOT MSVC AND TARGET Avendish_dump_pch)
     target_precompile_headers(${AVND_FX_TARGET}
       REUSE_FROM
         Avendish_dump_pch
@@ -72,8 +72,10 @@ target_link_libraries(Avendish_dump INTERFACE Avendish yyjson)
 add_library(Avendish::Avendish_dump ALIAS Avendish_dump)
 
 # Shared PCH for all dump executables: the JSON writer, fmt, and the heavy
-# standard-library headers the generated TUs pull in.
-if(NOT MSVC)
+# standard-library headers the generated TUs pull in. Only when avendish is the
+# top-level build: addon/subproject builds compile few dump objects, and a
+# cross-directory REUSE_FROM is fragile across CMake versions.
+if(NOT MSVC AND CMAKE_SOURCE_DIR STREQUAL AVND_SOURCE_DIR)
   add_library(Avendish_dump_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")
   target_link_libraries(Avendish_dump_pch
     PUBLIC
