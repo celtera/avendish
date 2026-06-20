@@ -259,6 +259,7 @@ add_library(avnd_dummy_lib OBJECT "${AVND_SOURCE_DIR}/src/dummy.cpp")
 include(avendish.dependencies)
 include(avendish.disableexceptions)
 include(avendish.sources)
+include(avendish.modules)
 include(avendish.tools)
 
 include(avendish.ui.qt)
