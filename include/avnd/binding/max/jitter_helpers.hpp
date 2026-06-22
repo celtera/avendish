@@ -295,19 +295,19 @@ inline void matrix_to_buffer(void* matrix, Field& field)
   auto& tex = field.buffer;
   if(info.type == _jit_sym_char) {
     tex.byte_size = num_elements;
-    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
+    tex.raw_data = reinterpret_cast<unsigned char*>(matrix_data);
   }
   else if(info.type == _jit_sym_long) {
     tex.byte_size = num_elements * sizeof(long);
-    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
+    tex.raw_data = reinterpret_cast<unsigned char*>(matrix_data);
   }
   else if(info.type == _jit_sym_float32) {
     tex.byte_size = num_elements * sizeof(float);
-    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
+    tex.raw_data = reinterpret_cast<unsigned char*>(matrix_data);
   }
   else if(info.type == _jit_sym_float64) {
     tex.byte_size = num_elements * sizeof(double);
-    tex.raw_data = reinterpret_cast<const char*>(matrix_data);
+    tex.raw_data = reinterpret_cast<unsigned char*>(matrix_data);
   }
   tex.changed = true;
 }
