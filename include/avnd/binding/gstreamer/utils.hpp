@@ -27,6 +27,52 @@ struct element
 template <typename T>
 struct metaclass;
 
+// Fixed-size numeric vector controls (halp xy / xyz / xyzw) have no native
+// GObject property type, so they are exposed as a GstValueArray (GST_TYPE_ARRAY)
+// holding their scalar components. These helpers translate one component at a
+// time, picking the GValue accessor that matches the component type.
+template <typename C>
+inline void append_vec_component(GValue* arr, C c)
+{
+  GValue tmp = G_VALUE_INIT;
+  if constexpr(std::is_same_v<C, float>)
+  {
+    g_value_init(&tmp, G_TYPE_FLOAT);
+    g_value_set_float(&tmp, c);
+  }
+  else if constexpr(std::is_same_v<C, double>)
+  {
+    g_value_init(&tmp, G_TYPE_DOUBLE);
+    g_value_set_double(&tmp, c);
+  }
+  else if constexpr(std::is_same_v<C, unsigned int>)
+  {
+    g_value_init(&tmp, G_TYPE_UINT);
+    g_value_set_uint(&tmp, c);
+  }
+  else
+  {
+    g_value_init(&tmp, G_TYPE_INT);
+    g_value_set_int(&tmp, static_cast<gint>(c));
+  }
+  gst_value_array_append_value(arr, &tmp);
+  g_value_unset(&tmp);
+}
+
+template <typename C>
+inline C read_vec_component(const GValue* arr, guint i)
+{
+  const GValue* e = gst_value_array_get_value(arr, i);
+  if constexpr(std::is_same_v<C, float>)
+    return g_value_get_float(e);
+  else if constexpr(std::is_same_v<C, double>)
+    return g_value_get_double(e);
+  else if constexpr(std::is_same_v<C, unsigned int>)
+    return g_value_get_uint(e);
+  else
+    return static_cast<C>(g_value_get_int(e));
+}
+
 struct get_property
 {
   GValue* value{};
@@ -47,9 +93,25 @@ struct get_property
   {
     // FIXME
   }
+  // A std::string satisfies both string_ish and iterable_ish; exclude strings
+  // here so they bind unambiguously to the string_ish overload above.
   void operator()(auto& param, const avnd::iterable_ish auto& v)
+    requires(!avnd::string_ish<std::remove_cvref_t<decltype(v)>>)
   {
     // FIXME
+  }
+  // halp xy / xyz / xyzw -> GstValueArray of 2..4 scalar components.
+  // One overload, constrained on xy_value (the common x,y); z and w are appended
+  // only when present, so xy / xyz / xyzw never form an ambiguous overload set.
+  void operator()(auto& param, const avnd::xy_value auto& v)
+  {
+    using comp_t = std::remove_cvref_t<decltype(v.x)>;
+    append_vec_component<comp_t>(value, v.x);
+    append_vec_component<comp_t>(value, v.y);
+    if constexpr(requires { v.z; })
+      append_vec_component<comp_t>(value, v.z);
+    if constexpr(requires { v.w; })
+      append_vec_component<comp_t>(value, v.w);
   }
   void operator()(auto& param, const int& v) { g_value_set_int(value, v); }
   void operator()(auto& param, const unsigned int& v) { g_value_set_uint(value, v); }
@@ -83,9 +145,28 @@ struct set_property
   {
     // FIXME
   }
+  // A std::string satisfies both string_ish and iterable_ish; exclude strings
+  // here so they bind unambiguously to the string_ish overload above.
   void operator()(auto& param, avnd::iterable_ish auto& v)
+    requires(!avnd::string_ish<std::remove_cvref_t<decltype(v)>>)
   {
     // FIXME
+  }
+  // halp xy / xyz / xyzw <- GstValueArray of 2..4 scalar components.
+  void operator()(auto& param, avnd::xy_value auto& v)
+  {
+    using comp_t = std::remove_cvref_t<decltype(v.x)>;
+    const guint n = gst_value_array_get_size(value);
+    if(n > 0)
+      v.x = read_vec_component<comp_t>(value, 0);
+    if(n > 1)
+      v.y = read_vec_component<comp_t>(value, 1);
+    if constexpr(requires { v.z; })
+      if(n > 2)
+        v.z = read_vec_component<comp_t>(value, 2);
+    if constexpr(requires { v.w; })
+      if(n > 3)
+        v.w = read_vec_component<comp_t>(value, 3);
   }
   void operator()(auto& param, int& v) { v = g_value_get_int(value); }
   void operator()(auto& param, unsigned int& v) { v = g_value_get_uint(value); }
