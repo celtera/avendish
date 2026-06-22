@@ -48,6 +48,32 @@ inline std::string canonical_name(const std::array<char, N>& symname)
   return canonical_name(std::string_view{symname.data(), symname.size()});
 }
 
+// halp xy / xyz / xyzw controls have no native GObject property type, so expose
+// them as a GstValueArray (GST_TYPE_ARRAY) whose element GParamSpec carries the
+// per-component scalar type + range.
+template <typename V>
+static GParamSpec* vec_array_param_spec(
+    const char* canonical, const char* name, const char* desc, double mn,
+    double mx, double init, int flags)
+{
+  using comp_t = std::remove_cvref_t<decltype(std::declval<V>().x)>;
+  GParamSpec* element{};
+  if constexpr(std::is_same_v<comp_t, float>)
+    element = g_param_spec_float(
+        "value", "value", "value", mn, mx, init, static_cast<GParamFlags>(flags));
+  else if constexpr(std::is_same_v<comp_t, double>)
+    element = g_param_spec_double(
+        "value", "value", "value", mn, mx, init, static_cast<GParamFlags>(flags));
+  else if constexpr(std::is_same_v<comp_t, unsigned int>)
+    element = g_param_spec_uint(
+        "value", "value", "value", mn, mx, init, static_cast<GParamFlags>(flags));
+  else
+    element = g_param_spec_int(
+        "value", "value", "value", mn, mx, init, static_cast<GParamFlags>(flags));
+  return gst_param_spec_array(
+      canonical, name, desc, element, static_cast<GParamFlags>(flags));
+}
+
 template <typename F>
   requires(avnd::has_range<F> && avnd::enum_ish_parameter<F>)
 static GParamSpec* param_spec()
@@ -88,6 +114,11 @@ static GParamSpec* param_spec()
     return g_param_spec_float(
         canonical.data(), name.data(), desc.data(), 0.f, 1.f, 0.f,
         static_cast<GParamFlags>(flags));
+  }
+  else if constexpr(avnd::xy_value<V>)
+  {
+    return vec_array_param_spec<V>(
+        canonical.data(), name.data(), desc.data(), -1e9, 1e9, 0., flags);
   }
   else
   {
@@ -161,6 +192,12 @@ static GParamSpec* param_spec()
     return g_param_spec_string(
         canonical.data(), name.data(), desc.data(), std::string_view(range.init).data(),
         static_cast<GParamFlags>(flags | G_PARAM_STATIC_STRINGS));
+  }
+  else if constexpr(avnd::xy_value<V>)
+  {
+    return vec_array_param_spec<V>(
+        canonical.data(), name.data(), desc.data(), range.min, range.max, range.init,
+        flags);
   }
   else
   {
