@@ -27,6 +27,12 @@ option(AVND_ENABLE_GSTREAMER     "Enable GStreamer backend"      ON)
 option(AVND_ENABLE_WASM          "Enable WebAssembly backend"    ON)
 option(AVND_ENABLE_FUZZ          "Enable libFuzzer harness (Clang only)" OFF)
 
+# Opt-in for add-ons that wrap a library whose API requires exceptions/RTTI (e.g.
+# onnxruntime). When ON, the DisableExceptions target becomes a no-op so the
+# back-ends that link it (pd / max / vst3 / example host / ...) build with
+# exceptions enabled. See cmake/avendish.disableexceptions.cmake.
+option(AVND_USES_EXCEPTIONS      "Add-on requires C++ exceptions/RTTI"   OFF)
+
 # Max/MSP externals link the static CRT (/MT) on Windows, as the official
 # max-sdk-base enforces globally. Set it here -- before the dependencies and the
 # addon's object library are created -- so everything linked into the external
