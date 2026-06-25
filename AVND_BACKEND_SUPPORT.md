@@ -14,6 +14,7 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 |---|---|---|---|---|
 | Controls: float/int slider, knob, spinbox, toggle, lineedit, buttons, enum, xy, color, bargraph | ok | ok | ok | ok |
 | Controls: range slider, xyz/xyzw spinboxes, time chooser, string enum, folder, file, multi-slider | ok | ok | ok | ok |
+| Sample-accurate control, smooth modifier, soundfile/midifile ports, dynamic port | ok | ok | ok | ok |
 | Value I/O float/int/bool/string | ok | ok | ok | ok |
 | Messages, callback | ok | ok | ok | ok |
 | MIDI passthrough | ok | ok | ok | ok |

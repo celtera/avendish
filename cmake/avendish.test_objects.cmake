@@ -89,3 +89,10 @@ avnd_make_all(TARGET TestStringEnum    MAIN_FILE examples/Tests/TestStringEnum.h
 avnd_make_all(TARGET TestFolderPort    MAIN_FILE examples/Tests/TestFolderPort.hpp    MAIN_CLASS examples::tests::TestFolderPort    C_NAME avnd_test_folder)
 avnd_make_all(TARGET TestFilePort      MAIN_FILE examples/Tests/TestFilePort.hpp      MAIN_CLASS examples::tests::TestFilePort      C_NAME avnd_test_file)
 avnd_make_all(TARGET TestMultiSlider   MAIN_FILE examples/Tests/TestMultiSlider.hpp   MAIN_CLASS examples::tests::TestMultiSlider   C_NAME avnd_test_multislider)
+
+### Modifiers & file/dynamic ports (§1, §8) ###
+avnd_make_all(TARGET TestAccurate      MAIN_FILE examples/Tests/TestAccurate.hpp      MAIN_CLASS examples::tests::TestAccurate      C_NAME avnd_test_accurate)
+avnd_make_all(TARGET TestSmoothSlider  MAIN_FILE examples/Tests/TestSmoothSlider.hpp  MAIN_CLASS examples::tests::TestSmoothSlider  C_NAME avnd_test_smooth)
+avnd_make_all(TARGET TestSoundfilePort MAIN_FILE examples/Tests/TestSoundfilePort.hpp MAIN_CLASS examples::tests::TestSoundfilePort C_NAME avnd_test_soundfile)
+avnd_make_all(TARGET TestMidifilePort  MAIN_FILE examples/Tests/TestMidifilePort.hpp  MAIN_CLASS examples::tests::TestMidifilePort  C_NAME avnd_test_midifile)
+avnd_make_all(TARGET TestDynamicPort   MAIN_FILE examples/Tests/TestDynamicPort.hpp   MAIN_CLASS examples::tests::TestDynamicPort   C_NAME avnd_test_dynamic_port)
