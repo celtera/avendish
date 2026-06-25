@@ -10,12 +10,10 @@ struct from_dict
 {
   template <typename V>
     requires avnd::has_field_names<std::remove_cvref_t<V>>
-  void operator()(t_dictionary* d, V&& v) noexcept
+  void operator()(t_dictionary* d, V& v) noexcept
   {
-    v.clear();
-
     avnd::for_each_field_ref_n(
-        v, [&]<std::size_t N>(const auto& f, avnd::field_index<N>) {
+        v, [&]<std::size_t N>(auto& f, avnd::field_index<N>) {
       static constexpr auto name = std::remove_cvref_t<V>::field_names()[N];
       static const auto key = gensym(name.data());
 
@@ -23,18 +21,11 @@ struct from_dict
       t_atom* argv{};
       if(dictionary_getatoms(d, key, &argc, &argv) == MAX_ERR_NONE)
       {
-        from_atoms{argc, argv}(v[name]);
+        from_atoms{argc, argv}(f);
       }
       else if(t_atom value; dictionary_getatom(d, key, &value) == MAX_ERR_NONE)
       {
-        if constexpr(max::convertible_to_fundamental_value_type<V>)
-        {
-          from_atom{value}(v[name]);
-        }
-        else
-        {
-          // FIXME TODO
-        }
+        from_atom{value}(f);
       }
     });
   }

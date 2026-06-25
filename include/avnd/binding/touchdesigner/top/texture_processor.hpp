@@ -183,7 +183,8 @@ private:
 
     tex.width = download_result->textureDesc.width;
     tex.height = download_result->textureDesc.height;
-    tex.bytes = static_cast<unsigned char*>(download_result->getData());
+    tex.bytes = reinterpret_cast<std::decay_t<decltype(tex.bytes)>>(
+        download_result->getData());
     tex.changed = true;
 
     // Map TD pixel format to Avendish format
