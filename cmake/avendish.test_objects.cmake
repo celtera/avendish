@@ -40,7 +40,7 @@ avnd_make_all(TARGET TestCallback      MAIN_FILE examples/Tests/TestCallback.hpp
 avnd_make_all(TARGET TestMidiPassthrough MAIN_FILE examples/Tests/TestMidiPassthrough.hpp MAIN_CLASS examples::tests::TestMidiPassthrough C_NAME avnd_test_midi)
 
 ### Audio (§3) ###
-avnd_make(TARGET TestAudioGainMono MAIN_FILE examples/Tests/TestAudioGainMono.hpp MAIN_CLASS examples::tests::TestAudioGainMono C_NAME avnd_test_audio_mono BACKENDS dump ossia)
+avnd_make_all(TARGET TestAudioGainMono MAIN_FILE examples/Tests/TestAudioGainMono.hpp MAIN_CLASS examples::tests::TestAudioGainMono C_NAME avnd_test_audio_mono)
 avnd_make_all(TARGET TestAudioGainPoly MAIN_FILE examples/Tests/TestAudioGainPoly.hpp MAIN_CLASS examples::tests::TestAudioGainPoly C_NAME avnd_test_audio_poly)
 
 ### Buffer / Tensor (§6, §7) ###
