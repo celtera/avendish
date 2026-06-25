@@ -18,8 +18,10 @@ struct TestGpuBufferOutput
   struct { halp::gpu_buffer_output<"Out"> out; } outputs;
   void operator()()
   {
-    outputs.out.buffer.byte_size = inputs.bytes;
-    outputs.out.buffer.changed = true;
+    const int64_t bytes = inputs.bytes;
+    auto* data = outputs.out.allocate(bytes);
+    for(int64_t i = 0; i < bytes; i++)
+      data[i] = static_cast<unsigned char>(i & 0xFF);
   }
 };
 }

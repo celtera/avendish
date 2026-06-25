@@ -308,6 +308,59 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
 }
 
 
+// GPU buffers carry an opaque handle; on the (CPU-only) Max host the handle is
+// a host pointer, so move the bytes through a char matrix like a raw buffer.
+template<avnd::gpu_buffer_port Field>
+inline void buffer_to_matrix(const Field& field, void* matrix)
+{
+  if(!matrix)
+    return;
+
+  const auto& buf = field.buffer;
+  if(!buf.handle || buf.byte_size <= 0)
+    return;
+
+  resize_buffer(matrix, buf.byte_size, 1, _jit_sym_char);
+
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  std::memcpy(matrix_data, buf.handle, buf.byte_size);
+}
+
+template<avnd::gpu_buffer_port Field>
+inline void matrix_to_buffer(void* matrix, Field& field)
+{
+  if(!matrix)
+    return;
+
+  matrix_lock lock(matrix);
+
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  if(info.dimcount == 0)
+    return;
+
+  int64_t byte_size = info.planecount;
+  for(int i = 0; i < info.dimcount; i++)
+    byte_size *= info.dim[i];
+  if(byte_size == 0)
+    return;
+
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  auto& buf = field.buffer;
+  buf.handle = matrix_data;
+  buf.byte_size = byte_size;
+  buf.changed = true;
+}
+
 template<avnd::cpu_typed_buffer_port Field>
 inline void matrix_to_buffer(void* matrix, Field& field)
 {

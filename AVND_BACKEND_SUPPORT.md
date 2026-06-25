@@ -29,7 +29,7 @@ Objects with no chosen family are skipped on TD with a status message rather tha
 | Texture **R32F / RGBA32F** (float) | ok | ok | — | ok |
 | Buffer raw | ok | ok | ok | ok |
 | Buffer **typed** — `TestBufferTypedIO` | ok | ok | ok | ok¹ |
-| **GPU buffer** in/out | ok | **FAIL** | ok | — |
+| **GPU buffer** in/out | ok | ok | ok | — |
 | Tensor input | ok | ok | ok | ok |
 | Aggregate value (`halp_field_names`) | ok | ok | ok | ok¹ |
 | Geometry **static** prefab generator | ok | ok | — | ok |
@@ -51,8 +51,10 @@ Objects with no chosen family are skipped on TD with a status message rather tha
   to pick TOP/CHOP_AUDIO/CHOP_MESSAGE/SOP/POP/DAT; objects with no family are skipped (status
   message) instead of erroring. Buffers/aggregates bind as CHOP_MESSAGE (fixed a `buf.count` typo).
 
+- **GPU buffers**: `gpu_buffer_output` now owns host storage (`allocate(bytes)`); the Max jitter
+  path moves the bytes through a char matrix (handle = host pointer on CPU hosts). GPU-native
+  hosts (ossia/score, TD POP device-memory) still use their own GPU handles.
+
 ## Gaps remaining
-- **GPU buffers**: opaque `handle` has no CPU-side path on Max/Pd; needs a real upload/download
-  or CPU-backed fallback.
 - **TouchDesigner — dynamic geometry**: SOP only reads generators; input-geometry filter path
   is unimplemented (TODO in `sop/geometry_processor.hpp`).
