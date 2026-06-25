@@ -7,7 +7,11 @@ if(NOT EMSCRIPTEN)
   return()
 endif()
 
-set(AVND_WASM_JS_DIR "${AVND_SOURCE_DIR}/include/avnd/binding/wasm/js")
+# Cached so avnd_make_wasm (and the packaging helpers) still see it when called
+# from another directory scope -- e.g. an addon's avnd_addon_object, where
+# avendish is add_subdirectory'd and this file-scope set() would otherwise be
+# invisible, silently skipping all the configure_file/copy steps.
+set(AVND_WASM_JS_DIR "${AVND_SOURCE_DIR}/include/avnd/binding/wasm/js" CACHE INTERNAL "")
 
 set(AVND_WASM_COMMON_LINK_FLAGS
   "-sWASM=1"
