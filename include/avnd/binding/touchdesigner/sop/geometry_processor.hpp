@@ -79,8 +79,8 @@ struct geometry_processor : public TD::SOP_CPlusPlusBase
     // Update parameter values from TouchDesigner
     update_controls(inputs);
 
-    // TODO: Read input geometry if processor has geometry inputs
-    // For now, we only support generators (no inputs)
+    // Read input geometry into the object's geometry input ports
+    read_input_geometry(inputs);
 
     // Execute the processor
     struct tick
@@ -153,6 +153,93 @@ struct geometry_processor : public TD::SOP_CPlusPlusBase
   void getInfoPopupString(TD::OP_String* info, void* reserved) override {}
 
 private:
+  // A geometry port is either the geometry itself or a struct wrapping it in a
+  // `.mesh` member.
+  template <typename Field>
+  static auto& resolve_mesh(Field& field)
+  {
+    if constexpr(requires { field.mesh; })
+      return field.mesh;
+    else
+      return field;
+  }
+
+  // Read TD SOP input geometry into the object's geometry input ports. Only CPU
+  // dynamic_geometry is filled (point position/normal/color); GPU geometry is
+  // handled by the POP/VBO path. The TD-owned arrays stay valid for this cook.
+  void read_input_geometry(const TD::OP_Inputs* inputs)
+  {
+    if constexpr(avnd::geometry_input_introspection<T>::size > 0)
+    {
+      int input_index = 0;
+      avnd::geometry_input_introspection<T>::for_all(
+          avnd::get_inputs(implementation), [&]<typename Field>(Field& field) {
+        if(const TD::OP_SOPInput* sop = inputs->getInputSOP(input_index++))
+          load_sop_input(sop, field);
+      });
+    }
+  }
+
+  template <typename Field>
+  void load_sop_input(const TD::OP_SOPInput* sop, Field& field)
+  {
+    auto& geom = resolve_mesh(field);
+    using geom_t = std::decay_t<decltype(geom)>;
+    if constexpr(avnd::dynamic_geometry_type<geom_t>)
+    {
+      const int32_t num_points = sop->getNumPoints();
+      const TD::Position* pos = sop->getPointPositions();
+      if(num_points <= 0 || !pos)
+        return;
+
+      if constexpr(requires { geom.vertices; })
+        geom.vertices = num_points;
+
+      // Only host (raw_data) buffers can take CPU point data.
+      if constexpr(requires { geom.buffers.resize(1); geom.buffers[0].raw_data; })
+      {
+        struct src { const void* data; int comps; attribute_semantic sem; attribute_format fmt; };
+        src list[3];
+        int n = 0;
+        list[n++] = {pos, 3, attribute_semantic::position, attribute_format::float3};
+
+        if(const TD::SOP_NormalInfo* nrm = sop->getNormals();
+           nrm && nrm->normals && nrm->numNormals >= num_points)
+          list[n++] = {nrm->normals, 3, attribute_semantic::normal, attribute_format::float3};
+        if(const TD::SOP_ColorInfo* col = sop->getColors();
+           col && col->colors && col->numColors >= num_points)
+          list[n++] = {col->colors, 4, attribute_semantic::color0, attribute_format::float4};
+
+        geom.buffers.resize(n);
+        geom.bindings.resize(n);
+        geom.input.resize(n);
+        geom.attributes.resize(n);
+        for(int i = 0; i < n; i++)
+        {
+          auto& buf = geom.buffers[i];
+          buf.raw_data = const_cast<void*>(list[i].data);
+          buf.byte_size = (int64_t)num_points * list[i].comps * sizeof(float);
+          if constexpr(requires { buf.dirty; })
+            buf.dirty = true;
+
+          geom.bindings[i].stride = list[i].comps * sizeof(float);
+          geom.bindings[i].step_rate = 1;
+
+          geom.input[i].buffer = i;
+          geom.input[i].byte_offset = 0;
+
+          auto& a = geom.attributes[i];
+          a.binding = i;
+          a.byte_offset = 0;
+          a.semantic = decltype(a.semantic)(list[i].sem);
+          a.format = decltype(a.format)(list[i].fmt);
+          if constexpr(requires { a.name; })
+            a.name.clear();
+        }
+      }
+    }
+  }
+
   // Write Avendish geometry to SOP output
   void write_geometry(TD::SOP_Output* output)
   {
@@ -163,7 +250,20 @@ private:
       avnd::geometry_output_introspection<T>::for_all(
           avnd::get_outputs(implementation),
           [&]<typename Field>(Field& field) {
-        load_geometry(field.mesh, output);
+        // A geometry port is either the geometry itself or a struct wrapping it
+        // in a `.mesh` member (optionally a vector of meshes).
+        if constexpr(requires { field.mesh; })
+        {
+          if constexpr(avnd::static_geometry_type<decltype(field.mesh)>
+                       || avnd::dynamic_geometry_type<decltype(field.mesh)>)
+            load_geometry(field.mesh, output);
+          else
+            for(auto& m : field.mesh) { load_geometry(m, output); break; }
+        }
+        else
+        {
+          load_geometry(field, output);
+        }
       });
     }
   }

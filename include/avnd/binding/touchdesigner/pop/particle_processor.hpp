@@ -297,7 +297,7 @@ private:
       avnd::geometry_output_introspection<T>::for_all(
           avnd::get_outputs(implementation),
           [&]<typename Field>(Field& field) {
-        total_points = write_geometry_particles(field.mesh, output);
+        total_points = write_geometry_particles(resolve_mesh(field), output);
       });
     }
     // Case 2: Raw buffer outputs
@@ -883,10 +883,21 @@ private:
     });
   }
 
+  // A geometry port is either the geometry itself or a struct wrapping it in a
+  // `.mesh` member.
+  template <typename Field>
+  static auto& resolve_mesh(Field& field)
+  {
+    if constexpr(requires { field.mesh; })
+      return field.mesh;
+    else
+      return field;
+  }
+
   template <typename Field>
   void read_pop_to_geometry(const TD::OP_POPInput* pop_input, Field& field)
   {
-    auto& geom = field.mesh;
+    auto& geom = resolve_mesh(field);
 
     // Read position attribute
     TD::POP_GetBufferInfo get_info{};

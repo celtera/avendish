@@ -33,7 +33,7 @@ Objects with no chosen family are skipped on TD with a status message rather tha
 | Tensor input | ok | ok | ok | ok |
 | Aggregate value (`halp_field_names`) | ok | ok | ok | ok¹ |
 | Geometry **static** prefab generator | ok | ok | — | ok |
-| Geometry **dynamic** (CPU/GPU) filter | ok | ok | — | **FAIL** |
+| Geometry **dynamic** (CPU/GPU) filter | ok | ok | — | ok |
 | Metadata, ticks (tick/musical/flicks), lifecycle (prepare/initialize/bypass) | ok | ok | ok | ok |
 
 ## Fixed
@@ -54,7 +54,9 @@ Objects with no chosen family are skipped on TD with a status message rather tha
 - **GPU buffers**: `gpu_buffer_output` now owns host storage (`allocate(bytes)`); the Max jitter
   path moves the bytes through a char matrix (handle = host pointer on CPU hosts). GPU-native
   hosts (ossia/score, TD POP device-memory) still use their own GPU handles.
+- **TD dynamic geometry filters**: SOP/POP hardcoded a `.mesh` member; geometry ports can also
+  be the geometry directly. Added a mesh resolver and a functional SOP input reader
+  (point position/normal/color) so CPU `dynamic_geometry` filters work, not just generators.
 
-## Gaps remaining
-- **TouchDesigner — dynamic geometry**: SOP only reads generators; input-geometry filter path
-  is unimplemented (TODO in `sop/geometry_processor.hpp`).
+All seven gaps from the original audit are closed for the locally-verifiable backends
+(dump/max/pd/td). GPU-native data transfer on GPU-capable hosts remains host-managed by design.
