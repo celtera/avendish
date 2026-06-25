@@ -10,6 +10,10 @@ by compiling every object's generated per-backend binding TU (`tooling/backend_s
 `dump` / `max` / `pd` / `td` are verified locally (clang-cl). godot / python / wasm /
 vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object here.
 
+¹ TD has no automatic operator family for some port shapes (buffers, aggregates). Pick one
+explicitly: `BACKENDS … touchdesigner:CHOP_MESSAGE` (also `:TOP`/`:CHOP_AUDIO`/`:SOP`/`:POP`/`:DAT`).
+Objects with no chosen family are skipped on TD with a status message rather than erroring.
+
 | Feature (object) | dump | max | pd | td |
 |---|---|---|---|---|
 | Controls: float/int slider, knob, spinbox, toggle, lineedit, buttons, enum, xy, color, bargraph | ok | ok | ok | ok |
@@ -24,10 +28,10 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 | Texture RGBA8 / RGB / variable / generator | ok | ok | — | ok |
 | Texture **R32F / RGBA32F** (float) | ok | ok | — | ok |
 | Buffer raw | ok | ok | ok | ok |
-| Buffer **typed** — `TestBufferTypedIO` | ok | ok | ok | — |
+| Buffer **typed** — `TestBufferTypedIO` | ok | ok | ok | ok¹ |
 | **GPU buffer** in/out | ok | **FAIL** | ok | — |
 | Tensor input | ok | ok | ok | ok |
-| Aggregate value (`halp_field_names`) | ok | ok | ok | — |
+| Aggregate value (`halp_field_names`) | ok | ok | ok | ok¹ |
 | Geometry **static** prefab generator | ok | ok | — | ok |
 | Geometry **dynamic** (CPU/GPU) filter | ok | ok | — | **FAIL** |
 | Metadata, ticks (tick/musical/flicks), lifecycle (prepare/initialize/bypass) | ok | ok | ok | ok |
@@ -43,11 +47,12 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 - **Per-sample-arg audio** (`float operator()(float)`): the monophonic multi-instance
   effect-container's `full_state(i)` returned `effect[i].effect` (no such member); now `effect[i]`.
   Max/Pd `dumpall` helper also handled the multi-instance inputs range.
+- **TD operator-family selection**: `avnd_make(BACKENDS …)` now accepts `touchdesigner:<FAMILY>`
+  to pick TOP/CHOP_AUDIO/CHOP_MESSAGE/SOP/POP/DAT; objects with no family are skipped (status
+  message) instead of erroring. Buffers/aggregates bind as CHOP_MESSAGE (fixed a `buf.count` typo).
 
 ## Gaps remaining
 - **GPU buffers**: opaque `handle` has no CPU-side path on Max/Pd; needs a real upload/download
   or CPU-backed fallback.
 - **TouchDesigner — dynamic geometry**: SOP only reads generators; input-geometry filter path
   is unimplemented (TODO in `sop/geometry_processor.hpp`).
-- **TouchDesigner — operator family**: buffer/aggregate objects have no auto processor category;
-  needs explicit user selection (`touchdesigner:CHOP`/`SOP`/`DAT`/…).
