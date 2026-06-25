@@ -160,6 +160,19 @@ struct gpu_buffer_output
   operator halp::gpu_buffer&() noexcept { return buffer; }
 
   halp::gpu_buffer buffer{};
+
+  // Host-backed fallback: on backends without a GPU engine the handle points
+  // into this owned storage so the buffer carries real bytes.
+  unsigned char* allocate(int64_t bytes)
+  {
+    storage.resize(bytes, boost::container::default_init);
+    buffer.handle = storage.data();
+    buffer.byte_size = bytes;
+    buffer.changed = true;
+    return storage.data();
+  }
+
+  boost::container::vector<unsigned char> storage;
 };
 
 }
