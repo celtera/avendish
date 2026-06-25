@@ -383,7 +383,14 @@ function(avnd_make)
 
   foreach(backend ${AVND_BACKENDS})
     string(STRIP "${backend}" backend)
-    string(TOLOWER "${backend}" backend)
-    _avnd_dispatch_backend(${backend} ${ARGV})
+    # Optional "backend:PROCESSOR_TYPE" form to pick an operator family, e.g.
+    # touchdesigner:SOP, touchdesigner:CHOP_MESSAGE, godot:NODE.
+    if(backend MATCHES "^([^:]+):(.+)$")
+      string(TOLOWER "${CMAKE_MATCH_1}" backend)
+      _avnd_dispatch_backend(${backend} ${ARGV} PROCESSOR_TYPE "${CMAKE_MATCH_2}")
+    else()
+      string(TOLOWER "${backend}" backend)
+      _avnd_dispatch_backend(${backend} ${ARGV})
+    endif()
   endforeach()
 endfunction()

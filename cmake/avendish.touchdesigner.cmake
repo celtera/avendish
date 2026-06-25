@@ -37,6 +37,19 @@ set(AVND_TD_SOURCES
 function(avnd_make_touchdesigner)
   cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
 
+  # No operator family: the object has no TD-mappable processor category.
+  # Skip instead of failing on a missing "<empty>.prototype.cpp.in"; pick one
+  # explicitly with BACKENDS touchdesigner:<TOP|CHOP_AUDIO|CHOP_MESSAGE|SOP|POP|DAT>.
+  if(NOT AVND_PROCESSOR_TYPE)
+    message(STATUS "Skipping ${AVND_TARGET} (touchdesigner): no operator family; pass touchdesigner:<TOP|CHOP_MESSAGE|SOP|POP|DAT>")
+    return()
+  endif()
+
+  if(NOT EXISTS "${AVND_SOURCE_DIR}/include/avnd/binding/touchdesigner/${AVND_PROCESSOR_TYPE}.prototype.cpp.in")
+    message(STATUS "Skipping ${AVND_TARGET} (touchdesigner): unknown operator family '${AVND_PROCESSOR_TYPE}'")
+    return()
+  endif()
+
   if(MINGW OR CYGWIN OR MSYS OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(STATUS "Will not build ${AVND_TARGET} (touchdesigner): MinGW is not supported, use a compiler compatible with the MSVC ABI.")
     return()
