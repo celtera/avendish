@@ -97,10 +97,32 @@ inline void matrix_to_texture(
   if(!matrix_data)
     return;
 
+  // Jitter rows are padded to dimstride[1]; convert_input_texture reads a
+  // tightly-packed buffer, so re-pack a padded matrix first.
+  void* src = matrix_data;
+  static thread_local boost::container::vector<unsigned char> packed;
+  const long packed_row = (long)width * info.dimstride[0];
+  if(info.dimstride[1] != packed_row)
+  {
+    packed.resize(std::size_t(packed_row) * height);
+    const auto* s = static_cast<const unsigned char*>(matrix_data);
+    for(int y = 0; y < height; ++y)
+      std::memcpy(packed.data() + std::size_t(y) * packed_row,
+                  s + std::size_t(y) * info.dimstride[1], packed_row);
+    src = packed.data();
+  }
+
   auto& tex = field.texture;
   tex.width = width;
   tex.height = height;
-  tex.bytes = convert_input_texture(matrix_data, width, height, planes, info.type, temp_storage, spec.format);
+  tex.bytes = convert_input_texture(src, width, height, planes, info.type, temp_storage, spec.format);
+  // If no conversion happened the result aliases the transient `packed` scratch;
+  // copy into the per-field temp_storage so it survives until the processor runs.
+  if(tex.bytes == packed.data())
+  {
+    temp_storage.assign(packed.begin(), packed.end());
+    tex.bytes = temp_storage.data();
+  }
   tex.changed = true;
 }
 
@@ -152,7 +174,26 @@ inline void texture_to_matrix(const Field& field, void* matrix)
   if(!matrix_data)
     return;
 
-  copy_texture_to_max(fmt, matrix_data, tex.bytes, tex.width, tex.height, tex.bytesize());
+  // Jitter pads each matrix row to dimstride[1]; copy_texture_to_max writes a
+  // tightly-packed buffer, so write into a packed scratch and re-stride into the
+  // matrix when the row is padded (otherwise the bottom rows are dropped).
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+  const long packed_row = (long)tex.width * info.dimstride[0];
+  if(info.dimstride[1] == packed_row)
+  {
+    copy_texture_to_max(fmt, matrix_data, tex.bytes, tex.width, tex.height, tex.bytesize());
+  }
+  else
+  {
+    static thread_local boost::container::vector<unsigned char> scratch;
+    scratch.resize(std::size_t(packed_row) * tex.height);
+    copy_texture_to_max(fmt, scratch.data(), tex.bytes, tex.width, tex.height, tex.bytesize());
+    auto* d = static_cast<unsigned char*>(matrix_data);
+    for(int y = 0; y < tex.height; ++y)
+      std::memcpy(d + std::size_t(y) * info.dimstride[1],
+                  scratch.data() + std::size_t(y) * packed_row, packed_row);
+  }
 
   // Mark texture as no longer changed
   if constexpr(requires { tex.changed; })
