@@ -34,6 +34,7 @@ struct typed_buffer
 {
   T* elements{};
   int64_t element_count{};
+  int64_t byte_offset{};
   bool changed{};
 
   operator std::span<T>() const noexcept
