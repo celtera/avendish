@@ -193,7 +193,7 @@ struct output_write_visitor
   template<avnd::cpu_typed_buffer_port T>
   void operator()(const T& port, float* channel, int64_t samples)
   {
-    for(int i = 0, N = std::min(samples, (int64_t)port.buffer.count); i < N; i++) {
+    for(int i = 0, N = std::min(samples, port.buffer.element_count); i < N; i++) {
       channel[i] = port.buffer.elements[i];
     }
   }
