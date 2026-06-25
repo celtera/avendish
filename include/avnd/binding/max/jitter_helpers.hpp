@@ -271,8 +271,8 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
     if(!buf.changed)
       return;
 
-  // Skip if texture is invalid
-  if(!buf.elements || buf.count <= 0)
+  // Skip if buffer is invalid
+  if(!buf.elements || buf.element_count <= 0)
     return;
 
   using buffer_type = std::decay_t<decltype(buf)>;
@@ -290,7 +290,7 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
   if(!sym)
     return;
 
-  resize_buffer(matrix, buf.count, 1, sym);
+  resize_buffer(matrix, buf.element_count, 1, sym);
 
   // Get pointer to matrix data
   void* matrix_data = nullptr;
@@ -298,7 +298,7 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
   if(!matrix_data)
     return;
 
-  std::memcpy(matrix_data, buf.elements, buf.count * sizeof(value_type));
+  std::memcpy(matrix_data, buf.elements, buf.element_count * sizeof(value_type));
 
   // Mark texture as no longer changed
   if constexpr(requires { buf.changed; })
@@ -308,7 +308,40 @@ inline void buffer_to_matrix(const Field& field, void* matrix)
 }
 
 
-template<avnd::buffer_port Field>
+template<avnd::cpu_typed_buffer_port Field>
+inline void matrix_to_buffer(void* matrix, Field& field)
+{
+  if(!matrix)
+    return;
+
+  matrix_lock lock(matrix);
+
+  t_jit_matrix_info info;
+  jit_object_method(matrix, _jit_sym_getinfo, &info);
+
+  if(info.dimcount == 0)
+    return;
+
+  int64_t num_elements = info.planecount;
+  for(int i = 0; i < info.dimcount; i++)
+    num_elements *= info.dim[i];
+  if(num_elements == 0)
+    return;
+
+  void* matrix_data = nullptr;
+  jit_object_method(matrix, _jit_sym_getdata, &matrix_data);
+  if(!matrix_data)
+    return;
+
+  auto& buf = field.buffer;
+  using value_type
+      = std::decay_t<std::remove_pointer_t<std::decay_t<decltype(buf.elements)>>>;
+  buf.elements = reinterpret_cast<value_type*>(matrix_data);
+  buf.element_count = num_elements;
+  buf.changed = true;
+}
+
+template<avnd::cpu_raw_buffer_port Field>
 inline void matrix_to_buffer(void* matrix, Field& field)
 {
   if(!matrix)

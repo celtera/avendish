@@ -22,28 +22,31 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 | Audio: per-sample **ports**, bus (args/fixed/dynamic), per-frame, variable channels | ok | ok | ok | ok |
 | Audio: per-sample **args** (`float operator()(float)`) — `TestAudioGainMono` | ok | FAIL | FAIL | FAIL |
 | Texture RGBA8 / RGB / variable / generator | ok | ok | — | ok |
-| Texture **R32F / RGBA32F** (float) | ok | ok | — | **FAIL** |
+| Texture **R32F / RGBA32F** (float) | ok | ok | — | ok |
 | Buffer raw | ok | ok | ok | ok |
-| Buffer **typed** — `TestBufferTypedIO` | ok | **FAIL** | ok | — |
+| Buffer **typed** — `TestBufferTypedIO` | ok | ok | ok | — |
 | **GPU buffer** in/out | ok | **FAIL** | ok | — |
 | Tensor input | ok | ok | ok | ok |
-| Aggregate value (`halp_field_names`) | ok | **FAIL** | ok | — |
+| Aggregate value (`halp_field_names`) | ok | ok | ok | — |
 | Geometry **static** prefab generator | ok | ok | — | ok |
 | Geometry **dynamic** (CPU/GPU) filter | ok | ok | — | **FAIL** |
 | Metadata, ticks (tick/musical/flicks), lifecycle (prepare/initialize/bypass) | ok | ok | ok | ok |
 
-## Gaps found
-- **Per-sample-arg audio** (`float operator()(float)`): fails on Max, Pd, and TD — only the
-  per-sample *port* form (`audio_sample<>` in `inputs`/`outputs` types) binds on the patch
-  backends.
-- **TouchDesigner TOP — float texture formats**: `R32F` / `RGBA32F` fail to compile; 8-bit
-  RGBA/RGB are fine. (TD `OP_PixelFormat` float-format mapping path.)
-- **TouchDesigner — dynamic geometry**: `dynamic_geometry` / `dynamic_gpu_geometry` in+out
-  filters fail; only static-prefab geometry *generators* (SOP) compile.
-- **Max/Jitter**: typed buffers, GPU buffers, and aggregate value ports fail (the jitter
-  binding assumes char/raw matrix data; `gpu_buffer` has no `raw_data`, etc.).
-- **TouchDesigner**: typed/GPU buffers and aggregate ports have no CHOP/TOP/SOP processor
-  category, so the TD prototype dispatch can't configure them (`—`); only raw buffer (CHOP) works.
+## Fixed
+- **TouchDesigner TOP — float textures** (`R32F`/`RGBA32F`): download path cast `float*` from
+  `unsigned char*`; now casts to the texture's actual byte pointer type.
+- **Max/Jitter — typed buffers**: `cpu_typed_buffer` required `byte_offset` (absent on
+  `typed_buffer`), so `setup` fell through to a deleted overload; added the member and a typed
+  `matrix_to_buffer` path (plus a latent `buf.count`→`element_count` typo).
+- **Max/Jitter — aggregate value ports**: `from_dict`'s field-named overload took `V&&` and lost
+  partial-ordering to the deleted `V&` catch-all; now `V&`, decomposing the struct field-by-field.
 
-These are candidate follow-up fixes in the respective avendish bindings; for now the affected
-objects are registered only for the backends where they compile.
+## Gaps remaining
+- **Per-sample-arg audio** (`float operator()(float)`): fails on Max, Pd, and TD — only the
+  per-sample *port* form binds. Poly effect-container replication bug.
+- **GPU buffers**: opaque `handle` has no CPU-side path on Max/Pd; needs a real upload/download
+  or CPU-backed fallback.
+- **TouchDesigner — dynamic geometry**: SOP only reads generators; input-geometry filter path
+  is unimplemented (TODO in `sop/geometry_processor.hpp`).
+- **TouchDesigner — operator family**: buffer/aggregate objects have no auto processor category;
+  needs explicit user selection (`touchdesigner:CHOP`/`SOP`/`DAT`/…).
