@@ -28,6 +28,7 @@ include(cmake/avendish.cmake)
 # not if it is add_subdirectory'd
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
   include(avendish.examples)
+  include(avendish.test_objects)
 
 target_sources(Addition
   PRIVATE

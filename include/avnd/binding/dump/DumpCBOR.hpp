@@ -170,12 +170,23 @@ template <typename Field>
 std::string_view port_type(Field f)
 {
   using type = typename Field::type;
+  // tensor/buffer/geometry before parameter: a tensor_port also exposes `.value`.
   if constexpr(avnd::audio_port<type>)
     return "audio";
   else if constexpr(avnd::midi_port<type>)
     return "midi";
   else if constexpr(avnd::texture_port<type>)
     return "texture";
+  else if constexpr(avnd::buffer_port<type>)
+    return "buffer";
+  else if constexpr(avnd::tensor_port<type>)
+    return "tensor";
+  else if constexpr(avnd::geometry_port<type>)
+    return "geometry";
+  else if constexpr(avnd::sampler_port<type>)
+    return "sampler";
+  else if constexpr(avnd::attachment_port<type>)
+    return "attachment";
   else if constexpr(avnd::image_port<type>)
     return "image";
   else if constexpr(avnd::parameter_port<type>)
@@ -194,15 +205,26 @@ std::string_view parameter_value_type(Field f)
   using type = typename Field::type;
   if constexpr(avnd::int_parameter<type>)
     return "int";
-  if constexpr(avnd::float_parameter<type>)
+  else if constexpr(avnd::float_parameter<type>)
     return "float";
-  if constexpr(avnd::bool_parameter<type>)
+  else if constexpr(avnd::bool_parameter<type>)
     return "bool";
-  if constexpr(avnd::string_parameter<type>)
+  else if constexpr(avnd::string_parameter<type>)
     return "string";
-  if constexpr(avnd::enum_parameter<type>)
+  else if constexpr(avnd::enum_parameter<type>)
     return "enum";
-  return "unknown";
+  else if constexpr(avnd::xyzw_parameter<type>)
+    return "xyzw";
+  else if constexpr(avnd::xyz_parameter<type>)
+    return "xyz";
+  else if constexpr(avnd::rgba_parameter<type>)
+    return "rgba";
+  else if constexpr(avnd::rgb_parameter<type>)
+    return "rgb";
+  else if constexpr(avnd::xy_parameter<type>)
+    return "xy";
+  else
+    return "unknown";
 }
 
 template <typename Field>
@@ -277,10 +299,74 @@ void print_audio(dump_json::value obj)
     obj["sample_format"] = "double";
     obj["port_format"] = "bus";
   }
+  else if constexpr(avnd::audio_frame_port<float, type>)
+  {
+    obj["sample_format"] = "float";
+    obj["port_format"] = "frame";
+  }
+  else if constexpr(avnd::audio_frame_port<double, type>)
+  {
+    obj["sample_format"] = "double";
+    obj["port_format"] = "frame";
+  }
   else
   {
-    static_assert(std::is_void_v<Field>, "Unrecognized audio port type");
+    obj["port_format"] = "unknown";
   }
+}
+
+template <typename Field>
+void print_buffer(dump_json::value obj)
+{
+  using type = typename Field::type;
+  if constexpr(avnd::gpu_buffer_port<type>)
+    obj["storage"] = "gpu";
+  else if constexpr(avnd::cpu_typed_buffer_port<type>)
+    obj["storage"] = "cpu_typed";
+  else if constexpr(avnd::cpu_raw_buffer_port<type>)
+    obj["storage"] = "cpu_raw";
+  else
+    obj["storage"] = "unknown";
+}
+
+template <typename Field>
+void print_tensor(dump_json::value obj)
+{
+  using type = typename Field::type;
+  using val = std::decay_t<decltype(std::declval<type&>().value)>;
+  if constexpr(avnd::view_tensor_like<val>)
+    obj["container"] = "view";
+  else if constexpr(avnd::resizable_tensor_like<val>)
+    obj["container"] = "resizable";
+  else if constexpr(avnd::mutable_tensor_like<val>)
+    obj["container"] = "mutable";
+  else if constexpr(avnd::dynamic_tensor_like<val>)
+    obj["container"] = "dynamic";
+  else
+    obj["container"] = "unknown";
+
+  if constexpr(avnd::tensor_like<val>)
+  {
+    using el = avnd::tensor_element<val>;
+    if constexpr(avnd::has_avnd_dtype<el>)
+    {
+      constexpr auto d = avnd::dtype_of<el>;
+      obj["dtype_code"] = (int)d.code;
+      obj["dtype_bits"] = (int)d.bits;
+    }
+  }
+}
+
+template <typename Field>
+void print_geometry(dump_json::value obj)
+{
+  using type = typename Field::type;
+  if constexpr(avnd::dynamic_geometry_type<type>)
+    obj["geometry"] = "dynamic";
+  else if constexpr(avnd::static_geometry_type<type>)
+    obj["geometry"] = "static";
+  else
+    obj["geometry"] = "mesh"; // geometry carried in a `.mesh` member
 }
 
 template <typename Field>
@@ -413,26 +499,35 @@ void print_generated_outputs(dump_json::value arr)
     arr.push_back(obj);
 }
 
+template <typename Field>
+void emit_port(Field wrap, dump_json::value obj)
+{
+  using type = typename Field::type;
+  print_metadatas<type>(obj);
+  obj["type"] = port_type(wrap);
+
+  if constexpr(avnd::tensor_port<type>)
+    print_tensor<Field>(obj["tensor"]);
+  else if constexpr(avnd::buffer_port<type>)
+    print_buffer<Field>(obj["buffer"]);
+  else if constexpr(avnd::geometry_port<type>)
+    print_geometry<Field>(obj["geometry"]);
+  else if constexpr(avnd::parameter_port<type>)
+    print_parameter<Field>(obj["parameter"]);
+  else if constexpr(avnd::audio_port<type>)
+    print_audio<Field>(obj["audio"]);
+  else if constexpr(avnd::callback<type>)
+    print_callback<Field>(obj["callback"]);
+}
+
 template <typename Processor>
 void print_inputs(dump_json::value arr)
 {
   print_generated_inputs<Processor>(arr);
 
   avnd::input_introspection<Processor>::for_all([&]<typename Field>(Field wrap) {
-    using type = typename Field::type;
     auto obj = arr.owner->make_node();
-    print_metadatas<type>(obj);
-    obj["type"] = port_type(wrap);
-
-    if constexpr(avnd::parameter_port<type>)
-    {
-      print_parameter<Field>(obj["parameter"]);
-    }
-    else if constexpr(avnd::audio_port<type>)
-    {
-      print_audio<Field>(obj["audio"]);
-    }
-
+    emit_port(wrap, obj);
     arr.push_back(obj);
   });
 }
@@ -443,15 +538,8 @@ void print_outputs(dump_json::value arr)
   print_generated_outputs<Processor>(arr);
 
   avnd::output_introspection<Processor>::for_all([&]<typename Field>(Field wrap) {
-    using type = typename Field::type;
     auto obj = arr.owner->make_node();
-    print_metadatas<type>(obj);
-    obj["type"] = port_type(wrap);
-
-    if constexpr(avnd::callback<type>)
-    {
-      print_callback<Field>(obj["callback"]);
-    }
+    emit_port(wrap, obj);
     arr.push_back(obj);
   });
 }
