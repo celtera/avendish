@@ -32,4 +32,6 @@ concept raw_file_port = requires(T t) {
 // Folder port is simply a value port with a std::string as there's not really any
 // filtering or special operations to be done
 AVND_DEFINE_TAG(file_watch)
+AVND_DEFINE_TAG(file_load)
+AVND_DEFINE_TAG(file_create)
 }
