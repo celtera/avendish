@@ -15,6 +15,7 @@ function(avnd_make_dump)
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
+  avnd_main_import(AVND_MAIN_IMPORT "${AVND_MAIN_FILE}" "${AVND_C_NAME}")
   configure_file(
     "${AVND_SOURCE_DIR}/include/avnd/binding/dump/prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_dump.cpp"
@@ -31,10 +32,10 @@ function(avnd_make_dump)
       RUNTIME_OUTPUT_DIRECTORY dump
   )
 
+  avnd_add_object_to_backend(${AVND_FX_TARGET} ${AVND_TARGET} "${AVND_MAIN_FILE}")
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
-      "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_dump.cpp"
   )
 

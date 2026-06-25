@@ -3,7 +3,7 @@
 // clang-format off
 #include <avnd/binding/gstreamer/element.hpp>
 #include <avnd/binding/gstreamer/configuration.hpp>
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 
 
 using type = decltype(avnd::configure<gst::config, @AVND_MAIN_CLASS@>())::type;

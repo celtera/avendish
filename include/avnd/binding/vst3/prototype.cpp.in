@@ -5,7 +5,7 @@
 #include <avnd/common/export.hpp>
 
 // clang-format off
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 
 // Needed everywhere
 bool InitModule() { return true; }

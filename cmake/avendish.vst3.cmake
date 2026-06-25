@@ -50,10 +50,10 @@ function(avnd_make_vst3)
     NEWLINE_STYLE LF
   )
 
+  avnd_add_object_to_backend(${AVND_FX_TARGET} ${AVND_TARGET} "${AVND_MAIN_FILE}")
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE
-      "${AVND_MAIN_FILE}"
       "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_vst3.cpp"
   )
 

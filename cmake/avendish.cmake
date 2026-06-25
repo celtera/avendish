@@ -53,6 +53,10 @@ function(_avnd_dispatch_backend backend)
   if(DEFINED ${_flag} AND NOT ${${_flag}})
     return()
   endif()
+  # Compute the prototype's object-pull-in line once; the called backend's
+  # configure_file picks up AVND_MAIN_IMPORT from this (calling) scope.
+  cmake_parse_arguments(AVND "" "MAIN_FILE;C_NAME" "" ${ARGN})
+  avnd_main_import(AVND_MAIN_IMPORT "${AVND_MAIN_FILE}" "${AVND_C_NAME}")
   cmake_language(CALL "avnd_make_${backend}" ${ARGN})
 endfunction()
 
@@ -265,6 +269,7 @@ add_library(avnd_dummy_lib OBJECT "${AVND_SOURCE_DIR}/src/dummy.cpp")
 include(avendish.dependencies)
 include(avendish.disableexceptions)
 include(avendish.sources)
+include(avendish.modules)
 include(avendish.tools)
 
 include(avendish.ui.qt)
@@ -292,7 +297,7 @@ function(avnd_register)
     add_library("${AVND_TARGET}" STATIC $<TARGET_OBJECTS:avnd_dummy_lib>)
   endif()
 
-  target_sources("${AVND_TARGET}" PRIVATE "${AVND_MAIN_FILE}")
+  avnd_add_object_to_base("${AVND_TARGET}" "${AVND_MAIN_FILE}")
   if(AVND_COMPILE_OPTIONS)
     target_compile_options("${AVND_TARGET}" PUBLIC "${AVND_COMPILE_OPTIONS}")
   endif()

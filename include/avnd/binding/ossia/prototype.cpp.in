@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <@AVND_MAIN_FILE@>
 #include <avnd/binding/ossia/all.hpp>
 #include <avnd/binding/ossia/configure.hpp>
+
+@AVND_MAIN_IMPORT@
 
 using type = decltype(avnd::configure<oscr::config, @AVND_MAIN_CLASS@>())::type;
 

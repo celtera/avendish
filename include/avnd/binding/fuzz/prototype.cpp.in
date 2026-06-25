@@ -12,7 +12,7 @@ struct config
 };
 }
 
-#include <@AVND_MAIN_FILE@>
+@AVND_MAIN_IMPORT@
 
 // libFuzzer provides main(); we only supply the per-input entry point.
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size)

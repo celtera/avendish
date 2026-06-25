@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <@AVND_MAIN_FILE@>
 #include <avnd/binding/clap/audio_effect.hpp>
 #include <avnd/binding/clap/configure.hpp>
+
+@AVND_MAIN_IMPORT@
 
 // clang-format off
 using plug_type = decltype(avnd::configure<avnd_clap::config, @AVND_MAIN_CLASS@>())::type;

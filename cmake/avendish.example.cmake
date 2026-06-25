@@ -1,7 +1,7 @@
 include(CTest)
 
 function(avnd_make_example_host)
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS" "" ${ARGN})
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
 
   set(AVND_FX_TARGET "${AVND_TARGET}_example_host")
   if(TARGET "${AVND_FX_TARGET}")
@@ -11,6 +11,7 @@ function(avnd_make_example_host)
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
+  avnd_main_import(AVND_MAIN_IMPORT "${AVND_MAIN_FILE}" "${AVND_C_NAME}")
   configure_file(
     "${AVND_SOURCE_DIR}/include/avnd/binding/example/prototype.cpp.in"
     "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_example_host.cpp"
@@ -25,6 +26,7 @@ function(avnd_make_example_host)
     PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY example
   )
+  avnd_add_object_to_backend(${AVND_FX_TARGET} ${AVND_TARGET} "${AVND_MAIN_FILE}")
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE

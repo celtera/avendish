@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 // clang-format off
-#include <@AVND_MAIN_FILE@>
 #include <avnd/binding/pd/audio_processor.hpp>
 #include <avnd/binding/pd/message_processor.hpp>
 #include <avnd/binding/pd/configure.hpp>
+
+@AVND_MAIN_IMPORT@
 using type = decltype(avnd::configure<pd::config, @AVND_MAIN_CLASS@>())::type;
 // clang-format on
 
