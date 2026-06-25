@@ -45,7 +45,7 @@ avnd_make_all(TARGET TestAudioGainPoly MAIN_FILE examples/Tests/TestAudioGainPol
 
 ### Buffer / Tensor (§6, §7) ###
 avnd_make_all(TARGET TestBufferRawIO   MAIN_FILE examples/Tests/TestBufferRawIO.hpp   MAIN_CLASS examples::tests::TestBufferRawIO   C_NAME avnd_test_buffer_raw)
-avnd_make(TARGET TestBufferTypedIO MAIN_FILE examples/Tests/TestBufferTypedIO.hpp MAIN_CLASS examples::tests::TestBufferTypedIO C_NAME avnd_test_buffer_typed BACKENDS dump ossia)
+avnd_make(TARGET TestBufferTypedIO MAIN_FILE examples/Tests/TestBufferTypedIO.hpp MAIN_CLASS examples::tests::TestBufferTypedIO C_NAME avnd_test_buffer_typed BACKENDS dump ossia pd touchdesigner)
 avnd_make_all(TARGET TestTensorInput   MAIN_FILE examples/Tests/TestTensorInput.hpp   MAIN_CLASS examples::tests::TestTensorInput   C_NAME avnd_test_tensor)
 
 ### Metadata (§11) ###
@@ -54,7 +54,7 @@ avnd_make_all(TARGET TestMetadata      MAIN_FILE examples/Tests/TestMetadata.hpp
 ### More controls + structured (§1, §10) ###
 avnd_make_all(TARGET TestSpinbox   MAIN_FILE examples/Tests/TestSpinbox.hpp   MAIN_CLASS examples::tests::TestSpinbox   C_NAME avnd_test_spinbox)
 avnd_make_all(TARGET TestColor     MAIN_FILE examples/Tests/TestColor.hpp     MAIN_CLASS examples::tests::TestColor     C_NAME avnd_test_color)
-avnd_make(TARGET TestAggregate MAIN_FILE examples/Tests/TestAggregate.hpp MAIN_CLASS examples::tests::TestAggregate C_NAME avnd_test_aggregate BACKENDS dump ossia)
+avnd_make(TARGET TestAggregate MAIN_FILE examples/Tests/TestAggregate.hpp MAIN_CLASS examples::tests::TestAggregate C_NAME avnd_test_aggregate BACKENDS dump ossia pd touchdesigner)
 
 ### Audio forms (§3) ###
 avnd_make_all(TARGET TestAudioSamplePorts     MAIN_FILE examples/Tests/TestAudioSamplePorts.hpp     MAIN_CLASS examples::tests::TestAudioSamplePorts     C_NAME avnd_test_audio_sample_ports)
@@ -64,8 +64,8 @@ avnd_make_all(TARGET TestAudioFrame           MAIN_FILE examples/Tests/TestAudio
 avnd_make_all(TARGET TestAudioVariableChannels MAIN_FILE examples/Tests/TestAudioVariableChannels.hpp MAIN_CLASS examples::tests::TestAudioVariableChannels C_NAME avnd_test_audio_variable)
 
 ### GPU buffers (§6) ###
-avnd_make(TARGET TestGpuBufferInput  MAIN_FILE examples/Tests/TestGpuBufferInput.hpp  MAIN_CLASS examples::tests::TestGpuBufferInput  C_NAME avnd_test_gpu_buffer_in BACKENDS dump ossia)
-avnd_make(TARGET TestGpuBufferOutput MAIN_FILE examples/Tests/TestGpuBufferOutput.hpp MAIN_CLASS examples::tests::TestGpuBufferOutput C_NAME avnd_test_gpu_buffer_out BACKENDS dump ossia)
+avnd_make(TARGET TestGpuBufferInput  MAIN_FILE examples/Tests/TestGpuBufferInput.hpp  MAIN_CLASS examples::tests::TestGpuBufferInput  C_NAME avnd_test_gpu_buffer_in BACKENDS dump ossia pd touchdesigner)
+avnd_make(TARGET TestGpuBufferOutput MAIN_FILE examples/Tests/TestGpuBufferOutput.hpp MAIN_CLASS examples::tests::TestGpuBufferOutput C_NAME avnd_test_gpu_buffer_out BACKENDS dump ossia pd touchdesigner)
 
 ### Geometry: static / dynamic, CPU / GPU (§8) ###
 avnd_make_geometry(TARGET TestGeometryStaticGenerator MAIN_FILE examples/Tests/TestGeometryStaticGenerator.hpp MAIN_CLASS examples::tests::TestGeometryStaticGenerator C_NAME avnd_test_geom_static)
