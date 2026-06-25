@@ -7,8 +7,8 @@ if(MSVC)
       PUBLIC
        -std:c++latest
        -Zi
-       "/FS" # serialize PDB writes: parallel cl.exe on one target share vcNNN.pdb (C1041) with -Zi
-       "/bigobj" # avendish's heavy template instantiation overruns the COFF section limit (C1128)
+       "/FS"
+       "/bigobj"
        "-permissive-"
        "-Zc:__cplusplus"
        "-Zc:enumTypes"
@@ -27,7 +27,7 @@ if(MSVC)
        "-permissive-"
        "-Zc:__cplusplus"
        "-Zc:inline"
-       "/bigobj" # heavy template instantiation can overrun the COFF section limit (C1128)
+       "/bigobj"
        -wd4244 # float -> int lossy conversion warning
        -wd4068 # disables warning C4068: unknown pragma 'GCC'
        -Werror=return-type

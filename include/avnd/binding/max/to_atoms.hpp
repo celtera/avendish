@@ -11,13 +11,7 @@
 
 namespace max
 {
-// magic_enum's enum_name() returns a std::string_view that is a substring of a
-// static signature buffer and is therefore NOT null-terminated. gensym() (and
-// the other Max C string APIs) read until a NUL, so handing them .data()
-// directly makes them run off the end and intern whatever trailing bytes follow
-// -- which is exactly the "weird unicode characters" seen in the Max window when
-// an object with an enum control is instantiated. Always copy the name into a
-// NUL-terminated buffer first.
+// gensym needs a NUL-terminated string; enum_name() returns a non-terminated view.
 template <typename E>
   requires std::is_enum_v<E>
 inline t_symbol* enum_sym(E v) noexcept

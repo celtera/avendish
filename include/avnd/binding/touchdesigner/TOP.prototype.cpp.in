@@ -26,20 +26,10 @@ DLLEXPORT
 void FillTOPPluginInfo(TD::TOP_PluginInfo* info)
 {
   info->apiVersion = TD::TOPCPlusPlusAPIVersion;
-  // TD does not rely on the C++ default member initializer here: the struct it
-  // hands us is zero-filled, so executeMode would otherwise be 0
-  // (TOP_ExecuteMode::Unsupported), which makes TD reject/crash the operator on
-  // instantiation. The CPUMem path is exactly what texture_processor implements
-  // (createOutputBuffer / uploadBuffer). Mirrors the SDK BasicFilterTOP sample.
   info->executeMode = TD::TOP_ExecuteMode::CPUMem;
   touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_PROCESSOR_TYPE@");
 }
 
-// NB: TOP (and POP) Create/Destroy take a *_Context* second argument -- unlike
-// CHOP/DAT/SOP which take only OP_NodeInfo*. The SDK loader calls these through
-// CREATETOPINSTANCE = TOP_CPlusPlusBase*(*)(const OP_NodeInfo*, TOP_Context*) and
-// DESTROYTOPINSTANCE = void(*)(TOP_CPlusPlusBase*, TOP_Context*)
-// (CPlusPlus_Common.h). Declaring the 1-arg form is an ABI mismatch.
 DLLEXPORT
 TD::TOP_CPlusPlusBase* CreateTOPInstance(const TD::OP_NodeInfo* info, TD::TOP_Context* context)
 {

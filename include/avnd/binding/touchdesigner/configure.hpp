@@ -103,8 +103,7 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   std::string nm2 = sanitize_td_name(nm);
   op.opType->setString(nm2.c_str());
   op.opLabel->setString(nm2.c_str());
-  // opIcon wants up to three letters/digits; guard against names shorter than
-  // three characters (nm2 is sanitized but can be as short as one char).
+  // opIcon: up to three letters/digits.
   char icon[4]{0, 0, 0, 0};
   for(std::size_t i = 0; i < 3 && i < nm2.size(); ++i)
     icon[i] = nm2[i];

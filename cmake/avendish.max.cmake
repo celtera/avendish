@@ -156,16 +156,7 @@ function(avnd_make_max)
       C74_USE_STRICT_TYPES=1
   )
 
-  # The Max SDK's variadic-call helpers (C74_VARFUN -> jit_object_method / object_method /
-  # jit_object_new ..., see c74support/.../ext_preprocessor.h) paste C74_VARFUN_<n> and
-  # rely on MSVC's *legacy* preprocessor rescan rules. Avendish (and halp's own
-  # HALP_FOREACH / halp_field_names) require the *conformant* preprocessor
-  # (-Zc:preprocessor, enabled PUBLIC on the Avendish core target), and the two collide in
-  # the same TU -- which is why these externals only build with clang-cl (clang handles
-  # both) and fail with cl.exe (C3861: 'C74_VARFUN_3' not found). We cannot drop to the
-  # legacy preprocessor here (it breaks halp_field_names: C4002), so instead force-include
-  # a tiny shim that redefines C74_VARFUN with a conformant-safe dispatch. The shim is a
-  # no-op on clang-cl and on the legacy preprocessor (it is guarded on _MSVC_TRADITIONAL==0).
+  # Make the Max SDK's C74_VARFUN work under MSVC's conformant preprocessor.
   if(MSVC AND NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
     target_compile_options(${AVND_FX_TARGET} PRIVATE
       "/FI${AVND_SOURCE_DIR}/include/avnd/binding/max/c74_varfun_conformant.hpp")

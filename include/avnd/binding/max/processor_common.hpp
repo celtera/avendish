@@ -22,9 +22,7 @@ struct processor_common
 
   }
 
-  // Max gives us a fixed ASSIST_MAX_STRING_LEN (500) buffer. Bound the copy and use
-  // the view's size rather than strcpy: get_description() may return a string_view
-  // that is not null-terminated, and a long description would overflow dst.
+  // Bounded copy into Max's fixed-size assist buffer.
   static void copy_assist(char* dst, std::string_view str)
   {
     snprintf(dst, ASSIST_MAX_STRING_LEN, "%.*s", (int)str.size(), str.data());
