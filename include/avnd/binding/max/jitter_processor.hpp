@@ -164,6 +164,18 @@ struct avnd_jit_class
     }
   }
 
+  template<avnd::gpu_buffer_port Field, std::size_t Idx>
+  void write_matrix(void* outputs, Field& field, avnd::predicate_index<Idx>)
+  {
+    if(void* out_matrix = jit_object_method(outputs, _jit_sym_getindex, Idx))
+    {
+      if(const auto& buf = field.buffer; buf.handle && buf.byte_size > 0)
+      {
+        max::jitter::buffer_to_matrix(field, out_matrix);
+      }
+    }
+  }
+
   template<avnd::tensor_port Field, std::size_t Idx>
   void read_matrix(void* inputs, Field& field, avnd::predicate_index<Idx>)
   {

@@ -64,8 +64,8 @@ avnd_make_all(TARGET TestAudioFrame           MAIN_FILE examples/Tests/TestAudio
 avnd_make_all(TARGET TestAudioVariableChannels MAIN_FILE examples/Tests/TestAudioVariableChannels.hpp MAIN_CLASS examples::tests::TestAudioVariableChannels C_NAME avnd_test_audio_variable)
 
 ### GPU buffers (§6) ###
-avnd_make(TARGET TestGpuBufferInput  MAIN_FILE examples/Tests/TestGpuBufferInput.hpp  MAIN_CLASS examples::tests::TestGpuBufferInput  C_NAME avnd_test_gpu_buffer_in BACKENDS dump ossia pd)
-avnd_make(TARGET TestGpuBufferOutput MAIN_FILE examples/Tests/TestGpuBufferOutput.hpp MAIN_CLASS examples::tests::TestGpuBufferOutput C_NAME avnd_test_gpu_buffer_out BACKENDS dump ossia pd)
+avnd_make(TARGET TestGpuBufferInput  MAIN_FILE examples/Tests/TestGpuBufferInput.hpp  MAIN_CLASS examples::tests::TestGpuBufferInput  C_NAME avnd_test_gpu_buffer_in BACKENDS dump ossia pd max)
+avnd_make(TARGET TestGpuBufferOutput MAIN_FILE examples/Tests/TestGpuBufferOutput.hpp MAIN_CLASS examples::tests::TestGpuBufferOutput C_NAME avnd_test_gpu_buffer_out BACKENDS dump ossia pd max)
 
 ### Geometry: static / dynamic, CPU / GPU (§8) ###
 avnd_make_geometry(TARGET TestGeometryStaticGenerator MAIN_FILE examples/Tests/TestGeometryStaticGenerator.hpp MAIN_CLASS examples::tests::TestGeometryStaticGenerator C_NAME avnd_test_geom_static)
