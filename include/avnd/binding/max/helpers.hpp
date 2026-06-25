@@ -73,8 +73,9 @@ static void process_generic_message(T& implementation, t_symbol* s)
   if("dumpall"sv == s->s_name)
   {
     int k = 0;
-    avnd::input_introspection<object_type>::for_all(
-        avnd::get_inputs<object_type>(implementation), [&k]<typename C>(C& ctl) {
+    auto dump_inputs = [&]<typename Ins>(Ins& ins) {
+      avnd::input_introspection<object_type>::for_all(
+        ins, [&k]<typename C>(C& ctl) {
           static constexpr auto obj_name = avnd::get_name<object_type>().data();
           if constexpr(requires { C::name(); })
           {
@@ -105,6 +106,18 @@ static void process_generic_message(T& implementation, t_symbol* s)
           }
           k++;
         });
+    };
+    // Multi-instance (polyphonic) containers yield a range of per-instance
+    // inputs; dump the first representative instance.
+    auto&& ins = avnd::get_inputs<object_type>(implementation);
+    if constexpr(requires { ins.begin(); ins.end(); })
+    {
+      for(auto& i : ins) { dump_inputs(i); break; }
+    }
+    else
+    {
+      dump_inputs(ins);
+    }
   }
 }
 

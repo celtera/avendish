@@ -527,7 +527,7 @@ struct effect_container<T>
 
   ref full_state(int i)
   {
-    return {effect[i].effect, effect[i].inputs, avnd::dummy_instance};
+    return {effect[i], effect[i].inputs, avnd::dummy_instance};
   }
 
   full_state_iterator<effect_container> full_state()
