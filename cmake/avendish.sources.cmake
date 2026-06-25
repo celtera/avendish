@@ -7,6 +7,8 @@ if(MSVC)
       PUBLIC
        -std:c++latest
        -Zi
+       "/FS"
+       "/bigobj"
        "-permissive-"
        "-Zc:__cplusplus"
        "-Zc:enumTypes"
@@ -25,6 +27,7 @@ if(MSVC)
        "-permissive-"
        "-Zc:__cplusplus"
        "-Zc:inline"
+       "/bigobj"
        -wd4244 # float -> int lossy conversion warning
        -wd4068 # disables warning C4068: unknown pragma 'GCC'
        -Werror=return-type

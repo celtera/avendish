@@ -26,7 +26,7 @@ DLLEXPORT
 void FillDATPluginInfo(TD::DAT_PluginInfo* info)
 {
   info->apiVersion = TD::DATCPlusPlusAPIVersion;
-  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_OPTYPE@");
+  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_PROCESSOR_TYPE@");
 }
 
 DLLEXPORT

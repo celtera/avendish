@@ -26,17 +26,18 @@ DLLEXPORT
 void FillTOPPluginInfo(TD::TOP_PluginInfo* info)
 {
   info->apiVersion = TD::TOPCPlusPlusAPIVersion;
-  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_OPTYPE@");
+  info->executeMode = TD::TOP_ExecuteMode::CPUMem;
+  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_PROCESSOR_TYPE@");
 }
 
 DLLEXPORT
-TD::TOP_CPlusPlusBase* CreateTOPInstance(const TD::OP_NodeInfo* info)
+TD::TOP_CPlusPlusBase* CreateTOPInstance(const TD::OP_NodeInfo* info, TD::TOP_Context* context)
 {
-  return new td::texture_processor<type>(info, static_cast<TD::TOP_Context*>(info->context));
+  return new td::texture_processor<type>(info, context);
 }
 
 DLLEXPORT
-void DestroyTOPInstance(TD::TOP_CPlusPlusBase* instance)
+void DestroyTOPInstance(TD::TOP_CPlusPlusBase* instance, TD::TOP_Context* context)
 {
   delete static_cast<td::texture_processor<type>*>(instance);
 }

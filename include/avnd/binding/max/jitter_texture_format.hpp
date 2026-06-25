@@ -207,7 +207,7 @@ const max_texture_spec::Format& texture_spec() noexcept
       return max_texture_spec::ARGB32F;
     else if(fmt == "r16f")
       return max_texture_spec::R16F;
-    else if(fmt == "r32")
+    else if(fmt == "r32f" || fmt == "r32")
       return max_texture_spec::R32F;
     else if(fmt == "rgb10a2")
       return max_texture_spec::RGB10A2;

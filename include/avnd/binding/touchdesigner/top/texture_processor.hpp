@@ -16,6 +16,8 @@
 
 #include <TOP_CPlusPlusBase.h>
 
+#include <vector>
+
 namespace touchdesigner::TOP
 {
 
@@ -32,6 +34,10 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
 
   // Track if we need to process
   bool needs_cook{true};
+
+  // Hold the downloaded textures alive until after the processor has run: the
+  // OP_SmartRef owns the pixel buffer the avnd texture ports point into.
+  std::vector<TD::OP_SmartRef<TD::OP_TOPDownloadResult>> download_results;
 
   explicit texture_processor(const TD::OP_NodeInfo* info, TD::TOP_Context* ctx)
       : context{ctx}
@@ -61,6 +67,8 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
   {
     // Update parameter values from TouchDesigner
     update_controls(inputs);
+
+    download_results.clear();
 
     // Handle texture inputs - download from GPU to CPU
     if constexpr(avnd::matrix_input_introspection<T>::size > 0)
@@ -162,18 +170,17 @@ private:
   {
     auto& tex = field.texture;
 
-    // Set up download options
+    // Download to top-down CPU memory (avnd convention).
     TD::OP_TOPInputDownloadOptions opts;
     opts.pixelFormat = top_input->textureDesc.pixelFormat;
+    opts.verticalFlip = true;
 
-    // Download the texture from GPU
     TD::OP_SmartRef<TD::OP_TOPDownloadResult> download_result =
         top_input->downloadTexture(opts, nullptr);
 
     if(!download_result)
       return;
 
-    // Update Avendish texture structure
     tex.width = download_result->textureDesc.width;
     tex.height = download_result->textureDesc.height;
     tex.bytes = static_cast<unsigned char*>(download_result->getData());
@@ -185,8 +192,7 @@ private:
       map_pixel_format(download_result->textureDesc.pixelFormat, tex);
     }
 
-    // Keep the download result alive (stored as member if needed)
-    // For now, we process immediately so the temp reference is fine
+    download_results.push_back(std::move(download_result));
   }
 
   // Upload texture from Avendish to TD
@@ -267,7 +273,7 @@ private:
     upload_info.textureDesc.pixelFormat = fmt.format;
     upload_info.textureDesc.aspectX = tex.width;
     upload_info.textureDesc.aspectY = tex.height;
-    upload_info.firstPixel = TD::TOP_FirstPixel::BottomLeft;
+    upload_info.firstPixel = TD::TOP_FirstPixel::TopLeft;
     upload_info.colorBufferIndex = 0;
 
     // Upload to TouchDesigner

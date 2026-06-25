@@ -9,6 +9,8 @@
 #include <avnd/binding/max/messages.hpp>
 #include <avnd/concepts/tensor.hpp>
 
+#include <cstdio>
+#include <string_view>
 
 namespace max
 {
@@ -20,12 +22,17 @@ struct processor_common
 
   }
 
+  // Bounded copy into Max's fixed-size assist buffer.
+  static void copy_assist(char* dst, std::string_view str)
+  {
+    snprintf(dst, ASSIST_MAX_STRING_LEN, "%.*s", (int)str.size(), str.data());
+  }
+
   static void get_inlet_description(long index, char *dst)
   {
     avnd::input_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
       if constexpr(avnd::has_description<typename Field::type>) {
-        auto str = avnd::get_description<typename Field::type>();
-        strcpy(dst, str.data());
+        copy_assist(dst, avnd::get_description<typename Field::type>());
       }
     });
   }
@@ -34,8 +41,7 @@ struct processor_common
   {
     avnd::output_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
       if constexpr(avnd::has_description<typename Field::type>) {
-        auto str = avnd::get_description<typename Field::type>();
-        strcpy(dst, str.data());
+        copy_assist(dst, avnd::get_description<typename Field::type>());
       }
     });
   }

@@ -156,6 +156,12 @@ function(avnd_make_max)
       C74_USE_STRICT_TYPES=1
   )
 
+  # Make the Max SDK's C74_VARFUN work under MSVC's conformant preprocessor.
+  if(MSVC AND NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang")
+    target_compile_options(${AVND_FX_TARGET} PRIVATE
+      "/FI${AVND_SOURCE_DIR}/include/avnd/binding/max/c74_varfun_conformant.hpp")
+  endif()
+
   target_include_directories(${AVND_FX_TARGET} SYSTEM PRIVATE
       "${MAXSDK_MAX_INCLUDE_DIR}"
       "${MAXSDK_MSP_INCLUDE_DIR}"

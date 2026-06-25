@@ -26,7 +26,7 @@ DLLEXPORT
 void FillSOPPluginInfo(TD::SOP_PluginInfo* info)
 {
   info->apiVersion = TD::SOPCPlusPlusAPIVersion;
-  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_OPTYPE@");
+  touchdesigner::configure_opInfo<type>(info->customOPInfo, "@AVND_C_NAME@", "@AVND_PROCESSOR_TYPE@");
 }
 
 DLLEXPORT
