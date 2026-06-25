@@ -9,6 +9,8 @@
 #include <avnd/binding/max/messages.hpp>
 #include <avnd/concepts/tensor.hpp>
 
+#include <cstdio>
+#include <string_view>
 
 namespace max
 {
@@ -20,12 +22,19 @@ struct processor_common
 
   }
 
+  // Max gives us a fixed ASSIST_MAX_STRING_LEN (500) buffer. Bound the copy and use
+  // the view's size rather than strcpy: get_description() may return a string_view
+  // that is not null-terminated, and a long description would overflow dst.
+  static void copy_assist(char* dst, std::string_view str)
+  {
+    snprintf(dst, ASSIST_MAX_STRING_LEN, "%.*s", (int)str.size(), str.data());
+  }
+
   static void get_inlet_description(long index, char *dst)
   {
     avnd::input_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
       if constexpr(avnd::has_description<typename Field::type>) {
-        auto str = avnd::get_description<typename Field::type>();
-        strcpy(dst, str.data());
+        copy_assist(dst, avnd::get_description<typename Field::type>());
       }
     });
   }
@@ -34,8 +43,7 @@ struct processor_common
   {
     avnd::output_introspection<T>::for_nth(index, [dst] <typename Field> (const Field& port) {
       if constexpr(avnd::has_description<typename Field::type>) {
-        auto str = avnd::get_description<typename Field::type>();
-        strcpy(dst, str.data());
+        copy_assist(dst, avnd::get_description<typename Field::type>());
       }
     });
   }

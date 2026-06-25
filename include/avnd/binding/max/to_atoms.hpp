@@ -7,8 +7,24 @@
 #include <boost/container/small_vector.hpp>
 #include <ext.h>
 
+#include <string>
+
 namespace max
 {
+// magic_enum's enum_name() returns a std::string_view that is a substring of a
+// static signature buffer and is therefore NOT null-terminated. gensym() (and
+// the other Max C string APIs) read until a NUL, so handing them .data()
+// directly makes them run off the end and intern whatever trailing bytes follow
+// -- which is exactly the "weird unicode characters" seen in the Max window when
+// an object with an enum control is instantiated. Always copy the name into a
+// NUL-terminated buffer first.
+template <typename E>
+  requires std::is_enum_v<E>
+inline t_symbol* enum_sym(E v) noexcept
+{
+  return gensym(std::string{avnd::enum_name(v)}.c_str());
+}
+
 struct to_list
 {
   boost::container::small_vector<t_atom, 256> atoms;
@@ -31,7 +47,7 @@ struct to_list
     requires std::is_enum_v<T>
   void operator()(T arg) noexcept
   {
-    atom_setsym(&atoms.emplace_back(), gensym(avnd::enum_name(arg).data()));
+    atom_setsym(&atoms.emplace_back(), enum_sym(arg));
   }
 
   void operator()(std::string_view v) noexcept
@@ -133,7 +149,7 @@ struct to_dict
     requires std::is_enum_v<T>
   void operator()(t_symbol* k, T&& arg) noexcept
   {
-    dictionary_appendstring(d, k, avnd::enum_name(arg).data());
+    dictionary_appendstring(d, k, std::string{avnd::enum_name(arg)}.c_str());
   }
 
   void operator()(t_symbol* k, const avnd::variant_ish auto& f) noexcept
@@ -245,7 +261,7 @@ struct set_atom
     requires std::is_enum_v<T>
   t_max_err operator()(t_atom* at, T arg) noexcept
   {
-    atom_setsym(at, gensym(avnd::enum_name(arg).data()));
+    atom_setsym(at, enum_sym(arg));
     return MAX_ERR_NONE;
   }
 };
@@ -310,7 +326,7 @@ struct to_atoms
   {
     if(auto atoms = allocate(1, ac, av); !atoms.empty())
     {
-      atom_setsym(&atoms[0], gensym(avnd::enum_name(arg).data()));
+      atom_setsym(&atoms[0], enum_sym(arg));
       return MAX_ERR_NONE;
     }
     return MAX_ERR_OUT_OF_MEM;
@@ -341,7 +357,7 @@ struct to_atoms
       else if constexpr(std::is_enum_v<span_val_type>)
       {
         for(auto& v : arg)
-          atom_setsym(&atoms[i], gensym(avnd::enum_name(v).data()));
+          atom_setsym(&atoms[i], enum_sym(v));
       }
       return MAX_ERR_NONE;
     }
