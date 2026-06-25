@@ -115,14 +115,18 @@ inline void matrix_to_texture(
   auto& tex = field.texture;
   tex.width = width;
   tex.height = height;
-  tex.bytes = convert_input_texture(src, width, height, planes, info.type, temp_storage, spec.format);
+  // convert_input_texture works in bytes; tex.bytes may be a typed pointer
+  // (e.g. float* for r32f/rgba32f), so keep the result as bytes and cast once.
+  unsigned char* converted
+      = convert_input_texture(src, width, height, planes, info.type, temp_storage, spec.format);
   // If no conversion happened the result aliases the transient `packed` scratch;
   // copy into the per-field temp_storage so it survives until the processor runs.
-  if(tex.bytes == packed.data())
+  if(converted == packed.data())
   {
     temp_storage.assign(packed.begin(), packed.end());
-    tex.bytes = temp_storage.data();
+    converted = temp_storage.data();
   }
+  tex.bytes = reinterpret_cast<std::decay_t<decltype(tex.bytes)>>(converted);
   tex.changed = true;
 }
 
