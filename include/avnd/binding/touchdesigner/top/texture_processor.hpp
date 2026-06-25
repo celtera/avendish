@@ -16,6 +16,8 @@
 
 #include <TOP_CPlusPlusBase.h>
 
+#include <vector>
+
 namespace touchdesigner::TOP
 {
 
@@ -32,6 +34,15 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
 
   // Track if we need to process
   bool needs_cook{true};
+
+  // downloadTexture() returns the pixels in an OP_SmartRef that OWNS the data:
+  // when the last ref is released the result (and its buffer) is deleted. The
+  // avnd texture ports only store a *pointer* to that buffer, and the processor
+  // reads it later (in invoke_effect during execute()), so the refs must outlive
+  // that call. Hold them here for the duration of the cook; cleared at the start
+  // of each execute(). Without this the download result was a local that freed
+  // its buffer before the processor ran -> use-after-free.
+  std::vector<TD::OP_SmartRef<TD::OP_TOPDownloadResult>> download_results;
 
   explicit texture_processor(const TD::OP_NodeInfo* info, TD::TOP_Context* ctx)
       : context{ctx}
@@ -61,6 +72,10 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
   {
     // Update parameter values from TouchDesigner
     update_controls(inputs);
+
+    // Release the previous cook's download results, then keep this cook's alive
+    // until after invoke_effect() has consumed the pixels (see member comment).
+    download_results.clear();
 
     // Handle texture inputs - download from GPU to CPU
     if constexpr(avnd::matrix_input_introspection<T>::size > 0)
@@ -165,6 +180,10 @@ private:
     // Set up download options
     TD::OP_TOPInputDownloadOptions opts;
     opts.pixelFormat = top_input->textureDesc.pixelFormat;
+    // GPU textures are bottom-up; avnd/halp CPU textures and the CV algorithms
+    // use the top-down image convention (row 0 = top). Flip on download so the
+    // processor sees a conventional image; the output upload flips back below.
+    opts.verticalFlip = true;
 
     // Download the texture from GPU
     TD::OP_SmartRef<TD::OP_TOPDownloadResult> download_result =
@@ -173,7 +192,9 @@ private:
     if(!download_result)
       return;
 
-    // Update Avendish texture structure
+    // Update Avendish texture structure. getData() returns a pointer OWNED by
+    // download_result, so we must keep the ref alive past invoke_effect() --
+    // done by moving it into download_results below.
     tex.width = download_result->textureDesc.width;
     tex.height = download_result->textureDesc.height;
     tex.bytes = static_cast<unsigned char*>(download_result->getData());
@@ -185,8 +206,7 @@ private:
       map_pixel_format(download_result->textureDesc.pixelFormat, tex);
     }
 
-    // Keep the download result alive (stored as member if needed)
-    // For now, we process immediately so the temp reference is fine
+    download_results.push_back(std::move(download_result));
   }
 
   // Upload texture from Avendish to TD
@@ -267,7 +287,9 @@ private:
     upload_info.textureDesc.pixelFormat = fmt.format;
     upload_info.textureDesc.aspectX = tex.width;
     upload_info.textureDesc.aspectY = tex.height;
-    upload_info.firstPixel = TD::TOP_FirstPixel::BottomLeft;
+    // avnd textures are top-down (see download_matrix's verticalFlip note), so
+    // tell TD the first row is the top row -- keeps a passthrough identity.
+    upload_info.firstPixel = TD::TOP_FirstPixel::TopLeft;
     upload_info.colorBufferIndex = 0;
 
     // Upload to TouchDesigner
