@@ -96,3 +96,7 @@ avnd_make_all(TARGET TestSmoothSlider  MAIN_FILE examples/Tests/TestSmoothSlider
 avnd_make_all(TARGET TestSoundfilePort MAIN_FILE examples/Tests/TestSoundfilePort.hpp MAIN_CLASS examples::tests::TestSoundfilePort C_NAME avnd_test_soundfile)
 avnd_make_all(TARGET TestMidifilePort  MAIN_FILE examples/Tests/TestMidifilePort.hpp  MAIN_CLASS examples::tests::TestMidifilePort  C_NAME avnd_test_midifile)
 avnd_make_all(TARGET TestDynamicPort   MAIN_FILE examples/Tests/TestDynamicPort.hpp   MAIN_CLASS examples::tests::TestDynamicPort   C_NAME avnd_test_dynamic_port)
+
+### Threading & MIDI out (§5, §9) ###
+avnd_make_all(TARGET TestWorker  MAIN_FILE examples/Tests/TestWorker.hpp  MAIN_CLASS examples::tests::TestWorker  C_NAME avnd_test_worker)
+avnd_make_all(TARGET TestMidiOut MAIN_FILE examples/Tests/TestMidiOut.hpp MAIN_CLASS examples::tests::TestMidiOut C_NAME avnd_test_midi_out)
