@@ -20,7 +20,7 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 | MIDI passthrough / MIDI out (note generation) | ok | ok | ok | ok |
 | Worker (async thread-pool request) | ok | ok | ok | ok |
 | Audio: per-sample **ports**, bus (args/fixed/dynamic), per-frame, variable channels | ok | ok | ok | ok |
-| Audio: per-sample **args** (`float operator()(float)`) — `TestAudioGainMono` | ok | FAIL | FAIL | FAIL |
+| Audio: per-sample **args** (`float operator()(float)`) — `TestAudioGainMono` | ok | ok | ok | ok |
 | Texture RGBA8 / RGB / variable / generator | ok | ok | — | ok |
 | Texture **R32F / RGBA32F** (float) | ok | ok | — | ok |
 | Buffer raw | ok | ok | ok | ok |
@@ -40,10 +40,11 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
   `matrix_to_buffer` path (plus a latent `buf.count`→`element_count` typo).
 - **Max/Jitter — aggregate value ports**: `from_dict`'s field-named overload took `V&&` and lost
   partial-ordering to the deleted `V&` catch-all; now `V&`, decomposing the struct field-by-field.
+- **Per-sample-arg audio** (`float operator()(float)`): the monophonic multi-instance
+  effect-container's `full_state(i)` returned `effect[i].effect` (no such member); now `effect[i]`.
+  Max/Pd `dumpall` helper also handled the multi-instance inputs range.
 
 ## Gaps remaining
-- **Per-sample-arg audio** (`float operator()(float)`): fails on Max, Pd, and TD — only the
-  per-sample *port* form binds. Poly effect-container replication bug.
 - **GPU buffers**: opaque `handle` has no CPU-side path on Max/Pd; needs a real upload/download
   or CPU-backed fallback.
 - **TouchDesigner — dynamic geometry**: SOP only reads generators; input-geometry filter path
