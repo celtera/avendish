@@ -17,7 +17,8 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 | Sample-accurate control, smooth modifier, soundfile/midifile ports, dynamic port | ok | ok | ok | ok |
 | Value I/O float/int/bool/string | ok | ok | ok | ok |
 | Messages, callback | ok | ok | ok | ok |
-| MIDI passthrough | ok | ok | ok | ok |
+| MIDI passthrough / MIDI out (note generation) | ok | ok | ok | ok |
+| Worker (async thread-pool request) | ok | ok | ok | ok |
 | Audio: per-sample **ports**, bus (args/fixed/dynamic), per-frame, variable channels | ok | ok | ok | ok |
 | Audio: per-sample **args** (`float operator()(float)`) — `TestAudioGainMono` | ok | FAIL | FAIL | FAIL |
 | Texture RGBA8 / RGB / variable / generator | ok | ok | — | ok |
