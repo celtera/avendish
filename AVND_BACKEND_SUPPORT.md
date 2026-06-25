@@ -13,6 +13,7 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 | Feature (object) | dump | max | pd | td |
 |---|---|---|---|---|
 | Controls: float/int slider, knob, spinbox, toggle, lineedit, buttons, enum, xy, color, bargraph | ok | ok | ok | ok |
+| Controls: range slider, xyz/xyzw spinboxes, time chooser, string enum, folder, file, multi-slider | ok | ok | ok | ok |
 | Value I/O float/int/bool/string | ok | ok | ok | ok |
 | Messages, callback | ok | ok | ok | ok |
 | MIDI passthrough | ok | ok | ok | ok |
@@ -21,10 +22,10 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
 | Texture RGBA8 / RGB / variable / generator | ok | ok | — | ok |
 | Texture **R32F / RGBA32F** (float) | ok | ok | — | **FAIL** |
 | Buffer raw | ok | ok | ok | ok |
-| Buffer **typed** — `TestBufferTypedIO` | ok | **FAIL** | ok | ok |
-| **GPU buffer** in/out | ok | **FAIL** | ok | ok |
+| Buffer **typed** — `TestBufferTypedIO` | ok | **FAIL** | ok | — |
+| **GPU buffer** in/out | ok | **FAIL** | ok | — |
 | Tensor input | ok | ok | ok | ok |
-| Aggregate value (`halp_field_names`) | ok | **FAIL** | ok | ok |
+| Aggregate value (`halp_field_names`) | ok | **FAIL** | ok | — |
 | Geometry **static** prefab generator | ok | ok | — | ok |
 | Geometry **dynamic** (CPU/GPU) filter | ok | ok | — | **FAIL** |
 | Metadata, ticks (tick/musical/flicks), lifecycle (prepare/initialize/bypass) | ok | ok | ok | ok |
@@ -39,6 +40,8 @@ vst3 / clap / ossia / gstreamer are exercised by avendish CI, not per-object her
   filters fail; only static-prefab geometry *generators* (SOP) compile.
 - **Max/Jitter**: typed buffers, GPU buffers, and aggregate value ports fail (the jitter
   binding assumes char/raw matrix data; `gpu_buffer` has no `raw_data`, etc.).
+- **TouchDesigner**: typed/GPU buffers and aggregate ports have no CHOP/TOP/SOP processor
+  category, so the TD prototype dispatch can't configure them (`—`); only raw buffer (CHOP) works.
 
 These are candidate follow-up fixes in the respective avendish bindings; for now the affected
 objects are registered only for the backends where they compile.

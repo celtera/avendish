@@ -45,7 +45,7 @@ avnd_make_all(TARGET TestAudioGainPoly MAIN_FILE examples/Tests/TestAudioGainPol
 
 ### Buffer / Tensor (§6, §7) ###
 avnd_make_all(TARGET TestBufferRawIO   MAIN_FILE examples/Tests/TestBufferRawIO.hpp   MAIN_CLASS examples::tests::TestBufferRawIO   C_NAME avnd_test_buffer_raw)
-avnd_make(TARGET TestBufferTypedIO MAIN_FILE examples/Tests/TestBufferTypedIO.hpp MAIN_CLASS examples::tests::TestBufferTypedIO C_NAME avnd_test_buffer_typed BACKENDS dump ossia pd touchdesigner)
+avnd_make(TARGET TestBufferTypedIO MAIN_FILE examples/Tests/TestBufferTypedIO.hpp MAIN_CLASS examples::tests::TestBufferTypedIO C_NAME avnd_test_buffer_typed BACKENDS dump ossia pd)
 avnd_make_all(TARGET TestTensorInput   MAIN_FILE examples/Tests/TestTensorInput.hpp   MAIN_CLASS examples::tests::TestTensorInput   C_NAME avnd_test_tensor)
 
 ### Metadata (§11) ###
@@ -54,7 +54,7 @@ avnd_make_all(TARGET TestMetadata      MAIN_FILE examples/Tests/TestMetadata.hpp
 ### More controls + structured (§1, §10) ###
 avnd_make_all(TARGET TestSpinbox   MAIN_FILE examples/Tests/TestSpinbox.hpp   MAIN_CLASS examples::tests::TestSpinbox   C_NAME avnd_test_spinbox)
 avnd_make_all(TARGET TestColor     MAIN_FILE examples/Tests/TestColor.hpp     MAIN_CLASS examples::tests::TestColor     C_NAME avnd_test_color)
-avnd_make(TARGET TestAggregate MAIN_FILE examples/Tests/TestAggregate.hpp MAIN_CLASS examples::tests::TestAggregate C_NAME avnd_test_aggregate BACKENDS dump ossia pd touchdesigner)
+avnd_make(TARGET TestAggregate MAIN_FILE examples/Tests/TestAggregate.hpp MAIN_CLASS examples::tests::TestAggregate C_NAME avnd_test_aggregate BACKENDS dump ossia pd)
 
 ### Audio forms (§3) ###
 avnd_make_all(TARGET TestAudioSamplePorts     MAIN_FILE examples/Tests/TestAudioSamplePorts.hpp     MAIN_CLASS examples::tests::TestAudioSamplePorts     C_NAME avnd_test_audio_sample_ports)
@@ -64,8 +64,8 @@ avnd_make_all(TARGET TestAudioFrame           MAIN_FILE examples/Tests/TestAudio
 avnd_make_all(TARGET TestAudioVariableChannels MAIN_FILE examples/Tests/TestAudioVariableChannels.hpp MAIN_CLASS examples::tests::TestAudioVariableChannels C_NAME avnd_test_audio_variable)
 
 ### GPU buffers (§6) ###
-avnd_make(TARGET TestGpuBufferInput  MAIN_FILE examples/Tests/TestGpuBufferInput.hpp  MAIN_CLASS examples::tests::TestGpuBufferInput  C_NAME avnd_test_gpu_buffer_in BACKENDS dump ossia pd touchdesigner)
-avnd_make(TARGET TestGpuBufferOutput MAIN_FILE examples/Tests/TestGpuBufferOutput.hpp MAIN_CLASS examples::tests::TestGpuBufferOutput C_NAME avnd_test_gpu_buffer_out BACKENDS dump ossia pd touchdesigner)
+avnd_make(TARGET TestGpuBufferInput  MAIN_FILE examples/Tests/TestGpuBufferInput.hpp  MAIN_CLASS examples::tests::TestGpuBufferInput  C_NAME avnd_test_gpu_buffer_in BACKENDS dump ossia pd)
+avnd_make(TARGET TestGpuBufferOutput MAIN_FILE examples/Tests/TestGpuBufferOutput.hpp MAIN_CLASS examples::tests::TestGpuBufferOutput C_NAME avnd_test_gpu_buffer_out BACKENDS dump ossia pd)
 
 ### Geometry: static / dynamic, CPU / GPU (§8) ###
 avnd_make_geometry(TARGET TestGeometryStaticGenerator MAIN_FILE examples/Tests/TestGeometryStaticGenerator.hpp MAIN_CLASS examples::tests::TestGeometryStaticGenerator C_NAME avnd_test_geom_static)
@@ -79,3 +79,13 @@ avnd_make_all(TARGET TestTickFlicks   MAIN_FILE examples/Tests/TestTickFlicks.hp
 avnd_make_all(TARGET TestPrepare      MAIN_FILE examples/Tests/TestPrepare.hpp      MAIN_CLASS examples::tests::TestPrepare      C_NAME avnd_test_prepare)
 avnd_make_all(TARGET TestInitialize   MAIN_FILE examples/Tests/TestInitialize.hpp   MAIN_CLASS examples::tests::TestInitialize   C_NAME avnd_test_initialize)
 avnd_make_all(TARGET TestBypass       MAIN_FILE examples/Tests/TestBypass.hpp       MAIN_CLASS examples::tests::TestBypass       C_NAME avnd_test_bypass)
+
+### More controls (§1) ###
+avnd_make_all(TARGET TestRangeSlider   MAIN_FILE examples/Tests/TestRangeSlider.hpp   MAIN_CLASS examples::tests::TestRangeSlider   C_NAME avnd_test_range_slider)
+avnd_make_all(TARGET TestXYZSpinboxes  MAIN_FILE examples/Tests/TestXYZSpinboxes.hpp  MAIN_CLASS examples::tests::TestXYZSpinboxes  C_NAME avnd_test_xyz)
+avnd_make_all(TARGET TestXYZWSpinboxes MAIN_FILE examples/Tests/TestXYZWSpinboxes.hpp MAIN_CLASS examples::tests::TestXYZWSpinboxes C_NAME avnd_test_xyzw)
+avnd_make_all(TARGET TestTimeChooser   MAIN_FILE examples/Tests/TestTimeChooser.hpp   MAIN_CLASS examples::tests::TestTimeChooser   C_NAME avnd_test_time)
+avnd_make_all(TARGET TestStringEnum    MAIN_FILE examples/Tests/TestStringEnum.hpp    MAIN_CLASS examples::tests::TestStringEnum    C_NAME avnd_test_string_enum)
+avnd_make_all(TARGET TestFolderPort    MAIN_FILE examples/Tests/TestFolderPort.hpp    MAIN_CLASS examples::tests::TestFolderPort    C_NAME avnd_test_folder)
+avnd_make_all(TARGET TestFilePort      MAIN_FILE examples/Tests/TestFilePort.hpp      MAIN_CLASS examples::tests::TestFilePort      C_NAME avnd_test_file)
+avnd_make_all(TARGET TestMultiSlider   MAIN_FILE examples/Tests/TestMultiSlider.hpp   MAIN_CLASS examples::tests::TestMultiSlider   C_NAME avnd_test_multislider)

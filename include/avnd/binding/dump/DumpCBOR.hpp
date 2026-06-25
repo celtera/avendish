@@ -400,12 +400,16 @@ void print_parameter(dump_json::value obj)
   {
     auto range = obj["range"];
     static constexpr auto ctl = avnd::get_range<type>();
+    auto put = [&](const char* k, auto v) {
+      if constexpr(std::is_arithmetic_v<std::decay_t<decltype(v)>>)
+        range[k] = v;
+    };
     if constexpr(requires { ctl.min; })
-      range["min"] = ctl.min;
+      put("min", ctl.min);
     if constexpr(requires { ctl.max; })
-      range["max"] = ctl.max;
+      put("max", ctl.max);
     if constexpr(requires { ctl.init; })
-      range["init"] = ctl.init;
+      put("init", ctl.init);
   }
   else if constexpr(avnd::enum_parameter<type>)
   {
