@@ -10,6 +10,7 @@
 #include <avnd/binding/python/audio.hpp>
 #include <avnd/concepts/audio_processor.hpp>
 #include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
@@ -325,6 +326,158 @@ struct processor
         });
   }
 
+  // Channels of a CPU texture = bytes-per-pixel / element size (handles both
+  // the static-constexpr and member-function bytes_per_pixel forms).
+  template <typename Tex>
+  static int tex_channels(const Tex& t)
+  {
+    using elem_t = std::remove_pointer_t<std::decay_t<decltype(t.bytes)>>;
+    if constexpr(requires { t.bytes_per_pixel(); })
+      return std::max<int>(1, static_cast<int>(t.bytes_per_pixel() / sizeof(elem_t)));
+    else
+      return std::max<int>(1, static_cast<int>(Tex::bytes_per_pixel / sizeof(elem_t)));
+  }
+
+  // CPU texture port <-> numpy (H, W, C). uint8 for 8-bit formats, float32 for
+  // float formats (dtype follows the texture's element pointer type).
+  template <auto Idx, typename C>
+  void setup_texture_input(avnd::field_reflection<Idx, C> refl)
+  {
+    using tex_t = std::decay_t<decltype(std::declval<C&>().texture)>;
+    using elem_t
+        = std::remove_pointer_t<std::decay_t<decltype(std::declval<tex_t&>().bytes)>>;
+    std::string keep = "__keepalive_" + std::string{avnd::get_name<C>()};
+    class_def.def_property(
+        c_str(input_name(refl)),
+        [](T& self) -> py::object {
+          auto& tex = avnd::pfr::get<Idx>(self.inputs).texture;
+          if(!tex.bytes || tex.width <= 0 || tex.height <= 0)
+            return py::none();
+          return py::array_t<elem_t>(
+              std::vector<py::ssize_t>{tex.height, tex.width, tex_channels(tex)},
+              tex.bytes, py::cast(&self, py::return_value_policy::reference));
+        },
+        [keep](
+            T& self,
+            py::array_t<elem_t, py::array::c_style | py::array::forcecast> arr) {
+          const auto info = arr.request();
+          if(info.ndim < 2)
+            throw std::runtime_error("texture expects a (H, W[, C]) array");
+          auto& tex = avnd::pfr::get<Idx>(self.inputs).texture;
+          tex.height = static_cast<int>(info.shape[0]);
+          tex.width = static_cast<int>(info.shape[1]);
+          tex.bytes = static_cast<elem_t*>(info.ptr);
+          if constexpr(requires { tex.changed; })
+            tex.changed = true;
+          py::cast(&self).attr(keep.c_str()) = arr;
+        });
+  }
+
+  template <auto Idx, typename C>
+  void setup_texture_output(avnd::field_reflection<Idx, C> refl)
+  {
+    using tex_t = std::decay_t<decltype(std::declval<C&>().texture)>;
+    using elem_t
+        = std::remove_pointer_t<std::decay_t<decltype(std::declval<tex_t&>().bytes)>>;
+    class_def.def_property_readonly(
+        c_str(output_name(refl)), [](T& self) -> py::object {
+          auto& tex = avnd::pfr::get<Idx>(self.outputs).texture;
+          if(!tex.bytes || tex.width <= 0 || tex.height <= 0)
+            return py::none();
+          return py::array_t<elem_t>(
+              std::vector<py::ssize_t>{tex.height, tex.width, tex_channels(tex)},
+              tex.bytes, py::cast(&self, py::return_value_policy::reference));
+        });
+  }
+
+  // Buffer ports <-> 1-D numpy. raw/gpu buffers marshal as uint8 bytes (the GPU
+  // handle is a host pointer on CPU hosts); typed buffers as their element dtype.
+  template <typename Buf>
+  static py::object buffer_to_numpy(Buf& buf, py::handle base)
+  {
+    if constexpr(requires { buf.elements; })
+    {
+      using e = std::decay_t<std::remove_pointer_t<std::decay_t<decltype(buf.elements)>>>;
+      if(!buf.elements || buf.element_count <= 0)
+        return py::none();
+      return py::array_t<e>(
+          std::vector<py::ssize_t>{buf.element_count}, buf.elements, base);
+    }
+    else if constexpr(requires { buf.raw_data; })
+    {
+      if(!buf.raw_data || buf.byte_size <= 0)
+        return py::none();
+      return py::array_t<std::uint8_t>(
+          std::vector<py::ssize_t>{buf.byte_size},
+          reinterpret_cast<std::uint8_t*>(buf.raw_data), base);
+    }
+    else // gpu_buffer: opaque handle, host pointer on CPU hosts
+    {
+      if(!buf.handle || buf.byte_size <= 0)
+        return py::none();
+      return py::array_t<std::uint8_t>(
+          std::vector<py::ssize_t>{buf.byte_size},
+          reinterpret_cast<std::uint8_t*>(buf.handle), base);
+    }
+  }
+
+  template <auto Idx, typename C>
+  void setup_buffer_input(avnd::field_reflection<Idx, C> refl)
+  {
+    using buf_t = std::decay_t<decltype(std::declval<C&>().buffer)>;
+    std::string keep = "__keepalive_" + std::string{avnd::get_name<C>()};
+    auto reader = [](T& self) -> py::object {
+      return buffer_to_numpy(
+          avnd::pfr::get<Idx>(self.inputs).buffer,
+          py::cast(&self, py::return_value_policy::reference));
+    };
+    if constexpr(requires(buf_t b) { b.elements; })
+    {
+      using e = std::decay_t<std::remove_pointer_t<std::decay_t<decltype(buf_t{}.elements)>>>;
+      class_def.def_property(
+          c_str(input_name(refl)), reader,
+          [keep](T& self, py::array_t<e, py::array::c_style | py::array::forcecast> arr) {
+            const auto info = arr.request();
+            auto& b = avnd::pfr::get<Idx>(self.inputs).buffer;
+            b.elements = static_cast<e*>(info.ptr);
+            b.element_count = info.size;
+            if constexpr(requires { b.changed; })
+              b.changed = true;
+            py::cast(&self).attr(keep.c_str()) = arr;
+          });
+    }
+    else
+    {
+      class_def.def_property(
+          c_str(input_name(refl)), reader,
+          [keep](
+              T& self,
+              py::array_t<std::uint8_t, py::array::c_style | py::array::forcecast> arr) {
+            const auto info = arr.request();
+            auto& b = avnd::pfr::get<Idx>(self.inputs).buffer;
+            if constexpr(requires { b.raw_data; })
+              b.raw_data = reinterpret_cast<unsigned char*>(info.ptr);
+            else
+              b.handle = info.ptr;
+            b.byte_size = info.size;
+            if constexpr(requires { b.changed; })
+              b.changed = true;
+            py::cast(&self).attr(keep.c_str()) = arr;
+          });
+    }
+  }
+
+  template <auto Idx, typename C>
+  void setup_buffer_output(avnd::field_reflection<Idx, C> refl)
+  {
+    class_def.def_property_readonly(
+        c_str(output_name(refl)), [](T& self) -> py::object {
+          return buffer_to_numpy(
+              avnd::pfr::get<Idx>(self.outputs).buffer,
+              py::cast(&self, py::return_value_policy::reference));
+        });
+  }
+
   template <auto Idx, typename C>
   void setup_input(avnd::field_reflection<Idx, C> refl, pybind11::module_& m)
   {
@@ -394,8 +547,10 @@ struct processor
     }
   }
 
+  // dynamic_attr lets us stash keep-alive numpy buffers (texture/buffer inputs)
+  // as per-instance Python attributes so the C++ pointers stay valid.
   explicit processor(pybind11::module_& m)
-      : class_def(m, c_str(avnd::get_c_identifier<T>()))
+      : class_def(m, c_str(avnd::get_c_identifier<T>()), py::dynamic_attr())
   {
     m.doc() = c_str(avnd::get_description<T>());
 
@@ -428,6 +583,20 @@ struct processor
       avnd::callback_output_introspection<T>::for_all(
           [this, &m](auto a) { setup_callback(a, m); });
     }
+
+    if constexpr(avnd::cpu_texture_input_introspection<T>::size > 0)
+      avnd::cpu_texture_input_introspection<T>::for_all(
+          [this](auto a) { setup_texture_input(a); });
+    if constexpr(avnd::cpu_texture_output_introspection<T>::size > 0)
+      avnd::cpu_texture_output_introspection<T>::for_all(
+          [this](auto a) { setup_texture_output(a); });
+
+    if constexpr(avnd::buffer_input_introspection<T>::size > 0)
+      avnd::buffer_input_introspection<T>::for_all(
+          [this](auto a) { setup_buffer_input(a); });
+    if constexpr(avnd::buffer_output_introspection<T>::size > 0)
+      avnd::buffer_output_introspection<T>::for_all(
+          [this](auto a) { setup_buffer_output(a); });
 
     avnd::messages_introspection<T>::for_all([this](auto a) { setup_message(a); });
   }
