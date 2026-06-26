@@ -23,6 +23,26 @@ concept aggregate_argument = std::is_aggregate_v<std::decay_t<T>>;
 
 namespace detail
 {
+template <class T, class U>
+constexpr auto&& forward_like(U&& x) noexcept
+{
+  constexpr bool is_adding_const = std::is_const_v<std::remove_reference_t<T>>;
+  if constexpr(std::is_lvalue_reference_v<T&&>)
+  {
+    if constexpr(is_adding_const)
+      return std::as_const(x);
+    else
+      return static_cast<U&>(x);
+  }
+  else
+  {
+    if constexpr(is_adding_const)
+      return std::move(std::as_const(x));
+    else
+      return std::move(x);
+  }
+}
+
 // A struct opts into flattening by declaring `recursive_group` (cf. halp_flag).
 template <typename T>
 concept is_recursive_group = requires { std::remove_cvref_t<T>::recursive_group; };
@@ -126,7 +146,7 @@ template <typename S, typename F>
 AVND_INLINE constexpr auto for_each_field(S&& s, F&& f) noexcept
 {
   auto&& [... elts] = static_cast<S&&>(s);
-  ((static_cast<F&&>(f)(std::forward_like<S>(elts))), ...);
+  ((static_cast<F&&>(f)(detail::forward_like<S>(elts))), ...);
 }
 }
 
