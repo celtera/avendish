@@ -560,6 +560,79 @@ struct processor
         [](T& self) { return midi_to_py(avnd::pfr::get<Idx>(self.outputs)); });
   }
 
+  // The dynamic_port wrapper has no name; derive one from the sub-port's
+  // "Name {}" template ("In {}" -> "In").
+  template <typename Sub>
+  static std::string dynamic_name()
+  {
+    std::string nm{Sub::name()};
+    if(const auto p = nm.find("{}"); p != std::string::npos)
+      nm.erase(p);
+    while(!nm.empty() && (nm.back() == ' ' || nm.back() == '_' || nm.back() == '-'))
+      nm.pop_back();
+    return nm.empty() ? std::string{"ports"} : nm;
+  }
+
+  // Dynamic port <-> list of sub-port values. Assigning a list resizes the
+  // port count and fills each sub-port's value.
+  template <auto Idx, typename C>
+  void setup_dynamic_input(avnd::field_reflection<Idx, C> refl)
+  {
+    using sub_t = typename std::decay_t<decltype(std::declval<C&>().ports)>::value_type;
+    class_def.def_property(
+        dynamic_name<sub_t>().c_str(),
+        [](T& self) {
+          py::list out;
+          for(auto& p : avnd::pfr::get<Idx>(self.inputs).ports)
+            out.append(p.value);
+          return out;
+        },
+        [](T& self, py::sequence vals) {
+          auto& dp = avnd::pfr::get<Idx>(self.inputs);
+          dp.ports.resize(py::len(vals));
+          std::size_t i = 0;
+          for(auto v : vals)
+            dp.ports[i++].value = v.cast<std::decay_t<decltype(sub_t{}.value)>>();
+        });
+  }
+
+  template <auto Idx, typename C>
+  void setup_dynamic_output(avnd::field_reflection<Idx, C> refl)
+  {
+    using sub_t = typename std::decay_t<decltype(std::declval<C&>().ports)>::value_type;
+    class_def.def_property_readonly(dynamic_name<sub_t>().c_str(), [](T& self) {
+      py::list out;
+      for(auto& p : avnd::pfr::get<Idx>(self.outputs).ports)
+        out.append(p.value);
+      return out;
+    });
+  }
+
+  // File port: expose the file contents as Python bytes (the host normally
+  // loads them; for tests we provide them directly). Kept alive per instance.
+  template <auto Idx, typename C>
+  void setup_file_input(avnd::field_reflection<Idx, C> refl)
+  {
+    std::string keep = "__keepalive_file_" + std::string{avnd::get_name<C>()};
+    class_def.def_property(
+        c_str(input_name(refl)),
+        [](T& self) -> py::object {
+          auto& f = avnd::pfr::get<Idx>(self.inputs).file;
+          return py::bytes(f.bytes.data(), f.bytes.size());
+        },
+        [keep](T& self, py::object data) {
+          py::bytes b = py::isinstance<py::str>(data)
+                            ? py::bytes(data.cast<std::string>())
+                            : py::reinterpret_borrow<py::bytes>(data);
+          py::cast(&self).attr(keep.c_str()) = b; // keep buffer alive
+          char* buf = nullptr;
+          Py_ssize_t len = 0;
+          PyBytes_AsStringAndSize(b.ptr(), &buf, &len);
+          auto& f = avnd::pfr::get<Idx>(self.inputs).file;
+          f.bytes = std::string_view(buf, static_cast<std::size_t>(len));
+        });
+  }
+
   template <auto Idx, typename C>
   void setup_input(avnd::field_reflection<Idx, C> refl, pybind11::module_& m)
   {
@@ -686,6 +759,17 @@ struct processor
     if constexpr(avnd::midi_output_introspection<T>::size > 0)
       avnd::midi_output_introspection<T>::for_all(
           [this](auto a) { setup_midi_output(a); });
+
+    if constexpr(avnd::dynamic_ports_input_introspection<T>::size > 0)
+      avnd::dynamic_ports_input_introspection<T>::for_all(
+          [this](auto a) { setup_dynamic_input(a); });
+    if constexpr(avnd::dynamic_ports_output_introspection<T>::size > 0)
+      avnd::dynamic_ports_output_introspection<T>::for_all(
+          [this](auto a) { setup_dynamic_output(a); });
+
+    if constexpr(avnd::file_input_introspection<T>::size > 0)
+      avnd::file_input_introspection<T>::for_all(
+          [this](auto a) { setup_file_input(a); });
 
     avnd::messages_introspection<T>::for_all([this](auto a) { setup_message(a); });
   }
