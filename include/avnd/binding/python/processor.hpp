@@ -478,6 +478,88 @@ struct processor
         });
   }
 
+  // MIDI port <-> list of (bytes, timestamp). A bare bytes list is accepted too
+  // (timestamp 0).
+  template <typename Port>
+  static py::list midi_to_py(const Port& port)
+  {
+    py::list out;
+    for(const auto& m : port.midi_messages)
+    {
+      py::list b;
+      for(auto byte : m.bytes)
+        b.append(static_cast<int>(static_cast<std::uint8_t>(byte)));
+      std::int64_t ts = 0;
+      if constexpr(requires { m.timestamp; })
+        ts = static_cast<std::int64_t>(m.timestamp);
+      out.append(py::make_tuple(b, ts));
+    }
+    return out;
+  }
+
+  template <typename Port>
+  static void py_to_midi(Port& port, py::handle msgs)
+  {
+    using msg_t = std::decay_t<decltype(port.midi_messages[0])>;
+    port.midi_messages.clear();
+    for(auto item : py::reinterpret_borrow<py::sequence>(msgs))
+    {
+      py::object bytes_obj = py::reinterpret_borrow<py::object>(item);
+      std::int64_t ts = 0;
+      if(py::isinstance<py::tuple>(item) || py::isinstance<py::list>(item))
+      {
+        auto seq = py::reinterpret_borrow<py::sequence>(item);
+        // (bytes, ts) if the first element is itself a sequence
+        if(py::len(seq) >= 1
+           && (py::isinstance<py::list>(seq[0]) || py::isinstance<py::tuple>(seq[0])))
+        {
+          bytes_obj = py::reinterpret_borrow<py::object>(seq[0]);
+          if(py::len(seq) >= 2)
+            ts = seq[1].cast<std::int64_t>();
+        }
+      }
+      msg_t msg{};
+      int i = 0;
+      auto bseq = py::reinterpret_borrow<py::sequence>(bytes_obj);
+      if constexpr(requires { msg.bytes.push_back(std::uint8_t{}); })
+      {
+        for(auto bb : bseq)
+          msg.bytes.push_back(static_cast<std::uint8_t>(bb.cast<int>()));
+      }
+      else
+      {
+        for(auto bb : bseq)
+        {
+          if(i >= static_cast<int>(std::size(msg.bytes)))
+            break;
+          msg.bytes[i++] = static_cast<std::uint8_t>(bb.cast<int>());
+        }
+      }
+      if constexpr(requires { msg.timestamp; })
+        msg.timestamp = ts;
+      port.midi_messages.push_back(msg);
+    }
+  }
+
+  template <auto Idx, typename C>
+  void setup_midi_input(avnd::field_reflection<Idx, C> refl)
+  {
+    class_def.def_property(
+        c_str(input_name(refl)),
+        [](T& self) { return midi_to_py(avnd::pfr::get<Idx>(self.inputs)); },
+        [](T& self, py::handle msgs) {
+          py_to_midi(avnd::pfr::get<Idx>(self.inputs), msgs);
+        });
+  }
+
+  template <auto Idx, typename C>
+  void setup_midi_output(avnd::field_reflection<Idx, C> refl)
+  {
+    class_def.def_property_readonly(
+        c_str(output_name(refl)),
+        [](T& self) { return midi_to_py(avnd::pfr::get<Idx>(self.outputs)); });
+  }
+
   template <auto Idx, typename C>
   void setup_input(avnd::field_reflection<Idx, C> refl, pybind11::module_& m)
   {
@@ -597,6 +679,13 @@ struct processor
     if constexpr(avnd::buffer_output_introspection<T>::size > 0)
       avnd::buffer_output_introspection<T>::for_all(
           [this](auto a) { setup_buffer_output(a); });
+
+    if constexpr(avnd::midi_input_introspection<T>::size > 0)
+      avnd::midi_input_introspection<T>::for_all(
+          [this](auto a) { setup_midi_input(a); });
+    if constexpr(avnd::midi_output_introspection<T>::size > 0)
+      avnd::midi_output_introspection<T>::for_all(
+          [this](auto a) { setup_midi_output(a); });
 
     avnd::messages_introspection<T>::for_all([this](auto a) { setup_message(a); });
   }
