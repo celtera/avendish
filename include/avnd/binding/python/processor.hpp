@@ -7,6 +7,8 @@
 //#include <halp/callback.hpp>
 #include <avnd/concepts/field_names.hpp>
 #include <avnd/concepts/tensor.hpp>
+#include <avnd/binding/python/audio.hpp>
+#include <avnd/concepts/audio_processor.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -401,6 +403,16 @@ struct processor
     if constexpr(requires { T{}(); })
     {
       class_def.def("process", &T::operator());
+    }
+
+    if constexpr(avnd::audio_processor<T>)
+    {
+      class_def.def(
+          "process_audio",
+          [](T& self,
+             py::array_t<float, py::array::c_style | py::array::forcecast> ins,
+             double rate) { return run_audio(self, std::move(ins), rate); },
+          py::arg("input"), py::arg("rate") = 48000.0);
     }
 
     if constexpr(avnd::inputs_is_value<T>)
