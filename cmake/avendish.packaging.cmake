@@ -17,6 +17,9 @@
 # Single-object projects (avnd_make + EXTERNALS lists, e.g. celtera/ultraleap) keep
 # using avnd_create_max_package / avnd_create_pd_package in avendish.max/pd.cmake.
 
+# Directory of this module, so POST_BUILD steps can find the helper scripts.
+set(_AVND_PACKAGING_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
 # --- helpers ----------------------------------------------------------------
 
 # avnd_packaging_platform_tags(<os-var> <arch-var>): set the os / arch tags used in
@@ -101,11 +104,14 @@ function(avnd_create_max_addon_package)
     get_target_property(_maxref ${_external} AVND_MAX_MAXREF_XML)
     if(_maxref)
       # The maxref is produced by a separate dump target (avnd_make_max); depend on
-      # it so the .maxref.xml exists before this POST_BUILD copy runs.
+      # it so the .maxref.xml is built first. Copy it best-effort: the generator
+      # doesn't emit it on every toolchain (e.g. the Windows multi-config build), and
+      # a missing doc must not fail the package build.
       add_dependencies("${_external}" "dump_maxref_${_external}")
       add_custom_command(TARGET ${_external} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/docs/refpages"
-        COMMAND ${CMAKE_COMMAND} -E copy "${_maxref}" "${_pkg}/docs/refpages/"
+        COMMAND ${CMAKE_COMMAND}
+          "-DSRC=${CMAKE_BINARY_DIR}/${_maxref}" "-DDST=${_pkg}/docs/refpages"
+          -P "${_AVND_PACKAGING_DIR}/avendish.packaging.copy_optional.cmake"
         VERBATIM)
     endif()
 
