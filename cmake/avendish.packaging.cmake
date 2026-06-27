@@ -100,6 +100,9 @@ function(avnd_create_max_addon_package)
 
     get_target_property(_maxref ${_external} AVND_MAX_MAXREF_XML)
     if(_maxref)
+      # The maxref is produced by a separate dump target (avnd_make_max); depend on
+      # it so the .maxref.xml exists before this POST_BUILD copy runs.
+      add_dependencies("${_external}" "dump_maxref_${_external}")
       add_custom_command(TARGET ${_external} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/docs/refpages"
         COMMAND ${CMAKE_COMMAND} -E copy "${_maxref}" "${_pkg}/docs/refpages/"
