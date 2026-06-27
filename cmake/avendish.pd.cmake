@@ -1,3 +1,11 @@
+# Skip this back-end's setup (and its dependencies) entirely when it is disabled,
+# so a single-back-end build -- e.g. one avnd-addon CI lane that passes
+# -DAVND_ENABLE_PD=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
+# VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
+if(DEFINED AVND_ENABLE_PD AND NOT AVND_ENABLE_PD)
+  return()
+endif()
+
 find_path(PD_HEADER NAMES m_pd.h)
 if(NOT PD_HEADER)
   message(STATUS "PureData header not found, skipping bindings...")

@@ -1,3 +1,11 @@
+# Skip this back-end's setup (and its dependencies) entirely when it is disabled,
+# so a single-back-end build -- e.g. one avnd-addon CI lane that passes
+# -DAVND_ENABLE_CLAP=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
+# VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
+if(DEFINED AVND_ENABLE_CLAP AND NOT AVND_ENABLE_CLAP)
+  return()
+endif()
+
 find_path(CLAP_HEADER NAMES clap/clap.h)
 if(NOT CLAP_HEADER)
   message(STATUS "Clap not found, skipping bindings...")

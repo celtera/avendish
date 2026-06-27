@@ -1,3 +1,11 @@
+# Skip this back-end's setup (and its dependencies) entirely when it is disabled,
+# so a single-back-end build -- e.g. one avnd-addon CI lane that passes
+# -DAVND_ENABLE_VST3=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
+# VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
+if(DEFINED AVND_ENABLE_VST3 AND NOT AVND_ENABLE_VST3)
+  return()
+endif()
+
 set(VST3_SDK_ROOT "" CACHE PATH "VST3 SDK path")
 if(NOT VST3_SDK_ROOT)
   function(avnd_make_vst3)

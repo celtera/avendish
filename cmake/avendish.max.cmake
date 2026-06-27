@@ -1,3 +1,11 @@
+# Skip this back-end's setup (and its dependencies) entirely when it is disabled,
+# so a single-back-end build -- e.g. one avnd-addon CI lane that passes
+# -DAVND_ENABLE_MAX=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
+# VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
+if(DEFINED AVND_ENABLE_MAX AND NOT AVND_ENABLE_MAX)
+  return()
+endif()
+
 set(AVND_MAXSDK_PATH "" CACHE PATH "Path to Max SDK folder")
 if(NOT AVND_MAXSDK_PATH)
   function(avnd_make_max)

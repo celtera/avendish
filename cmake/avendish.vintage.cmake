@@ -1,3 +1,11 @@
+# Skip this back-end's setup (and its dependencies) entirely when it is disabled,
+# so a single-back-end build -- e.g. one avnd-addon CI lane that passes
+# -DAVND_ENABLE_VINTAGE=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
+# VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
+if(DEFINED AVND_ENABLE_VINTAGE AND NOT AVND_ENABLE_VINTAGE)
+  return()
+endif()
+
 if(AVND_USE_PCH)
 # Define a PCH
 add_library(Avendish_vintage_pch STATIC "${AVND_SOURCE_DIR}/src/dummy.cpp")

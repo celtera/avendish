@@ -1,3 +1,11 @@
+# Skip this back-end's setup (and its dependencies) entirely when it is disabled,
+# so a single-back-end build -- e.g. one avnd-addon CI lane that passes
+# -DAVND_ENABLE_TOUCHDESIGNER=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
+# VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
+if(DEFINED AVND_ENABLE_TOUCHDESIGNER AND NOT AVND_ENABLE_TOUCHDESIGNER)
+  return()
+endif()
+
 option(TOUCHDESIGNER_SDK_PATH "Path to TouchDesigner CustomOperatorSamples directory" "")
 if(NOT TOUCHDESIGNER_SDK_PATH)
   function(avnd_make_touchdesigner)
