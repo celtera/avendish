@@ -59,6 +59,81 @@ function(avnd_packaging_copy_metadata pkg source_path addon_name)
   endforeach()
 endfunction()
 
+# --- Max/MSP (addon) --------------------------------------------------------
+#
+# avnd_create_max_addon_package(
+#   NAME <addon-name> SOURCE_PATH <dir> PACKAGE_ROOT <dir>
+#   EXTERNALS <target> ...      # the *_max external targets
+#   [SUPPORT <file> ...])
+#
+# Distinct from avnd_create_max_package (avendish.max.cmake), which copies a
+# curated SOURCE_PATH/* skeleton -- pointing that at an addon's source root would
+# recurse into the package dir being built. This addon variant copies only the
+# known metadata (LICENSE/README/package-info.json) plus the externals + SUPPORT.
+# Layout: <pkg>/externals/<.mxo|.mxe64>  +  <pkg>/support/<bundled libs>  +
+#         <pkg>/docs/refpages/<.maxref.xml>  +  package-info.json + LICENSE/README.
+function(avnd_create_max_addon_package)
+  cmake_parse_arguments(AVND "" "NAME;SOURCE_PATH;PACKAGE_ROOT" "EXTERNALS;SUPPORT" ${ARGN})
+  if(NOT AVND_EXTERNALS)
+    return()
+  endif()
+
+  set(_pkg "${AVND_PACKAGE_ROOT}/${AVND_NAME}")
+  set(_pkg_target "${AVND_NAME}_max_package")
+  add_custom_target(${_pkg_target} ALL DEPENDS ${AVND_EXTERNALS})
+
+  if(AVND_SOURCE_PATH)
+    avnd_packaging_copy_metadata("${_pkg}" "${AVND_SOURCE_PATH}" "${AVND_NAME}")
+    if(EXISTS "${AVND_SOURCE_PATH}/package-info.json")
+      file(COPY "${AVND_SOURCE_PATH}/package-info.json" DESTINATION "${_pkg}/")
+    else()
+      file(WRITE "${_pkg}/package-info.json"
+"{\n  \"name\": \"${AVND_NAME}\",\n  \"displayname\": \"${AVND_NAME}\",\n  \"version\": \"continuous\",\n  \"author\": \"ossia.io\",\n  \"description\": \"Built from avendish -- see https://github.com/celtera/avendish\",\n  \"homepatcher\": \"\"\n}\n")
+    endif()
+  endif()
+
+  foreach(_external ${AVND_EXTERNALS})
+    add_custom_command(TARGET ${_external} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/externals"
+      COMMENT "Packaging Max external: ${_external}"
+      VERBATIM)
+
+    get_target_property(_maxref ${_external} AVND_MAX_MAXREF_XML)
+    if(_maxref)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/docs/refpages"
+        COMMAND ${CMAKE_COMMAND} -E copy "${_maxref}" "${_pkg}/docs/refpages/"
+        VERBATIM)
+    endif()
+
+    if(WIN32)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_pkg}/externals/"
+        VERBATIM)
+    else()
+      # rpath so a LINKED support lib resolves from <pkg>/support/. Harmless for a
+      # dlopen'd dep like onnxruntime (found via the loader's module-relative search).
+      set_target_properties(${_external} PROPERTIES
+        BUILD_WITH_INSTALL_RPATH 1
+        INSTALL_NAME_DIR "@rpath"
+        BUILD_RPATH "@loader_path/../../../../support"
+        INSTALL_RPATH "@loader_path/../../../../support")
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "$<TARGET_BUNDLE_DIR:${_external}>"
+            "${_pkg}/externals/$<TARGET_BUNDLE_DIR_NAME:${_external}>"
+        VERBATIM)
+    endif()
+  endforeach()
+
+  foreach(_support ${AVND_SUPPORT})
+    add_custom_command(TARGET ${_pkg_target} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_pkg}/support"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_support}" "${_pkg}/support/"
+      VERBATIM)
+  endforeach()
+endfunction()
+
 # --- TouchDesigner ----------------------------------------------------------
 #
 # avnd_create_touchdesigner_package(
@@ -240,7 +315,7 @@ function(avnd_addon_package)
     endif()
 
     if(_backend STREQUAL "max")
-      avnd_create_max_package(
+      avnd_create_max_addon_package(
         NAME "${AVND_NAME}"
         SOURCE_PATH "${AVND_SOURCE_PATH}"
         PACKAGE_ROOT "${AVND_PACKAGE_ROOT}"
