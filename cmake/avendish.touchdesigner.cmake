@@ -69,6 +69,9 @@ function(avnd_make_touchdesigner)
 
   add_library(${AVND_FX_TARGET} MODULE)
 
+  # Register for avnd_addon_package() (the addon-wide packaging orchestrator).
+  set_property(GLOBAL APPEND PROPERTY AVND_ALL_TOUCHDESIGNER_EXTERNALS ${AVND_FX_TARGET})
+
   target_sources(
     ${AVND_FX_TARGET}
     PRIVATE

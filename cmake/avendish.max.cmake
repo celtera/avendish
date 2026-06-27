@@ -112,6 +112,9 @@ function(avnd_make_max)
   set(AVND_FX_TARGET "${AVND_TARGET}_max")
   add_library(${AVND_FX_TARGET} MODULE)
 
+  # Register for avnd_addon_package() (the addon-wide packaging orchestrator).
+  set_property(GLOBAL APPEND PROPERTY AVND_ALL_MAX_EXTERNALS ${AVND_FX_TARGET})
+
   set_target_properties(
     ${AVND_FX_TARGET}
     PROPERTIES

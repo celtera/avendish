@@ -121,6 +121,12 @@ function(avnd_make_godot)
   set(AVND_FX_TARGET "${AVND_TARGET}_${AVND_PROCESSOR_TYPE}_godot")
   add_library(${AVND_FX_TARGET} SHARED)
 
+  # Register for avnd_addon_package() (the addon-wide packaging orchestrator):
+  # the binary target + its generated .gdextension manifest.
+  set_property(GLOBAL APPEND PROPERTY AVND_ALL_GODOT_EXTERNALS ${AVND_FX_TARGET})
+  set_property(GLOBAL APPEND PROPERTY AVND_ALL_GODOT_GDEXTENSIONS
+    "${CMAKE_BINARY_DIR}/godot/${AVND_C_NAME}${_AVND_GODOT_SUFFIX}.gdextension")
+
   if(APPLE)
     # macOS: emit a .framework bundle so the binary can be codesigned
     # with --deep --options runtime AND stapled via xcrun stapler staple
