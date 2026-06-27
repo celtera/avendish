@@ -17,8 +17,11 @@
 # Single-object projects (avnd_make + EXTERNALS lists, e.g. celtera/ultraleap) keep
 # using avnd_create_max_package / avnd_create_pd_package in avendish.max/pd.cmake.
 
-# Directory of this module, so POST_BUILD steps can find the helper scripts.
-set(_AVND_PACKAGING_DIR "${CMAKE_CURRENT_LIST_DIR}")
+# Directory of this module, so POST_BUILD steps can find the helper scripts. Stored
+# as a GLOBAL property: a plain variable set here lands in the (find_package) include
+# scope and isn't visible when avnd_addon_package is later called from the addon's
+# own scope, whereas a global property always is.
+set_property(GLOBAL PROPERTY AVND_PACKAGING_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 # --- helpers ----------------------------------------------------------------
 
@@ -108,10 +111,11 @@ function(avnd_create_max_addon_package)
       # doesn't emit it on every toolchain (e.g. the Windows multi-config build), and
       # a missing doc must not fail the package build.
       add_dependencies("${_external}" "dump_maxref_${_external}")
+      get_property(_pkgdir GLOBAL PROPERTY AVND_PACKAGING_DIR)
       add_custom_command(TARGET ${_external} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
           "-DSRC=${CMAKE_BINARY_DIR}/${_maxref}" "-DDST=${_pkg}/docs/refpages"
-          -P "${_AVND_PACKAGING_DIR}/avendish.packaging.copy_optional.cmake"
+          -P "${_pkgdir}/avendish.packaging.copy_optional.cmake"
         VERBATIM)
     endif()
 
