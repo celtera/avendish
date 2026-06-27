@@ -29,10 +29,17 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-non-virtual-dtor")
 endif()
 
-# When the Max backend forces the static CRT (/MT -- see avendish.cmake), the
-# VST3 SDK must use it too: it doesn't honour CMAKE_MSVC_RUNTIME_LIBRARY, so its
-# base.lib stays /MD and clashes with the /MT objects at link time (LNK2038).
-if(MSVC AND AVND_ENABLE_MAX)
+# When the surrounding build uses the static CRT (/MT) -- e.g. an addon that ships
+# a Max external forces CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded for the whole tree
+# (see avendish.cmake) -- the VST3 SDK must use it too: it doesn't honour
+# CMAKE_MSVC_RUNTIME_LIBRARY, so its base.lib stays /MD and clashes with the /MT
+# objects at link time (LNK2038). Detect the static runtime directly (the "...DLL"
+# variants are the dynamic /MD ones) rather than keying on AVND_ENABLE_MAX, so a
+# single-backend build (e.g. the vst3-only CI lane, where MAX is off but the addon
+# still set /MT globally) is covered too.
+if(MSVC AND (AVND_ENABLE_MAX
+    OR (CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded"
+        AND NOT CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "DLL")))
   set(SMTG_USE_STATIC_CRT ON CACHE BOOL "" FORCE)
 endif()
 
