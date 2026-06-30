@@ -126,9 +126,13 @@ struct Controls<T>
   void name(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    // Controls are shared across the (internal) per-channel instances; operate
-    // on one representative instance. self.inputs() would be a member_iterator
-    // for polyphonic effects, which for_nth_mapped can't take.
+    // Default to an empty string in case there are no instances (the host
+    // buffer is otherwise left uninitialized). Controls are shared across the
+    // (internal) per-channel instances; operate on one representative instance.
+    // self.inputs() would be a member_iterator for polyphonic effects, which
+    // for_nth_mapped can't take.
+    if(ptr)
+      reinterpret_cast<char*>(ptr)[0] = '\0';
     for(auto state : self.full_state())
     {
       inputs_info_t::for_nth_mapped(
@@ -150,6 +154,8 @@ struct Controls<T>
   void display(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
+    if(ptr)
+      reinterpret_cast<char*>(ptr)[0] = '\0';
     for(auto state : self.full_state())
     {
       inputs_info_t::for_nth_mapped(
@@ -166,6 +172,8 @@ struct Controls<T>
   void label(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
+    if(ptr)
+      reinterpret_cast<char*>(ptr)[0] = '\0';
     for(auto state : self.full_state())
     {
       inputs_info_t::for_nth_mapped(

@@ -76,6 +76,10 @@ public:
     if(paramIndex < 0 || paramIndex >= inputs_info_t::size)
       return Steinberg::kInvalidArgument;
 
+    // Zero-init so skipped (non-scalar) controls still have a valid
+    // defaultNormalizedValue (0, in [0,1]) and stepCount (0 = continuous),
+    // as required by ParameterInfo.
+    info = {};
     info.id = inputs_info_t::index_map[paramIndex];
     inputs_info_t::for_nth_raw(
         info.id,
