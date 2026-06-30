@@ -15,6 +15,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -387,34 +388,35 @@ void emit_pd(const model_t& m, std::ostream& out)
 
   const int demo_top = 92;
   const int row = 30;
-  const int controls_h = static_cast<int>(controls.size()) * row;
+  const int rows_per_col = 18; // wrap long control lists into columns
+  const int col_w = 330;
+  const int nctrl = static_cast<int>(controls.size());
+  const int tallest = nctrl > 0 ? std::min(nctrl, rows_per_col) : 0;
   const int msgs_h = static_cast<int>(m.messages.size()) * row;
-  const int y_obj = demo_top + controls_h + msgs_h + 50;
+  const int y_obj = demo_top + tallest * row + msgs_h + 50;
 
   const std::string create = m.c_name.empty() ? m.name : m.c_name;
   const int obj_idx = p.add(
       "#X obj 24 " + std::to_string(y_obj) + " " + pd_escape(create) + ";");
 
-  // --- controls: one driver per control, wired to the left inlet ---
-  int y = demo_top;
-  for(const auto* c : controls)
+  // --- controls: one driver per control, wired to the left inlet; per-control
+  // descriptions live in the inlets section below to keep the demo compact ---
+  for(int i = 0; i < nctrl; ++i)
   {
-    pd_driver d = pd_emit_control(p, *c, 24, y);
+    const int cx = 24 + (i / rows_per_col) * col_w;
+    const int cy = demo_top + (i % rows_per_col) * row;
+    pd_driver d = pd_emit_control(p, *controls[i], cx, cy);
     if(d.message >= 0)
       p.connect(d.message, 0, obj_idx, 0);
-    p.text(320, y, c->name + " - " + pd_port_typestr(*c)
-                       + (c->description.empty() ? "" : ": " + c->description));
-    y += row;
   }
 
   // --- messages: clickable message boxes into the left inlet ---
+  int y = demo_top + tallest * row + 10;
   for(const auto& msg : m.messages)
   {
-    std::string body = selector(msg.name);
     const int mi = p.add(
-        "#X msg 24 " + std::to_string(y) + " " + body + ";");
+        "#X msg 24 " + std::to_string(y) + " " + selector(msg.name) + ";");
     p.connect(mi, 0, obj_idx, 0);
-    p.text(320, y, "message: " + msg.name);
     y += row;
   }
 
@@ -499,8 +501,10 @@ void emit_pd(const model_t& m, std::ostream& out)
     }
   }
 
+  const int ncols = nctrl > 0 ? (nctrl + rows_per_col - 1) / rows_per_col : 1;
+  const int width = std::max(620, 24 + ncols * col_w + 80);
   const int height = sy + 40;
-  p.write(out, 620, height < 300 ? 300 : height);
+  p.write(out, width, height < 300 ? 300 : height);
 }
 
 // Max/MSP .maxhelp is a JSON patcher (same schema family as .maxpat). Controls
@@ -662,38 +666,152 @@ void emit_max(const model_t& m, std::ostream& out)
   p.write(out);
 }
 
-// Godot text scene (.tscn). Phase 0: a Node placeholder + the description; the
-// real generated/extension class is referenced in a later phase.
-void emit_godot(const model_t& m, std::ostream& out)
+// Godot text scene (.tscn) — fully text-emittable. Instantiates the
+// extension-registered class and sets a few exported properties to their init
+// values. `cls` is the registered class name (avnd_<c_name><suffix>); when
+// absent we fall back to avnd_<c_name>.
+bool valid_gd_ident(std::string_view s)
 {
+  if(s.empty())
+    return false;
+  if(!((s[0] >= 'a' && s[0] <= 'z') || (s[0] >= 'A' && s[0] <= 'Z') || s[0] == '_'))
+    return false;
+  for(char c : s)
+    if(!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+         || c == '_'))
+      return false;
+  return true;
+}
+
+std::string gd_node_name(std::string_view s)
+{
+  std::string r;
+  for(char c : s)
+    r += (c == '.' || c == ':' || c == '@' || c == '/' || c == '%' || c == ' ')
+             ? '_'
+             : c;
+  return r.empty() ? std::string{"Example"} : r;
+}
+
+void emit_godot(const model_t& m, std::ostream& out, const std::string& cls)
+{
+  const std::string klass
+      = !cls.empty() ? cls
+                     : "avnd_" + (m.c_name.empty() ? m.name : m.c_name);
+
   out << "[gd_scene format=3]\n\n";
-  out << "; " << m.name << " - " << blurb(m) << " (auto-generated example - WIP)\n\n";
-  out << "[node name=\"" << m.name << "Example\" type=\"Node\"]\n";
+  out << "; " << m.name << " - " << blurb(m) << " (auto-generated example)\n\n";
+  out << "[node name=\"" << gd_node_name(m.name) << "\" type=\"" << klass << "\"]\n";
+
+  // Exported properties (Avendish parameters). Property names are the control
+  // names verbatim; emit assignments for the ones that are valid identifiers.
+  for(const auto& c : m.inputs)
+  {
+    if(c.type != "parameter" || !valid_gd_ident(c.name))
+      continue;
+    if(c.value_type == "float" || c.value_type == "int")
+    {
+      double v = 0.0;
+      if(c.range && c.range->init)
+        v = *c.range->init;
+      else if(c.default_value && c.default_value->is_number())
+        v = c.default_value->get<double>();
+      out << c.name << " = " << trim_num(v) << "\n";
+    }
+    else if(c.value_type == "bool")
+    {
+      bool v = c.default_value && c.default_value->is_boolean()
+               && c.default_value->get<bool>();
+      out << c.name << " = " << (v ? "true" : "false") << "\n";
+    }
+    else if(c.value_type == "enum")
+    {
+      out << c.name << " = 0\n";
+    }
+  }
 }
 
-// TouchDesigner: the real path is text-synthesis + toecollapse (Phase 3). Phase
-// 0 emits a placeholder describing the object's parameters as plain text.
-void emit_td(const model_t& m, std::ostream& out)
+// TouchDesigner example: a Python network-builder script. An avendish TD
+// operator is a compiled Custom OP plugin, so a network can only reference it
+// once the plugin is installed -- the robust shippable artifact is a builder
+// script (run inside TD) or an author-provided .tox via the EXAMPLE_TD override.
+// `optype` is the registered Custom OP type (passed by CMake); falls back to the
+// c_name.
+void emit_td(const model_t& m, std::ostream& out, const std::string& optype)
 {
-  out << "# TouchDesigner example for " << m.name << " (" << m.c_name << ")\n";
+  const std::string ty = optype.empty() ? m.c_name : optype;
+  out << "# TouchDesigner example builder for " << m.name << "\n";
   out << "# " << blurb(m) << "\n";
-  out << "# Auto-generated placeholder -- real .tox synthesis lands in Phase 3.\n";
-  out << "# Parameters:\n";
-  for(const auto& p : m.inputs)
-    out << "#   - " << p.name << " (" << (p.value_type.empty() ? p.type : p.value_type)
-        << ")\n";
+  out << "#\n";
+  out << "# Run inside TouchDesigner (paste into a Text DAT and run it, or call\n";
+  out << "# build(op('/')) ) to create an example network for this operator.\n";
+  out << "# A hand-authored .tox can be shipped instead via the EXAMPLE_TD override.\n\n";
+  out << "OPERATOR_TYPE = " << '"' << ty << '"' << "\n\n";
+  out << "# Parameters (name, type, range/default):\n";
+  for(const auto& c : m.inputs)
+  {
+    if(c.type != "parameter")
+      continue;
+    out << "#   - " << c.name << " : " << pd_port_typestr(c);
+    if(!c.description.empty())
+      out << " - " << c.description;
+    out << "\n";
+  }
+  out << "\n";
+  out << "def build(parent):\n";
+  out << "    n = parent.create(OPERATOR_TYPE, " << '"' << m.c_name << "_example"
+      << '"' << ")\n";
+  for(const auto& c : m.inputs)
+  {
+    if(c.type != "parameter")
+      continue;
+    double v = 0.0;
+    if(c.range && c.range->init)
+      v = *c.range->init;
+    else if(c.default_value && c.default_value->is_number())
+      v = c.default_value->get<double>();
+    // Custom parameters appear under n.par.<Name> (TD capitalizes the first
+    // letter of the tuplet name); leave the assignment for the user to confirm.
+    out << "    # n.par." << c.name << " = " << trim_num(v) << "\n";
+  }
+  out << "    return n\n";
 }
 
-// Python example script.
+// Python example script: import the module and exercise the object.
 void emit_python(const model_t& m, std::ostream& out)
 {
-  out << "# Auto-generated example for " << m.name << " (WIP)\n";
-  out << "# " << blurb(m) << "\n";
-  out << "import " << m.c_name << " as obj\n";
+  out << "#!/usr/bin/env python3\n";
+  out << "\"\"\"" << m.name << " - " << blurb(m) << "\n\n";
+  out << "Auto-generated usage example.\n\"\"\"\n\n";
+  out << "import " << m.c_name << " as mod\n\n";
+  out << "obj = mod." << m.c_name << "()\n\n";
+  out << "# Set the input controls:\n";
+  bool any = false;
+  for(const auto& c : m.inputs)
+  {
+    if(c.type != "parameter")
+      continue;
+    any = true;
+    std::string v = "0";
+    if(c.value_type == "string")
+      v = "\"\"";
+    else if(c.value_type == "bool")
+      v = "False";
+    else if(c.range && c.range->init)
+      v = trim_num(*c.range->init);
+    else if(c.default_value && c.default_value->is_number())
+      v = trim_num(c.default_value->get<double>());
+    out << "obj." << selector(c.name) << " = " << v;
+    if(!c.description.empty())
+      out << "  # " << c.description;
+    out << "\n";
+  }
+  if(!any)
+    out << "# (this object has no input controls)\n";
 }
 
 int run(const std::string& backend, const std::string& in_path,
-        const std::string& out_path)
+        const std::string& out_path, const std::string& hint)
 {
   std::ifstream in(in_path);
   if(!in)
@@ -735,9 +853,9 @@ int run(const std::string& backend, const std::string& in_path,
   else if(backend == "max" || backend == "maxhelp")
     emit_max(m, out);
   else if(backend == "godot")
-    emit_godot(m, out);
+    emit_godot(m, out, hint);
   else if(backend == "td" || backend == "touchdesigner")
-    emit_td(m, out);
+    emit_td(m, out, hint);
   else if(backend == "python")
     emit_python(m, out);
   else
@@ -751,12 +869,13 @@ int run(const std::string& backend, const std::string& in_path,
 
 int main(int argc, char** argv)
 {
-  if(argc != 4)
+  if(argc != 4 && argc != 5)
   {
     std::cerr
-        << "Usage: generate_patches <backend> <input.json> <output-path>\n"
-           "  backend: pd | max | godot | td | python\n";
+        << "Usage: generate_patches <backend> <input.json> <output-path> [hint]\n"
+           "  backend: pd | max | godot | td | python\n"
+           "  hint:    backend-specific (godot: the registered class name)\n";
     return 1;
   }
-  return run(argv[1], argv[2], argv[3]);
+  return run(argv[1], argv[2], argv[3], argc == 5 ? argv[4] : std::string{});
 }

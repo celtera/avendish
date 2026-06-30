@@ -193,6 +193,19 @@ function(avnd_create_touchdesigner_package)
       COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_plugins}/"
       COMMENT "Packaging TouchDesigner plugin: ${_external}"
       VERBATIM)
+
+    get_target_property(_td_example ${_external} AVND_TD_EXAMPLE)
+    if(_td_example)
+      if(TARGET "${_external}_help")
+        add_dependencies("${_external}" "${_external}_help")
+      endif()
+      get_property(_pkgdir GLOBAL PROPERTY AVND_PACKAGING_DIR)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+          "-DSRC=${CMAKE_BINARY_DIR}/${_td_example}" "-DDST=${_pkg}/examples"
+          -P "${_pkgdir}/avendish.packaging.copy_optional.cmake"
+        VERBATIM)
+    endif()
   endforeach()
 
   # SUPPORT libs live next to the plugins (the OS loader / our get_module_folder()
@@ -249,6 +262,19 @@ function(avnd_create_godot_package)
       ${_copy}
       COMMENT "Packaging Godot GDExtension: ${_external}"
       VERBATIM)
+
+    get_target_property(_gd_example ${_external} AVND_GODOT_EXAMPLE)
+    if(_gd_example)
+      if(TARGET "${_external}_help")
+        add_dependencies("${_external}" "${_external}_help")
+      endif()
+      get_property(_pkgdir GLOBAL PROPERTY AVND_PACKAGING_DIR)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+          "-DSRC=${CMAKE_BINARY_DIR}/${_gd_example}" "-DDST=${_pkg}/examples"
+          -P "${_pkgdir}/avendish.packaging.copy_optional.cmake"
+        VERBATIM)
+    endif()
   endforeach()
 
   # Rewrite each .gdextension so its [libraries] res:// paths point at

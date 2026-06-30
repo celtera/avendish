@@ -43,7 +43,7 @@ set(AVND_TD_SOURCES
 
 # Function to create a TouchDesigner Custom operator OP from an Avendish processor
 function(avnd_make_touchdesigner)
-  cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "LINK_LIBRARIES" ${ARGN})
+  cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;EXAMPLE_TD" "LINK_LIBRARIES" ${ARGN})
 
   # No operator family: the object has no TD-mappable processor category.
   # Skip instead of failing on a missing "<empty>.prototype.cpp.in"; pick one
@@ -172,6 +172,19 @@ function(avnd_make_touchdesigner)
   # Installation (optional)
   # TouchDesigner plugins typically go in <Project>/Plugins/
   # install(TARGETS ${AVND_FX_TARGET} LIBRARY DESTINATION "Plugins")
+
+  # Example: a Python network-builder script (an avendish TD operator is a
+  # compiled Custom OP, so a .tox can only reference it once installed; ship a
+  # builder script, or a hand-authored .tox via EXAMPLE_TD).
+  avnd_generate_help(
+    FX_TARGET     "${AVND_FX_TARGET}"
+    SOURCE_TARGET "${AVND_TARGET}"
+    BACKEND       td
+    DESTINATION   "td/examples/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.example.py"
+    PROPERTY      AVND_TD_EXAMPLE
+    OVERRIDE      "${AVND_EXAMPLE_TD}"
+    EXTRA_ARG     "${AVND_C_NAME}"
+  )
 
   message(STATUS "Configured TouchDesigner: ${AVND_FX_TARGET}")
 endfunction()

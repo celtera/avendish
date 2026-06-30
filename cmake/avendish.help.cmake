@@ -15,7 +15,7 @@
 # )
 function(avnd_generate_help)
   cmake_parse_arguments(AVND ""
-    "FX_TARGET;SOURCE_TARGET;BACKEND;DESTINATION;PROPERTY;OVERRIDE" "" ${ARGN})
+    "FX_TARGET;SOURCE_TARGET;BACKEND;DESTINATION;PROPERTY;OVERRIDE;EXTRA_ARG" "" ${ARGN})
 
   if(AVND_DISABLE_AUTOHELP)
     return()
@@ -47,13 +47,16 @@ function(avnd_generate_help)
   if(NOT TARGET generate_patches)
     return()
   endif()
+  if(NOT TARGET ${AVND_SOURCE_TARGET})
+    return()
+  endif()
   get_target_property(_dump_path ${AVND_SOURCE_TARGET} AVND_DUMP_PATH)
   if(NOT _dump_path)
     return()
   endif()
 
   add_custom_target(${AVND_FX_TARGET}_help ALL
-      generate_patches "${AVND_BACKEND}" "${_dump_path}" "${AVND_DESTINATION}"
+      generate_patches "${AVND_BACKEND}" "${_dump_path}" "${AVND_DESTINATION}" ${AVND_EXTRA_ARG}
       DEPENDS "${_dump_path}" generate_patches
       BYPRODUCTS "${AVND_DESTINATION}"
     )

@@ -25,7 +25,7 @@ function(avnd_make_python)
     return()
   endif()
 
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;EXAMPLE_PY" "" ${ARGN})
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
@@ -77,6 +77,16 @@ function(avnd_make_python)
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+
+  # Usage example next to the module.
+  avnd_generate_help(
+    FX_TARGET     "${AVND_FX_TARGET}"
+    SOURCE_TARGET "${AVND_TARGET}"
+    BACKEND       python
+    DESTINATION   "python/examples/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}_example.py"
+    PROPERTY      AVND_PYTHON_EXAMPLE
+    OVERRIDE      "${AVND_EXAMPLE_PY}"
+  )
 endfunction()
 
 add_library(Avendish_python INTERFACE)
