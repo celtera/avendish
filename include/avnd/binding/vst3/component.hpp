@@ -310,7 +310,8 @@ struct Component final
     if constexpr(avnd::midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
-      auto& in_port = avnd::pfr::get<i_info::index_map[0]>(controls_inputs());
+      [[maybe_unused]] auto& in_port
+          = avnd::pfr::get<i_info::index_map[0]>(controls_inputs());
 
       midi.reserve_space(this->effect, newSetup.maxSamplesPerBlock);
     }
