@@ -15,6 +15,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -187,7 +188,7 @@ std::string blurb(const model_t& m)
 // every character outside [a-zA-Z0-9.~] replaced by '_' (mirrors
 // avnd::fixup_identifier with pd::valid_char_for_name). A message
 // [<selector> <value>( sent to the object's left inlet sets that control.
-std::string pd_selector(std::string_view name)
+std::string selector(std::string_view name)
 {
   std::string s;
   s.reserve(name.size());
@@ -275,7 +276,7 @@ struct pd_driver { int widget = -1; int message = -1; };
 
 pd_driver pd_emit_control(pd_patch& p, const port_t& c, int x, int y)
 {
-  const std::string sel = pd_selector(c.name);
+  const std::string sel = selector(c.name);
   pd_driver d;
 
   auto msg = [&](const std::string& body) {
@@ -409,7 +410,7 @@ void emit_pd(const model_t& m, std::ostream& out)
   // --- messages: clickable message boxes into the left inlet ---
   for(const auto& msg : m.messages)
   {
-    std::string body = pd_selector(msg.name);
+    std::string body = selector(msg.name);
     const int mi = p.add(
         "#X msg 24 " + std::to_string(y) + " " + body + ";");
     p.connect(mi, 0, obj_idx, 0);
@@ -449,7 +450,7 @@ void emit_pd(const model_t& m, std::ostream& out)
     {
       const int pr = p.add(
           "#X obj " + std::to_string(ox) + " " + std::to_string(oy) + " print "
-          + pd_selector(o.name) + ";");
+          + selector(o.name) + ";");
       p.connect(obj_idx, static_cast<int>(i), pr, 0);
       ox += 90;
     }
@@ -473,13 +474,13 @@ void emit_pd(const model_t& m, std::ostream& out)
   sy += 18;
   for(const auto* c : controls)
   {
-    p.text(20, sy, pd_selector(c->name) + " - " + pd_port_typestr(*c)
+    p.text(20, sy, selector(c->name) + " - " + pd_port_typestr(*c)
                        + (c->description.empty() ? "" : ": " + c->description));
     sy += 16;
   }
   for(const auto& msg : m.messages)
   {
-    p.text(20, sy, pd_selector(msg.name) + " - message");
+    p.text(20, sy, selector(msg.name) + " - message");
     sy += 16;
   }
 
@@ -502,37 +503,163 @@ void emit_pd(const model_t& m, std::ostream& out)
   p.write(out, 620, height < 300 ? 300 : height);
 }
 
-// Max/MSP .maxhelp is a JSON patcher (same schema family as .maxpat).
+// Max/MSP .maxhelp is a JSON patcher (same schema family as .maxpat). Controls
+// are driven exactly like Pd: a [selector value( message into the object's left
+// inlet (the binding registers an "anything" A_GIMME method), with the same
+// name normalization.
+struct max_patch
+{
+  json boxes = json::array();
+  json lines = json::array();
+  int n = 0;
+
+  std::string box(
+      std::string_view maxclass, std::string_view text, double x, double y,
+      double w, double h, int nin = 1, int nout = 1)
+  {
+    std::string id = "obj-" + std::to_string(++n);
+    json b;
+    b["id"] = id;
+    b["maxclass"] = maxclass;
+    b["numinlets"] = nin;
+    b["numoutlets"] = nout;
+    b["patching_rect"] = {x, y, w, h};
+    if(!text.empty())
+      b["text"] = text;
+    if(nout > 0)
+      b["outlettype"] = std::vector<std::string>(static_cast<std::size_t>(nout), "");
+    boxes.push_back(json{{"box", b}});
+    return id;
+  }
+  void line(const std::string& s, int so, const std::string& d, int di)
+  {
+    lines.push_back(json{
+        {"patchline",
+         {{"source", {s, so}}, {"destination", {d, di}}}}});
+  }
+  void write(std::ostream& o) const
+  {
+    json p;
+    p["patcher"] = {
+        {"fileversion", 1},
+        {"appversion",
+         {{"major", 8}, {"minor", 5}, {"revision", 0}, {"architecture", "x64"},
+          {"modernui", 1}}},
+        {"classnamespace", "box"},
+        {"rect", {80.0, 80.0, 900.0, 600.0}},
+        {"boxes", boxes},
+        {"lines", lines}};
+    json doc;
+    doc["patcher"] = p["patcher"];
+    o << doc.dump(2) << '\n';
+  }
+};
+
 void emit_max(const model_t& m, std::ostream& out)
 {
-  json patcher;
-  patcher["fileversion"] = 1;
-  patcher["appversion"]
-      = {{"major", 8}, {"minor", 0}, {"revision", 0}, {"architecture", "x64"},
-         {"modernui", 1}};
-  patcher["rect"] = {50, 50, 620, 440};
-  patcher["boxes"] = json::array();
+  max_patch p;
 
-  auto comment = json::object();
-  comment["box"]
-      = {{"id", "obj-1"},
-         {"maxclass", "comment"},
-         {"text", m.name + " - " + blurb(m) + " (auto-generated help - WIP)"},
-         {"patching_rect", {18.0, 16.0, 400.0, 20.0}}};
-  patcher["boxes"].push_back(comment);
+  p.box("comment", m.name, 40, 16, 400, 20, 1, 0);
+  p.box("comment", blurb(m), 40, 38, 600, 20, 1, 0);
 
-  auto object = json::object();
-  object["box"]
-      = {{"id", "obj-2"}, {"maxclass", "newobj"}, {"text", m.c_name},
-         {"numinlets", 1}, {"numoutlets", 0},
-         {"patching_rect", {18.0, 80.0, 120.0, 22.0}}};
-  patcher["boxes"].push_back(object);
+  std::vector<const port_t*> controls, audio_in;
+  for(const auto& c : m.inputs)
+  {
+    if(c.type == "parameter")
+      controls.push_back(&c);
+    else if(c.type == "audio")
+      audio_in.push_back(&c);
+  }
 
-  patcher["lines"] = json::array();
+  const double row = 36;
+  const double demo_top = 90;
+  const double y_obj
+      = demo_top + (controls.size() + m.messages.size()) * row + 60;
 
-  json doc;
-  doc["patcher"] = patcher;
-  out << doc.dump(2) << '\n';
+  const std::string create = m.c_name.empty() ? m.name : m.c_name;
+  const std::string obj = p.box(
+      "newobj", create, 40, y_obj, 240, 22,
+      std::max<int>(1, static_cast<int>(audio_in.size())),
+      std::max<int>(1, static_cast<int>(m.outputs.size())));
+
+  double y = demo_top;
+  for(const auto* c : controls)
+  {
+    const std::string sel = selector(c->name);
+    std::string widget, body = sel + " $1";
+    std::string maxclass;
+    if(c->value_type == "bool")
+      maxclass = "toggle";
+    else if(c->value_type == "int" || c->value_type == "enum")
+      maxclass = "number";
+    else if(c->value_type == "float")
+      maxclass = "flonum";
+    else if(c->value_type == "string")
+      maxclass = ""; // message-only
+    else
+    {
+      maxclass = "button";
+      body = sel; // bang / impulse
+    }
+
+    if(!maxclass.empty())
+    {
+      widget = p.box(maxclass, "", 40, y, 50, 22);
+      const std::string msg = p.box("message", body, 200, y, 140, 22);
+      p.line(widget, 0, msg, 0);
+      p.line(msg, 0, obj, 0);
+    }
+    else
+    {
+      const std::string msg = p.box("message", sel + " value", 200, y, 140, 22);
+      p.line(msg, 0, obj, 0);
+    }
+    p.box("comment", c->name + " - " + pd_port_typestr(*c)
+                         + (c->description.empty() ? "" : ": " + c->description),
+          350, y, 240, 20, 1, 0);
+    y += row;
+  }
+
+  for(const auto& msg : m.messages)
+  {
+    const std::string mb = p.box("message", selector(msg.name), 40, y, 140, 22);
+    p.line(mb, 0, obj, 0);
+    y += row;
+  }
+
+  double ax = 40;
+  for(std::size_t k = 0; k < audio_in.size(); ++k)
+  {
+    const std::string src = p.box("newobj", "cycle~ 220", ax, y_obj - 40, 90, 22);
+    p.line(src, 0, obj, static_cast<int>(k));
+    ax += 100;
+  }
+
+  double ox = 40;
+  const double oy = y_obj + 50;
+  std::string dac;
+  for(std::size_t i = 0; i < m.outputs.size(); ++i)
+  {
+    const port_t& o = m.outputs[i];
+    if(o.type == "audio")
+    {
+      const std::string g = p.box("newobj", "*~ 0.2", ox, oy, 60, 22);
+      p.line(obj, static_cast<int>(i), g, 0);
+      if(dac.empty())
+        dac = p.box("newobj", "ezdac~", 40, oy + 40, 45, 45, 2, 0);
+      p.line(g, 0, dac, static_cast<int>(i) % 2);
+      ox += 80;
+    }
+    else
+    {
+      const std::string pr
+          = p.box("newobj", "print " + selector(o.name), ox, oy, 140, 22, 1, 0);
+      p.line(obj, static_cast<int>(i), pr, 0);
+      ox += 150;
+    }
+  }
+
+  p.write(out);
 }
 
 // Godot text scene (.tscn). Phase 0: a Node placeholder + the description; the
@@ -588,6 +715,13 @@ int run(const std::string& backend, const std::string& in_path,
   }
 
   const model_t m = parse_model(j);
+
+  if(const auto parent = std::filesystem::path(out_path).parent_path();
+     !parent.empty())
+  {
+    std::error_code ec;
+    std::filesystem::create_directories(parent, ec);
+  }
 
   std::ofstream out(out_path, std::ios::binary);
   if(!out)

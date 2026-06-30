@@ -119,6 +119,21 @@ function(avnd_create_max_addon_package)
         VERBATIM)
     endif()
 
+    get_target_property(_maxhelp ${_external} AVND_MAX_HELP)
+    if(_maxhelp)
+      # Interactive help patch (avnd_generate_help). Best-effort, same rationale
+      # as the maxref above: a missing help patch must not fail packaging.
+      if(TARGET "${_external}_help")
+        add_dependencies("${_external}" "${_external}_help")
+      endif()
+      get_property(_pkgdir GLOBAL PROPERTY AVND_PACKAGING_DIR)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+          "-DSRC=${CMAKE_BINARY_DIR}/${_maxhelp}" "-DDST=${_pkg}/help"
+          -P "${_pkgdir}/avendish.packaging.copy_optional.cmake"
+        VERBATIM)
+    endif()
+
     if(WIN32)
       add_custom_command(TARGET ${_external} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_external}>" "${_pkg}/externals/"
