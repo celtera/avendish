@@ -71,13 +71,25 @@ struct ColorChannelTestTOP
     Passthrough
   };
 
+  // Mark a halp control as a class attribute so it surfaces as a Max/MSP
+  // attribute (settable in the inspector / via @attr) rather than only an
+  // inlet. Harmless on backends that register every control (e.g. TD).
+  template <typename Base>
+  struct attribute : Base
+  {
+    enum
+    {
+      class_attribute
+    };
+  };
+
   struct
   {
     halp::texture_input<"Input"> image;
-    halp::enum_t<Mode, "Mode"> mode;
+    attribute<halp::enum_t<Mode, "Mode">> mode;
     // Output size used in Generate mode (Passthrough follows the input size).
-    halp::knob_i32<"Gen Width", halp::range{16, 4096, 512}> gen_width;
-    halp::knob_i32<"Gen Height", halp::range{16, 4096, 512}> gen_height;
+    attribute<halp::knob_i32<"Gen Width", halp::range{16, 4096, 512}>> gen_width;
+    attribute<halp::knob_i32<"Gen Height", halp::range{16, 4096, 512}>> gen_height;
   } inputs;
 
   struct
