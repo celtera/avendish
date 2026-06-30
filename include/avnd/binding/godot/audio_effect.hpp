@@ -147,12 +147,21 @@ private:
 
     if constexpr(avnd::has_inputs<T>)
     {
-      auto& src = params_src->inputs();
-      auto& dst = adapter.effect.inputs();
-      avnd::parameter_input_introspection<T>::for_all(
-          [&]<auto Idx, typename C>(avnd::field_reflection<Idx, C>) {
-        avnd::pfr::get<Idx>(dst).value = avnd::pfr::get<Idx>(src).value;
-      });
+      // Copy the canonical parameter values into every instance of the
+      // processing container. inputs() is a member_iterator for polyphonic
+      // effects, so reach the concrete inputs through full_state().
+      for(auto src_state : params_src->full_state())
+      {
+        for(auto dst_state : adapter.effect.full_state())
+        {
+          avnd::parameter_input_introspection<T>::for_all(
+              [&]<auto Idx, typename C>(avnd::field_reflection<Idx, C>) {
+            avnd::pfr::get<Idx>(dst_state.inputs).value
+                = avnd::pfr::get<Idx>(src_state.inputs).value;
+          });
+        }
+        break; // representative source params
+      }
     }
   }
 };

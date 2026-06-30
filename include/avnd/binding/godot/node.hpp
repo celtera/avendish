@@ -357,11 +357,16 @@ bool set_property(
       static const godot::StringName fname{field_name<Idx, C, inputs_t>().data()};
       if(fname == p_name)
       {
-        auto& fld = avnd::pfr::get<Idx>(effect.inputs());
-        if(set_from_variant<C>(fld, p_value))
+        // Write to every (per-channel) instance; inputs() is a member_iterator
+        // for polyphonic effects, so go through full_state().
+        for(auto state : effect.full_state())
         {
-          if_possible(fld.update(effect.effect));
-          found = true;
+          auto& fld = avnd::pfr::get<Idx>(state.inputs);
+          if(set_from_variant<C>(fld, p_value))
+          {
+            if_possible(fld.update(state.effect));
+            found = true;
+          }
         }
       }
     }
@@ -387,8 +392,14 @@ bool get_property(
         static const godot::StringName fname{field_name<Idx, C, inputs_t>().data()};
         if(fname == p_name)
         {
-          r_ret = to_variant<C>(avnd::pfr::get<Idx>(effect.inputs()));
-          found = true;
+          // Read a representative instance (inputs() is a member_iterator for
+          // polyphonic effects; controls are shared across instances).
+          for(auto state : effect.full_state())
+          {
+            r_ret = to_variant<C>(avnd::pfr::get<Idx>(state.inputs));
+            found = true;
+            break;
+          }
         }
       }
     });
