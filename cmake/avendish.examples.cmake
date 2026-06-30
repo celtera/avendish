@@ -328,6 +328,14 @@ avnd_make_touchdesigner(
   PROCESSOR_TYPE SOP
 )
 
+avnd_make_touchdesigner(
+  TARGET ColorChannelTestTOP
+  MAIN_FILE examples/Advanced/TouchDesigner/ColorChannelTestTOP.hpp
+  MAIN_CLASS examples::touchdesigner::ColorChannelTestTOP
+  C_NAME avnd_color_channel_test
+  PROCESSOR_TYPE TOP
+)
+
 # Max/MSP geometry object (Jitter ob3d). Only built on macOS / Windows.
 avnd_make_max(
   TARGET CubeGeometry
