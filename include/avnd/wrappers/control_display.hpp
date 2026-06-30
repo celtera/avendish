@@ -76,16 +76,37 @@ bool display_control(const T& value, char* cstr, std::size_t len)
     }
     else if constexpr(avnd::optional_ish<T>)
     {
-      if(value)
-        *fmt::format_to_n(cstr, len, "{}", *value).out = '\0';
+      using inner_type = std::decay_t<decltype(*value)>;
+      if constexpr(fmt::is_formattable<inner_type>::value)
+      {
+        if(value)
+          *fmt::format_to_n(cstr, len, "{}", *value).out = '\0';
+        else
+          *fmt::format_to_n(cstr, len, "(nullopt)").out = '\0';
+        return true;
+      }
       else
-        *fmt::format_to_n(cstr, len, "(nullopt)").out = '\0';
+      {
+        // No fmt formatter for the wrapped type (e.g. halp::impulse_type):
+        // nothing printable, report empty rather than failing to compile.
+        if(len > 0)
+          cstr[0] = '\0';
+        return false;
+      }
+    }
+    else if constexpr(fmt::is_formattable<val_type>::value)
+    {
+      *fmt::format_to_n(cstr, len, "{}", value).out = '\0';
       return true;
     }
     else
     {
-      *fmt::format_to_n(cstr, len, "{}", value).out = '\0';
-      return true;
+      // Value types fmt cannot format on its own (colors, vectors, xy/xyz/xyzw,
+      // range sliders, tensors, ...). These have no textual control display;
+      // degrade gracefully instead of breaking the build.
+      if(len > 0)
+        cstr[0] = '\0';
+      return false;
     }
 #else
     if constexpr(std::floating_point<val_type>)

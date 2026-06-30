@@ -87,7 +87,9 @@ public:
       if constexpr(avnd::has_range<C>)
       {
         static constexpr auto range = avnd::get_range<C>();
-        if constexpr(requires { range.init; })
+        // map_control_to_01 is deleted for non-scalar controls (color, xy,
+        // range, xyz, xyzw...): they have no single normalized value.
+        if constexpr(requires { avnd::map_control_to_01<C>(range.init); })
           info.defaultNormalizedValue = avnd::map_control_to_01<C>(range.init);
 
         if constexpr(requires { range.step; })
@@ -108,7 +110,8 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        assign_if_assignable(res, avnd::map_control_from_01_to_fp<C>(valueNormalized));
+        if constexpr(requires { avnd::map_control_from_01_to_fp<C>(valueNormalized); })
+          assign_if_assignable(res, avnd::map_control_from_01_to_fp<C>(valueNormalized));
       });
     }
     return res;
@@ -121,7 +124,8 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        assign_if_assignable(res, avnd::map_control_from_fp_to_01<C>(plainValue));
+        if constexpr(requires { avnd::map_control_from_fp_to_01<C>(plainValue); })
+          assign_if_assignable(res, avnd::map_control_from_fp_to_01<C>(plainValue));
       });
     }
     return res;
@@ -134,7 +138,8 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        assign_if_assignable(res, avnd::map_control_to_01(field));
+        if constexpr(requires { avnd::map_control_to_01(field); })
+          assign_if_assignable(res, avnd::map_control_to_01(field));
       });
     }
     return res;
@@ -148,7 +153,8 @@ public:
     if constexpr(avnd::has_inputs<T>)
     {
       inputs_info_t::for_nth_raw(this->inputs_mirror, tag, [&]<typename C>(C& field) {
-        assign_if_assignable(field.value, avnd::map_control_from_01<C>(value));
+        if constexpr(requires { avnd::map_control_from_01<C>(value); })
+          assign_if_assignable(field.value, avnd::map_control_from_01<C>(value));
       });
     }
 
@@ -175,7 +181,8 @@ public:
             if(streamer.readDouble(param) == false)
               return false;
 
-            assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
+            if constexpr(requires { avnd::map_control_from_01<C>(param); })
+              assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
 
             return true;
           });

@@ -101,8 +101,14 @@ struct SimpleAudioEffect : vintage::Effect
       // First the default value
       avnd::init_controls(effect);
 
-      // Then the preset
-      controls.read(effect.inputs());
+      // Then the preset. For polyphonic (multi-instance) effects inputs() is a
+      // per-instance iterator, not a concrete inputs&; read from a representative
+      // instance via full_state() (works for single- and multi-instance alike).
+      for(auto state : effect.full_state())
+      {
+        controls.read(state.inputs);
+        break;
+      }
     }
   }
 
