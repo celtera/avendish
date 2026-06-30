@@ -1,5 +1,14 @@
 # Automatic help / example patch generation — implementation plan
 
+> **Status (all phases implemented, PR #126):** generator tool + override/generation
+> plumbing (P0); full Pure Data `-help.pd` emitter (P1); Max `.maxhelp` + `help/`
+> packaging (P2); Godot `.tscn` and TouchDesigner Python builder + `examples/`
+> packaging (P3); Python example + Pd column pagination (P4). Per-control
+> descriptions already flow through the dump — authors just declare them. TD `.tox`
+> text-synthesis (§5.3) is validated but deferred to a future iteration in favour of
+> the builder script + `EXAMPLE_TD` override; in-GUI verification of Max/Godot/TD
+> outputs is the remaining manual follow-up.
+
 ## 1. Goal
 
 Every object that avendish builds should ship with a **help / example patch** in the
