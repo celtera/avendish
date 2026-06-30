@@ -97,9 +97,12 @@ struct attribute_register<Processor, T>
       if(static constexpr auto style = get_atoms_style<F>(); strlen(style) > 0)
         CLASS_ATTR_STYLE(c, attr_name.data(), 0, style);
 
-      if constexpr(avnd::parameter_with_minmax_range<V>)
+      if constexpr(avnd::parameter_with_minmax_range<F>)
       {
-        static constexpr auto range = avnd::get_range<V>();
+        // NB: the range lives on the control type F, not on the value type V
+        // (which is e.g. `int` and has no range) — checking V here silently
+        // dropped the default and the clip filter for every attribute.
+        static constexpr auto range = avnd::get_range<F>();
         CLASS_ATTR_FILTER_CLIP(c, attr_name.data(), range.min, range.max);
         const auto init = std::to_string(range.init);
         CLASS_ATTR_DEFAULT(c, attr_name.data(), 0, init.c_str());
