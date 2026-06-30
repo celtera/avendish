@@ -180,6 +180,26 @@ struct inputs<T>
       jit_attr_setlong(input, _jit_sym_mindimcount, mindim);
       jit_attr_setlong(input, _jit_sym_maxdimcount, maxdim);
     }
+    else if constexpr(avnd::cpu_typed_buffer_port<Field>)
+    {
+      // Typed buffer: a 1-D array of the element type (no row padding, single
+      // plane). Matching the cell type here is what makes matrix_to_buffer's
+      // alias safe.
+      using value_type = std::remove_pointer_t<
+          std::decay_t<decltype(std::declval<Field&>().buffer.elements)>>;
+      jit_attr_setsym(input, _jit_sym_type, jitter::jitter_type_for_element<value_type>());
+      jit_attr_setlong(input, _jit_sym_planecount, 1);
+      jit_attr_setlong(input, _jit_sym_mindimcount, 1);
+      jit_attr_setlong(input, _jit_sym_maxdimcount, 1);
+    }
+    else if constexpr(avnd::cpu_raw_buffer_port<Field> || avnd::gpu_buffer_port<Field>)
+    {
+      // Raw / GPU buffer: 1-D char array (raw bytes).
+      jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
+      jit_attr_setlong(input, _jit_sym_planecount, 1);
+      jit_attr_setlong(input, _jit_sym_mindimcount, 1);
+      jit_attr_setlong(input, _jit_sym_maxdimcount, 1);
+    }
     else
     {
       jit_attr_setsym(input, _jit_sym_type, _jit_sym_char);
