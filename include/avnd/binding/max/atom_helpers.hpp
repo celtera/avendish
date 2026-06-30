@@ -60,7 +60,11 @@ constexpr const char* get_atoms_style() noexcept
   if constexpr(std::is_same_v<V, bool>)
     return "onoff";
   if constexpr(std::is_enum_v<V>)
-    return "enumindex";
+    // "enum" (symbol-valued) rather than "enumindex" (integer): our enum
+    // getter/setter/initial-value all speak the enum *name* as a symbol, so the
+    // inspector dropdown must match on the name. The label list is supplied via
+    // CLASS_ATTR_ENUM at class registration.
+    return "enum";
   if constexpr(std::is_same_v<V, std::string>)
     return "text";
   if constexpr(std::is_arithmetic_v<V>)
