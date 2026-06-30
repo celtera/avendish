@@ -52,6 +52,10 @@ struct geometry_processor : public TD::SOP_CPlusPlusBase
   parameter_setup<T> param_setup;
   touchdesigner::file_ports<T> file_setup;
 
+  // Owns the triangle index buffers built from the input SOP primitives so the
+  // avnd geometry-input ports can point at them for the duration of the cook.
+  std::vector<std::vector<uint32_t>> sop_index_storage;
+
   explicit geometry_processor(const TD::OP_NodeInfo* info)
   {
     init();
@@ -174,17 +178,19 @@ private:
   {
     if constexpr(avnd::geometry_input_introspection<T>::size > 0)
     {
+      sop_index_storage.resize(avnd::geometry_input_introspection<T>::size);
       int input_index = 0;
       avnd::geometry_input_introspection<T>::for_all(
           avnd::get_inputs(implementation), [&]<typename Field>(Field& field) {
-        if(const TD::OP_SOPInput* sop = inputs->getInputSOP(input_index++))
-          load_sop_input(sop, field);
+        const int slot = input_index++;
+        if(const TD::OP_SOPInput* sop = inputs->getInputSOP(slot))
+          load_sop_input(sop, field, slot);
       });
     }
   }
 
   template <typename Field>
-  void load_sop_input(const TD::OP_SOPInput* sop, Field& field)
+  void load_sop_input(const TD::OP_SOPInput* sop, Field& field, int slot)
   {
     auto& geom = resolve_mesh(field);
     using geom_t = std::decay_t<decltype(geom)>;
@@ -239,6 +245,44 @@ private:
           if constexpr(requires { a.name; })
             a.name.clear();
         }
+
+        // Read the input topology into an index buffer so a filter sees faces,
+        // not just a point cloud. n-gons are fan-triangulated. Additive: it only
+        // populates geom.index (previously unset); ports that ignore indices are
+        // unaffected.
+        if constexpr(requires { geom.index.buffer; })
+        {
+          const int32_t num_prims = sop->getNumPrimitives();
+          auto& idx = sop_index_storage[slot];
+          idx.clear();
+          for(int32_t p = 0; p < num_prims; ++p)
+          {
+            const TD::SOP_PrimitiveInfo& pi = sop->getPrimitive(p);
+            if(!pi.pointIndices || pi.numVertices < 3)
+              continue;
+            for(int32_t v = 1; v + 1 < pi.numVertices; ++v)
+            {
+              idx.push_back(static_cast<uint32_t>(pi.pointIndices[0]));
+              idx.push_back(static_cast<uint32_t>(pi.pointIndices[v]));
+              idx.push_back(static_cast<uint32_t>(pi.pointIndices[v + 1]));
+            }
+          }
+          if(!idx.empty())
+          {
+            const int bidx = static_cast<int>(geom.buffers.size());
+            geom.buffers.push_back({});
+            auto& ib = geom.buffers[bidx];
+            ib.raw_data = idx.data();
+            ib.byte_size = static_cast<int64_t>(idx.size()) * sizeof(uint32_t);
+            if constexpr(requires { ib.dirty; })
+              ib.dirty = true;
+            geom.index.buffer = bidx;
+            geom.index.byte_offset = 0;
+            geom.index.format = decltype(geom.index.format)(1); // uint32
+            if constexpr(requires { geom.indices; })
+              geom.indices = static_cast<int>(idx.size());
+          }
+        }
       }
     }
   }
@@ -261,7 +305,18 @@ private:
                        || avnd::dynamic_geometry_type<decltype(field.mesh)>)
             load_geometry(field.mesh, output);
           else
-            for(auto& m : field.mesh) { load_geometry(m, output); break; }
+          {
+            // Vector of meshes: emit them all, offsetting each mesh's primitive
+            // indices by the running point count (SOP_Output point indices
+            // accumulate across addPoint calls).
+            int base_point = 0;
+            for(auto& m : field.mesh)
+            {
+              load_geometry(m, output, base_point);
+              if constexpr(requires { m.vertices; })
+                base_point += m.vertices;
+            }
+          }
         }
         else
         {
@@ -274,7 +329,11 @@ private:
   // Main geometry loading - maps from avnd geometry structure to TD SOP
   template <typename GeomPort>
     requires(avnd::static_geometry_type<GeomPort> || avnd::dynamic_geometry_type<GeomPort>)
-  void load_geometry(GeomPort& geom, TD::SOP_Output* output)
+  // base_point is the running point index of the first point this mesh adds to
+  // the output (0 for a single mesh; for a vector of meshes it accumulates so
+  // each mesh's primitive indices stay correct, since SOP_Output point indices
+  // accumulate across addPoint calls).
+  void load_geometry(GeomPort& geom, TD::SOP_Output* output, int base_point = 0)
   {
     // Get vertex count
     int num_vertices = 0;
@@ -291,7 +350,7 @@ private:
       // Run-time attribute list (e.g. halp::dynamic_geometry):
       // attributes are identified by their semantic
       add_vertices_from_dynamic_buffers(geom, output);
-      add_dynamic_primitives(geom, output);
+      add_dynamic_primitives(geom, output, base_point);
     }
     else
     {
@@ -299,7 +358,7 @@ private:
       add_vertices_from_buffers(geom, output);
 
       // Add primitives based on topology
-      add_primitives(geom, output);
+      add_primitives(geom, output, base_point);
     }
   }
 
@@ -457,7 +516,7 @@ private:
   }
 
   template <typename GeomPort>
-  void add_dynamic_primitives(GeomPort& geom, TD::SOP_Output* output)
+  void add_dynamic_primitives(GeomPort& geom, TD::SOP_Output* output, int base_point = 0)
   {
     const TopologyType topology = get_topology(geom);
     if(topology == TopologyType::triangles)
@@ -487,13 +546,17 @@ private:
               {
                 const auto* indices = reinterpret_cast<const uint16_t*>(data);
                 for(int64_t k = 0; k < num_indices - 2; k += 3)
-                  output->addTriangle(indices[k], indices[k + 1], indices[k + 2]);
+                  output->addTriangle(
+                      indices[k] + base_point, indices[k + 1] + base_point,
+                      indices[k + 2] + base_point);
               }
               else
               {
                 const auto* indices = reinterpret_cast<const uint32_t*>(data);
                 for(int64_t k = 0; k < num_indices - 2; k += 3)
-                  output->addTriangle(indices[k], indices[k + 1], indices[k + 2]);
+                  output->addTriangle(
+                      indices[k] + base_point, indices[k + 1] + base_point,
+                      indices[k + 2] + base_point);
               }
               // Index buffer used successfully
               return;
@@ -505,12 +568,12 @@ private:
       // No usable index buffer: add the triangles directly
       for(int i = 0; i < geom.vertices - 2; i += 3)
       {
-        output->addTriangle(i + 0, i + 1, i + 2);
+        output->addTriangle(base_point + i + 0, base_point + i + 1, base_point + i + 2);
       }
     }
     else
     {
-      output->addParticleSystem(geom.vertices, 0);
+      output->addParticleSystem(geom.vertices, base_point);
     }
   }
 
@@ -742,7 +805,7 @@ private:
   }
 
   template <typename GeomPort>
-  void add_primitives(GeomPort& geom, TD::SOP_Output* output)
+  void add_primitives(GeomPort& geom, TD::SOP_Output* output, int base_point = 0)
   {
     const TopologyType topology = get_topology(geom);
     if(topology == TopologyType::triangles)
@@ -782,7 +845,7 @@ private:
                   auto i1 = buf.elements[k + 1];
                   auto i2 = buf.elements[k + 2];
 
-                  output->addTriangle(i0, i1, i2);
+                  output->addTriangle(i0 + base_point, i1 + base_point, i2 + base_point);
                 }
               }
               else if constexpr(requires { buf.raw_data; buf.byte_size; })
@@ -792,7 +855,9 @@ private:
                 {
                   const int64_t count = buf.byte_size / int64_t(sizeof(uint32_t));
                   for(int64_t k = 0; k < count - 2; k += 3)
-                    output->addTriangle(indices[k], indices[k + 1], indices[k + 2]);
+                    output->addTriangle(
+                        indices[k] + base_point, indices[k + 1] + base_point,
+                        indices[k + 2] + base_point);
                 }
               }
             }
@@ -807,12 +872,12 @@ private:
       // so instead let's add them manually
       for(int i = 0; i < geom.vertices - 2; i += 3)
       {
-        output->addTriangle(i+0, i+1, i+2);
+        output->addTriangle(base_point + i+0, base_point + i+1, base_point + i+2);
       }
     }
     else
     {
-      output->addParticleSystem(geom.vertices, 0);
+      output->addParticleSystem(geom.vertices, base_point);
     }
   }
 
