@@ -358,8 +358,13 @@ inline void matrix_to_buffer(void* matrix, Field& field)
   auto& buf = field.buffer;
   buf.handle = matrix_data;
   buf.byte_size = byte_size;
-  buf.changed = true;
+  if constexpr(requires { buf.changed; })
+    buf.changed = true;
 }
+
+// Defined further down; declared here so matrix_to_buffer can use it.
+template <typename T>
+inline t_symbol* jitter_type_for_element() noexcept;
 
 template<avnd::cpu_typed_buffer_port Field>
 inline void matrix_to_buffer(void* matrix, Field& field)
@@ -389,6 +394,16 @@ inline void matrix_to_buffer(void* matrix, Field& field)
   auto& buf = field.buffer;
   using value_type
       = std::decay_t<std::remove_pointer_t<std::decay_t<decltype(buf.elements)>>>;
+  // Guard against a cell-type mismatch: reinterpreting e.g. a 1-byte char matrix
+  // as float* would read 4x the allocation (heap over-read). Only alias when the
+  // jitter cell type matches the buffer's element type.
+  if(info.type != jitter_type_for_element<value_type>())
+  {
+    buf.elements = nullptr;
+    buf.element_count = 0;
+    buf.changed = true;
+    return;
+  }
   buf.elements = reinterpret_cast<value_type*>(matrix_data);
   buf.element_count = num_elements;
   buf.changed = true;
@@ -408,11 +423,11 @@ inline void matrix_to_buffer(void* matrix, Field& field)
   if(info.dimcount == 0)
     return;
 
-  // Get matrix dimensions
-  int64_t num_elements = 1;
+  // Get matrix dimensions. Include planecount so byte_size covers all planes
+  // (a multi-plane matrix has planecount components per cell).
+  int64_t num_elements = info.planecount;
   for(int i = 0; i < info.dimcount; i++)
     num_elements *= info.dim[i];
-  const int planes = info.planecount;
 
   if(num_elements == 0)
     return;
