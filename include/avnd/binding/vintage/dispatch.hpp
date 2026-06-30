@@ -126,6 +126,7 @@ intptr_t default_dispatch(
         // bypass lives on the effect instance(s), not on the container.
         for(auto state : container.full_state())
           state.effect.bypass = bool(value);
+        return 1; // tell the host soft-bypass is accepted (else it hard-bypasses)
       }
       break;
     }
@@ -271,6 +272,11 @@ intptr_t default_dispatch(
       return Constants::ApiVersion;
     case EffectOpcodes::CanDo: // 51
     {
+      const std::string_view cando
+          = ptr ? reinterpret_cast<const char*>(ptr) : std::string_view{};
+      if constexpr(avnd::can_bypass<effect_type>)
+        if(cando == "bypass")
+          return 1;
       if constexpr(can_event<Effect>)
       {
         static const std::array<std::string_view, 3> available{
@@ -280,10 +286,7 @@ intptr_t default_dispatch(
             "receiveVstMidiEvent",
             "receiveVstSysexEvent",
         };
-        return std::find(
-                   available.begin(), available.end(),
-                   reinterpret_cast<const char*>(ptr))
-                       != available.end()
+        return std::find(available.begin(), available.end(), cando) != available.end()
                    ? 1
                    : 0;
       }

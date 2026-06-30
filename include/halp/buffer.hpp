@@ -39,7 +39,10 @@ struct typed_buffer
 
   operator std::span<T>() const noexcept
   {
-    return {elements, std::size_t(element_count)};
+    // byte_offset is a byte offset (like raw_buffer), applied before the typed view.
+    return {
+        reinterpret_cast<T*>(reinterpret_cast<char*>(elements) + byte_offset),
+        std::size_t(element_count)};
   }
 };
 
