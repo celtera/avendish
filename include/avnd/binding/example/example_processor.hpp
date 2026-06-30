@@ -1,8 +1,10 @@
 #pragma once
 #include <avnd/common/export.hpp>
+#include <avnd/concepts/worker.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/messages.hpp>
 #include <avnd/introspection/midi.hpp>
+#include <avnd/introspection/port.hpp>
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/wrappers/callbacks_adapter.hpp>
 #include <avnd/wrappers/configure.hpp>
@@ -135,6 +137,13 @@ public:
       avnd::init_controls(effect);
     }
 
+    // A node may invoke a host-provided std::function from prepare() or
+    // operator() -- a variable-channel bus asking for channels, or a worker
+    // offloading a task. If we leave those empty, calling them terminates the
+    // process (and with exceptions disabled, that is a hard __fastfail crash).
+    // Install handlers before start()/prepare() runs.
+    wire_host_callbacks();
+
     // FIXME also initialize ports, channels, etc...
     // to make sure that we never have uninitialized values
 
@@ -166,6 +175,56 @@ public:
       };
       this->callbacks.wrap_callbacks(effect, callbacks_initializer);
 #endif
+    }
+  }
+
+  // Install no-op handlers for the host-provided callables a node may invoke,
+  // visiting each port *kind* through its filtered introspection (the same way
+  // the wasm/ossia/fuzz bindings reach these members) rather than recursing
+  // through arbitrary aggregates.
+  void wire_host_callbacks()
+  {
+    // Variable-channel audio busses ask the host for channels via
+    // request_channels(). The process adapter assigns the real sample buffers
+    // and channel count at process() time, so a no-op is all that is needed
+    // here to keep prepare() from calling an empty std::function.
+    auto wire_channels = [](auto& p) {
+      if constexpr(requires { p.request_channels; })
+        if(!p.request_channels)
+          p.request_channels = [](int) {};
+    };
+    if constexpr(avnd::audio_bus_input_introspection<T>::size > 0)
+      avnd::audio_bus_input_introspection<T>::for_all(
+          avnd::get_inputs(effect), wire_channels);
+    if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
+      avnd::audio_bus_output_introspection<T>::for_all(
+          avnd::get_outputs(effect), wire_channels);
+
+    // Output buffer / geometry ports push their data through buffer.upload.
+    auto wire_buffer = [](auto& p) {
+      if constexpr(requires { p.buffer.upload; })
+        if(!p.buffer.upload)
+          p.buffer.upload = [](const char*, std::int64_t, std::int64_t) {};
+    };
+    if constexpr(avnd::buffer_output_introspection<T>::size > 0)
+      avnd::buffer_output_introspection<T>::for_all(
+          avnd::get_outputs(effect), wire_buffer);
+    if constexpr(avnd::buffer_input_introspection<T>::size > 0)
+      avnd::buffer_input_introspection<T>::for_all(
+          avnd::get_inputs(effect), wire_buffer);
+
+    // Workers offload a job to the host: calling worker.request(args...) is
+    // expected to (eventually) run worker::work(args...). A real host would
+    // dispatch it to a thread pool; the example host just runs it inline.
+    if constexpr(avnd::has_worker<T>)
+    {
+      for(auto& impl : effect.effects())
+      {
+        using worker_t = std::decay_t<decltype(impl.worker)>;
+        impl.worker.request = [](auto&&... args) {
+          worker_t::work(std::forward<decltype(args)>(args)...);
+        };
+      }
     }
   }
 
