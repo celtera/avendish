@@ -181,14 +181,325 @@ std::string blurb(const model_t& m)
 // sections and per-port text without changing the plumbing.
 // ---------------------------------------------------------------------------
 
-// Pure Data netlist (#N canvas / #X obj / #X text / #X connect ...).
+// --- Pure Data helpers -----------------------------------------------------
+
+// The selector the Pd binding routes control messages by: the control name with
+// every character outside [a-zA-Z0-9.~] replaced by '_' (mirrors
+// avnd::fixup_identifier with pd::valid_char_for_name). A message
+// [<selector> <value>( sent to the object's left inlet sets that control.
+std::string pd_selector(std::string_view name)
+{
+  std::string s;
+  s.reserve(name.size());
+  for(char c : name)
+  {
+    const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                    || (c >= '0' && c <= '9') || c == '.' || c == '~';
+    s += ok ? c : '_';
+  }
+  return s;
+}
+
+// Escape Pd's structural characters in free text (comments / message contents).
+std::string pd_escape(std::string_view s)
+{
+  std::string r;
+  r.reserve(s.size());
+  for(char c : s)
+  {
+    if(c == ',' || c == ';' || c == '\\')
+      r += '\\';
+    r += c;
+  }
+  return r;
+}
+
+std::string trim_num(double v)
+{
+  std::string s = std::to_string(v);
+  if(s.find('.') != std::string::npos)
+  {
+    while(!s.empty() && s.back() == '0')
+      s.pop_back();
+    if(!s.empty() && s.back() == '.')
+      s.pop_back();
+  }
+  return s;
+}
+
+// Accumulates objects (each gets an index in creation order) and connections,
+// which Pd references by that index. Objects are written first, connections
+// after.
+struct pd_patch
+{
+  std::vector<std::string> objects;
+  std::vector<std::string> connections;
+
+  int add(std::string line)
+  {
+    objects.push_back(std::move(line));
+    return static_cast<int>(objects.size()) - 1;
+  }
+  void connect(int src, int outlet, int dst, int inlet)
+  {
+    connections.push_back(
+        "#X connect " + std::to_string(src) + " " + std::to_string(outlet) + " "
+        + std::to_string(dst) + " " + std::to_string(inlet) + ";");
+  }
+  void text(int x, int y, std::string_view t)
+  {
+    add("#X text " + std::to_string(x) + " " + std::to_string(y) + " "
+        + pd_escape(t) + ";");
+  }
+  // A section-header divider bar, in the ELSE help-patch idiom.
+  void divider(int x, int y, std::string_view label)
+  {
+    add("#X obj " + std::to_string(x) + " " + std::to_string(y)
+        + " cnv 3 550 3 empty empty " + pd_escape(label)
+        + " 8 12 0 13 #dcdcdc #000000 0;");
+  }
+  void write(std::ostream& o, int w, int h) const
+  {
+    o << "#N canvas 50 50 " << w << " " << h << " 12;\n";
+    for(const auto& l : objects)
+      o << l << '\n';
+    for(const auto& c : connections)
+      o << c << '\n';
+  }
+};
+
+// Emit the widget that drives one control. Returns {widget_index, message_index}
+// where the message [selector ...( is wired to the object's left inlet. Returns
+// widget_index = -1 when only a message box (no live widget) is produced.
+struct pd_driver { int widget = -1; int message = -1; };
+
+pd_driver pd_emit_control(pd_patch& p, const port_t& c, int x, int y)
+{
+  const std::string sel = pd_selector(c.name);
+  pd_driver d;
+
+  auto msg = [&](const std::string& body) {
+    d.message = p.add(
+        "#X msg " + std::to_string(x + 150) + " " + std::to_string(y) + " " + body
+        + ";");
+  };
+
+  if(c.value_type == "bool" || c.widget == "toggle" || c.widget == "checkbox")
+  {
+    d.widget = p.add(
+        "#X obj " + std::to_string(x) + " " + std::to_string(y)
+        + " tgl 17 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;");
+    msg(sel + " \\$1");
+  }
+  else if(c.value_type == "enum" && !c.choices.empty())
+  {
+    const int n = static_cast<int>(c.choices.size());
+    d.widget = p.add(
+        "#X obj " + std::to_string(x) + " " + std::to_string(y) + " hradio 17 1 "
+        + std::to_string(n)
+        + " 0 empty empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;");
+    msg(sel + " \\$1"); // enum settable by index
+  }
+  else if(c.value_type == "string")
+  {
+    d.widget = p.add(
+        "#X obj " + std::to_string(x) + " " + std::to_string(y)
+        + " symbolatom 12 0 0 0 - - - 0;");
+    msg(sel + " \\$1");
+  }
+  else if(c.value_type == "int")
+  {
+    d.widget
+        = p.add("#X floatatom " + std::to_string(x) + " " + std::to_string(y)
+                + " 5 0 0 0 - - - 0;");
+    msg(sel + " \\$1");
+  }
+  else if(c.value_type == "float")
+  {
+    if(c.range && c.range->min && c.range->max)
+    {
+      d.widget = p.add(
+          "#X obj " + std::to_string(x) + " " + std::to_string(y) + " hsl 128 15 "
+          + trim_num(*c.range->min) + " " + trim_num(*c.range->max)
+          + " 0 0 empty empty empty -2 -8 0 10 #fcfcfc #000000 #000000 0 1;");
+    }
+    else
+    {
+      d.widget
+          = p.add("#X floatatom " + std::to_string(x) + " " + std::to_string(y)
+                  + " 5 0 0 0 - - - 0;");
+    }
+    msg(sel + " \\$1");
+  }
+  else
+  {
+    // bang / impulse, or a complex/multi-component control: emit an editable
+    // message box the user can click, prefilled with the selector.
+    msg(sel);
+  }
+
+  if(d.widget >= 0 && d.message >= 0)
+    p.connect(d.widget, 0, d.message, 0);
+  return d;
+}
+
+std::string pd_port_typestr(const port_t& c)
+{
+  if(c.type == "parameter")
+  {
+    std::string s = c.value_type.empty() ? "control" : c.value_type;
+    if(c.range && c.range->min && c.range->max)
+      s += " (" + trim_num(*c.range->min) + ".." + trim_num(*c.range->max) + ")";
+    return s;
+  }
+  if(c.type == "audio")
+    return "signal";
+  return c.type;
+}
+
+// Pure Data netlist help patch: title, description, a live interactive demo
+// (a widget wired to each control's left-inlet message, osc~ sources for audio
+// in, clip~/dac~ for audio out, sinks on outlets), and labelled
+// inlets/outlets/arguments sections.
 void emit_pd(const model_t& m, std::ostream& out)
 {
-  out << "#N canvas 50 50 620 440 12;\n";
-  out << "#X text 18 16 " << m.name << " \\, " << blurb(m)
-      << " (auto-generated help -- WIP);\n";
-  // Instantiate the object so the patch is already meaningful.
-  out << "#X obj 18 80 " << m.c_name << ";\n";
+  pd_patch p;
+
+  // --- header: title + library badge ---
+  p.add("#X obj 4 5 cnv 15 360 42 empty empty " + pd_escape(m.name)
+        + " 20 20 2 37 #e0e0e0 #000000 0;");
+  p.add("#X obj 470 5 cnv 15 130 42 empty empty avendish 12 13 0 18 #7c7c7c "
+        "#e0e4dc 0;");
+
+  // --- description ---
+  p.text(8, 54, blurb(m));
+
+  // --- the object (created early so its index is known to connections) ---
+  std::vector<const port_t*> controls, audio_in;
+  for(const auto& c : m.inputs)
+  {
+    if(c.type == "parameter")
+      controls.push_back(&c);
+    else if(c.type == "audio")
+      audio_in.push_back(&c);
+  }
+
+  const int demo_top = 92;
+  const int row = 30;
+  const int controls_h = static_cast<int>(controls.size()) * row;
+  const int msgs_h = static_cast<int>(m.messages.size()) * row;
+  const int y_obj = demo_top + controls_h + msgs_h + 50;
+
+  const std::string create = m.c_name.empty() ? m.name : m.c_name;
+  const int obj_idx = p.add(
+      "#X obj 24 " + std::to_string(y_obj) + " " + pd_escape(create) + ";");
+
+  // --- controls: one driver per control, wired to the left inlet ---
+  int y = demo_top;
+  for(const auto* c : controls)
+  {
+    pd_driver d = pd_emit_control(p, *c, 24, y);
+    if(d.message >= 0)
+      p.connect(d.message, 0, obj_idx, 0);
+    p.text(320, y, c->name + " - " + pd_port_typestr(*c)
+                       + (c->description.empty() ? "" : ": " + c->description));
+    y += row;
+  }
+
+  // --- messages: clickable message boxes into the left inlet ---
+  for(const auto& msg : m.messages)
+  {
+    std::string body = pd_selector(msg.name);
+    const int mi = p.add(
+        "#X msg 24 " + std::to_string(y) + " " + body + ";");
+    p.connect(mi, 0, obj_idx, 0);
+    p.text(320, y, "message: " + msg.name);
+    y += row;
+  }
+
+  // --- audio inputs: osc~ sources into the signal inlets ---
+  int ax = 24;
+  for(std::size_t k = 0; k < audio_in.size(); ++k)
+  {
+    const int osc = p.add(
+        "#X obj " + std::to_string(ax) + " " + std::to_string(y_obj - 40)
+        + " osc~ 220;");
+    p.connect(osc, 0, obj_idx, static_cast<int>(k));
+    ax += 70;
+  }
+
+  // --- outputs: sinks in dump order (= outlet order) ---
+  int dac_idx = -1;
+  int ox = 24, oy = y_obj + 44;
+  for(std::size_t i = 0; i < m.outputs.size(); ++i)
+  {
+    const port_t& o = m.outputs[i];
+    if(o.type == "audio")
+    {
+      const int clip = p.add(
+          "#X obj " + std::to_string(ox) + " " + std::to_string(oy)
+          + " clip~ -0.95 0.95;");
+      p.connect(obj_idx, static_cast<int>(i), clip, 0);
+      if(dac_idx < 0)
+        dac_idx = p.add("#X obj 24 " + std::to_string(oy + 40) + " dac~;");
+      p.connect(clip, 0, dac_idx, static_cast<int>(i) % 2);
+      ox += 70;
+    }
+    else if(o.type == "message" || o.type == "callback")
+    {
+      const int pr = p.add(
+          "#X obj " + std::to_string(ox) + " " + std::to_string(oy) + " print "
+          + pd_selector(o.name) + ";");
+      p.connect(obj_idx, static_cast<int>(i), pr, 0);
+      ox += 90;
+    }
+    else
+    {
+      const int fa = p.add(
+          "#X floatatom " + std::to_string(ox) + " " + std::to_string(oy)
+          + " 5 0 0 0 - - - 0;");
+      p.connect(obj_idx, static_cast<int>(i), fa, 0);
+      ox += 60;
+    }
+  }
+
+  // --- reference sections (text only) below the demo ---
+  int sy = (dac_idx >= 0 ? y_obj + 44 + 80 : oy + 40);
+  if(sy < y_obj + 90)
+    sy = y_obj + 90;
+  p.divider(8, sy, "inlets");
+  sy += 18;
+  p.text(20, sy, "left inlet: any [name value( message sets the matching control");
+  sy += 18;
+  for(const auto* c : controls)
+  {
+    p.text(20, sy, pd_selector(c->name) + " - " + pd_port_typestr(*c)
+                       + (c->description.empty() ? "" : ": " + c->description));
+    sy += 16;
+  }
+  for(const auto& msg : m.messages)
+  {
+    p.text(20, sy, pd_selector(msg.name) + " - message");
+    sy += 16;
+  }
+
+  if(!m.outputs.empty())
+  {
+    sy += 8;
+    p.divider(8, sy, "outlets");
+    sy += 18;
+    int oi = 0;
+    for(const auto& o : m.outputs)
+    {
+      p.text(20, sy, std::to_string(oi++) + ") " + o.name + " - "
+                         + pd_port_typestr(o)
+                         + (o.description.empty() ? "" : ": " + o.description));
+      sy += 16;
+    }
+  }
+
+  const int height = sy + 40;
+  p.write(out, 620, height < 300 ? 300 : height);
 }
 
 // Max/MSP .maxhelp is a JSON patcher (same schema family as .maxpat).
