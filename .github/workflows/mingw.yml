@@ -10,6 +10,14 @@ jobs:
         include:
           - { sys: clang64, env: clang-x86_64 }
     steps:
+      - name: Use GitHub mirror for Eigen submodule
+        shell: bash
+        run: |
+          # score pins 3rdparty/eigen to gitlab.com, which is slow/flaky from
+          # GitHub runners. The eigen-mirror/eigen GitHub repo preserves the same
+          # commit SHAs, so redirect the submodule fetch there.
+          git config --global url."https://github.com/eigen-mirror/eigen".insteadOf "https://gitlab.com/libeigen/eigen"
+
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
