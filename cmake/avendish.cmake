@@ -269,6 +269,7 @@ include(avendish.tools)
 
 include(avendish.ui.qt)
 include(avendish.dump)
+include(avendish.help)
 include(avendish.max)
 include(avendish.gstreamer)
 include(avendish.pd)
