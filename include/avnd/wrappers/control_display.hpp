@@ -59,9 +59,22 @@ bool display_control(const T& value, char* cstr, std::size_t len)
     using val_type = std::decay_t<decltype(value)>;
 
 #if __has_include(<fmt/format.h>) && !defined(AVND_DISABLE_FMT)
+    // Always reserve room for the NUL: fmt::format_to_n returns .out at
+    // cstr + min(n, untruncated_size), so passing the full `len` and writing
+    // *out would hit cstr[len] (one past the end) whenever the text reaches the
+    // buffer size. Pass len-1 and terminate at the written end.
+    // fmt::runtime: the format string is forwarded through this helper, so fmt's
+    // consteval format-string check can't see it as a literal; these strings are
+    // fixed and valid, so a runtime format string is fine.
+    const auto put = [&](fmt::string_view f, const auto&... args) {
+      if(len == 0)
+        return;
+      auto r = fmt::format_to_n(cstr, len - 1, fmt::runtime(f), args...);
+      cstr[r.size < (len - 1) ? r.size : (len - 1)] = '\0';
+    };
     if constexpr(std::floating_point<val_type>)
     {
-      *fmt::format_to_n(cstr, len, "{:.2f}", value).out = '\0';
+      put("{:.2f}", value);
       return true;
     }
     else if constexpr(std::is_enum_v<val_type>)
@@ -69,9 +82,9 @@ bool display_control(const T& value, char* cstr, std::size_t len)
       static constexpr auto choices = avnd::get_enum_choices<C>();
       const int enum_index = static_cast<int>(value);
       if(enum_index >= 0 && enum_index < choices.size())
-        *fmt::format_to_n(cstr, len, "{}", choices[enum_index]).out = '\0';
+        put("{}", choices[enum_index]);
       else
-        *fmt::format_to_n(cstr, len, "{}", enum_index).out = '\0';
+        put("{}", enum_index);
       return true;
     }
     else if constexpr(avnd::optional_ish<T>)
@@ -80,9 +93,9 @@ bool display_control(const T& value, char* cstr, std::size_t len)
       if constexpr(fmt::is_formattable<inner_type>::value)
       {
         if(value)
-          *fmt::format_to_n(cstr, len, "{}", *value).out = '\0';
+          put("{}", *value);
         else
-          *fmt::format_to_n(cstr, len, "(nullopt)").out = '\0';
+          put("(nullopt)");
         return true;
       }
       else
@@ -96,7 +109,7 @@ bool display_control(const T& value, char* cstr, std::size_t len)
     }
     else if constexpr(fmt::is_formattable<val_type>::value)
     {
-      *fmt::format_to_n(cstr, len, "{}", value).out = '\0';
+      put("{}", value);
       return true;
     }
     else

@@ -321,11 +321,13 @@ struct Component final
   }
 
   // A single representative `inputs` struct holding the (channel-)shared
-  // controls. A VST host sees one parameter set; avendish's polyphony is just
-  // internal per-channel replication. For polyphonic effects effect.inputs() is
-  // a per-instance member_iterator, which the field introspection helpers
+  // controls, used for READS / serialization (getState) and MIDI dispatch. A
+  // VST host sees one parameter set; avendish's polyphony is just internal
+  // per-channel replication. For polyphonic effects effect.inputs() is a
+  // per-instance member_iterator, which the field introspection helpers
   // (for_nth_*, for_all_unless, pfr::get) cannot take, so use the first
-  // instance. write()/processControl fan host changes out to every instance.
+  // instance. WRITES of host parameter changes (processControl) instead fan out
+  // to every instance via full_state().
   decltype(auto) controls_inputs() noexcept
   {
     if constexpr(std::is_reference_v<decltype(this->effect.inputs())>)
@@ -350,11 +352,14 @@ struct Component final
     int id = queue.getParameterId();
     if(queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
     {
-      avnd::parameter_input_introspection<T>::for_nth_raw(
-          controls_inputs(), id, [&]<typename C>(C& ctl) {
-            if constexpr(requires { avnd::map_control_from_01<C>(value); })
-              assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
-          });
+      // Apply the host parameter change to every (per-channel) instance so all
+      // voices of a polyphonic effect track automation, not just instance 0.
+      for(auto state : this->effect.full_state())
+        avnd::parameter_input_introspection<T>::for_nth_raw(
+            state.inputs, id, [&]<typename C>(C& ctl) {
+              if constexpr(requires { avnd::map_control_from_01<C>(value); })
+                assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
+            });
     };
   }
 
