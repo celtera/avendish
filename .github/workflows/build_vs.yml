@@ -7,6 +7,14 @@ jobs:
     name: VS2026
     runs-on: windows-2025-vs2026
     steps:
+      - name: Use GitHub mirror for Eigen submodule
+        shell: bash
+        run: |
+          # score pins 3rdparty/eigen to gitlab.com, which is slow/flaky from
+          # GitHub runners. The eigen-mirror/eigen GitHub repo preserves the same
+          # commit SHAs, so redirect the submodule fetch there.
+          git config --global url."https://github.com/eigen-mirror/eigen".insteadOf "https://gitlab.com/libeigen/eigen"
+
       - name: Checkout code
         uses: actions/checkout@v6
 
