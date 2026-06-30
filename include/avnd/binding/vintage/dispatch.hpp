@@ -123,7 +123,9 @@ intptr_t default_dispatch(
     {
       if constexpr(avnd::can_bypass<effect_type>)
       {
-        container.bypass = bool(value);
+        // bypass lives on the effect instance(s), not on the container.
+        for(auto state : container.full_state())
+          state.effect.bypass = bool(value);
       }
       break;
     }

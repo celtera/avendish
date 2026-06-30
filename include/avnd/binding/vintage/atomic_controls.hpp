@@ -126,46 +126,61 @@ struct Controls<T>
   void name(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    inputs_info_t::for_nth_mapped(
-        self.inputs(), index, [ptr]<typename P>(const P& param) {
-          if constexpr(requires { P::name(); })
-          {
-            vintage::name{P::name()}.copy_to(ptr);
-          }
-          else if constexpr(requires { P::label(); })
-          {
-            vintage::label{P::label()}.copy_to(ptr);
-          }
-        });
+    // Controls are shared across the (internal) per-channel instances; operate
+    // on one representative instance. self.inputs() would be a member_iterator
+    // for polyphonic effects, which for_nth_mapped can't take.
+    for(auto state : self.full_state())
+    {
+      inputs_info_t::for_nth_mapped(
+          state.inputs, index, [ptr]<typename P>(const P& param) {
+            if constexpr(requires { P::name(); })
+            {
+              vintage::name{P::name()}.copy_to(ptr);
+            }
+            else if constexpr(requires { P::label(); })
+            {
+              vintage::label{P::label()}.copy_to(ptr);
+            }
+          });
+      break;
+    }
   }
 
   template <typename Effect_T>
   void display(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    inputs_info_t::for_nth_mapped(
-        self.inputs(), index,
-        [ptr]<typename C>(const C& param) {
-      avnd::display_control<C>(
-          param.value, reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen);
-        });
+    for(auto state : self.full_state())
+    {
+      inputs_info_t::for_nth_mapped(
+          state.inputs, index,
+          [ptr]<typename C>(const C& param) {
+        avnd::display_control<C>(
+            param.value, reinterpret_cast<char*>(ptr), vintage::Constants::ParamStrLen);
+          });
+      break;
+    }
   }
 
   template <typename Effect_T>
   void label(Effect_T& effect, int index, void* ptr)
   {
     auto& self = effect.effect;
-    inputs_info_t::for_nth_mapped(
-        self.inputs(), index, [ptr]<typename P>(const P& param) {
-          if constexpr(avnd::has_label<P>)
-          {
-            vintage::label{avnd::get_label<P>()}.copy_to(ptr);
-          }
-          else if constexpr(avnd::has_name<P>)
-          {
-            vintage::label{avnd::get_name<P>()}.copy_to(ptr);
-          }
-        });
+    for(auto state : self.full_state())
+    {
+      inputs_info_t::for_nth_mapped(
+          state.inputs, index, [ptr]<typename P>(const P& param) {
+            if constexpr(avnd::has_label<P>)
+            {
+              vintage::label{avnd::get_label<P>()}.copy_to(ptr);
+            }
+            else if constexpr(avnd::has_name<P>)
+            {
+              vintage::label{avnd::get_name<P>()}.copy_to(ptr);
+            }
+          });
+      break;
+    }
   }
 
   template <typename Effect_T>
@@ -174,8 +189,10 @@ struct Controls<T>
     auto& self = effect.effect;
     auto& props = *(vintage::ParameterProperties*)ptr;
 
-    inputs_info_t::for_nth_mapped(
-        self.inputs(), index, [&props, index](const auto& param) {
+    for(auto state : self.full_state())
+    {
+      inputs_info_t::for_nth_mapped(
+          state.inputs, index, [&props, index](const auto& param) {
           props.stepFloat = 0.01;
           props.smallStepFloat = 0.01;
           props.largeStepFloat = 0.01;
@@ -202,6 +219,8 @@ struct Controls<T>
             vintage::category_label{param.categoryLabel()}.copy_to(props.categoryLabel);
           }
         });
+      break;
+    }
   }
 };
 

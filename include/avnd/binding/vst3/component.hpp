@@ -310,7 +310,7 @@ struct Component final
     if constexpr(avnd::midi_input_introspection<T>::size > 0)
     {
       using i_info = avnd::midi_input_introspection<T>;
-      auto& in_port = avnd::pfr::get<i_info::index_map[0]>(effect.inputs());
+      auto& in_port = avnd::pfr::get<i_info::index_map[0]>(controls_inputs());
 
       midi.reserve_space(this->effect, newSetup.maxSamplesPerBlock);
     }
@@ -318,6 +318,27 @@ struct Component final
     // Effect-specific preparation
     avnd::prepare(effect, setup_info);
     return kResultOk;
+  }
+
+  // A single representative `inputs` struct holding the (channel-)shared
+  // controls. A VST host sees one parameter set; avendish's polyphony is just
+  // internal per-channel replication. For polyphonic effects effect.inputs() is
+  // a per-instance member_iterator, which the field introspection helpers
+  // (for_nth_*, for_all_unless, pfr::get) cannot take, so use the first
+  // instance. write()/processControl fan host changes out to every instance.
+  decltype(auto) controls_inputs() noexcept
+  {
+    if constexpr(std::is_reference_v<decltype(this->effect.inputs())>)
+    {
+      return (this->effect.inputs());
+    }
+    else
+    {
+      for(auto state : this->effect.full_state())
+        return (state.inputs);
+      static typename avnd::inputs_type<T>::type empty{};
+      return (empty);
+    }
   }
 
   void processControl(IParamValueQueue& queue)
@@ -330,8 +351,9 @@ struct Component final
     if(queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
     {
       avnd::parameter_input_introspection<T>::for_nth_raw(
-          effect.inputs(), id, [&]<typename C>(C& ctl) {
-            assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
+          controls_inputs(), id, [&]<typename C>(C& ctl) {
+            if constexpr(requires { avnd::map_control_from_01<C>(value); })
+              assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
           });
     };
   }
@@ -388,13 +410,13 @@ struct Component final
     switch(event.type)
     {
       case Event::kNoteOnEvent: {
-        refl::for_nth_mapped(this->effect.inputs(), event.busIndex, [&](auto& bus) {
+        refl::for_nth_mapped(controls_inputs(), event.busIndex, [&](auto& bus) {
           this->processEvent(bus, event.noteOn, event.sampleOffset);
         });
         break;
       }
       case Event::kNoteOffEvent: {
-        refl::for_nth_mapped(this->effect.inputs(), event.busIndex, [&](auto& bus) {
+        refl::for_nth_mapped(controls_inputs(), event.busIndex, [&](auto& bus) {
           this->processEvent(bus, event.noteOff, event.sampleOffset);
         });
         break;
@@ -529,14 +551,23 @@ struct Component final
     IBStreamer streamer(state, kLittleEndian);
     if constexpr(avnd::has_inputs<T>)
     {
-      bool ok = inputs_info_t::for_all_unless(
-          this->effect.inputs(), [&]<typename C>(C& field) -> bool {
-            double param = 0.f;
-            if(streamer.readDouble(param) == false)
-              return false;
-            assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
-            return true;
-          });
+      // The state is exactly inputs_info_t::size doubles (one per control). Read
+      // them into a SINGLE representative inputs struct so the byte layout never
+      // depends on the polyphonic instance count (and stays compatible with the
+      // controller's setComponentState, which reads the same count).
+      auto read_one = [&]<typename C>(C& field) -> bool {
+        double param = 0.f;
+        if(streamer.readDouble(param) == false)
+          return false;
+        // map_control_from_01 is deleted for non-scalar controls.
+        if constexpr(requires { avnd::map_control_from_01<C>(param); })
+          assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
+        return true;
+      };
+
+      // One representative control set => exactly inputs_info_t::size doubles,
+      // matching getState and the controller's setComponentState.
+      bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), read_one);
 
       return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
     }
@@ -553,12 +584,15 @@ struct Component final
     IBStreamer streamer(state, kLittleEndian);
     if constexpr(avnd::has_inputs<T>)
     {
-      bool ok = inputs_info_t::for_all_unless(
-          this->effect.inputs(), [&]<typename C>(C& field) -> bool {
-            double param{};
-            if_possible(param = avnd::map_control_to_01<C>(field.value));
-            return streamer.writeDouble(param);
-          });
+      // Write exactly inputs_info_t::size doubles (one representative control
+      // set), independent of the polyphonic instance count.
+      auto write_one = [&]<typename C>(C& field) -> bool {
+        double param{};
+        if_possible(param = avnd::map_control_to_01<C>(field.value));
+        return streamer.writeDouble(param);
+      };
+
+      bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), write_one);
 
       return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
     }
