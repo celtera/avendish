@@ -5,6 +5,7 @@
 #include <avnd/binding/touchdesigner/configure.hpp>
 #include <avnd/binding/touchdesigner/geometry_helpers.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
+#include <avnd/binding/touchdesigner/file_ports.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
 #include <avnd/binding/touchdesigner/info_output.hpp>
@@ -52,6 +53,7 @@ struct particle_processor : public TD::POP_CPlusPlusBase
 {
   avnd::effect_container<T> implementation;
   parameter_setup<T> param_setup;
+  touchdesigner::file_ports<T> file_setup;
   TD::POP_Context* context{};
   std::vector<TD::OP_SmartRef<TD::POP_Buffer>> m_input_buffers;
 
@@ -239,6 +241,7 @@ struct particle_processor : public TD::POP_CPlusPlusBase
   void setupParameters(TD::OP_ParameterManager* manager, void* reserved) override
   {
     param_setup.setup(implementation, manager);
+    file_setup.setup(implementation, manager);
   }
 
   void pulsePressed(const char* name, void* reserved) override
@@ -995,7 +998,10 @@ private:
   void update_controls(const TD::OP_Inputs* inputs)
   {
     if constexpr(avnd::has_inputs<T>)
+    {
       parameter_update<T>{}.update(implementation, inputs);
+      file_setup.load(implementation, inputs);
+    }
   }
 };
 

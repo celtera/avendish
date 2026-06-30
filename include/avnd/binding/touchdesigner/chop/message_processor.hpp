@@ -6,6 +6,7 @@
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/binding/touchdesigner/configure.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
+#include <avnd/binding/touchdesigner/file_ports.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 #include <avnd/binding/touchdesigner/parameter_update.hpp>
 #include <avnd/binding/touchdesigner/info_output.hpp>
@@ -306,6 +307,7 @@ struct message_processor<T> : public TD::CHOP_CPlusPlusBase
   avnd::effect_container<T> implementation;
 
   parameter_setup<T> param_setup;
+  touchdesigner::file_ports<T> file_setup;
 
   std::vector<std::vector<double>> tensor_input_scratch;
 
@@ -492,6 +494,7 @@ struct message_processor<T> : public TD::CHOP_CPlusPlusBase
   void setupParameters(TD::OP_ParameterManager* manager, void* reserved) override
   {
     param_setup.setup(implementation, manager);
+    file_setup.setup(implementation, manager);
   }
 
   int32_t
@@ -552,7 +555,10 @@ private:
   // Helper to update control values from TD parameters
   void update_controls(const TD::OP_Inputs* inputs){
     if constexpr(avnd::has_inputs<T>)
+    {
       parameter_update<T>{}.update(implementation, inputs);
+      file_setup.load(implementation, inputs);
+    }
   }
 
   template <typename Field, std::size_t P>

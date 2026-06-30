@@ -13,6 +13,10 @@
 #include <CPlusPlus_Common.h>
 #include <avnd/common/enum_reflection.hpp>
 
+#include <string>
+#include <string_view>
+#include <vector>
+
 namespace touchdesigner
 {
 /**
@@ -44,7 +48,9 @@ private:
   {
     static constexpr auto name = get_td_name<Field>();
     static constexpr auto label = get_parameter_label<Field>();
-    if constexpr(avnd::enum_ish_parameter<Field>)
+    if constexpr(touchdesigner::string_menu_param<Field>)
+      setup_string_menu<Field>(name.data(), label.data());
+    else if constexpr(avnd::enum_ish_parameter<Field>)
       setup_enum<Field>(name.data(), label.data());
     else
       setup_parameter<Field>(name.data(), label.data());
@@ -128,7 +134,12 @@ private:
       param.defaultValues[0] = 0.0;
     }
 
-    manager->appendToggle(param);
+    // halp::maintained_button maps to a momentary (held) button; a plain
+    // toggle/checkbox stays a toggle.
+    if constexpr(touchdesigner::momentary_button_param<Field>)
+      manager->appendMomentary(param);
+    else
+      manager->appendToggle(param);
   }
 
   template <avnd::string_parameter Field>
@@ -137,17 +148,54 @@ private:
     TD::OP_StringParameter param(name);
     param.label = label;
 
-    if constexpr (avnd::has_range<Field>)
+    // Default value: only usable if the range exposes a string-ish `init`
+    // (e.g. halp::lineedit). Folder ports and bare std::string have none.
+    if constexpr(requires {
+                   std::string_view{avnd::get_range<Field>().init};
+                 })
     {
       static constexpr auto init = avnd::get_range<Field>();
-      param.defaultValue = init.init.data();
+      param.defaultValue = std::string_view{init.init}.data();
     }
     else
     {
       param.defaultValue = "";
     }
 
-    manager->appendString(param);
+    // halp::folder_port requests a directory picker.
+    if constexpr(touchdesigner::folder_param<Field>)
+      manager->appendFolder(param);
+    else
+      manager->appendString(param);
+  }
+
+  // String-valued fixed choices (halp::string_enum_t): use a TD string menu so
+  // the stored parameter value is the chosen string itself.
+  template <avnd::string_parameter Field>
+  void setup_string_menu(const char* name, const char* label)
+  {
+    TD::OP_StringParameter param(name);
+    param.label = label;
+
+    static constexpr auto count = avnd::get_enum_choices_count<Field>();
+    static_assert(count > 0);
+    static constexpr auto choices = avnd::get_enum_choices<Field>();
+
+    // TD copies the strings during the append call, so temporaries are fine.
+    std::vector<std::string> storage;
+    storage.reserve(count);
+    for(int i = 0; i < count; ++i)
+      storage.emplace_back(choices[i]);
+
+    std::vector<const char*> names;
+    names.reserve(count);
+    for(auto& s : storage)
+      names.push_back(s.c_str());
+
+    if(!storage.empty())
+      param.defaultValue = storage.front().c_str();
+
+    manager->appendStringMenu(param, count, names.data(), names.data());
   }
 
   template <avnd::enum_ish_parameter Field>
@@ -455,6 +503,8 @@ private:
     manager->appendRGBA(param);
   }
 
+  // Generic fallback: impulse_button / bang and other trigger-like ports with
+  // no specific value type map to a TD pulse button.
   template <typename Field>
   void setup_parameter(const char* name, const char* label)
   {
@@ -464,24 +514,10 @@ private:
     manager->appendPulse(param);
   }
 
-  template <avnd::file_port Field>
-  void setup_parameter(const char* name, const char* label)
-  {
-    TD::OP_StringParameter param(name);
-    param.label = label;
-
-    if constexpr (avnd::has_range<Field>)
-    {
-      static constexpr auto init = avnd::get_range<Field>();
-      param.defaultValue = init.c_str();
-    }
-    else
-    {
-      param.defaultValue = "";
-    }
-
-    manager->appendString(param);
-  }
+  // NOTE: file_port / soundfile_port / midifile_port are NOT parameter_port
+  // (they have no `.value`) so they are not iterated here. They are handled by
+  // touchdesigner::file_ports<T> (file_ports.hpp), which appends the File
+  // parameter and loads the file contents on cook.
 };
 
 }
