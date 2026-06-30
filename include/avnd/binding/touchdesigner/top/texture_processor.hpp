@@ -41,6 +41,10 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
   // OP_SmartRef owns the pixel buffer the avnd texture ports point into.
   std::vector<TD::OP_SmartRef<TD::OP_TOPDownloadResult>> download_results;
 
+  // Per-input owned storage, used only when a downloaded texture must be
+  // repacked (e.g. RGBA8 -> RGB8) instead of pointed at zero-copy.
+  std::vector<std::vector<unsigned char>> matrix_input_scratch;
+
   explicit texture_processor(const TD::OP_NodeInfo* info, TD::TOP_Context* ctx)
       : context{ctx}
   {
@@ -75,6 +79,7 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
     // Handle texture inputs - download from GPU to CPU
     if constexpr(avnd::matrix_input_introspection<T>::size > 0)
     {
+      matrix_input_scratch.resize(avnd::matrix_input_introspection<T>::size);
       int input_index = 0;
       avnd::matrix_input_introspection<T>::for_all(
           avnd::get_inputs(implementation),
@@ -84,7 +89,7 @@ struct texture_processor : public TD::TOP_CPlusPlusBase
               const TD::OP_TOPInput* top_input = inputs->getInputTOP(input_index);
               if(top_input && top_input->textureDesc.width > 0 && top_input->textureDesc.height > 0)
               {
-                download_matrix(top_input, field);
+                download_matrix(top_input, field, input_index);
               }
             }
             input_index++;
@@ -169,33 +174,79 @@ private:
   // has no texDim / slice selection so arrays / cubemaps / 3D textures cannot
   // be downloaded meaningfully here.
   template <avnd::cpu_texture_port Field>
-  void download_matrix(const TD::OP_TOPInput* top_input, Field& field)
+  void download_matrix(const TD::OP_TOPInput* top_input, Field& field, int input_index)
   {
     auto& tex = field.texture;
 
     // Download to top-down CPU memory (avnd convention).
     TD::OP_TOPInputDownloadOptions opts;
-    opts.pixelFormat = top_input->textureDesc.pixelFormat;
     opts.verticalFlip = true;
 
-    TD::OP_SmartRef<TD::OP_TOPDownloadResult> download_result =
-        top_input->downloadTexture(opts, nullptr);
-
-    if(!download_result)
-      return;
-
-    tex.width = download_result->textureDesc.width;
-    tex.height = download_result->textureDesc.height;
-    tex.bytes = static_cast<unsigned char*>(download_result->getData());
-    tex.changed = true;
-
-    // Map TD pixel format to Avendish format
     if constexpr(requires { tex.format; })
     {
-      map_pixel_format(download_result->textureDesc.pixelFormat, tex);
-    }
+      // Variable-format texture (halp::custom_variable_texture): the plug-in
+      // accepts whatever TD provides. Download in the upstream's native pixel
+      // format and report it back so the plug-in can interpret the channels.
+      opts.pixelFormat = top_input->textureDesc.pixelFormat;
 
-    download_results.push_back(std::move(download_result));
+      TD::OP_SmartRef<TD::OP_TOPDownloadResult> download_result
+          = top_input->downloadTexture(opts, nullptr);
+      if(!download_result)
+        return;
+
+      tex.width = download_result->textureDesc.width;
+      tex.height = download_result->textureDesc.height;
+      tex.bytes = reinterpret_cast<decltype(tex.bytes)>(download_result->getData());
+      tex.changed = true;
+      map_pixel_format(download_result->textureDesc.pixelFormat, tex);
+
+      download_results.push_back(std::move(download_result));
+    }
+    else
+    {
+      // Fixed-format (or plug-in-requested) texture: ask TD to convert from
+      // whatever the upstream pixel format is into the canonical layout this
+      // port expects. This makes the input robust to *any* TD source format
+      // (RGBA8, BGRA8, float, mono, ...). In particular it fixes the red/blue
+      // swap that happened when the upstream was BGRA8 but the bytes were read
+      // as RGBA: TD now performs the channel conversion during download.
+      const td_format_info fmt = get_format_info(tex);
+      opts.pixelFormat = (fmt.format == TD::OP_PixelFormat::Invalid)
+                             ? top_input->textureDesc.pixelFormat
+                             : fmt.format;
+
+      TD::OP_SmartRef<TD::OP_TOPDownloadResult> download_result
+          = top_input->downloadTexture(opts, nullptr);
+      if(!download_result)
+        return;
+
+      tex.width = download_result->textureDesc.width;
+      tex.height = download_result->textureDesc.height;
+      tex.changed = true;
+
+      if(fmt.expand_rgb_to_rgba)
+      {
+        // TD has no 3-byte pixel format, so we requested RGBA8 and now pack it
+        // down to the RGB8 layout the port expects, into per-input storage.
+        const uint64_t num_pixels = static_cast<uint64_t>(tex.width) * tex.height;
+        const auto* src = static_cast<const unsigned char*>(download_result->getData());
+        auto& scratch = matrix_input_scratch[input_index];
+        scratch.resize(num_pixels * 3);
+        for(uint64_t i = 0; i < num_pixels; ++i)
+        {
+          scratch[i * 3 + 0] = src[i * 4 + 0];
+          scratch[i * 3 + 1] = src[i * 4 + 1];
+          scratch[i * 3 + 2] = src[i * 4 + 2];
+        }
+        tex.bytes = reinterpret_cast<decltype(tex.bytes)>(scratch.data());
+        // download_result not retained: data already copied into scratch.
+      }
+      else
+      {
+        tex.bytes = reinterpret_cast<decltype(tex.bytes)>(download_result->getData());
+        download_results.push_back(std::move(download_result));
+      }
+    }
   }
 
   // Upload texture from Avendish to TD
@@ -287,7 +338,7 @@ private:
   }
 
   template <avnd::cpu_buffer_port Field>
-  void download_matrix(const TD::OP_TOPInput* top_input, Field& field)
+  void download_matrix(const TD::OP_TOPInput* top_input, Field& field, int input_index)
   {
     // TODO
   }
