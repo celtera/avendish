@@ -296,12 +296,34 @@ struct SimpleAudioEffect : clap_plugin
     midi.clear_inputs(this->effect);
   }
 
+  // Representative shared-controls inputs for reads / MIDI dispatch. inputs() is
+  // a per-instance member_iterator for polyphonic effects, which the field
+  // introspection helpers can't take; use the first instance.
+  decltype(auto) controls_inputs() noexcept
+  {
+    if constexpr(std::is_reference_v<decltype(this->effect.inputs())>)
+    {
+      return (this->effect.inputs());
+    }
+    else
+    {
+      for(auto state : this->effect.full_state())
+        return (state.inputs);
+      static typename avnd::inputs_type<T>::type empty{};
+      return (empty);
+    }
+  }
+
   void process_param(const clap_event_param_value& p)
   {
-    param_in_info::for_nth_mapped(
-        this->effect.inputs(), p.param_id, [&]<typename C>(C& field) {
-          field.value = avnd::map_control_from_01<C>(p.value);
-        });
+    // Apply to every (per-channel) instance; map_control_from_01 is deleted for
+    // non-scalar controls, so guard it.
+    for(auto state : this->effect.full_state())
+      param_in_info::for_nth_mapped(
+          state.inputs, p.param_id, [&]<typename C>(C& field) {
+            if constexpr(requires { avnd::map_control_from_01<C>(p.value); })
+              field.value = avnd::map_control_from_01<C>(p.value);
+          });
   }
 
   void process_transport(const clap_event_transport& transport)
@@ -324,7 +346,7 @@ struct SimpleAudioEffect : clap_plugin
           case CLAP_EVENT_NOTE_ON:
           case CLAP_EVENT_NOTE_OFF: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(), ((clap_event_note_t*)ev)->port_index,
+                controls_inputs(), ((clap_event_note_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_note_t*)ev);
             });
@@ -332,7 +354,7 @@ struct SimpleAudioEffect : clap_plugin
           }
           case CLAP_EVENT_MIDI: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(), ((clap_event_midi_t*)ev)->port_index,
+                controls_inputs(), ((clap_event_midi_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_midi_t*)ev);
             });
@@ -340,7 +362,7 @@ struct SimpleAudioEffect : clap_plugin
           }
           case CLAP_EVENT_MIDI_SYSEX: {
             midi_in_info::for_nth_mapped(
-                this->effect.inputs(), ((clap_event_midi_sysex_t*)ev)->port_index,
+                controls_inputs(), ((clap_event_midi_sysex_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_midi_sysex_t*)ev);
             });
@@ -386,7 +408,8 @@ struct SimpleAudioEffect : clap_plugin
       if constexpr(avnd::has_range<C>)
       {
         static constexpr auto range = avnd::get_range<C>();
-        if constexpr(requires { range.init; })
+        // map_control_to_double is deleted for non-scalar controls (color/xy/...)
+        if constexpr(requires { avnd::map_control_to_double<C>(range.init); })
           info->default_value = avnd::map_control_to_double<C>(range.init);
 
         if constexpr(avnd::enum_parameter<C>)
@@ -398,8 +421,8 @@ struct SimpleAudioEffect : clap_plugin
         else
         {
           if constexpr(requires {
-                         range.min;
-                         range.max;
+                         avnd::map_control_to_double<C>(range.min);
+                         avnd::map_control_to_double<C>(range.max);
                        })
           {
             info->min_value = avnd::map_control_to_double<C>(range.min);
@@ -419,8 +442,9 @@ struct SimpleAudioEffect : clap_plugin
   bool get_param_value(clap_id param_id, double* value)
   {
     param_in_info::for_nth_raw(
-        this->effect.inputs(), param_id, [&]<typename C>(const C& field) {
-          *value = avnd::map_control_to_double(field);
+        controls_inputs(), param_id, [&]<typename C>(const C& field) {
+          if constexpr(requires { avnd::map_control_to_double(field); })
+            *value = avnd::map_control_to_double(field);
         });
 
     return true;
