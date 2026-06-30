@@ -502,6 +502,10 @@ struct processor
   {
     using msg_t = std::decay_t<decltype(port.midi_messages[0])>;
     port.midi_messages.clear();
+    if(msgs.is_none())
+      return;
+    if(!py::isinstance<py::sequence>(msgs))
+      throw py::type_error("midi port expects a sequence of messages");
     for(auto item : py::reinterpret_borrow<py::sequence>(msgs))
     {
       py::object bytes_obj = py::reinterpret_borrow<py::object>(item);
@@ -621,13 +625,18 @@ struct processor
           return py::bytes(f.bytes.data(), f.bytes.size());
         },
         [keep](T& self, py::object data) {
-          py::bytes b = py::isinstance<py::str>(data)
-                            ? py::bytes(data.cast<std::string>())
-                            : py::reinterpret_borrow<py::bytes>(data);
+          py::bytes b;
+          if(py::isinstance<py::str>(data))
+            b = py::bytes(data.cast<std::string>());
+          else if(py::isinstance<py::bytes>(data))
+            b = py::reinterpret_borrow<py::bytes>(data);
+          else
+            throw py::type_error("file port expects str or bytes");
           py::cast(&self).attr(keep.c_str()) = b; // keep buffer alive
           char* buf = nullptr;
           Py_ssize_t len = 0;
-          PyBytes_AsStringAndSize(b.ptr(), &buf, &len);
+          if(PyBytes_AsStringAndSize(b.ptr(), &buf, &len) != 0)
+            throw py::error_already_set();
           auto& f = avnd::pfr::get<Idx>(self.inputs).file;
           f.bytes = std::string_view(buf, static_cast<std::size_t>(len));
         });
