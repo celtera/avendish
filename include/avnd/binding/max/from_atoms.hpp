@@ -151,11 +151,11 @@ struct from_atoms
   {
     if(ac == 0)
       return false;
-    auto r = static_cast<std::underlying_type_t<T>>(v);
-    auto res = from_atom{av[0]}(r);
-    if(res)
-      v = static_cast<T>(r);
-    return res;
+    // Delegate to the single-atom enum handler, which accepts both the integer
+    // value (A_LONG/A_FLOAT) and the enum name as a symbol (A_SYM, via
+    // avnd::enum_cast). Casting to the underlying integer first would lose the
+    // by-name path and only accept numbers.
+    return from_atom{av[0]}(v);
   }
 
   template <avnd::list_ish T>

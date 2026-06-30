@@ -109,4 +109,29 @@ inline std::string sanitize_td_name(std::string_view name)
   return result;
 }
 
+/**
+ * Widget-shape detection.
+ *
+ * halp encodes the requested widget kind as enumerators injected into the port
+ * struct (e.g. `enum widget { folder };`). We dispatch on those enumerators to
+ * pick the matching TD parameter kind, since the avnd concepts only tell us the
+ * underlying value type (string, bool, ...), not the intended widget.
+ */
+
+// halp::folder_port: a std::string value with `enum widget { folder };`
+template <typename Field>
+concept folder_param = avnd::string_parameter<Field> && requires { Field::folder; };
+
+// halp::maintained_button: a bool value with `enum widget { button, pushbutton };`
+// (as opposed to a plain toggle/checkbox, which stays as appendToggle)
+template <typename Field>
+concept momentary_button_param = avnd::bool_parameter<Field> && requires { Field::button; };
+
+// halp::string_enum_t / string-valued combos: the value is a std::string but the
+// allowed values come from a fixed list. Maps to a TD string menu so the stored
+// value is the chosen string rather than an integer index.
+template <typename Field>
+concept string_menu_param
+    = avnd::string_parameter<Field> && avnd::enum_ish_parameter<Field>;
+
 }

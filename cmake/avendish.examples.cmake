@@ -328,6 +328,24 @@ avnd_make_touchdesigner(
   PROCESSOR_TYPE SOP
 )
 
+avnd_make_touchdesigner(
+  TARGET ColorChannelTestTOP
+  MAIN_FILE examples/Advanced/TouchDesigner/ColorChannelTestTOP.hpp
+  MAIN_CLASS examples::touchdesigner::ColorChannelTestTOP
+  C_NAME avnd_color_channel_test
+  PROCESSOR_TYPE TOP
+)
+
+# Same diagnostic as a Max/MSP Jitter texture external (jit object), to validate
+# the R/B channel behaviour on the Max side. The Max prototype auto-selects the
+# Jitter texture processor because the class has texture ports.
+avnd_make_max(
+  TARGET ColorChannelTestMax
+  MAIN_FILE examples/Advanced/TouchDesigner/ColorChannelTestTOP.hpp
+  MAIN_CLASS examples::touchdesigner::ColorChannelTestTOP
+  C_NAME avnd_color_channel_test
+)
+
 # Max/MSP geometry object (Jitter ob3d). Only built on macOS / Windows.
 avnd_make_max(
   TARGET CubeGeometry

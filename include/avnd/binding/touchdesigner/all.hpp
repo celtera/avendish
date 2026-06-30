@@ -8,6 +8,7 @@
  */
 
 #include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/file_ports.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/parameter_setup.hpp>
 

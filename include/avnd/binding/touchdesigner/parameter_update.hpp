@@ -104,7 +104,9 @@ struct parameter_update
           avnd::get_inputs(implementation),
           [&]<typename Field>(Field& field) {
         static constexpr auto name = touchdesigner::get_td_name<Field>();
-        if constexpr(avnd::enum_ish_parameter<Field>)
+        if constexpr(touchdesigner::string_menu_param<Field>)
+          this->update_string_menu(field, name.data(), inputs);
+        else if constexpr(avnd::enum_ish_parameter<Field>)
           this->update_enum(field, name.data(), inputs);
         else
           this->update(field, name.data(), inputs);
@@ -135,6 +137,22 @@ struct parameter_update
 
   template <avnd::string_parameter Field>
   void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
+  {
+    // Folder ports resolve to an absolute path (OS-consistent slashes); plain
+    // strings use the raw parameter value.
+    const char* str = nullptr;
+    if constexpr(touchdesigner::folder_param<Field>)
+      str = inputs->getParFilePath(name);
+    else
+      str = inputs->getParString(name);
+    if(str)
+      field.value.assign(str);
+  }
+
+  // String-valued fixed-choice menu (halp::string_enum_t): TD returns the
+  // selected entry as a string.
+  template <avnd::string_parameter Field>
+  void update_string_menu(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
     const char* str = inputs->getParString(name);
     if(str)
@@ -289,13 +307,8 @@ struct parameter_update
     pulse(field, name);
   }
 
-  template <avnd::file_port Field>
-  void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
-  {
-    const char* str = inputs->getParFilePath(name);
-    if(str)
-      field.value.assign(str);
-  }
+  // NOTE: file_port / soundfile_port / midifile_port are handled by
+  // touchdesigner::file_ports<T> (file_ports.hpp), not here.
 
   //////////////////
   // We know that input exists and has at least one channel sample

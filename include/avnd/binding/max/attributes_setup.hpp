@@ -9,7 +9,11 @@
 #include <avnd/common/aggregates.hpp>
 #include <avnd/common/for_nth.hpp>
 #include <avnd/wrappers/metadatas.hpp>
+#include <avnd/common/enum_reflection.hpp>
 #include <ext.h>
+
+#include <string>
+#include <string_view>
 
 namespace max
 {
@@ -97,9 +101,26 @@ struct attribute_register<Processor, T>
       if(static constexpr auto style = get_atoms_style<F>(); strlen(style) > 0)
         CLASS_ATTR_STYLE(c, attr_name.data(), 0, style);
 
-      if constexpr(avnd::parameter_with_minmax_range<V>)
+      if constexpr(std::is_enum_v<V>)
       {
-        static constexpr auto range = avnd::get_range<V>();
+        // Populate the inspector's enum dropdown with the enumerator names so
+        // the editor shows "Generate" / "Passthrough" rather than raw numbers.
+        std::string vals;
+        for(std::string_view nm : avnd::enum_names<V>())
+        {
+          if(!vals.empty())
+            vals += ' ';
+          vals += nm;
+        }
+        CLASS_ATTR_ENUM(c, attr_name.data(), 0, vals.c_str());
+      }
+
+      if constexpr(avnd::parameter_with_minmax_range<F>)
+      {
+        // NB: the range lives on the control type F, not on the value type V
+        // (which is e.g. `int` and has no range) — checking V here silently
+        // dropped the default and the clip filter for every attribute.
+        static constexpr auto range = avnd::get_range<F>();
         CLASS_ATTR_FILTER_CLIP(c, attr_name.data(), range.min, range.max);
         const auto init = std::to_string(range.init);
         CLASS_ATTR_DEFAULT(c, attr_name.data(), 0, init.c_str());
