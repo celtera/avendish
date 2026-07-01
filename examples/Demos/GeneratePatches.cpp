@@ -248,10 +248,17 @@ struct pd_patch
         "#X connect " + std::to_string(src) + " " + std::to_string(outlet) + " "
         + std::to_string(dst) + " " + std::to_string(inlet) + ";");
   }
-  void text(int x, int y, std::string_view t)
+  // Emit a comment with an explicit character width (the `, f <n>` flag) so Pd's
+  // line-wrapping is deterministic, and return the vertical space it occupies in
+  // pixels. Callers advance Y by this so a comment that wraps to several lines
+  // never collides with the next one.
+  int text(int x, int y, std::string_view t, int width_chars = 60)
   {
     add("#X text " + std::to_string(x) + " " + std::to_string(y) + " "
-        + pd_escape(t) + ";");
+        + pd_escape(t) + ", f " + std::to_string(width_chars) + ";");
+    const int len = static_cast<int>(t.size());
+    const int lines = len <= width_chars ? 1 : (len + width_chars - 1) / width_chars;
+    return lines * 15; // ~one line height at font size 12
   }
   // A section-header divider bar, in the ELSE help-patch idiom.
   void divider(int x, int y, std::string_view label)
@@ -374,7 +381,7 @@ void emit_pd(const model_t& m, std::ostream& out)
         "#e0e4dc 0;");
 
   // --- description ---
-  p.text(8, 54, blurb(m));
+  p.text(8, 54, blurb(m), 86);
 
   // --- the object (created early so its index is known to connections) ---
   std::vector<const port_t*> controls, audio_in;
@@ -471,34 +478,25 @@ void emit_pd(const model_t& m, std::ostream& out)
   if(sy < y_obj + 90)
     sy = y_obj + 90;
   p.divider(8, sy, "inlets");
-  sy += 18;
-  p.text(20, sy, "left inlet: any [name value( message sets the matching control");
-  sy += 18;
+  sy += 20;
+  sy += p.text(
+      20, sy, "left inlet: any [name value( message sets the matching control");
   for(const auto* c : controls)
-  {
-    p.text(20, sy, selector(c->name) + " - " + pd_port_typestr(*c)
-                       + (c->description.empty() ? "" : ": " + c->description));
-    sy += 16;
-  }
+    sy += p.text(20, sy, selector(c->name) + " - " + pd_port_typestr(*c)
+                             + (c->description.empty() ? "" : ": " + c->description));
   for(const auto& msg : m.messages)
-  {
-    p.text(20, sy, selector(msg.name) + " - message");
-    sy += 16;
-  }
+    sy += p.text(20, sy, selector(msg.name) + " - message");
 
   if(!m.outputs.empty())
   {
-    sy += 8;
+    sy += 10;
     p.divider(8, sy, "outlets");
-    sy += 18;
+    sy += 20;
     int oi = 0;
     for(const auto& o : m.outputs)
-    {
-      p.text(20, sy, std::to_string(oi++) + ") " + o.name + " - "
-                         + pd_port_typestr(o)
-                         + (o.description.empty() ? "" : ": " + o.description));
-      sy += 16;
-    }
+      sy += p.text(20, sy, std::to_string(oi++) + ") " + o.name + " - "
+                               + pd_port_typestr(o)
+                               + (o.description.empty() ? "" : ": " + o.description));
   }
 
   const int ncols = nctrl > 0 ? (nctrl + rows_per_col - 1) / rows_per_col : 1;
