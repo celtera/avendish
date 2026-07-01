@@ -6,6 +6,10 @@ if(DEFINED AVND_ENABLE_VST3 AND NOT AVND_ENABLE_VST3)
   return()
 endif()
 
+# Build a self-contained VSTGUI editor into VST3 plug-ins (no Qt). Needs the
+# VST3 SDK configured with SMTG_ADD_VSTGUI=ON so the `vstgui` target exists.
+option(AVND_ENABLE_VST3_VSTGUI "Embed a VSTGUI editor in VST3 plug-ins" ON)
+
 set(VST3_SDK_ROOT "" CACHE PATH "VST3 SDK path")
 if(NOT VST3_SDK_ROOT)
   function(avnd_make_vst3)
@@ -136,6 +140,13 @@ function(avnd_make_vst3)
       PRIVATE
         ${COREFOUNDATION_FK}
     )
+  endif()
+
+  # Optional self-contained VSTGUI editor. Requires the VST3 SDK to have been
+  # configured with SMTG_ADD_VSTGUI=ON (which provides the `vstgui` target).
+  if(AVND_ENABLE_VST3_VSTGUI AND TARGET vstgui)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE vstgui)
+    target_compile_definitions(${AVND_FX_TARGET} PRIVATE AVND_VST3_VSTGUI=1)
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
