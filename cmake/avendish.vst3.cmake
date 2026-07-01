@@ -154,6 +154,13 @@ function(avnd_make_vst3)
   if(AVND_ENABLE_VST3_VSTGUI AND TARGET vstgui)
     target_link_libraries(${AVND_FX_TARGET} PRIVATE vstgui)
     target_compile_definitions(${AVND_FX_TARGET} PRIVATE AVND_VST3_VSTGUI=1)
+    # VSTGUI headers are included as <vstgui/...>; the include root is the
+    # vstgui4 dir (the `vstgui` target does not export it).
+    if(SMTG_VSTGUI_SOURCE_DIR)
+      target_include_directories(${AVND_FX_TARGET} PRIVATE "${SMTG_VSTGUI_SOURCE_DIR}")
+    else()
+      target_include_directories(${AVND_FX_TARGET} PRIVATE "${VST3_SDK_ROOT}/vstgui4")
+    endif()
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
