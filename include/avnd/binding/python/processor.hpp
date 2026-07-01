@@ -65,6 +65,9 @@ constexpr auto output_name(avnd::field_reflection<Idx, C>)
   return avnd::get_static_symbol<C>();
 }
 
+template <typename V>
+inline void ensure_value_type_registered(pybind11::module_& m);
+
 template <typename... Args>
 struct register_types;
 template <>
@@ -125,6 +128,20 @@ struct register_types<Arg>
       return 0;
     }();
   }
+};
+
+// Single non-aggregate type (e.g. a callback argument like `float` or an enum).
+// Without this, register_types<float> would fall through to the variadic
+// specialization below (with an empty pack), whose body calls
+// register_types<Arg>{} = register_types<float>{} -> itself -> infinite
+// recursion -> stack overflow when importing a module with a scalar-arg
+// callback. This more-specialized single-type overload breaks that: builtins
+// need no registration, enums are handled by ensure_value_type_registered.
+template <typename Arg>
+  requires(!std::is_aggregate_v<Arg>)
+struct register_types<Arg>
+{
+  void operator()(pybind11::module_& m) { ensure_value_type_registered<Arg>(m); }
 };
 
 template <typename Arg, typename... Args>
