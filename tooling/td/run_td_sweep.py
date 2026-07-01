@@ -98,12 +98,40 @@ def gen_runner(dumps, out_dir):
     sys.exit(f"runner not generated under {out_dir}")
 
 
+def compare_audio(td, golden, atol, rtol):
+    """Compare captured TD output channels to the golden output channels over
+    their overlapping prefix (TD's cook sample-count can differ from the
+    golden's frame count). Returns (verdict, detail)."""
+    if not golden:
+        return ("no-golden-audio", "")
+    if not td:
+        return ("no-td-audio", "")
+    nch = min(len(td), len(golden))
+    if nch == 0:
+        return ("empty", "")
+    maxdiff = 0.0
+    for c in range(nch):
+        ns = min(len(td[c]), len(golden[c]))
+        for i in range(ns):
+            maxdiff = max(maxdiff, abs(td[c][i] - golden[c][i]))
+    peak = max((abs(x) for ch in golden for x in ch), default=0.0)
+    tol = atol + rtol * peak
+    verdict = "match" if maxdiff <= tol else "MISMATCH"
+    detail = (f"maxdiff={maxdiff:.2e} tol={tol:.2e} "
+              f"td={len(td)}x{len(td[0]) if td[0:1] else 0} "
+              f"gold={len(golden)}x{len(golden[0]) if golden[0:1] else 0}")
+    return (verdict, detail)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--td", required=True, help="TouchDesigner.exe")
     ap.add_argument("--toe", required=True, help="driver .toe (see README.md)")
     ap.add_argument("--plugins", required=True, help="dir of built *_td.dll")
     ap.add_argument("--dumps", required=True, help="dump JSON dir")
+    ap.add_argument("--goldens", help="golden JSON dir (enables output diff)")
+    ap.add_argument("--atol", type=float, default=1e-3, help="abs tolerance")
+    ap.add_argument("--rtol", type=float, default=1e-3, help="rel tolerance")
     ap.add_argument("--timeout", type=int, default=300, help="seconds")
     args = ap.parse_args()
 
@@ -157,6 +185,8 @@ def main():
     env = dict(os.environ)
     env["AVND_TD_RUNNER"] = runner
     env["AVND_TD_REPORT_DIR"] = toe_dir
+    if args.goldens:
+        env["AVND_TD_GOLDEN_DIR"] = os.path.abspath(args.goldens)
 
     def _read(p):
         try:
@@ -232,6 +262,36 @@ def main():
     if crashers:
         print(f"\n*** {len(crashers)} object(s) CRASHED TouchDesigner: "
               + ", ".join(crashers) + " ***")
+
+    # Differential: diff each captured output against the golden oracle.
+    if args.goldens:
+        goldens = {}
+        for gf in glob.glob(os.path.join(args.goldens, "*.json")):
+            try:
+                g = json.load(open(gf, encoding="utf-8"))
+                goldens[g.get("c_name")] = g
+            except Exception:
+                pass
+        counts, mism = {}, []
+        for r in results:
+            g = goldens.get(r.get("name"))
+            if not g:
+                continue
+            if r.get("has_audio_in"):
+                # feeding the exact input signal into TD is Phase 2b
+                v, detail = "skip-needs-input", ""
+            else:
+                v, detail = compare_audio(
+                    r.get("td_audio"), g.get("outputs", {}).get("audio"),
+                    args.atol, args.rtol)
+            counts[v] = counts.get(v, 0) + 1
+            if v == "MISMATCH":
+                mism.append(f"  MISMATCH {r['name']}: {detail}")
+        print(f"\n=== output diff vs golden ({len(goldens)} goldens) ===")
+        for k in sorted(counts):
+            print(f"  {k}: {counts[k]}")
+        for m in mism[:40]:
+            print(m)
 
 
 if __name__ == "__main__":
