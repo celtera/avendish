@@ -161,6 +161,17 @@ function(avnd_make_vst3)
     else()
       target_include_directories(${AVND_FX_TARGET} PRIVATE "${VST3_SDK_ROOT}/vstgui4")
     endif()
+
+    # VSTGUI compiles its own sources with -Werror on macOS, which trips on
+    # recent AppleClang/macOS SDKs (e.g. unused-variable in cgbitmap.cpp).
+    # Don't let VSTGUI's internal warnings fail the addon build.
+    if(APPLE)
+      get_target_property(_avnd_vstgui_opts vstgui COMPILE_OPTIONS)
+      if(_avnd_vstgui_opts)
+        list(REMOVE_ITEM _avnd_vstgui_opts "-Werror")
+        set_target_properties(vstgui PROPERTIES COMPILE_OPTIONS "${_avnd_vstgui_opts}")
+      endif()
+    endif()
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
