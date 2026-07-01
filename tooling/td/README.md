@@ -34,21 +34,33 @@ python tooling/td/run_td_sweep.py \
 ```
 
 It will:
-1. stage every `*_td.dll` into `tooling/td/Plugins/` (TouchDesigner scans a
-   project's `Plugins/` folder), then remove them afterwards;
-2. generate `td-runner/td_run_all.py` from the dump JSON
-   (`gen_tester_patches.py --backend td-runner`) — this instantiates + **cooks**
-   each operator, records `errors()`/`warnings()`, and writes the report;
+1. stage the `*_td.dll` into the top level of your
+   `Documents/Derivative/Plugins/` (TouchDesigner loads compiled Custom OPs from
+   there — **not** from a `.toe`-adjacent `Plugins/`, and it does not recurse
+   into subfolders), then remove exactly what it staged afterwards. Duplicates
+   are collapsed by opType: a build emits e.g. `Foo_CHOP_AUDIO_td.dll` **and**
+   `Foo_CHOP_MESSAGE_td.dll`, both of which sanitize to the same opType, so only
+   one is staged;
+2. generate `td_run_all.py` from the dump JSON
+   (`gen_tester_patches.py --backend td-runner`) — it creates each operator via
+   its Python class (`sanitize_td_name(c_name)` + family, e.g. `AvndadditionCHOP`
+   — TD's `create()` needs the class, not the opType string), **cooks** it,
+   records `errors()`/`warnings()`, and flushes the report after every operator;
 3. launch the driver `.toe`;
-4. auto-dismiss the modal **"Plugin Load Error"** dialog (raised when two
-   installed plugins claim the same opType — e.g. duplicate variants in your
-   global `Documents/Derivative/Plugins/`); without this it blocks startup and
-   the sweep never runs;
-5. wait for `td_test_report.json` and print `N/total ok` plus each failure.
+4. auto-dismiss the modal **"Plugin Load Error"** dialog (`BM_CLICK` its OK
+   button) — raised for every duplicate/known opType conflict; without this it
+   blocks startup and the sweep never runs;
+5. if an operator **hard-crashes** TouchDesigner mid-sweep, the runner leaves a
+   breadcrumb (`td_current.txt`) naming it; the harness records it as a crash and
+   **relaunches**, and the runner resumes past everything already tested — so one
+   bad op doesn't block the other 109;
+6. print `N/total ok`, each per-op failure, and the list of operators that
+   crashed TD.
 
-An operator that **crashes** on instantiation/cook takes TouchDesigner down, so
-you get no report / an early exit — the harness flags that. Cook errors and
-warnings are reported per-operator without crashing.
+Result classes you'll see: **ok** (instantiated + cooked clean), **"Not enough
+sources specified"** (a filter/effect that needs an input wired — benign, it
+instantiated fine), **class not found** (didn't load, or a family the resolver
+doesn't guess), and **crashed TouchDesigner** (the real bug the sweep hunts).
 
 ## Notes
 - TouchDesigner's Python is **Windows** Python: use `C:/…` paths, not MSYS

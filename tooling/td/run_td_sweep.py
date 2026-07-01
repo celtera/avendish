@@ -112,48 +112,108 @@ def main():
     report = os.path.join(toe_dir, "td_test_report.json")
     errfile = os.path.join(toe_dir, "td_sweep_error.txt")
 
-    # 1. stage plugins next to the .toe so TouchDesigner discovers them.
-    plug_dst = os.path.join(toe_dir, "Plugins")
-    os.makedirs(plug_dst, exist_ok=True)
-    staged = 0
-    for dll in glob.glob(os.path.join(args.plugins, "*.dll")):
-        shutil.copy2(dll, plug_dst)
-        staged += 1
-    print(f"staged {staged} plugins -> {plug_dst}")
+    # 1. stage plugins where TouchDesigner discovers compiled Custom OPs: the
+    # top level of the user's Documents/Derivative/Plugins (TD does not recurse
+    # into subfolders for DLLs, and a .toe-adjacent Plugins/ is only for .tox
+    # components). Track exactly what we copy so cleanup never touches the user's
+    # own plugins, and never clobber an existing file.
+    plug_dir = os.path.join(os.path.expanduser("~"), "Documents", "Derivative",
+                            "Plugins")
+    os.makedirs(plug_dir, exist_ok=True)
+    # Dedup by (object, family): a build emits e.g. Foo_CHOP_AUDIO_td.dll AND
+    # Foo_CHOP_MESSAGE_td.dll -- both CHOP, both sanitize to the same opType, so
+    # loading both just triggers "opType already used". Keep one per opType.
+    fam_of = {"CHOP_AUDIO": "CHOP", "CHOP_MESSAGE": "CHOP", "TOP": "TOP",
+              "SOP": "SOP", "POP": "POP", "DAT": "DAT"}
+    chosen = {}
+    for dll in sorted(glob.glob(os.path.join(args.plugins, "*.dll"))):
+        stem = os.path.basename(dll)[:-len("_td.dll")] \
+            if os.path.basename(dll).endswith("_td.dll") else os.path.basename(dll)[:-4]
+        fam, base = None, stem
+        for pt, f in fam_of.items():
+            if stem.endswith("_" + pt):
+                fam, base = f, stem[:-(len(pt) + 1)]
+                break
+        chosen.setdefault((base, fam or stem), dll)
+    staged_files = []
+    for dll in chosen.values():
+        dst = os.path.join(plug_dir, os.path.basename(dll))
+        shutil.copy2(dll, dst)  # avendish names don't collide with user plugins
+        staged_files.append(dst)
+    print(f"staged {len(staged_files)} plugins (deduped by opType) -> {plug_dir}")
 
     # 2. generate the runner.
     runner = gen_runner(args.dumps, toe_dir)
     print(f"runner: {runner}")
 
-    # 3. launch TouchDesigner on the driver .toe.
-    for f in (report, errfile):
+    # 3-5. launch, dismiss dialogs, wait for completion. If an operator crashes
+    # TouchDesigner mid-sweep, record it (from the breadcrumb) and relaunch --
+    # the runner resumes past everything already tested, so one bad op doesn't
+    # block the rest.
+    cur = os.path.join(toe_dir, "td_current.txt")
+    for f in (report, errfile, cur):
         if os.path.exists(f):
             os.remove(f)
     env = dict(os.environ)
     env["AVND_TD_RUNNER"] = runner
     env["AVND_TD_REPORT_DIR"] = toe_dir
-    print(f"launching: {args.td} {toe}")
-    proc = subprocess.Popen([args.td, toe], env=env)
 
-    # 4/5. dismiss dialogs, wait for the report.
-    deadline = time.time() + args.timeout
-    dismissed = 0
-    while time.time() < deadline:
-        dismissed += dismiss_plugin_dialogs()
-        if os.path.exists(report):
+    def _read(p):
+        try:
+            return open(p, encoding="utf-8").read().strip()
+        except Exception:
+            return ""
+
+    dismissed, crashers = 0, []
+    for attempt in range(1, 61):
+        print(f"launch #{attempt}: {args.td} {toe}")
+        proc = subprocess.Popen([args.td, toe], env=env)
+        deadline, done = time.time() + args.timeout, False
+        while time.time() < deadline:
+            dismissed += dismiss_plugin_dialogs()
+            if _read(cur) == "DONE":
+                done = True
+                break
+            if proc.poll() is not None:
+                break
+            time.sleep(1)
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        if done:
             break
-        if proc.poll() is not None and not os.path.exists(report):
-            print("TouchDesigner exited before writing a report "
-                  "(a Custom OP likely crashed it on instantiation).")
+        culprit = _read(cur)
+        if not culprit or culprit == "DONE":
+            break  # timed out with no progress, or actually finished
+        crashers.append(culprit)
+        # Record the crasher so the relaunch skips it.
+        try:
+            rep = json.load(open(report, encoding="utf-8"))
+        except Exception:
+            rep = []
+        if culprit not in {r["name"] for r in rep}:
+            rep.append({"name": culprit, "ok": False,
+                        "exception": "crashed TouchDesigner (instantiation/cook)"})
+            open(report, "w", encoding="utf-8").write(json.dumps(rep, indent=2))
+        print(f"  *** crashed on '{culprit}' -> recorded; relaunching to continue")
+
+    # clean up only the plugins we staged (leave the user's own untouched).
+    # TouchDesigner may still hold the DLL handles for a moment after kill, so
+    # retry briefly.
+    for _ in range(10):
+        for f in [f for f in staged_files if os.path.exists(f)]:
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        if not [f for f in staged_files if os.path.exists(f)]:
             break
         time.sleep(1)
-
-    try:
-        proc.kill()
-    except Exception:
-        pass
-    # clean up staged plugins
-    shutil.rmtree(plug_dst, ignore_errors=True)
+    left = [f for f in staged_files if os.path.exists(f)]
+    if left:
+        print(f"warning: {len(left)} staged plugin(s) still locked in "
+              f"{os.path.dirname(left[0])} -- remove manually")
 
     if dismissed:
         print(f"(auto-dismissed {dismissed} plugin-load dialog(s))")
@@ -169,6 +229,9 @@ def main():
     for r in bad:
         why = r.get("exception") or r.get("errors") or "cook error/warning"
         print(f"  FAIL {r.get('name')}: {why}")
+    if crashers:
+        print(f"\n*** {len(crashers)} object(s) CRASHED TouchDesigner: "
+              + ", ".join(crashers) + " ***")
 
 
 if __name__ == "__main__":
