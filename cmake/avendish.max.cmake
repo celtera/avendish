@@ -3,6 +3,9 @@
 # -DAVND_ENABLE_MAX=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
 # VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
 if(DEFINED AVND_ENABLE_MAX AND NOT AVND_ENABLE_MAX)
+  # examples.cmake calls avnd_make_max directly; keep the command defined.
+  function(avnd_make_max)
+  endfunction()
   return()
 endif()
 
