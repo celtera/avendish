@@ -69,7 +69,7 @@ public:
   Steinberg::tresult PLUGIN_API attached(void* parent, Steinberg::FIDString /*type*/) override
   {
     computeSize();
-    frame = new VSTGUI::CFrame(VSTGUI::CRect(0, 0, m_width, m_height), this);
+    frame = new VSTGUI::CFrame(VSTGUI::CRect(0, 0, m_width, m_height), nullptr);
     frame->setBackgroundColor(VSTGUI::CColor{32, 32, 34, 255});
 
     VSTGUI::PlatformType pt =
@@ -183,13 +183,15 @@ private:
       {
         // Continuous -> self-drawing knob.
         VSTGUI::CRect rc(x + (cell_w - 56) / 2, y + 20, x + (cell_w - 56) / 2 + 56, y + 76);
-        auto* knob = new VSTGUI::CKnob(rc, this, info.id, nullptr, nullptr);
-        knob->setDrawStyle(VSTGUI::CKnob::kCoronaDrawing | VSTGUI::CKnob::kHandleCircleDrawing);
+        auto* knob = new VSTGUI::CKnob(
+            rc, this, info.id, nullptr, nullptr, VSTGUI::CPoint(0, 0),
+            VSTGUI::CKnob::kCoronaDrawing | VSTGUI::CKnob::kHandleCircleDrawing);
         ctl = knob;
 
         // Name label above the knob.
         VSTGUI::CRect lr(x, y + 2, x + cell_w, y + 18);
-        auto* lbl = new VSTGUI::CTextLabel(lr, VSTGUI::UTF8String{title_of(info)});
+        const std::string lbl_txt = title_of(info);
+        auto* lbl = new VSTGUI::CTextLabel(lr, lbl_txt.c_str());
         lbl->setFontColor(VSTGUI::kWhiteCColor);
         lbl->setBackColor(VSTGUI::kTransparentCColor);
         lbl->setFrameColor(VSTGUI::kTransparentCColor);
