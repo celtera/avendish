@@ -33,11 +33,27 @@ struct parameter_setup
     manager = mgr;
 
     if constexpr(avnd::has_inputs<T>) {
-      // Iterate over all input fields that are parameters
+      // Widget controls (sliders, xy, colour, menus, ...) -> TD parameters.
       avnd::control_input_introspection<T>::for_all(
           avnd::get_inputs(impl),
           [this]<typename Field>(Field& field) {
             setup_parameter<Field>();
+          });
+
+      // Value-ports are parameters WITHOUT a widget (e.g. an int/float control
+      // with just a range, like an audio effect's amount). They are the natural
+      // TD parameters for those objects too, so expose the scalar ones -- else
+      // there is no way to set them (they were silently dropped, so audio
+      // effects had no adjustable controls).
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs(impl),
+          [this]<typename Field>(Field& field) {
+            using vt = std::decay_t<decltype(Field::value)>;
+            if constexpr(
+                avnd::value_port<Field>
+                && (std::is_arithmetic_v<vt> || std::is_enum_v<vt>
+                    || avnd::string_ish<vt>))
+              setup_parameter<Field>();
           });
     }
   }
