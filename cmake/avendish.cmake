@@ -345,6 +345,7 @@ endfunction()
 function(avnd_make_texture)
   avnd_register(${ARGV})
 
+  avnd_make_golden(${ARGV})
   _avnd_dispatch_backend(fuzz ${ARGV})
   avnd_make_ossia(${ARGV})
   _avnd_dispatch_backend(max ${ARGV})
@@ -356,6 +357,7 @@ endfunction()
 function(avnd_make_buffer)
   avnd_register(${ARGV})
 
+  avnd_make_golden(${ARGV})
   _avnd_dispatch_backend(fuzz ${ARGV})
   _avnd_dispatch_backend(godot ${ARGV} PROCESSOR_TYPE BUFFER)
 endfunction()
@@ -363,6 +365,7 @@ endfunction()
 function(avnd_make_geometry)
   avnd_register(${ARGV})
 
+  avnd_make_golden(${ARGV})
   _avnd_dispatch_backend(fuzz ${ARGV})
   avnd_make_ossia(${ARGV})
   _avnd_dispatch_backend(max ${ARGV} PROCESSOR_TYPE GEOMETRY)
@@ -382,6 +385,10 @@ endfunction()
 
 function(avnd_make)
   avnd_register(${ARGV})
+
+  # Always emit a golden target (like the dump target) regardless of the
+  # requested BACKENDS -- it is an offline test/introspection aid.
+  avnd_make_golden(${ARGV})
 
   cmake_parse_arguments(AVND "" "" "BACKENDS" ${ARGN})
 

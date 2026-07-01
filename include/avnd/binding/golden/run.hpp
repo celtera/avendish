@@ -14,6 +14,7 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/messages.hpp>
+#include <avnd/introspection/port.hpp>
 #include <avnd/introspection/range.hpp>
 #include <avnd/wrappers/audio_channel_manager.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -22,6 +23,8 @@
 #include <avnd/wrappers/process_adapter.hpp>
 
 #include <cmath>
+#include <cstdint>
+#include <deque>
 #include <fstream>
 #include <string>
 #include <string_view>
@@ -38,6 +41,18 @@ inline float test_sample(int ch, int i, int frames)
 {
   // Bounded, distinct per channel, no randomness.
   return 0.5f * std::sin(2.0 * 3.14159265358979 * (ch + 1) * (i + 1) / frames);
+}
+
+// Bytes per pixel for a halp texture (static member or method, else assume 4).
+int tex_bpp(const auto& tex)
+{
+  using Tex = std::decay_t<decltype(tex)>;
+  if constexpr(requires { tex.bytes_per_pixel(); })
+    return tex.bytes_per_pixel();
+  else if constexpr(requires { Tex::bytes_per_pixel; })
+    return Tex::bytes_per_pixel;
+  else
+    return 4;
 }
 
 // A clean, matchable name: the port's own name if it has one, else a positional
@@ -242,6 +257,25 @@ int run(std::string_view path)
     for(int c = 0; c < out_N; ++c)
       out_ptrs[c] = outbuf[c].data();
 
+    // CPU texture inputs: give each a small deterministic test image so filters
+    // have something to read (storage must outlive process()). GPU textures are
+    // not handled (they need a graphics context).
+    std::deque<std::vector<unsigned char>> tex_storage;
+    if constexpr(avnd::cpu_texture_input_introspection<T>::size > 0)
+      avnd::cpu_texture_input_introspection<T>::for_all(
+          avnd::get_inputs(effect), [&](auto& port) {
+            const int w = 16, h = 16, bpp = tex_bpp(port.texture);
+            auto& buf = tex_storage.emplace_back((std::size_t)w * h * bpp);
+            for(std::size_t i = 0; i < buf.size(); ++i)
+              buf[i] = (unsigned char)(i & 0xFF);
+            port.texture.width = w;
+            port.texture.height = h;
+            port.texture.bytes
+                = reinterpret_cast<decltype(port.texture.bytes)>(buf.data());
+            if constexpr(requires { port.texture.changed; })
+              port.texture.changed = true;
+          });
+
     // --- run ---
     processor.process(
         effect, avnd::span<float*>{in_ptrs.data(), (std::size_t)in_N},
@@ -267,6 +301,37 @@ int run(std::string_view path)
       auto chnode = jdoc.make_node();
       chnode = outbuf[c];
       out_audio.push_back(chnode);
+    }
+
+    // CPU texture outputs: record dimensions + a content hash (exact pixels are
+    // large; the hash is enough for a backend to match against).
+    auto out_tex = out["texture"];
+    out_tex.ensure_array();
+    if constexpr(avnd::cpu_texture_output_introspection<T>::size > 0)
+    {
+      int tidx = 0;
+      avnd::cpu_texture_output_introspection<T>::for_all(
+          avnd::get_outputs(effect), [&](auto& port) {
+            auto node = jdoc.make_node();
+            node["index"] = tidx++;
+            node["width"] = port.texture.width;
+            node["height"] = port.texture.height;
+            std::uint64_t hash = 1469598103934665603ULL;
+            const int bpp = tex_bpp(port.texture);
+            if(port.texture.bytes && port.texture.width > 0 && port.texture.height > 0)
+            {
+              const std::size_t n
+                  = (std::size_t)port.texture.width * port.texture.height * bpp;
+              const auto* b = reinterpret_cast<const unsigned char*>(port.texture.bytes);
+              for(std::size_t i = 0; i < n; ++i)
+              {
+                hash ^= b[i];
+                hash *= 1099511628211ULL;
+              }
+            }
+            node["hash"] = (std::int64_t)hash;
+            out_tex.push_back(node);
+          });
     }
 
     return write("ok");
