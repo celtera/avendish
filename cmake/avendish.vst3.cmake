@@ -10,6 +10,13 @@ endif()
 # VST3 SDK configured with SMTG_ADD_VSTGUI=ON so the `vstgui` target exists.
 option(AVND_ENABLE_VST3_VSTGUI "Embed a VSTGUI editor in VST3 plug-ins" ON)
 
+# VSTGUI on macOS compiles Objective-C++ sources, so the enclosing project must
+# enable those languages (a plain `project(Foo CXX)` does not).
+if(APPLE AND AVND_ENABLE_VST3_VSTGUI)
+  enable_language(OBJC)
+  enable_language(OBJCXX)
+endif()
+
 set(VST3_SDK_ROOT "" CACHE PATH "VST3 SDK path")
 if(NOT VST3_SDK_ROOT)
   function(avnd_make_vst3)
