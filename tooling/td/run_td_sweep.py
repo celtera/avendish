@@ -182,20 +182,38 @@ def main():
                             "Plugins")
     os.makedirs(plug_dir, exist_ok=True)
     # Dedup by (object, family): a build emits e.g. Foo_CHOP_AUDIO_td.dll AND
-    # Foo_CHOP_MESSAGE_td.dll -- both CHOP, both sanitize to the same opType, so
-    # loading both just triggers "opType already used". Keep one per opType.
+    # Foo_CHOP_MESSAGE_td.dll -- both sanitize to the SAME opType, so loading both
+    # just triggers "opType already used" and only one can register. We must stage
+    # the RIGHT one: an audio object needs CHOP_AUDIO (audio_processor), a control
+    # object needs CHOP_MESSAGE (message_processor). Staging CHOP_AUDIO for a
+    # control object makes it report 0 output channels (no audio ports).
+    def _is_audio_object(base):
+        try:
+            d = json.load(open(os.path.join(args.dumps, base + ".json"),
+                               encoding="utf-8"))
+            ports = d.get("inputs", []) + d.get("outputs", [])
+            return any(p.get("type") == "audio" for p in ports)
+        except Exception:
+            return True  # default to the audio variant
     fam_of = {"CHOP_AUDIO": "CHOP", "CHOP_MESSAGE": "CHOP", "TOP": "TOP",
               "SOP": "SOP", "POP": "POP", "DAT": "DAT"}
-    chosen = {}
+    variants = {}  # (base, fam) -> {ptype: dll}
     for dll in sorted(glob.glob(os.path.join(args.plugins, "*.dll"))):
         stem = os.path.basename(dll)[:-len("_td.dll")] \
             if os.path.basename(dll).endswith("_td.dll") else os.path.basename(dll)[:-4]
-        fam, base = None, stem
+        fam, base, ptype = None, stem, None
         for pt, f in fam_of.items():
             if stem.endswith("_" + pt):
-                fam, base = f, stem[:-(len(pt) + 1)]
+                fam, base, ptype = f, stem[:-(len(pt) + 1)], pt
                 break
-        chosen.setdefault((base, fam or stem), dll)
+        variants.setdefault((base, fam or stem), {})[ptype or "_"] = dll
+    chosen = {}
+    for (base, fam), byp in variants.items():
+        if fam == "CHOP" and "CHOP_AUDIO" in byp and "CHOP_MESSAGE" in byp:
+            chosen[(base, fam)] = byp["CHOP_AUDIO"] if _is_audio_object(base) \
+                else byp["CHOP_MESSAGE"]
+        else:
+            chosen[(base, fam)] = next(iter(byp.values()))
     staged_files = []
     for dll in chosen.values():
         dst = os.path.join(plug_dir, os.path.basename(dll))
