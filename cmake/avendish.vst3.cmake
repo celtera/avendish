@@ -172,6 +172,13 @@ function(avnd_make_vst3)
         set_target_properties(vstgui PROPERTIES COMPILE_OPTIONS "${_avnd_vstgui_opts}")
       endif()
     endif()
+
+    # VSTGUI's variadic macros (e.g. vstgui_assert with ##__VA_ARGS__) need
+    # MSVC's conformant preprocessor. Set it on the VSTGUI lib and the module.
+    if(MSVC)
+      target_compile_options(vstgui PRIVATE /Zc:preprocessor)
+      target_compile_options(${AVND_FX_TARGET} PRIVATE /Zc:preprocessor)
+    endif()
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
