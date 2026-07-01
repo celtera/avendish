@@ -123,17 +123,13 @@ def compare_audio(td_out, golden, atol, rtol):
     return (verdict, detail)
 
 
-def compare_controls(td_out, golden, atol, rtol):
-    """Diff golden output controls against the TD output channel of the same name
-    (control outputs surface as named channels; compare the first sample)."""
+def compare_controls(named, golden, atol, rtol):
+    """Diff golden output controls against TD values matched by name. `named` is
+    {channel/info-name -> value}, built from output channels + Info-CHOP."""
     if not golden:
         return ("no-golden-controls", "")
-    if not td_out:
+    if not named:
         return ("no-td-controls", "")
-    named = {}
-    for e in td_out:
-        if e.get("samples"):
-            named[e["name"]] = e["samples"][0]
     checked, maxdiff, worst = 0, 0.0, ""
     for gc in golden:
         if not isinstance(gc, dict):
@@ -322,7 +318,14 @@ def main():
             if gaud:
                 v, detail = compare_audio(td_out, gaud, args.atol, args.rtol)
             elif gctl:
-                v, detail = compare_controls(td_out, gctl, args.atol, args.rtol)
+                # Prefer named output channels; fall back to Info-CHOP values.
+                named = {}
+                for e in (td_out or []):
+                    if e.get("samples"):
+                        named[e["name"]] = e["samples"][0]
+                for k, val in (r.get("td_info") or {}).items():
+                    named.setdefault(k, val)
+                v, detail = compare_controls(named, gctl, args.atol, args.rtol)
             else:
                 v, detail = "no-golden-output", ""
             counts[v] = counts.get(v, 0) + 1
