@@ -3,6 +3,9 @@
 # -DAVND_ENABLE_GODOT=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
 # VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
 if(DEFINED AVND_ENABLE_GODOT AND NOT AVND_ENABLE_GODOT)
+  # examples.cmake calls avnd_make_godot directly; keep the command defined.
+  function(avnd_make_godot)
+  endfunction()
   return()
 endif()
 

@@ -3,6 +3,10 @@
 # -DAVND_ENABLE_TOUCHDESIGNER=OFF -- doesn't fetch/build what it won't use (godot-cpp, the
 # VST3 SDK, ...). Matches _avnd_dispatch_backend: only act when explicitly OFF.
 if(DEFINED AVND_ENABLE_TOUCHDESIGNER AND NOT AVND_ENABLE_TOUCHDESIGNER)
+  # Still define the stub: examples.cmake calls avnd_make_touchdesigner directly,
+  # so a disabled back-end must not leave the command undefined.
+  function(avnd_make_touchdesigner)
+  endfunction()
   return()
 endif()
 
