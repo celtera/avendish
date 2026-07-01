@@ -62,6 +62,14 @@ if(MSVC AND (AVND_ENABLE_MAX
   set(SMTG_USE_STATIC_CRT ON CACHE BOOL "" FORCE)
 endif()
 
+# VSTGUI's variadic macros (vstgui_assert uses ,##__VA_ARGS__) require MSVC's
+# conformant preprocessor. Set it at directory scope before the SDK/VSTGUI
+# subdirectory so every SDK target inherits it (a per-target flag doesn't stick
+# reliably with the Visual Studio generator, and CMAKE_CXX_FLAGS gets clobbered).
+if(MSVC AND AVND_ENABLE_VST3_VSTGUI)
+  add_compile_options(/Zc:preprocessor)
+endif()
+
 add_subdirectory("${VST3_SDK_ROOT}" "${CMAKE_BINARY_DIR}/vst3_sdk")
 
 function(avnd_make_vst3)
