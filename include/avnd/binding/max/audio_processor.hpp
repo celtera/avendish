@@ -299,9 +299,14 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
       return false;
   };
   static constexpr auto outputcount = +[](instance* x, long index) -> long {
-    // TODO check whether the outputs are fixed or dynamic
-    // FIXME compute it better, e.g. use runtime_output_count
-    return x->m_runtime_input_count;
+    // Report the number of output channels Max must allocate. This MUST match
+    // dsp()'s output_chans computation, otherwise perform() receives fewer `outs`
+    // buffers than the object writes -> out-of-bounds. In particular a fixed
+    // output bus (e.g. fixed_audio_bus<..., 2>) always writes its N channels even
+    // when fed a mono signal, so we can never report fewer than output_channels.
+    const long ins
+        = std::max<long>(instance::input_channels, x->m_runtime_input_count);
+    return std::max<long>(instance::output_channels, ins);
   };
 
   // Message processing
