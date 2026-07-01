@@ -68,6 +68,13 @@ endif()
 # reliably with the Visual Studio generator, and CMAKE_CXX_FLAGS gets clobbered).
 if(MSVC AND AVND_ENABLE_VST3_VSTGUI)
   add_compile_options(/Zc:preprocessor)
+  # VSTGUI's vstgui_assert macro is defined via a vstguibase.h<->vstguidebug.h
+  # include cycle that leaves it undefined for some TUs under MSVC (malloc.h:
+  # "'vstgui_assert': identifier not found"). Force-include vstguidebug.h so the
+  # macro exists before any TU is compiled.
+  if(EXISTS "${VST3_SDK_ROOT}/vstgui4/vstgui/lib/vstguidebug.h")
+    add_compile_options("/FI${VST3_SDK_ROOT}/vstgui4/vstgui/lib/vstguidebug.h")
+  endif()
 endif()
 
 add_subdirectory("${VST3_SDK_ROOT}" "${CMAKE_BINARY_DIR}/vst3_sdk")
