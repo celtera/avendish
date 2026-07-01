@@ -98,14 +98,15 @@ def gen_runner(dumps, out_dir):
     sys.exit(f"runner not generated under {out_dir}")
 
 
-def compare_audio(td, golden, atol, rtol):
-    """Compare captured TD output channels to the golden output channels over
-    their overlapping prefix (TD's cook sample-count can differ from the
-    golden's frame count). Returns (verdict, detail)."""
+def compare_audio(td_out, golden, atol, rtol):
+    """Diff TD output channels (positional) against the golden audio channels
+    over their overlapping prefix (TD's cook sample-count can differ from the
+    golden's frame count). td_out is [{name, samples}]."""
     if not golden:
         return ("no-golden-audio", "")
-    if not td:
+    if not td_out:
         return ("no-td-audio", "")
+    td = [e["samples"] for e in td_out]
     nch = min(len(td), len(golden))
     if nch == 0:
         return ("empty", "")
@@ -118,9 +119,45 @@ def compare_audio(td, golden, atol, rtol):
     tol = atol + rtol * peak
     verdict = "match" if maxdiff <= tol else "MISMATCH"
     detail = (f"maxdiff={maxdiff:.2e} tol={tol:.2e} "
-              f"td={len(td)}x{len(td[0]) if td[0:1] else 0} "
-              f"gold={len(golden)}x{len(golden[0]) if golden[0:1] else 0}")
+              f"td={len(td)}ch gold={len(golden)}ch")
     return (verdict, detail)
+
+
+def compare_controls(td_out, golden, atol, rtol):
+    """Diff golden output controls against the TD output channel of the same name
+    (control outputs surface as named channels; compare the first sample)."""
+    if not golden:
+        return ("no-golden-controls", "")
+    if not td_out:
+        return ("no-td-controls", "")
+    named = {}
+    for e in td_out:
+        if e.get("samples"):
+            named[e["name"]] = e["samples"][0]
+    checked, maxdiff, worst = 0, 0.0, ""
+    for gc in golden:
+        if not isinstance(gc, dict):
+            continue
+        nm, gv = gc.get("name", ""), gc.get("value")
+        if not isinstance(gv, (int, float)):
+            continue
+        tv = None
+        for k in (nm, nm.lower(), nm.capitalize()):
+            if k in named:
+                tv = named[k]
+                break
+        if tv is None:
+            continue
+        checked += 1
+        if abs(tv - gv) > maxdiff:
+            maxdiff, worst = abs(tv - gv), nm
+    if checked == 0:
+        return ("no-name-match", f"td={list(named)[:4]}")
+    peak = max((abs(gc["value"]) for gc in golden
+                if isinstance(gc.get("value"), (int, float))), default=0.0)
+    tol = atol + rtol * peak
+    return ("match" if maxdiff <= tol else "MISMATCH",
+            f"{checked} ctrls maxdiff={maxdiff:.2e}@{worst} tol={tol:.2e}")
 
 
 def main():
@@ -277,13 +314,17 @@ def main():
             g = goldens.get(r.get("name"))
             if not g:
                 continue
-            if r.get("has_audio_in"):
-                # feeding the exact input signal into TD is Phase 2b
-                v, detail = "skip-needs-input", ""
+            td_out = r.get("td_out")
+            gaud = g.get("outputs", {}).get("audio")
+            gctl = g.get("outputs", {}).get("controls")
+            # Prefer audio comparison when the golden has audio output, else the
+            # control outputs (which surface as named channels in TD).
+            if gaud:
+                v, detail = compare_audio(td_out, gaud, args.atol, args.rtol)
+            elif gctl:
+                v, detail = compare_controls(td_out, gctl, args.atol, args.rtol)
             else:
-                v, detail = compare_audio(
-                    r.get("td_audio"), g.get("outputs", {}).get("audio"),
-                    args.atol, args.rtol)
+                v, detail = "no-golden-output", ""
             counts[v] = counts.get(v, 0) + 1
             if v == "MISMATCH":
                 mism.append(f"  MISMATCH {r['name']}: {detail}")
