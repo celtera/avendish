@@ -2,6 +2,7 @@
 #include <avnd/binding/vst3/controller_base.hpp>
 #include <avnd/binding/vst3/programs.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/binding/vst3/vstgui_editor.hpp>
 #include <avnd/common/widechar.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
@@ -68,6 +69,15 @@ public:
   Controller() { }
 
   virtual ~Controller();
+
+#if defined(AVND_VST3_VSTGUI)
+  Steinberg::IPlugView* createView(const char* name) override
+  {
+    if(name && std::strcmp(name, Steinberg::Vst::ViewType::kEditor) == 0)
+      return new stv3::VstGuiEditor{this};
+    return nullptr;
+  }
+#endif
 
   int32 getParameterCount() override { return inputs_info_t::size; }
 
