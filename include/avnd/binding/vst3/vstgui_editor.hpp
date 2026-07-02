@@ -23,6 +23,7 @@
 #include <vstgui/lib/controls/ctextlabel.h>
 
 #if defined(__linux__)
+#include <vstgui/lib/platform/platform_linux.h>
 #include <vstgui/lib/platform/linux/x11frame.h>
 #include <vstgui/lib/platform/iplatformframe.h>
 #include <base/source/fobject.h>
