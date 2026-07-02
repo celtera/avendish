@@ -49,7 +49,7 @@ target_link_libraries(Avendish_pd_pch
 avnd_common_setup("" "Avendish_pd_pch")
 
 function(avnd_make_pd)
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;HELP_PATCH" "" ${ARGN})
 
   string(MAKE_C_IDENTIFIER "${AVND_MAIN_CLASS}" MAIN_OUT_FILE)
 
@@ -129,6 +129,17 @@ function(avnd_make_pd)
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+
+  # Ship a help patch: <c_name>-help.pd next to the external (Pd finds it on the
+  # path). Use the explicit HELP_PATCH override if given, else auto-generate.
+  avnd_generate_help(
+    FX_TARGET     "${AVND_FX_TARGET}"
+    SOURCE_TARGET "${AVND_TARGET}"
+    BACKEND       pd
+    DESTINATION   "pd/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}-help.pd"
+    PROPERTY      AVND_PD_HELP
+    OVERRIDE      "${AVND_HELP_PATCH}"
+  )
 endfunction()
 
 add_library(Avendish_pd INTERFACE)

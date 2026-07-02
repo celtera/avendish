@@ -90,7 +90,7 @@ function(avnd_make_max)
     return()
   endif()
 
-  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;PROCESSOR_TYPE" "" ${ARGN})
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;PROCESSOR_TYPE;HELP_PATCH" "" ${ARGN})
 
   if(AVND_PROCESSOR_TYPE STREQUAL "GEOMETRY" AND NOT (APPLE OR WIN32))
     return()
@@ -264,6 +264,17 @@ EXPORTS
       )
     endif()
   endif()
+
+  # Interactive help patch: <c_name>.maxhelp in the package's help/ folder
+  # (Max searches help/ for <name>.maxhelp). Complements the .maxref.xml above.
+  avnd_generate_help(
+    FX_TARGET     "${AVND_FX_TARGET}"
+    SOURCE_TARGET "${AVND_TARGET}"
+    BACKEND       max
+    DESTINATION   "max/help/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxhelp"
+    PROPERTY      AVND_MAX_HELP
+    OVERRIDE      "${AVND_HELP_PATCH}"
+  )
 endfunction()
 
 add_library(Avendish_max INTERFACE)

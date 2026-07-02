@@ -90,7 +90,7 @@ set(AVND_GODOT_SOURCES
 
 # PROCESSOR_TYPE: NODE (default), AUDIO_EFFECT, TEXTURE, BUFFER, or GEOMETRY
 function(avnd_make_godot)
-  cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
+  cmake_parse_arguments(AVND "" "PROCESSOR_TYPE;TARGET;MAIN_FILE;MAIN_CLASS;C_NAME;EXAMPLE_GODOT" "" ${ARGN})
 
   if(NOT AVND_PROCESSOR_TYPE)
     set(AVND_PROCESSOR_TYPE "NODE")
@@ -216,6 +216,17 @@ function(avnd_make_godot)
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+
+  # Example scene: instantiates the registered class (avnd_<c_name><suffix>).
+  avnd_generate_help(
+    FX_TARGET     "${AVND_FX_TARGET}"
+    SOURCE_TARGET "${AVND_TARGET}"
+    BACKEND       godot
+    DESTINATION   "godot/examples/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}${_AVND_GODOT_SUFFIX}.tscn"
+    PROPERTY      AVND_GODOT_EXAMPLE
+    OVERRIDE      "${AVND_EXAMPLE_GODOT}"
+    EXTRA_ARG     "avnd_${AVND_C_NAME}${_AVND_GODOT_SUFFIX}"
+  )
 
   # Headless smoke test: load the extension in godot --headless and check
   # that the class registers. Runs for any project that has a godot
