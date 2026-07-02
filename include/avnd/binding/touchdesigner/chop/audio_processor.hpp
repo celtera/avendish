@@ -102,8 +102,13 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
       info->sampleRate = 0;
       return true;
     }
-    else if constexpr(avnd::bus_introspection<T>::output_busses == 1)
+    else if constexpr(avnd::bus_introspection<T>::output_busses >= 1)
     {
+      // TD has a single output bus with all channels concatenated, so objects
+      // with several audio channel-ports (output_busses > 1, e.g. 4 mono
+      // oscillator outputs) are handled here too -- output_channels already
+      // counts every channel across those ports. Without this they fell into
+      // the `else` below, returned false, and crashed TD on cook.
       if(inputs->getNumInputs() == 0)
       {
         if(avnd::monophonic_audio_processor<T>) {
@@ -129,7 +134,6 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
 
         // Allocate buffers if supported
         avnd::prepare(implementation, setup_info);
-
 
         return true;
       }
@@ -210,11 +214,13 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
       if(avnd::monophonic_audio_processor<T>)
         return;
 
-      // Prepare input/output spans for processing
+      // Prepare input/output spans for processing. TD hands us one output bus
+      // with every channel concatenated (numChannels), which for objects with
+      // several audio channel-ports is the total across ports -- NOT
+      // get_output_channels(impl, 0), which is only bus 0's count.
       const int num_samples = output->numSamples;
       const int num_in_channels = 0;
       const int num_out_channels = output->numChannels;
-      assert(num_out_channels == channels.get_output_channels(implementation, 0));
 
       float* in_ptrs[8]{0};
       auto out_ptrs = (float**) alloca(sizeof(float*) * num_out_channels + 4);
