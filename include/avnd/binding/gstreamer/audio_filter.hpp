@@ -86,14 +86,22 @@ struct element<T> : property_handler
         this, "Processing %lu frames: %d channels, %d Hz, format=%s, bps=%d", n_frames,
         channels, sample_rate, gst_audio_format_to_string(format), bps);
 
-    // Convert interleaved GStreamer audio to planar format for process_adapter
-    std::vector<float*> input_ptrs(channels);
-    std::vector<float*> output_ptrs(channels);
-    std::vector<std::vector<float>> input_channels(channels);
-    std::vector<std::vector<float>> output_channels(channels);
+    // The object may read/write more channels than the caps advertise -- e.g. a
+    // fixed_audio_bus<..., 2> output unconditionally writes channel 1 even when
+    // fed a mono stream. Size the planar buffers to what the object needs, not
+    // just to `channels`, so process() can never write past the end.
+    const int in_ch = std::max<int>(channels, avnd::input_channels<T>(channels));
+    const int out_ch = std::max<int>(channels, avnd::output_channels<T>(channels));
+    const int buf_ch = std::max(in_ch, out_ch);
 
-    // Allocate and prepare channel arrays
-    for(int ch = 0; ch < channels; ch++)
+    // Convert interleaved GStreamer audio to planar format for process_adapter
+    std::vector<float*> input_ptrs(buf_ch);
+    std::vector<float*> output_ptrs(buf_ch);
+    std::vector<std::vector<float>> input_channels(buf_ch);
+    std::vector<std::vector<float>> output_channels(buf_ch);
+
+    // Allocate and prepare channel arrays (extra channels stay zero-filled)
+    for(int ch = 0; ch < buf_ch; ch++)
     {
       input_channels[ch].resize(n_frames);
       output_channels[ch].resize(n_frames);
@@ -101,7 +109,7 @@ struct element<T> : property_handler
       output_ptrs[ch] = output_channels[ch].data();
     }
 
-    // Convert from interleaved to planar format
+    // Convert from interleaved to planar format (only the caps channels exist)
     float* samples = (float*)in_info.data;
     for(int ch = 0; ch < channels; ch++)
     {
@@ -113,8 +121,8 @@ struct element<T> : property_handler
 
     // Process through process_adapter (handles all Avendish audio APIs)
     processor.process(
-        impl, avnd::span<float*>{input_ptrs.data(), (size_t)channels},
-        avnd::span<float*>{output_ptrs.data(), (size_t)channels}, n_frames);
+        impl, avnd::span<float*>{input_ptrs.data(), (size_t)in_ch},
+        avnd::span<float*>{output_ptrs.data(), (size_t)out_ch}, n_frames);
 
     // Convert back from planar to interleaved format
     float* out_samples = (float*)out_info.data;
@@ -144,13 +152,22 @@ struct element<T> : property_handler
     int sample_rate = GST_AUDIO_INFO_RATE(&audio_info);
     int frames_per_buffer = 1024; // Default, will be updated in transform()
 
+    // Size to what the object needs, not just the caps: a fixed output bus keeps
+    // its channel count regardless of the input's.
+    const int in_ch = std::max<int>(channels, avnd::input_channels<T>(channels));
+    const int out_ch = std::max<int>(channels, avnd::output_channels<T>(channels));
+
     // Initialize process adapter buffers
     avnd::process_setup setup_info{
-        .input_channels = channels,
-        .output_channels = channels,
+        .input_channels = in_ch,
+        .output_channels = out_ch,
         .frames_per_buffer = frames_per_buffer,
         .rate = (double)sample_rate};
     processor.allocate_buffers(setup_info, float{});
+
+    // Set up the effect duplicator's per-channel state and output bus channel
+    // count -- without this the object writes to unallocated output channels.
+    impl.init_channels(in_ch, out_ch);
 
     // Initialize Avendish effect
     avnd::prepare(impl, setup_info);
