@@ -114,6 +114,26 @@ struct parameter_update
         // Call update callback if it exists
         if_possible(field.update(implementation.effect));
       });
+
+      // Scalar value-ports are exposed as TD parameters too (see
+      // parameter_setup) -- read them back from TD the same way.
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs(implementation),
+          [&]<typename Field>(Field& field) {
+        using vt = std::decay_t<decltype(Field::value)>;
+        if constexpr(
+            avnd::value_port<Field>
+            && (std::is_arithmetic_v<vt> || std::is_enum_v<vt>
+                || avnd::string_ish<vt>))
+        {
+          static constexpr auto name = touchdesigner::get_td_name<Field>();
+          if constexpr(avnd::enum_ish_parameter<Field>)
+            this->update_enum(field, name.data(), inputs);
+          else
+            this->update(field, name.data(), inputs);
+          if_possible(field.update(implementation.effect));
+        }
+      });
     }
   }
 
