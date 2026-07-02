@@ -328,7 +328,14 @@ struct message_processor<T> : public TD::CHOP_CPlusPlusBase
     info->cookEveryFrameIfAsked = true;
     info->inputMatchIndex = 0;
     info->timeslice = false;
+  }
 
+  // Read inputs and run the object. MUST be called once per cook (from
+  // execute()), NOT from getGeneralInfo -- TD calls getGeneralInfo several times
+  // per cook, so running the effect there advanced stateful objects (counters,
+  // oscillators, RNG) multiple times; stateless ones were merely idempotent.
+  void run_effect(const TD::OP_Inputs* inputs)
+  {
     // Update parameter values from TouchDesigner
     update_controls(inputs);
 
@@ -380,7 +387,6 @@ struct message_processor<T> : public TD::CHOP_CPlusPlusBase
       int frames = 0;
     } t{.frames = (int) ti->deltaFrames};
 
-    // Copy outputs in their respective channels
     invoke_effect(implementation, t);
   }
 
@@ -461,6 +467,9 @@ struct message_processor<T> : public TD::CHOP_CPlusPlusBase
 
   void execute(TD::CHOP_Output* output, const TD::OP_Inputs* inputs, void* reserved) override
   {
+    // Run the object exactly once per cook (see run_effect).
+    run_effect(inputs);
+
     if(output->numSamples <= 0)
       return;
 

@@ -304,7 +304,11 @@ struct parameter_update
   template <typename Field>
   void update(Field& field, const char* name, const TD::OP_Inputs* inputs)
   {
-    pulse(field, name);
+    // Generic fallback (e.g. impulse_button -> TD pulse parameter). An impulse
+    // must engage ONLY when its pulse is actually clicked -- that happens via
+    // the onPulse callback (message_processor -> parameter_update::pulse()).
+    // The per-cook update must NOT engage it, otherwise the impulse fires on
+    // every single cook (a counter driven by it increments forever).
   }
 
   // NOTE: file_port / soundfile_port / midifile_port are handled by
