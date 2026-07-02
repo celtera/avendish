@@ -17,7 +17,16 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-// #define AVND_ENABLE_SAFE_BUFFER_STORAGE 1
+
+// The effect must always receive valid, zero-filled channel buffers. When a host
+// supplies fewer channels than the object declares (e.g. an unconnected input),
+// the missing channels must point at silent scratch buffers -- otherwise the
+// effect dereferences a null channel pointer and crashes. This is a core
+// invariant, so it is on by default; define AVND_ENABLE_SAFE_BUFFER_STORAGE=0
+// before including to opt out.
+#ifndef AVND_ENABLE_SAFE_BUFFER_STORAGE
+#define AVND_ENABLE_SAFE_BUFFER_STORAGE 1
+#endif
 namespace avnd
 {
 
