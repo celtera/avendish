@@ -40,7 +40,11 @@ endif()
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0)
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0 CACHE INTERNAL "")
 
-add_definitions(-DDEVELOPMENT)
+# The SDK wants exactly one of DEVELOPMENT / RELEASE. DEVELOPMENT enables its
+# FDebugBreak assertions, which raise SIGTRAP inside the host process -- an
+# unconditional -DDEVELOPMENT made *release* plug-ins crash hosts on teardown
+# (e.g. VSTGUI editor close). Define it for Debug builds only.
+add_compile_definitions($<IF:$<CONFIG:Debug>,DEVELOPMENT=1,RELEASE=1>)
 include_directories("${VST3_SDK_ROOT}")
 
 # VST3 uses COM APIs which require no virtual dtors in interfaces
