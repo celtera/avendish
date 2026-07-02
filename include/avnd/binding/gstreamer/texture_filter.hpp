@@ -106,6 +106,17 @@ struct element<T> : property_handler
     {
       avnd::texture_input_introspection<T>::for_all(
           inputs, [&]<typename Field>(Field& field) {
+        // This element advertises 8-bit RGBA caps (4 bytes/pixel). A float
+        // texture (float* bytes, 16 bytes/pixel) would read four times past the
+        // GStreamer buffer -> out-of-bounds. Until the caps become format-aware,
+        // skip such textures (leave bytes null so the effect early-outs) instead
+        // of crashing.
+        using px_t = std::remove_pointer_t<decltype(field.texture.bytes)>;
+        if constexpr(!std::is_same_v<px_t, unsigned char>)
+        {
+          field.texture.bytes = nullptr;
+          return;
+        }
         // CRITICAL: Ensure texture buffer is valid and accessible
         if(!in_info.data || in_info.size < expected_min_size)
         {
@@ -118,8 +129,11 @@ struct element<T> : property_handler
         // Handle stride: if buffer has padding, we need to create a tightly packed copy
         if(stride == width * 4)
         {
-          // No padding, can use buffer directly
-          field.texture.bytes = (unsigned char*)in_info.data;
+          // No padding, can use buffer directly. Cast to the field's own pixel
+          // pointer type: byte textures use `unsigned char*`, float textures
+          // (e.g. RGBA32F) use `float*`.
+          field.texture.bytes
+              = reinterpret_cast<decltype(field.texture.bytes)>(in_info.data);
         }
         else
         {
@@ -139,7 +153,8 @@ struct element<T> : property_handler
             memcpy(dst + y * width * 4, src + y * stride, width * 4);
           }
 
-          field.texture.bytes = stride_conversion_buffer.get();
+          field.texture.bytes = reinterpret_cast<decltype(field.texture.bytes)>(
+              stride_conversion_buffer.get());
           GST_DEBUG_OBJECT(
               this, "Converted strided input (%d) to tightly packed buffer", stride);
         }
