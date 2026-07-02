@@ -4,6 +4,10 @@
 #include <avnd/binding/vst3/configure.hpp>
 #include <avnd/common/export.hpp>
 
+#if defined(AVND_VST3_VSTGUI)
+#include <vstgui/lib/platform/platformfactory.h>
+#endif
+
 // clang-format off
 #include <@AVND_MAIN_FILE@>
 
@@ -19,8 +23,22 @@ extern "C" AVND_EXPORTED_SYMBOL bool bundleExit() { return true; }
 extern "C" AVND_EXPORTED_SYMBOL bool InitDll() { return true; }
 extern "C" AVND_EXPORTED_SYMBOL bool ExitDll() { return true; }
 #elif __linux__
-extern "C" AVND_EXPORTED_SYMBOL bool ModuleEntry() { return true; }
-extern "C" AVND_EXPORTED_SYMBOL bool ModuleExit() { return true; }
+// The host passes the plugin's dlopen handle; VSTGUI needs it to initialise its
+// Linux (X11/fontconfig) platform, or creating an editor CFrame crashes.
+extern "C" AVND_EXPORTED_SYMBOL bool ModuleEntry(void* sharedLibraryHandle)
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::initPlatform(sharedLibraryHandle);
+#endif
+  return true;
+}
+extern "C" AVND_EXPORTED_SYMBOL bool ModuleExit()
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::exitPlatform();
+#endif
+  return true;
+}
 #endif
 
 extern "C" AVND_EXPORTED_SYMBOL Steinberg::IPluginFactory* GetPluginFactory()
