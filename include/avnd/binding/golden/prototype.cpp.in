@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <avnd/binding/golden/run.hpp>
+#include <avnd/wrappers/configure.hpp>
+#include <halp/log.hpp>
+
+namespace golden
+{
+struct config
+{
+  using logger_type = halp::basic_logger;
+};
+}
+
+#include <@AVND_MAIN_FILE@>
+int main(int argc, char** argv)
+{
+  using type = decltype(avnd::configure<golden::config, @AVND_MAIN_CLASS@>())::type;
+  return golden::run<type>(argc > 1 ? argv[1] : std::string_view{"golden.json"});
+}
+// clang-format on
