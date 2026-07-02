@@ -117,6 +117,8 @@ public:
   explicit VstGuiEditor(ControllerCommon* c)
       : controller{c}
   {
+    // Hosts call getSize() before attached() to size the window: compute now.
+    computeSize();
   }
 
   // ---------------- IUnknown ----------------
