@@ -22,11 +22,92 @@
 #include <vstgui/lib/controls/cbuttons.h>
 #include <vstgui/lib/controls/ctextlabel.h>
 
+#if defined(__linux__)
+#include <vstgui/lib/platform/linux/x11frame.h>
+#include <vstgui/lib/platform/iplatformframe.h>
+#include <base/source/fobject.h>
+#include <pluginterfaces/base/smartpointer.h>
+#include <vector>
+#endif
+
 #include <atomic>
 #include <cstring>
 
 namespace stv3
 {
+
+#if defined(__linux__)
+// Bridges the host's Steinberg::Linux::IRunLoop (from IPlugFrame) to VSTGUI's
+// X11 run loop, required for VSTGUI to handle events inside a VST3 host on
+// Linux. Adapted from VSTGUI's own vst3editor.cpp.
+class Vst3X11RunLoop final
+    : public VSTGUI::IRunLoop
+    , public VSTGUI::AtomicReferenceCounted
+{
+public:
+  struct EventHandler : Steinberg::Linux::IEventHandler, public Steinberg::FObject
+  {
+    VSTGUI::IEventHandler* handler{nullptr};
+    void PLUGIN_API onFDIsSet(Steinberg::Linux::FileDescriptor) override
+    { if(handler) handler->onEvent(); }
+    DELEGATE_REFCOUNT(Steinberg::FObject)
+    DEFINE_INTERFACES
+      DEF_INTERFACE(Steinberg::Linux::IEventHandler)
+    END_DEFINE_INTERFACES(Steinberg::FObject)
+  };
+  struct TimerHandler : Steinberg::Linux::ITimerHandler, public Steinberg::FObject
+  {
+    VSTGUI::ITimerHandler* handler{nullptr};
+    void PLUGIN_API onTimer() final { if(handler) handler->onTimer(); }
+    DELEGATE_REFCOUNT(Steinberg::FObject)
+    DEFINE_INTERFACES
+      DEF_INTERFACE(Steinberg::Linux::ITimerHandler)
+    END_DEFINE_INTERFACES(Steinberg::FObject)
+  };
+
+  bool registerEventHandler(int fd, VSTGUI::IEventHandler* handler) final
+  {
+    if(!runLoop) return false;
+    auto h = Steinberg::owned(new EventHandler());
+    h->handler = handler;
+    if(runLoop->registerEventHandler(h, fd) == Steinberg::kResultTrue)
+    { eventHandlers.push_back(h); return true; }
+    return false;
+  }
+  bool unregisterEventHandler(VSTGUI::IEventHandler* handler) final
+  {
+    if(!runLoop) return false;
+    for(auto it = eventHandlers.begin(); it != eventHandlers.end(); ++it)
+      if((*it)->handler == handler)
+      { runLoop->unregisterEventHandler(*it); eventHandlers.erase(it); return true; }
+    return false;
+  }
+  bool registerTimer(uint64_t interval, VSTGUI::ITimerHandler* handler) final
+  {
+    if(!runLoop) return false;
+    auto h = Steinberg::owned(new TimerHandler());
+    h->handler = handler;
+    if(runLoop->registerTimer(h, interval) == Steinberg::kResultTrue)
+    { timerHandlers.push_back(h); return true; }
+    return false;
+  }
+  bool unregisterTimer(VSTGUI::ITimerHandler* handler) final
+  {
+    if(!runLoop) return false;
+    for(auto it = timerHandlers.begin(); it != timerHandlers.end(); ++it)
+      if((*it)->handler == handler)
+      { runLoop->unregisterTimer(*it); timerHandlers.erase(it); return true; }
+    return false;
+  }
+
+  explicit Vst3X11RunLoop(Steinberg::FUnknown* rl) : runLoop(rl) {}
+
+private:
+  std::vector<Steinberg::IPtr<EventHandler>> eventHandlers;
+  std::vector<Steinberg::IPtr<TimerHandler>> timerHandlers;
+  Steinberg::FUnknownPtr<Steinberg::Linux::IRunLoop> runLoop;
+};
+#endif
 
 class VstGuiEditor final
     : public Steinberg::IPlugView
@@ -72,15 +153,16 @@ public:
     frame = new VSTGUI::CFrame(VSTGUI::CRect(0, 0, m_width, m_height), nullptr);
     frame->setBackgroundColor(VSTGUI::CColor{32, 32, 34, 255});
 
-    VSTGUI::PlatformType pt =
 #if defined(_WIN32)
-        VSTGUI::PlatformType::kHWND;
+    frame->open(parent, VSTGUI::PlatformType::kHWND);
 #elif defined(__APPLE__)
-        VSTGUI::PlatformType::kNSView;
+    frame->open(parent, VSTGUI::PlatformType::kNSView);
 #else
-        VSTGUI::PlatformType::kX11EmbedWindowID;
+    // X11 needs the host run loop wired into VSTGUI, or event handling crashes.
+    VSTGUI::X11::FrameConfig x11config;
+    x11config.runLoop = VSTGUI::owned(new Vst3X11RunLoop(plugFrame));
+    frame->open(parent, VSTGUI::PlatformType::kX11EmbedWindowID, &x11config);
 #endif
-    frame->open(parent, pt);
     buildControls();
     return Steinberg::kResultTrue;
   }
