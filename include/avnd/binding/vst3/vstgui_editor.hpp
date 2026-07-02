@@ -23,7 +23,6 @@
 #include <vstgui/lib/controls/ctextlabel.h>
 
 #if defined(__linux__)
-#include <vstgui/lib/platform/platform_linux.h>
 #include <vstgui/lib/platform/linux/x11frame.h>
 #include <vstgui/lib/platform/iplatformframe.h>
 #include <base/source/fobject.h>
@@ -42,13 +41,13 @@ namespace stv3
 // X11 run loop, required for VSTGUI to handle events inside a VST3 host on
 // Linux. Adapted from VSTGUI's own vst3editor.cpp.
 class Vst3X11RunLoop final
-    : public VSTGUI::IRunLoop
+    : public VSTGUI::X11::IRunLoop
     , public VSTGUI::AtomicReferenceCounted
 {
 public:
   struct EventHandler : Steinberg::Linux::IEventHandler, public Steinberg::FObject
   {
-    VSTGUI::IEventHandler* handler{nullptr};
+    VSTGUI::X11::IEventHandler* handler{nullptr};
     void PLUGIN_API onFDIsSet(Steinberg::Linux::FileDescriptor) override
     { if(handler) handler->onEvent(); }
     DELEGATE_REFCOUNT(Steinberg::FObject)
@@ -58,7 +57,7 @@ public:
   };
   struct TimerHandler : Steinberg::Linux::ITimerHandler, public Steinberg::FObject
   {
-    VSTGUI::ITimerHandler* handler{nullptr};
+    VSTGUI::X11::ITimerHandler* handler{nullptr};
     void PLUGIN_API onTimer() final { if(handler) handler->onTimer(); }
     DELEGATE_REFCOUNT(Steinberg::FObject)
     DEFINE_INTERFACES
@@ -66,7 +65,7 @@ public:
     END_DEFINE_INTERFACES(Steinberg::FObject)
   };
 
-  bool registerEventHandler(int fd, VSTGUI::IEventHandler* handler) final
+  bool registerEventHandler(int fd, VSTGUI::X11::IEventHandler* handler) final
   {
     if(!runLoop) return false;
     auto h = Steinberg::owned(new EventHandler());
@@ -75,7 +74,7 @@ public:
     { eventHandlers.push_back(h); return true; }
     return false;
   }
-  bool unregisterEventHandler(VSTGUI::IEventHandler* handler) final
+  bool unregisterEventHandler(VSTGUI::X11::IEventHandler* handler) final
   {
     if(!runLoop) return false;
     for(auto it = eventHandlers.begin(); it != eventHandlers.end(); ++it)
@@ -83,7 +82,7 @@ public:
       { runLoop->unregisterEventHandler(*it); eventHandlers.erase(it); return true; }
     return false;
   }
-  bool registerTimer(uint64_t interval, VSTGUI::ITimerHandler* handler) final
+  bool registerTimer(uint64_t interval, VSTGUI::X11::ITimerHandler* handler) final
   {
     if(!runLoop) return false;
     auto h = Steinberg::owned(new TimerHandler());
@@ -92,7 +91,7 @@ public:
     { timerHandlers.push_back(h); return true; }
     return false;
   }
-  bool unregisterTimer(VSTGUI::ITimerHandler* handler) final
+  bool unregisterTimer(VSTGUI::X11::ITimerHandler* handler) final
   {
     if(!runLoop) return false;
     for(auto it = timerHandlers.begin(); it != timerHandlers.end(); ++it)
