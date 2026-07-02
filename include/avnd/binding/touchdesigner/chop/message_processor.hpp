@@ -347,8 +347,11 @@ struct message_processor<T> : public TD::CHOP_CPlusPlusBase
           avnd::get_inputs(implementation),
           [&]<typename Field, std::size_t P, std::size_t I>(Field& field, avnd::predicate_index<P> pred_idx, avnd::field_index<I>) {
 
+        // Value-port inputs are optional (they double as parameters), so the
+        // connector may be unconnected -> getInputCHOP returns null. Guard it;
+        // when absent the parameter value set by update_controls is used.
         auto chop_in = inputs->getInputCHOP(P);
-        if(chop_in->numChannels > 0)
+        if(chop_in && chop_in->numChannels > 0)
         {
           if(chop_in->numSamples > 0)
           {

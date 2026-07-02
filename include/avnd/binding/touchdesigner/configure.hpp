@@ -139,9 +139,15 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
   else if(optype == "CHOP_MESSAGE")
   {
-    op.minInputs = avnd::value_port_input_introspection<type>::size
+    // Value-port inputs are OPTIONAL: each also surfaces as a parameter
+    // (parameter_setup), so the object cooks standalone from the parameter and a
+    // connected CHOP overrides it (run_effect reads the parameter, then the
+    // input CHOP only when one is connected). Matches native TD generators
+    // (Constant/Pattern/...) which cook from parameters with minInputs == 0.
+    // Tensor inputs have no parameter fallback, so they stay mandatory.
+    op.minInputs = avnd::tensor_port_input_introspection<type>::size;
+    op.maxInputs = avnd::value_port_input_introspection<type>::size
                  + avnd::tensor_port_input_introspection<type>::size;
-    op.maxInputs = op.minInputs;
   }
   else if(optype == "TOP")
   {
@@ -150,9 +156,10 @@ inline void configure_opInfo(TD::OP_CustomOPInfo& op, std::string_view nm, std::
   }
   else if(optype == "DAT")
   {
-    op.minInputs = avnd::value_port_input_introspection<type>::size
+    // Value-port inputs optional (parameter fallback); tensor inputs mandatory.
+    op.minInputs = avnd::tensor_port_input_introspection<type>::size;
+    op.maxInputs = avnd::value_port_input_introspection<type>::size
                  + avnd::tensor_port_input_introspection<type>::size;
-    op.maxInputs = op.minInputs;
   }
   else if(optype == "SOP")
   {
