@@ -56,10 +56,15 @@ function(avnd_generate_help)
   endif()
 
   add_custom_target(${AVND_FX_TARGET}_help ALL
-      generate_patches "${AVND_BACKEND}" "${_dump_path}" "${AVND_DESTINATION}" ${AVND_EXTRA_ARG}
+      "$<TARGET_FILE:generate_patches>" "${AVND_BACKEND}" "${_dump_path}" "${AVND_DESTINATION}" ${AVND_EXTRA_ARG}
       DEPENDS "${_dump_path}" generate_patches
       BYPRODUCTS "${AVND_DESTINATION}"
     )
+  # DEPENDS on a target in add_custom_target does not reliably force build
+  # ordering (esp. with the VS generator + parallel MSBuild): the help step
+  # could run before generate_patches or the dump JSON existed (exit code 3).
+  # Force it explicitly.
+  add_dependencies(${AVND_FX_TARGET}_help generate_patches ${AVND_SOURCE_TARGET})
   set_target_properties(${AVND_FX_TARGET}
     PROPERTIES "${AVND_PROPERTY}" "${AVND_DESTINATION}")
 endfunction()
