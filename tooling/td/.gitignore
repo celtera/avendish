@@ -1,0 +1,8 @@
+# Runtime artifacts produced by run_td_sweep.py
+td_run_all.py
+td_test_report.json
+td_current.txt
+td_sweep_error.txt
+td_sweep.*.toe
+Plugins/
+__pycache__/
