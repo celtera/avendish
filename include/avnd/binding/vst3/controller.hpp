@@ -4,6 +4,7 @@
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/binding/vst3/vstgui_editor.hpp>
 #include <avnd/common/widechar.hpp>
+#include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/control_display.hpp>
@@ -109,6 +110,10 @@ public:
         if constexpr(requires { range.step; })
           info.stepCount = avnd::get_range<C>().step;
       }
+      // A boolean control is a stepped (on/off) parameter: hosts then show a
+      // checkbox and our VSTGUI editor a toggle button instead of a knob.
+      if constexpr(avnd::bool_parameter<C>)
+        info.stepCount = 1;
         });
 
     info.unitId = 1;
