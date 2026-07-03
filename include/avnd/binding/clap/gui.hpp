@@ -17,18 +17,21 @@
  * CLAP_EVENT_PARAM_GESTURE_BEGIN / PARAM_VALUE / GESTURE_END.
  */
 
+#include <avnd/common/no_unique_address.hpp>
 #include <avnd/concepts/gui_window.hpp>
+#include <avnd/concepts/ui.hpp>
 #include <avnd/introspection/layout.hpp>
 
 #include <clap/all.h>
+#include <concurrentqueue.h>
 
 #if defined(AVND_CLAP_UI)
 #include <avnd/binding/ui/soft/window.hpp>
 #endif
 
+#include <functional>
 #include <memory>
-#include <mutex>
-#include <vector>
+#include <type_traits>
 
 namespace avnd_clap
 {
@@ -84,39 +87,102 @@ struct gesture_event
 
 struct gesture_queue
 {
-  // A mutex is fine here: contention is UI-rate on one side and
-  // flush-rate on the other, both tiny. Lock-free refinement can come with
-  // the SPSC bus transport.
-  std::mutex mutex;
-  std::vector<gesture_event> pending;
+  // Single producer (UI thread), so moodycamel's per-producer FIFO keeps
+  // begin/value/end ordered. enqueue() may allocate: fine on the UI thread.
+  moodycamel::ConcurrentQueue<gesture_event> queue{128};
 
-  void push(gesture_event ev)
-  {
-    std::lock_guard _{mutex};
-    pending.push_back(ev);
-  }
+  void push(gesture_event ev) { queue.enqueue(ev); }
 
   template <typename F>
   void drain(F&& f)
   {
-    std::vector<gesture_event> local;
-    {
-      std::lock_guard _{mutex};
-      std::swap(local, pending);
-    }
-    for(auto& ev : local)
+    gesture_event ev;
+    while(queue.try_dequeue(ev))
       f(ev);
   }
 };
 
+// ---- Message-bus transport ----
+// Extract the message type carried by a std::function<void(Msg)> member
+// (T::send_message / ui::bus::send_message).
+template <typename F>
+struct function_arg;
+template <typename R, typename A>
+struct function_arg<std::function<R(A)>>
+{
+  using type = std::remove_cvref_t<A>;
+};
+
+namespace detail
+{
+template <typename T>
+static constexpr auto ui_to_proc_msg()
+{
+  if constexpr(avnd::has_gui_to_processor_bus<T>)
+    return std::type_identity<typename function_arg<std::remove_cvref_t<
+        decltype(std::declval<typename T::ui::bus>().send_message)>>::type>{};
+  else
+    return std::type_identity<void>{};
+}
+
+template <typename T>
+static constexpr auto proc_to_ui_msg()
+{
+  if constexpr(avnd::has_processor_to_gui_bus<T>)
+    return std::type_identity<typename function_arg<
+        std::remove_cvref_t<decltype(std::declval<T>().send_message)>>::type>{};
+  else
+    return std::type_identity<void>{};
+}
+}
+
+template <typename T>
+using ui_to_proc_msg_t = typename decltype(detail::ui_to_proc_msg<T>())::type;
+template <typename T>
+using proc_to_ui_msg_t = typename decltype(detail::proc_to_ui_msg<T>())::type;
+
+struct no_queue
+{
+};
+
+// UI thread enqueues (enqueue: may allocate, not RT), audio thread drains
+// (try_dequeue: lock-free).
+template <typename Msg>
+struct ui_to_proc_queue
+{
+  moodycamel::ConcurrentQueue<Msg> queue{128};
+};
+
+// Audio thread enqueues: preallocated capacity + try_enqueue so the RT
+// thread never allocates queue storage (messages beyond capacity are
+// dropped; the message payload's own move is on the author). UI thread
+// drains on the editor timer.
+template <typename Msg>
+struct proc_to_ui_queue
+{
+  moodycamel::ConcurrentQueue<Msg> queue{1024};
+};
+
 // GUI state carried by SimpleAudioEffect when an editor exists.
-template <typename Editor>
+template <typename T, typename Editor>
 struct gui_state
 {
   std::unique_ptr<Editor> editor;
   gesture_queue gestures;
   clap_id timer_id{CLAP_INVALID_ID};
   double scale{1.};
+
+  AVND_NO_UNIQUE_ADDRESS
+  std::conditional_t<
+      avnd::has_gui_to_processor_bus<T>, ui_to_proc_queue<ui_to_proc_msg_t<T>>,
+      no_queue>
+      to_processor;
+
+  AVND_NO_UNIQUE_ADDRESS
+  std::conditional_t<
+      avnd::has_processor_to_gui_bus<T>, proc_to_ui_queue<proc_to_ui_msg_t<T>>,
+      no_queue>
+      to_ui;
 };
 
 struct no_gui_state

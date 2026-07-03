@@ -137,6 +137,32 @@ public:
   ui_t& ui() noexcept { return m_ui; }
   font_registry& fonts() noexcept { return m_fonts; }
 
+  // ---- Bus transport overrides ----
+  // By default the constructor wires the message bus synchronously
+  // (headless / single-threaded shells). Plug-in bindings replace both
+  // directions with lock-free queues: UI→processor via this setter,
+  // processor→UI by reassigning effect.send_message to enqueue and calling
+  // deliver_to_ui() from their UI-thread tick when draining.
+  template <typename F>
+  void set_bus_to_processor(F&& f)
+  {
+    if constexpr(requires { m_bus->send_message; })
+      if(m_bus)
+        m_bus->send_message = std::forward<F>(f);
+  }
+
+  void deliver_to_ui(auto&& msg)
+  {
+    if constexpr(requires {
+                   ui_t::bus::process_message(
+                       m_ui, std::forward<decltype(msg)>(msg));
+                 })
+    {
+      ui_t::bus::process_message(m_ui, std::forward<decltype(msg)>(msg));
+      m_dirty = true;
+    }
+  }
+
   void set_viewport(int w, int h, double scale = 1.)
   {
     m_width = w;

@@ -50,6 +50,8 @@ struct clap_ui_level_widget
   bool mouse_release(double x, double y)
   {
     transaction.commit();
+    if(on_commit)
+      on_commit(value);
     return false;
   }
 
@@ -62,7 +64,9 @@ struct clap_ui_level_widget
   void set_value(const auto& control, float v) { value = v; }
 
   halp::transaction<float> transaction;
+  std::function<void(float)> on_commit;
   float value{};
+  float feedback{};
 };
 
 struct ClapUiPlug
@@ -100,6 +104,27 @@ struct ClapUiPlug
           = input_audio.audio.channel[i] * inputs.gain.value * inputs.level.value;
   }
 
+  // Message bus round trip: committed widget values are sent to the
+  // processor (drained in process()), which copies them into the gain
+  // parameter (host-observable) and answers with a feedback message
+  // (drained on the editor timer).
+  struct ui_to_processor
+  {
+    float value;
+  };
+  struct processor_to_ui
+  {
+    float doubled;
+  };
+
+  void process_message(const ui_to_processor& msg)
+  {
+    inputs.gain.value = msg.value;
+    if(send_message)
+      send_message(processor_to_ui{.doubled = msg.value * 2.f});
+  }
+  std::function<void(processor_to_ui)> send_message;
+
   struct ui
   {
     halp_meta(layout, halp::layouts::container)
@@ -107,6 +132,21 @@ struct ClapUiPlug
     halp_meta(height, 220)
 
     halp::custom_control<clap_ui_level_widget, &ins::level> level{};
+
+    struct bus
+    {
+      void init(ui& self)
+      {
+        self.level.on_commit = [this](float v) {
+          this->send_message(ui_to_processor{.value = v});
+        };
+      }
+      static void process_message(ui& self, processor_to_ui msg)
+      {
+        self.level.feedback = msg.doubled;
+      }
+      std::function<void(ui_to_processor)> send_message;
+    };
   };
 };
 }
