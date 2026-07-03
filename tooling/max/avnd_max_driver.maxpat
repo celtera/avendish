@@ -76,18 +76,6 @@
       },
       {
         "box": {
-          "id": "obj-dspdrv",
-          "maxclass": "message",
-          "text": "; dsp driver NonRealTime",
-          "varname": "dspdriver",
-          "numinlets": 2,
-          "numoutlets": 1,
-          "outlettype": [""],
-          "patching_rect": [300.0, 120.0, 200.0, 22.0]
-        }
-      },
-      {
-        "box": {
           "id": "obj-avin0",
           "maxclass": "newobj",
           "text": "buffer~ avin0",

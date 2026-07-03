@@ -25,7 +25,8 @@ include("avnd_max_config.js"); // -> AVND_CFG {report, breadcrumb, goldenDir}
 include("avnd_max_data.js");   // -> AVND_DATA [{name, kind, cases:[...]}]
 
 var FRAMES = 64;
-var BUFSAMPS = 128;
+var RATE = 44100;
+var BUFSAMPS = 64;   // == FRAMES: record~ (loop off) auto-stops after one block
 var CHANS = 2;
 
 var allLines = [];      // raw report lines (prior + new), rewritten each object
@@ -37,6 +38,10 @@ var capture = {};       // cap<i> -> value  (control capture, current case)
 var objCases = [];      // accumulated case-result strings for the current object
 var TASKS = [];         // keep Task refs alive
 var dspWorks = false;   // set by the DSP self-test: does audio actually render?
+var adDriver = null;    // [adstatus driver] (persistent) for set + readback
+var dsptimeObj = null;  // [dsptime~] (persistent): samples rendered since dsp start
+var setupObjs = [];     // persistent NRT-setup objects (never cleaned up)
+var pollTarget = 0, pollThen = "", pollAttempts = 0;  // dsptime~ render gate
 
 function post_(s) { post(s + "\n"); }
 
@@ -103,45 +108,41 @@ function defer(mode, ms) {
 function taskCallback(mode) {
   if (mode === "readStep") readStep();
   else if (mode === "buildStep") buildStep();
+  else if (mode === "selfTest") selfTestDSP();
   else if (mode === "selfTestRead") selfTestRead();
+  else if (mode === "poll") pollStep();
 }
 
-// One-shot: prove that global DSP + record~ actually capture a signal in this
-// automated Max session. Writes the peak sample to <breadcrumb>.dbg.
-function selfTestDSP() {
+// ---- Non-Real-Time DSP: render MSP with no physical audio device -----------
+// Max has no headless mode, but its NonRealTime audio driver computes the DSP
+// graph on demand (no hardware). Required companions (else the scheduler --
+// which drives our poll Tasks / metro / dsptime~ -- does not advance under NRT):
+// Overdrive ON and Scheduler-in-Audio-Interrupt ON. We also pin the sample rate
+// and signal vector size to the golden's (64 frames @ 44100) so block-based
+// objects see exactly the oracle's one-block buffer.
+function setupAudioNRT() {
   var p = this.patcher;
-  capture = {};
-  var b = new Buffer("avout0");
-  for (var z = 0; z < BUFSAMPS; z++) b.poke(1, z, 0.0);
-  // report the current audio driver (adstatus reports on bang).
-  var ads = p.newdefault(400, 520, "adstatus", "driver");
-  var adp = p.newdefault(600, 520, "prepend", "curdrv");
-  p.connect(ads, 0, adp, 0);
+  var X = 660;
+  stopDSP();
+  try { messnamed("max", "overdrive", 1); } catch (e) {}
+  var over = p.newdefault(X, 300, "adstatus", "overdrive"); over.message(1);
+  var sched = p.newdefault(X, 326, "adstatus", "scheduler"); sched.message(1); // SIAI
+  adDriver = p.newdefault(X, 352, "adstatus", "driver");
+  var adp = p.newdefault(X + 170, 352, "prepend", "curdrv");
+  p.connect(adDriver, 0, adp, 0);
   p.connect(adp, 0, p.getnamed("driver"), 0);
-  ads.message("bang");
-  var osc = p.newdefault(40, 520, "cycle~", 441);
-  var snap = p.newdefault(40, 545, "snapshot~", 20);       // live sample every 20ms
-  var pre = p.newdefault(200, 545, "prepend", "stpeak");
-  var rec = p.newdefault(40, 580, "record~", "avout0");
-  cur = [ads, adp, osc, snap, pre, rec];
-  p.connect(osc, 0, snap, 0);
-  p.connect(snap, 0, pre, 0);
-  p.connect(pre, 0, this.patcher.getnamed("driver"), 0);
-  p.connect(osc, 0, rec, 0);
-  rec.message(1);
-  startDSP();
-  defer("selfTestRead", 800);
+  adDriver.message("NonRealTime");                    // set the driver
+  try { messnamed("dsp", "setdriver", "NonRealTime"); } catch (e) {}
+  var sr = p.newdefault(X, 378, "adstatus", "sr"); sr.message(RATE);
+  var vs = p.newdefault(X, 404, "adstatus", "sigvs"); vs.message(FRAMES);
+  var io = p.newdefault(X, 430, "adstatus", "iovs"); io.message(FRAMES);
+  dsptimeObj = p.newdefault(X, 456, "dsptime~");
+  var dtp = p.newdefault(X + 170, 456, "prepend", "dsptime");
+  p.connect(dsptimeObj, 0, dtp, 0);
+  p.connect(dtp, 0, p.getnamed("driver"), 0);
+  setupObjs = [over, sched, adDriver, adp, sr, vs, io, dsptimeObj, dtp];
 }
-var dspDriverSet = false;
 function startDSP() {
-  // No live audio device is guaranteed in an automated Max, so drive the graph
-  // with the Non-Real-Time driver (renders the DSP chain without hardware).
-  if (!dspDriverSet) {
-    var dv = this.patcher.getnamed("dspdriver");
-    if (dv) dv.message("bang");
-    try { messnamed("dsp", "driver", "NonRealTime"); } catch (e) {}
-    dspDriverSet = true;
-  }
   var ds = this.patcher.getnamed("dspstart");
   if (ds) ds.message("bang");
   try { messnamed("dsp", "start"); } catch (e) {}
@@ -150,6 +151,44 @@ function stopDSP() {
   var ds = this.patcher.getnamed("dspstop");
   if (ds) ds.message("bang");
   try { messnamed("dsp", "stop"); } catch (e) {}
+}
+// Gate on dsptime~ (samples rendered), NOT wall-clock: NRT free-runs, so poll
+// until at least `target` samples have elapsed, then dispatch `then`.
+function startPoll(target, then) {
+  pollTarget = target; pollThen = then; pollAttempts = 0;
+  defer("poll", 8);
+}
+function pollStep() {
+  pollAttempts++;
+  if (dsptimeObj) dsptimeObj.message("bang");
+  var t = capture["dsptime"];
+  if ((typeof t === "number" && t >= pollTarget) || pollAttempts > 120) {
+    taskCallback(pollThen);
+    return;
+  }
+  defer("poll", 8);
+}
+
+// One-shot: prove NRT DSP + record~ actually capture a signal here. Sets the
+// global dspWorks flag; the per-object audio path only activates when true.
+function selfTestDSP() {
+  var p = this.patcher;
+  capture = {};
+  var b = new Buffer("avout0");
+  for (var z = 0; z < BUFSAMPS; z++) b.poke(1, z, 0.0);
+  if (adDriver) adDriver.message("bang");             // read back the driver name
+  var osc = p.newdefault(40, 520, "cycle~", 441);
+  var snap = p.newdefault(40, 545, "snapshot~", 5);
+  var pre = p.newdefault(200, 545, "prepend", "stpeak");
+  var rec = p.newdefault(40, 580, "record~", "avout0");
+  cur = [osc, snap, pre, rec];
+  p.connect(osc, 0, snap, 0);
+  p.connect(snap, 0, pre, 0);
+  p.connect(pre, 0, this.patcher.getnamed("driver"), 0);
+  p.connect(osc, 0, rec, 0);
+  rec.message(1);
+  startDSP();
+  startPoll(FRAMES, "selfTestRead");
 }
 function selfTestRead() {
   var b = new Buffer("avout0");
@@ -166,9 +205,9 @@ function selfTestRead() {
   if (dbg.isopen) {
     dbg.position = dbg.eof;
     dbg.writeline("dsp_works=" + dspWorks);
-    dbg.writeline("selftest_record_peak=" + peak);
-    dbg.writeline("selftest_snapshot=" + (capture["stpeak"] === undefined ? "none" : capture["stpeak"]));
     dbg.writeline("audio_driver=" + (capture["curdrv"] === undefined ? "none" : capture["curdrv"]));
+    dbg.writeline("selftest_record_peak=" + peak);
+    dbg.writeline("selftest_dsptime=" + (capture["dsptime"] === undefined ? "none" : capture["dsptime"]));
     dbg.close();
   }
   cleanup();
@@ -205,7 +244,9 @@ function run() {
     dbg.writeline("avout0.framecount=" + tb.framecount());
     dbg.close();
   }
-  selfTestDSP();
+  setupAudioNRT();
+  // give the driver switch a moment to apply before the self-test starts DSP.
+  defer("selfTest", 300);
 }
 function countKeys(o) { var n = 0; for (var k in o) n++; return n; }
 function sizeBuf(varname) {
@@ -240,7 +281,10 @@ function buildStep() {
     defer("buildStep", 20);
     return;
   }
-  defer("readStep", kind === "audio" ? 250 : 50);
+  if (kind === "audio" && dspWorks)
+    startPoll(FRAMES, "readStep");   // gate the read on dsptime~ (samples rendered)
+  else
+    defer("readStep", 40);
 }
 
 function buildControl(obj, c) {
@@ -295,8 +339,14 @@ function buildAudio(obj, c) {
   if (nout > CHANS) nout = CHANS;
 
   if (nin > 0) {
+    // count~ only advances while its left inlet carries a NONZERO signal; with
+    // nothing connected its gate is 0 and it stays stuck at index 0 (the object
+    // would see a constant input). Feed it a constant 1 so it counts 0,1,2,...
+    var one = p.newdefault(20, 110, "sig~", 1);
+    cur.push(one);
     var cnt = p.newdefault(50, 140, "count~");
     cur.push(cnt);
+    p.connect(one, 0, cnt, 0);
     var pack = (nin > 1) ? p.newdefault(300, 240, "mc.pack~", nin) : null;
     if (pack) cur.push(pack);
     for (var ch = 0; ch < nin && ch < CHANS; ch++) {
@@ -395,17 +445,18 @@ function readAudio(obj, c, ci) {
 
 // ---- capture handler: [prepend cap<i>] -> here -----------------------------
 function anything() {
+  // Captures everything wired back into inlet 0: control outputs (cap<i>), the
+  // DSP self-test signal (stpeak), the audio driver name (curdrv) and the
+  // rendered-sample count (dsptime).
   var sel = "" + messagename;
-  if (sel.substring(0, 3) === "cap" || sel === "stpeak" || sel === "curdrv") {
-    var a = arrayfromargs(arguments);
-    // Prefer the first numeric arg (scalar control / signal value); fall back to
-    // the first arg as-is (string/enum/symbol outputs, driver name).
-    var v = (a.length > 0) ? a[0] : 0;
-    for (var i = 0; i < a.length; i++) {
-      if (typeof a[i] === "number") { v = a[i]; break; }
-    }
-    capture[sel] = v;
+  var a = arrayfromargs(arguments);
+  // Prefer the first numeric arg (scalar control / signal value); fall back to
+  // the first arg as-is (string/enum/symbol outputs, driver name).
+  var v = (a.length > 0) ? a[0] : 0;
+  for (var i = 0; i < a.length; i++) {
+    if (typeof a[i] === "number") { v = a[i]; break; }
   }
+  capture[sel] = v;
 }
 function msg_float(v) { /* bare float outputs shouldn't reach us (prepended) */ }
 function msg_int(v) { }
