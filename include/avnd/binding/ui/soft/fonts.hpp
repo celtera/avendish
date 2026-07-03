@@ -72,7 +72,10 @@ inline font_registry system_fonts()
     return fonts;
 #endif
   static constexpr const char* candidates[] = {
-#if defined(_WIN32)
+#if defined(__EMSCRIPTEN__)
+      // Embedded into the module's virtual FS by avnd_target_soft_ui
+      "/font.ttf",
+#elif defined(_WIN32)
       "C:\\Windows\\Fonts\\segoeui.ttf",
       "C:\\Windows\\Fonts\\arial.ttf",
       "C:\\Windows\\Fonts\\tahoma.ttf",

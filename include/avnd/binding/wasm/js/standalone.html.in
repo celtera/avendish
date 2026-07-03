@@ -79,6 +79,13 @@
       <input id="file" type="file" accept="audio/*" disabled />
     </div>
 
+    <!-- Software-framebuffer renderer (Nuklear + canvas_ity compiled to
+         wasm); shown when the module exports SoftUI. -->
+    <fieldset id="soft-ui" style="display: none">
+      <legend>Editor (software renderer)</legend>
+      <canvas id="soft-ui-canvas" style="touch-action: none"></canvas>
+    </fieldset>
+
     <fieldset>
       <legend>Parameters</legend>
       <div id="params"></div>

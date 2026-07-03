@@ -56,6 +56,10 @@ public:
     m_surface.resize(w, h, device_pixel_ratio);
   }
 
+  // Declared logical size of the layout (before any resize)
+  int logical_width() { return m_surface.runtime().width(); }
+  int logical_height() { return m_surface.runtime().height(); }
+
   int physical_width() { return m_surface.runtime().physical_width(); }
   int physical_height() { return m_surface.runtime().physical_height(); }
 
@@ -89,6 +93,8 @@ void bind_wasm_ui(const char* js_name)
   emscripten::class_<wasm_ui<T>>(js_name)
       .template constructor<>()
       .function("resize", &wasm_ui<T>::resize)
+      .function("logicalWidth", &wasm_ui<T>::logical_width)
+      .function("logicalHeight", &wasm_ui<T>::logical_height)
       .function("physicalWidth", &wasm_ui<T>::physical_width)
       .function("physicalHeight", &wasm_ui<T>::physical_height)
       .function("pointerMove", &wasm_ui<T>::pointer_move)
