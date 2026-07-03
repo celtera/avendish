@@ -74,7 +74,7 @@ public:
   Steinberg::IPlugView* createView(const char* name) override
   {
     if(name && std::strcmp(name, Steinberg::Vst::ViewType::kEditor) == 0)
-      return new stv3::VstGuiEditor{this};
+      return new stv3::VstGuiEditor{this, std::string{avnd::get_name<T>()}};
     return nullptr;
   }
 #endif

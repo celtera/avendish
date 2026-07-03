@@ -22,6 +22,9 @@
 #include <vstgui/lib/controls/cbuttons.h>
 #include <vstgui/lib/controls/ctextlabel.h>
 
+#include <string>
+#include <utility>
+
 #if defined(__linux__)
 #include <vstgui/lib/platform/linux/x11frame.h>
 #include <vstgui/lib/platform/iplatformframe.h>
@@ -114,8 +117,9 @@ class VstGuiEditor final
     , public VSTGUI::IControlListener
 {
 public:
-  explicit VstGuiEditor(ControllerCommon* c)
+  explicit VstGuiEditor(ControllerCommon* c, std::string title = {})
       : controller{c}
+      , m_title{std::move(title)}
   {
     // Hosts call getSize() before attached() to size the window: compute now.
     computeSize();
@@ -235,57 +239,89 @@ private:
   void computeSize()
   {
     const int n = edit_controller()->getParameterCount();
-    const int rows = (n + cols - 1) / cols;
-    m_width = cols * cell_w + margin * 2;
-    m_height = (rows > 0 ? rows : 1) * cell_h + margin * 2;
-    if(m_width < 240) m_width = 240;
-    if(m_height < 140) m_height = 140;
+    const int c = n < cols ? (n > 0 ? n : 1) : cols;
+    const int rows = (n + c - 1) / c;
+    m_width = c * cell_w + margin * 2;
+    m_height = title_h + rows * cell_h + margin * 2;
+    if(m_width < 260) m_width = 260;
   }
 
   void buildControls()
   {
     auto* ec = edit_controller();
     const int n = ec->getParameterCount();
-    int col = 0, row = 0;
+    const int c = n < cols ? (n > 0 ? n : 1) : cols;
+
+    const VSTGUI::CColor accent{86, 158, 255, 255};
+    const VSTGUI::CColor labelCol{205, 205, 212, 255};
+
+    // Title bar with the plugin name.
+    {
+      VSTGUI::CRect tr(0, 0, m_width, title_h);
+      auto* t = new VSTGUI::CTextLabel(
+          tr, m_title.empty() ? "Avendish" : m_title.c_str());
+      t->setFrameColor(VSTGUI::kTransparentCColor);
+      t->setBackColor(VSTGUI::CColor{24, 24, 26, 255});
+      t->setFontColor(VSTGUI::CColor{235, 235, 240, 255});
+      t->setFont(VSTGUI::kNormalFontBig);
+      t->setHoriAlign(VSTGUI::kCenterText);
+      frame->addView(t);
+    }
+
+    int idx = 0;
     for(int i = 0; i < n; ++i)
     {
       Steinberg::Vst::ParameterInfo info{};
       if(ec->getParameterInfo(i, info) != Steinberg::kResultTrue)
         continue;
 
+      const int col = idx % c, row = idx / c;
       const VSTGUI::CCoord x = margin + col * cell_w;
-      const VSTGUI::CCoord y = margin + row * cell_h;
+      const VSTGUI::CCoord y = title_h + margin + row * cell_h;
+      const std::string name = title_of(info);
 
       VSTGUI::CControl* ctl = nullptr;
       if(info.stepCount == 1)
       {
-        // Toggle -> self-drawing checkbox.
-        VSTGUI::CRect rc(x + 8, y + 24, x + cell_w - 8, y + 48);
-        ctl = new VSTGUI::CCheckBox(rc, this, info.id, title_of(info).data());
+        // Toggle -> on/off text button that shows the parameter name.
+        VSTGUI::CRect rc(x + 10, y + 22, x + cell_w - 10, y + 54);
+        auto* b = new VSTGUI::CTextButton(
+            rc, this, info.id, name.c_str(), VSTGUI::CTextButton::kOnOffStyle);
+        b->setRoundRadius(5.);
+        b->setFrameColor(accent);
+        b->setTextColor(labelCol);
+        b->setTextColorHighlighted(VSTGUI::CColor{16, 16, 18, 255});
+        ctl = b;
       }
       else
       {
-        // Continuous -> self-drawing knob.
-        VSTGUI::CRect rc(x + (cell_w - 56) / 2, y + 20, x + (cell_w - 56) / 2 + 56, y + 76);
+        // Continuous -> corona knob with the name label below it.
+        const VSTGUI::CCoord kw = 58;
+        const VSTGUI::CCoord kx = x + (cell_w - kw) / 2;
+        VSTGUI::CRect rc(kx, y + 12, kx + kw, y + 12 + kw);
         auto* knob = new VSTGUI::CKnob(
             rc, this, info.id, nullptr, nullptr, VSTGUI::CPoint(0, 0),
-            VSTGUI::CKnob::kCoronaDrawing | VSTGUI::CKnob::kHandleCircleDrawing);
+            VSTGUI::CKnob::kCoronaDrawing | VSTGUI::CKnob::kCoronaOutline
+                | VSTGUI::CKnob::kHandleCircleDrawing);
+        knob->setCoronaColor(accent);
+        knob->setColorHandle(accent);
+        knob->setColorShadowHandle(VSTGUI::CColor{16, 16, 18, 255});
+        knob->setCoronaInset(4.);
+        knob->setHandleLineWidth(2.5);
         ctl = knob;
 
-        // Name label above the knob.
-        VSTGUI::CRect lr(x, y + 2, x + cell_w, y + 18);
-        const std::string lbl_txt = title_of(info);
-        auto* lbl = new VSTGUI::CTextLabel(lr, lbl_txt.c_str());
-        lbl->setFontColor(VSTGUI::kWhiteCColor);
-        lbl->setBackColor(VSTGUI::kTransparentCColor);
+        VSTGUI::CRect lr(x, y + cell_h - 26, x + cell_w, y + cell_h - 8);
+        auto* lbl = new VSTGUI::CTextLabel(lr, name.c_str());
         lbl->setFrameColor(VSTGUI::kTransparentCColor);
+        lbl->setBackColor(VSTGUI::kTransparentCColor);
+        lbl->setFontColor(labelCol);
+        lbl->setHoriAlign(VSTGUI::kCenterText);
         frame->addView(lbl);
       }
 
       ctl->setValueNormalized(static_cast<float>(ec->getParamNormalized(info.id)));
       frame->addView(ctl);
-
-      if(++col >= cols) { col = 0; ++row; }
+      ++idx;
     }
   }
 
@@ -301,12 +337,14 @@ private:
   Steinberg::IPlugFrame* plugFrame{};
   std::atomic<Steinberg::uint32> m_ref{1};
 
+  std::string m_title;
   static constexpr int cols = 4;
-  static constexpr int cell_w = 90;
-  static constexpr int cell_h = 96;
+  static constexpr int cell_w = 96;
+  static constexpr int cell_h = 104;
   static constexpr int margin = 12;
-  int m_width = 240;
-  int m_height = 140;
+  static constexpr int title_h = 34;
+  int m_width = 260;
+  int m_height = 180;
 };
 
 }
