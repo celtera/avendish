@@ -56,6 +56,17 @@ public:
     m_surface.resize(w, h, device_pixel_ratio);
   }
 
+  // Fonts cannot come from the filesystem in a browser (and --embed-file's
+  // FS emulation breaks the module inside AudioWorkletGlobalScope): the
+  // page fetches a TTF and passes it in as a Uint8Array.
+  void load_font(emscripten::val bytes)
+  {
+    m_surface.runtime().fonts().register_font(
+        "default",
+        emscripten::convertJSArrayToNumberVector<unsigned char>(bytes));
+    m_surface.runtime().mark_dirty();
+  }
+
   // Declared logical size of the layout (before any resize)
   int logical_width() { return m_surface.runtime().width(); }
   int logical_height() { return m_surface.runtime().height(); }
@@ -93,6 +104,7 @@ void bind_wasm_ui(const char* js_name)
   emscripten::class_<wasm_ui<T>>(js_name)
       .template constructor<>()
       .function("resize", &wasm_ui<T>::resize)
+      .function("loadFont", &wasm_ui<T>::load_font)
       .function("logicalWidth", &wasm_ui<T>::logical_width)
       .function("logicalHeight", &wasm_ui<T>::logical_height)
       .function("physicalWidth", &wasm_ui<T>::physical_width)

@@ -109,7 +109,14 @@ async function initSoftUI(Module) {
   const canvas = document.getElementById("soft-ui-canvas");
   if (!fs || !canvas) return;
   const { attachSoftUI } = await import("./avnd-soft-ui.js");
-  attachSoftUI(new Module.SoftUI(), canvas);
+  const ui = new Module.SoftUI();
+  // Fonts are fetched at runtime (no FS in the module: it would break the
+  // worklet); a missing font just renders text-less.
+  try {
+    const resp = await fetch("./font.ttf");
+    if (resp.ok) ui.loadFont(new Uint8Array(await resp.arrayBuffer()));
+  } catch {}
+  attachSoftUI(ui, canvas);
   fs.style.display = "";
 }
 
