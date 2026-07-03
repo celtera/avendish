@@ -472,6 +472,7 @@ def gen_td_runner(dumps):
         md = dump.get("metadatas", {})
         ins = dump.get("inputs", [])
         is_top = any(port_kind(p) == "texture" for p in ins + dump.get("outputs", []))
+        has_tex_in = any(port_kind(p) == "texture" for p in ins)
         pars = {sanitize_td_name(p["name"]): init_value(p)
                 for p in ins if is_control(p) and "name" in p}
         # The registered opType is sanitize_td_name(C_NAME) -- the TD binding's
@@ -480,6 +481,10 @@ def gen_td_runner(dumps):
         specs.append({"name": md.get("c_name", name),
                       "type": sanitize_td_name(md.get("c_name", name)),
                       "family": "TOP" if is_top else "CHOP",
+                      # int, not bool: SPECS is embedded via json.dumps and then
+                      # exec()'d in TD, where JSON `false`/`true` are not valid
+                      # Python identifiers.
+                      "has_tex_in": 1 if has_tex_in else 0,
                       "file": name, "pars": pars})
     return (
         "# Run inside TouchDesigner (an Execute DAT). For each avendish Custom OP:\n"
@@ -612,6 +617,17 @@ def gen_td_runner(dumps):
         "                        n.inputConnectors[0].connect(src)\n"
         "            except Exception as e:\n"
         "                cres['input_err'] = str(e)\n"
+        "            if s.get('family') == 'TOP' and s.get('has_tex_in'):\n"
+        "                try:\n"
+        "                    tsrc = container.create(noiseTOP, 'tsrc_' + uid)\n"
+        "                    try:\n"
+        "                        tsrc.par.resolutionw = 16; tsrc.par.resolutionh = 16\n"
+        "                    except Exception: pass\n"
+        "                    tsrc.cook(force=True)\n"
+        "                    if len(n.inputConnectors) > 0:\n"
+        "                        n.inputConnectors[0].connect(tsrc)\n"
+        "                except Exception as e:\n"
+        "                    cres['tex_in_err'] = str(e)\n"
         "            open(CUR, 'w').write(tag + ':precook')\n"
         "            n.cook(force=True)\n"
         "            cres['ok'] = not n.errors()\n"
@@ -641,6 +657,17 @@ def gen_td_runner(dumps):
         "            except Exception:\n"
         "                pass\n"
         "            cres['td_info'] = ti\n"
+        "            td_tex = []\n"
+        "            try:\n"
+        "                if s.get('family') == 'TOP':\n"
+        "                    import zlib\n"
+        "                    a = n.numpyArray()  # (h, w, ch), TD's normalized readback\n"
+        "                    hh = int(a.shape[0]); ww = int(a.shape[1])\n"
+        "                    td_tex.append({'width': ww, 'height': hh,\n"
+        "                                   'hash': int(zlib.crc32(a.tobytes()) & 0xffffffff)})\n"
+        "            except Exception as e:\n"
+        "                cres['tex_err'] = str(e)\n"
+        "            cres['td_tex'] = td_tex\n"
         "            n.destroy()\n"
         "        except Exception as e:\n"
         "            cres['exception'] = str(e)\n"

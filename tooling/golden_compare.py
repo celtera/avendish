@@ -76,15 +76,23 @@ def compare_controls(named, golden, atol, rtol):
             f"{checked} ctrls maxdiff={maxdiff:.2e}@{worst} tol={tol:.2e}")
 
 
-def compare_textures(textures, golden, atol, rtol):
+def compare_textures(textures, golden, atol, rtol, content="hash"):
     """Diff captured texture outputs against the golden's recorded
-    {width, height, hash} (FNV-1a over the raw pixel bytes -- see fnv1a64).
-    `textures` is [{width, height, hash}] in port order."""
+    {width, height, hash}. `textures` is [{width, height, hash}] in port order.
+
+    content="hash" (default): dimensions AND the FNV-1a byte hash must match --
+    valid only when the backend reads pixels back in the object's NATIVE byte
+    layout (the golden hashes native bytes; the Python binding does too).
+    content="dims": dimensions are authoritative, the hash is informational --
+    for hosts (TouchDesigner, GStreamer) that hand back a normalized/converted
+    representation whose bytes never equal the native golden hash. Wrong output
+    SIZE is still a real failure and is caught."""
     if not golden:
         return ("no-golden-texture", "")
     if not textures:
         return ("no-backend-texture", "")
     n = min(len(textures), len(golden))
+    hashes_match = True
     for i in range(n):
         t, g = textures[i], golden[i]
         if (t.get("width"), t.get("height")) != (g.get("width"), g.get("height")):
@@ -92,7 +100,12 @@ def compare_textures(textures, golden, atol, rtol):
                     f"tex{i} size {t.get('width')}x{t.get('height')} "
                     f"vs gold {g.get('width')}x{g.get('height')}")
         if t.get("hash") != g.get("hash"):
-            return ("MISMATCH", f"tex{i} content hash differs")
+            hashes_match = False
+            if content == "hash":
+                return ("MISMATCH", f"tex{i} content hash differs")
+    if content == "dims":
+        note = "content byte-identical" if hashes_match else "dims only"
+        return ("match", f"{n} textures ({note})")
     return ("match", f"{n} textures")
 
 

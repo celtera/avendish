@@ -34,7 +34,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from golden_compare import (aggregate_case_verdicts, compare_audio,
-                            compare_controls)
+                            compare_controls, compare_textures)
 
 user32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
@@ -276,19 +276,27 @@ def main():
                 pass
         # Compare one captured case (td_out + td_info) against a golden case's
         # outputs. Prefer audio when the golden has audio output, else controls.
-        def compare_one(td_out, td_info, gout):
+        # A texture output surfaces as a TOP: the runner captures its
+        # width/height (+ a crc of TD's normalized readback) into td_tex.
+        # TD hands back a converted representation, so compare dimensions
+        # authoritatively and treat content as informational (content="dims").
+        def compare_one(rc, gout):
             gaud = (gout or {}).get("audio")
             gctl = (gout or {}).get("controls")
+            gtex = (gout or {}).get("texture")
             if gaud:
-                return compare_audio(td_out, gaud, args.atol, args.rtol)
+                return compare_audio(rc.get("td_out"), gaud, args.atol, args.rtol)
             if gctl:
                 named = {}
-                for e in (td_out or []):
+                for e in (rc.get("td_out") or []):
                     if e.get("samples"):
                         named[e["name"]] = e["samples"][0]
-                for k, val in (td_info or {}).items():
+                for k, val in (rc.get("td_info") or {}).items():
                     named.setdefault(k, val)
                 return compare_controls(named, gctl, args.atol, args.rtol)
+            if gtex:
+                return compare_textures(rc.get("td_tex"), gtex, args.atol,
+                                        args.rtol, content="dims")
             return ("no-golden-output", "")
 
         counts, mism = {}, []
@@ -305,12 +313,11 @@ def main():
                     if ci >= len(gcases):
                         continue
                     gout = gcases[ci].get("outputs", {})
-                    v, d = compare_one(rc.get("td_out"), rc.get("td_info"), gout)
+                    v, d = compare_one(rc, gout)
                     verdicts.append((ci, v, d))
             else:
                 # old single-case schema (golden or result without `cases`)
-                v, d = compare_one(r.get("td_out"), r.get("td_info"),
-                                   g.get("outputs", {}))
+                v, d = compare_one(r, g.get("outputs", {}))
                 verdicts.append((0, v, d))
             v, detail = aggregate_case_verdicts(verdicts)
             counts[v] = counts.get(v, 0) + 1
