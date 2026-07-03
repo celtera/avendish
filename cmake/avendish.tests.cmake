@@ -74,6 +74,15 @@ if(BUILD_TESTING)
       endif()
     endif()
 
+    # Tier C: the CustomUiWindow example's author-provided editor.
+    if(WIN32 AND TARGET CustomUiWindow_clap)
+      avnd_add_catch_test(test_custom_ui_window tests/ui/test_custom_ui_window.cpp)
+      add_dependencies(test_custom_ui_window CustomUiWindow_clap)
+      target_include_directories(test_custom_ui_window PRIVATE ${CLAP_HEADER})
+      target_compile_definitions(test_custom_ui_window PRIVATE
+        "AVND_TEST_CUSTOM_UI_CLAP_PATH=\"$<TARGET_FILE:CustomUiWindow_clap>\"")
+    endif()
+
     # Same plug-in through the VST3 editor glue.
     if(WIN32 AND COMMAND avnd_make_vst3 AND TARGET avnd_pugl AND VST3_SDK_ROOT)
       avnd_make_vst3(
