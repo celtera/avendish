@@ -102,7 +102,11 @@ function readCallbackInfosFromInstance() {
 }
 
 // Software-framebuffer editor (Module.SoftUI, avnd-soft-ui.js): the same
-// pixels as the native plug-in editors, blitted into a canvas.
+// pixels as the native plug-in editors, blitted into a canvas. It drives
+// the SAME instances as the DOM auto-UI: canvas gestures go to the worklet
+// (normalized) and the paint instance; worklet outputs and DOM edits flow
+// back in through setOutputValue / setParameter.
+let softUI = null;
 async function initSoftUI(Module) {
   if (!Module.SoftUI) return;
   const fs = document.getElementById("soft-ui");
@@ -116,7 +120,26 @@ async function initSoftUI(Module) {
     const resp = await fetch("./font.ttf");
     if (resp.ok) ui.loadFont(new Uint8Array(await resp.arrayBuffer()));
   } catch {}
+  if (ui.setGestureCallback) {
+    ui.setGestureCallback((type, index, norm) => {
+      if (type !== "perform") return;
+      if (node) node.port.postMessage({ type: "setParamNorm", index, value: norm });
+      // Mirror to the DOM UI's value cache + paint instance. Descriptors
+      // without a numeric range (toggles, enums) mirror the normalized
+      // value directly — same convention as setParameterNormalized.
+      const d = paramInfos[index];
+      const raw = d && typeof d.min === "number" && typeof d.max === "number"
+        ? d.min + norm * (d.max - d.min)
+        : norm;
+      paramValues[index] = raw;
+      if (uiInstance) {
+        try { uiInstance.setParameter(index, raw); } catch {}
+        tickUIAndReadOutputs();
+      }
+    });
+  }
   attachSoftUI(ui, canvas);
+  softUI = ui;
   fs.style.display = "";
 }
 
@@ -228,6 +251,11 @@ function onWorkletMessage(data) {
     }
   } else if (data.type === "outputs") {
     updateOutputs(data.values || []);
+    if (softUI && softUI.setOutputValue) {
+      (data.values || []).forEach((v, i) => {
+        if (typeof v === "number") softUI.setOutputValue(i, v);
+      });
+    }
   } else if (data.type === "callbacks") {
     if (callbacksLog && Array.isArray(data.events)) {
       for (const ev of data.events) callbacksLog.append(ev);
@@ -325,13 +353,16 @@ initUI().catch((e) => {
 // Widget mapping + layout renderer live in avnd-ui.js; here we wire them so
 // setParam writes to both the worklet DSP and the main-thread paint instance.
 
-// Write a parameter to the worklet DSP + the paint instance.
+// Write a parameter to the worklet DSP + the paint instance + the canvas editor.
 function sendParam(index, value) {
   paramValues[index] = value;
   if (node) node.port.postMessage({ type: "setParam", index, value });
   if (uiInstance) {
     try { uiInstance.setParameter(index, value); } catch {}
     tickUIAndReadOutputs(); // refresh outputs even with no audio running
+  }
+  if (softUI && softUI.setParameter && typeof value === "number") {
+    try { softUI.setParameter(index, value); } catch {}
   }
 }
 
@@ -434,3 +465,12 @@ function updateOutputs(values) {
     el.textContent = typeof v === "number" ? v.toFixed(4) : JSON.stringify(v);
   });
 }
+
+// Exposed for headless tests and console debugging.
+self.avnd = {
+  paramValues,
+  sendParam,
+  get softUI() { return softUI; },
+  get running() { return !!node; },
+  get paramInfos() { return paramInfos; },
+};
