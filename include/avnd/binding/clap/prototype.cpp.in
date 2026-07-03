@@ -4,11 +4,18 @@
 #include <avnd/binding/clap/audio_effect.hpp>
 #include <avnd/binding/clap/configure.hpp>
 
+#if defined(AVND_CLAP_UI)
+// Emit the Nuklear + canvas_ity implementations exactly once per plug-in.
+#include <avnd/binding/ui/soft/implementation.hpp>
+#endif
+
 // clang-format off
 using plug_type = decltype(avnd::configure<avnd_clap::config, @AVND_MAIN_CLASS@>())::type;
 using effect_type = avnd_clap::SimpleAudioEffect<plug_type>;
 
-AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_plugin_entry = {
+// Named `clap_entry` to match the extern "C" declaration in clap/entry.h:
+// that is the symbol hosts dlsym/GetProcAddress.
+AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_entry = {
    CLAP_VERSION,
    +[] (const char* path) -> bool { /* init */ return true; },
    +[] () { /* deinit */ },
