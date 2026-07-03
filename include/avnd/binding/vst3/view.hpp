@@ -13,14 +13,11 @@
  * the host through IComponentHandler begin/perform/endEdit with the same
  * normalized mapping as getParamNormalized.
  *
- * Ticks: on Windows the pugl timer is serviced by the host's message pump.
- * On Linux the host's IRunLoop (queried from the IPlugFrame) drives both a
- * periodic timer and the X11 connection's event handler. macOS pends on the
- * Cocoa blit pass.
- *
- * Known v1 limit: the message bus is wired to the *view-side* model, not to
- * the actual processor component -- routing it across the
- * processor/controller split needs IMessage (connection points).
+ * Ticks: the view owns a 16 ms UI-thread timer while attached (Win32
+ * SetTimer / host IRunLoop on Linux / CFRunLoopTimer on macOS). Each tick
+ * calls the editor's idle() (this is the clock Tier C editors are promised
+ * by the concept; the soft editor's pugl timer coexists harmlessly) and
+ * pumps the processor->UI message bus (see binding/vst3/bus.hpp).
  */
 
 #include <avnd/binding/ui/editor.hpp>
@@ -36,6 +33,19 @@
 
 #include <memory>
 #include <string_view>
+
+#if defined(_WIN32)
+#if !defined(WIN32_LEAN_AND_MEAN)
+#define WIN32_LEAN_AND_MEAN
+#endif
+#if !defined(NOMINMAX)
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <map>
+#elif defined(__APPLE__)
+#include <CoreFoundation/CFRunLoop.h>
+#endif
 
 namespace stv3
 {
@@ -106,6 +116,7 @@ public:
 
   ~plug_view()
   {
+    stop_tick();
     controller.ui_param_changed = {};
     if constexpr(stv3::bus_to_ui_enabled<T>)
       controller.ui_message_received = {};
@@ -182,11 +193,13 @@ public:
     p.api = avnd::gui_api::x11_window;
 #endif
     editor->open(p, make_host());
+    start_tick();
     return Steinberg::kResultOk;
   }
 
   tresult removed() override
   {
+    stop_tick();
     if(editor)
       editor->close();
     return Steinberg::kResultOk;
@@ -308,6 +321,124 @@ private:
           editor->runtime().mark_dirty();
     }
   }
+
+  // ---- UI-thread tick: editor idle() + processor->UI bus pump ----
+  static constexpr int tick_ms = 16;
+
+  void on_tick()
+  {
+    if(editor)
+      editor->idle();
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+      controller.send_bus_pump();
+  }
+
+#if defined(_WIN32)
+  // HWND-less SetTimer: the TimerProc trampoline resolves the view through
+  // a UI-thread-only id map.
+  static std::map<UINT_PTR, plug_view*>& timer_map()
+  {
+    static std::map<UINT_PTR, plug_view*> m;
+    return m;
+  }
+  static void CALLBACK timer_proc(HWND, UINT, UINT_PTR id, DWORD)
+  {
+    auto& m = timer_map();
+    if(auto it = m.find(id); it != m.end())
+      it->second->on_tick();
+  }
+  void start_tick()
+  {
+    if(m_timer)
+      return;
+    m_timer = SetTimer(nullptr, 0, tick_ms, &plug_view::timer_proc);
+    if(m_timer)
+      timer_map()[m_timer] = this;
+  }
+  void stop_tick()
+  {
+    if(m_timer)
+    {
+      KillTimer(nullptr, m_timer);
+      timer_map().erase(m_timer);
+      m_timer = 0;
+    }
+  }
+  UINT_PTR m_timer{};
+#elif defined(__APPLE__)
+  static void timer_cb(CFRunLoopTimerRef, void* info)
+  {
+    static_cast<plug_view*>(info)->on_tick();
+  }
+  void start_tick()
+  {
+    if(m_timer)
+      return;
+    CFRunLoopTimerContext ctx{};
+    ctx.info = this;
+    m_timer = CFRunLoopTimerCreate(
+        nullptr, CFAbsoluteTimeGetCurrent() + tick_ms / 1000., tick_ms / 1000., 0,
+        0, &plug_view::timer_cb, &ctx);
+    if(m_timer)
+      CFRunLoopAddTimer(CFRunLoopGetMain(), m_timer, kCFRunLoopCommonModes);
+  }
+  void stop_tick()
+  {
+    if(m_timer)
+    {
+      CFRunLoopTimerInvalidate(m_timer);
+      CFRelease(m_timer);
+      m_timer = nullptr;
+    }
+  }
+  CFRunLoopTimerRef m_timer{};
+#else
+  // Host-provided run loop (queried from the IPlugFrame, per the VST3
+  // Linux windowing contract).
+  struct timer_handler final : Steinberg::Linux::ITimerHandler
+  {
+    plug_view* self{};
+    tresult queryInterface(const Steinberg::TUID iid, void** obj) override
+    {
+      QUERY_INTERFACE(
+          iid, obj, Steinberg::FUnknown::iid, Steinberg::Linux::ITimerHandler);
+      QUERY_INTERFACE(
+          iid, obj, Steinberg::Linux::ITimerHandler::iid,
+          Steinberg::Linux::ITimerHandler);
+      *obj = nullptr;
+      return Steinberg::kNoInterface;
+    }
+    // Lifetime is the owning view's
+    Steinberg::uint32 addRef() override { return 2; }
+    Steinberg::uint32 release() override { return 1; }
+    void onTimer() override { self->on_tick(); }
+  };
+  void start_tick()
+  {
+    if(m_runloop || !frame)
+      return;
+    Steinberg::Linux::IRunLoop* rl{};
+    if(frame->queryInterface(Steinberg::Linux::IRunLoop::iid, (void**)&rl)
+           == Steinberg::kResultOk
+       && rl)
+    {
+      m_tick_handler.self = this;
+      rl->registerTimer(&m_tick_handler, tick_ms);
+      m_runloop = rl;
+    }
+  }
+  void stop_tick()
+  {
+    if(m_runloop)
+    {
+      m_runloop->unregisterTimer(&m_tick_handler);
+      m_runloop->release();
+      m_runloop = nullptr;
+    }
+  }
+  timer_handler m_tick_handler;
+  Steinberg::Linux::IRunLoop* m_runloop{};
+#endif
 
   Controller& controller;
   avnd::effect_container<T> model;

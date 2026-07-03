@@ -8,12 +8,22 @@
  * object from the processing component (possibly out-of-process), so bus
  * payloads cross through the host's connection points.
  *
- * v1 carries trivially-copyable messages as a binary attribute; non-trivial
- * payloads (std::string / std::vector members...) need a serializer and are
- * not routed yet -- such plug-ins keep the view-local behaviour.
+ * Payloads are serialized with avnd::bus_serial (trivially-copyable types,
+ * std::string / std::vector members, aggregates thereof). Messages the
+ * serializer cannot handle keep the previous behaviour: that direction of
+ * the bus is disabled and the plug-in stays view-local.
+ *
+ * Threading: IHostApplication::createInstance and IConnectionPoint::notify
+ * are [UI-thread] per the SDK. The processor therefore never sends from
+ * process(): it enqueues into a preallocated lock-free queue, and the
+ * controller's editor timer sends a small "pump" message through the
+ * connection point. The component's notify() runs on the UI thread, where
+ * it drains the queue and sends the queued payloads back — spec-compliant
+ * on both ends, no allocation on the audio thread.
  */
 
 #include <avnd/binding/ui/message_transport.hpp>
+#include <avnd/binding/ui/serialization.hpp>
 
 #include <pluginterfaces/vst/ivsthostapplication.h>
 #include <pluginterfaces/vst/ivstmessage.h>
@@ -24,17 +34,13 @@ namespace stv3
 {
 static constexpr const char* bus_ui_to_processor_id = "avnd_ui_to_processor";
 static constexpr const char* bus_processor_to_ui_id = "avnd_processor_to_ui";
+static constexpr const char* bus_pump_id = "avnd_bus_pump";
 static constexpr const char* bus_payload_key = "avnd_payload";
 
 namespace detail
 {
 template <typename Msg>
-static constexpr bool busable = !std::is_void_v<Msg> && [] {
-  if constexpr(!std::is_void_v<Msg>)
-    return std::is_trivially_copyable_v<Msg>;
-  else
-    return false;
-}();
+static constexpr bool busable = avnd::bus_serial::serializable<Msg>;
 }
 
 template <typename T>
@@ -48,7 +54,7 @@ static constexpr bool bus_to_ui_enabled
       && detail::busable<avnd::any_proc_to_ui_msg_t<T>>;
 
 // Send a message through a connection point. Allocates the IMessage from
-// the host application found in `context`.
+// the host application found in `context`. [UI-thread] only.
 template <typename Msg>
 inline bool send_bus_message(
     Steinberg::FUnknown* context, Steinberg::Vst::IConnectionPoint* peer,
@@ -73,7 +79,45 @@ inline bool send_bus_message(
   {
     m->setMessageID(message_id);
     if(auto* attrs = m->getAttributes())
-      attrs->setBinary(bus_payload_key, &msg, sizeof(Msg));
+    {
+      if constexpr(std::is_trivially_copyable_v<Msg>)
+      {
+        attrs->setBinary(bus_payload_key, &msg, sizeof(Msg));
+      }
+      else
+      {
+        const auto bytes = avnd::bus_serial::to_bytes(msg);
+        attrs->setBinary(bus_payload_key, bytes.data(), (Steinberg::uint32)bytes.size());
+      }
+    }
+    peer->notify(m);
+    m->release();
+  }
+  app->release();
+  return ok;
+}
+
+// Parameterless notification (e.g. the bus pump). [UI-thread] only.
+inline bool send_empty_message(
+    Steinberg::FUnknown* context, Steinberg::Vst::IConnectionPoint* peer,
+    const char* message_id)
+{
+  using namespace Steinberg;
+  using namespace Steinberg::Vst;
+  if(!context || !peer)
+    return false;
+  IHostApplication* app{};
+  if(context->queryInterface(IHostApplication::iid, (void**)&app) != kResultOk
+     || !app)
+    return false;
+  TUID iid;
+  memcpy(iid, IMessage::iid, sizeof(TUID));
+  IMessage* m{};
+  const bool ok
+      = app->createInstance(iid, iid, (void**)&m) == kResultOk && m != nullptr;
+  if(ok)
+  {
+    m->setMessageID(message_id);
     peer->notify(m);
     m->release();
   }
@@ -82,7 +126,7 @@ inline bool send_bus_message(
 }
 
 // Extract a message of the given type; returns false when the IMessage is
-// not ours or the payload does not match.
+// not ours or the payload does not decode.
 template <typename Msg>
 inline bool read_bus_message(
     Steinberg::Vst::IMessage& m, const char* message_id, Msg& out)
@@ -95,10 +139,18 @@ inline bool read_bus_message(
     return false;
   const void* data{};
   Steinberg::uint32 size{};
-  if(attrs->getBinary(bus_payload_key, data, size) != kResultOk || !data
-     || size != sizeof(Msg))
+  if(attrs->getBinary(bus_payload_key, data, size) != kResultOk || !data)
     return false;
-  memcpy(&out, data, sizeof(Msg));
-  return true;
+  if constexpr(std::is_trivially_copyable_v<Msg>)
+  {
+    if(size != sizeof(Msg))
+      return false;
+    memcpy(&out, data, sizeof(Msg));
+    return true;
+  }
+  else
+  {
+    return avnd::bus_serial::from_bytes(data, size, out);
+  }
 }
 }
