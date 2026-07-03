@@ -267,15 +267,20 @@ def main():
         culprit = _read(cur)
         if not culprit or culprit == "DONE":
             break  # timed out with no progress, or actually finished
+        # The breadcrumb may carry a ':<stage>' suffix (created/precook/cooked)
+        # for diagnostics -- strip it to get the object name used for resume
+        # matching, but keep the full breadcrumb so we can see where it died.
+        base = culprit.split(":", 1)[0]
         crashers.append(culprit)
         # Record the crasher so the relaunch skips it.
         try:
             rep = json.load(open(report, encoding="utf-8"))
         except Exception:
             rep = []
-        if culprit not in {r["name"] for r in rep}:
-            rep.append({"name": culprit, "ok": False,
-                        "exception": "crashed TouchDesigner (instantiation/cook)"})
+        if base not in {r["name"] for r in rep}:
+            rep.append({"name": base, "ok": False,
+                        "exception": "crashed TouchDesigner (instantiation/cook)",
+                        "crash_stage": culprit})
             open(report, "w", encoding="utf-8").write(json.dumps(rep, indent=2))
         print(f"  *** crashed on '{culprit}' -> recorded; relaunching to continue")
 
