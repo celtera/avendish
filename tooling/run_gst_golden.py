@@ -39,7 +39,8 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from golden_compare import aggregate_case_verdicts, compare_audio
+from golden_compare import (aggregate_case_verdicts, compare_audio,
+                            compare_textures)
 
 import numpy as np
 
@@ -62,22 +63,28 @@ def norm(name):
 
 
 def inspect_element(gst_bin, env, element):
-    """Return (properties, has_sink) for `element`, or (None, False) if it does
-    not exist. `has_sink` is False for a pure source (generator). Parses
+    """Return (properties, has_sink, media) for `element`, or (None, False, None)
+    if it does not exist. `has_sink` is False for a pure source (generator);
+    `media` is 'audio' or 'video' (from the pad caps). Parses
     `gst-inspect-1.0 <element>`."""
     exe = os.path.join(gst_bin, "gst-inspect-1.0.exe")
     try:
         p = subprocess.run([exe, element], capture_output=True, text=True,
                            env=env, timeout=30)
     except Exception:
-        return (None, False)
+        return (None, False, None)
     if p.returncode != 0:
-        return (None, False)
+        return (None, False, None)
     props, in_props = set(), False
     has_sink = False
+    media = None
     for line in p.stdout.splitlines():
         if re.match(r"^\s+SINK template:", line):
             has_sink = True
+        if "video/x-raw" in line:
+            media = "video"
+        elif "audio/x-raw" in line and media is None:
+            media = "audio"
         if line.startswith("Element Properties"):
             in_props = True
             continue
@@ -87,7 +94,7 @@ def inspect_element(gst_bin, env, element):
         if m:
             props.add(m.group(1))
     props -= {"name", "parent", "qos"}
-    return (props, has_sink)
+    return (props, has_sink, media)
 
 
 def prop_arg(name, value):
@@ -123,8 +130,68 @@ def deinterleave(raw, nch):
     return [frames[:, c].tolist() for c in range(nch)]
 
 
+def build_prop_tokens(props, gcase):
+    """gst-launch `name=value` tokens for the golden controls the element
+    actually exposes (matched by normalized name)."""
+    by_norm = {norm(p): p for p in props}
+    tokens = []
+    for c in gcase.get("inputs", {}).get("controls", []):
+        real = by_norm.get(norm(c.get("name", "")))
+        if real is None:
+            continue
+        tok = prop_arg(real, c.get("value"))
+        if tok:
+            tokens.append(tok)
+    return tokens
+
+
+def parse_caps_dims(text):
+    """Pull the (width, height) of the negotiated fakesink caps out of
+    gst-launch -v output; fall back to the last width/height pair seen."""
+    fakesink_dims, last_dims = None, None
+    for line in text.splitlines():
+        m = re.search(r"width=\(int\)(\d+).*?height=\(int\)(\d+)", line)
+        if not m:
+            continue
+        last_dims = (int(m.group(1)), int(m.group(2)))
+        if "fakesink" in line.lower():
+            fakesink_dims = last_dims
+    return fakesink_dims or last_dims
+
+
+def run_texture_case(exe, env, element, props, has_sink, gcase, tmp):
+    """Run one texture case; return ([{width,height}], error). Reads the output
+    resolution from the negotiated caps (gst-launch -v). Content bytes are not
+    captured -- a host's readback format isn't the golden's native layout, so
+    dimensions are the authoritative cross-backend check."""
+    prop_tokens = build_prop_tokens(props, gcase)
+    if not has_sink:
+        # Generator (Source/Video): output size is the element's own.
+        pipeline = [exe, "-v", element, *prop_tokens, "num-buffers=1", "!",
+                    "fakesink"]
+    else:
+        # Filter: feed a 16x16 RGBA frame -- the size the golden synthesizes for
+        # texture inputs -- so a size-preserving filter yields 16x16 and a
+        # resampler yields its own size.
+        pipeline = [exe, "-v",
+                    "videotestsrc", "num-buffers=1", "!",
+                    "video/x-raw,format=RGBA,width=16,height=16", "!",
+                    "videoconvert", "!",
+                    element, *prop_tokens, "!", "fakesink"]
+    try:
+        p = subprocess.run(pipeline, capture_output=True, text=True, env=env,
+                           timeout=60)
+    except subprocess.TimeoutExpired:
+        return (None, "timeout")
+    dims = parse_caps_dims((p.stdout or "") + "\n" + (p.stderr or ""))
+    if dims is None:
+        err = (p.stderr or p.stdout or "").strip().splitlines()
+        return (None, "no-caps: " + (err[-1] if err else "?"))
+    return ([{"width": dims[0], "height": dims[1], "hash": None}], None)
+
+
 def run_case(exe, env, element, props, has_sink, gcase, meta, tmp):
-    """Run one golden case through gst-launch; return (out_channels, error)."""
+    """Run one golden AUDIO case through gst-launch; return (out_channels, error)."""
     gin = gcase.get("inputs", {}).get("audio") or []
     gout = gcase.get("outputs", {}).get("audio") or []
     out_nch = len(gout)
@@ -137,17 +204,7 @@ def run_case(exe, env, element, props, has_sink, gcase, meta, tmp):
     if os.path.exists(out_path):
         os.remove(out_path)
 
-    # Only set properties the element actually exposes (matched by normalized
-    # name; the binding lowercases the port symbol and dashes non-alnum chars).
-    by_norm = {norm(p): p for p in props}
-    prop_tokens = []
-    for c in gcase.get("inputs", {}).get("controls", []):
-        real = by_norm.get(norm(c.get("name", "")))
-        if real is None:
-            continue
-        tok = prop_arg(real, c.get("value"))
-        if tok:
-            prop_tokens.append(tok)
+    prop_tokens = build_prop_tokens(props, gcase)
 
     if not has_sink:
         # Pure source (generator): no input pad. Produce one block and capture.
@@ -227,7 +284,7 @@ def main():
         entry = {"name": c_name, "cases": []}
         report.append(entry)
 
-        props, has_sink = inspect_element(args.gst_bin, env, c_name)
+        props, has_sink, media = inspect_element(args.gst_bin, env, c_name)
         if props is None:
             entry["verdict"] = "no-element"
             counts["no-element"] = counts.get("no-element", 0) + 1
@@ -239,26 +296,39 @@ def main():
                        "outputs": g.get("outputs", {})}]
         verdicts = []
         for ci, gcase in enumerate(gcases):
-            gout = gcase.get("outputs", {}).get("audio") or []
+            gaud = gcase.get("outputs", {}).get("audio") or []
+            gtex = gcase.get("outputs", {}).get("texture") or []
             rec = {"index": ci}
-            if not gout:
-                # No audio output to diff -- gst has no headless control/texture
-                # read-back through gst-launch.
+            if media == "video" and gtex:
+                tex, err = run_texture_case(exe, env, c_name, props, has_sink,
+                                            gcase, args.tmp)
+                if err:
+                    verdicts.append((ci, "error", err))
+                    rec["verdict"], rec["error"] = "error", err
+                else:
+                    # TD/gst hand textures back converted, so dimensions are
+                    # authoritative and the byte hash is informational.
+                    v, d = compare_textures(tex, gtex, args.atol, args.rtol,
+                                            content="dims")
+                    verdicts.append((ci, v, d))
+                    rec["verdict"], rec["detail"], rec["tex"] = v, d, tex
+            elif gaud:
+                out_ch, err = run_case(exe, env, c_name, props, has_sink, gcase,
+                                       g.get("meta", {}), args.tmp)
+                if err:
+                    verdicts.append((ci, "error", err))
+                    rec["verdict"], rec["error"] = "error", err
+                else:
+                    v, d = compare_audio(
+                        [{"name": f"c{i}", "samples": s}
+                         for i, s in enumerate(out_ch)], gaud, args.atol, args.rtol)
+                    verdicts.append((ci, v, d))
+                    rec["verdict"], rec["detail"] = v, d
+            else:
+                # No audio/texture output to diff -- gst has no headless
+                # control read-back through gst-launch.
                 verdicts.append((ci, "no-audio-io", ""))
                 rec["verdict"] = "no-audio-io"
-                entry["cases"].append(rec)
-                continue
-            out_ch, err = run_case(exe, env, c_name, props, has_sink, gcase,
-                                   g.get("meta", {}), args.tmp)
-            if err:
-                verdicts.append((ci, "error", err))
-                rec["verdict"], rec["error"] = "error", err
-            else:
-                v, d = compare_audio(
-                    [{"name": f"c{i}", "samples": s} for i, s in enumerate(out_ch)],
-                    gout, args.atol, args.rtol)
-                verdicts.append((ci, v, d))
-                rec["verdict"], rec["detail"] = v, d
             entry["cases"].append(rec)
 
         v, detail = aggregate_case_verdicts(verdicts)
