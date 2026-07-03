@@ -333,60 +333,67 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_in_events(const clap_process& p)
   {
-    if constexpr(midi_in_info::size > 0)
+    // Parameter and transport events apply to every plug-in; only the MIDI
+    // cases depend on having MIDI inputs.
+    auto N = p.in_events->size(p.in_events);
+
+    for(uint32_t i = 0; i < N; i++)
     {
-      auto N = p.in_events->size(p.in_events);
+      const clap_event_header_t* ev = p.in_events->get(p.in_events, i);
 
-      for(uint32_t i = 0; i < N; i++)
+      switch(ev->type)
       {
-        const clap_event_header_t* ev = p.in_events->get(p.in_events, i);
-
-        switch(ev->type)
-        {
-          case CLAP_EVENT_NOTE_ON:
-          case CLAP_EVENT_NOTE_OFF: {
+        case CLAP_EVENT_NOTE_ON:
+        case CLAP_EVENT_NOTE_OFF: {
+          if constexpr(midi_in_info::size > 0)
+          {
             midi_in_info::for_nth_mapped(
                 controls_inputs(), ((clap_event_note_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_note_t*)ev);
             });
-            break;
           }
-          case CLAP_EVENT_MIDI: {
+          break;
+        }
+        case CLAP_EVENT_MIDI: {
+          if constexpr(midi_in_info::size > 0)
+          {
             midi_in_info::for_nth_mapped(
                 controls_inputs(), ((clap_event_midi_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_midi_t*)ev);
             });
-            break;
           }
-          case CLAP_EVENT_MIDI_SYSEX: {
+          break;
+        }
+        case CLAP_EVENT_MIDI_SYSEX: {
+          if constexpr(midi_in_info::size > 0)
+          {
             midi_in_info::for_nth_mapped(
                 controls_inputs(), ((clap_event_midi_sysex_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_midi_sysex_t*)ev);
             });
-            break;
-          }
-
-          case CLAP_EVENT_PARAM_VALUE: {
-            process_param(*((clap_event_param_value_t*)ev));
-            break;
           }
           break;
-          case CLAP_EVENT_PARAM_MOD:
-            break;
-          case CLAP_EVENT_TRANSPORT: {
-            process_transport(*((clap_event_transport_t*)ev));
-            break;
-          }
-          case CLAP_EVENT_NOTE_CHOKE:
-          case CLAP_EVENT_NOTE_EXPRESSION:
-          case CLAP_EVENT_NOTE_END:
-          default:
-            // TODO
-            break;
         }
+
+        case CLAP_EVENT_PARAM_VALUE: {
+          process_param(*((clap_event_param_value_t*)ev));
+          break;
+        }
+        case CLAP_EVENT_PARAM_MOD:
+          break;
+        case CLAP_EVENT_TRANSPORT: {
+          process_transport(*((clap_event_transport_t*)ev));
+          break;
+        }
+        case CLAP_EVENT_NOTE_CHOKE:
+        case CLAP_EVENT_NOTE_EXPRESSION:
+        case CLAP_EVENT_NOTE_END:
+        default:
+          // TODO
+          break;
       }
     }
   }
