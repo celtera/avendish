@@ -1,5 +1,7 @@
 #pragma once
+#include <avnd/binding/vst3/bus.hpp>
 #include <avnd/binding/vst3/controller_base.hpp>
+#include <avnd/common/no_unique_address.hpp>
 #include <avnd/binding/vst3/programs.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/common/widechar.hpp>
@@ -70,6 +72,46 @@ public:
   // Set by the plug view while it is alive: host-driven parameter changes
   // are forwarded to the editor's model.
   std::function<void(ParamID, ParamValue)> ui_param_changed;
+
+  // ---- Message bus over the host connection (binding/vst3/bus.hpp) ----
+  // UI thread -> processing component
+  template <typename Msg>
+  void send_ui_message(const Msg& msg)
+  {
+    stv3::send_bus_message(
+        this->hostContext.get(), this->peerConnection.get(),
+        stv3::bus_ui_to_processor_id, msg);
+  }
+
+  // Component -> UI: delivered to the active view
+  struct no_bus_handler
+  {
+  };
+  static constexpr auto bus_handler_type()
+  {
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+      return std::type_identity<
+          std::function<void(avnd::any_proc_to_ui_msg_t<T>)>>{};
+    else
+      return std::type_identity<no_bus_handler>{};
+  }
+  AVND_NO_UNIQUE_ADDRESS
+  typename decltype(bus_handler_type())::type ui_message_received{};
+
+  Steinberg::tresult on_message(Steinberg::Vst::IMessage& m) override
+  {
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+    {
+      avnd::any_proc_to_ui_msg_t<T> msg;
+      if(stv3::read_bus_message(m, stv3::bus_processor_to_ui_id, msg))
+      {
+        if(ui_message_received)
+          ui_message_received(std::move(msg));
+        return Steinberg::kResultOk;
+      }
+    }
+    return Steinberg::kResultFalse;
+  }
 
   Controller()
   {

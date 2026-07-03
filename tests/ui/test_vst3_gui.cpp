@@ -16,6 +16,8 @@
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 #include <pluginterfaces/vst/ivstcomponent.h>
 #include <pluginterfaces/vst/ivsteditcontroller.h>
+#include <pluginterfaces/vst/ivsthostapplication.h>
+#include <pluginterfaces/vst/ivstmessage.h>
 
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN 1
@@ -27,7 +29,10 @@
 
 #include <cmath>
 #include <cstring>
+#include <map>
+#include <string>
 #include <string_view>
+#include <vector>
 
 // The plug-in module and this host each carry their own IID definitions.
 namespace Steinberg
@@ -40,6 +45,10 @@ DEF_CLASS_IID(IComponent)
 DEF_CLASS_IID(IAudioProcessor)
 DEF_CLASS_IID(IEditController)
 DEF_CLASS_IID(IComponentHandler)
+DEF_CLASS_IID(IConnectionPoint)
+DEF_CLASS_IID(IMessage)
+DEF_CLASS_IID(IAttributeList)
+DEF_CLASS_IID(IHostApplication)
 }
 }
 
@@ -85,6 +94,109 @@ struct component_handler final : Vst::IComponentHandler
   {
     restarts++;
     return kResultOk;
+  }
+};
+
+// ---- Minimal host-side IMessage machinery for the connection points ----
+struct test_attributes final : Vst::IAttributeList
+{
+  std::map<std::string, std::vector<char>> bins;
+
+  tresult PLUGIN_API queryInterface(const TUID iid, void** obj) override
+  {
+    QUERY_INTERFACE(iid, obj, FUnknown::iid, Vst::IAttributeList);
+    QUERY_INTERFACE(iid, obj, Vst::IAttributeList::iid, Vst::IAttributeList);
+    *obj = nullptr;
+    return kNoInterface;
+  }
+  uint32 PLUGIN_API addRef() override { return 2; }
+  uint32 PLUGIN_API release() override { return 1; }
+
+  tresult PLUGIN_API setInt(AttrID, int64) override { return kResultFalse; }
+  tresult PLUGIN_API getInt(AttrID, int64&) override { return kResultFalse; }
+  tresult PLUGIN_API setFloat(AttrID, double) override { return kResultFalse; }
+  tresult PLUGIN_API getFloat(AttrID, double&) override { return kResultFalse; }
+  tresult PLUGIN_API setString(AttrID, const Vst::TChar*) override
+  {
+    return kResultFalse;
+  }
+  tresult PLUGIN_API getString(AttrID, Vst::TChar*, uint32) override
+  {
+    return kResultFalse;
+  }
+  tresult PLUGIN_API setBinary(AttrID id, const void* data, uint32 size) override
+  {
+    auto* bytes = (const char*)data;
+    bins[id] = std::vector<char>(bytes, bytes + size);
+    return kResultOk;
+  }
+  tresult PLUGIN_API getBinary(AttrID id, const void*& data, uint32& size) override
+  {
+    auto it = bins.find(id);
+    if(it == bins.end())
+      return kResultFalse;
+    data = it->second.data();
+    size = (uint32)it->second.size();
+    return kResultOk;
+  }
+};
+
+struct test_message final : Vst::IMessage
+{
+  std::string id;
+  test_attributes attrs;
+  int refs{1};
+
+  tresult PLUGIN_API queryInterface(const TUID iid, void** obj) override
+  {
+    QUERY_INTERFACE(iid, obj, FUnknown::iid, Vst::IMessage);
+    QUERY_INTERFACE(iid, obj, Vst::IMessage::iid, Vst::IMessage);
+    *obj = nullptr;
+    return kNoInterface;
+  }
+  uint32 PLUGIN_API addRef() override { return ++refs; }
+  uint32 PLUGIN_API release() override
+  {
+    if(--refs == 0)
+    {
+      delete this;
+      return 0;
+    }
+    return refs;
+  }
+
+  Steinberg::FIDString PLUGIN_API getMessageID() override { return id.c_str(); }
+  void PLUGIN_API setMessageID(Steinberg::FIDString mid) override { id = mid ? mid : ""; }
+  Vst::IAttributeList* PLUGIN_API getAttributes() override { return &attrs; }
+};
+
+struct test_host_app final : Vst::IHostApplication
+{
+  tresult PLUGIN_API queryInterface(const TUID iid, void** obj) override
+  {
+    QUERY_INTERFACE(iid, obj, FUnknown::iid, Vst::IHostApplication);
+    QUERY_INTERFACE(iid, obj, Vst::IHostApplication::iid, Vst::IHostApplication);
+    *obj = nullptr;
+    return kNoInterface;
+  }
+  uint32 PLUGIN_API addRef() override { return 2; }
+  uint32 PLUGIN_API release() override { return 1; }
+
+  tresult PLUGIN_API getName(Vst::String128 name) override
+  {
+    static constexpr char16_t n[] = u"avnd-test-host";
+    memcpy(name, n, sizeof(n));
+    return kResultOk;
+  }
+  tresult PLUGIN_API createInstance(TUID cid, TUID iid, void** obj) override
+  {
+    if(memcmp(cid, Vst::IMessage::iid, sizeof(TUID)) == 0)
+    {
+      *obj = new test_message;
+      return kResultOk;
+    }
+    *obj = nullptr;
+    return kNoInterface;
   }
 };
 
@@ -160,13 +272,15 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
   }
   REQUIRE(fx_index >= 0);
 
+  test_host_app host_app;
+
   Vst::IComponent* component{};
   REQUIRE(
       factory->createInstance(
           ci.cid, Vst::IComponent::iid, (void**)&component)
       == kResultOk);
   REQUIRE(component);
-  REQUIRE(component->initialize(nullptr) == kResultOk);
+  REQUIRE(component->initialize(&host_app) == kResultOk);
 
   TUID controller_cid{};
   REQUIRE(component->getControllerClassId(controller_cid) == kResultOk);
@@ -177,7 +291,20 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
           controller_cid, Vst::IEditController::iid, (void**)&controller)
       == kResultOk);
   REQUIRE(controller);
-  REQUIRE(controller->initialize(nullptr) == kResultOk);
+  REQUIRE(controller->initialize(&host_app) == kResultOk);
+
+  // Connect the component and controller like a host does, so the message
+  // bus can cross between them.
+  Vst::IConnectionPoint* comp_cp{};
+  Vst::IConnectionPoint* ctrl_cp{};
+  REQUIRE(
+      component->queryInterface(Vst::IConnectionPoint::iid, (void**)&comp_cp)
+      == kResultOk);
+  REQUIRE(
+      controller->queryInterface(Vst::IConnectionPoint::iid, (void**)&ctrl_cp)
+      == kResultOk);
+  REQUIRE(comp_cp->connect(ctrl_cp) == kResultOk);
+  REQUIRE(ctrl_cp->connect(comp_cp) == kResultOk);
 
   component_handler handler;
   REQUIRE(controller->setComponentHandler(&handler) == kResultOk);
@@ -224,6 +351,60 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
   CHECK(handler.last_value > 0.4);
   CHECK(controller->getParamNormalized(0) == handler.last_value);
 
+  // Message bus round trip across the component/controller split: the
+  // release queued a ui->processor message, sent over the connection as an
+  // IMessage; the component drains it in process(), copies the value into
+  // Gain, and answers with a feedback IMessage.
+  Vst::IAudioProcessor* processor{};
+  REQUIRE(
+      component->queryInterface(Vst::IAudioProcessor::iid, (void**)&processor)
+      == kResultOk);
+
+  Vst::ProcessSetup setup{
+      Vst::kRealtime, Vst::kSample32, 64, 48000.};
+  REQUIRE(processor->setupProcessing(setup) == kResultOk);
+  component->activateBus(Vst::kAudio, Vst::kInput, 0, true);
+  component->activateBus(Vst::kAudio, Vst::kOutput, 0, true);
+  REQUIRE(component->setActive(true) == kResultOk);
+
+  float in_l[64], in_r[64], out_l[64]{}, out_r[64]{};
+  for(int i = 0; i < 64; i++)
+  {
+    in_l[i] = 1.f;
+    in_r[i] = 1.f;
+  }
+  float* ins[2] = {in_l, in_r};
+  float* outs[2] = {out_l, out_r};
+  Vst::AudioBusBuffers in_bus{};
+  in_bus.numChannels = 2;
+  in_bus.channelBuffers32 = ins;
+  Vst::AudioBusBuffers out_bus{};
+  out_bus.numChannels = 2;
+  out_bus.channelBuffers32 = outs;
+
+  Vst::ProcessData data{};
+  data.processMode = Vst::kRealtime;
+  data.symbolicSampleSize = Vst::kSample32;
+  data.numSamples = 64;
+  data.numInputs = 1;
+  data.numOutputs = 1;
+  data.inputs = &in_bus;
+  data.outputs = &out_bus;
+  REQUIRE(processor->process(data) == kResultOk);
+
+  // The processor received the committed level over the bus and used it
+  // this very block: gain was set to the committed value by
+  // process_message. The Level *parameter* on the component still holds its
+  // 0.25 init — this minimal host does not route performEdit back as
+  // parameter changes the way a real host would.
+  CHECK(out_l[0] == 1.f * (float)handler.last_value * 0.25f);
+
+  // The feedback message reached the controller/editor without incident.
+  pump_messages(100);
+
+  component->setActive(false);
+  processor->release();
+
   // Host-driven automation flows back into the editor without incident.
   // The mirror stores float, so compare with a float-precision tolerance.
   REQUIRE(controller->setParamNormalized(0, 0.1) == kResultTrue);
@@ -233,6 +414,11 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
   REQUIRE(view->removed() == kResultOk);
   view->release();
   DestroyWindow(parent);
+
+  comp_cp->disconnect(ctrl_cp);
+  ctrl_cp->disconnect(comp_cp);
+  comp_cp->release();
+  ctrl_cp->release();
 
   controller->terminate();
   controller->release();

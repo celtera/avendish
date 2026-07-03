@@ -20,6 +20,7 @@
 #endif
 #include <windows.h>
 
+#include <cmath>
 #include <vector>
 
 namespace
@@ -173,6 +174,43 @@ TEST_CASE("tier C: author-provided editor through the plug-in bindings", "[custo
   CHECK(out.count(CLAP_EVENT_PARAM_GESTURE_BEGIN) == 1);
   CHECK(out.count(CLAP_EVENT_PARAM_GESTURE_END) == 1);
   CHECK(out.count(CLAP_EVENT_PARAM_VALUE) >= 1);
+
+  // Tier C message bus: the release sent ui_to_processor{gain} through the
+  // window's send_message; process() drains it and the processor sets
+  // gain = value/2 (deliberately different from the direct edit).
+  REQUIRE(plugin->activate(plugin, 48000., 64, 64));
+  REQUIRE(plugin->start_processing(plugin));
+
+  float in_l[64]{}, in_r[64]{}, out_l[64]{}, out_r[64]{};
+  float* ins[2] = {in_l, in_r};
+  float* outs[2] = {out_l, out_r};
+  clap_audio_buffer in_bus{};
+  in_bus.data32 = ins;
+  in_bus.channel_count = 2;
+  clap_audio_buffer out_bus{};
+  out_bus.data32 = outs;
+  out_bus.channel_count = 2;
+
+  out_event_collector process_out;
+  clap_process proc{};
+  proc.frames_count = 64;
+  proc.audio_inputs = &in_bus;
+  proc.audio_inputs_count = 1;
+  proc.audio_outputs = &out_bus;
+  proc.audio_outputs_count = 1;
+  proc.in_events = &empty_in_events;
+  proc.out_events = &process_out.list;
+  REQUIRE(plugin->process(plugin, &proc) != CLAP_PROCESS_ERROR);
+
+  double gain_after_bus{};
+  REQUIRE(params->get_value(plugin, 0, &gain_after_bus));
+  CHECK(std::abs(gain_after_bus - after * 0.5) < 1e-6);
+
+  // The feedback message drains into window.process_message on the timer.
+  pump_messages(150);
+
+  plugin->stop_processing(plugin);
+  plugin->deactivate(plugin);
 
   gui->destroy(plugin);
   pump_messages(50);

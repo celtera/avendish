@@ -24,6 +24,7 @@
  */
 
 #include <avnd/binding/ui/editor.hpp>
+#include <avnd/binding/vst3/bus.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -73,11 +74,41 @@ public:
     editor = avnd::make_ui_editor(model);
     controller.ui_param_changed
         = [this](ParamID tag, double value) { apply_param(tag, value); };
+
+    // Message bus: route through the host connection to the real
+    // processing component instead of the view-local model
+    // (binding/vst3/bus.hpp; trivially-copyable payloads only for now).
+    if constexpr(stv3::bus_to_processor_enabled<T>)
+    {
+      if constexpr(requires { editor->runtime(); })
+      {
+        editor->runtime().set_bus_to_processor(
+            [this](auto&& msg) { controller.send_ui_message(msg); });
+      }
+      else if constexpr(requires { editor->send_message; })
+      {
+        editor->send_message
+            = [this](auto&& msg) { controller.send_ui_message(msg); };
+      }
+    }
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+    {
+      controller.ui_message_received = [this](auto msg) {
+        if(!editor)
+          return;
+        if constexpr(requires { editor->runtime(); })
+          editor->runtime().deliver_to_ui(std::move(msg));
+        else if constexpr(requires { editor->process_message(std::move(msg)); })
+          editor->process_message(std::move(msg));
+      };
+    }
   }
 
   ~plug_view()
   {
     controller.ui_param_changed = {};
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+      controller.ui_message_received = {};
     if(editor)
       editor->close();
     editor.reset();
