@@ -154,6 +154,15 @@ avnd_make_audioplug(
   C_NAME avnd_midi
 )
 
+# Tier C custom-UI example: the plug-in ships its own editor (raw Win32)
+# through the avnd::gui_windowed_ui seam instead of the soft editor.
+avnd_make_audioplug(
+  TARGET CustomUiWindow
+  MAIN_FILE examples/Advanced/UI/CustomUiWindow.hpp
+  MAIN_CLASS examples::CustomUiWindow
+  C_NAME avnd_custom_ui_window
+)
+
 # GCC segfaults with those two...
 if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   avnd_make_all(
