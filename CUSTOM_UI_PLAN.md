@@ -27,7 +27,9 @@ Status: proposal. Date: 2026-07-02.
    (HWND / NSView* / X11 Window) and a UI-thread idle/timer callback. The
    plug-in renders a child into it and never owns the event loop. Every layer
    below must fit this inversion of control.
-5. **Permissive licensing** for everything linked into a binary plug-in.
+5. **License compatibility with Avendish (AGPL).** Copyleft dependencies
+   (GPL/LGPL) are acceptable; permissive (ISC/MIT) is a bonus that keeps
+   every downstream licensing option open, not a requirement.
 
 ## 2. What exists today (inventory)
 
@@ -69,8 +71,11 @@ Picks, per layer (each layer independently swappable):
 | Standard widgets + input logic | **Nuklear** (MIT/Unlicense, single C89 header, ~18 kLoC) | Only surveyed library with: in-tree software rasterizer (`rawfb`), native `nk_knob`, fixed-buffer no-libc mode (MCU-proven), active maintenance (v4.13.3, 2026); text editing/combos/skinning for free | Dear ImGui (richest ecosystem, GPU-oriented, PSRAM-hungry on MCU); LVGL (if the embedded-product end dominates); microui (pedagogical minimum, dormant) |
 | `avnd::painter` rasterizer | **canvas_ity** (ISC, single header ~2.3 kLoC) | HTML5-Canvas semantics map 1:1 onto `avnd::painter` (which was modeled on Qt/Canvas2D); pure software, no deps, TTF text, gradients, clipping | PlutoVG (C, MIT, lighter surfaces — better for tiny-RAM MCU); ThorVG |
 
-Licensing: ISC + MIT/Unlicense + ISC are all compatible with Avendish's
-dual-licensed concept headers and with proprietary plug-in binaries.
+Licensing: Avendish is AGPL, so copyleft dependencies would be fine too —
+the picks are ISC/MIT/Unlicense on technical merit, which additionally keeps
+every downstream licensing option open. (Candidates eliminated during the
+survey were dropped for technical reasons, not copyleft: Cairo on build
+weight, AGG on abandonment, Slint on the Rust toolchain requirement.)
 
 Why not "just Nuklear" for custom widgets too: Nuklear's command list has no
 arbitrary path fill, no bézier fill, no transforms — it cannot implement
