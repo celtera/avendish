@@ -26,11 +26,14 @@ public:
 
   ui_runtime<T>& runtime() noexcept { return m_runtime; }
 
-  void resize(int w, int h)
+  // w/h are logical; the framebuffer is w*scale x h*scale physical pixels.
+  void resize(int w, int h, double scale = 1.)
   {
-    m_pixels.assign(size_t(w) * h * 4, 0);
-    m_fb = framebuffer{m_pixels.data(), w, h, w * 4};
-    m_runtime.set_viewport(w, h);
+    m_runtime.set_viewport(w, h, scale);
+    const int pw = m_runtime.physical_width();
+    const int ph = m_runtime.physical_height();
+    m_pixels.assign(size_t(pw) * ph * 4, 0);
+    m_fb = framebuffer{m_pixels.data(), pw, ph, pw * 4};
   }
 
   // ---- Input ----

@@ -43,6 +43,7 @@ namespace Steinberg
 {
 DEF_CLASS_IID(IPlugView)
 DEF_CLASS_IID(IPlugFrame)
+DEF_CLASS_IID(IPlugViewContentScaleSupport)
 
 namespace Vst
 {

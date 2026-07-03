@@ -76,7 +76,10 @@ if(NOT EMSCRIPTEN AND NOT TARGET avnd_pugl)
   if(WIN32)
     target_link_libraries(avnd_pugl PUBLIC user32 gdi32 dwmapi shlwapi shell32)
   elseif(APPLE)
-    target_link_libraries(avnd_pugl PUBLIC "-framework Cocoa" "-framework CoreVideo")
+    # QuartzCore/CoreGraphics: the soft window's CALayer blit
+    target_link_libraries(avnd_pugl PUBLIC
+      "-framework Cocoa" "-framework CoreVideo"
+      "-framework QuartzCore" "-framework CoreGraphics")
   else()
     find_package(X11 REQUIRED)
     target_link_libraries(avnd_pugl PUBLIC X11::X11)

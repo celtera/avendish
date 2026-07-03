@@ -792,8 +792,16 @@ struct SimpleAudioEffect : clap_plugin
         = [](const clap_plugin* plugin) -> void { self(plugin)->gui_destroy(); },
 
         .set_scale = [](const clap_plugin* plugin, double scale) -> bool {
-      self(plugin)->gui.scale = scale > 0. ? scale : 1.;
-      return false; // scaling applied on next open only, for now
+      auto& p = *self(plugin);
+      p.gui.scale = scale > 0. ? scale : 1.;
+      // Applied at open through gui_parent.scale; forwarded live when the
+      // editor supports rescaling.
+      if constexpr(requires { p.gui.editor->set_scale(scale); })
+      {
+        if(p.gui.editor)
+          p.gui.editor->set_scale(p.gui.scale);
+      }
+      return true;
     },
 
         .get_size

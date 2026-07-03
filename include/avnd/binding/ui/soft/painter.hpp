@@ -91,7 +91,10 @@ public:
   void rotate(double deg) { m_c.rotate(deg * deg2rad); }
   void reset_transform()
   {
-    m_c.set_transform(1.f, 0.f, 0.f, 1.f, 0.f, 0.f);
+    // Base transform: device scale (HiDPI) then widget-local origin;
+    // paint() code always works in logical, widget-local coordinates.
+    m_c.set_transform(
+        (float)m_base_scale, 0.f, 0.f, (float)m_base_scale, 0.f, 0.f);
     if(m_base_tx != 0. || m_base_ty != 0.)
       m_c.translate(m_base_tx, m_base_ty);
   }
@@ -191,6 +194,12 @@ public:
     reset_transform();
   }
 
+  void set_base_scale(double s)
+  {
+    m_base_scale = s > 0. ? s : 1.;
+    reset_transform();
+  }
+
 private:
   void apply_font()
   {
@@ -209,6 +218,7 @@ private:
   std::vector<unsigned char> m_bytes;
   double m_font_size{12.};
   double m_base_tx{}, m_base_ty{};
+  double m_base_scale{1.};
   bool m_font_dirty{true};
 };
 
