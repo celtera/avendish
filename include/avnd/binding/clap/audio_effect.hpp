@@ -268,7 +268,7 @@ struct SimpleAudioEffect : clap_plugin
     // Process the audio
     {
       int in_N = avnd::input_channels<T>(2);
-      int out_N = avnd::input_channels<T>(2);
+      int out_N = avnd::output_channels<T>(2);
 
       if constexpr(avnd::float_processor<T>)
       {
