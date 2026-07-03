@@ -301,19 +301,26 @@ struct SimpleAudioEffect : clap_plugin
     // Process the audio
     {
       int in_N = avnd::input_channels<T>(2);
-      int out_N = avnd::input_channels<T>(2);
+      int out_N = avnd::output_channels<T>(2);
 
       if constexpr(avnd::float_processor<T>)
       {
-        auto inputs = (float**)alloca(sizeof(float*) * in_N);
-        auto outputs = (float**)alloca(sizeof(float*) * out_N);
+        auto inputs = (float**)alloca(sizeof(float*) * std::max(in_N, 1));
+        auto outputs = (float**)alloca(sizeof(float*) * std::max(out_N, 1));
+        // The host may provide fewer channels than declared: null the slots
+        // so the zero-filled-channels invariant substitutes silent buffers
+        // instead of the effect writing through garbage pointers.
+        std::fill_n(inputs, in_N, nullptr);
+        std::fill_n(outputs, out_N, nullptr);
 
         process_impl<&clap_audio_buffer::data32>(process, inputs, in_N, outputs, out_N);
       }
       else if constexpr(avnd::double_processor<T>)
       {
-        auto inputs = (double**)alloca(sizeof(double*) * in_N);
-        auto outputs = (double**)alloca(sizeof(double*) * out_N);
+        auto inputs = (double**)alloca(sizeof(double*) * std::max(in_N, 1));
+        auto outputs = (double**)alloca(sizeof(double*) * std::max(out_N, 1));
+        std::fill_n(inputs, in_N, nullptr);
+        std::fill_n(outputs, out_N, nullptr);
 
         process_impl<&clap_audio_buffer::data64>(process, inputs, in_N, outputs, out_N);
       }
@@ -380,60 +387,67 @@ struct SimpleAudioEffect : clap_plugin
       }
     }
 
-    if constexpr(midi_in_info::size > 0)
+    // Parameter and transport events apply to every plug-in; only the MIDI
+    // cases depend on having MIDI inputs.
+    auto N = p.in_events->size(p.in_events);
+
+    for(uint32_t i = 0; i < N; i++)
     {
-      auto N = p.in_events->size(p.in_events);
+      const clap_event_header_t* ev = p.in_events->get(p.in_events, i);
 
-      for(uint32_t i = 0; i < N; i++)
+      switch(ev->type)
       {
-        const clap_event_header_t* ev = p.in_events->get(p.in_events, i);
-
-        switch(ev->type)
-        {
-          case CLAP_EVENT_NOTE_ON:
-          case CLAP_EVENT_NOTE_OFF: {
+        case CLAP_EVENT_NOTE_ON:
+        case CLAP_EVENT_NOTE_OFF: {
+          if constexpr(midi_in_info::size > 0)
+          {
             midi_in_info::for_nth_mapped(
                 controls_inputs(), ((clap_event_note_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_note_t*)ev);
             });
-            break;
           }
-          case CLAP_EVENT_MIDI: {
+          break;
+        }
+        case CLAP_EVENT_MIDI: {
+          if constexpr(midi_in_info::size > 0)
+          {
             midi_in_info::for_nth_mapped(
                 controls_inputs(), ((clap_event_midi_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_midi_t*)ev);
             });
-            break;
           }
-          case CLAP_EVENT_MIDI_SYSEX: {
+          break;
+        }
+        case CLAP_EVENT_MIDI_SYSEX: {
+          if constexpr(midi_in_info::size > 0)
+          {
             midi_in_info::for_nth_mapped(
                 controls_inputs(), ((clap_event_midi_sysex_t*)ev)->port_index,
                 [&]<typename C>(C& in_port) {
               midi.add_message(in_port, *(clap_event_midi_sysex_t*)ev);
             });
-            break;
-          }
-
-          case CLAP_EVENT_PARAM_VALUE: {
-            process_param(*((clap_event_param_value_t*)ev));
-            break;
           }
           break;
-          case CLAP_EVENT_PARAM_MOD:
-            break;
-          case CLAP_EVENT_TRANSPORT: {
-            process_transport(*((clap_event_transport_t*)ev));
-            break;
-          }
-          case CLAP_EVENT_NOTE_CHOKE:
-          case CLAP_EVENT_NOTE_EXPRESSION:
-          case CLAP_EVENT_NOTE_END:
-          default:
-            // TODO
-            break;
         }
+
+        case CLAP_EVENT_PARAM_VALUE: {
+          process_param(*((clap_event_param_value_t*)ev));
+          break;
+        }
+        case CLAP_EVENT_PARAM_MOD:
+          break;
+        case CLAP_EVENT_TRANSPORT: {
+          process_transport(*((clap_event_transport_t*)ev));
+          break;
+        }
+        case CLAP_EVENT_NOTE_CHOKE:
+        case CLAP_EVENT_NOTE_EXPRESSION:
+        case CLAP_EVENT_NOTE_END:
+        default:
+          // TODO
+          break;
       }
     }
   }
