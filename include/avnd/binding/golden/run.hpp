@@ -68,23 +68,39 @@ std::string clean_name(int index)
   return std::string{nm};
 }
 
-// Set a deterministic value on an input control field, then append
-// {index, name, value} to the ordered `arr` (order matches the dump).
+// One test case = "override control #index with `value`" (index < 0 => the base
+// case: every control at its default midpoint / first-enum / true). We sweep one
+// control at a time (OAT): the base case, then each enum mode and each numeric
+// range endpoint, holding the others at their default. `value` carries the enum
+// ordinal or the range endpoint as a double; string/bool overrides are unused.
+struct case_override
+{
+  int index = -1;
+  double value = 0.0;
+};
+
+// Set a deterministic value on an input control field (honouring `ov` when it
+// targets this control), then append {index, name, value} to the ordered `arr`.
 template <typename F>
-void set_and_record_control(F& field, dump_json::document& jdoc, dump_json::value arr, int index)
+void set_and_record_control(
+    F& field, dump_json::document& jdoc, dump_json::value arr, int index,
+    const case_override& ov)
 {
   using vt = std::decay_t<decltype(field.value)>;
+  const bool over = (ov.index == index);
   auto node = jdoc.make_node();
   node["index"] = index;
   node["name"] = clean_name<F>(index);
   if constexpr(std::is_same_v<vt, bool>)
   {
-    field.value = true;
-    node["value"] = true;
+    field.value = over ? (ov.value != 0.0) : true;
+    node["value"] = (bool)field.value;
   }
   else if constexpr(std::floating_point<vt>)
   {
-    if constexpr(avnd::parameter_with_minmax_range<F>)
+    if(over)
+      field.value = static_cast<vt>(ov.value);
+    else if constexpr(avnd::parameter_with_minmax_range<F>)
     {
       constexpr auto r = avnd::get_range<F>();
       field.value = static_cast<vt>(r.min + 0.5 * (r.max - r.min));
@@ -95,12 +111,14 @@ void set_and_record_control(F& field, dump_json::document& jdoc, dump_json::valu
   }
   else if constexpr(std::is_enum_v<vt>)
   {
-    field.value = static_cast<vt>(0);
+    field.value = over ? static_cast<vt>((int)ov.value) : static_cast<vt>(0);
     node["value"] = static_cast<int>(field.value);
   }
   else if constexpr(std::integral<vt>)
   {
-    if constexpr(avnd::parameter_with_minmax_range<F>)
+    if(over)
+      field.value = static_cast<vt>((std::int64_t)ov.value);
+    else if constexpr(avnd::parameter_with_minmax_range<F>)
     {
       constexpr auto r = avnd::get_range<F>();
       field.value = static_cast<vt>(r.min + (r.max - r.min) / 2);
@@ -119,6 +137,46 @@ void set_and_record_control(F& field, dump_json::document& jdoc, dump_json::valu
     node["value"] = "unrecorded"; // container/struct: structural compare only
   }
   arr.push_back(node);
+}
+
+// Enumerate the OAT test cases for T: the base case, then for every enum input a
+// case per non-zero mode, and for every ranged numeric input a case at min and
+// at max. Bounded (sum, not product), so it stays small.
+template <typename T>
+std::vector<case_override> enumerate_cases()
+{
+  std::vector<case_override> cases;
+  cases.push_back({-1, 0.0}); // base
+  if constexpr(avnd::parameter_input_introspection<T>::size > 0)
+  {
+    avnd::effect_container<T> probe;
+    avnd::init_controls(probe);
+    int idx = 0;
+    avnd::parameter_input_introspection<T>::for_all(
+        avnd::get_inputs(probe), [&](auto& field) {
+          using F = std::decay_t<decltype(field)>;
+          using vt = std::decay_t<decltype(field.value)>;
+          if constexpr(std::is_enum_v<vt>)
+          {
+            constexpr int C = (int)avnd::get_enum_choices_count<F>();
+            for(int c = 1; c < C; ++c)
+              cases.push_back({idx, (double)c});
+          }
+          else if constexpr(
+              (std::floating_point<vt> || std::integral<vt>)&&avnd::
+                  parameter_with_minmax_range<F>)
+          {
+            constexpr auto r = avnd::get_range<F>();
+            if((double)r.min != (double)r.max)
+            {
+              cases.push_back({idx, (double)r.min});
+              cases.push_back({idx, (double)r.max});
+            }
+          }
+          idx++;
+        });
+  }
+  return cases;
 }
 
 // Append an output control field's value as {index, name, value}.
@@ -140,26 +198,11 @@ void record_output_control(F& field, dump_json::document& jdoc, dump_json::value
   arr.push_back(node);
 }
 
+// Run ONE test case (fresh effect, override `ov` applied) and write its inputs
+// and outputs into `case_node`. Throws on failure (caught by run()).
 template <typename T>
-int run(std::string_view path)
+void run_case(dump_json::document& jdoc, dump_json::value case_node, const case_override& ov)
 {
-  dump_json::document jdoc;
-  auto root = jdoc.root();
-  root["c_name"] = avnd::get_c_name<T>();
-  auto meta = root["meta"];
-  meta["seed"] = k_seed;
-  meta["frames"] = k_frames;
-  meta["rate"] = k_rate;
-
-  auto write = [&](std::string_view status) {
-    root["meta"]["status"] = status;
-    std::ofstream f{std::string{path}};
-    f << jdoc.dump();
-    return 0;
-  };
-
-  try
-  {
     avnd::effect_container<T> effect;
     avnd::process_adapter<T> processor;
     avnd::audio_channel_manager<T> channels{effect};
@@ -227,7 +270,7 @@ int run(std::string_view path)
       control_buffers.reserve_space(effect, k_frames);
 
     // --- inputs ---
-    auto in = root["inputs"];
+    auto in = case_node["inputs"];
     auto in_controls = in["controls"];
     in_controls.ensure_array();
     if constexpr(avnd::parameter_input_introspection<T>::size > 0)
@@ -235,7 +278,7 @@ int run(std::string_view path)
       int idx = 0;
       avnd::parameter_input_introspection<T>::for_all(
           avnd::get_inputs(effect), [&](auto& field) {
-            set_and_record_control(field, jdoc, in_controls, idx++);
+            set_and_record_control(field, jdoc, in_controls, idx++, ov);
           });
     }
 
@@ -282,7 +325,7 @@ int run(std::string_view path)
         avnd::span<float*>{out_ptrs.data(), (std::size_t)out_N}, k_frames);
 
     // --- outputs ---
-    auto out = root["outputs"];
+    auto out = case_node["outputs"];
     auto out_controls = out["controls"];
     out_controls.ensure_array();
     if constexpr(avnd::parameter_output_introspection<T>::size > 0)
@@ -333,17 +376,68 @@ int run(std::string_view path)
             out_tex.push_back(node);
           });
     }
+}
 
-    return write("ok");
-  }
-  catch(const std::exception& e)
+template <typename T>
+int run(std::string_view path)
+{
+  dump_json::document jdoc;
+  auto root = jdoc.root();
+  root["c_name"] = avnd::get_c_name<T>();
+  auto meta = root["meta"];
+  meta["seed"] = k_seed;
+  meta["frames"] = k_frames;
+  meta["rate"] = k_rate;
+
+  auto finish = [&](std::string_view status) {
+    root["meta"]["status"] = status;
+    std::ofstream f{std::string{path}};
+    f << jdoc.dump();
+    return 0;
+  };
+
+  auto cases_arr = root["cases"];
+  cases_arr.ensure_array();
+
+  std::vector<case_override> overrides;
+  try
   {
-    root["meta"]["error"] = std::string_view{e.what()};
-    return write("error");
+    overrides = enumerate_cases<T>();
   }
   catch(...)
   {
-    return write("error");
+    // If we cannot even enumerate, fall back to the single base case.
+    overrides = {{-1, 0.0}};
   }
+  meta["num_cases"] = (int)overrides.size();
+
+  bool all_ok = true;
+  int ci = 0;
+  for(const auto& ov : overrides)
+  {
+    auto cnode = jdoc.make_node();
+    cnode["index"] = ci++;
+    cnode["override_control"] = ov.index;
+    cnode["override_value"] = ov.value;
+    try
+    {
+      run_case<T>(jdoc, cnode, ov);
+      cnode["status"] = "ok";
+    }
+    catch(const std::exception& e)
+    {
+      cnode["status"] = "error";
+      cnode["error"] = std::string_view{e.what()};
+      all_ok = false;
+    }
+    catch(...)
+    {
+      cnode["status"] = "error";
+      all_ok = false;
+    }
+    cases_arr.push_back(cnode);
+  }
+
+  return finish(all_ok ? "ok" : "partial");
 }
 }
