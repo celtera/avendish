@@ -35,9 +35,68 @@ if(NOT TARGET avnd_deps_nuklear)
   target_include_directories(avnd_deps_canvas_ity INTERFACE "${avnd_canvas_ity_SOURCE_DIR}/src")
 endif()
 
+# pugl: tiny windowing shim made for plug-in editor embedding
+# (puglSetParent + host-pumped events). Desktop only; wasm and MCU shells
+# talk to soft_ui::surface directly.
+if(NOT EMSCRIPTEN AND NOT TARGET avnd_pugl)
+  FetchContent_Declare(
+    avnd_pugl
+    GIT_REPOSITORY "https://github.com/lv2/pugl"
+    GIT_TAG b7637149ebe53124e5be90559e02a0185bbcbd73
+    GIT_PROGRESS true
+  )
+  FetchContent_GetProperties(avnd_pugl)
+  if(NOT avnd_pugl_POPULATED)
+    FetchContent_Populate(avnd_pugl)
+  endif()
+
+  set(_pugl_src
+    "${avnd_pugl_SOURCE_DIR}/src/common.c"
+    "${avnd_pugl_SOURCE_DIR}/src/internal.c"
+  )
+  if(WIN32)
+    list(APPEND _pugl_src
+      "${avnd_pugl_SOURCE_DIR}/src/win.c"
+      "${avnd_pugl_SOURCE_DIR}/src/win_stub.c")
+  elseif(APPLE)
+    list(APPEND _pugl_src
+      "${avnd_pugl_SOURCE_DIR}/src/mac.m"
+      "${avnd_pugl_SOURCE_DIR}/src/mac_stub.m")
+  else()
+    list(APPEND _pugl_src
+      "${avnd_pugl_SOURCE_DIR}/src/x11.c"
+      "${avnd_pugl_SOURCE_DIR}/src/x11_stub.c")
+  endif()
+
+  add_library(avnd_pugl STATIC ${_pugl_src})
+  target_include_directories(avnd_pugl PUBLIC "${avnd_pugl_SOURCE_DIR}/include")
+  target_compile_definitions(avnd_pugl PUBLIC PUGL_STATIC)
+  set_target_properties(avnd_pugl PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+  if(WIN32)
+    target_link_libraries(avnd_pugl PUBLIC user32 gdi32 dwmapi shlwapi shell32)
+  elseif(APPLE)
+    target_link_libraries(avnd_pugl PUBLIC "-framework Cocoa" "-framework CoreVideo")
+  else()
+    find_package(X11 REQUIRED)
+    target_link_libraries(avnd_pugl PUBLIC X11::X11)
+    if(TARGET X11::Xrandr)
+      target_link_libraries(avnd_pugl PUBLIC X11::Xrandr)
+      target_compile_definitions(avnd_pugl PRIVATE USE_XRANDR=1)
+    endif()
+    if(TARGET X11::Xcursor)
+      target_link_libraries(avnd_pugl PUBLIC X11::Xcursor)
+      target_compile_definitions(avnd_pugl PRIVATE USE_XCURSOR=1)
+    endif()
+  endif()
+endif()
+
 if(NOT TARGET Avendish_soft_ui)
   add_library(Avendish_soft_ui INTERFACE)
   target_link_libraries(Avendish_soft_ui INTERFACE avnd_deps_nuklear avnd_deps_canvas_ity)
+  if(TARGET avnd_pugl)
+    target_link_libraries(Avendish_soft_ui INTERFACE avnd_pugl)
+  endif()
   add_library(Avendish::soft_ui ALIAS Avendish_soft_ui)
 
   # Default font for examples & tests (Nuklear vendors a few permissively

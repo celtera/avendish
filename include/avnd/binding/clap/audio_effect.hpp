@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/clap/bus_info.hpp>
+#include <avnd/binding/clap/gui.hpp>
 #include <avnd/binding/clap/helpers.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/introspection/channels.hpp>
@@ -122,6 +123,11 @@ struct SimpleAudioEffect : clap_plugin
 
   const clap_host& host;
 
+  using editor_t = clap_editor_t<T>;
+  static constexpr bool has_editor = clap_has_editor<T>;
+  AVND_NO_UNIQUE_ADDRESS
+  std::conditional_t<has_editor, gui_state<editor_t>, no_gui_state> gui;
+
   AVND_NO_UNIQUE_ADDRESS avnd_clap::audio_bus_info<T> audio_busses;
   AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
   AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
@@ -177,6 +183,13 @@ struct SimpleAudioEffect : clap_plugin
         return &p.audio_ports;
       if(id_sv == "clap.note-ports")
         return &p.note_ports;
+      if constexpr(has_editor)
+      {
+        if(id_sv == CLAP_EXT_GUI)
+          return get_gui();
+        if(id_sv == CLAP_EXT_TIMER_SUPPORT)
+          return get_timer_support();
+      }
 
       return nullptr;
     };
@@ -393,6 +406,7 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_out_events(const clap_process& p)
   {
+    flush_gestures(p.out_events);
     // TODO module
   }
 
@@ -515,7 +529,250 @@ struct SimpleAudioEffect : clap_plugin
       .description = avnd::get_description<T>().data(),
       .features = features.data()};
 
-  // wrapped in a function so the class is complete for the self()-> lambdas (MSVC C2027)
+  // ================= GUI (clap.gui + clap.timer-support) =================
+  // See binding/clap/gui.hpp for editor resolution and the gesture queue.
+
+  bool gui_create(const char* api, bool is_floating)
+  {
+    if constexpr(has_editor)
+    {
+      if(is_floating || std::string_view{api} != clap_native_window_api)
+        return false;
+      if constexpr(std::is_constructible_v<editor_t, avnd::effect_container<T>&>)
+        gui.editor = std::make_unique<editor_t>(effect);
+      else
+        gui.editor = std::make_unique<editor_t>();
+
+      if(auto t = (const clap_host_timer_support*)host.get_extension(
+             &host, CLAP_EXT_TIMER_SUPPORT))
+        t->register_timer(&host, 16, &gui.timer_id);
+      return true;
+    }
+    return false;
+  }
+
+  void gui_destroy()
+  {
+    if constexpr(has_editor)
+    {
+      if(gui.timer_id != CLAP_INVALID_ID)
+      {
+        if(auto t = (const clap_host_timer_support*)host.get_extension(
+               &host, CLAP_EXT_TIMER_SUPPORT))
+          t->unregister_timer(&host, gui.timer_id);
+        gui.timer_id = CLAP_INVALID_ID;
+      }
+      if(gui.editor)
+        gui.editor->close();
+      gui.editor.reset();
+    }
+  }
+
+  bool gui_set_parent(const clap_window* w)
+  {
+    if constexpr(has_editor)
+    {
+      if(!gui.editor || !w)
+        return false;
+      void* handle{};
+#if defined(_WIN32)
+      handle = (void*)w->win32;
+#elif defined(__APPLE__)
+      handle = (void*)w->cocoa;
+#else
+      handle = (void*)(uintptr_t)w->x11;
+#endif
+      gui.editor->open(
+          avnd::gui_parent{handle, native_gui_api, gui.scale}, make_gui_host());
+      return true;
+    }
+    return false;
+  }
+
+  bool gui_get_size(uint32_t* width, uint32_t* height)
+  {
+    if constexpr(has_editor)
+    {
+      if(!gui.editor)
+        return false;
+      const auto [w, h] = gui.editor->size();
+      *width = w;
+      *height = h;
+      return true;
+    }
+    return false;
+  }
+
+  void gui_on_timer(clap_id timer_id)
+  {
+    if constexpr(has_editor)
+    {
+      if(gui.editor && timer_id == gui.timer_id)
+        gui.editor->idle();
+    }
+  }
+
+  avnd::gui_host make_gui_host()
+  {
+    avnd::gui_host h;
+    h.ctx = this;
+    if constexpr(has_editor)
+    {
+      h.begin_edit = [](void* ctx, int param) {
+        ((SimpleAudioEffect*)ctx)->push_gesture(gesture_event::begin, param);
+      };
+      h.perform_edit = [](void* ctx, int param, double) {
+        ((SimpleAudioEffect*)ctx)->push_gesture(gesture_event::value, param);
+      };
+      h.end_edit = [](void* ctx, int param) {
+        ((SimpleAudioEffect*)ctx)->push_gesture(gesture_event::end, param);
+      };
+      h.request_resize = [](void* ctx, int w, int h_) {
+        auto& self = *(SimpleAudioEffect*)ctx;
+        if(auto g
+           = (const clap_host_gui*)self.host.get_extension(&self.host, CLAP_EXT_GUI))
+          g->request_resize(&self.host, w, h_);
+      };
+    }
+    return h;
+  }
+
+  void push_gesture(gesture_event::kind kind, int param)
+  {
+    if constexpr(has_editor)
+    {
+      if(param < 0 || param >= param_in_info::size)
+        return;
+      gesture_event ev{
+          .type = kind, .param_id = (clap_id)param_in_info::index_map[param]};
+      // The runtime writes the control before firing the hook, so the
+      // current mapped value is the one to broadcast.
+      if(kind == gesture_event::value)
+        get_param_value(ev.param_id, &ev.value_mapped);
+      gui.gestures.push(ev);
+
+      if(auto p = (const clap_host_params*)host.get_extension(&host, CLAP_EXT_PARAMS))
+        p->request_flush(&host);
+    }
+  }
+
+  // Drained from params.flush() and from process(): whichever the host
+  // calls first after a gesture.
+  void flush_gestures(const clap_output_events_t* out)
+  {
+    if constexpr(has_editor)
+    {
+      if(!out)
+        return;
+      gui.gestures.drain([&](const gesture_event& ev) {
+        if(ev.type == gesture_event::value)
+        {
+          clap_event_param_value e{};
+          e.header.size = sizeof(e);
+          e.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
+          e.header.type = CLAP_EVENT_PARAM_VALUE;
+          e.param_id = ev.param_id;
+          e.note_id = -1;
+          e.port_index = -1;
+          e.channel = -1;
+          e.key = -1;
+          e.value = ev.value_mapped;
+          out->try_push(out, &e.header);
+        }
+        else
+        {
+          clap_event_param_gesture e{};
+          e.header.size = sizeof(e);
+          e.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
+          e.header.type = ev.type == gesture_event::begin
+                              ? CLAP_EVENT_PARAM_GESTURE_BEGIN
+                              : CLAP_EVENT_PARAM_GESTURE_END;
+          e.param_id = ev.param_id;
+          out->try_push(out, &e.header);
+        }
+      });
+    }
+  }
+
+  // wrapped in functions so the class is complete for the self()-> lambdas (MSVC C2027)
+  static const clap_plugin_gui* get_gui() noexcept
+  {
+    static constexpr clap_plugin_gui gui_ext{
+        .is_api_supported
+        = [](const clap_plugin* plugin, const char* api, bool is_floating) -> bool {
+      return !is_floating && api && std::string_view{api} == clap_native_window_api;
+    },
+
+        .get_preferred_api
+        = [](const clap_plugin* plugin, const char** api, bool* is_floating) -> bool {
+      *api = clap_native_window_api;
+      *is_floating = false;
+      return true;
+    },
+
+        .create
+        = [](const clap_plugin* plugin, const char* api, bool is_floating) -> bool {
+      return self(plugin)->gui_create(api, is_floating);
+    },
+
+        .destroy
+        = [](const clap_plugin* plugin) -> void { self(plugin)->gui_destroy(); },
+
+        .set_scale = [](const clap_plugin* plugin, double scale) -> bool {
+      self(plugin)->gui.scale = scale > 0. ? scale : 1.;
+      return false; // scaling applied on next open only, for now
+    },
+
+        .get_size
+        = [](const clap_plugin* plugin, uint32_t* width, uint32_t* height) -> bool {
+      return self(plugin)->gui_get_size(width, height);
+    },
+
+        .can_resize = [](const clap_plugin* plugin) -> bool { return false; },
+
+        .get_resize_hints
+        = [](const clap_plugin* plugin, clap_gui_resize_hints* hints) -> bool {
+      return false;
+    },
+
+        .adjust_size
+        = [](const clap_plugin* plugin, uint32_t* width, uint32_t* height) -> bool {
+      return self(plugin)->gui_get_size(width, height);
+    },
+
+        .set_size
+        = [](const clap_plugin* plugin, uint32_t width, uint32_t height) -> bool {
+      uint32_t w{}, h{};
+      return self(plugin)->gui_get_size(&w, &h) && w == width && h == height;
+    },
+
+        .set_parent
+        = [](const clap_plugin* plugin, const clap_window* window) -> bool {
+      return self(plugin)->gui_set_parent(window);
+    },
+
+        .set_transient
+        = [](const clap_plugin* plugin, const clap_window* window) -> bool {
+      return false;
+    },
+
+        .suggest_title = [](const clap_plugin* plugin, const char* title) -> void {},
+
+        .show = [](const clap_plugin* plugin) -> bool { return true; },
+
+        .hide = [](const clap_plugin* plugin) -> bool { return true; }};
+    return &gui_ext;
+  }
+
+  static const clap_plugin_timer_support* get_timer_support() noexcept
+  {
+    static constexpr clap_plugin_timer_support timer_ext{
+        .on_timer = [](const clap_plugin* plugin, clap_id timer_id) -> void {
+          self(plugin)->gui_on_timer(timer_id);
+        }};
+    return &timer_ext;
+  }
+
   static const clap_plugin_params* get_params() noexcept
   {
     static constexpr clap_plugin_params params{
@@ -541,7 +798,21 @@ struct SimpleAudioEffect : clap_plugin
 
       .flush
       = [](const clap_plugin* plugin, const clap_input_events_t* input_parameter_changes,
-           const clap_output_events_t* output_parameter_changes) -> void {}};
+           const clap_output_events_t* output_parameter_changes) -> void {
+    auto& p = *self(plugin);
+    if(input_parameter_changes)
+    {
+      const auto N = input_parameter_changes->size(input_parameter_changes);
+      for(uint32_t i = 0; i < N; i++)
+      {
+        const auto* ev
+            = input_parameter_changes->get(input_parameter_changes, i);
+        if(ev && ev->type == CLAP_EVENT_PARAM_VALUE)
+          p.process_param(*(const clap_event_param_value*)ev);
+      }
+    }
+    p.flush_gestures(output_parameter_changes);
+  }};
     return &params;
   }
 

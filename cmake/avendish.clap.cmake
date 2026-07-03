@@ -8,6 +8,24 @@ endif()
 
 find_path(CLAP_HEADER NAMES clap/clap.h)
 if(NOT CLAP_HEADER)
+  # The CLAP "SDK" is a set of plain C headers: fetch them when absent.
+  include(FetchContent)
+  FetchContent_Declare(
+    avnd_clap_headers
+    GIT_REPOSITORY "https://github.com/free-audio/clap"
+    GIT_TAG 1.2.6
+    GIT_PROGRESS true
+  )
+  FetchContent_GetProperties(avnd_clap_headers)
+  if(NOT avnd_clap_headers_POPULATED)
+    FetchContent_Populate(avnd_clap_headers)
+  endif()
+  if(EXISTS "${avnd_clap_headers_SOURCE_DIR}/include/clap/clap.h")
+    set(CLAP_HEADER "${avnd_clap_headers_SOURCE_DIR}/include" CACHE PATH "clap headers" FORCE)
+  endif()
+endif()
+
+if(NOT CLAP_HEADER)
   message(STATUS "Clap not found, skipping bindings...")
 
   function(avnd_make_clap)
@@ -114,6 +132,13 @@ function(avnd_make_clap)
       Avendish::Avendish_clap
       DisableExceptions
   )
+
+  # Editors: plug-ins with a `struct ui` get the reference soft UI editor
+  # (pugl + Nuklear + canvas_ity); UI-less plug-ins are unaffected.
+  if(TARGET Avendish::soft_ui AND TARGET avnd_pugl)
+    avnd_target_soft_ui(${AVND_FX_TARGET})
+    target_compile_definitions(${AVND_FX_TARGET} PRIVATE AVND_CLAP_UI=1)
+  endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
