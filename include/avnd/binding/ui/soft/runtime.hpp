@@ -109,6 +109,8 @@ public:
   using ui_t = typename avnd::ui_type<T>::type;
   static constexpr int row_height = 28;
   static constexpr int nested_box_height = 220;
+  // Ticks between forced repaints when otherwise clean (see tick())
+  static constexpr int idle_refresh_interval = 16;
 
   explicit ui_runtime(avnd::effect_container<T>& impl, font_registry fonts = {})
       : m_impl{impl}
@@ -246,8 +248,15 @@ public:
     }
 
     m_mouse_was_down = m_mouse_down;
-    return std::exchange(m_dirty, true); // dirty-tracking refinement later:
-                                         // for now every tick repaints
+
+    // Values can change behind the UI's back with no notification (host
+    // automation applied on the audio thread in CLAP/VST2): a low-rate
+    // heartbeat bounds that staleness (~2 Hz at a 30 Hz tick) while idle
+    // frames otherwise cost nothing.
+    if(++m_ticks_since_render >= idle_refresh_interval)
+      m_dirty = true;
+
+    return m_dirty; // cleared by render()
   }
 
   // fb must be physical_width() x physical_height(); content is laid out in
@@ -263,8 +272,14 @@ public:
 
     auto& c = *m_canvas;
     const float s = (float)m_scale;
+    // No full clear: the theme paints an opaque full-window background as
+    // the first Nuklear command, covering the previous frame (the clear
+    // measured 2.6 ms/frame at 640x480 — pure waste). Only the sub-pixel
+    // sliver at the right/bottom edges (fractional HiDPI scales) can escape
+    // the background fill; clearing just that is ~free.
     c.set_transform(1.f, 0.f, 0.f, 1.f, 0.f, 0.f);
-    c.clear_rectangle(0.f, 0.f, (float)m_canvas_w, (float)m_canvas_h);
+    c.clear_rectangle((float)m_canvas_w - 2.f, 0.f, 2.f, (float)m_canvas_h);
+    c.clear_rectangle(0.f, (float)m_canvas_h - 2.f, (float)m_canvas_w, 2.f);
     c.set_transform(s, 0.f, 0.f, s, 0.f, 0.f);
 
     m_renderer.render(&m_ctx, c);
@@ -285,6 +300,7 @@ public:
 
     c.get_image_data(fb.data, fb.width, fb.height, fb.row_bytes(), 0, 0);
     m_dirty = false;
+    m_ticks_since_render = 0;
   }
 
 private:
@@ -303,6 +319,10 @@ private:
 
   void apply_input()
   {
+    // Any input can change visuals (hover states, drags, focus)
+    if(!m_events.empty())
+      m_dirty = true;
+
     nk_input_begin(&m_ctx);
     for(auto& e : m_events)
     {
@@ -902,6 +922,7 @@ private:
   int m_width{640}, m_height{480};
   int m_canvas_w{}, m_canvas_h{};
   int m_active_gesture{-1};
+  int m_ticks_since_render{};
   double m_scale{1.};
   double m_mouse_x{}, m_mouse_y{};
   bool m_mouse_down{}, m_mouse_was_down{};

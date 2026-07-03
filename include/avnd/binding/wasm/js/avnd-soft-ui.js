@@ -63,13 +63,18 @@ export function attachSoftUI(ui, canvas, opts = {}) {
   canvas.addEventListener("wheel", onWheel, { passive: false });
 
   let raf = 0;
-  const tick = () => {
-    // frame() returns a zero-copy view over the wasm heap
-    const pixels = ui.frame();
+  const blit = (pixels) => {
     const image = new ImageData(new Uint8ClampedArray(pixels), physW, physH);
     ctx.putImageData(image, 0, 0);
+  };
+  const tick = () => {
+    // frame() returns a zero-copy view over the wasm heap, or null when the
+    // UI didn't change — idle frames then skip render and blit entirely.
+    const pixels = ui.frame();
+    if (pixels) blit(pixels);
     raf = requestAnimationFrame(tick);
   };
+  blit(ui.renderNow ? ui.renderNow() : ui.frame()); // first paint
   raf = requestAnimationFrame(tick);
 
   return {
