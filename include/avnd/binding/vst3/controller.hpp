@@ -13,6 +13,8 @@
 #include <pluginterfaces/vst/ivstmidicontrollers.h>
 
 #include <cstdio>
+#include <functional>
+#include <string_view>
 
 namespace stv3
 {
@@ -58,16 +60,36 @@ class Controller final
     return m_refcount;
   }
 
+public:
   using inputs_t = typename avnd::inputs_type<T>::type;
   inputs_t inputs_mirror{};
 
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
 
-public:
-  Controller() { }
+  // Set by the plug view while it is alive: host-driven parameter changes
+  // are forwarded to the editor's model.
+  std::function<void(ParamID, ParamValue)> ui_param_changed;
+
+  Controller()
+  {
+    // Give the mirror the declared initial values so hosts (and the editor)
+    // see them before any state load.
+    if constexpr(avnd::has_inputs<T>)
+    {
+      inputs_info_t::for_all(inputs_mirror, []<typename C>(C& field) {
+        if constexpr(avnd::has_range<C>)
+        {
+          if constexpr(requires { field.value = avnd::get_range<C>().init; })
+            field.value = avnd::get_range<C>().init;
+        }
+      });
+    }
+  }
 
   virtual ~Controller();
+
+  Steinberg::IPlugView* createView(const char* name) override;
 
   int32 getParameterCount() override { return inputs_info_t::size; }
 
@@ -161,6 +183,9 @@ public:
           assign_if_assignable(field.value, avnd::map_control_from_01<C>(value));
       });
     }
+
+    if(ui_param_changed)
+      ui_param_changed(tag, value);
 
     return Steinberg::kResultTrue;
   }
@@ -260,5 +285,21 @@ public:
 template <typename T>
 Controller<T>::~Controller()
 {
+}
+}
+
+#include <avnd/binding/vst3/view.hpp>
+
+namespace stv3
+{
+template <typename T>
+Steinberg::IPlugView* Controller<T>::createView(const char* name)
+{
+  if constexpr(avnd::has_ui_editor<T>)
+  {
+    if(name && std::string_view{name} == Steinberg::Vst::ViewType::kEditor)
+      return new stv3::plug_view<T, Controller<T>>{*this};
+  }
+  return nullptr;
 }
 }

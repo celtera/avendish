@@ -7,6 +7,11 @@
 // clang-format off
 #include <@AVND_MAIN_FILE@>
 
+#if defined(AVND_SOFT_UI_EDITOR)
+// Emit the Nuklear + canvas_ity implementations exactly once per plug-in.
+#include <avnd/binding/ui/soft/implementation.hpp>
+#endif
+
 // Needed everywhere
 bool InitModule() { return true; }
 bool DeinitModule() { return true; }
@@ -36,6 +41,9 @@ extern "C" AVND_EXPORTED_SYMBOL Steinberg::IPluginFactory* GetPluginFactory()
 // clang-format on
 namespace Steinberg
 {
+DEF_CLASS_IID(IPlugView)
+DEF_CLASS_IID(IPlugFrame)
+
 namespace Vst
 {
 

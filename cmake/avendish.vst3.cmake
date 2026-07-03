@@ -7,6 +7,32 @@ if(DEFINED AVND_ENABLE_VST3 AND NOT AVND_ENABLE_VST3)
 endif()
 
 set(VST3_SDK_ROOT "" CACHE PATH "VST3 SDK path")
+option(AVND_FETCH_VST3_SDK "Fetch the VST3 SDK when VST3_SDK_ROOT is not set" OFF)
+
+if(NOT VST3_SDK_ROOT AND AVND_FETCH_VST3_SDK)
+  include(FetchContent)
+  FetchContent_Declare(
+    avnd_vst3sdk
+    GIT_REPOSITORY "https://github.com/steinbergmedia/vst3sdk"
+    GIT_TAG v3.7.14_build_55
+    GIT_SUBMODULES base cmake pluginterfaces public.sdk
+    GIT_PROGRESS true
+  )
+  FetchContent_GetProperties(avnd_vst3sdk)
+  if(NOT avnd_vst3sdk_POPULATED)
+    FetchContent_Populate(avnd_vst3sdk)
+  endif()
+  if(EXISTS "${avnd_vst3sdk_SOURCE_DIR}/pluginterfaces/base/funknown.h")
+    set(VST3_SDK_ROOT "${avnd_vst3sdk_SOURCE_DIR}" CACHE PATH "VST3 SDK path" FORCE)
+    # Plug-in library only: no samples, hosting tools, validator or vstgui
+    set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SMTG_ENABLE_VSTGUI_SUPPORT OFF CACHE BOOL "" FORCE)
+    set(SMTG_CREATE_PLUGIN_LINK OFF CACHE BOOL "" FORCE)
+    set(SMTG_RUN_VST_VALIDATOR OFF CACHE BOOL "" FORCE)
+  endif()
+endif()
+
 if(NOT VST3_SDK_ROOT)
   function(avnd_make_vst3)
   endfunction()
@@ -127,8 +153,14 @@ function(avnd_make_vst3)
     PUBLIC
       Avendish::Avendish_vst3
       sdk_common pluginterfaces
+      concurrentqueue
       DisableExceptions
   )
+
+  # Editors: plug-ins with a `struct ui` get the reference soft UI editor.
+  if(TARGET Avendish::soft_ui AND TARGET avnd_pugl)
+    avnd_target_soft_ui(${AVND_FX_TARGET})
+  endif()
   if(APPLE)
     find_library(COREFOUNDATION_FK CoreFoundation)
     target_link_libraries(

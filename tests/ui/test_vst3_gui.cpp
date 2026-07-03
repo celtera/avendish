@@ -1,0 +1,254 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// End-to-end VST3 editor test: loads the .vst3 module, instantiates
+// component + edit controller through the factory, opens the IPlugView in a
+// real parent window, drives it with injected mouse messages, and verifies
+// the IComponentHandler gesture flow and the controller parameter mirror.
+// Windows-only, matching the blit backend.
+
+#include <catch2/catch_test_macros.hpp>
+
+#if defined(_WIN32) && defined(AVND_TEST_VST3_PATH)
+
+#include <pluginterfaces/base/funknown.h>
+#include <pluginterfaces/base/ipluginbase.h>
+#include <pluginterfaces/gui/iplugview.h>
+#include <pluginterfaces/vst/ivstaudioprocessor.h>
+#include <pluginterfaces/vst/ivstcomponent.h>
+#include <pluginterfaces/vst/ivsteditcontroller.h>
+
+#if !defined(WIN32_LEAN_AND_MEAN)
+#define WIN32_LEAN_AND_MEAN 1
+#endif
+#if !defined(NOMINMAX)
+#define NOMINMAX 1
+#endif
+#include <windows.h>
+
+#include <cmath>
+#include <cstring>
+#include <string_view>
+
+// The plug-in module and this host each carry their own IID definitions.
+namespace Steinberg
+{
+DEF_CLASS_IID(IPlugView)
+DEF_CLASS_IID(IPlugFrame)
+namespace Vst
+{
+DEF_CLASS_IID(IComponent)
+DEF_CLASS_IID(IAudioProcessor)
+DEF_CLASS_IID(IEditController)
+DEF_CLASS_IID(IComponentHandler)
+}
+}
+
+namespace
+{
+using namespace Steinberg;
+
+struct component_handler final : Vst::IComponentHandler
+{
+  int begins{}, performs{}, ends{}, restarts{};
+  Vst::ParamID last_id{~0u};
+  Vst::ParamValue last_value{-1.};
+
+  tresult PLUGIN_API queryInterface(const TUID iid, void** obj) override
+  {
+    QUERY_INTERFACE(iid, obj, FUnknown::iid, Vst::IComponentHandler);
+    QUERY_INTERFACE(iid, obj, Vst::IComponentHandler::iid, Vst::IComponentHandler);
+    *obj = nullptr;
+    return kNoInterface;
+  }
+  uint32 PLUGIN_API addRef() override { return 2; }
+  uint32 PLUGIN_API release() override { return 1; }
+
+  tresult PLUGIN_API beginEdit(Vst::ParamID id) override
+  {
+    begins++;
+    last_id = id;
+    return kResultOk;
+  }
+  tresult PLUGIN_API performEdit(Vst::ParamID id, Vst::ParamValue v) override
+  {
+    performs++;
+    last_id = id;
+    last_value = v;
+    return kResultOk;
+  }
+  tresult PLUGIN_API endEdit(Vst::ParamID id) override
+  {
+    ends++;
+    return kResultOk;
+  }
+  tresult PLUGIN_API restartComponent(int32) override
+  {
+    restarts++;
+    return kResultOk;
+  }
+};
+
+static void pump_messages(int ms)
+{
+  const DWORD end = GetTickCount() + ms;
+  for(;;)
+  {
+    MSG msg;
+    while(PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+    {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
+    }
+    if(GetTickCount() >= end)
+      break;
+    Sleep(5);
+  }
+}
+
+static HWND create_parent(int w, int h)
+{
+  WNDCLASSW wc{};
+  wc.lpfnWndProc = DefWindowProcW;
+  wc.hInstance = GetModuleHandleW(nullptr);
+  wc.lpszClassName = L"avnd_vst3_gui_test_parent";
+  RegisterClassW(&wc);
+  RECT r{0, 0, w, h};
+  AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
+  return CreateWindowExW(
+      0, wc.lpszClassName, L"avnd vst3 gui test", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+      CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, nullptr,
+      nullptr, wc.hInstance, nullptr);
+}
+
+struct child_finder
+{
+  HWND child{};
+  static BOOL CALLBACK cb(HWND hwnd, LPARAM p)
+  {
+    ((child_finder*)p)->child = hwnd;
+    return FALSE;
+  }
+};
+}
+
+TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
+{
+  using namespace Steinberg;
+
+  const HMODULE lib = LoadLibraryA(AVND_TEST_VST3_PATH);
+  REQUIRE(lib);
+  if(auto init = (bool (*)())GetProcAddress(lib, "InitDll"))
+    REQUIRE(init());
+
+  const auto get_factory
+      = (IPluginFactory * (*)()) GetProcAddress(lib, "GetPluginFactory");
+  REQUIRE(get_factory);
+  IPluginFactory* factory = get_factory();
+  REQUIRE(factory);
+
+  // Find the audio effect class + instantiate the component
+  PClassInfo ci{};
+  int32 fx_index = -1;
+  for(int32 i = 0; i < factory->countClasses(); i++)
+  {
+    REQUIRE(factory->getClassInfo(i, &ci) == kResultOk);
+    if(std::string_view{ci.category} == kVstAudioEffectClass)
+    {
+      fx_index = i;
+      break;
+    }
+  }
+  REQUIRE(fx_index >= 0);
+
+  Vst::IComponent* component{};
+  REQUIRE(
+      factory->createInstance(
+          ci.cid, Vst::IComponent::iid, (void**)&component)
+      == kResultOk);
+  REQUIRE(component);
+  REQUIRE(component->initialize(nullptr) == kResultOk);
+
+  TUID controller_cid{};
+  REQUIRE(component->getControllerClassId(controller_cid) == kResultOk);
+
+  Vst::IEditController* controller{};
+  REQUIRE(
+      factory->createInstance(
+          controller_cid, Vst::IEditController::iid, (void**)&controller)
+      == kResultOk);
+  REQUIRE(controller);
+  REQUIRE(controller->initialize(nullptr) == kResultOk);
+
+  component_handler handler;
+  REQUIRE(controller->setComponentHandler(&handler) == kResultOk);
+
+  // Initial state: Level (tag 0) is declared with init = 0.25
+  CHECK(controller->getParamNormalized(0) == 0.25);
+
+  // Create + attach the editor
+  IPlugView* view = controller->createView(Vst::ViewType::kEditor);
+  REQUIRE(view);
+  REQUIRE(view->isPlatformTypeSupported(kPlatformTypeHWND) == kResultTrue);
+
+  ViewRect rect{};
+  REQUIRE(view->getSize(&rect) == kResultTrue);
+  CHECK(rect.getWidth() == 320);
+  CHECK(rect.getHeight() == 220);
+
+  const HWND parent = create_parent(rect.getWidth(), rect.getHeight());
+  REQUIRE(parent);
+  REQUIRE(view->attached(parent, kPlatformTypeHWND) == kResultOk);
+
+  pump_messages(300);
+
+  child_finder finder;
+  EnumChildWindows(parent, &child_finder::cb, (LPARAM)&finder);
+  REQUIRE(finder.child);
+
+  // Click + drag inside the custom widget
+  const auto pos = [](int x, int y) { return MAKELPARAM(x, y); };
+  PostMessageW(finder.child, WM_MOUSEMOVE, 0, pos(100, 50));
+  PostMessageW(finder.child, WM_LBUTTONDOWN, MK_LBUTTON, pos(100, 50));
+  pump_messages(200);
+  PostMessageW(finder.child, WM_MOUSEMOVE, MK_LBUTTON, pos(150, 50));
+  pump_messages(200);
+  PostMessageW(finder.child, WM_LBUTTONUP, 0, pos(150, 50));
+  pump_messages(200);
+
+  // Gestures reached the component handler with the normalized value,
+  // and the controller mirror is current.
+  CHECK(handler.begins == 1);
+  CHECK(handler.ends == 1);
+  CHECK(handler.performs >= 1);
+  CHECK(handler.last_id == 0);
+  CHECK(handler.last_value > 0.4);
+  CHECK(controller->getParamNormalized(0) == handler.last_value);
+
+  // Host-driven automation flows back into the editor without incident.
+  // The mirror stores float, so compare with a float-precision tolerance.
+  REQUIRE(controller->setParamNormalized(0, 0.1) == kResultTrue);
+  CHECK(std::abs(controller->getParamNormalized(0) - 0.1) < 1e-6);
+  pump_messages(100);
+
+  REQUIRE(view->removed() == kResultOk);
+  view->release();
+  DestroyWindow(parent);
+
+  controller->terminate();
+  controller->release();
+  component->terminate();
+  component->release();
+  factory->release();
+  if(auto exit_dll = (bool (*)())GetProcAddress(lib, "ExitDll"))
+    exit_dll();
+  FreeLibrary(lib);
+}
+
+#else
+
+TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
+{
+  SKIP("vst3 gui test currently runs on Windows only");
+}
+
+#endif

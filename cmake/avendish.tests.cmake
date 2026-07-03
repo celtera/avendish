@@ -74,6 +74,24 @@ if(BUILD_TESTING)
       endif()
     endif()
 
+    # Same plug-in through the VST3 editor glue.
+    if(WIN32 AND COMMAND avnd_make_vst3 AND TARGET avnd_pugl AND VST3_SDK_ROOT)
+      avnd_make_vst3(
+        TARGET Vst3UiPlugTest
+        MAIN_FILE tests/ui/ClapUiPlug.hpp
+        MAIN_CLASS avnd_test::ClapUiPlug
+        C_NAME avnd_vst3_ui_test
+      )
+      if(TARGET Vst3UiPlugTest_vst3)
+        avnd_add_catch_test(test_vst3_gui tests/ui/test_vst3_gui.cpp)
+        add_dependencies(test_vst3_gui Vst3UiPlugTest_vst3)
+        target_include_directories(test_vst3_gui PRIVATE ${VST3_SDK_ROOT})
+        target_link_libraries(test_vst3_gui PRIVATE pluginterfaces)
+        target_compile_definitions(test_vst3_gui PRIVATE
+          "AVND_TEST_VST3_PATH=\"$<TARGET_FILE:Vst3UiPlugTest_vst3>\"")
+      endif()
+    endif()
+
     # Same plug-in through the VST2 (vintage) editor glue.
     if(WIN32 AND COMMAND avnd_make_vintage AND TARGET avnd_pugl)
       avnd_make_vintage(
