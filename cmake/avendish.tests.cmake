@@ -52,6 +52,24 @@ if(BUILD_TESTING)
   if(TARGET Avendish::soft_ui)
     avnd_add_catch_test(test_soft_ui tests/ui/test_soft_ui.cpp)
     avnd_target_soft_ui(test_soft_ui)
+
+    # End-to-end clap.gui test: build a .clap with an editor, then a host
+    # that loads and drives it.
+    if(WIN32 AND COMMAND avnd_make_clap AND TARGET avnd_pugl)
+      avnd_make_clap(
+        TARGET ClapUiPlugTest
+        MAIN_FILE tests/ui/ClapUiPlug.hpp
+        MAIN_CLASS avnd_test::ClapUiPlug
+        C_NAME avnd_clap_ui_test
+      )
+      if(TARGET ClapUiPlugTest_clap)
+        avnd_add_catch_test(test_clap_gui tests/ui/test_clap_gui.cpp)
+        add_dependencies(test_clap_gui ClapUiPlugTest_clap)
+        target_include_directories(test_clap_gui PRIVATE ${CLAP_HEADER})
+        target_compile_definitions(test_clap_gui PRIVATE
+          "AVND_TEST_CLAP_PATH=\"$<TARGET_FILE:ClapUiPlugTest_clap>\"")
+      endif()
+    endif()
   endif()
 endif()
 

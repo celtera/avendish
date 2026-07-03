@@ -61,4 +61,34 @@ struct font_registry
     return fonts.empty() ? nullptr : &fonts.front();
   }
 };
+
+// Best-effort default font for plug-in editors: build-time override first,
+// then well-known system font locations.
+inline font_registry system_fonts()
+{
+  font_registry fonts;
+#if defined(AVND_SOFT_UI_DEFAULT_FONT)
+  if(fonts.register_font_file("default", AVND_SOFT_UI_DEFAULT_FONT))
+    return fonts;
+#endif
+  static constexpr const char* candidates[] = {
+#if defined(_WIN32)
+      "C:\\Windows\\Fonts\\segoeui.ttf",
+      "C:\\Windows\\Fonts\\arial.ttf",
+      "C:\\Windows\\Fonts\\tahoma.ttf",
+#elif defined(__APPLE__)
+      "/Library/Fonts/Arial.ttf",
+      "/System/Library/Fonts/Supplemental/Arial.ttf",
+#else
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+      "/usr/share/fonts/TTF/DejaVuSans.ttf",
+      "/usr/local/share/fonts/dejavu/DejaVuSans.ttf",
+#endif
+  };
+  for(auto path : candidates)
+    if(fonts.register_font_file("default", path))
+      break;
+  return fonts;
+}
 }
