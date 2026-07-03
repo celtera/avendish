@@ -45,6 +45,7 @@ target_include_directories(
 
 target_link_libraries(Avendish_clap_pch
   PUBLIC
+    concurrentqueue
     DisableExceptions
 )
 
@@ -130,6 +131,7 @@ function(avnd_make_clap)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish_clap
+      concurrentqueue
       DisableExceptions
   )
 

@@ -254,6 +254,48 @@ TEST_CASE("clap editor: embed, interact, gestures", "[clap_gui]")
   CHECK(out.count(CLAP_EVENT_PARAM_GESTURE_END) == 1);
   CHECK(out.count(CLAP_EVENT_PARAM_VALUE) >= 1);
 
+  // Message bus round trip: releasing the mouse queued a ui->processor
+  // message (lock-free queue); process() drains it, the processor copies
+  // the value into the Gain param and answers with a feedback message
+  // drained on the next editor timer tick.
+  double gain_before{};
+  REQUIRE(params->get_value(plugin, 1, &gain_before));
+  CHECK(gain_before == 0.5);
+
+  REQUIRE(plugin->activate(plugin, 48000., 64, 64));
+  REQUIRE(plugin->start_processing(plugin));
+
+  float in_buf[64]{}, out_buf[64]{};
+  float* ins[1] = {in_buf};
+  float* outs[1] = {out_buf};
+  clap_audio_buffer in_bus{};
+  in_bus.data32 = ins;
+  in_bus.channel_count = 1;
+  clap_audio_buffer out_bus{};
+  out_bus.data32 = outs;
+  out_bus.channel_count = 1;
+
+  out_event_collector process_out;
+  clap_process proc{};
+  proc.frames_count = 64;
+  proc.audio_inputs = &in_bus;
+  proc.audio_inputs_count = 1;
+  proc.audio_outputs = &out_bus;
+  proc.audio_outputs_count = 1;
+  proc.in_events = &empty_in_events;
+  proc.out_events = &process_out.list;
+  REQUIRE(plugin->process(plugin, &proc) != CLAP_PROCESS_ERROR);
+
+  double gain_after{};
+  REQUIRE(params->get_value(plugin, 1, &gain_after));
+  CHECK(gain_after == after); // processor received the committed level
+
+  // Feedback message drains on the editor timer without incident.
+  pump_messages(150);
+
+  plugin->stop_processing(plugin);
+  plugin->deactivate(plugin);
+
   gui->destroy(plugin);
   pump_messages(50);
   DestroyWindow(parent);

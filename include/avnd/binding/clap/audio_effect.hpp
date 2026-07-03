@@ -126,7 +126,7 @@ struct SimpleAudioEffect : clap_plugin
   using editor_t = clap_editor_t<T>;
   static constexpr bool has_editor = clap_has_editor<T>;
   AVND_NO_UNIQUE_ADDRESS
-  std::conditional_t<has_editor, gui_state<editor_t>, no_gui_state> gui;
+  std::conditional_t<has_editor, gui_state<T, editor_t>, no_gui_state> gui;
 
   AVND_NO_UNIQUE_ADDRESS avnd_clap::audio_bus_info<T> audio_busses;
   AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
@@ -200,6 +200,26 @@ struct SimpleAudioEffect : clap_plugin
     if constexpr(avnd::has_inputs<T>)
     {
       avnd::init_controls(effect);
+    }
+
+    wire_bus_queues();
+  }
+
+  // processor → UI bus: enqueue from the audio thread into a preallocated
+  // lock-free queue (try_enqueue never allocates; overflow drops), drained
+  // on the editor timer. Installed at construction so send_message is
+  // always callable, and re-installed after editor creation since the soft
+  // runtime's constructor wires a synchronous default.
+  void wire_bus_queues()
+  {
+    if constexpr(has_editor && avnd::has_processor_to_gui_bus<T>)
+    {
+      if constexpr(requires { this->effect.effect.send_message = nullptr; })
+      {
+        this->effect.effect.send_message = [this](auto&& msg) {
+          gui.to_ui.queue.try_enqueue(std::forward<decltype(msg)>(msg));
+        };
+      }
     }
   }
 
@@ -346,6 +366,20 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_in_events(const clap_process& p)
   {
+    // Drain UI → processor bus messages queued by the editor.
+    if constexpr(has_editor && avnd::has_gui_to_processor_bus<T>)
+    {
+      if constexpr(requires {
+                     this->effect.effect.process_message(
+                         std::declval<ui_to_proc_msg_t<T>>());
+                   })
+      {
+        ui_to_proc_msg_t<T> msg;
+        while(gui.to_processor.queue.try_dequeue(msg))
+          this->effect.effect.process_message(std::move(msg));
+      }
+    }
+
     if constexpr(midi_in_info::size > 0)
     {
       auto N = p.in_events->size(p.in_events);
@@ -543,6 +577,19 @@ struct SimpleAudioEffect : clap_plugin
       else
         gui.editor = std::make_unique<editor_t>();
 
+      // The soft runtime wires the bus synchronously in its constructor;
+      // replace both directions with the lock-free queues.
+      if constexpr(requires { gui.editor->runtime(); })
+      {
+        if constexpr(avnd::has_gui_to_processor_bus<T>)
+        {
+          gui.editor->runtime().set_bus_to_processor([this](auto&& msg) {
+            gui.to_processor.queue.enqueue(std::forward<decltype(msg)>(msg));
+          });
+        }
+        wire_bus_queues();
+      }
+
       if(auto t = (const clap_host_timer_support*)host.get_extension(
              &host, CLAP_EXT_TIMER_SUPPORT))
         t->register_timer(&host, 16, &gui.timer_id);
@@ -608,7 +655,18 @@ struct SimpleAudioEffect : clap_plugin
     if constexpr(has_editor)
     {
       if(gui.editor && timer_id == gui.timer_id)
+      {
+        if constexpr(avnd::has_processor_to_gui_bus<T>)
+        {
+          if constexpr(requires { gui.editor->runtime(); })
+          {
+            proc_to_ui_msg_t<T> msg;
+            while(gui.to_ui.queue.try_dequeue(msg))
+              gui.editor->runtime().deliver_to_ui(std::move(msg));
+          }
+        }
         gui.editor->idle();
+      }
     }
   }
 
