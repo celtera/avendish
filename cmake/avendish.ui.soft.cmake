@@ -116,13 +116,18 @@ function(avnd_target_soft_ui theTarget)
     target_compile_definitions("${theTarget}" PRIVATE AVND_SOFT_UI_EDITOR=1)
   endif()
   if(EXISTS "${AVND_SOFT_UI_DEFAULT_FONT}")
-    target_compile_definitions("${theTarget}" PRIVATE
-      "AVND_SOFT_UI_DEFAULT_FONT=\"${AVND_SOFT_UI_DEFAULT_FONT}\"")
-    if(EMSCRIPTEN)
-      # Browsers have no host fonts: embed the TTF into the module's
-      # virtual FS, where system_fonts() looks for /font.ttf.
-      target_link_options("${theTarget}" PRIVATE
-        "SHELL:--embed-file ${AVND_SOFT_UI_DEFAULT_FONT}@/font.ttf")
+    if(NOT EMSCRIPTEN)
+      target_compile_definitions("${theTarget}" PRIVATE
+        "AVND_SOFT_UI_DEFAULT_FONT=\"${AVND_SOFT_UI_DEFAULT_FONT}\"")
+    else()
+      # No --embed-file here: the FS emulation it drags in aborts inside
+      # AudioWorkletGlobalScope, and the same module runs in the worklet.
+      # The page fetches font.ttf and hands it to SoftUI.loadFont instead;
+      # ship the file next to the module.
+      add_custom_command(TARGET "${theTarget}" POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${AVND_SOFT_UI_DEFAULT_FONT}" "$<TARGET_FILE_DIR:${theTarget}>/font.ttf"
+      )
     endif()
   endif()
 endfunction()
