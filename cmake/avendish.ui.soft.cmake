@@ -118,6 +118,12 @@ function(avnd_target_soft_ui theTarget)
   if(EXISTS "${AVND_SOFT_UI_DEFAULT_FONT}")
     target_compile_definitions("${theTarget}" PRIVATE
       "AVND_SOFT_UI_DEFAULT_FONT=\"${AVND_SOFT_UI_DEFAULT_FONT}\"")
+    if(EMSCRIPTEN)
+      # Browsers have no host fonts: embed the TTF into the module's
+      # virtual FS, where system_fonts() looks for /font.ttf.
+      target_link_options("${theTarget}" PRIVATE
+        "SHELL:--embed-file ${AVND_SOFT_UI_DEFAULT_FONT}@/font.ttf")
+    endif()
   endif()
 endfunction()
 

@@ -15,8 +15,8 @@
 //   handle.stop();
 
 export function attachSoftUI(ui, canvas, opts = {}) {
-  const logicalW = opts.width ?? 640;
-  const logicalH = opts.height ?? 480;
+  const logicalW = opts.width ?? (ui.logicalWidth ? ui.logicalWidth() : 640);
+  const logicalH = opts.height ?? (ui.logicalHeight ? ui.logicalHeight() : 480);
   const dpr = opts.devicePixelRatio ?? (globalThis.devicePixelRatio || 1);
 
   ui.resize(logicalW, logicalH, dpr);

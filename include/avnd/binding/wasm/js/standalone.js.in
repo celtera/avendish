@@ -101,9 +101,22 @@ function readCallbackInfosFromInstance() {
   return infos;
 }
 
+// Software-framebuffer editor (Module.SoftUI, avnd-soft-ui.js): the same
+// pixels as the native plug-in editors, blitted into a canvas.
+async function initSoftUI(Module) {
+  if (!Module.SoftUI) return;
+  const fs = document.getElementById("soft-ui");
+  const canvas = document.getElementById("soft-ui-canvas");
+  if (!fs || !canvas) return;
+  const { attachSoftUI } = await import("./avnd-soft-ui.js");
+  attachSoftUI(new Module.SoftUI(), canvas);
+  fs.style.display = "";
+}
+
 // Build the UI at page load, independent of the audio graph.
 async function initUI() {
   await ensureUIModule();
+  initSoftUI(uiModule ?? {});
   paramInfos = readParamInfosFromInstance();
   buildUI(paramInfos);
   buildOutputUI(readOutputInfosFromInstance());

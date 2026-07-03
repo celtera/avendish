@@ -9,3 +9,16 @@ using type = decltype(avnd::configure<wasm::config, @AVND_MAIN_CLASS@>())::type;
 // clang-format on
 
 AVND_WASM_MODULE(type, @AVND_C_NAME@)
+
+#if defined(AVND_WASM_SOFT_UI)
+// Software-framebuffer renderer: exported as Module.SoftUI when the plug-in
+// declares a `ui`; the standalone page picks it up automatically.
+#include <avnd/binding/ui/soft/implementation.hpp>
+#include <avnd/binding/ui/soft/wasm.hpp>
+
+EMSCRIPTEN_BINDINGS(@AVND_C_NAME@_soft_ui)
+{
+  if constexpr(requires { sizeof(typename avnd::ui_type<type>::type); })
+    avnd::soft_ui::bind_wasm_ui<type>("SoftUI");
+}
+#endif
