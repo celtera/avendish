@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/vst3/bus.hpp>
 #include <avnd/binding/vst3/bus_info.hpp>
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/helpers.hpp>
@@ -72,6 +73,17 @@ struct Component final
 
   avnd::effect_container<T> effect;
 
+  // UI -> processor bus messages, enqueued from notify() (main thread),
+  // drained in process(). See binding/vst3/bus.hpp.
+  struct no_bus_queue
+  {
+  };
+  AVND_NO_UNIQUE_ADDRESS
+  std::conditional_t<
+      stv3::bus_to_processor_enabled<T>,
+      avnd::ui_to_proc_queue<avnd::any_ui_to_proc_msg_t<T>>, no_bus_queue>
+      bus_to_processor;
+
   AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi;
@@ -102,6 +114,36 @@ struct Component final
 
     // First the default value
     avnd::init_controls(effect);
+
+    // processor -> UI bus: send through the connection point when the
+    // controller is connected. NOTE: this allocates the IMessage on the
+    // calling (audio) thread -- same practice as the SDK samples; a
+    // main-thread pump is a possible refinement.
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+    {
+      if constexpr(requires { this->effect.effect.send_message = nullptr; })
+      {
+        this->effect.effect.send_message = [this](const auto& msg) {
+          stv3::send_bus_message(
+              this->hostContext.get(), this->peerConnection.get(),
+              stv3::bus_processor_to_ui_id, msg);
+        };
+      }
+    }
+  }
+
+  Steinberg::tresult on_message(Steinberg::Vst::IMessage& m) override
+  {
+    if constexpr(stv3::bus_to_processor_enabled<T>)
+    {
+      avnd::any_ui_to_proc_msg_t<T> msg;
+      if(stv3::read_bus_message(m, stv3::bus_ui_to_processor_id, msg))
+      {
+        bus_to_processor.queue.enqueue(std::move(msg));
+        return Steinberg::kResultOk;
+      }
+    }
+    return Steinberg::kResultFalse;
   }
 
   virtual ~Component() { }
@@ -526,6 +568,20 @@ struct Component final
   {
     using namespace Steinberg;
     using namespace Steinberg::Vst;
+
+    // Drain UI -> processor bus messages queued by notify()
+    if constexpr(stv3::bus_to_processor_enabled<T>)
+    {
+      if constexpr(requires {
+                     this->effect.effect.process_message(
+                         std::declval<avnd::any_ui_to_proc_msg_t<T>>());
+                   })
+      {
+        avnd::any_ui_to_proc_msg_t<T> msg;
+        while(bus_to_processor.queue.try_dequeue(msg))
+          this->effect.effect.process_message(std::move(msg));
+      }
+    }
 
     // Clear outputs
     this->midi.clear_outputs(effect);

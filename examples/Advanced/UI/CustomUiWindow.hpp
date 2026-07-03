@@ -61,6 +61,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <utility>
 
 namespace examples
@@ -91,6 +92,27 @@ struct CustomUiWindow
       for(int i = 0; i < frames; i++)
         outputs.audio.samples[c][i] = inputs.audio.samples[c][i] * inputs.gain.value;
   }
+
+  // Message bus for Tier C: the window itself is the UI-side endpoint --
+  // the bindings wire window.send_message and call window.process_message.
+  struct ui_to_processor
+  {
+    float value;
+  };
+  struct processor_to_ui
+  {
+    float applied;
+  };
+
+  void process_message(const ui_to_processor& msg)
+  {
+    // Deliberately not the same as the direct edit (msg.value / 2) so the
+    // bus path is observable in tests.
+    inputs.gain.value = msg.value * 0.5f;
+    if(send_message)
+      send_message(processor_to_ui{.applied = inputs.gain.value});
+  }
+  std::function<void(processor_to_ui)> send_message;
 
 #if defined(_WIN32)
   struct ui
@@ -145,6 +167,13 @@ struct CustomUiWindow
       void idle() { }
 
       std::pair<int, int> size() const { return {width, height}; }
+
+      // ---- Message bus endpoints (wired by the bindings) ----
+      // UI thread -> processor; called on mouse release below.
+      std::function<void(ui_to_processor)> send_message;
+      // processor -> UI thread
+      void process_message(processor_to_ui msg) { feedback = msg.applied; }
+      float feedback{-1.f};
 
     private:
       float gain() const { return fx.effect.inputs.gain.value; }
@@ -213,6 +242,8 @@ struct CustomUiWindow
               self->dragging = false;
               ReleaseCapture();
               self->host.end_edit(self->host.ctx, gain_param);
+              if(self->send_message)
+                self->send_message(ui_to_processor{.value = self->gain()});
             }
             return 0;
 

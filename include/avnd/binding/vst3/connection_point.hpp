@@ -45,6 +45,12 @@ public:
     if(!message)
       return Steinberg::kInvalidArgument;
 
+    return on_message(*message);
+  }
+
+  // Typed hook for subclasses (message-bus transport, ...)
+  virtual Steinberg::tresult on_message(Steinberg::Vst::IMessage&)
+  {
     return Steinberg::kResultFalse;
   }
 };

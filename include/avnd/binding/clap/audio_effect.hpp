@@ -212,7 +212,7 @@ struct SimpleAudioEffect : clap_plugin
   // runtime's constructor wires a synchronous default.
   void wire_bus_queues()
   {
-    if constexpr(has_editor && avnd::has_processor_to_gui_bus<T>)
+    if constexpr(has_editor && avnd::processor_sends_to_ui<T>)
     {
       if constexpr(requires { this->effect.effect.send_message = nullptr; })
       {
@@ -367,14 +367,14 @@ struct SimpleAudioEffect : clap_plugin
   void process_in_events(const clap_process& p)
   {
     // Drain UI → processor bus messages queued by the editor.
-    if constexpr(has_editor && avnd::has_gui_to_processor_bus<T>)
+    if constexpr(has_editor && avnd::ui_sends_to_processor<T>)
     {
       if constexpr(requires {
                      this->effect.effect.process_message(
-                         std::declval<ui_to_proc_msg_t<T>>());
+                         std::declval<avnd::any_ui_to_proc_msg_t<T>>());
                    })
       {
-        ui_to_proc_msg_t<T> msg;
+        avnd::any_ui_to_proc_msg_t<T> msg;
         while(gui.bus.to_processor.queue.try_dequeue(msg))
           this->effect.effect.process_message(std::move(msg));
       }
@@ -574,8 +574,9 @@ struct SimpleAudioEffect : clap_plugin
         return false;
       gui.editor = avnd::make_ui_editor(effect);
 
-      // The soft runtime wires the bus synchronously in its constructor;
-      // replace both directions with the lock-free queues.
+      // Wire the bus transport. The soft runtime wires it synchronously in
+      // its constructor, so replace both directions with the lock-free
+      // queues; Tier C windows get their send_message member connected.
       if constexpr(requires { gui.editor->runtime(); })
       {
         if constexpr(avnd::has_gui_to_processor_bus<T>)
@@ -584,8 +585,17 @@ struct SimpleAudioEffect : clap_plugin
             gui.bus.to_processor.queue.enqueue(std::forward<decltype(msg)>(msg));
           });
         }
-        wire_bus_queues();
       }
+      else if constexpr(avnd::window_sends_to_processor<T>)
+      {
+        if constexpr(requires { gui.editor->send_message; })
+        {
+          gui.editor->send_message = [this](auto&& msg) {
+            gui.bus.to_processor.queue.enqueue(std::forward<decltype(msg)>(msg));
+          };
+        }
+      }
+      wire_bus_queues();
 
       if(auto t = (const clap_host_timer_support*)host.get_extension(
              &host, CLAP_EXT_TIMER_SUPPORT))
@@ -653,13 +663,15 @@ struct SimpleAudioEffect : clap_plugin
     {
       if(gui.editor && timer_id == gui.timer_id)
       {
-        if constexpr(avnd::has_processor_to_gui_bus<T>)
+        if constexpr(avnd::processor_sends_to_ui<T>)
         {
-          if constexpr(requires { gui.editor->runtime(); })
+          avnd::any_proc_to_ui_msg_t<T> msg;
+          while(gui.bus.to_ui.queue.try_dequeue(msg))
           {
-            proc_to_ui_msg_t<T> msg;
-            while(gui.bus.to_ui.queue.try_dequeue(msg))
+            if constexpr(requires { gui.editor->runtime(); })
               gui.editor->runtime().deliver_to_ui(std::move(msg));
+            else if constexpr(requires { gui.editor->process_message(msg); })
+              gui.editor->process_message(std::move(msg));
           }
         }
         gui.editor->idle();

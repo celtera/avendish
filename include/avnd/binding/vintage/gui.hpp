@@ -76,15 +76,17 @@ template <typename Self>
 static void gui_drain_to_ui(Self& self)
 {
   using T = typename Self::effect_type;
-  if constexpr(avnd::has_processor_to_gui_bus<T>)
+  if constexpr(avnd::processor_sends_to_ui<T>)
   {
-    if constexpr(requires { self.gui.editor->runtime(); })
+    if(self.gui.editor)
     {
-      if(self.gui.editor)
+      avnd::any_proc_to_ui_msg_t<T> msg;
+      while(self.gui.bus.to_ui.queue.try_dequeue(msg))
       {
-        avnd::proc_to_ui_msg_t<T> msg;
-        while(self.gui.bus.to_ui.queue.try_dequeue(msg))
+        if constexpr(requires { self.gui.editor->runtime(); })
           self.gui.editor->runtime().deliver_to_ui(std::move(msg));
+        else if constexpr(requires { self.gui.editor->process_message(msg); })
+          self.gui.editor->process_message(std::move(msg));
       }
     }
   }
@@ -95,14 +97,14 @@ template <typename Self>
 static void gui_drain_to_processor(Self& self)
 {
   using T = typename Self::effect_type;
-  if constexpr(avnd::has_ui_editor<T> && avnd::has_gui_to_processor_bus<T>)
+  if constexpr(avnd::has_ui_editor<T> && avnd::ui_sends_to_processor<T>)
   {
     if constexpr(requires {
                    self.effect.effect.process_message(
-                       std::declval<avnd::ui_to_proc_msg_t<T>>());
+                       std::declval<avnd::any_ui_to_proc_msg_t<T>>());
                  })
     {
-      avnd::ui_to_proc_msg_t<T> msg;
+      avnd::any_ui_to_proc_msg_t<T> msg;
       while(self.gui.bus.to_processor.queue.try_dequeue(msg))
         self.effect.effect.process_message(std::move(msg));
     }
@@ -116,7 +118,7 @@ template <typename Self>
 static void gui_wire_bus(Self& self)
 {
   using T = typename Self::effect_type;
-  if constexpr(avnd::has_ui_editor<T> && avnd::has_processor_to_gui_bus<T>)
+  if constexpr(avnd::has_ui_editor<T> && avnd::processor_sends_to_ui<T>)
   {
     if constexpr(requires { self.effect.effect.send_message = nullptr; })
     {
@@ -147,8 +149,18 @@ static void gui_ensure(Self& self)
               std::forward<decltype(msg)>(msg));
         });
       }
-      gui_wire_bus(self);
     }
+    else if constexpr(avnd::window_sends_to_processor<T>)
+    {
+      if constexpr(requires { self.gui.editor->send_message; })
+      {
+        self.gui.editor->send_message = [&self](auto&& msg) {
+          self.gui.bus.to_processor.queue.enqueue(
+              std::forward<decltype(msg)>(msg));
+        };
+      }
+    }
+    gui_wire_bus(self);
     if constexpr(requires { self.gui.editor->on_frame; })
     {
       self.gui.editor->on_frame = [&self] { gui_drain_to_ui(self); };
