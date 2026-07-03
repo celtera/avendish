@@ -127,6 +127,13 @@ struct process_adapter<T>
             avnd::generic_audio_frame_port<Field>
             && avnd::dynamic_poly_audio_port<Field>)
         {
+          // A dynamic frame port carries its own channel count. A host that ran
+          // the audio_channel_manager has already set it; one that only calls
+          // prepare()/process() (e.g. the Python/GStreamer/Pd one-block drivers)
+          // leaves it 0, which would copy nothing and leave the output
+          // uninitialised. Derive it from the buffer we were handed.
+          if(field.channels <= 0)
+            field.channels = std::max(0, (int)in.size() - offset);
           const int ch = avnd::get_channels(field);
           if(offset + ch <= (int)this->m_input_frame_storage.size())
             field.frame = this->m_input_frame_storage.data() + offset;
@@ -143,6 +150,8 @@ struct process_adapter<T>
             avnd::generic_audio_frame_port<Field>
             && avnd::dynamic_poly_audio_port<Field>)
         {
+          if(field.channels <= 0)
+            field.channels = std::max(0, (int)out.size() - offset);
           const int ch = avnd::get_channels(field);
           if(offset + ch <= (int)this->m_output_frame_storage.size())
             field.frame = this->m_output_frame_storage.data() + offset;
