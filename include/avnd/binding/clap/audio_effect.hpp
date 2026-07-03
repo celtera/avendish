@@ -523,10 +523,11 @@ struct SimpleAudioEffect : clap_plugin
   {
     static constexpr bool midi_ins = avnd::midi_input_introspection<T>::size > 0;
     static constexpr bool midi_outs = avnd::midi_output_introspection<T>::size > 0;
-    static constexpr bool audio_ins
-        = avnd::audio_channel_input_introspection<T>::size > 0;
+    // Bus counts, not channel-port counts: bus-typed audio I/O
+    // (dynamic_audio_bus etc.) must classify too.
+    static constexpr bool audio_ins = avnd_clap::audio_bus_info<T>::input_count() > 0;
     static constexpr bool audio_outs
-        = avnd::audio_channel_output_introspection<T>::size > 0;
+        = avnd_clap::audio_bus_info<T>::output_count() > 0;
     static constexpr bool instrument = midi_ins && audio_outs;
     static constexpr bool audio_fx = audio_ins && audio_outs;
     static constexpr bool analyzer = audio_ins && !audio_outs;
@@ -541,14 +542,16 @@ struct SimpleAudioEffect : clap_plugin
           audio_fx ? CLAP_PLUGIN_FEATURE_AUDIO_EFFECT : 0, 0};
     else if constexpr(audio_fx)
       return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_AUDIO_EFFECT, 0};
-    else if constexpr(analyzer)
-      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_NOTE_EFFECT, 0};
-    else if constexpr(note_fx)
-      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_NOTE_DETECTOR, 0};
     else if constexpr(note_detector)
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_NOTE_DETECTOR, 0};
+    else if constexpr(analyzer)
       return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_ANALYZER, 0};
+    else if constexpr(note_fx)
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_NOTE_EFFECT, 0};
     else
-      return std::array<const char*, 1>{0};
+      // Parameter-only utility objects: hosts require one of the main
+      // categories; audio-effect is the least wrong.
+      return std::array<const char*, 2>{CLAP_PLUGIN_FEATURE_AUDIO_EFFECT, 0};
   }
   static constexpr auto features = get_features();
   static constexpr clap_plugin_descriptor descriptor{
