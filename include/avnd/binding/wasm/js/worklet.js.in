@@ -35,7 +35,19 @@ class AvndWorkletProcessor extends AudioWorkletProcessor {
 
     const sr = data.sampleRate || sampleRate; // sampleRate is a worklet global
     const M = await ModuleFactory({
-      wasmBinary: data.wasmBinary,
+      // Recent emscripten prunes the `wasmBinary` incoming-module option, in
+      // which case the glue would try to fetch/XHR the wasm — neither exists
+      // in AudioWorkletGlobalScope. `instantiateWasm` is always honored and
+      // takes over wasm loading entirely: instantiate from the posted bytes.
+      instantiateWasm: (imports, done) => {
+        WebAssembly.instantiate(data.wasmBinary, imports).then(
+          (res) => done(res.instance, res.module),
+          (err) => {
+            throw err;
+          },
+        );
+        return {};
+      },
       locateFile: (p) => p,
     });
 
