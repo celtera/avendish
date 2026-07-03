@@ -83,6 +83,16 @@ public:
         stv3::bus_ui_to_processor_id, msg);
   }
 
+  // Ask the component (UI thread) to flush its queued processor->UI
+  // messages through the connection point; see the pump protocol notes in
+  // binding/vst3/bus.hpp. Called from the view's timer while an editor is
+  // open.
+  void send_bus_pump()
+  {
+    stv3::send_empty_message(
+        this->hostContext.get(), this->peerConnection.get(), stv3::bus_pump_id);
+  }
+
   // Component -> UI: delivered to the active view
   struct no_bus_handler
   {

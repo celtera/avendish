@@ -13,6 +13,8 @@
 #include <halp/meta.hpp>
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 namespace avnd_test
 {
@@ -111,20 +113,30 @@ struct ClapUiPlug
   // processor (drained in process()), which copies them into the gain
   // parameter (host-observable) and answers with a feedback message
   // (drained on the editor timer).
+  //
+  // The non-trivial members (string, vector) exercise the bus serializer on
+  // bindings where the payload crosses a host boundary (VST3 IMessage): the
+  // processor only applies the value when they arrive intact, so the
+  // host-observable gain assertion doubles as a serialization check.
   struct ui_to_processor
   {
     float value;
+    std::string label;
+    std::vector<float> curve;
   };
   struct processor_to_ui
   {
     float doubled;
+    std::string echoed;
   };
 
   void process_message(const ui_to_processor& msg)
   {
+    if(msg.label != "commit" || msg.curve != std::vector<float>{1.f, 2.f, 3.f})
+      return;
     inputs.gain.value = msg.value;
     if(send_message)
-      send_message(processor_to_ui{.doubled = msg.value * 2.f});
+      send_message(processor_to_ui{.doubled = msg.value * 2.f, .echoed = "ok"});
   }
   std::function<void(processor_to_ui)> send_message;
 
@@ -141,12 +153,14 @@ struct ClapUiPlug
       void init(ui& self)
       {
         self.level.on_commit = [this](float v) {
-          this->send_message(ui_to_processor{.value = v});
+          this->send_message(
+              ui_to_processor{.value = v, .label = "commit", .curve = {1.f, 2.f, 3.f}});
         };
       }
       static void process_message(ui& self, processor_to_ui msg)
       {
-        self.level.feedback = msg.doubled;
+        if(msg.echoed == "ok")
+          self.level.feedback = msg.doubled;
       }
       std::function<void(ui_to_processor)> send_message;
     };
