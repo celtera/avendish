@@ -14,6 +14,7 @@
 #include <avnd/binding/ui/soft/framebuffer.hpp>
 #include <avnd/binding/ui/soft/nk_renderer.hpp>
 #include <avnd/binding/ui/soft/painter.hpp>
+#include <avnd/binding/ui/soft/theme.hpp>
 #include <avnd/common/for_nth.hpp>
 #include <avnd/concepts/gui_window.hpp>
 #include <avnd/concepts/layout.hpp>
@@ -28,6 +29,7 @@
 #include <avnd/wrappers/widgets.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <map>
 #include <optional>
@@ -116,6 +118,17 @@ public:
     m_font = m_renderer.make_font(13.f);
     nk_init_default(&m_ctx, &m_font);
 
+    // Instrument theme; window background follows the layout's
+    // halp_meta(background, ...) when declared.
+    int bg = 1; // background_dark
+    if constexpr(requires { (int)ui_t::background(); })
+    {
+      const int b = (int)ui_t::background();
+      // halp::colors: 0..4 fg shades, 5..9 background shades
+      bg = b >= 5 && b <= 9 ? b - 5 : 1;
+    }
+    apply_instrument_theme(&m_ctx, background_shade(bg));
+
     if constexpr(requires { (int)ui_t::width(); })
       m_width = ui_t::width();
     if constexpr(requires { (int)ui_t::height(); })
@@ -167,27 +180,38 @@ public:
     }
   }
 
+  // Logical size; the framebuffer/window is width()*scale x height()*scale.
   void set_viewport(int w, int h, double scale = 1.)
   {
     m_width = w;
     m_height = h;
-    m_scale = scale;
+    m_scale = scale > 0. ? scale : 1.;
     m_canvas.reset();
     m_dirty = true;
   }
 
-  // ---- Input (shell → runtime) ----
+  double scale() const noexcept { return m_scale; }
+  int physical_width() const noexcept
+  {
+    return (int)std::lround(m_width * m_scale);
+  }
+  int physical_height() const noexcept
+  {
+    return (int)std::lround(m_height * m_scale);
+  }
+
+  // ---- Input (shell → runtime), in physical window pixels ----
   void pointer_move(double x, double y)
   {
-    m_events.push_back({event::motion, x, y, 0});
+    m_events.push_back({event::motion, x / m_scale, y / m_scale, 0});
   }
   void pointer_button(double x, double y, bool pressed)
   {
-    m_events.push_back({event::button, x, y, pressed ? 1 : 0});
+    m_events.push_back({event::button, x / m_scale, y / m_scale, pressed ? 1 : 0});
   }
   void wheel(double x, double y, double delta)
   {
-    m_events.push_back({event::scroll, x, y, (int)(delta * 120)});
+    m_events.push_back({event::scroll, x / m_scale, y / m_scale, (int)(delta * 120)});
   }
 
   // ---- Frame ----
@@ -213,36 +237,50 @@ public:
     nk_end(&m_ctx);
     m_needs_clear = true;
 
+    // Gesture edges for standard widgets: the gesture ends when the mouse
+    // is released, not after every value change.
+    if(m_active_gesture >= 0 && !m_mouse_down)
+    {
+      host.end_edit(host.ctx, m_active_gesture);
+      m_active_gesture = -1;
+    }
+
     m_mouse_was_down = m_mouse_down;
     return std::exchange(m_dirty, true); // dirty-tracking refinement later:
                                          // for now every tick repaints
   }
 
+  // fb must be physical_width() x physical_height(); content is laid out in
+  // logical coordinates and rasterized under a device-scale transform.
   void render(framebuffer fb)
   {
-    if(!m_canvas || fb.width != m_width || fb.height != m_height)
+    if(!m_canvas || fb.width != m_canvas_w || fb.height != m_canvas_h)
     {
-      m_width = fb.width;
-      m_height = fb.height;
-      m_canvas.emplace(m_width, m_height);
+      m_canvas_w = fb.width;
+      m_canvas_h = fb.height;
+      m_canvas.emplace(m_canvas_w, m_canvas_h);
     }
 
     auto& c = *m_canvas;
+    const float s = (float)m_scale;
     c.set_transform(1.f, 0.f, 0.f, 1.f, 0.f, 0.f);
-    c.clear_rectangle(0.f, 0.f, (float)m_width, (float)m_height);
+    c.clear_rectangle(0.f, 0.f, (float)m_canvas_w, (float)m_canvas_h);
+    c.set_transform(s, 0.f, 0.f, s, 0.f, 0.f);
 
     m_renderer.render(&m_ctx, c);
     nk_clear(&m_ctx);
     m_needs_clear = false;
 
     // Custom paint() widgets composite over the Nuklear pass, in
-    // widget-local coordinates.
+    // widget-local logical coordinates.
     painter p{c, m_fonts, m_dirty};
+    p.set_base_scale(m_scale);
     for(auto& d : m_custom_draws)
     {
       p.set_base_translation(d.x, d.y);
       d.paint(d.widget, p);
     }
+    p.set_base_scale(1.);
     p.set_base_translation(0., 0.);
 
     c.get_image_data(fb.data, fb.width, fb.height, fb.row_bytes(), 0, 0);
@@ -649,9 +687,17 @@ private:
       double norm = 0.;
       if constexpr(requires { avnd::map_control_to_01(ctl); })
         norm = avnd::map_control_to_01(ctl);
-      host.begin_edit(host.ctx, idx);
+      // One gesture per continuous interaction: begin on the first change,
+      // end when the mouse is released (see tick()). Changing widget
+      // mid-gesture closes the previous one.
+      if(m_active_gesture != idx)
+      {
+        if(m_active_gesture >= 0)
+          host.end_edit(host.ctx, m_active_gesture);
+        host.begin_edit(host.ctx, idx);
+        m_active_gesture = idx;
+      }
       host.perform_edit(host.ctx, idx, norm);
-      host.end_edit(host.ctx, idx);
     }
     m_dirty = true;
   }
@@ -854,6 +900,8 @@ private:
   std::string m_scratch;
 
   int m_width{640}, m_height{480};
+  int m_canvas_w{}, m_canvas_h{};
+  int m_active_gesture{-1};
   double m_scale{1.};
   double m_mouse_x{}, m_mouse_y{};
   bool m_mouse_down{}, m_mouse_was_down{};

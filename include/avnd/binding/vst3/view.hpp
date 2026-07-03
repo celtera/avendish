@@ -30,6 +30,7 @@
 #include <avnd/wrappers/effect_container.hpp>
 
 #include <pluginterfaces/gui/iplugview.h>
+#include <pluginterfaces/gui/iplugviewcontentscalesupport.h>
 #include <pluginterfaces/vst/ivsteditcontroller.h>
 
 #include <memory>
@@ -40,6 +41,7 @@ namespace stv3
 template <typename T, typename Controller>
 class plug_view final
     : public Steinberg::IPlugView
+    , public Steinberg::IPlugViewContentScaleSupport
     , public stv3::refcount
 {
   using tresult = Steinberg::tresult;
@@ -97,6 +99,9 @@ public:
   {
     QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, Steinberg::IPlugView);
     QUERY_INTERFACE(iid, obj, Steinberg::IPlugView::iid, Steinberg::IPlugView);
+    QUERY_INTERFACE(
+        iid, obj, Steinberg::IPlugViewContentScaleSupport::iid,
+        Steinberg::IPlugViewContentScaleSupport);
     *obj = nullptr;
     return Steinberg::kNoInterface;
   }
@@ -137,7 +142,7 @@ public:
     if(!editor)
       return Steinberg::kResultFalse;
 
-    avnd::gui_parent p{.handle = parent, .scale = 1.};
+    avnd::gui_parent p{.handle = parent, .scale = m_scale};
 #if defined(_WIN32)
     p.api = avnd::gui_api::win32_hwnd;
 #elif defined(__APPLE__)
@@ -189,6 +194,22 @@ public:
   }
 
   tresult canResize() override { return Steinberg::kResultFalse; }
+
+  // ---- IPlugViewContentScaleSupport ----
+  tresult setContentScaleFactor(
+      Steinberg::IPlugViewContentScaleSupport::ScaleFactor factor) override
+  {
+    m_scale = factor > 0.f ? factor : 1.f;
+    if constexpr(requires { editor->set_scale(m_scale); })
+    {
+      if(editor)
+      {
+        editor->set_scale(m_scale);
+        return Steinberg::kResultTrue;
+      }
+    }
+    return Steinberg::kResultFalse;
+  }
 
   tresult checkSizeConstraint(ViewRect* rect) override
   {
@@ -261,5 +282,6 @@ private:
   avnd::effect_container<T> model;
   std::unique_ptr<avnd::ui_editor_t<T>> editor;
   Steinberg::IPlugFrame* frame{};
+  double m_scale{1.};
 };
 }

@@ -236,6 +236,92 @@ TEST_CASE("custom widget interaction, gestures, bus round-trip", "[soft_ui]")
   write_ppm("soft_ui_interaction.ppm", ui.pixels());
 }
 
+namespace
+{
+// One full-row slider, for driving standard-widget gestures synthetically.
+struct GestureTest
+{
+  static consteval auto name() { return "SoftUiGesture"; }
+  static consteval auto c_name() { return "soft_ui_gesture"; }
+  static consteval auto uuid() { return "1a2b3c4d-0001-4e2f-8c07-3d3b7e0a5f43"; }
+
+  struct ins
+  {
+    halp::hslider_f32<"X"> x;
+  } inputs;
+  struct
+  {
+  } outputs;
+  void operator()(int) { }
+
+  struct ui
+  {
+    halp_meta(layout, halp::layouts::vbox)
+    halp_meta(width, 400)
+    halp_meta(height, 60)
+    halp::item<&ins::x> x;
+  };
+};
+}
+
+TEST_CASE("standard widgets: one gesture per drag", "[soft_ui]")
+{
+  avnd::effect_container<GestureTest> effect;
+  avnd::soft_ui::surface<GestureTest> ui{effect, test_fonts()};
+  auto& rt = ui.runtime();
+
+  struct gesture_log
+  {
+    int begins{}, performs{}, ends{};
+  } log;
+  rt.host.ctx = &log;
+  rt.host.begin_edit = [](void* c, int) { ((gesture_log*)c)->begins++; };
+  rt.host.perform_edit
+      = [](void* c, int, double) { ((gesture_log*)c)->performs++; };
+  rt.host.end_edit = [](void* c, int) { ((gesture_log*)c)->ends++; };
+
+  ui.frame(); // initial layout
+
+  // Drag across the slider (right column of the control row)
+  ui.pointer_move(300, 22);
+  ui.pointer_button(300, 22, true);
+  ui.frame();
+  ui.pointer_move(330, 22);
+  ui.frame();
+  ui.pointer_move(360, 22);
+  ui.frame();
+  ui.pointer_button(360, 22, false);
+  ui.frame();
+
+  CHECK(effect.effect.inputs.x.value > 0.5f);
+  CHECK(log.begins == 1);
+  CHECK(log.ends == 1);
+  CHECK(log.performs >= 2);
+}
+
+TEST_CASE("hidpi: scale 2 renders at physical size", "[soft_ui]")
+{
+  avnd::effect_container<examples::helpers::Ui> effect;
+  avnd::soft_ui::surface<examples::helpers::Ui> ui{effect, test_fonts()};
+  ui.resize(320, 240, 2.);
+
+  auto fb = ui.frame();
+  REQUIRE(fb.width == 640);
+  REQUIRE(fb.height == 480);
+  REQUIRE(count_nonzero(fb) > 10000);
+
+  // Input is descaled: physical (600, 28) is logical (300, 14) -- inside
+  // the first row's slider; interaction must still work.
+  ui.pointer_move(600, 28);
+  ui.pointer_button(600, 28, true);
+  ui.frame();
+  ui.pointer_button(600, 28, false);
+  auto fb2 = ui.frame();
+  REQUIRE(fb2.width == 640);
+
+  write_ppm("soft_ui_hidpi.ppm", fb2);
+}
+
 TEST_CASE("processor to ui bus is delivered", "[soft_ui]")
 {
   avnd::effect_container<InteractionTest> effect;

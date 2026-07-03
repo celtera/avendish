@@ -30,6 +30,10 @@
 #define NOMINMAX 1
 #endif
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <CoreGraphics/CoreGraphics.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
 #elif defined(__linux__) || defined(__FreeBSD__)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -50,9 +54,24 @@ public:
 
   ui_runtime<T>& runtime() noexcept { return m_runtime; }
 
+  // Physical window size (what Win32/X11 hosts size the parent to).
   std::pair<int, int> size() const
   {
-    return {m_runtime.width(), m_runtime.height()};
+    return {m_runtime.physical_width(), m_runtime.physical_height()};
+  }
+
+  // Host DPI scale changed (CLAP set_scale, VST3 content-scale support).
+  void set_scale(double s)
+  {
+    m_scale = s > 0. ? s : 1.;
+    m_runtime.set_viewport(m_runtime.width(), m_runtime.height(), m_scale);
+    if(m_view)
+    {
+      puglSetSizeHint(
+          m_view, PUGL_CURRENT_SIZE, (PuglSpan)m_runtime.physical_width(),
+          (PuglSpan)m_runtime.physical_height());
+      puglObscureView(m_view);
+    }
   }
 
   static bool supports(avnd::gui_api api) noexcept
@@ -73,6 +92,7 @@ public:
 
     m_runtime.host = host;
     m_scale = parent.scale > 0. ? parent.scale : 1.;
+    m_runtime.set_viewport(m_runtime.width(), m_runtime.height(), m_scale);
 
     m_world = puglNewWorld(PUGL_MODULE, 0);
     m_view = puglNewView(m_world);
@@ -81,8 +101,8 @@ public:
     puglSetBackend(m_view, puglStubBackend());
     puglSetViewHint(m_view, PUGL_RESIZABLE, PUGL_FALSE);
     puglSetSizeHint(
-        m_view, PUGL_DEFAULT_SIZE, (PuglSpan)m_runtime.width(),
-        (PuglSpan)m_runtime.height());
+        m_view, PUGL_DEFAULT_SIZE, (PuglSpan)m_runtime.physical_width(),
+        (PuglSpan)m_runtime.physical_height());
     if(parent.handle)
       puglSetParent(m_view, (PuglNativeView)parent.handle);
 
@@ -176,8 +196,8 @@ private:
 
   void render_and_blit(PuglView* view)
   {
-    const int w = m_runtime.width();
-    const int h = m_runtime.height();
+    const int w = m_runtime.physical_width();
+    const int h = m_runtime.physical_height();
     m_pixels.resize(size_t(w) * h * 4);
     m_runtime.render({m_pixels.data(), w, h, w * 4});
 
@@ -237,8 +257,40 @@ private:
       XPutImage(dpy, win, gc, &img, 0, 0, 0, 0, w, h);
       XFreeGC(dpy, gc);
     }
-#else
-    // macOS blit lands with the Cocoa pass (CUSTOM_UI_PLAN.md phase 3).
+#elif defined(__APPLE__)
+    // Core Animation blit: hand the frame to the NSView's backing layer as
+    // a CGImage. Plain C (CoreGraphics + objc runtime) so no .mm file is
+    // needed. NOTE: written on a non-mac machine and NOT yet validated on
+    // real hardware -- the first macOS run should start here.
+    using msg_id = id (*)(id, SEL);
+    using msg_set_id = void (*)(id, SEL, id);
+    using msg_set_bool = void (*)(id, SEL, signed char);
+
+    const id nsview = (id)puglGetNativeView(view);
+    if(!nsview)
+      return;
+    ((msg_set_bool)objc_msgSend)(nsview, sel_registerName("setWantsLayer:"), 1);
+    const id layer = ((msg_id)objc_msgSend)(nsview, sel_registerName("layer"));
+    if(!layer)
+      return;
+
+    // Copy the frame: the layer keeps the image alive past this call.
+    const CFDataRef data
+        = CFDataCreate(nullptr, m_pixels.data(), (CFIndex)m_pixels.size());
+    const CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+    const CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+    const CGImageRef img = CGImageCreate(
+        w, h, 8, 32, (size_t)w * 4, cs,
+        kCGImageAlphaNoneSkipLast | kCGBitmapByteOrder32Big, provider, nullptr,
+        false, kCGRenderingIntentDefault);
+    if(img)
+    {
+      ((msg_set_id)objc_msgSend)(layer, sel_registerName("setContents:"), (id)img);
+      CGImageRelease(img);
+    }
+    CGColorSpaceRelease(cs);
+    CGDataProviderRelease(provider);
+    CFRelease(data);
 #endif
   }
 
