@@ -470,7 +470,14 @@ struct ui {
   (`puglSetParent`), stub backend for software blit, per-instance worlds.
   Chosen: desktop embedding.
 - **canvas_ity** — ISC, one header, HTML5-canvas semantics ≈ `avnd::painter`
-  verbatim, software. Chosen: painter. (PlutoVG as MCU variant.)
+  verbatim, software. Chosen: painter. Known ceiling: internal bitmap is
+  float RGBA (16 B/px) with no banded mode — desktop-fine, MCU-hostile.
+- **ctx** (ctx.graphics) — ISC (verified 2026-07: not LGPL as often
+  assumed), C, actively maintained, MCU-first software rasterizer: 1–32 bpp
+  incl. RGB565, tiled partial redraw, SIMD, ESP32 demos. Leading candidate
+  for the MCU-tier painter behind the same concept; costs: very large
+  amalgamated header, idiosyncratic API, some font gaps. PlutoVG (MIT, C99,
+  4 B/px surfaces, stb_truetype) is the conservative fallback.
 - **Dear ImGui** — best ecosystem & plugin precedent, but GPU-oriented (the
   maintained CPU path is SDL_Renderer; `imgui_sw` is dormant/unlicensed) and
   PSRAM-hungry on MCU. Runner-up; a later `imgui` Tier C adapter is cheap.
