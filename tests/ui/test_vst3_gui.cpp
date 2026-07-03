@@ -241,6 +241,46 @@ struct child_finder
     return FALSE;
   }
 };
+
+// Interposed connection point: forwards to the real peer while recording
+// the message IDs that cross, so the test can assert on the wire protocol
+// (ui->processor payloads, the UI-thread bus pump, processor->ui replies).
+struct spy_connection final : Vst::IConnectionPoint
+{
+  Vst::IConnectionPoint* target{};
+  std::vector<std::string> seen;
+
+  tresult PLUGIN_API queryInterface(const TUID iid, void** obj) override
+  {
+    QUERY_INTERFACE(iid, obj, FUnknown::iid, Vst::IConnectionPoint);
+    QUERY_INTERFACE(iid, obj, Vst::IConnectionPoint::iid, Vst::IConnectionPoint);
+    *obj = nullptr;
+    return kNoInterface;
+  }
+  uint32 PLUGIN_API addRef() override { return 2; }
+  uint32 PLUGIN_API release() override { return 1; }
+  tresult PLUGIN_API connect(Vst::IConnectionPoint* o) override
+  {
+    return target->connect(o);
+  }
+  tresult PLUGIN_API disconnect(Vst::IConnectionPoint* o) override
+  {
+    return target->disconnect(o);
+  }
+  tresult PLUGIN_API notify(Vst::IMessage* m) override
+  {
+    if(m && m->getMessageID())
+      seen.push_back(m->getMessageID());
+    return target->notify(m);
+  }
+  bool saw(const char* id) const
+  {
+    for(auto& s : seen)
+      if(s == id)
+        return true;
+    return false;
+  }
+};
 }
 
 TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
@@ -303,8 +343,13 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
   REQUIRE(
       controller->queryInterface(Vst::IConnectionPoint::iid, (void**)&ctrl_cp)
       == kResultOk);
-  REQUIRE(comp_cp->connect(ctrl_cp) == kResultOk);
-  REQUIRE(ctrl_cp->connect(comp_cp) == kResultOk);
+  // Interpose spies so the test observes the wire protocol between the two.
+  spy_connection to_controller; // component -> controller
+  to_controller.target = ctrl_cp;
+  spy_connection to_component; // controller -> component
+  to_component.target = comp_cp;
+  REQUIRE(comp_cp->connect(&to_controller) == kResultOk);
+  REQUIRE(ctrl_cp->connect(&to_component) == kResultOk);
 
   component_handler handler;
   REQUIRE(controller->setComponentHandler(&handler) == kResultOk);
@@ -399,8 +444,16 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
   // parameter changes the way a real host would.
   CHECK(out_l[0] == 1.f * (float)handler.last_value * 0.25f);
 
-  // The feedback message reached the controller/editor without incident.
+  // Assert on the observed wire protocol:
+  // - the committed widget value crossed as a ui->processor IMessage
+  //   (its payload has std::string + std::vector members — serialized);
+  // - the controller pumps the component from the view timer (the
+  //   processor never sends from the audio thread);
+  // - the processor's reply crossed back after a pump.
   pump_messages(100);
+  CHECK(to_component.saw("avnd_ui_to_processor"));
+  CHECK(to_component.saw("avnd_bus_pump"));
+  CHECK(to_controller.saw("avnd_processor_to_ui"));
 
   component->setActive(false);
   processor->release();
@@ -415,8 +468,8 @@ TEST_CASE("vst3 editor: embed, interact, gestures", "[vst3_gui]")
   view->release();
   DestroyWindow(parent);
 
-  comp_cp->disconnect(ctrl_cp);
-  ctrl_cp->disconnect(comp_cp);
+  comp_cp->disconnect(&to_controller);
+  ctrl_cp->disconnect(&to_component);
   comp_cp->release();
   ctrl_cp->release();
 
