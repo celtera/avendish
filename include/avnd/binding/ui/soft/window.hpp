@@ -143,6 +143,13 @@ public:
       puglUpdate(m_world, 0.);
   }
 
+  // Blocking variant for standalone shells that own the event loop.
+  void update(double timeout_seconds)
+  {
+    if(m_world)
+      puglUpdate(m_world, timeout_seconds);
+  }
+
   void* native_view() const noexcept
   {
     return m_view ? (void*)puglGetNativeView(m_view) : nullptr;
@@ -150,6 +157,9 @@ public:
 
   // Called at the start of every UI frame (30 Hz pugl timer, UI thread).
   std::function<void()> on_frame;
+
+  // Standalone shells: the user asked to close the top-level window.
+  std::function<void()> on_close;
 
 private:
   static window_editor& self(PuglView* view)
@@ -187,6 +197,12 @@ private:
         break;
       case PUGL_EXPOSE:
         w.render_and_blit(view);
+        break;
+      case PUGL_CLOSE:
+        // Only top-level (standalone) windows get this; embedded editors
+        // are closed by their host through close().
+        if(w.on_close)
+          w.on_close();
         break;
       default:
         break;

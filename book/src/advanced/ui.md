@@ -50,3 +50,12 @@ Dear ImGui, Qt, JUCE, or raw platform code. See
 is a plain Win32 window, built as CLAP, VST2 and VST3 from the same file.
 
 > Supported bindings: CLAP, VST2, VST3
+
+## Previewing UIs without a host
+
+`avnd_make_ui_preview(TARGET ... MAIN_FILE ... MAIN_CLASS ... C_NAME ...)`
+builds a small executable that opens the plug-in's editor in a plain window —
+no DAW needed (`--frames N` exits after N cycles, for CI smoke tests). In the
+browser, `avnd/binding/ui/soft/wasm.hpp` + `avnd-soft-ui.js` blit the same
+software framebuffer into a `<canvas>`; on microcontrollers see
+`examples/platforms/esp32-ui/`.
