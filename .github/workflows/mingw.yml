@@ -19,19 +19,19 @@ jobs:
           git config --global url."https://github.com/eigen-mirror/eigen".insteadOf "https://gitlab.com/libeigen/eigen"
 
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: 'recursive'
 
       - name: Checkout Max SDK
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: jcelerier/max-sdk-base
           submodules: "recursive"
           path: max-sdk-base
 
       - name: Checkout dependencies
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           repository: ossia/score
           submodules: "recursive"

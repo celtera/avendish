@@ -18,7 +18,7 @@ jobs:
         std: ["23", "26"]
         backend: [boost.pfr, p1061]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: false
 

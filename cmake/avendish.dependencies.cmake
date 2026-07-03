@@ -4,7 +4,7 @@ if(NOT TARGET fmt::fmt AND NOT TARGET fmt::fmt_header_only)
   FetchContent_Declare(
     fmt
     GIT_REPOSITORY "https://github.com/fmtlib/fmt"
-    GIT_TAG 12.0.0
+    GIT_TAG 12.2.0
     GIT_PROGRESS true
   )
   if(EMSCRIPTEN)
