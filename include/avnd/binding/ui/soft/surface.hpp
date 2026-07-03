@@ -52,6 +52,17 @@ public:
     return m_fb;
   }
 
+  // Widget pass + rasterize only when something changed; data == nullptr
+  // means "clean, reuse the previous frame". Shells with a repaint loop
+  // (rAF, timers) should use this to make idle frames free.
+  framebuffer frame_if_dirty()
+  {
+    if(!m_runtime.tick())
+      return {};
+    m_runtime.render(m_fb);
+    return m_fb;
+  }
+
   framebuffer pixels() noexcept { return m_fb; }
 
 private:

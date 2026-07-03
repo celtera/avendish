@@ -82,10 +82,23 @@ public:
   }
   void wheel(double x, double y, double delta) { m_surface.wheel(x, y, delta); }
 
-  // One frame: widget pass + rasterization. Returns a zero-copy
-  // Uint8ClampedArray view over the RGBA framebuffer (valid until the next
-  // resize) for `new ImageData(view, w, h)` + putImageData.
+  // One frame: widget pass + rasterization when something changed. Returns
+  // a zero-copy Uint8ClampedArray view over the RGBA framebuffer (valid
+  // until the next resize) for `new ImageData(view, w, h)` + putImageData,
+  // or null when the UI is clean — the caller keeps the previous canvas
+  // contents and skips the blit (idle frames cost ~nothing).
   emscripten::val frame()
+  {
+    const auto fb = m_surface.frame_if_dirty();
+    if(!fb.data)
+      return emscripten::val::null();
+    return emscripten::val(emscripten::typed_memory_view(
+        size_t(fb.width) * fb.height * 4,
+        reinterpret_cast<const unsigned char*>(fb.data)));
+  }
+
+  // Unconditional render (first paint, testing)
+  emscripten::val render_now()
   {
     const auto fb = m_surface.frame();
     return emscripten::val(emscripten::typed_memory_view(
@@ -112,7 +125,8 @@ void bind_wasm_ui(const char* js_name)
       .function("pointerMove", &wasm_ui<T>::pointer_move)
       .function("pointerButton", &wasm_ui<T>::pointer_button)
       .function("wheel", &wasm_ui<T>::wheel)
-      .function("frame", &wasm_ui<T>::frame);
+      .function("frame", &wasm_ui<T>::frame)
+      .function("renderNow", &wasm_ui<T>::render_now);
 }
 }
 
