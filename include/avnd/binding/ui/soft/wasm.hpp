@@ -9,14 +9,13 @@
  * framebuffer; JS blits it into a <canvas> with putImageData and feeds
  * pointer events back (see binding/wasm/js/avnd-soft-ui.js).
  *
- * v1 scope: a self-contained browser preview -- the shell owns its own
- * effect instance and the bus is wired synchronously by the runtime, like
- * the native standalone preview. Hooking it to the AudioWorklet processing
- * graph comes with emsdk validation.
- *
- * Validated headlessly under node (tests/ui/wasm_soft_ui_test.mjs: frame
- * determinism + pointer interaction through embind); the browser-side
- * canvas glue in avnd-soft-ui.js still awaits a manual browser run.
+ * The shell paints its own effect instance (widget state), but the
+ * authoritative instance is the page's audio worklet: gestures are
+ * reported through setGestureCallback (the page forwards them as
+ * setParamNorm worklet messages), and the page pushes worklet param /
+ * output state back in via setParameter / setOutputValue. The ui::bus
+ * stays wired synchronously to the local instance (worklet bus routing is
+ * an open item).
  *
  * Usage in a module:
  *
@@ -33,6 +32,8 @@
 #if defined(__EMSCRIPTEN__)
 
 #include <avnd/binding/ui/soft/surface.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
 
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
@@ -54,6 +55,65 @@ public:
   void resize(int w, int h, double device_pixel_ratio)
   {
     m_surface.resize(w, h, device_pixel_ratio);
+  }
+
+  // ---- Shared-instance wiring -------------------------------------------
+  // fn(type: "begin"|"perform"|"end", paramIndex: int, normalized: double).
+  // Wires the runtime's gui_host so user edits on the canvas are reported
+  // to JS with the same flat-index/normalized protocol as native hosts.
+  void set_gesture_callback(emscripten::val fn)
+  {
+    m_on_gesture = std::move(fn);
+    auto& h = m_surface.runtime().host;
+    h.ctx = this;
+    h.begin_edit = [](void* ctx, int p) {
+      ((wasm_ui*)ctx)->fire_gesture("begin", p, 0.);
+    };
+    h.perform_edit = [](void* ctx, int p, double norm) {
+      ((wasm_ui*)ctx)->fire_gesture("perform", p, norm);
+    };
+    h.end_edit
+        = [](void* ctx, int p) { ((wasm_ui*)ctx)->fire_gesture("end", p, 0.); };
+  }
+
+  // External (DOM- or worklet-driven) parameter change: raw value, no
+  // gesture feedback — mirrors what native bindings do for host automation.
+  void set_parameter(int index, double v)
+  {
+    using pi = avnd::parameter_input_introspection<T>;
+    if constexpr(pi::size > 0)
+    {
+      if(index < 0 || index >= (int)pi::size)
+        return;
+      for(auto state : m_effect.full_state())
+      {
+        pi::for_nth_mapped(state.inputs, index, [&]<typename C>(C& field) {
+          if constexpr(requires { field.value = decltype(field.value)(v); })
+            field.value = decltype(field.value)(v);
+        });
+      }
+      m_surface.runtime().mark_dirty();
+    }
+  }
+
+  // Worklet output values (bargraphs...): raw output-field index, the same
+  // space as the page's {type:'outputs'} poll.
+  void set_output_value(int index, double v)
+  {
+    using oi = avnd::output_introspection<T>;
+    if constexpr(oi::size > 0)
+    {
+      if(index < 0 || index >= (int)oi::size)
+        return;
+      for(auto state : m_effect.full_state())
+      {
+        oi::for_nth(state.outputs, index, [&]<typename C>(C& field) {
+          if constexpr(requires { field.value = decltype(field.value)(v); })
+            field.value = decltype(field.value)(v);
+        });
+      }
+      m_surface.runtime().mark_dirty();
+    }
   }
 
   // Fonts cannot come from the filesystem in a browser (and --embed-file's
@@ -107,8 +167,15 @@ public:
   }
 
 private:
+  void fire_gesture(const char* type, int param, double norm)
+  {
+    if(!m_on_gesture.isUndefined() && !m_on_gesture.isNull())
+      m_on_gesture(std::string(type), param, norm);
+  }
+
   avnd::effect_container<T> m_effect;
   surface<T> m_surface;
+  emscripten::val m_on_gesture = emscripten::val::undefined();
 };
 
 template <typename T>
@@ -117,6 +184,9 @@ void bind_wasm_ui(const char* js_name)
   emscripten::class_<wasm_ui<T>>(js_name)
       .template constructor<>()
       .function("resize", &wasm_ui<T>::resize)
+      .function("setGestureCallback", &wasm_ui<T>::set_gesture_callback)
+      .function("setParameter", &wasm_ui<T>::set_parameter)
+      .function("setOutputValue", &wasm_ui<T>::set_output_value)
       .function("loadFont", &wasm_ui<T>::load_font)
       .function("logicalWidth", &wasm_ui<T>::logical_width)
       .function("logicalHeight", &wasm_ui<T>::logical_height)

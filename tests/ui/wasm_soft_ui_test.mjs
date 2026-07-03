@@ -35,6 +35,11 @@ assert.deepEqual(forced, first, "render must be deterministic");
 // ...and a clean frame() reports "unchanged" (dirty tracking).
 assert.equal(snapshot(), null, "clean frame must skip rendering");
 
+// Gestures must be reported through the shared-instance protocol
+// (flat param index + normalized value), like native hosts get them.
+const gestures = [];
+ui.setGestureCallback((type, index, norm) => gestures.push({ type, index, norm }));
+
 // Drag inside the 200x100 custom widget near the top-left: the orange fill
 // follows the pointer, so the frame must change (and must not be null).
 ui.pointerMove(30, 50);
@@ -50,6 +55,18 @@ let diff = 0;
 for (let i = 0; i < after.length; i++) if (after[i] !== first[i]) diff++;
 assert.ok(diff > 1000, `interaction did not change the frame (diff=${diff})`);
 
+assert.ok(gestures.some((g) => g.type === "perform"), "drag must report perform_edit");
+const perf = gestures.filter((g) => g.type === "perform").at(-1);
+assert.ok(perf.norm >= 0 && perf.norm <= 1, `normalized out of range: ${perf.norm}`);
+
+// External (worklet/DOM-driven) updates must repaint without gestures.
+const before = gestures.length;
+ui.setParameter(perf.index, 0.1);
+const ext = snapshot();
+assert.ok(ext, "external param change must dirty the frame");
+assert.equal(gestures.length, before, "external changes must not re-emit gestures");
+
 console.log(
-  `wasm soft ui OK: ${nonzero} nonzero bytes, deterministic, clean frames skipped, drag changed ${diff} bytes`,
+  `wasm soft ui OK: ${nonzero} nonzero bytes, deterministic, clean frames skipped, ` +
+    `drag changed ${diff} bytes, ${gestures.length} gestures, external sync ok`,
 );
