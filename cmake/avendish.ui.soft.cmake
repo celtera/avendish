@@ -121,6 +121,33 @@ function(avnd_target_soft_ui theTarget)
   endif()
 endfunction()
 
+# Standalone UI preview executables: run any example's editor in a plain
+# window, no plug-in host needed. `<exe> --frames N` exits after N cycles.
+function(avnd_make_ui_preview)
+  cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
+  if(NOT TARGET avnd_pugl)
+    return()
+  endif()
+
+  set(AVND_FX_TARGET "${AVND_TARGET}_ui_preview")
+  configure_file(
+    "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/preview_prototype.cpp.in"
+    "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_ui_preview.cpp"
+    @ONLY
+    NEWLINE_STYLE LF
+  )
+  add_executable(${AVND_FX_TARGET}
+    "${AVND_MAIN_FILE}"
+    "${CMAKE_BINARY_DIR}/${AVND_C_NAME}_ui_preview.cpp"
+  )
+  set_target_properties(${AVND_FX_TARGET} PROPERTIES
+    OUTPUT_NAME "${AVND_C_NAME}_ui"
+    RUNTIME_OUTPUT_DIRECTORY ui_preview
+  )
+  avnd_target_soft_ui(${AVND_FX_TARGET})
+  avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
+endfunction()
+
 target_sources(Avendish PRIVATE
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/framebuffer.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/fonts.hpp"
@@ -129,5 +156,9 @@ target_sources(Avendish PRIVATE
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/nk_renderer.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/painter.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/runtime.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/standalone.hpp"
   "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/surface.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/theme.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/wasm.hpp"
+  "${AVND_SOURCE_DIR}/include/avnd/binding/ui/soft/window.hpp"
 )

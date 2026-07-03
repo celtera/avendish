@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+
+#include <avnd/binding/ui/soft/implementation.hpp>
+#include <avnd/binding/ui/soft/standalone.hpp>
+
+#include <cstdlib>
+#include <string_view>
+
+int main(int argc, char** argv)
+{
+  // --frames N: exit after N update cycles (smoke tests)
+  int frames = -1;
+  for(int i = 1; i + 1 < argc; i++)
+    if(std::string_view{argv[i]} == "--frames")
+      frames = std::atoi(argv[i + 1]);
+
+  return avnd::soft_ui::run_editor<@AVND_MAIN_CLASS@>(frames);
+}

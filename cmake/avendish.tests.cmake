@@ -74,6 +74,13 @@ if(BUILD_TESTING)
       endif()
     endif()
 
+    # Standalone preview smoke test: open the editor in a real top-level
+    # window for a few frames and exit cleanly.
+    if(WIN32 AND TARGET HelpersUiPreview_ui_preview)
+      add_test(NAME test_ui_preview
+               COMMAND HelpersUiPreview_ui_preview --frames 30)
+    endif()
+
     # Tier C: the CustomUiWindow example's author-provided editor.
     if(WIN32 AND TARGET CustomUiWindow_clap)
       avnd_add_catch_test(test_custom_ui_window tests/ui/test_custom_ui_window.cpp)
