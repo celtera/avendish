@@ -54,6 +54,22 @@ def attr_map(obj):
     return {norm(a): a for a in dir(obj) if not a.startswith("_")}
 
 
+def sub_accessor(obj, which):
+    """Return the obj.inputs / obj.outputs proxy and its attr map, or (None, {}).
+
+    Newer modules expose nested `inputs`/`outputs` sub-objects that carry one
+    property per port -- the unambiguous path when an input and an output share
+    a symbol (they collide in the flat namespace). Older modules lack them, so
+    callers fall back to the flat attributes."""
+    proxy = getattr(obj, which, None)
+    if proxy is None or isinstance(proxy, (bool, int, float, str)):
+        return (None, {})
+    try:
+        return (proxy, attr_map(proxy))
+    except Exception:
+        return (None, {})
+
+
 def set_control(obj, attrs, name, value):
     """Set one golden input control on the instance. Returns (ok, error)."""
     a = attrs.get(norm(name))
@@ -103,13 +119,20 @@ def run_case(cls, gcase, meta, stage):
     stage("construct")
     obj = cls()
     attrs = attr_map(obj)
+    # Prefer the nested obj.inputs / obj.outputs proxies (unambiguous when an
+    # input and an output share a symbol); fall back to flat attributes.
+    ins, in_attrs = sub_accessor(obj, "inputs")
+    outs, out_attrs = sub_accessor(obj, "outputs")
 
     stage("apply")
     for c in gcase.get("inputs", {}).get("controls", []):
         nm, val = c.get("name", ""), c.get("value")
         if val == "unrecorded":
             continue
-        ok, err = set_control(obj, attrs, nm, val)
+        if ins is not None and norm(nm) in in_attrs:
+            ok, err = set_control(ins, in_attrs, nm, val)
+        else:
+            ok, err = set_control(obj, attrs, nm, val)
         if ok:
             rec["applied"][nm] = val
         else:
@@ -135,14 +158,19 @@ def run_case(cls, gcase, meta, stage):
     named = {}
     for gc in gcase.get("outputs", {}).get("controls", []):
         nm = gc.get("name", "")
-        # Unnamed output ports: golden says p<i>, the python binding disambi-
-        # guates them from unnamed inputs as out_p<i>. Prefer the out_ form so
-        # an unnamed input p<i> attribute doesn't shadow the output we want.
-        a = attrs.get(norm("out_" + nm)) or attrs.get(norm(nm))
+        # Prefer obj.outputs.<name> (unambiguous even when an input shares the
+        # symbol). Fall back to the flat attribute: unnamed output ports get an
+        # "out_" prefix from the binding, so try that before the bare name so an
+        # unnamed input p<i> doesn't shadow the output we want.
+        if outs is not None and norm(nm) in out_attrs:
+            src, a = outs, out_attrs.get(norm(nm))
+        else:
+            src = obj
+            a = attrs.get(norm("out_" + nm)) or attrs.get(norm(nm))
         if a is None:
             continue
         try:
-            v = getattr(obj, a)
+            v = getattr(src, a)
         except Exception:
             continue
         if isinstance(v, (bool, int, float)):

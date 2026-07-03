@@ -48,6 +48,79 @@ void wire_worker(U& obj)
   }
 }
 
+// Wire every host-provided callable on `obj` to a no-op / inline handler and
+// give indeterminate CPU-texture inputs a defined empty state. The `process`
+// binding invokes `operator()` directly on the instance (no prepare/host
+// setup), so an object that pushes through an unset std::function (buffer
+// upload, audio bus request_channels, worker) or reads an uninitialised input
+// texture would crash. run_audio wires the same set on its processing
+// container; this covers the plain process() path (and is harmless for audio
+// objects). Same handlers the example host and golden generator install.
+template <typename U>
+void wire_host_callbacks(U& obj)
+{
+  wire_worker(obj);
+
+  // The remaining callbacks live on ports reached through get_inputs/get_outputs
+  // -- only valid on a bare instance when the ports are declared as VALUE
+  // members (inputs_is_value / outputs_is_value). Objects that declare their
+  // ports as nested TYPES keep their storage in the effect container, are only
+  // ever driven through run_audio (which wires that container itself), and
+  // never bind plain process() -- so there is nothing to wire on the instance.
+  auto wire_req = [](auto& p) {
+    if constexpr(requires { p.request_channels; })
+      if(!p.request_channels)
+        p.request_channels = [](int) {};
+  };
+  auto wire_buf = [](auto& p) {
+    if constexpr(requires { p.buffer.upload; })
+      if(!p.buffer.upload)
+        p.buffer.upload = [](const char*, std::int64_t, std::int64_t) {};
+  };
+  // CPU texture inputs have no default member initializers (bytes/width/height
+  // are indeterminate). An object guarding on `texture.bytes == nullptr` reads
+  // garbage width/height when the pointer happens to be non-null -> crash.
+  auto zero_tex = [](auto& p) {
+    p.texture.bytes = nullptr;
+    p.texture.width = 0;
+    p.texture.height = 0;
+    if constexpr(requires { p.texture.changed; })
+      p.texture.changed = false;
+  };
+
+  if constexpr(avnd::inputs_is_value<U>)
+  {
+    if constexpr(avnd::audio_bus_input_introspection<U>::size > 0)
+      avnd::audio_bus_input_introspection<U>::for_all(avnd::get_inputs(obj), wire_req);
+    if constexpr(avnd::buffer_input_introspection<U>::size > 0)
+      avnd::buffer_input_introspection<U>::for_all(avnd::get_inputs(obj), wire_buf);
+    if constexpr(avnd::cpu_texture_input_introspection<U>::size > 0)
+      avnd::cpu_texture_input_introspection<U>::for_all(avnd::get_inputs(obj), zero_tex);
+  }
+  if constexpr(avnd::outputs_is_value<U>)
+  {
+    if constexpr(avnd::audio_bus_output_introspection<U>::size > 0)
+      avnd::audio_bus_output_introspection<U>::for_all(avnd::get_outputs(obj), wire_req);
+    if constexpr(avnd::buffer_output_introspection<U>::size > 0)
+      avnd::buffer_output_introspection<U>::for_all(avnd::get_outputs(obj), wire_buf);
+  }
+}
+
+// Small proxy objects returned by `obj.inputs` / `obj.outputs`: they expose one
+// property per port so an input and an output that share a symbol (e.g.
+// Controls has input "A" and output "A") can be addressed unambiguously
+// (obj.inputs.A vs obj.outputs.A) instead of colliding in the flat namespace.
+template <typename T>
+struct inputs_accessor
+{
+  T* self{};
+};
+template <typename T>
+struct outputs_accessor
+{
+  T* self{};
+};
+
 inline const char* c_str(const std::string& v) noexcept
 {
   return v.c_str();
@@ -721,6 +794,55 @@ struct processor
     });
   }
 
+  // Per-field property on the obj.inputs proxy (value ports only; tensor and
+  // other buffer-ish ports keep the flat attribute, which does not collide).
+  template <auto Idx, typename C>
+  void setup_input_value_accessor(
+      py::class_<inputs_accessor<T>>& cls, avnd::field_reflection<Idx, C> refl,
+      pybind11::module_& m)
+  {
+    using value_type = std::remove_cvref_t<decltype(C::value)>;
+    if constexpr(!avnd::tensor_like<value_type>)
+    {
+      ensure_value_type_registered<value_type>(m);
+      cls.def_property(
+          c_str(input_name(refl)),
+          [](inputs_accessor<T>& a) {
+            return avnd::pfr::get<Idx>(a.self->inputs).value;
+          },
+          [](inputs_accessor<T>& a, decltype(C::value) x) {
+            avnd::pfr::get<Idx>(a.self->inputs).value = x;
+            auto& inputs = avnd::get_inputs(*a.self);
+            auto& field = boost::pfr::get<Idx>(inputs);
+            if_possible(field.update(*a.self));
+          });
+    }
+  }
+
+  // Per-field property on the obj.outputs proxy (value ports only).
+  template <auto Idx, typename C>
+  void setup_output_value_accessor(
+      py::class_<outputs_accessor<T>>& cls, avnd::field_reflection<Idx, C> refl,
+      pybind11::module_& m)
+  {
+    if constexpr(requires { avnd::get_name<C>(); })
+    {
+      using value_type = std::remove_cvref_t<decltype(C::value)>;
+      if constexpr(!avnd::tensor_like<value_type>)
+      {
+        ensure_value_type_registered<value_type>(m);
+        cls.def_property(
+            c_str(output_name(refl)),
+            [](outputs_accessor<T>& a) {
+              return avnd::pfr::get<Idx>(a.self->outputs).value;
+            },
+            [](outputs_accessor<T>& a, decltype(C::value) x) {
+              avnd::pfr::get<Idx>(a.self->outputs).value = x;
+            });
+      }
+    }
+  }
+
   template <auto Idx, typename C>
   void setup_output(avnd::field_reflection<Idx, C> refl, pybind11::module_& m)
   {
@@ -782,7 +904,7 @@ struct processor
     // executing the work inline.
     class_def.def(py::init([] {
       auto t = std::make_unique<T>();
-      wire_worker(*t);
+      wire_host_callbacks(*t);
       return t;
     }));
     if constexpr(requires { T{}(); })
@@ -812,6 +934,35 @@ struct processor
           [this, &m](auto a) { setup_output(a, m); });
       avnd::callback_output_introspection<T>::for_all(
           [this, &m](auto a) { setup_callback(a, m); });
+    }
+
+    // Nested unambiguous accessors: obj.inputs.<name> / obj.outputs.<name>.
+    // The flat attributes above stay as a convenience shortcut, but when an
+    // input and an output share a symbol the second registered property
+    // shadows the first in the flat namespace; the proxies are the reliable
+    // path (setting obj.inputs.<name> writes the same field run_audio and
+    // process() read).
+    {
+      static py::class_<inputs_accessor<T>> in_cls(
+          m, (std::string{c_str(avnd::get_c_identifier<T>())} + "_inputs").c_str());
+      static py::class_<outputs_accessor<T>> out_cls(
+          m, (std::string{c_str(avnd::get_c_identifier<T>())} + "_outputs").c_str());
+
+      if constexpr(avnd::inputs_is_value<T>)
+        avnd::parameter_input_introspection<T>::for_all(
+            [this, &m](auto a) { setup_input_value_accessor(in_cls, a, m); });
+      if constexpr(avnd::outputs_is_value<T>)
+        avnd::parameter_output_introspection<T>::for_all(
+            [this, &m](auto a) { setup_output_value_accessor(out_cls, a, m); });
+
+      class_def.def_property_readonly(
+          "inputs", py::cpp_function(
+                        [](T& self) { return inputs_accessor<T>{&self}; },
+                        py::keep_alive<0, 1>()));
+      class_def.def_property_readonly(
+          "outputs", py::cpp_function(
+                         [](T& self) { return outputs_accessor<T>{&self}; },
+                         py::keep_alive<0, 1>()));
     }
 
     if constexpr(avnd::cpu_texture_input_introspection<T>::size > 0)
