@@ -283,8 +283,12 @@ static constexpr auto map_control_to_01(const auto& value) = delete;
 //   static_assert(std::is_void_v<T>, "Error: unhandled control type");
 // }
 
+// Note: the value-level overloads above cannot deduce T, so the constraint
+// must pass it explicitly -- with the unqualified form this overload was
+// unsatisfiable and every caller's `requires { map_control_to_01(ctl); }`
+// silently evaluated to false.
 template <avnd::parameter_port T>
-  requires requires(T t) { map_control_to_01(t.value); }
+  requires requires(T t) { map_control_to_01<T>(t.value); }
 static constexpr auto map_control_to_01(const T& ctl)
 {
   return map_control_to_01<T>(ctl.value);
