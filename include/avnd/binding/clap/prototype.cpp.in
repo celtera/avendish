@@ -17,7 +17,12 @@ AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_entry = {
       static constexpr const clap_plugin_factory factory {
         .get_plugin_count = +[] (const struct clap_plugin_factory *factory) -> uint32_t { /* count */ return 1; }
       , .get_plugin_descriptor =  +[] (const struct clap_plugin_factory *factory, uint32_t) -> const clap_plugin_descriptor* { return &effect_type::descriptor; }
-      , .create_plugin = +[] (const struct clap_plugin_factory *factory, const clap_host_t *host, const char *plugin_id) -> const clap_plugin_t* { return new effect_type{host}; }
+      , .create_plugin = +[] (const struct clap_plugin_factory *factory, const clap_host_t *host, const char *plugin_id) -> const clap_plugin_t* {
+          // Hosts probe with arbitrary IDs; only answer to ours.
+          if(!plugin_id || strcmp(plugin_id, effect_type::descriptor.id) != 0)
+            return nullptr;
+          return new effect_type{host};
+        }
       };
       if(!strcmp(factory_id,CLAP_PLUGIN_FACTORY_ID))
         return &factory;
