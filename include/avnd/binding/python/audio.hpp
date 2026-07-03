@@ -2,7 +2,12 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/concepts/worker.hpp>
 #include <avnd/introspection/channels.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
+#include <avnd/introspection/port.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
@@ -53,6 +58,42 @@ py::array_t<float> run_audio(
       st.inputs = avnd::get_inputs(self);
   }
 
+  // Host-provided callables must never be empty std::functions when
+  // prepare()/process() runs them -- install no-op (or inline, for the
+  // worker) handlers, the same set the example host and the golden
+  // generator wire.
+  if constexpr(avnd::audio_bus_input_introspection<T>::size > 0)
+    avnd::audio_bus_input_introspection<T>::for_all(
+        avnd::get_inputs(c), [](auto& p) {
+          if constexpr(requires { p.request_channels; })
+            if(!p.request_channels)
+              p.request_channels = [](int) {};
+        });
+  if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
+    avnd::audio_bus_output_introspection<T>::for_all(
+        avnd::get_outputs(c), [](auto& p) {
+          if constexpr(requires { p.request_channels; })
+            if(!p.request_channels)
+              p.request_channels = [](int) {};
+        });
+  auto wire_buffer = [](auto& p) {
+    if constexpr(requires { p.buffer.upload; })
+      if(!p.buffer.upload)
+        p.buffer.upload = [](const char*, std::int64_t, std::int64_t) {};
+  };
+  if constexpr(avnd::buffer_output_introspection<T>::size > 0)
+    avnd::buffer_output_introspection<T>::for_all(avnd::get_outputs(c), wire_buffer);
+  if constexpr(avnd::buffer_input_introspection<T>::size > 0)
+    avnd::buffer_input_introspection<T>::for_all(avnd::get_inputs(c), wire_buffer);
+  if constexpr(avnd::has_worker<T>)
+    for(auto& impl : c.effects())
+    {
+      using worker_t = std::decay_t<decltype(impl.worker)>;
+      impl.worker.request = [](auto&&... args) {
+        worker_t::work(std::forward<decltype(args)>(args)...);
+      };
+    }
+
   avnd::process_setup su{
       .input_channels = n_in,
       .output_channels = n_out,
@@ -62,6 +103,12 @@ py::array_t<float> run_audio(
   proc.allocate_buffers(su, float{});
   proc.allocate_buffers(su, double{});
   avnd::prepare(c, su);
+
+  // Sample-accurate control ports need their per-buffer storage reserved
+  // before process() (else the object writes into unallocated storage).
+  avnd::control_storage<T> control_buffers;
+  if constexpr(sizeof(control_buffers) > 1)
+    control_buffers.reserve_space(c, frames);
 
   auto* in_base = static_cast<float*>(info.ptr);
   std::vector<float*> in_ptrs(n_in);
@@ -83,6 +130,17 @@ py::array_t<float> run_audio(
   proc.process(
       c, avnd::span<float*>{in_ptrs.data(), static_cast<std::size_t>(n_in)},
       avnd::span<float*>{out_ptrs.data(), static_cast<std::size_t>(n_out)}, t);
+
+  // Copy the processed state back so output controls (e.g. analysis results)
+  // are readable on the Python instance afterwards.
+  for(auto&& st : c.full_state())
+  {
+    if constexpr(std::is_copy_assignable_v<T>)
+      self = st.effect;
+    else if constexpr(requires { avnd::get_outputs(self) = st.outputs; })
+      avnd::get_outputs(self) = st.outputs;
+    break;
+  }
 
   return out;
 }

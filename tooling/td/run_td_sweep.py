@@ -32,6 +32,10 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from golden_compare import (aggregate_case_verdicts, compare_audio,
+                            compare_controls)
+
 user32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
 # --- Win32: find and OK the "Plugin Load Error" dialog -----------------------
@@ -96,64 +100,6 @@ def gen_runner(dumps, out_dir):
         if os.path.exists(cand):
             return cand
     sys.exit(f"runner not generated under {out_dir}")
-
-
-def compare_audio(td_out, golden, atol, rtol):
-    """Diff TD output channels (positional) against the golden audio channels
-    over their overlapping prefix (TD's cook sample-count can differ from the
-    golden's frame count). td_out is [{name, samples}]."""
-    if not golden:
-        return ("no-golden-audio", "")
-    if not td_out:
-        return ("no-td-audio", "")
-    td = [e["samples"] for e in td_out]
-    nch = min(len(td), len(golden))
-    if nch == 0:
-        return ("empty", "")
-    maxdiff = 0.0
-    for c in range(nch):
-        ns = min(len(td[c]), len(golden[c]))
-        for i in range(ns):
-            maxdiff = max(maxdiff, abs(td[c][i] - golden[c][i]))
-    peak = max((abs(x) for ch in golden for x in ch), default=0.0)
-    tol = atol + rtol * peak
-    verdict = "match" if maxdiff <= tol else "MISMATCH"
-    detail = (f"maxdiff={maxdiff:.2e} tol={tol:.2e} "
-              f"td={len(td)}ch gold={len(golden)}ch")
-    return (verdict, detail)
-
-
-def compare_controls(named, golden, atol, rtol):
-    """Diff golden output controls against TD values matched by name. `named` is
-    {channel/info-name -> value}, built from output channels + Info-CHOP."""
-    if not golden:
-        return ("no-golden-controls", "")
-    if not named:
-        return ("no-td-controls", "")
-    checked, maxdiff, worst = 0, 0.0, ""
-    for gc in golden:
-        if not isinstance(gc, dict):
-            continue
-        nm, gv = gc.get("name", ""), gc.get("value")
-        if not isinstance(gv, (int, float)):
-            continue
-        tv = None
-        for k in (nm, nm.lower(), nm.capitalize()):
-            if k in named:
-                tv = named[k]
-                break
-        if tv is None:
-            continue
-        checked += 1
-        if abs(tv - gv) > maxdiff:
-            maxdiff, worst = abs(tv - gv), nm
-    if checked == 0:
-        return ("no-name-match", f"td={list(named)[:4]}")
-    peak = max((abs(gc["value"]) for gc in golden
-                if isinstance(gc.get("value"), (int, float))), default=0.0)
-    tol = atol + rtol * peak
-    return ("match" if maxdiff <= tol else "MISMATCH",
-            f"{checked} ctrls maxdiff={maxdiff:.2e}@{worst} tol={tol:.2e}")
 
 
 def main():
@@ -366,21 +312,7 @@ def main():
                 v, d = compare_one(r.get("td_out"), r.get("td_info"),
                                    g.get("outputs", {}))
                 verdicts.append((0, v, d))
-            # Per-object verdict: any case mismatching -> MISMATCH (report the
-            # first failing case); else match if any case matched; else the
-            # first non-match category (no-name-match / no-golden-output / ...).
-            mm = [x for x in verdicts if x[1] == "MISMATCH"]
-            if mm:
-                v = "MISMATCH"
-                detail = f"case{mm[0][0]} {mm[0][2]}"
-                if len(mm) > 1:
-                    detail += f" (+{len(mm)-1} more cases)"
-            elif any(x[1] == "match" for x in verdicts):
-                v, detail = "match", ""
-            elif verdicts:
-                v, detail = verdicts[0][1], verdicts[0][2]
-            else:
-                v, detail = "no-golden-output", ""
+            v, detail = aggregate_case_verdicts(verdicts)
             counts[v] = counts.get(v, 0) + 1
             if v == "MISMATCH":
                 mism.append(f"  MISMATCH {r['name']} ({len(verdicts)} cases): {detail}")

@@ -32,6 +32,22 @@
 
 namespace python
 {
+// Install an inline worker hand-off so an object that offloads to the host's
+// thread pool has a valid callable (never an empty std::function). A free
+// function template so MSVC reliably discards the branch for worker-less types
+// (an `if constexpr` inside the py::init lambda did not discard cleanly).
+template <typename U>
+void wire_worker(U& obj)
+{
+  if constexpr(avnd::has_worker<U>)
+  {
+    using worker_t = std::decay_t<decltype(obj.worker)>;
+    obj.worker.request = [](auto&&... args) {
+      worker_t::work(std::forward<decltype(args)>(args)...);
+    };
+  }
+}
+
 inline const char* c_str(const std::string& v) noexcept
 {
   return v.c_str();
@@ -53,16 +69,42 @@ inline const char* c_str(const std::array<char, Sz>& v) noexcept
 
 namespace py = pybind11;
 
-template <auto Idx, typename C>
-constexpr auto input_name(avnd::field_reflection<Idx, C>)
+// Unnamed ports all map to the same "unnamed" identifier, so their properties
+// would silently overwrite each other -- fall back to a positional name (the
+// same "p<index>" scheme the golden generator uses; outputs get an "out_"
+// prefix so an unnamed input/output pair does not collide either).
+inline bool unusable_name(std::string_view nm)
 {
-  return avnd::get_static_symbol<C>();
+  return nm.empty() || nm.find("unnamed") != std::string_view::npos
+         || nm.find('<') != std::string_view::npos;
+}
+
+template <typename C>
+std::string symbol_string()
+{
+  auto sym = avnd::get_static_symbol<C>();
+  if constexpr(requires { std::string_view{sym}; })
+    return std::string{std::string_view{sym}};
+  else
+    return std::string{sym.data()};
 }
 
 template <auto Idx, typename C>
-constexpr auto output_name(avnd::field_reflection<Idx, C>)
+std::string input_name(avnd::field_reflection<Idx, C>)
 {
-  return avnd::get_static_symbol<C>();
+  std::string nm = symbol_string<C>();
+  if(unusable_name(nm))
+    return "p" + std::to_string((int)Idx);
+  return nm;
+}
+
+template <auto Idx, typename C>
+std::string output_name(avnd::field_reflection<Idx, C>)
+{
+  std::string nm = symbol_string<C>();
+  if(unusable_name(nm))
+    return "out_p" + std::to_string((int)Idx);
+  return nm;
 }
 
 template <typename V>
@@ -735,7 +777,14 @@ struct processor
   {
     m.doc() = c_str(avnd::get_description<T>());
 
-    class_def.def(py::init<>());
+    // Host-provided callables (the worker thread-pool hand-off) must never be
+    // an empty std::function when the object runs -- wire them at construction,
+    // executing the work inline.
+    class_def.def(py::init([] {
+      auto t = std::make_unique<T>();
+      wire_worker(*t);
+      return t;
+    }));
     if constexpr(requires { T{}(); })
     {
       class_def.def("process", &T::operator());
