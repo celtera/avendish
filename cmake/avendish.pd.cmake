@@ -190,6 +190,23 @@ function(avnd_create_pd_package)
     add_custom_command(TARGET ${_external} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy "${_external_bin}" "${_pkg}/"
     )
+
+    # Ship the interactive help patch as a sibling of the external: Pd opens
+    # <c_name>-help.pd when you right-click the object, and searches the same
+    # folder the external lives in. Best-effort -- the help patch may be absent
+    # on some toolchains and must not fail packaging.
+    get_target_property(_pd_help ${_external} AVND_PD_HELP)
+    if(_pd_help)
+      if(TARGET "${_external}_help")
+        add_dependencies("${_external}" "${_external}_help")
+      endif()
+      get_property(_pkgdir GLOBAL PROPERTY AVND_PACKAGING_DIR)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+          "-DSRC=${CMAKE_BINARY_DIR}/${_pd_help}" "-DDST=${_pkg}"
+          -P "${_pkgdir}/avendish.packaging.copy_optional.cmake"
+        VERBATIM)
+    endif()
   endforeach()
 
   # Copy the support files
