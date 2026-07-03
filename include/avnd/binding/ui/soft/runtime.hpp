@@ -151,6 +151,10 @@ public:
         m_bus->send_message = std::forward<F>(f);
   }
 
+  // Bindings call this when the model changed behind the UI's back
+  // (host automation, preset load) so the next tick repaints.
+  void mark_dirty() noexcept { m_dirty = true; }
+
   void deliver_to_ui(auto&& msg)
   {
     if constexpr(requires {
@@ -441,14 +445,47 @@ private:
   }
 
   // ================= Standard controls =================
+  // Representative inputs/outputs: for per-channel polyphonic effects the
+  // UI edits the first instance (whose controls are shared/copied across
+  // instances by the bindings' parameter mirrors).
+  decltype(auto) first_inputs()
+  {
+    if constexpr(std::is_reference_v<decltype(m_impl.inputs())>)
+    {
+      return (m_impl.inputs());
+    }
+    else
+    {
+      for(auto state : m_impl.full_state())
+        return (state.inputs);
+      static typename avnd::inputs_type<T>::type empty{};
+      return (empty);
+    }
+  }
+
+  decltype(auto) first_outputs()
+  {
+    if constexpr(std::is_reference_v<decltype(m_impl.outputs())>)
+    {
+      return (m_impl.outputs());
+    }
+    else
+    {
+      for(auto state : m_impl.full_state())
+        return (state.outputs);
+      static typename avnd::outputs_type<T>::type empty{};
+      return (empty);
+    }
+  }
+
   // Layout items can reference inputs (editable) or outputs (display-only).
   template <typename P>
   void resolve_control(P member, int columns)
   {
-    if constexpr(requires { avnd::get_inputs<T>(m_impl).*member; })
-      control_widget(avnd::get_inputs<T>(m_impl).*member, columns);
-    else if constexpr(requires { avnd::get_outputs<T>(m_impl).*member; })
-      output_widget(avnd::get_outputs<T>(m_impl).*member, columns);
+    if constexpr(requires { this->first_inputs().*member; })
+      control_widget(this->first_inputs().*member, columns);
+    else if constexpr(requires { this->first_outputs().*member; })
+      output_widget(this->first_outputs().*member, columns);
   }
 
   template <typename C>
@@ -624,7 +661,7 @@ private:
   {
     int res = -1, k = 0;
     avnd::parameter_input_introspection<T>::for_all(
-        avnd::get_inputs<T>(m_impl), [&](auto& field) {
+        this->first_inputs(), [&](auto& field) {
           if((const void*)&field == (const void*)&ctl)
             res = k;
           k++;
@@ -712,9 +749,10 @@ private:
   void init_custom(Item& item)
   {
     using I = std::remove_cvref_t<Item>;
-    if constexpr(has_control_model<I>)
+    if constexpr(has_control_model<I>
+                 && requires { this->first_inputs().*(item.model); })
     {
-      auto& ins = avnd::get_inputs<T>(m_impl);
+      decltype(auto) ins = this->first_inputs();
       auto& ctl = ins.*(item.model);
       using C = std::remove_cvref_t<decltype(ctl)>;
 
