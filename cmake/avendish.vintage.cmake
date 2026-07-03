@@ -18,6 +18,7 @@ target_precompile_headers(Avendish_vintage_pch
 
 target_link_libraries(Avendish_vintage_pch
   PUBLIC
+    concurrentqueue
     DisableExceptions
 )
 avnd_common_setup("" "Avendish_vintage_pch")
@@ -101,14 +102,20 @@ function(avnd_make_vintage)
     ${AVND_FX_TARGET}
     PUBLIC
       Avendish::Avendish_vintage
+      concurrentqueue
       DisableExceptions
   )
+
+  # Editors: plug-ins with a `struct ui` get the reference soft UI editor.
+  if(TARGET Avendish::soft_ui AND TARGET avnd_pugl)
+    avnd_target_soft_ui(${AVND_FX_TARGET})
+  endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
 
 add_library(Avendish_vintage INTERFACE)
-target_link_libraries(Avendish_vintage INTERFACE Avendish)
+target_link_libraries(Avendish_vintage INTERFACE Avendish concurrentqueue)
 add_library(Avendish::Avendish_vintage ALIAS Avendish_vintage)
 
 target_sources(Avendish PRIVATE

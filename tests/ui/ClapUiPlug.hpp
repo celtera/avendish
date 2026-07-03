@@ -77,6 +77,7 @@ struct ClapUiPlug
 
   struct ins
   {
+    // Parameters first so their flat indices stay 0 (Level) and 1 (Gain)
     struct : halp::val_port<"Level", float>
     {
       struct range
@@ -85,23 +86,25 @@ struct ClapUiPlug
       };
     } level;
     halp::knob_f32<"Gain", halp::range{.min = 0., .max = 1., .init = 0.5}> gain;
+
+    halp::dynamic_audio_bus<"In", float> audio;
   } inputs;
 
-  struct
+  struct outs
   {
-    halp::audio_channel<"In", float> audio;
-  } input_audio;
-
-  struct
-  {
-    halp::audio_channel<"Out", float> audio;
-  } output_audio;
+    halp::dynamic_audio_bus<"Out", float> audio;
+  } outputs;
 
   void operator()(int frames)
   {
-    for(int i = 0; i < frames; i++)
-      output_audio.audio.channel[i]
-          = input_audio.audio.channel[i] * inputs.gain.value * inputs.level.value;
+    const float g = inputs.gain.value * inputs.level.value;
+    for(int c = 0; c < outputs.audio.channels; c++)
+    {
+      auto* in = inputs.audio.samples[c];
+      auto* out = outputs.audio.samples[c];
+      for(int i = 0; i < frames; i++)
+        out[i] = in[i] * g;
+    }
   }
 
   // Message bus round trip: committed widget values are sent to the
