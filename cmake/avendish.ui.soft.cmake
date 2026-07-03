@@ -107,6 +107,11 @@ endif()
 
 function(avnd_target_soft_ui theTarget)
   target_link_libraries("${theTarget}" PRIVATE Avendish::soft_ui)
+  # Editor-capable targets (plug-in bindings) resolve declarative `struct ui`
+  # to the soft editor through avnd/binding/ui/editor.hpp.
+  if(TARGET avnd_pugl)
+    target_compile_definitions("${theTarget}" PRIVATE AVND_SOFT_UI_EDITOR=1)
+  endif()
   if(EXISTS "${AVND_SOFT_UI_DEFAULT_FONT}")
     target_compile_definitions("${theTarget}" PRIVATE
       "AVND_SOFT_UI_DEFAULT_FONT=\"${AVND_SOFT_UI_DEFAULT_FONT}\"")

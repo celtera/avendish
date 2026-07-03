@@ -139,14 +139,13 @@ function(avnd_make_clap)
   # (pugl + Nuklear + canvas_ity); UI-less plug-ins are unaffected.
   if(TARGET Avendish::soft_ui AND TARGET avnd_pugl)
     avnd_target_soft_ui(${AVND_FX_TARGET})
-    target_compile_definitions(${AVND_FX_TARGET} PRIVATE AVND_CLAP_UI=1)
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
 
 add_library(Avendish_clap INTERFACE)
-target_link_libraries(Avendish_clap INTERFACE Avendish)
+target_link_libraries(Avendish_clap INTERFACE Avendish concurrentqueue)
 add_library(Avendish::Avendish_clap ALIAS Avendish_clap)
 
 target_sources(Avendish PRIVATE

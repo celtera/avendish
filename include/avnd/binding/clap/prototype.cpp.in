@@ -4,7 +4,7 @@
 #include <avnd/binding/clap/audio_effect.hpp>
 #include <avnd/binding/clap/configure.hpp>
 
-#if defined(AVND_CLAP_UI)
+#if defined(AVND_SOFT_UI_EDITOR)
 // Emit the Nuklear + canvas_ity implementations exactly once per plug-in.
 #include <avnd/binding/ui/soft/implementation.hpp>
 #endif

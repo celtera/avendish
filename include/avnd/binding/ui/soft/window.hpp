@@ -20,6 +20,8 @@
 #include <pugl/pugl.h>
 #include <pugl/stub.h>
 
+#include <functional>
+
 #if defined(_WIN32)
 #if !defined(WIN32_LEAN_AND_MEAN)
 #define WIN32_LEAN_AND_MEAN 1
@@ -126,6 +128,9 @@ public:
     return m_view ? (void*)puglGetNativeView(m_view) : nullptr;
   }
 
+  // Called at the start of every UI frame (30 Hz pugl timer, UI thread).
+  std::function<void()> on_frame;
+
 private:
   static window_editor& self(PuglView* view)
   {
@@ -152,6 +157,10 @@ private:
       case PUGL_TIMER:
         if(event->timer.id == 0)
         {
+          // Binding hook: drain transport queues etc. on the UI thread even
+          // when the host provides no idle callback of its own.
+          if(w.on_frame)
+            w.on_frame();
           if(w.m_runtime.tick())
             puglObscureView(view);
         }

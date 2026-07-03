@@ -217,7 +217,7 @@ struct SimpleAudioEffect : clap_plugin
       if constexpr(requires { this->effect.effect.send_message = nullptr; })
       {
         this->effect.effect.send_message = [this](auto&& msg) {
-          gui.to_ui.queue.try_enqueue(std::forward<decltype(msg)>(msg));
+          gui.bus.to_ui.queue.try_enqueue(std::forward<decltype(msg)>(msg));
         };
       }
     }
@@ -375,7 +375,7 @@ struct SimpleAudioEffect : clap_plugin
                    })
       {
         ui_to_proc_msg_t<T> msg;
-        while(gui.to_processor.queue.try_dequeue(msg))
+        while(gui.bus.to_processor.queue.try_dequeue(msg))
           this->effect.effect.process_message(std::move(msg));
       }
     }
@@ -572,10 +572,7 @@ struct SimpleAudioEffect : clap_plugin
     {
       if(is_floating || std::string_view{api} != clap_native_window_api)
         return false;
-      if constexpr(std::is_constructible_v<editor_t, avnd::effect_container<T>&>)
-        gui.editor = std::make_unique<editor_t>(effect);
-      else
-        gui.editor = std::make_unique<editor_t>();
+      gui.editor = avnd::make_ui_editor(effect);
 
       // The soft runtime wires the bus synchronously in its constructor;
       // replace both directions with the lock-free queues.
@@ -584,7 +581,7 @@ struct SimpleAudioEffect : clap_plugin
         if constexpr(avnd::has_gui_to_processor_bus<T>)
         {
           gui.editor->runtime().set_bus_to_processor([this](auto&& msg) {
-            gui.to_processor.queue.enqueue(std::forward<decltype(msg)>(msg));
+            gui.bus.to_processor.queue.enqueue(std::forward<decltype(msg)>(msg));
           });
         }
         wire_bus_queues();
@@ -661,7 +658,7 @@ struct SimpleAudioEffect : clap_plugin
           if constexpr(requires { gui.editor->runtime(); })
           {
             proc_to_ui_msg_t<T> msg;
-            while(gui.to_ui.queue.try_dequeue(msg))
+            while(gui.bus.to_ui.queue.try_dequeue(msg))
               gui.editor->runtime().deliver_to_ui(std::move(msg));
           }
         }
