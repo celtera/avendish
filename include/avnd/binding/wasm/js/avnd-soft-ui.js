@@ -5,8 +5,9 @@
 // <canvas> via putImageData and forwards pointer events in physical canvas
 // pixels. Companion of the DOM/Canvas2D path in avnd-ui.js.
 //
-// NOTE: written without an emsdk on the dev machine; needs a browser run
-// before being relied upon.
+// The C++ side (module, frame data contract, pointer events) is validated
+// headlessly under node (tests/ui/wasm_soft_ui_test.mjs); this DOM glue
+// itself still awaits a manual browser run.
 //
 //   import { attachSoftUI } from "./avnd-soft-ui.js";
 //   const handle = attachSoftUI(new Module.SoftUI(), canvas, { width: 640, height: 480 });

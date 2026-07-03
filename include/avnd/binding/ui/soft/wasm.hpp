@@ -14,8 +14,9 @@
  * the native standalone preview. Hooking it to the AudioWorklet processing
  * graph comes with emsdk validation.
  *
- * NOTE: written without an emsdk on the dev machine -- compiles against the
- * emscripten headers in CI but has not been exercised in a browser yet.
+ * Validated headlessly under node (tests/ui/wasm_soft_ui_test.mjs: frame
+ * determinism + pointer interaction through embind); the browser-side
+ * canvas glue in avnd-soft-ui.js still awaits a manual browser run.
  *
  * Usage in a module:
  *
