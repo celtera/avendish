@@ -38,6 +38,9 @@ if(BUILD_TESTING)
   avnd_add_static_test(test_introspection_rec tests/test_introspection_rec.cpp)
   avnd_add_static_test(test_predicate tests/test_predicate.cpp)
   avnd_add_static_test(test_vintage tests/tests_vintage.cpp)
+  if(TARGET concurrentqueue) # vintage gui glue's bus transport
+    target_link_libraries(test_vintage PRIVATE concurrentqueue)
+  endif()
   avnd_add_static_test(test_channels tests/tests_channels.cpp)
   avnd_add_static_test(test_function_reflection tests/tests_function_reflection.cpp)
   avnd_add_static_test(test_audioprocessor tests/test_audioprocessor.cpp)
@@ -68,6 +71,22 @@ if(BUILD_TESTING)
         target_include_directories(test_clap_gui PRIVATE ${CLAP_HEADER})
         target_compile_definitions(test_clap_gui PRIVATE
           "AVND_TEST_CLAP_PATH=\"$<TARGET_FILE:ClapUiPlugTest_clap>\"")
+      endif()
+    endif()
+
+    # Same plug-in through the VST2 (vintage) editor glue.
+    if(WIN32 AND COMMAND avnd_make_vintage AND TARGET avnd_pugl)
+      avnd_make_vintage(
+        TARGET VintageUiPlugTest
+        MAIN_FILE tests/ui/ClapUiPlug.hpp
+        MAIN_CLASS avnd_test::ClapUiPlug
+        C_NAME avnd_vintage_ui_test
+      )
+      if(TARGET VintageUiPlugTest_vintage)
+        avnd_add_catch_test(test_vintage_gui tests/ui/test_vintage_gui.cpp)
+        add_dependencies(test_vintage_gui VintageUiPlugTest_vintage)
+        target_compile_definitions(test_vintage_gui PRIVATE
+          "AVND_TEST_VST2_PATH=\"$<TARGET_FILE:VintageUiPlugTest_vintage>\"")
       endif()
     endif()
   endif()

@@ -265,15 +265,15 @@ TEST_CASE("clap editor: embed, interact, gestures", "[clap_gui]")
   REQUIRE(plugin->activate(plugin, 48000., 64, 64));
   REQUIRE(plugin->start_processing(plugin));
 
-  float in_buf[64]{}, out_buf[64]{};
-  float* ins[1] = {in_buf};
-  float* outs[1] = {out_buf};
+  float in_l[64]{}, in_r[64]{}, out_l[64]{}, out_r[64]{};
+  float* ins[2] = {in_l, in_r};
+  float* outs[2] = {out_l, out_r};
   clap_audio_buffer in_bus{};
   in_bus.data32 = ins;
-  in_bus.channel_count = 1;
+  in_bus.channel_count = 2;
   clap_audio_buffer out_bus{};
   out_bus.data32 = outs;
-  out_bus.channel_count = 1;
+  out_bus.channel_count = 2;
 
   out_event_collector process_out;
   clap_process proc{};
