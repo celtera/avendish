@@ -12,6 +12,7 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_storage.hpp>
+#include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 
 namespace stv3
@@ -128,6 +129,10 @@ struct Component final
 
     // First the default value
     avnd::init_controls(effect);
+
+    // Safe no-op handlers for worker.request / request_channels members:
+    // an empty std::function call terminates under -fno-exceptions.
+    avnd::wire_fallback_callbacks(effect);
 
     // processor -> UI bus: IMessage may only be allocated/sent on the UI
     // thread, so the audio thread merely enqueues (preallocated queue,
