@@ -34,7 +34,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from golden_compare import (aggregate_case_verdicts, compare_audio,
-                            compare_controls, compare_textures)
+                            compare_controls)
 
 user32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
@@ -276,10 +276,20 @@ def main():
                 pass
         # Compare one captured case (td_out + td_info) against a golden case's
         # outputs. Prefer audio when the golden has audio output, else controls.
-        # A texture output surfaces as a TOP: the runner captures its
-        # width/height (+ a crc of TD's normalized readback) into td_tex.
-        # TD hands back a converted representation, so compare dimensions
-        # authoritatively and treat content as informational (content="dims").
+        #
+        # TEXTURE OUTPUT IS NOT VERIFIABLE HEADLESS. Investigation (2026-07):
+        # a Custom TOP's GPU upload (createOutputBuffer/uploadBuffer) is NOT
+        # rendered/flushed for numpyArray() readback in a scripted, no-viewer
+        # cook -- every avendish TOP reads back as TD's empty 128x128 default
+        # (identical hash across all objects), and forcing the node's Output
+        # Resolution to Custom does not produce a surface. This is NOT an
+        # avendish bug: the object produces correct output (verified via the
+        # Python binding: pyavnd_test_tex_generator -> real 512x512), the same
+        # invoke_effect/get_outputs path drives the working CHOP binding, and
+        # built-in TOPs (noiseTOP/constantTOP) DO read back headless. So it is
+        # a TouchDesigner headless-Custom-OP limitation. Report it as an honest
+        # gap rather than a false MISMATCH. (GStreamer texture output IS verified
+        # -- see run_gst_golden.py -- so the object contract is still covered.)
         def compare_one(rc, gout):
             gaud = (gout or {}).get("audio")
             gctl = (gout or {}).get("controls")
@@ -295,8 +305,8 @@ def main():
                     named.setdefault(k, val)
                 return compare_controls(named, gctl, args.atol, args.rtol)
             if gtex:
-                return compare_textures(rc.get("td_tex"), gtex, args.atol,
-                                        args.rtol, content="dims")
+                return ("no-headless-texture-readback",
+                        "TD renders Custom-OP GPU uploads only with a viewer")
             return ("no-golden-output", "")
 
         counts, mism = {}, []
