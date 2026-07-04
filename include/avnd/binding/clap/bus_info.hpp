@@ -36,6 +36,11 @@ struct event_bus_info
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
           });
+      // process_in_events consumes both note events and raw MIDI; the
+      // ports are MIDI-message-based, so prefer that dialect. (A zero
+      // preferred_dialect is invalid and makes hosts reject the config.)
+      info.supported_dialects = CLAP_NOTE_DIALECT_MIDI | CLAP_NOTE_DIALECT_CLAP;
+      info.preferred_dialect = CLAP_NOTE_DIALECT_MIDI;
       return true;
     }
     else
@@ -56,6 +61,8 @@ struct event_bus_info
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
         copy_string(info.name, C::name());
           });
+      info.supported_dialects = CLAP_NOTE_DIALECT_MIDI | CLAP_NOTE_DIALECT_CLAP;
+      info.preferred_dialect = CLAP_NOTE_DIALECT_MIDI;
       return true;
     }
     else
@@ -286,10 +293,15 @@ struct audio_bus_info<T>
             = avnd::poly_array_sample_port<double, C>
                   ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
                   : 0;
+        // Each port reports its own channel count, not the plug-in total
+        // (a stereo main + stereo sidechain is two 2-channel ports, not
+        // two 4-channel ones). Dynamic buses default to stereo.
+        const int channels = avnd::channels_in_bus<C>();
+        info.channel_count = channels > 0 ? channels : 2;
+        info.port_type = info.channel_count == 1   ? CLAP_PORT_MONO
+                         : info.channel_count == 2 ? CLAP_PORT_STEREO
+                                                   : nullptr;
           });
-
-      info.channel_count = default_input_channel_count();
-      info.port_type = CLAP_PORT_STEREO;
       info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
@@ -311,10 +323,12 @@ struct audio_bus_info<T>
             = avnd::poly_array_sample_port<double, C>
                   ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
                   : 0;
+        const int channels = avnd::channels_in_bus<C>();
+        info.channel_count = channels > 0 ? channels : 2;
+        info.port_type = info.channel_count == 1   ? CLAP_PORT_MONO
+                         : info.channel_count == 2 ? CLAP_PORT_STEREO
+                                                   : nullptr;
           });
-
-      info.channel_count = default_output_channel_count();
-      info.port_type = CLAP_PORT_STEREO;
       info.in_place_pair = CLAP_INVALID_ID; // FIXME
 
       return true;
@@ -393,8 +407,11 @@ struct audio_bus_info<T>
 template <avnd::channel_port_processor T>
 struct audio_bus_info<T>
 {
-  using input_refl = avnd::audio_bus_input_introspection<T>;
-  using output_refl = avnd::audio_bus_output_introspection<T>;
+  // Channel ports (mono `.channel` members), not bus ports: the bus
+  // introspection is empty for these, hiding the plug-in's real audio
+  // shape from hosts (issue #154).
+  using input_refl = avnd::audio_channel_input_introspection<T>;
+  using output_refl = avnd::audio_channel_output_introspection<T>;
   static constexpr int input_count() noexcept { return input_refl::size; }
   static constexpr int output_count() noexcept { return output_refl::size; }
   static constexpr int default_input_channel_count() noexcept { return input_count(); }
@@ -408,7 +425,11 @@ struct audio_bus_info<T>
       input_refl::for_nth_mapped(
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
-        copy_string(info.name, C::name());
+        // name() may be a static_string NTTP rather than string_view-like
+        if constexpr(requires { copy_string(info.name, C::name()); })
+          copy_string(info.name, C::name());
+        else
+          copy_string(info.name, std::string_view{C::name().value});
         info.flags
             = avnd::mono_array_sample_port<double, C>
                   ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
@@ -433,7 +454,10 @@ struct audio_bus_info<T>
       output_refl::for_nth_mapped(
           index,
           [&]<std::size_t I, typename C>(const avnd::field_reflection<I, C>& port) {
-        copy_string(info.name, C::name());
+        if constexpr(requires { copy_string(info.name, C::name()); })
+          copy_string(info.name, C::name());
+        else
+          copy_string(info.name, std::string_view{C::name().value});
         info.flags
             = avnd::mono_array_sample_port<double, C>
                   ? (CLAP_AUDIO_PORT_SUPPORTS_64BITS | CLAP_AUDIO_PORT_PREFERS_64BITS)
