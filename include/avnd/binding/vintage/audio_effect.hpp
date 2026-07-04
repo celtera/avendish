@@ -13,6 +13,7 @@
 #include <avnd/common/export.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 
 namespace vintage
@@ -46,6 +47,9 @@ struct SimpleAudioEffect : vintage::Effect
   AVND_NO_UNIQUE_ADDRESS programs_setup programs;
 
   AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
+
+  // Per-buffer storage backing sample-accurate control ports
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
   float sample_rate{44100.};
   int buffer_size{512};
@@ -134,6 +138,11 @@ struct SimpleAudioEffect : vintage::Effect
     if constexpr(avnd::double_processor<T>)
       processor.allocate_buffers(setup_info, double{});
 
+    // Sample-accurate control ports need their per-buffer storage reserved
+    // before process() (else the effect reads unallocated `values` arrays).
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.reserve_space(effect, buffer_size);
+
     // Setup buffers for storing MIDI messages
     if constexpr(midi_input_introspection<T>::size > 0)
     {
@@ -171,6 +180,8 @@ struct SimpleAudioEffect : vintage::Effect
 
     // Clear our midi outputs
     midi.clear_outputs(effect);
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.clear_outputs(effect);
 
     // Before processing starts, we copy all our atomics back into the struct
     controls.write(effect);
@@ -188,6 +199,8 @@ struct SimpleAudioEffect : vintage::Effect
 
     // Clear our midi inputs
     midi.clear_inputs(effect);
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.clear_inputs(effect);
   }
 
   void event_input(const vintage::Events* evs)

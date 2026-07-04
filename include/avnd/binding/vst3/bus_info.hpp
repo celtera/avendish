@@ -157,47 +157,86 @@ default_speaker_arrangement(int channels, Steinberg::Vst::SpeakerArrangement& ar
 // thus either the number of channels is set explicitely, or we default to 2 as
 // that is the expectation for VSTs.
 
+// Fallback: no specialized bus concept matched. The core wrappers may
+// still see audio channels the concepts above don't cover (array-style
+// value ports carrying a .channel, analyzers without audio outputs...):
+// declare one main bus per direction that actually has channels, so
+// hosts/validators see the plug-in's real audio shape instead of
+// "no buses at all". Effects with no audio in either direction keep
+// declaring nothing (parameter-only utility objects).
 template <typename T>
 struct audio_bus_info
 {
-  static constexpr int inputCount() noexcept { return 0; }
-  static constexpr int outputCount() noexcept { return 0; }
-  static constexpr int defaultInputChannelCount() noexcept { return 0; }
-  static constexpr int defaultOutputChannelCount() noexcept { return 0; }
+  static constexpr int inputCount() noexcept
+  {
+    return avnd::input_channels<T>(0) > 0 ? 1 : 0;
+  }
+  static constexpr int outputCount() noexcept
+  {
+    return avnd::output_channels<T>(0) > 0 ? 1 : 0;
+  }
+  static constexpr int defaultInputChannelCount() noexcept
+  {
+    return avnd::input_channels<T>(0);
+  }
+  static constexpr int defaultOutputChannelCount() noexcept
+  {
+    return avnd::output_channels<T>(0);
+  }
 
   static Steinberg::tresult
   inputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
+    if(index == 0 && inputCount() > 0)
+    {
+      info.channelCount = defaultInputChannelCount();
+      setStr(info.name, u16_str "In");
+      info.busType = Steinberg::Vst::BusTypes::kMain;
+      return Steinberg::kResultTrue;
+    }
     return Steinberg::kInvalidArgument;
   }
 
   static Steinberg::tresult
   outputInfo(Steinberg::int32 index, Steinberg::Vst::BusInfo& info)
   {
+    if(index == 0 && outputCount() > 0)
+    {
+      info.channelCount = defaultOutputChannelCount();
+      setStr(info.name, u16_str "Out");
+      info.busType = Steinberg::Vst::BusTypes::kMain;
+      return Steinberg::kResultTrue;
+    }
     return Steinberg::kInvalidArgument;
   }
 
   static Steinberg::tresult
   inputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
+    if(index == 0 && inputCount() > 0)
+      return default_speaker_arrangement(defaultInputChannelCount(), arr);
     return Steinberg::kInvalidArgument;
   }
 
   static Steinberg::tresult
   outputArrangement(Steinberg::int32 index, Steinberg::Vst::SpeakerArrangement& arr)
   {
+    if(index == 0 && outputCount() > 0)
+      return default_speaker_arrangement(defaultOutputChannelCount(), arr);
     return Steinberg::kInvalidArgument;
   }
 
   static Steinberg::tresult activateInput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    return Steinberg::kInvalidArgument;
+    return (index == 0 && inputCount() > 0) ? Steinberg::kResultTrue
+                                            : Steinberg::kInvalidArgument;
   }
 
   static Steinberg::tresult
   activateOutput(Steinberg::int32 index, Steinberg::TBool state)
   {
-    return Steinberg::kInvalidArgument;
+    return (index == 0 && outputCount() > 0) ? Steinberg::kResultTrue
+                                             : Steinberg::kInvalidArgument;
   }
 
   Steinberg::tresult setBusArrangements(
@@ -206,7 +245,7 @@ struct audio_bus_info
       Steinberg::int32 numOuts)
   {
     using namespace Steinberg;
-    if(numIns == 0 && numOuts == 0)
+    if(numIns == inputCount() && numOuts == outputCount())
       return kResultTrue;
     return kResultFalse;
   }
@@ -751,8 +790,11 @@ struct audio_bus_info<T>
 template <avnd::channel_port_processor T>
 struct audio_bus_info<T>
 {
-  using input_refl = avnd::audio_bus_input_introspection<T>;
-  using output_refl = avnd::audio_bus_output_introspection<T>;
+  // Channel ports (mono `.channel` members), not bus ports: the bus
+  // introspection is empty for these — that made analyzers such as
+  // essentia Entropy report zero buses (issue #154).
+  using input_refl = avnd::audio_channel_input_introspection<T>;
+  using output_refl = avnd::audio_channel_output_introspection<T>;
   static constexpr int inputCount() noexcept { return input_refl::size; }
   static constexpr int outputCount() noexcept { return output_refl::size; }
   static constexpr int defaultInputChannelCount() noexcept { return inputCount(); }
