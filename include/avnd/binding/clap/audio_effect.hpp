@@ -12,6 +12,7 @@
 #include <avnd/wrappers/controls_double.hpp>
 #include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/metadatas.hpp>
+#include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <clap/all.h>
@@ -196,40 +197,9 @@ struct SimpleAudioEffect : clap_plugin
       avnd::init_controls(effect);
     }
 
-    wire_effect_callbacks();
-  }
-
-  // Host-callback members on the effect must never be left as empty
-  // std::functions: calling one terminates the process under
-  // -fno-exceptions (bad_function_call cannot unwind).
-  void wire_effect_callbacks()
-  {
-    // Workers offload a job to the host; CLAP has no generic offloading
-    // hook wired here yet, so run the job inline (same result, no
-    // background thread).
-    if constexpr(avnd::has_worker<T>)
-    {
-      for(auto& impl : effect.effects())
-      {
-        using worker_t = std::decay_t<decltype(impl.worker)>;
-        impl.worker.request = [](auto&&... args) {
-          worker_t::work(std::forward<decltype(args)>(args)...);
-        };
-      }
-    }
-
-    // Runtime channel-count requests (variable_audio_bus): CLAP only
-    // renegotiates port layouts across a restart; accept and ignore until
-    // that is implemented rather than crash on an empty function.
-    for(auto state : effect.full_state())
-    {
-      auto wire = [](auto& port) {
-        if constexpr(requires { port.request_channels = std::function<void(int)>{}; })
-          port.request_channels = [](int) {};
-      };
-      avnd::for_each_field_ref(state.inputs, wire);
-      avnd::for_each_field_ref(state.outputs, wire);
-    }
+    // Safe no-op handlers for worker.request / request_channels members:
+    // an empty std::function call terminates under -fno-exceptions.
+    avnd::wire_fallback_callbacks(effect);
   }
 
   void start()
