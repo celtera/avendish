@@ -11,6 +11,7 @@
 #include <avnd/wrappers/control_display.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/controls_double.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <avnd/wrappers/widgets.hpp>
@@ -132,6 +133,9 @@ struct SimpleAudioEffect : clap_plugin
 
   AVND_NO_UNIQUE_ADDRESS avnd_clap::audio_bus_info<T> audio_busses;
   AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
+
+  // Per-buffer storage backing sample-accurate control ports
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
   AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
 
   float sample_rate{44100.};
@@ -153,6 +157,7 @@ struct SimpleAudioEffect : clap_plugin
       auto& p = *self(plugin);
       p.sample_rate = sample_rate;
       p.buffer_size = max_frames_count;
+      p.ensure_scratch(max_frames_count);
 
       p.start();
       return true;
@@ -205,6 +210,7 @@ struct SimpleAudioEffect : clap_plugin
     }
 
     wire_bus_queues();
+    wire_effect_callbacks();
   }
 
   // processor → UI bus: enqueue from the audio thread into a preallocated
@@ -225,6 +231,39 @@ struct SimpleAudioEffect : clap_plugin
     }
   }
 
+  // Host-callback members on the effect must never be left as empty
+  // std::functions: calling one terminates the process under
+  // -fno-exceptions (bad_function_call cannot unwind).
+  void wire_effect_callbacks()
+  {
+    // Workers offload a job to the host; CLAP has no generic offloading
+    // hook wired here yet, so run the job inline (same result, no
+    // background thread).
+    if constexpr(avnd::has_worker<T>)
+    {
+      for(auto& impl : effect.effects())
+      {
+        using worker_t = std::decay_t<decltype(impl.worker)>;
+        impl.worker.request = [](auto&&... args) {
+          worker_t::work(std::forward<decltype(args)>(args)...);
+        };
+      }
+    }
+
+    // Runtime channel-count requests (variable_audio_bus): CLAP only
+    // renegotiates port layouts across a restart; accept and ignore until
+    // that is implemented rather than crash on an empty function.
+    for(auto state : effect.full_state())
+    {
+      auto wire = [](auto& port) {
+        if constexpr(requires { port.request_channels = std::function<void(int)>{}; })
+          port.request_channels = [](int) {};
+      };
+      avnd::for_each_field_ref(state.inputs, wire);
+      avnd::for_each_field_ref(state.outputs, wire);
+    }
+  }
+
   void start()
   {
     // Allocate buffers, setup everything
@@ -234,8 +273,16 @@ struct SimpleAudioEffect : clap_plugin
         .frames_per_buffer = buffer_size,
         .rate = sample_rate};
 
+    // Hosts choose float or double per process() call (data32 / data64):
+    // conversion storage must exist for both source sample types.
+    processor.allocate_buffers(setup_info, float{});
     processor.allocate_buffers(setup_info, double{});
     effect.init_channels(setup_info.input_channels, setup_info.output_channels);
+
+    // Sample-accurate control ports need their per-buffer storage reserved
+    // before process() (else the effect reads unallocated `values` arrays).
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.reserve_space(effect, buffer_size);
 
     // Setup buffers for storing MIDI messages
     if constexpr(midi_in_info::size > 0)
@@ -284,15 +331,52 @@ struct SimpleAudioEffect : clap_plugin
     }
 
     using samples_t = std::decay_t<decltype(inputs[0][0])>;
+
+    // Hosts may hand buses whose channel rows are null (clap-validator
+    // does): point those at binding-owned scratch so no adapter shape ever
+    // dereferences null — silence in, discarded writes out.
+    ensure_scratch(process.frames_count);
+    for(int i = 0; i < in_N; i++)
+      if(!inputs[i])
+        inputs[i] = zero_buffer<samples_t>();
+    for(int i = 0; i < out_N; i++)
+      if(!outputs[i])
+        outputs[i] = trash_buffer<samples_t>();
+
     processor.process(
         effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
         avnd::span<samples_t*>{outputs, std::size_t(out_N)}, process.frames_count);
   }
 
+  // Scratch rows substituted for null host channel pointers. Sized in
+  // activate(); the process-time call only allocates if a non-conformant
+  // host processes more frames than it activated for (or never activated).
+  void ensure_scratch(uint32_t frames)
+  {
+    if(m_zero64.size() < frames)
+    {
+      m_zero64.assign(frames, 0.);
+      m_trash64.resize(frames);
+    }
+  }
+  template <typename Sample>
+  Sample* zero_buffer() noexcept
+  {
+    // A double row of N zeros is also a valid float row of 2N zeros.
+    return reinterpret_cast<Sample*>(m_zero64.data());
+  }
+  template <typename Sample>
+  Sample* trash_buffer() noexcept
+  {
+    return reinterpret_cast<Sample*>(m_trash64.data());
+  }
+  std::vector<double> m_zero64, m_trash64;
+
   void process(const clap_process& process)
   {
-    // Clear the control out ports
-    // FIXME
+    // Clear the sample-accurate control out ports
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.clear_outputs(this->effect);
 
     // Clear the midi out ports
     midi.clear_outputs(this->effect);
@@ -305,33 +389,52 @@ struct SimpleAudioEffect : clap_plugin
       int in_N = avnd::input_channels<T>(2);
       int out_N = avnd::output_channels<T>(2);
 
-      if constexpr(avnd::float_processor<T>)
+      // SUPPORTS_64BITS is a per-process() negotiation: the host decides
+      // each call which of data32 / data64 it filled. Read what is actually
+      // there — the adapters convert between float and double effects and
+      // buffers as needed.
+      const bool host_64 = [&] {
+        if(process.audio_inputs_count + process.audio_outputs_count == 0)
+          return avnd::double_processor<T>;
+        for(uint32_t b = 0; b < process.audio_inputs_count; b++)
+          if(process.audio_inputs[b].channel_count > 0
+             && !process.audio_inputs[b].data64)
+            return false;
+        for(uint32_t b = 0; b < process.audio_outputs_count; b++)
+          if(process.audio_outputs[b].channel_count > 0
+             && !process.audio_outputs[b].data64)
+            return false;
+        return true;
+      }();
+
+      if(host_64)
       {
-        auto inputs = (float**)alloca(sizeof(float*) * std::max(in_N, 1));
-        auto outputs = (float**)alloca(sizeof(float*) * std::max(out_N, 1));
+        auto inputs = (double**)alloca(sizeof(double*) * std::max(in_N, 1));
+        auto outputs = (double**)alloca(sizeof(double*) * std::max(out_N, 1));
         // Null the slots so the zero-filled-channels invariant substitutes
         // silent buffers rather than the effect dereferencing garbage.
         std::fill_n(inputs, in_N, nullptr);
         std::fill_n(outputs, out_N, nullptr);
 
-        process_impl<&clap_audio_buffer::data32>(process, inputs, in_N, outputs, out_N);
+        process_impl<&clap_audio_buffer::data64>(process, inputs, in_N, outputs, out_N);
       }
-      else if constexpr(avnd::double_processor<T>)
+      else
       {
-        auto inputs = (double**)alloca(sizeof(double*) * std::max(in_N, 1));
-        auto outputs = (double**)alloca(sizeof(double*) * std::max(out_N, 1));
+        auto inputs = (float**)alloca(sizeof(float*) * std::max(in_N, 1));
+        auto outputs = (float**)alloca(sizeof(float*) * std::max(out_N, 1));
         std::fill_n(inputs, in_N, nullptr);
         std::fill_n(outputs, out_N, nullptr);
 
-        process_impl<&clap_audio_buffer::data64>(process, inputs, in_N, outputs, out_N);
+        process_impl<&clap_audio_buffer::data32>(process, inputs, in_N, outputs, out_N);
       }
     }
 
     // Process the output events
     process_out_events(process);
 
-    // Clear the control in ports
-    // FIXME
+    // Clear the sample-accurate control in ports
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.clear_inputs(this->effect);
 
     // Clear the midi in ports
     midi.clear_inputs(this->effect);
@@ -479,6 +582,14 @@ struct SimpleAudioEffect : clap_plugin
         {
           info->min_value = 0;
           info->max_value = avnd::get_enum_choices_count<C>() - 1;
+          info->flags |= CLAP_PARAM_IS_STEPPED;
+        }
+        else if constexpr(requires { std::size(range.values); })
+        {
+          // Values-list controls (combo boxes...): the value is an index
+          // into range.values; there is no range.min / range.max.
+          info->min_value = 0;
+          info->max_value = double(std::size(range.values)) - 1.;
           info->flags |= CLAP_PARAM_IS_STEPPED;
         }
         else
