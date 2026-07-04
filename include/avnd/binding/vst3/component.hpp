@@ -10,6 +10,7 @@
 #include <avnd/introspection/midi.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 
 namespace stv3
@@ -75,6 +76,9 @@ struct Component final
   AVND_NO_UNIQUE_ADDRESS avnd::process_adapter<T> processor;
 
   AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi;
+
+  // Per-buffer storage backing sample-accurate control ports
+  AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
   AVND_NO_UNIQUE_ADDRESS stv3::audio_bus_info<T> audio_busses;
 
@@ -301,6 +305,11 @@ struct Component final
     // We always do so for float, as the plug-in API requires the existence of this
     processor.allocate_buffers(setup_info, float{});
     processor.allocate_buffers(setup_info, double{});
+
+    // Sample-accurate control ports need their per-buffer storage reserved
+    // before process() (else the effect reads unallocated `values` arrays).
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.reserve_space(effect, newSetup.maxSamplesPerBlock);
 
     effect.init_channels(
         audio_busses.runtime_input_channel_count,
@@ -529,6 +538,8 @@ struct Component final
 
     // Clear outputs
     this->midi.clear_outputs(effect);
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.clear_outputs(effect);
 
     processControls(data);
     processEvents(data);
@@ -541,6 +552,8 @@ struct Component final
 
     // Clear inputs
     this->midi.clear_inputs(effect);
+    if constexpr(sizeof(control_buffers) > 1)
+      control_buffers.clear_inputs(effect);
 
     return kResultOk;
   }
