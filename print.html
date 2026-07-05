@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-bdc8ee8a.js";
+            window.path_to_searchindex_js = "searchindex-07154a40.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ae0bcd33.js"></script>
@@ -4203,7 +4203,8 @@ For an actual processor though, it’s likely that you would have to write your 
 using plug_type = decltype(avnd::configure&lt;avnd_clap::config, @AVND_MAIN_CLASS@&gt;())::type;
 using effect_type = avnd_clap::SimpleAudioEffect&lt;plug_type&gt;;
 
-AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_plugin_entry = {
+// clap_entry is the symbol hosts look up (see clap/entry.h).
+AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_entry = {
    CLAP_VERSION,
    +[] (const char* path) -&gt; bool { /* init */ return true; },
    +[] () { /* deinit */ },
