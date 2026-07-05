@@ -345,6 +345,21 @@ function(avnd_create_max_package)
       )
     endif()
 
+    # Max looks for the help patch in <package>/help/<name>.maxhelp.
+    # Best-effort: it may be absent on some toolchains, so don't fail packaging.
+    get_target_property(_maxhelp ${_external} AVND_MAX_HELP)
+    if(_maxhelp)
+      if(TARGET "${_external}_help")
+        add_dependencies("${_external}" "${_external}_help")
+      endif()
+      get_property(_pkgdir GLOBAL PROPERTY AVND_PACKAGING_DIR)
+      add_custom_command(TARGET ${_external} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+          "-DSRC=${CMAKE_BINARY_DIR}/${_maxhelp}" "-DDST=${_pkg}/help"
+          -P "${_pkgdir}/avendish.packaging.copy_optional.cmake"
+        VERBATIM)
+    endif()
+
 
     # Copy the external (fairly platform-specific)
     if(WIN32)
