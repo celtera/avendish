@@ -8,7 +8,8 @@
 using plug_type = decltype(avnd::configure<avnd_clap::config, @AVND_MAIN_CLASS@>())::type;
 using effect_type = avnd_clap::SimpleAudioEffect<plug_type>;
 
-AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_plugin_entry = {
+// clap_entry is the symbol hosts look up (see clap/entry.h).
+AVND_EXPORTED_SYMBOL extern const struct clap_plugin_entry clap_entry = {
    CLAP_VERSION,
    +[] (const char* path) -> bool { /* init */ return true; },
    +[] () { /* deinit */ },
