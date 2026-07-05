@@ -2,7 +2,14 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/concepts/processor.hpp>
+#include <avnd/concepts/worker.hpp>
 #include <avnd/introspection/channels.hpp>
+#include <avnd/introspection/input.hpp>
+#include <avnd/introspection/output.hpp>
+#include <avnd/introspection/port.hpp>
+#include <avnd/wrappers/controls.hpp>
+#include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/effect_container.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
@@ -41,10 +48,21 @@ py::array_t<float> run_audio(
         "process_audio expects a 1-D or 2-D float array (channels, frames)");
   }
 
-  const int n_out = std::max(1, avnd::output_channels<T>(n_in));
+  // Monophonic adapters process in.size() channels and write as many out, so
+  // the output must match the input count; sizing it by output_channels<T>()
+  // (e.g. 1 for a sample-port object) underflows out_ptrs -> heap corruption.
+  const int n_out = avnd::monophonic_audio_processor<T>
+                        ? std::max(1, n_in)
+                        : std::max(1, avnd::output_channels<T>(n_in));
 
   avnd::effect_container<T> c;
   c.init_channels(n_in, n_out);
+
+  // Default the container's control storage before copying instance values:
+  // nested inputs/outputs-TYPE ports live in the container, not on `T`, so the
+  // copy below can't reach them and they'd otherwise be read uninitialised.
+  avnd::init_controls(c);
+
   for(auto&& st : c.full_state())
   {
     if constexpr(std::is_copy_assignable_v<T>)
@@ -52,6 +70,40 @@ py::array_t<float> run_audio(
     else if constexpr(requires { st.inputs = avnd::get_inputs(self); })
       st.inputs = avnd::get_inputs(self);
   }
+
+  // Install no-op/inline handlers so host callables aren't empty when
+  // prepare()/process() runs them.
+  if constexpr(avnd::audio_bus_input_introspection<T>::size > 0)
+    avnd::audio_bus_input_introspection<T>::for_all(
+        avnd::get_inputs(c), [](auto& p) {
+          if constexpr(requires { p.request_channels; })
+            if(!p.request_channels)
+              p.request_channels = [](int) {};
+        });
+  if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
+    avnd::audio_bus_output_introspection<T>::for_all(
+        avnd::get_outputs(c), [](auto& p) {
+          if constexpr(requires { p.request_channels; })
+            if(!p.request_channels)
+              p.request_channels = [](int) {};
+        });
+  auto wire_buffer = [](auto& p) {
+    if constexpr(requires { p.buffer.upload; })
+      if(!p.buffer.upload)
+        p.buffer.upload = [](const char*, std::int64_t, std::int64_t) {};
+  };
+  if constexpr(avnd::buffer_output_introspection<T>::size > 0)
+    avnd::buffer_output_introspection<T>::for_all(avnd::get_outputs(c), wire_buffer);
+  if constexpr(avnd::buffer_input_introspection<T>::size > 0)
+    avnd::buffer_input_introspection<T>::for_all(avnd::get_inputs(c), wire_buffer);
+  if constexpr(avnd::has_worker<T>)
+    for(auto& impl : c.effects())
+    {
+      using worker_t = std::decay_t<decltype(impl.worker)>;
+      impl.worker.request = [](auto&&... args) {
+        worker_t::work(std::forward<decltype(args)>(args)...);
+      };
+    }
 
   avnd::process_setup su{
       .input_channels = n_in,
@@ -62,6 +114,12 @@ py::array_t<float> run_audio(
   proc.allocate_buffers(su, float{});
   proc.allocate_buffers(su, double{});
   avnd::prepare(c, su);
+
+  // Sample-accurate control ports need their per-buffer storage reserved
+  // before process() (else the object writes into unallocated storage).
+  avnd::control_storage<T> control_buffers;
+  if constexpr(sizeof(control_buffers) > 1)
+    control_buffers.reserve_space(c, frames);
 
   auto* in_base = static_cast<float*>(info.ptr);
   std::vector<float*> in_ptrs(n_in);
@@ -83,6 +141,17 @@ py::array_t<float> run_audio(
   proc.process(
       c, avnd::span<float*>{in_ptrs.data(), static_cast<std::size_t>(n_in)},
       avnd::span<float*>{out_ptrs.data(), static_cast<std::size_t>(n_out)}, t);
+
+  // Copy the processed state back so output controls (e.g. analysis results)
+  // are readable on the Python instance afterwards.
+  for(auto&& st : c.full_state())
+  {
+    if constexpr(std::is_copy_assignable_v<T>)
+      self = st.effect;
+    else if constexpr(requires { avnd::get_outputs(self) = st.outputs; })
+      avnd::get_outputs(self) = st.outputs;
+    break;
+  }
 
   return out;
 }
