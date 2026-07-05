@@ -347,9 +347,36 @@ struct element<T> : property_handler
   {
     GST_DEBUG_OBJECT(this, "fixate_caps direction=%d", direction);
 
-    // For dynamic resolution effects, we cannot predetermine output size
-    // Start with input size as baseline, actual size will be handled in transform
-    GstCaps* result = gst_caps_fixate(gst_caps_copy(othercaps));
+    // The src template advertises [1,MAX], so a plain fixate() picks 1x1.
+    // Default the output to the input resolution; size-changing effects
+    // renegotiate in transform().
+    othercaps = gst_caps_make_writable(othercaps);
+
+    if(gst_caps_get_size(caps) > 0 && gst_caps_get_size(othercaps) > 0)
+    {
+      GstStructure* ins = gst_caps_get_structure(caps, 0);
+      gint width = 0, height = 0, fps_n = 0, fps_d = 1;
+      const gboolean have_w = gst_structure_get_int(ins, "width", &width);
+      const gboolean have_h = gst_structure_get_int(ins, "height", &height);
+      const gboolean have_fps
+          = gst_structure_get_fraction(ins, "framerate", &fps_n, &fps_d);
+
+      const guint n = gst_caps_get_size(othercaps);
+      for(guint i = 0; i < n; i++)
+      {
+        GstStructure* outs = gst_caps_get_structure(othercaps, i);
+        if(have_w)
+          gst_structure_fixate_field_nearest_int(outs, "width", width);
+        if(have_h)
+          gst_structure_fixate_field_nearest_int(outs, "height", height);
+        if(have_fps)
+          gst_structure_fixate_field_nearest_fraction(
+              outs, "framerate", fps_n, fps_d);
+      }
+    }
+
+    // Fixate any remaining fields (format etc.)
+    GstCaps* result = gst_caps_fixate(othercaps);
     return result;
   }
 
