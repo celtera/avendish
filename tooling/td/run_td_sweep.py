@@ -32,6 +32,10 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from golden_compare import (aggregate_case_verdicts, compare_audio,
+                            compare_controls)
+
 user32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
 # --- Win32: find and OK the "Plugin Load Error" dialog -----------------------
@@ -96,64 +100,6 @@ def gen_runner(dumps, out_dir):
         if os.path.exists(cand):
             return cand
     sys.exit(f"runner not generated under {out_dir}")
-
-
-def compare_audio(td_out, golden, atol, rtol):
-    """Diff TD output channels (positional) against the golden audio channels
-    over their overlapping prefix (TD's cook sample-count can differ from the
-    golden's frame count). td_out is [{name, samples}]."""
-    if not golden:
-        return ("no-golden-audio", "")
-    if not td_out:
-        return ("no-td-audio", "")
-    td = [e["samples"] for e in td_out]
-    nch = min(len(td), len(golden))
-    if nch == 0:
-        return ("empty", "")
-    maxdiff = 0.0
-    for c in range(nch):
-        ns = min(len(td[c]), len(golden[c]))
-        for i in range(ns):
-            maxdiff = max(maxdiff, abs(td[c][i] - golden[c][i]))
-    peak = max((abs(x) for ch in golden for x in ch), default=0.0)
-    tol = atol + rtol * peak
-    verdict = "match" if maxdiff <= tol else "MISMATCH"
-    detail = (f"maxdiff={maxdiff:.2e} tol={tol:.2e} "
-              f"td={len(td)}ch gold={len(golden)}ch")
-    return (verdict, detail)
-
-
-def compare_controls(named, golden, atol, rtol):
-    """Diff golden output controls against TD values matched by name. `named` is
-    {channel/info-name -> value}, built from output channels + Info-CHOP."""
-    if not golden:
-        return ("no-golden-controls", "")
-    if not named:
-        return ("no-td-controls", "")
-    checked, maxdiff, worst = 0, 0.0, ""
-    for gc in golden:
-        if not isinstance(gc, dict):
-            continue
-        nm, gv = gc.get("name", ""), gc.get("value")
-        if not isinstance(gv, (int, float)):
-            continue
-        tv = None
-        for k in (nm, nm.lower(), nm.capitalize()):
-            if k in named:
-                tv = named[k]
-                break
-        if tv is None:
-            continue
-        checked += 1
-        if abs(tv - gv) > maxdiff:
-            maxdiff, worst = abs(tv - gv), nm
-    if checked == 0:
-        return ("no-name-match", f"td={list(named)[:4]}")
-    peak = max((abs(gc["value"]) for gc in golden
-                if isinstance(gc.get("value"), (int, float))), default=0.0)
-    tol = atol + rtol * peak
-    return ("match" if maxdiff <= tol else "MISMATCH",
-            f"{checked} ctrls maxdiff={maxdiff:.2e}@{worst} tol={tol:.2e}")
 
 
 def main():
@@ -267,15 +213,20 @@ def main():
         culprit = _read(cur)
         if not culprit or culprit == "DONE":
             break  # timed out with no progress, or actually finished
+        # The breadcrumb may carry a ':<stage>' suffix (created/precook/cooked)
+        # for diagnostics -- strip it to get the object name used for resume
+        # matching, but keep the full breadcrumb so we can see where it died.
+        base = culprit.split(":", 1)[0]
         crashers.append(culprit)
         # Record the crasher so the relaunch skips it.
         try:
             rep = json.load(open(report, encoding="utf-8"))
         except Exception:
             rep = []
-        if culprit not in {r["name"] for r in rep}:
-            rep.append({"name": culprit, "ok": False,
-                        "exception": "crashed TouchDesigner (instantiation/cook)"})
+        if base not in {r["name"] for r in rep}:
+            rep.append({"name": base, "ok": False,
+                        "exception": "crashed TouchDesigner (instantiation/cook)",
+                        "crash_stage": culprit})
             open(report, "w", encoding="utf-8").write(json.dumps(rep, indent=2))
         print(f"  *** crashed on '{culprit}' -> recorded; relaunching to continue")
 
@@ -323,33 +274,66 @@ def main():
                 goldens[g.get("c_name")] = g
             except Exception:
                 pass
+        # Compare one captured case (td_out + td_info) against a golden case's
+        # outputs. Prefer audio when the golden has audio output, else controls.
+        #
+        # TEXTURE OUTPUT IS NOT VERIFIABLE HEADLESS. Investigation (2026-07):
+        # a Custom TOP's GPU upload (createOutputBuffer/uploadBuffer) is NOT
+        # rendered/flushed for numpyArray() readback in a scripted, no-viewer
+        # cook -- every avendish TOP reads back as TD's empty 128x128 default
+        # (identical hash across all objects), and forcing the node's Output
+        # Resolution to Custom does not produce a surface. This is NOT an
+        # avendish bug: the object produces correct output (verified via the
+        # Python binding: pyavnd_test_tex_generator -> real 512x512), the same
+        # invoke_effect/get_outputs path drives the working CHOP binding, and
+        # built-in TOPs (noiseTOP/constantTOP) DO read back headless. So it is
+        # a TouchDesigner headless-Custom-OP limitation. Report it as an honest
+        # gap rather than a false MISMATCH. (GStreamer texture output IS verified
+        # -- see run_gst_golden.py -- so the object contract is still covered.)
+        def compare_one(rc, gout):
+            gaud = (gout or {}).get("audio")
+            gctl = (gout or {}).get("controls")
+            gtex = (gout or {}).get("texture")
+            if gaud:
+                return compare_audio(rc.get("td_out"), gaud, args.atol, args.rtol)
+            if gctl:
+                named = {}
+                for e in (rc.get("td_out") or []):
+                    if e.get("samples"):
+                        named[e["name"]] = e["samples"][0]
+                for k, val in (rc.get("td_info") or {}).items():
+                    named.setdefault(k, val)
+                return compare_controls(named, gctl, args.atol, args.rtol)
+            if gtex:
+                return ("no-headless-texture-readback",
+                        "TD renders Custom-OP GPU uploads only with a viewer")
+            return ("no-golden-output", "")
+
         counts, mism = {}, []
         for r in results:
             g = goldens.get(r.get("name"))
             if not g:
                 continue
-            td_out = r.get("td_out")
-            gaud = g.get("outputs", {}).get("audio")
-            gctl = g.get("outputs", {}).get("controls")
-            # Prefer audio comparison when the golden has audio output, else the
-            # control outputs (which surface as named channels in TD).
-            if gaud:
-                v, detail = compare_audio(td_out, gaud, args.atol, args.rtol)
-            elif gctl:
-                # Prefer named output channels; fall back to Info-CHOP values.
-                named = {}
-                for e in (td_out or []):
-                    if e.get("samples"):
-                        named[e["name"]] = e["samples"][0]
-                for k, val in (r.get("td_info") or {}).items():
-                    named.setdefault(k, val)
-                v, detail = compare_controls(named, gctl, args.atol, args.rtol)
+            gcases = g.get("cases")
+            rcases = r.get("cases")
+            verdicts = []  # (case_index, verdict, detail)
+            if gcases is not None and rcases is not None:
+                for rc in rcases:
+                    ci = rc.get("index", 0)
+                    if ci >= len(gcases):
+                        continue
+                    gout = gcases[ci].get("outputs", {})
+                    v, d = compare_one(rc, gout)
+                    verdicts.append((ci, v, d))
             else:
-                v, detail = "no-golden-output", ""
+                # old single-case schema (golden or result without `cases`)
+                v, d = compare_one(r, g.get("outputs", {}))
+                verdicts.append((0, v, d))
+            v, detail = aggregate_case_verdicts(verdicts)
             counts[v] = counts.get(v, 0) + 1
             if v == "MISMATCH":
-                mism.append(f"  MISMATCH {r['name']}: {detail}")
-        print(f"\n=== output diff vs golden ({len(goldens)} goldens) ===")
+                mism.append(f"  MISMATCH {r['name']} ({len(verdicts)} cases): {detail}")
+        print(f"\n=== output diff vs golden ({len(goldens)} goldens, per-case) ===")
         for k in sorted(counts):
             print(f"  {k}: {counts[k]}")
         for m in mism[:40]:
