@@ -96,10 +96,24 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
   {
     if constexpr(avnd::bus_introspection<T>::output_busses == 0)
     {
+      // Analyzer (audio in -> control out): no audio output bus, but still
+      // prepare() so the scratch buffers exist -- skipping it crashed TD on cook.
+      auto in0 = inputs->getNumInputs() > 0 ? inputs->getInputCHOP(0) : nullptr;
+      const int in_ch = in0 ? updateAudioChannels(inputs) : 0;
+
       info->numChannels = 0;
-      info->numSamples = 0;
+      info->numSamples = in0 ? in0->numSamples : 0;
       info->startIndex = 0;
-      info->sampleRate = 0;
+      info->sampleRate = in0 ? in0->sampleRate : default_sample_rate;
+
+      avnd::process_setup setup_info{
+          .input_channels = in_ch,
+          .output_channels = 0,
+          .frames_per_buffer = default_buffer_size,
+          .rate = in0 ? (float)in0->sampleRate : (float)default_sample_rate};
+      processor.allocate_buffers(setup_info, float{});
+      implementation.init_channels(in0 ? in0->numChannels : 0, 0);
+      avnd::prepare(implementation, setup_info);
       return true;
     }
     else if constexpr(avnd::bus_introspection<T>::output_busses >= 1)
@@ -240,10 +254,12 @@ struct audio_processor<T> : public TD::CHOP_CPlusPlusBase
       const TD::OP_CHOPInput* input = inputs->getInputCHOP(0);
       assert(input);
 
-      // Prepare input/output spans for processing
+      // Size by output->numChannels (what TD allocated), not
+      // get_output_channels(impl, 0): bus 0 doesn't exist for analyzers and its
+      // bogus count runs out_ptrs off the end of output->channels.
       const int num_samples = output->numSamples;
       const int num_in_channels = total_input_channels;
-      const int num_out_channels = channels.get_output_channels(implementation, 0);
+      const int num_out_channels = output->numChannels;
 
       auto in_ptrs = (float**) alloca(sizeof(float*) * num_in_channels + 4);
       auto out_ptrs = (float**) alloca(sizeof(float*) * num_out_channels + 4);

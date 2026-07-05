@@ -127,6 +127,10 @@ struct process_adapter<T>
             avnd::generic_audio_frame_port<Field>
             && avnd::dynamic_poly_audio_port<Field>)
         {
+          // Hosts that skip the channel manager leave channels==0; derive it
+          // from the buffer so we don't copy nothing into an uninit output.
+          if(field.channels <= 0)
+            field.channels = std::max(0, (int)in.size() - offset);
           const int ch = avnd::get_channels(field);
           if(offset + ch <= (int)this->m_input_frame_storage.size())
             field.frame = this->m_input_frame_storage.data() + offset;
@@ -143,6 +147,8 @@ struct process_adapter<T>
             avnd::generic_audio_frame_port<Field>
             && avnd::dynamic_poly_audio_port<Field>)
         {
+          if(field.channels <= 0)
+            field.channels = std::max(0, (int)out.size() - offset);
           const int ch = avnd::get_channels(field);
           if(offset + ch <= (int)this->m_output_frame_storage.size())
             field.frame = this->m_output_frame_storage.data() + offset;
