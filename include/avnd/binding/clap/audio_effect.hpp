@@ -15,6 +15,8 @@
 #include <avnd/wrappers/widgets.hpp>
 #include <clap/all.h>
 
+#include <algorithm>
+
 namespace avnd_clap
 {
 template <typename T>
@@ -272,15 +274,21 @@ struct SimpleAudioEffect : clap_plugin
 
       if constexpr(avnd::float_processor<T>)
       {
-        auto inputs = (float**)alloca(sizeof(float*) * in_N);
-        auto outputs = (float**)alloca(sizeof(float*) * out_N);
+        auto inputs = (float**)alloca(sizeof(float*) * std::max(in_N, 1));
+        auto outputs = (float**)alloca(sizeof(float*) * std::max(out_N, 1));
+        // Null the slots so the zero-filled-channels invariant substitutes
+        // silent buffers rather than the effect dereferencing garbage.
+        std::fill_n(inputs, in_N, nullptr);
+        std::fill_n(outputs, out_N, nullptr);
 
         process_impl<&clap_audio_buffer::data32>(process, inputs, in_N, outputs, out_N);
       }
       else if constexpr(avnd::double_processor<T>)
       {
-        auto inputs = (double**)alloca(sizeof(double*) * in_N);
-        auto outputs = (double**)alloca(sizeof(double*) * out_N);
+        auto inputs = (double**)alloca(sizeof(double*) * std::max(in_N, 1));
+        auto outputs = (double**)alloca(sizeof(double*) * std::max(out_N, 1));
+        std::fill_n(inputs, in_N, nullptr);
+        std::fill_n(outputs, out_N, nullptr);
 
         process_impl<&clap_audio_buffer::data64>(process, inputs, in_N, outputs, out_N);
       }
