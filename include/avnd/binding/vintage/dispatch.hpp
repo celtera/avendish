@@ -2,6 +2,7 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <avnd/binding/vintage/gui.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
 #include <avnd/introspection/input.hpp>
@@ -270,6 +271,12 @@ intptr_t default_dispatch(
     }
     case EffectOpcodes::GetApiVersion: // 58
       return Constants::ApiVersion;
+
+    case EffectOpcodes::EditGetRect: // 13
+    case EffectOpcodes::EditOpen:    // 14
+    case EffectOpcodes::EditClose:   // 15
+    case EffectOpcodes::EditIdle:    // 19
+      return gui_dispatch(object, opcode, index, value, ptr, opt);
     case EffectOpcodes::CanDo: // 51
     {
       const std::string_view cando
