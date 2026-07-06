@@ -1,5 +1,7 @@
 #pragma once
+#include <avnd/binding/vst3/bus.hpp>
 #include <avnd/binding/vst3/controller_base.hpp>
+#include <avnd/common/no_unique_address.hpp>
 #include <avnd/binding/vst3/programs.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/common/widechar.hpp>
@@ -13,6 +15,8 @@
 #include <pluginterfaces/vst/ivstmidicontrollers.h>
 
 #include <cstdio>
+#include <functional>
+#include <string_view>
 
 namespace stv3
 {
@@ -58,16 +62,86 @@ class Controller final
     return m_refcount;
   }
 
+public:
   using inputs_t = typename avnd::inputs_type<T>::type;
   inputs_t inputs_mirror{};
 
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
 
-public:
-  Controller() { }
+  // Set by the plug view while it is alive: host-driven parameter changes
+  // are forwarded to the editor's model.
+  std::function<void(ParamID, ParamValue)> ui_param_changed;
+
+  // ---- Message bus over the host connection (binding/vst3/bus.hpp) ----
+  // UI thread -> processing component
+  template <typename Msg>
+  void send_ui_message(const Msg& msg)
+  {
+    stv3::send_bus_message(
+        this->hostContext.get(), this->peerConnection.get(),
+        stv3::bus_ui_to_processor_id, msg);
+  }
+
+  // Ask the component (UI thread) to flush its queued processor->UI
+  // messages through the connection point; see the pump protocol notes in
+  // binding/vst3/bus.hpp. Called from the view's timer while an editor is
+  // open.
+  void send_bus_pump()
+  {
+    stv3::send_empty_message(
+        this->hostContext.get(), this->peerConnection.get(), stv3::bus_pump_id);
+  }
+
+  // Component -> UI: delivered to the active view
+  struct no_bus_handler
+  {
+  };
+  static constexpr auto bus_handler_type()
+  {
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+      return std::type_identity<
+          std::function<void(avnd::any_proc_to_ui_msg_t<T>)>>{};
+    else
+      return std::type_identity<no_bus_handler>{};
+  }
+  AVND_NO_UNIQUE_ADDRESS
+  typename decltype(bus_handler_type())::type ui_message_received{};
+
+  Steinberg::tresult on_message(Steinberg::Vst::IMessage& m) override
+  {
+    if constexpr(stv3::bus_to_ui_enabled<T>)
+    {
+      avnd::any_proc_to_ui_msg_t<T> msg;
+      if(stv3::read_bus_message(m, stv3::bus_processor_to_ui_id, msg))
+      {
+        if(ui_message_received)
+          ui_message_received(std::move(msg));
+        return Steinberg::kResultOk;
+      }
+    }
+    return Steinberg::kResultFalse;
+  }
+
+  Controller()
+  {
+    // Give the mirror the declared initial values so hosts (and the editor)
+    // see them before any state load.
+    if constexpr(avnd::has_inputs<T>)
+    {
+      inputs_info_t::for_all(inputs_mirror, []<typename C>(C& field) {
+        if constexpr(avnd::has_range<C>)
+        {
+          if constexpr(requires { field.value = avnd::get_range<C>().init; })
+            field.value = avnd::get_range<C>().init;
+        }
+      });
+    }
+  }
 
   virtual ~Controller();
+
+  Steinberg::IPlugView* createView(const char* name) override;
 
   int32 getParameterCount() override { return inputs_info_t::size; }
 
@@ -161,6 +235,9 @@ public:
           assign_if_assignable(field.value, avnd::map_control_from_01<C>(value));
       });
     }
+
+    if(ui_param_changed)
+      ui_param_changed(tag, value);
 
     return Steinberg::kResultTrue;
   }
@@ -260,5 +337,21 @@ public:
 template <typename T>
 Controller<T>::~Controller()
 {
+}
+}
+
+#include <avnd/binding/vst3/view.hpp>
+
+namespace stv3
+{
+template <typename T>
+Steinberg::IPlugView* Controller<T>::createView(const char* name)
+{
+  if constexpr(avnd::has_ui_editor<T>)
+  {
+    if(name && std::string_view{name} == Steinberg::Vst::ViewType::kEditor)
+      return new stv3::plug_view<T, Controller<T>>{*this};
+  }
+  return nullptr;
 }
 }
