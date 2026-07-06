@@ -1,6 +1,9 @@
 include(FetchContent)
 
 if(NOT TARGET fmt::fmt AND NOT TARGET fmt::fmt_header_only)
+  # fmt >= 12 auto-enables its C++-modules target when CMake supports it and
+  # then hard-requires a module-scanning toolchain; we never want that here.
+  set(FMT_MODULE OFF CACHE BOOL "Build fmt as a C++ module")
   FetchContent_Declare(
     fmt
     GIT_REPOSITORY "https://github.com/fmtlib/fmt"
