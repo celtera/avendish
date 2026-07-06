@@ -284,10 +284,14 @@ private:
       VSTGUI::CControl* ctl = nullptr;
       if(info.stepCount == 1)
       {
-        // Toggle -> on/off text button that shows the parameter name.
+        // Momentary (bang) -> kick button: 1 while pressed, 0 on release.
+        // Latched toggle -> on/off button. Both show the parameter name.
+        const bool momentary = controller->isMomentaryParameter(info.id);
         VSTGUI::CRect rc(x + 10, y + 22, x + cell_w - 10, y + 54);
         auto* b = new VSTGUI::CTextButton(
-            rc, this, info.id, name.c_str(), VSTGUI::CTextButton::kOnOffStyle);
+            rc, this, info.id, name.c_str(),
+            momentary ? VSTGUI::CTextButton::kKickStyle
+                      : VSTGUI::CTextButton::kOnOffStyle);
         b->setRoundRadius(5.);
         b->setFrameColor(accent);
         // Explicit fills so the label stays readable in both states (the

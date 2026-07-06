@@ -82,6 +82,22 @@ public:
 
   int32 getParameterCount() override { return inputs_info_t::size; }
 
+  bool isMomentaryParameter(Steinberg::Vst::ParamID id) const noexcept override
+  {
+    bool momentary = false;
+    inputs_info_t::for_nth_raw(
+        id, [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C>) {
+      // Momentary widgets expose a `pushbutton` (maintained button) or
+      // `bang` / `impulse` (impulse button) enumerator; latched toggles
+      // don't.
+      if constexpr(
+          requires { C::pushbutton; } || requires { C::bang; }
+          || requires { C::impulse; })
+        momentary = true;
+        });
+    return momentary;
+  }
+
   Steinberg::tresult getParameterInfo(int32 paramIndex, ParameterInfo& info) override
   {
     if(paramIndex < 0 || paramIndex >= inputs_info_t::size)
