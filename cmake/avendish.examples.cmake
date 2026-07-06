@@ -154,6 +154,28 @@ avnd_make_audioplug(
   C_NAME avnd_midi
 )
 
+# Tier C custom-UI example: the plug-in ships its own editor (raw Win32 /
+# raw Xlib) through the avnd::gui_windowed_ui seam instead of the soft editor.
+avnd_make_audioplug(
+  TARGET CustomUiWindow
+  MAIN_FILE examples/Advanced/UI/CustomUiWindow.hpp
+  MAIN_CLASS examples::CustomUiWindow
+  C_NAME avnd_custom_ui_window
+)
+# The example's Xlib editor must be linked into the plug-in modules
+# themselves: a host has no reason to have libX11 loaded when it dlopens
+# them. (Without X11 headers the example simply has no editor.)
+if(UNIX AND NOT APPLE)
+  find_package(X11 QUIET)
+  if(X11_FOUND)
+    foreach(_avnd_backend clap vst3 vintage)
+      if(TARGET CustomUiWindow_${_avnd_backend})
+        target_link_libraries(CustomUiWindow_${_avnd_backend} PRIVATE X11::X11)
+      endif()
+    endforeach()
+  endif()
+endif()
+
 # GCC segfaults with those two...
 if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   avnd_make_all(

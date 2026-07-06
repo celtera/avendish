@@ -38,6 +38,9 @@ if(BUILD_TESTING)
   avnd_add_static_test(test_introspection_rec tests/test_introspection_rec.cpp)
   avnd_add_static_test(test_predicate tests/test_predicate.cpp)
   avnd_add_static_test(test_vintage tests/tests_vintage.cpp)
+  if(TARGET concurrentqueue) # vintage gui glue's bus transport
+    target_link_libraries(test_vintage PRIVATE concurrentqueue)
+  endif()
   avnd_add_static_test(test_channels tests/tests_channels.cpp)
   avnd_add_static_test(test_function_reflection tests/tests_function_reflection.cpp)
   avnd_add_static_test(test_audioprocessor tests/test_audioprocessor.cpp)
@@ -48,5 +51,37 @@ if(BUILD_TESTING)
 
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
+
+  # The end-to-end editor tests need a real windowing system: Win32, or
+  # X11 (run under Xvfb in headless CI).
+  if(WIN32)
+    set(AVND_GUI_TESTS 1)
+  elseif(UNIX AND NOT APPLE)
+    find_package(X11 QUIET)
+    if(X11_FOUND)
+      set(AVND_GUI_TESTS 1)
+    else()
+      set(AVND_GUI_TESTS 0)
+    endif()
+  else()
+    set(AVND_GUI_TESTS 0)
+  endif()
+
+  # Editor test hosts drive the plug-in's window from outside on X11.
+  function(avnd_gui_test_platform_libs theTarget)
+    if(UNIX AND NOT APPLE)
+      target_link_libraries("${theTarget}" PRIVATE X11::X11)
+    endif()
+  endfunction()
+
+  # Tier C: the CustomUiWindow example's author-provided editor.
+  if(AVND_GUI_TESTS AND TARGET CustomUiWindow_clap)
+    avnd_add_catch_test(test_custom_ui_window tests/ui/test_custom_ui_window.cpp)
+    add_dependencies(test_custom_ui_window CustomUiWindow_clap)
+    target_include_directories(test_custom_ui_window PRIVATE ${CLAP_HEADER})
+    avnd_gui_test_platform_libs(test_custom_ui_window)
+    target_compile_definitions(test_custom_ui_window PRIVATE
+      "AVND_TEST_CUSTOM_UI_CLAP_PATH=\"$<TARGET_FILE:CustomUiWindow_clap>\"")
+  endif()
 endif()
 
