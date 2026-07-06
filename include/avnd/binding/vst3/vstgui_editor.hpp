@@ -21,6 +21,7 @@
 #include <vstgui/lib/controls/cknob.h>
 #include <vstgui/lib/controls/cbuttons.h>
 #include <vstgui/lib/controls/ctextlabel.h>
+#include <vstgui/lib/cgradient.h>
 
 #include <string>
 #include <utility>
@@ -289,8 +290,16 @@ private:
             rc, this, info.id, name.c_str(), VSTGUI::CTextButton::kOnOffStyle);
         b->setRoundRadius(5.);
         b->setFrameColor(accent);
-        b->setTextColor(labelCol);
-        b->setTextColorHighlighted(VSTGUI::CColor{16, 16, 18, 255});
+        // Explicit fills so the label stays readable in both states (the
+        // default gradient is light, which hid light text when off).
+        auto offGrad = VSTGUI::owned(VSTGUI::CGradient::create(
+            0., 1., VSTGUI::CColor{54, 54, 60, 255}, VSTGUI::CColor{38, 38, 42, 255}));
+        auto onGrad = VSTGUI::owned(VSTGUI::CGradient::create(
+            0., 1., VSTGUI::CColor{104, 170, 255, 255}, VSTGUI::CColor{74, 142, 235, 255}));
+        b->setGradient(offGrad.get());
+        b->setGradientHighlighted(onGrad.get());
+        b->setTextColor(VSTGUI::CColor{225, 225, 230, 255});          // off: light on dark
+        b->setTextColorHighlighted(VSTGUI::CColor{16, 16, 18, 255});  // on: dark on accent
         ctl = b;
       }
       else
