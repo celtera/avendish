@@ -135,6 +135,12 @@ function(avnd_make_clap)
       DisableExceptions
   )
 
+  # Editors: plug-ins with a `struct ui` get the reference soft UI editor
+  # (pugl + Nuklear + canvas_ity); UI-less plug-ins are unaffected.
+  if(TARGET Avendish::soft_ui AND TARGET avnd_pugl)
+    avnd_target_soft_ui(${AVND_FX_TARGET})
+  endif()
+
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 endfunction()
 

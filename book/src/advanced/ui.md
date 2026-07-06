@@ -14,13 +14,17 @@ Avendish allows four levels of UI definition:
 
 2. Giving layout hints. A declarative syntax allows to layout said items and text in usual containers, auomatically and with arbitrary nesting: hbox, vbox, tabs, split view... Here is, again, an example in *ossia score*.
 
-> Supported bindings: ossia
+> Supported bindings: ossia, and the plug-in editors (CLAP, VST2, VST3) through the
+> built-in software UI runtime (Nuklear widgets + canvas_ity rasterizer, embedded
+> with pugl — no GPU or extra framework needed).
 
 ![Basic UI](images/ui-layout.png)
 
 3. Creating entirely custom items with a Canvas-based API. It is also possible to load images, make custom animations and handle mouse events.
 
-> Supported bindings: ossia
+> Supported bindings: ossia, WebAssembly (Canvas2D), and the plug-in editors
+> (CLAP, VST2, VST3) — the same `paint()` code renders through QPainter,
+> HTML5 Canvas or the software rasterizer.
 
 ![Basic UI](images/ui-image.gif)
 
@@ -46,3 +50,12 @@ Dear ImGui, Qt, JUCE, or raw platform code. See
 is a plain Win32 window, built as CLAP, VST2 and VST3 from the same file.
 
 > Supported bindings: CLAP, VST2, VST3
+
+## Previewing UIs without a host
+
+`avnd_make_ui_preview(TARGET ... MAIN_FILE ... MAIN_CLASS ... C_NAME ...)`
+builds a small executable that opens the plug-in's editor in a plain window —
+no DAW needed (`--frames N` exits after N cycles, for CI smoke tests). In the
+browser, `avnd/binding/ui/soft/wasm.hpp` + `avnd-soft-ui.js` blit the same
+software framebuffer into a `<canvas>`; on microcontrollers see
+`examples/platforms/esp32-ui/`.
