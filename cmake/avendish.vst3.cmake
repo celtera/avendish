@@ -7,6 +7,32 @@ if(DEFINED AVND_ENABLE_VST3 AND NOT AVND_ENABLE_VST3)
 endif()
 
 set(VST3_SDK_ROOT "" CACHE PATH "VST3 SDK path")
+option(AVND_FETCH_VST3_SDK "Fetch the VST3 SDK when VST3_SDK_ROOT is not set" OFF)
+
+if(NOT VST3_SDK_ROOT AND AVND_FETCH_VST3_SDK)
+  include(FetchContent)
+  FetchContent_Declare(
+    avnd_vst3sdk
+    GIT_REPOSITORY "https://github.com/steinbergmedia/vst3sdk"
+    GIT_TAG v3.7.14_build_55
+    GIT_SUBMODULES base cmake pluginterfaces public.sdk
+    GIT_PROGRESS true
+  )
+  FetchContent_GetProperties(avnd_vst3sdk)
+  if(NOT avnd_vst3sdk_POPULATED)
+    FetchContent_Populate(avnd_vst3sdk)
+  endif()
+  if(EXISTS "${avnd_vst3sdk_SOURCE_DIR}/pluginterfaces/base/funknown.h")
+    set(VST3_SDK_ROOT "${avnd_vst3sdk_SOURCE_DIR}" CACHE PATH "VST3 SDK path" FORCE)
+    # Plug-in library only: no samples, hosting tools, validator or vstgui
+    set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SMTG_ENABLE_VSTGUI_SUPPORT OFF CACHE BOOL "" FORCE)
+    set(SMTG_CREATE_PLUGIN_LINK OFF CACHE BOOL "" FORCE)
+    set(SMTG_RUN_VST_VALIDATOR OFF CACHE BOOL "" FORCE)
+  endif()
+endif()
+
 if(NOT VST3_SDK_ROOT)
   function(avnd_make_vst3)
   endfunction()
@@ -52,6 +78,14 @@ if(MSVC AND (AVND_ENABLE_MAX
 endif()
 
 add_subdirectory("${VST3_SDK_ROOT}" "${CMAKE_BINARY_DIR}/vst3_sdk")
+
+# The SDK's `base` target uses pluginterfaces symbols (FUID, FUnknown, ...)
+# but never declares the dependency; with a single-pass linker (GNU ld) base
+# then ends up after pluginterfaces on the link line and the plug-ins ship
+# with undefined Steinberg::FUID::* symbols. Declare it for them.
+if(TARGET base AND TARGET pluginterfaces)
+  target_link_libraries(base PUBLIC pluginterfaces)
+endif()
 
 function(avnd_make_vst3)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})
