@@ -25,6 +25,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #if defined(__linux__)
 #include <vstgui/lib/platform/linux/x11frame.h>
@@ -218,6 +219,13 @@ public:
       controller->componentHandler->endEdit(tag);
     }
     edit_controller()->setParamNormalized(tag, v);
+
+    for(auto& [t, lbl] : m_valueLabels)
+      if(t == tag && lbl)
+      {
+        lbl->setText(value_string(tag, v).c_str());
+        lbl->invalid();
+      }
   }
 
 private:
@@ -252,6 +260,7 @@ private:
     auto* ec = edit_controller();
     const int n = ec->getParameterCount();
     const int c = n < cols ? (n > 0 ? n : 1) : cols;
+    m_valueLabels.clear(); // labels belong to the (recreated) frame
 
     const VSTGUI::CColor accent{86, 158, 255, 255};
     const VSTGUI::CColor labelCol{205, 205, 212, 255};
@@ -308,10 +317,11 @@ private:
       }
       else
       {
-        // Continuous -> corona knob with the name label below it.
-        const VSTGUI::CCoord kw = 58;
+        // Continuous -> corona knob, with a live value readout and the name
+        // label below it.
+        const VSTGUI::CCoord kw = 52;
         const VSTGUI::CCoord kx = x + (cell_w - kw) / 2;
-        VSTGUI::CRect rc(kx, y + 12, kx + kw, y + 12 + kw);
+        VSTGUI::CRect rc(kx, y + 8, kx + kw, y + 8 + kw);
         auto* knob = new VSTGUI::CKnob(
             rc, this, info.id, nullptr, nullptr, VSTGUI::CPoint(0, 0),
             VSTGUI::CKnob::kCoronaDrawing | VSTGUI::CKnob::kCoronaOutline
@@ -323,7 +333,19 @@ private:
         knob->setHandleLineWidth(2.5);
         ctl = knob;
 
-        VSTGUI::CRect lr(x, y + cell_h - 26, x + cell_w, y + cell_h - 8);
+        // Value readout (refreshed on user edits, see valueChanged).
+        VSTGUI::CRect vr(x, y + cell_h - 44, x + cell_w, y + cell_h - 26);
+        auto* vlbl = new VSTGUI::CTextLabel(
+            vr, value_string(info.id, ec->getParamNormalized(info.id)).c_str());
+        vlbl->setFrameColor(VSTGUI::kTransparentCColor);
+        vlbl->setBackColor(VSTGUI::kTransparentCColor);
+        vlbl->setFontColor(accent);
+        vlbl->setHoriAlign(VSTGUI::kCenterText);
+        frame->addView(vlbl);
+        m_valueLabels.push_back({info.id, vlbl});
+
+        // Name label.
+        VSTGUI::CRect lr(x, y + cell_h - 24, x + cell_w, y + cell_h - 6);
         auto* lbl = new VSTGUI::CTextLabel(lr, name.c_str());
         lbl->setFrameColor(VSTGUI::kTransparentCColor);
         lbl->setBackColor(VSTGUI::kTransparentCColor);
@@ -336,6 +358,18 @@ private:
       frame->addView(ctl);
       ++idx;
     }
+  }
+
+  // Formatted plain-value string for a normalized value (reuses the
+  // controller's getParamStringByValue, e.g. "1.00", "0.50", "2.00").
+  std::string value_string(Steinberg::Vst::ParamID tag, double norm)
+  {
+    Steinberg::Vst::String128 s{};
+    if(edit_controller()->getParamStringByValue(tag, norm, s) != Steinberg::kResultTrue)
+      return {};
+    Steinberg::String str(s);
+    str.toMultiByte(Steinberg::kCP_Utf8);
+    return std::string(str.text8() ? str.text8() : "");
   }
 
   static std::string title_of(const Steinberg::Vst::ParameterInfo& info)
@@ -351,9 +385,10 @@ private:
   std::atomic<Steinberg::uint32> m_ref{1};
 
   std::string m_title;
+  std::vector<std::pair<Steinberg::Vst::ParamID, VSTGUI::CTextLabel*>> m_valueLabels;
   static constexpr int cols = 4;
   static constexpr int cell_w = 96;
-  static constexpr int cell_h = 104;
+  static constexpr int cell_h = 118;
   static constexpr int margin = 12;
   static constexpr int title_h = 34;
   int m_width = 260;
