@@ -133,5 +133,19 @@ macro(avnd_addon_finalize)
       BASE_TARGET ${AA_NAME}
       PLUGIN_UUID ${AA_UUID}
       PLUGIN_VERSION ${AA_VERSION})
+  else()
+    # Standalone: assemble the distributable packages from CMake by default, so
+    # every addon ships the per-backend layout (externals + generated help /
+    # example patches + metadata) with no per-addon packaging code. An addon that
+    # must bundle a runtime dependency calls avnd_addon_package(... SUPPORT ...)
+    # itself before finalize; that sets the guard below so we don't package twice.
+    # Each back-end whose externals weren't built is skipped inside the call.
+    get_property(_avnd_pkg_done GLOBAL PROPERTY AVND_ADDON_PACKAGE_INVOKED)
+    if(NOT _avnd_pkg_done AND COMMAND avnd_addon_package)
+      avnd_addon_package(
+        NAME "${AA_NAME}"
+        SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}"
+        BACKENDS max pd python touchdesigner godot)
+    endif()
   endif()
 endmacro()

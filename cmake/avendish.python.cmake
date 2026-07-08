@@ -78,6 +78,9 @@ function(avnd_make_python)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
+  # Register for avnd_addon_package() (the addon-wide packaging orchestrator).
+  set_property(GLOBAL APPEND PROPERTY AVND_ALL_PYTHON_EXTERNALS ${AVND_FX_TARGET})
+
   # Usage example next to the module.
   avnd_generate_help(
     FX_TARGET     "${AVND_FX_TARGET}"
