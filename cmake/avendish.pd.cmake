@@ -130,6 +130,9 @@ function(avnd_make_pd)
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
+  # Register for avnd_addon_package() (the addon-wide packaging orchestrator).
+  set_property(GLOBAL APPEND PROPERTY AVND_ALL_PD_EXTERNALS ${AVND_FX_TARGET})
+
   # Ship a help patch: <c_name>-help.pd next to the external (Pd finds it on the
   # path). Use the explicit HELP_PATCH override if given, else auto-generate.
   avnd_generate_help(
