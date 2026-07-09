@@ -4,6 +4,11 @@
 #include <avnd/binding/vintage/audio_effect.hpp>
 #include <avnd/binding/vintage/configure.hpp>
 
+#if defined(AVND_SOFT_UI_EDITOR)
+// Emit the Nuklear + canvas_ity implementations exactly once per plug-in.
+#include <avnd/binding/ui/soft/implementation.hpp>
+#endif
+
 extern "C"
 AVND_EXPORTED_SYMBOL vintage::Effect* VSTPluginMain(
     vintage::HostCallback cb)

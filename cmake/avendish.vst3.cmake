@@ -165,6 +165,11 @@ function(avnd_make_vst3)
       DisableExceptions
   )
 
+  # Editors: plug-ins with a `struct ui` get the reference soft UI editor.
+  if(TARGET Avendish::soft_ui AND TARGET avnd_pugl)
+    avnd_target_soft_ui(${AVND_FX_TARGET})
+  endif()
+
   if(APPLE)
     find_library(COREFOUNDATION_FK CoreFoundation)
     target_link_libraries(

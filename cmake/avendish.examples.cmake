@@ -190,6 +190,22 @@ if(_avnd_customui_impl)
   endforeach()
 endif()
 
+# Standalone editor previews (run the UI without a plug-in host)
+if(COMMAND avnd_make_ui_preview)
+  avnd_make_ui_preview(
+    TARGET HelpersUiPreview
+    MAIN_FILE examples/Helpers/Ui.hpp
+    MAIN_CLASS examples::helpers::Ui
+    C_NAME avnd_helpers_ui
+  )
+  avnd_make_ui_preview(
+    TARGET MultisliderPreview
+    MAIN_FILE examples/Advanced/UI/Multislider.hpp
+    MAIN_CLASS uo::Multislider
+    C_NAME avnd_multislider
+  )
+endif()
+
 # GCC segfaults with those two...
 if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   avnd_make_all(

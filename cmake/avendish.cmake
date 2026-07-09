@@ -268,6 +268,7 @@ include(avendish.sources)
 include(avendish.tools)
 
 include(avendish.ui.qt)
+include(avendish.ui.soft)
 include(avendish.dump)
 include(avendish.help)
 include(avendish.golden)

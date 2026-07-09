@@ -115,6 +115,13 @@ function(avnd_make_wasm)
       "-lembind"
   )
 
+  # Software-framebuffer editor: exported as Module.SoftUI for plug-ins with
+  # a `ui`, rendered by the standalone page through avnd-soft-ui.js.
+  if(TARGET Avendish::soft_ui)
+    avnd_target_soft_ui(${AVND_FX_TARGET})
+    target_compile_definitions(${AVND_FX_TARGET} PRIVATE AVND_WASM_SOFT_UI=1)
+  endif()
+
   # worklet + standalone page
   _avnd_wasm_generate_packaging("${AVND_FX_TARGET}" "${AVND_C_NAME}")
 
@@ -167,6 +174,7 @@ function(_avnd_wasm_generate_packaging fx_target c_name)
       "avnd-audio-helper.js"
       "avnd-dsp.js"
       "avnd-ui.js"
+      "avnd-soft-ui.js"
       "avnd-node-runner.mjs"
       "avnd-dev-server.mjs")
     if(EXISTS "${AVND_WASM_JS_DIR}/${_static}")
