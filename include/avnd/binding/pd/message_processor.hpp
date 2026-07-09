@@ -35,7 +35,10 @@ struct message_processor_metaclass
   static inline t_class* g_class{};
   static inline message_processor_metaclass* instance{};
 
-  message_processor_metaclass();
+  // class_name is the Pd class symbol; the setup function passes @AVND_C_NAME@ so
+  // the registered class matches the external's filename (nullptr -> fall back to
+  // the introspected name, for callers that construct the metaclass directly).
+  message_processor_metaclass(t_symbol* class_name = nullptr);
 };
 
 template <typename T>
@@ -187,7 +190,7 @@ struct message_processor
 };
 
 template <typename T>
-message_processor_metaclass<T>::message_processor_metaclass()
+message_processor_metaclass<T>::message_processor_metaclass(t_symbol* class_name)
 {
   message_processor_metaclass::instance = this;
   using instance = message_processor<T>;
@@ -228,8 +231,8 @@ message_processor_metaclass<T>::message_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      symbol_from_name<T>(), (t_newmethod)obj_new, (t_method)obj_free,
-      sizeof(message_processor<T>), CLASS_DEFAULT, A_GIMME, 0);
+      class_name ? class_name : symbol_from_name<T>(), (t_newmethod)obj_new,
+      (t_method)obj_free, sizeof(message_processor<T>), CLASS_DEFAULT, A_GIMME, 0);
 
   // Connect our methods
   class_addanything(g_class, (t_method)obj_process);
