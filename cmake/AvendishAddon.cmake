@@ -72,7 +72,27 @@ macro(avnd_addon_object)
     endif()
   else()
     if(NOT TARGET ${AA_C_NAME})
-      add_library(${AA_C_NAME} STATIC ${AA_SOURCES})
+      # A header-only object (SOURCES lists no translation unit) would produce an
+      # empty STATIC library: GNU ar tolerates that, but macOS ar and MSVC lib
+      # reject it ("no archive members specified"). Give it the same generated
+      # empty stub the base target uses, so header-only addons link everywhere.
+      set(_avnd_obj_sources ${AA_SOURCES})
+      set(_avnd_obj_has_tu 0)
+      foreach(_avnd_src ${AA_SOURCES})
+        if(_avnd_src MATCHES "\\.(c|C|cc|cpp|cxx|c\\+\\+|m|mm|M)$")
+          set(_avnd_obj_has_tu 1)
+          break()
+        endif()
+      endforeach()
+      if(NOT _avnd_obj_has_tu)
+        set(_avnd_obj_stub "${CMAKE_CURRENT_BINARY_DIR}/${AA_C_NAME}_avnd_obj_stub.cpp")
+        if(NOT EXISTS "${_avnd_obj_stub}")
+          file(WRITE "${_avnd_obj_stub}"
+            "// Avendish standalone addon object (header-only; intentionally empty TU).\n")
+        endif()
+        list(APPEND _avnd_obj_sources "${_avnd_obj_stub}")
+      endif()
+      add_library(${AA_C_NAME} STATIC ${_avnd_obj_sources})
     endif()
     if(TARGET ${AA_BASE} AND NOT "${AA_BASE}" STREQUAL "${AA_C_NAME}")
       target_link_libraries(${AA_C_NAME} PUBLIC ${AA_BASE})
