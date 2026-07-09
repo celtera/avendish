@@ -238,7 +238,7 @@ avnd_make_all(
   TARGET SampleAccurateControls
   MAIN_FILE examples/Raw/SampleAccurateControls.hpp
   MAIN_CLASS examples::SampleAccurateControls
-  C_NAME avnd_sample_accurate_controls
+  C_NAME avnd_sampleaccurate  # must match SampleAccurateControls::c_name()
 )
 
 avnd_make_all(
