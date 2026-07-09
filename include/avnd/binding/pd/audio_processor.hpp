@@ -35,7 +35,10 @@ struct audio_processor_metaclass
   static inline t_class* g_class{};
   static inline audio_processor_metaclass* instance{};
 
-  audio_processor_metaclass();
+  // class_name is the Pd class symbol; the setup function passes @AVND_C_NAME@ so
+  // the registered class matches the external's filename (nullptr -> fall back to
+  // the introspected name, for callers that construct the metaclass directly).
+  audio_processor_metaclass(t_symbol* class_name = nullptr);
 };
 
 template <typename T>
@@ -205,7 +208,7 @@ struct audio_processor
 };
 
 template <typename T>
-audio_processor_metaclass<T>::audio_processor_metaclass()
+audio_processor_metaclass<T>::audio_processor_metaclass(t_symbol* class_name)
 {
   audio_processor_metaclass::instance = this;
   using instance = audio_processor<T>;
@@ -249,8 +252,8 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      symbol_from_name<T>(), (t_newmethod)obj_new, (t_method)obj_free,
-      sizeof(audio_processor<T>), CLASS_DEFAULT, A_GIMME, 0);
+      class_name ? class_name : symbol_from_name<T>(), (t_newmethod)obj_new,
+      (t_method)obj_free, sizeof(audio_processor<T>), CLASS_DEFAULT, A_GIMME, 0);
 
   // First port will receive messages
   CLASS_MAINSIGNALIN(g_class, audio_processor<T>, f);

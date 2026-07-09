@@ -10,17 +10,23 @@ using type = decltype(avnd::configure<pd::config, @AVND_MAIN_CLASS@>())::type;
 
 extern "C" AVND_EXPORTED_SYMBOL void @AVND_C_NAME@_setup()
 {
-  []<typename T = type> {
+  // Register the class under the external's own name (the file Pd just loaded is
+  // @AVND_C_NAME@.pd_*, and this function is @AVND_C_NAME@_setup). Pd looks up a
+  // single-object external by filename, so the class symbol must match it exactly;
+  // otherwise the object loads but the class is registered under a different name,
+  // Pd never finds it, and its loader retries until it hits the recursion limit.
+  t_symbol* const avnd_class_name = gensym("@AVND_C_NAME@");
+  [avnd_class_name]<typename T = type> {
     if constexpr(
         avnd::monophonic_audio_processor<T> || avnd::polyphonic_audio_processor<T>)
     {
       // If we're an audio effect, make a type with the whole DSP stuff
-      static const pd::audio_processor_metaclass<T> instance{};
+      static const pd::audio_processor_metaclass<T> instance{avnd_class_name};
     }
     else
     {
       // Simpler case which just processes messages
-      static const pd::message_processor_metaclass<T> instance{};
+      static const pd::message_processor_metaclass<T> instance{avnd_class_name};
     }
   }();
 }
