@@ -65,13 +65,15 @@ struct cpu_buffer_input
   auto cast()
   {
     return std::span<T>{
-        reinterpret_cast<T*>(buffer.raw_data), buffer.byte_size / sizeof(T)};
+        reinterpret_cast<T*>(buffer.raw_data),
+        static_cast<std::size_t>(buffer.byte_size / sizeof(T))};
   }
   template <typename T>
   auto cast() const noexcept
   {
     return std::span<const T>{
-        reinterpret_cast<const T*>(buffer.raw_data), buffer.byte_size / sizeof(T)};
+        reinterpret_cast<const T*>(buffer.raw_data),
+        static_cast<std::size_t>(buffer.byte_size / sizeof(T))};
   }
 
   halp::raw_buffer buffer{};
