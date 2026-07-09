@@ -284,7 +284,7 @@ static constexpr auto map_control_to_01(const auto& value) = delete;
 // }
 
 template <avnd::parameter_port T>
-  requires requires(T t) { map_control_to_01(t.value); }
+  requires requires(T t) { map_control_to_01<T>(t.value); }
 static constexpr auto map_control_to_01(const T& ctl)
 {
   return map_control_to_01<T>(ctl.value);
