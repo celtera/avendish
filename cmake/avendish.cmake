@@ -56,7 +56,7 @@ function(_avnd_dispatch_backend backend)
   cmake_language(CALL "avnd_make_${backend}" ${ARGN})
 endfunction()
 
-find_package(Boost 1.87 QUIET REQUIRED)
+find_package(Boost 1.90 QUIET REQUIRED)
 find_package(Threads QUIET)
 find_package(fmt QUIET)
 
