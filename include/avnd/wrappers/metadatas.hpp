@@ -318,6 +318,21 @@ static constexpr auto get_static_symbol()
     return avnd::get_c_identifier<T, Symtab>();
 }
 
+// True unless the object declares an explicit c_name (halp_meta(c_name, ...)) that
+// differs from the external's CMake C_NAME. The per-backend prototypes call this so
+// a C_NAME that disagrees with the object's own c_name is a compile error instead of
+// an external whose file name and registered class name silently differ (which Pd and
+// Max load by, so it can't be instantiated). Objects with no c_name meta leave the
+// CMake C_NAME authoritative and always pass.
+template <typename T>
+consteval bool c_name_matches(std::string_view cmake_c_name)
+{
+  if constexpr(avnd::has_c_name<T>)
+    return avnd::get_c_name<T>() == cmake_c_name;
+  else
+    return true;
+}
+
 
 
 template <typename T>
