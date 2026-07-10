@@ -248,6 +248,7 @@ private:
   void computeSize()
   {
     const int n = edit_controller()->getParameterCount();
+    const int cols = colsFor(n);
     const int c = n < cols ? (n > 0 ? n : 1) : cols;
     const int rows = (n + c - 1) / c;
     m_width = c * cell_w + margin * 2;
@@ -259,6 +260,7 @@ private:
   {
     auto* ec = edit_controller();
     const int n = ec->getParameterCount();
+    const int cols = colsFor(n);
     const int c = n < cols ? (n > 0 ? n : 1) : cols;
     m_valueLabels.clear(); // labels belong to the (recreated) frame
 
@@ -386,7 +388,8 @@ private:
 
   std::string m_title;
   std::vector<std::pair<Steinberg::Vst::ParamID, VSTGUI::CTextLabel*>> m_valueLabels;
-  static constexpr int cols = 4;
+  // Wider grid for parameter-heavy plugins so the window stays usable.
+  static constexpr int colsFor(int n) noexcept { return n > 20 ? 6 : 4; }
   static constexpr int cell_w = 96;
   static constexpr int cell_h = 118;
   static constexpr int margin = 12;
