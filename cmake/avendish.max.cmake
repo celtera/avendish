@@ -274,6 +274,9 @@ EXPORTS
     DESTINATION   "max/help/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxhelp"
     PROPERTY      AVND_MAX_HELP
     OVERRIDE      "${AVND_HELP_PATCH}"
+    # The name the external is actually registered under (the object box must
+    # use it -- the class's own c_name() may differ from the CMake C_NAME).
+    EXTRA_ARG     "${AVND_C_NAME}"
   )
 endfunction()
 

@@ -142,6 +142,9 @@ function(avnd_make_pd)
     DESTINATION   "pd/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}-help.pd"
     PROPERTY      AVND_PD_HELP
     OVERRIDE      "${AVND_HELP_PATCH}"
+    # The name the external is actually registered under (the object box must
+    # use it -- the class's own c_name() may differ from the CMake C_NAME).
+    EXTRA_ARG     "${AVND_C_NAME}"
   )
 endfunction()
 
