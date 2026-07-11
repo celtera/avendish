@@ -322,6 +322,12 @@ def main():
                     ci = rc.get("index", 0)
                     if ci >= len(gcases):
                         continue
+                    # Impulse-engagement / message-invocation cases are not
+                    # replayed by the TD runner; skip them honestly.
+                    if gcases[ci].get("kind") in ("impulse", "message"):
+                        verdicts.append(
+                            (ci, "unsupported-case-kind", gcases[ci]["kind"]))
+                        continue
                     gout = gcases[ci].get("outputs", {})
                     v, d = compare_one(rc, gout)
                     verdicts.append((ci, v, d))

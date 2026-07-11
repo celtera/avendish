@@ -222,6 +222,13 @@ def run_object(g, atol, rtol, stagefile):
                    "outputs": g.get("outputs", {})}]
     verdicts = []
     for ci, gcase in enumerate(gcases):
+        # Impulse-engagement and message-invocation cases need a backend
+        # driving mechanism this in-process harness doesn't have (yet).
+        if gcase.get("kind") in ("impulse", "message"):
+            verdicts.append((ci, "unsupported-case-kind", gcase["kind"]))
+            entry["cases"].append(
+                {"index": ci, "verdict": "unsupported-case-kind"})
+            continue
         try:
             rec = run_case(cls, gcase, g.get("meta", {}),
                            lambda s: stage(f"case{ci}:{s}"))

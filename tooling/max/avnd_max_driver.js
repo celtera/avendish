@@ -3,12 +3,18 @@
 // Loaded by avnd_max_driver.maxpat (loadbang -> "run"). For every golden object
 // (data staged in avnd_max_data.js by run_max_golden.py) it:
 //   * control objects: instantiates the message_processor external, wires each
-//     output outlet through [prepend cap<i>] back into this js inlet, replays the
-//     golden input controls and captures the committed output values;
+//     output outlet through [prepend cap<i>] back into this js inlet, replays
+//     the golden input controls (numeric + string by name, unnamed ports by
+//     proxy inlet), impulse engagements, message-port invocations, and captures
+//     every committed output value / callback firing (ordered event lists);
 //   * audio objects: builds count~ -> index~(avin<ch>) -> mc.pack~ -> object ->
 //     mc.unpack~ -> record~(avout<ch>), fills the input buffers with the golden
-//     samples, runs one real DSP block and reads the recorded output samples;
-//   * none/texture: instantiate-only smoke (nothing feasible to capture).
+//     samples, runs one real DSP block, reads the recorded output samples, and
+//     flushes the non-audio outlets with a post-block bang (analyzers);
+//   * texture objects: jit.matrix MOP -- feeds filters a deterministic char
+//     matrix, bangs to cook, reads the output matrix dims through a named
+//     [jit.matrix @adapt 1];
+//   * none: instantiate-only smoke (nothing feasible to capture).
 // Results are written one JSON line per object to AVND_CFG.report; a per-object
 // breadcrumb (AVND_CFG.breadcrumb) lets the Python harness relaunch past a
 // crasher and resume (objects already in the report are skipped).
@@ -34,7 +40,9 @@ var doneNames = {};     // objects already reported (resume after crash)
 var WORK = [];          // flattened [{oi, ci, first, last}]
 var wi = -1;            // current work index
 var cur = [];           // graph objects to clean up for the current case
-var capture = {};       // cap<i> -> value  (control capture, current case)
+var curObj = null;      // the object under test for the current case
+var capture = {};       // cap<i>/dsptime/... -> last value
+var events = {};        // cap<i> -> [[args...], ...] (every firing, in order)
 var objCases = [];      // accumulated case-result strings for the current object
 var TASKS = [];         // keep Task refs alive
 var dspWorks = false;   // set by the DSP self-test: does audio actually render?
@@ -61,6 +69,26 @@ function jarr(a) {
   var p = [];
   for (var i = 0; i < a.length; i++) p.push(jnum(a[i]));
   return "[" + p.join(",") + "]";
+}
+function jval(x) { return (typeof x === "number") ? jnum(x) : jstr(x); }
+function jevents(a) {  // [[atoms...], ...] -> JSON
+  var evs = [];
+  for (var i = 0; i < a.length; i++) {
+    var p = [];
+    for (var j = 0; j < a[i].length; j++) p.push(jval(a[i][j]));
+    evs.push("[" + p.join(",") + "]");
+  }
+  return "[" + evs.join(",") + "]";
+}
+// The captured outlet events, keyed by cap index, for the current case.
+function jcaps(nCaps) {
+  var parts = [];
+  for (var i = 0; i < nCaps; i++) {
+    var evs = events["cap" + i];
+    if (evs && evs.length > 0)
+      parts.push(jstr("" + i) + ":" + jevents(evs));
+  }
+  return "{" + parts.join(",") + "}";
 }
 
 // ---- files ----------------------------------------------------------------
@@ -263,13 +291,16 @@ function buildStep() {
   crumb(obj.name + ":case" + w.ci);
   if (w.first) objCases = [];
   capture = {};
+  events = {};
   cur = [];
+  curObj = null;
 
   var kind = obj.kind;
   var ok = false;
   try {
     if (kind === "audio") ok = buildAudio(obj, obj.cases[w.ci]);
     else if (kind === "control") ok = buildControl(obj, obj.cases[w.ci]);
+    else if (kind === "texture") ok = buildTexture(obj, obj.cases[w.ci]);
     else ok = buildNone(obj, obj.cases[w.ci]);
   } catch (e) {
     ok = false;
@@ -287,40 +318,120 @@ function buildStep() {
     defer("readStep", 40);
 }
 
+// Wire the object's message outlets (capBase..capBase+caps-1) back into this
+// js through [prepend cap<i>], so every firing is captured into `events`.
+function wireCaps(p, o, obj) {
+  var driver = p.getnamed("driver");
+  var n = obj.caps.length;
+  for (var i = 0; i < n; i++) {
+    var pre = p.newdefault(220 + i * 60, 430, "prepend", "cap" + i);
+    cur.push(pre);
+    p.connect(o, obj.capBase + i, pre, 0);
+    p.connect(pre, 0, driver, 0);
+  }
+}
+
+// Replay the case's string+numeric controls (by name -- works for every named
+// port on inlet 0 without triggering processing in the audio/jitter bindings),
+// impulse engagements (selector-only message) and message invocations.
+function sendNamedInputs(o, c) {
+  for (var k = 0; k < c.controls.length; k++) {
+    var nm = c.controls[k][1], val = c.controls[k][2];
+    if (nm && nm.length > 0) o.message(nm, val);
+  }
+  for (var i = 0; i < c.impulses.length; i++)
+    if (c.impulses[i] && c.impulses[i].length > 0)
+      o.message(c.impulses[i]);
+  for (var m = 0; m < c.messages.length; m++)
+    sendMessagePort(o, c.messages[m]);
+}
+
+// jsobj.message is a host method: .apply() on it is not reliable across Max
+// versions, so dispatch by arity (declared message ports have few args).
+function sendMessagePort(o, msg) {
+  var nm = msg[0], ar = msg[1];
+  if (!nm || nm.length === 0) return;
+  if (ar.length === 0) o.message(nm);
+  else if (ar.length === 1) o.message(nm, ar[0]);
+  else if (ar.length === 2) o.message(nm, ar[0], ar[1]);
+  else if (ar.length === 3) o.message(nm, ar[0], ar[1], ar[2]);
+  else o.message(nm, ar[0], ar[1], ar[2], ar[3]);
+}
+
 function buildControl(obj, c) {
   var p = this.patcher;
   var o = p.newdefault(220, 300, obj.name);
   if (!o) return false;
   cur.push(o);
-  var driver = p.getnamed("driver");
-  var nout = c.outCtrlNames.length;
-  for (var i = 0; i < nout; i++) {
-    var pre = p.newdefault(220 + i * 60, 400, "prepend", "cap" + i);
-    cur.push(pre);
-    p.connect(o, i, pre, 0);
-    p.connect(pre, 0, driver, 0);
-  }
-  // Set each explicit control by INLET INDEX, not by name: the message_processor
-  // maps proxy inlet i -> parameter i, and its name-matching path fails for
-  // unnamed ports (whose golden name is a positional "p<i>" placeholder). A
-  // message box feeding inlet i sets exactly parameter i. Inlet 0 also triggers
-  // process()+commit, so set the higher inlets first, then inlet 0 / a bang.
+  curObj = o;
+  wireCaps(p, o, obj);
+  // Named ports: a "<name> <value>" message on inlet 0 sets the parameter
+  // WITHOUT triggering processing. Unnamed ports (positional "p<i>" golden
+  // placeholder) have no name to match in the Max binding: feed the value to
+  // proxy inlet i through a message box instead (the message_processor maps
+  // proxy inlet i -> parameter i; inlet 0 also triggers process()+commit).
   var msgs = [];
   for (var k = 0; k < c.controls.length; k++) {
-    var idx = c.controls[k][0], val = c.controls[k][2];
-    var mb = p.newdefault(20 + k * 70, 230, "message");
-    mb.message("set", val); // the numeric content is NOT taken from a ctor arg
-    cur.push(mb);
-    p.connect(mb, 0, o, idx);
-    msgs.push(mb);
+    var idx = c.controls[k][0], nm = c.controls[k][1], val = c.controls[k][2];
+    // Container controls (xy / rgba / array / list) arrive as a JS array:
+    // spread the components into a list message so every component lands.
+    var atoms = (val instanceof Array) ? val : [val];
+    if (nm && nm.length > 0 && !(/^p\d+$/.test(nm))) {
+      o.message.apply(o, [nm].concat(atoms));
+    } else {
+      var mb = p.newdefault(20 + k * 70, 230, "message");
+      mb.message.apply(mb, ["set"].concat(atoms)); // content not from a ctor arg
+      cur.push(mb);
+      p.connect(mb, 0, o, idx);
+      msgs.push([mb, idx]);
+    }
   }
-  for (var m = msgs.length - 1; m >= 0; m--) {
-    var idx2 = c.controls[m][0];
-    if (idx2 !== 0) msgs[m].message("bang");
-  }
+  for (var m = msgs.length - 1; m >= 0; m--)
+    if (msgs[m][1] !== 0) msgs[m][0].message("bang");
   for (var m2 = 0; m2 < msgs.length; m2++)
-    if (c.controls[m2][0] === 0) msgs[m2].message("bang");
+    if (msgs[m2][1] === 0) msgs[m2][0].message("bang");
+  // Impulse engagements + declared message-port invocations, then the final
+  // process()+commit.
+  for (var i = 0; i < c.impulses.length; i++)
+    if (c.impulses[i] && c.impulses[i].length > 0)
+      o.message(c.impulses[i]);
+  for (var mm = 0; mm < c.messages.length; mm++)
+    sendMessagePort(o, c.messages[mm]);
   o.message("bang"); // force a final process()+commit on inlet 0
+  return true;
+}
+
+function buildTexture(obj, c) {
+  var p = this.patcher;
+  var o = p.newdefault(220, 300, obj.name);
+  if (!o) return false;
+  cur.push(o);
+  curObj = o;
+  // Receiving matrix adapts to whatever the MOP outputs (dims + planes).
+  var mout = p.newdefault(220, 430, "jit.matrix", "avndtexout", "@adapt", 1);
+  cur.push(mout);
+  p.connect(o, 0, mout, 0);
+  // reset the receiver to a 1x1 so stale dims from a previous case can never
+  // masquerade as this case's output.
+  mout.message("dim", 1, 1);
+  // Texture filters: feed a deterministic char 4-plane matrix of the golden's
+  // recorded input size (content is informational only -- Jitter plane order
+  // is ARGB vs the object's RGBA, and the dims diff is what's authoritative).
+  if (c.texIn && c.texIn.length > 0) {
+    var w = c.texIn[0][0], h = c.texIn[0][1];
+    var jin = new JitterMatrix("avndtexin", 4, "char", w, h);
+    for (var y = 0; y < h; y++)
+      for (var x = 0; x < w; x++) {
+        var base = (y * w + x) * 4;
+        jin.setcell2d(x, y, base % 256, (base + 1) % 256, (base + 2) % 256,
+                      (base + 3) % 256);
+      }
+  }
+  // Controls (e.g. a generator's Width/Height) by name -- no processing yet.
+  sendNamedInputs(o, c);
+  if (c.texIn && c.texIn.length > 0)
+    o.message("jit_matrix", "avndtexin");
+  o.message("bang"); // cook: matrix_calc + outputmatrix + commit
   return true;
 }
 
@@ -329,22 +440,27 @@ function buildAudio(obj, c) {
   var o = p.newdefault(420, 300, obj.name);
   if (!o) return false;
   cur.push(o);
+  curObj = o;
   // If DSP can't render in this session (no audio driver -- Max has no headless
   // mode), instantiating the audio external is all we can verify. Skip the futile
   // signal graph; readAudio will report dsp:false so it isn't a false MISMATCH.
   if (!dspWorks) return true;
+  wireCaps(p, o, obj);   // control/callback outlets right of the signal outlet
   var nin = c.audioIn.length;
-  var nout = c.nAudioOut > 0 ? c.nAudioOut : nin;
-  if (nout < 1) nout = 1;
+  var nout = c.nAudioOut;  // 0 for analyzers: nothing to record~, controls only
   if (nout > CHANS) nout = CHANS;
 
   if (nin > 0) {
     // count~ only advances while its left inlet carries a NONZERO signal; with
     // nothing connected its gate is 0 and it stays stuck at index 0 (the object
     // would see a constant input). Feed it a constant 1 so it counts 0,1,2,...
+    // Wrap at FRAMES so every block replays the same golden input (the signal
+    // vector is pinned to FRAMES, so each block is exactly one pass) -- like
+    // Pd's repeating [tabreceive~]; otherwise index~ runs past the buffer and
+    // control outputs committed after the first block reflect garbage input.
     var one = p.newdefault(20, 110, "sig~", 1);
     cur.push(one);
-    var cnt = p.newdefault(50, 140, "count~");
+    var cnt = p.newdefault(50, 140, "count~", 0, FRAMES);
     cur.push(cnt);
     p.connect(one, 0, cnt, 0);
     var pack = (nin > 1) ? p.newdefault(300, 240, "mc.pack~", nin) : null;
@@ -363,9 +479,9 @@ function buildAudio(obj, c) {
     if (pack) p.connect(pack, 0, o, 0);
   }
   // audio_processor has only the signal inlet 0 and matches controls by NAME
-  // (no proxy inlets / index fallback), so set them via "<name> <value>".
-  for (var k = 0; k < c.controls.length; k++)
-    o.message(c.controls[k][1], c.controls[k][2]);
+  // (no proxy inlets / index fallback): strings, impulses and message ports
+  // included.
+  sendNamedInputs(o, c);
 
   var unpack = (nout > 1) ? p.newdefault(420, 400, "mc.unpack~", nout) : null;
   if (unpack) { cur.push(unpack); p.connect(o, 0, unpack, 0); }
@@ -399,6 +515,7 @@ function readStep() {
   try {
     if (obj.kind === "audio") line = readAudio(obj, c, w.ci);
     else if (obj.kind === "control") line = readControl(obj, c, w.ci);
+    else if (obj.kind === "texture") line = readTexture(obj, c, w.ci);
     else line = "{\"index\":" + w.ci + ",\"instantiated\":true}";
   } catch (e) {
     line = "{\"index\":" + w.ci + ",\"error\":\"read failed\"}";
@@ -410,23 +527,27 @@ function readStep() {
 }
 
 function readControl(obj, c, ci) {
-  var parts = [];
-  var nout = c.outCtrlNames.length;
-  for (var i = 0; i < nout; i++) {
-    var key = "cap" + i;
-    if (capture[key] !== undefined) {
-      var nm = c.outCtrlNames[i];
-      parts.push(jstr(nm) + ":" + jnum(capture[key]));
-    }
-  }
-  return "{\"index\":" + ci + ",\"controls\":{" + parts.join(",") + "}}";
+  return "{\"index\":" + ci + ",\"caps\":" + jcaps(obj.caps.length) + "}";
+}
+
+function readTexture(obj, c, ci) {
+  var jm = new JitterMatrix("avndtexout");
+  var dim = jm.dim;
+  var w = 0, h = 1;
+  if (dim instanceof Array) { w = dim[0]; if (dim.length > 1) h = dim[1]; }
+  else w = dim;
+  return "{\"index\":" + ci + ",\"texture\":[{\"width\":" + jnum(w)
+       + ",\"height\":" + jnum(h) + ",\"planes\":" + jnum(jm.planecount)
+       + "}],\"caps\":" + jcaps(obj.caps.length) + "}";
 }
 
 function readAudio(obj, c, ci) {
   if (!dspWorks)
     return "{\"index\":" + ci + ",\"instantiated\":true,\"dsp\":false}";
-  var nout = c.nAudioOut > 0 ? c.nAudioOut : c.audioIn.length;
-  if (nout < 1) nout = 1;
+  // Flush the non-audio outputs computed by the rendered block(s): the audio
+  // binding commits them on bang (analyzers like avnd_peak).
+  if (curObj && obj.caps.length > 0) curObj.message("bang");
+  var nout = c.nAudioOut;
   if (nout > CHANS) nout = CHANS;
   var ds = this.patcher.getnamed("dspstop");
   var chans = [];
@@ -440,14 +561,15 @@ function readAudio(obj, c, ci) {
     chans.push(jarr(arr));
   }
   if (ds) ds.message("bang");
-  return "{\"index\":" + ci + ",\"audio\":[" + chans.join(",") + "]}";
+  return "{\"index\":" + ci + ",\"audio\":[" + chans.join(",")
+       + "],\"caps\":" + jcaps(obj.caps.length) + "}";
 }
 
 // ---- capture handler: [prepend cap<i>] -> here -----------------------------
 function anything() {
-  // Captures everything wired back into inlet 0: control outputs (cap<i>), the
-  // DSP self-test signal (stpeak), the audio driver name (curdrv) and the
-  // rendered-sample count (dsptime).
+  // Captures everything wired back into inlet 0: control/callback outputs
+  // (cap<i>), the DSP self-test signal (stpeak), the audio driver name
+  // (curdrv) and the rendered-sample count (dsptime).
   var sel = "" + messagename;
   var a = arrayfromargs(arguments);
   // Prefer the first numeric arg (scalar control / signal value); fall back to
@@ -457,6 +579,12 @@ function anything() {
     if (typeof a[i] === "number") { v = a[i]; break; }
   }
   capture[sel] = v;
+  // Full event log per capture outlet (callback diffing needs every firing,
+  // in order, with all its arguments).
+  if (sel.substring(0, 3) === "cap") {
+    if (!events[sel]) events[sel] = [];
+    events[sel].push(a.slice(0));
+  }
 }
 function msg_float(v) { /* bare float outputs shouldn't reach us (prepended) */ }
 function msg_int(v) { }

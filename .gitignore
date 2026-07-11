@@ -62,3 +62,4 @@ Documentation/Doc_sources/score-documentation/site
 
 .vscode
 
+*.pyc
