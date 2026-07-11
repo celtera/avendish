@@ -18,17 +18,13 @@ int main(int argc, char** argv)
 {
   using type = decltype(avnd::configure<golden::config, @AVND_MAIN_CLASS@>())::type;
 
-  // Every object is built for the golden harness (SDK-free, always on), so this
-  // single check enforces the name invariant for all back-ends at once: when an
-  // object declares an explicit halp_meta(c_name, ...), the avnd_addon_object /
-  // avnd_make_* C_NAME must equal it -- they name the same external (the file and
-  // class Pd/Max load by), and a mismatch ships something that can't be
-  // instantiated. Objects with no c_name leave the C_NAME authoritative.
-  static_assert(
-      avnd::c_name_matches<type>("@AVND_C_NAME@"),
-      "avendish: the CMake C_NAME does not match this object's halp_meta(c_name, ...). "
-      "Make the avnd_addon_object / avnd_make_* C_NAME equal the object's c_name.");
-
-  return golden::run<type>(argc > 1 ? argv[1] : std::string_view{"golden.json"});
+  // The CMake C_NAME is authoritative end-to-end: it names the external file,
+  // the class Pd/Max register (binding/pd/prototype.cpp.in), the generated
+  // help patch's object box and this golden's c_name. An object may declare a
+  // different halp_meta(c_name, ...) -- e.g. an addon renaming its externals
+  // in CMake -- and everything stays consistent, so a mismatch is a deliberate
+  // rename, not an error. run() records the authoritative name.
+  return golden::run<type>(
+      argc > 1 ? argv[1] : std::string_view{"golden.json"}, "@AVND_C_NAME@");
 }
 // clang-format on
