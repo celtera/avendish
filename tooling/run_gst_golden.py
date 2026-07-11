@@ -296,6 +296,11 @@ def main():
                        "outputs": g.get("outputs", {})}]
         verdicts = []
         for ci, gcase in enumerate(gcases):
+            # Impulse-engagement / message-invocation cases have no gst-launch
+            # driving mechanism; skip them honestly.
+            if gcase.get("kind") in ("impulse", "message"):
+                verdicts.append((ci, "unsupported-case-kind", gcase["kind"]))
+                continue
             gaud = gcase.get("outputs", {}).get("audio") or []
             gtex = gcase.get("outputs", {}).get("texture") or []
             rec = {"index": ci}

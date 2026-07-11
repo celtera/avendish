@@ -45,7 +45,7 @@ def compare_controls(named, golden, atol, rtol):
         if not isinstance(gc, dict):
             continue
         nm, gv = gc.get("name", ""), gc.get("value")
-        if gv == "unrecorded" or not isinstance(gv, (int, float, str)):
+        if gv == "unrecorded" or not isinstance(gv, (int, float, str, list)):
             continue
         tv = None
         for k in (nm, nm.lower(), nm.capitalize()):
@@ -60,6 +60,25 @@ def compare_controls(named, golden, atol, rtol):
             if str(tv) != gv and maxdiff == 0.0:
                 maxdiff, worst = 1.0, f"{nm}({tv!r}!={gv!r})"
             continue
+        if isinstance(gv, list):
+            # Container outputs (vector / array / aggregate): elementwise.
+            tvl = tv if isinstance(tv, list) else [tv]
+            checked += 1
+            if len(tvl) != len(gv):
+                if maxdiff == 0.0:
+                    maxdiff, worst = float("inf"), f"{nm}(len {len(tvl)}!={len(gv)})"
+                continue
+            for a, b in zip(tvl, gv):
+                if isinstance(a, bool):
+                    a = float(a)
+                if isinstance(b, bool):
+                    b = float(b)
+                if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                    if abs(a - b) > maxdiff:
+                        maxdiff, worst = abs(a - b), nm
+                elif str(a) != str(b) and maxdiff == 0.0:
+                    maxdiff, worst = 1.0, f"{nm}({a!r}!={b!r})"
+            continue
         if isinstance(tv, bool):
             tv = float(tv)
         if not isinstance(tv, (int, float)):
@@ -69,8 +88,15 @@ def compare_controls(named, golden, atol, rtol):
             maxdiff, worst = abs(tv - gv), nm
     if checked == 0:
         return ("no-name-match", f"got={list(named)[:4]}")
-    peak = max((abs(gc["value"]) for gc in golden
-                if isinstance(gc.get("value"), (int, float))), default=0.0)
+    peak = 0.0
+    for gc in golden:
+        v = gc.get("value")
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            peak = max(peak, abs(v))
+        elif isinstance(v, list):
+            for x in v:
+                if isinstance(x, (int, float)) and not isinstance(x, bool):
+                    peak = max(peak, abs(x))
     tol = atol + rtol * peak
     return ("match" if maxdiff <= tol else "MISMATCH",
             f"{checked} ctrls maxdiff={maxdiff:.2e}@{worst} tol={tol:.2e}")
@@ -107,6 +133,38 @@ def compare_textures(textures, golden, atol, rtol, content="hash"):
         note = "content byte-identical" if hashes_match else "dims only"
         return ("match", f"{n} textures ({note})")
     return ("match", f"{n} textures")
+
+
+def compare_callbacks(events, golden_events, atol, rtol):
+    """Diff one callback port's captured firings against the golden's recorded
+    events. Both are lists of argument lists; the event count and each
+    argument must match (numeric within tolerance, strings exact, positions the
+    golden recorded as 'unrecorded' skipped)."""
+    if golden_events is None:
+        return ("no-golden-callbacks", "")
+    if len(events) != len(golden_events):
+        return ("MISMATCH",
+                f"{len(events)} events vs gold {len(golden_events)}")
+    for i, (e, g) in enumerate(zip(events, golden_events)):
+        # An 'unrecorded' golden argument is a container/aggregate whose
+        # backend representation may expand to several atoms: give up on
+        # arity for that event and only compare the positions before it.
+        relaxed = "unrecorded" in g
+        if not relaxed and len(e) != len(g):
+            return ("MISMATCH", f"event{i} arity {len(e)} vs {len(g)}")
+        for j, (a, b) in enumerate(zip(e, g)):
+            if b == "unrecorded":
+                if relaxed:
+                    break
+                continue
+            if isinstance(b, bool):
+                b = float(b)
+            if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+                if abs(a - b) > atol + rtol * abs(b):
+                    return ("MISMATCH", f"event{i}[{j}] {a} vs {b}")
+            elif str(a) != str(b):
+                return ("MISMATCH", f"event{i}[{j}] {a!r} vs {b!r}")
+    return ("match", f"{len(events)} events")
 
 
 def fnv1a64(data):

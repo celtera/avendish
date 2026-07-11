@@ -22,13 +22,25 @@ the TouchDesigner sweep (tooling/td/run_td_sweep.py) -- this drives the GUI host
 
 Capture reality (Max's limits, reported honestly per object):
   * control objects  -> message_processor commits output controls to outlets:
-                        real value diff.
-  * audio objects    -> audio_processor exposes only its MC signal outlet (it does
-                        NOT commit control outlets -- known TODO), captured with
-                        record~; real sample diff when DSP runs.
-  * none/texture     -> nothing feasible to capture: instantiate-only smoke
-                        (verdict 'instantiated' / 'no-backend-*'), never a false
-                        pass.
+                        real value diff; string controls, impulse engagements
+                        ([<PortName>( selector) and declared message-port
+                        invocations are replayed; callback firings are captured
+                        as ordered event lists and diffed per event.
+  * audio objects    -> MC signal outlet captured with record~ (real sample diff
+                        when DSP runs); control/callback outlets (to the right
+                        of the signal outlet) captured after a post-block bang,
+                        which the audio binding answers by committing its
+                        non-audio outputs (analyzers like avnd_peak).
+  * texture objects  -> jit.matrix MOP: filters are fed a 16x16 char matrix,
+                        generators banged; the output matrix dims are read back
+                        via a named [jit.matrix @adapt 1] and diffed in "dims"
+                        mode (Jitter converts content, so bytes are
+                        informational only).
+  * none             -> nothing feasible to capture: instantiate-only smoke
+                        (verdict 'instantiated'), never a false pass.
+Outlet -> port mapping comes from the introspection dumps (--dumps, declaration
+order); without a dump, positional mapping applies when the object has only one
+kind of capturable output.
 
 Windows only. Example:
 
@@ -43,6 +55,7 @@ import ctypes
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -50,7 +63,8 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from golden_compare import (aggregate_case_verdicts, compare_audio,
-                            compare_controls)
+                            compare_callbacks, compare_controls,
+                            compare_textures)
 
 user32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
@@ -116,11 +130,71 @@ def _round(x):
         return 0.0
 
 
-def gen_data_js(goldens, out_path):
+def max_symbol(name):
+    """The runtime selector the Max binding matches a port/message name
+    against: avnd::get_static_symbol / fixup_identifier REPLACES every char
+    outside [A-Za-z0-9.~] with '_' (see binding/max/helpers.hpp
+    valid_char_for_name + common/metadatas.hpp fixup_identifier)."""
+    return re.sub(r"[^A-Za-z0-9.~]", "_", str(name))
+
+
+def load_dump_outputs(dumps_dir, stem):
+    """Declaration-ordered output ports [{name, type}] from the introspection
+    dump JSON for this object (types: parameter/callback/audio/texture/...),
+    or None if unavailable."""
+    if not dumps_dir or not stem:
+        return None
+    p = os.path.join(dumps_dir, stem + ".json")
+    if not os.path.exists(p):
+        return None
+    try:
+        outs = json.load(open(p, encoding="utf-8")).get("outputs")
+        return outs if isinstance(outs, list) else []
+    except Exception:
+        return None
+
+
+def cap_layout(outs_decl, gcases, kind):
+    """(capBase, caps) -- which object outlets carry capturable messages.
+    caps is [[type, name], ...] in outlet order starting at outlet capBase.
+    For message objects every output port gets an outlet (declaration order,
+    capBase 0); for audio objects the non-audio ports sit to the RIGHT of the
+    single mc signal outlet (capBase 1 -- or 0 when the object has no
+    audio-output port, e.g. analyzers)."""
+    if outs_decl is None:
+        # No dump: positional fallback from the golden's recorded outputs
+        # (valid when the object has only one kind of capturable output).
+        gc = (gcases[0].get("outputs", {}).get("controls") or [])
+        gcb = (gcases[0].get("outputs", {}).get("callbacks") or [])
+        if gc and gcb:
+            return (0, None)  # ambiguous
+        caps = [["parameter", c.get("name", f"p{i}")] for i, c in enumerate(gc)]
+        caps += [["callback", c.get("name", f"p{i}")] for i, c in enumerate(gcb)]
+        return (0, caps)
+    has_audio_out = any(o.get("type") == "audio" for o in outs_decl)
+    caps, pi, cbi = [], 0, 0
+    for o in outs_decl:
+        ty = o.get("type", "")
+        if kind == "audio" and ty == "audio":
+            continue  # folded into the single mc signal outlet
+        nm = o.get("name")
+        if ty == "parameter":
+            caps.append([ty, nm if nm else f"p{pi}"])
+            pi += 1
+        elif ty == "callback":
+            caps.append([ty, nm if nm else f"p{cbi}"])
+            cbi += 1
+        else:
+            caps.append([ty, nm or ""])  # midi/texture/...: occupies an outlet
+    base = 1 if (kind == "audio" and has_audio_out) else 0
+    return (base, caps)
+
+
+def gen_data_js(goldens, out_path, dumps_dir):
     """Emit avnd_max_data.js: `var AVND_DATA = [...]` -- the in-Max driver
     include()s it, so it never has to parse JSON. One entry per object with its
-    kind and, per case, the input controls/audio and the golden output control
-    names (so captured outlet values can be matched back to a port name)."""
+    kind, outlet-capture layout, and per case the input controls (numeric,
+    string), impulse engagements, message invocations, audio and texture."""
     objs = []
     for g in goldens:
         cases_out = []
@@ -129,29 +203,55 @@ def gen_data_js(goldens, out_path):
         kind = "none"
         for c in cases:
             ins, outs = c.get("inputs", {}), c.get("outputs", {})
-            controls = [[cc.get("index", k), cc.get("name", ""), cc.get("value")]
-                        for k, cc in enumerate(ins.get("controls", []))
-                        if cc.get("value") != "unrecorded"
-                        and isinstance(cc.get("value"), (int, float))]
+            controls, impulses = [], []
+            for k, cc in enumerate(ins.get("controls", [])):
+                v = cc.get("value")
+                nm = max_symbol(cc.get("name", ""))  # runtime selector form
+                if v == "unrecorded" or v is None:
+                    continue
+                if v == "bang":
+                    impulses.append(nm)
+                elif isinstance(v, bool):
+                    controls.append([cc.get("index", k), nm, int(v)])
+                elif isinstance(v, list):
+                    # container control (xy / rgba / array / list): feed all
+                    # components as one list message to the inlet.
+                    if all(isinstance(x, (bool, int, float, str)) for x in v):
+                        controls.append([cc.get("index", k), nm,
+                                         [int(x) if isinstance(x, bool) else x
+                                          for x in v]])
+                elif isinstance(v, (int, float, str)):
+                    controls.append([cc.get("index", k), nm, v])
+            messages = [[max_symbol(m.get("name", "")), m.get("args", [])]
+                        for m in (ins.get("messages") or [])
+                        if m.get("status") == "invoked"]
             audio_in = ins.get("audio") or []
-            out_ctrl_names = [cc.get("name", "")
-                              for cc in outs.get("controls", [])]
+            tex_in = [[t.get("width", 16), t.get("height", 16)]
+                      for t in (ins.get("texture") or [])]
             has_aout = bool(outs.get("audio"))
-            has_cout = bool(outs.get("controls"))
+            has_ain = bool(audio_in)
+            has_cout = bool(outs.get("controls") or outs.get("callbacks"))
             has_tex = bool(outs.get("texture"))
-            if has_aout:
+            if has_aout or has_ain:
                 kind = "audio"
-            elif has_cout and kind != "audio":
-                kind = "control"
-            elif has_tex and kind not in ("audio", "control"):
+            elif has_tex and kind != "audio":
                 kind = "texture"
+            elif has_cout and kind not in ("audio", "texture"):
+                kind = "control"
             cases_out.append({
                 "controls": controls,
+                "impulses": impulses,
+                "messages": messages,
                 "audioIn": audio_in,
+                "texIn": tex_in,
                 "nAudioOut": len(outs.get("audio") or []),
-                "outCtrlNames": out_ctrl_names,
+                "nTexOut": len(outs.get("texture") or []),
             })
-        objs.append({"name": g["c_name"], "kind": kind, "cases": cases_out})
+        outs_decl = load_dump_outputs(dumps_dir, g.get("_stem"))
+        base, caps = cap_layout(outs_decl, cases, kind)
+        objs.append({"name": g["c_name"], "kind": kind, "capBase": base,
+                     "caps": caps if caps is not None else [],
+                     "capsAmbiguous": caps is None, "cases": cases_out})
     with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         f.write("// Auto-generated by run_max_golden.py -- golden inputs/outputs\n")
         f.write("// for the in-Max driver (include()'d, so no JSON parser needed).\n")
@@ -167,6 +267,8 @@ def load_goldens(goldens_dir):
         try:
             g = json.load(open(f, encoding="utf-8"))
             if g.get("c_name"):
+                # file stem = CMake target name = the introspection dump's name
+                g["_stem"] = os.path.splitext(os.path.basename(f))[0]
                 out.append(g)
         except Exception:
             pass
@@ -175,16 +277,39 @@ def load_goldens(goldens_dir):
 
 def parse_report(path):
     """Report is JSON-lines (one object per line), written by the js driver and
-    appended-to by us on crash. Returns {name: entry}."""
+    appended-to by us on crash. Returns {name: entry}.
+
+    Max's File('write') flushes its internal buffer every 32 KB with a raw
+    newline, so a long object line (audio arrays) can be split across several
+    physical lines. Rejoin greedily: accumulate lines until the buffer parses
+    as one object, then reset. A stray unparseable fragment is dropped when the
+    next '{' starts, so a single corrupt object can't swallow the rest."""
     entries = {}
     if not os.path.exists(path):
         return entries
+    buf = ""
     for line in open(path, encoding="utf-8"):
-        line = line.strip()
-        if not line:
+        line = line.rstrip("\n")
+        if not line.strip() and not buf:
             continue
+        # A new object starts here and the buffer never parsed -> drop it.
+        if buf and line.lstrip().startswith("{"):
+            try:
+                e = json.loads(buf)
+                entries[e["name"]] = e
+            except Exception:
+                pass
+            buf = ""
+        buf += line
         try:
-            e = json.loads(line)
+            e = json.loads(buf)
+            entries[e["name"]] = e
+            buf = ""
+        except Exception:
+            pass
+    if buf:
+        try:
+            e = json.loads(buf)
             entries[e["name"]] = e
         except Exception:
             pass
@@ -196,12 +321,19 @@ def main():
     ap.add_argument("--max", required=True, help="Max.exe")
     ap.add_argument("--externals", required=True, help="dir of built *.mxe64")
     ap.add_argument("--goldens", required=True, help="golden JSON dir")
+    ap.add_argument("--dumps", default=None,
+                    help="introspection dump JSON dir (declaration-ordered "
+                         "outlet mapping); default: goldens dir with 'golden' "
+                         "replaced by 'dump'")
     ap.add_argument("--atol", type=float, default=1e-3)
     ap.add_argument("--rtol", type=float, default=1e-3)
     ap.add_argument("--timeout", type=int, default=240,
                     help="seconds per launch before giving up")
     ap.add_argument("--max-launches", type=int, default=80)
     ap.add_argument("--only", help="comma-separated c_names to restrict to")
+    ap.add_argument("--recompute", action="store_true",
+                    help="skip driving Max; recompute verdicts from an existing "
+                         "report (useful to re-diff after a compare-logic change)")
     ap.add_argument("--report", default=None,
                     help="report path (default: <externals>/avnd_max_report.jsonl)")
     args = ap.parse_args()
@@ -209,6 +341,11 @@ def main():
     here = os.path.dirname(os.path.abspath(__file__))
     asset_dir = os.path.join(here, "max")
     ext_dir = os.path.abspath(args.externals).replace("\\", "/")
+
+    dumps_dir = args.dumps
+    if dumps_dir is None:
+        cand = os.path.abspath(args.goldens).replace("golden", "dump")
+        dumps_dir = cand if os.path.isdir(cand) else None
 
     goldens = load_goldens(args.goldens)
     if args.only:
@@ -224,7 +361,8 @@ def main():
         shutil.copy2(os.path.join(asset_dir, fn), dst)
         staged.append(dst)
     data_js = os.path.join(ext_dir, "avnd_max_data.js")
-    gen_data_js(goldens, data_js)
+    data_objs = gen_data_js(goldens, data_js, dumps_dir)
+    datamap = {o["name"]: o for o in data_objs}
     staged.append(data_js)
 
     report = args.report or os.path.join(ext_dir, "avnd_max_report.jsonl")
@@ -241,9 +379,10 @@ def main():
         f.write(";\n")
     staged.append(cfg)
 
-    for f in (report, breadcrumb):
-        if os.path.exists(f):
-            os.remove(f)
+    if not args.recompute:
+        for f in (report, breadcrumb):
+            if os.path.exists(f):
+                os.remove(f)
 
     patch = os.path.join(ext_dir, "avnd_max_driver.maxpat")
     kill = ["taskkill", "/F", "/IM", "Max.exe"]
@@ -254,9 +393,10 @@ def main():
         except Exception:
             return ""
 
-    subprocess.run(kill, capture_output=True)
     dismissed, crashers = 0, []
-    for attempt in range(1, args.max_launches + 1):
+    if not args.recompute:
+        subprocess.run(kill, capture_output=True)
+    for attempt in range(1, (0 if args.recompute else args.max_launches) + 1):
         done = parse_report(report)
         remaining = [g for g in goldens if g["c_name"] not in done]
         if not remaining:
@@ -328,12 +468,70 @@ def main():
         print(f"(auto-dismissed {dismissed} Max dialog(s))")
 
     # ---- diff vs golden -----------------------------------------------------
-    goldmap = {g["c_name"]: g for g in goldens}
+    def fold(results):
+        """Combine several (verdict, detail) comparisons of one case."""
+        if not results:
+            return ("no-capturable-output", "")
+        for bad in ("MISMATCH", "error"):
+            for v, d in results:
+                if v == bad:
+                    return (v, d)
+        for v, d in results:
+            if v == "match":
+                return ("match",
+                        "; ".join(x[1] for x in results if x[0] == "match"))
+        return results[0]
+
+    def caps_compare(rc, gc, dobj):
+        """Diff a case's captured outlet events against the golden's output
+        controls and callback events. rc['caps'] = {capIdx(str): [event,...]},
+        each event a list of atoms ('bang' -> valueless firing)."""
+        results = []
+        gout = gc.get("outputs", {})
+        gctl = gout.get("controls") or []
+        gcb = gout.get("callbacks") or []
+        recordable = [c for c in gctl if isinstance(c, dict)
+                      and c.get("value") != "unrecorded"]
+        if dobj.get("capsAmbiguous"):
+            return [("ambiguous-outlets", "params+callbacks but no dump")]
+        caps = dobj.get("caps") or []
+        rcaps = rc.get("caps") or {}
+
+        def events(i):
+            evs = rcaps.get(str(i)) or []
+            return [[] if e == ["bang"] else e for e in evs]
+        if recordable:
+            named = {}
+            for i, (ty, nm) in enumerate(caps):
+                if ty != "parameter":
+                    continue
+                evs = events(i)
+                if evs and evs[-1]:
+                    ev = evs[-1]
+                    named[nm] = ev[0] if len(ev) == 1 else ev
+            results.append(compare_controls(named, gctl, args.atol, args.rtol))
+        cbi = 0
+        for i, (ty, nm) in enumerate(caps):
+            if ty != "callback":
+                continue
+            gev = None
+            for cb in gcb:
+                if cb.get("name") == nm or cb.get("index") == cbi:
+                    gev = cb.get("events")
+                    break
+            cbi += 1
+            if gev is None:
+                continue
+            v, d = compare_callbacks(events(i), gev, args.atol, args.rtol)
+            results.append((v, f"cb {nm}: {d}"))
+        return results
+
     entries = parse_report(report)
     counts, details, rows = {}, [], []
     for g in goldens:
         name = g["c_name"]
         e = entries.get(name)
+        dobj = datamap.get(name, {})
         gcases = g.get("cases") or [{"inputs": g.get("inputs", {}),
                                      "outputs": g.get("outputs", {})}]
         if e is None:
@@ -352,7 +550,8 @@ def main():
                 if rc.get("error"):
                     verdicts.append((ci, "error", str(rc["error"])[:80]))
                     continue
-                if gout.get("audio"):
+                results = []
+                if gout.get("audio") or gc.get("inputs", {}).get("audio"):
                     if rc.get("dsp") is False:
                         # Max rendered no audio (no live DSP driver in this
                         # session): the external instantiated but we can't do a
@@ -360,21 +559,30 @@ def main():
                         verdicts.append((ci, "audio-dsp-unavailable",
                                          "instantiated; DSP did not run"))
                         continue
-                    cap = rc.get("audio")
-                    out = ([{"name": f"c{i}", "samples": ch}
-                            for i, ch in enumerate(cap)] if cap else None)
-                    verdicts.append((ci,) + compare_audio(
-                        out, gout["audio"], args.atol, args.rtol))
-                elif gout.get("controls"):
-                    verdicts.append((ci,) + compare_controls(
-                        rc.get("controls") or {}, gout["controls"],
-                        args.atol, args.rtol))
+                    if gout.get("audio"):
+                        cap = rc.get("audio")
+                        out = ([{"name": f"c{i}", "samples": ch}
+                                for i, ch in enumerate(cap)] if cap else None)
+                        results.append(compare_audio(
+                            out, gout["audio"], args.atol, args.rtol))
+                    if gout.get("controls") or gout.get("callbacks"):
+                        results += caps_compare(rc, gc, dobj)
+                    verdicts.append((ci,) + fold(results))
                 elif gout.get("texture"):
-                    verdicts.append((ci, "texture-uncaptured",
-                                     "jitter matrix not captured"))
+                    rtex = rc.get("texture")
+                    if rtex:
+                        verdicts.append((ci,) + compare_textures(
+                            rtex, gout["texture"], args.atol, args.rtol,
+                            content="dims"))
+                    else:
+                        verdicts.append((ci, "texture-uncaptured",
+                                         "jitter matrix not captured"))
+                elif gout.get("controls") or gout.get("callbacks"):
+                    verdicts.append((ci,) + fold(caps_compare(rc, gc, dobj)))
                 else:
                     # no output to verify: object at least instantiated + ran.
-                    ok = rc.get("instantiated") or rc.get("ok")
+                    ok = rc.get("instantiated") or rc.get("ok") \
+                        or "caps" in rc
                     verdicts.append((ci, "instantiated" if ok else "error",
                                      "" if ok else "did not instantiate"))
             v, d = aggregate_case_verdicts(verdicts)
