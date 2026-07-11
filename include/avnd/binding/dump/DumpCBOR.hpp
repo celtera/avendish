@@ -313,6 +313,19 @@ void print_audio(dump_json::value obj)
   {
     obj["port_format"] = "unknown";
   }
+
+  // Statically-known channel count (fixed busses / mono ports); dynamic
+  // busses omit it (the host decides).
+  if constexpr(avnd::audio_sample_port<float, type> || avnd::audio_sample_port<double, type>
+               || avnd::mono_array_sample_port<float, type>
+               || avnd::mono_array_sample_port<double, type>)
+  {
+    obj["channels"] = 1;
+  }
+  else if constexpr(requires { type::channels(); })
+  {
+    obj["channels"] = (int)type::channels();
+  }
 }
 
 template <typename Field>
@@ -369,11 +382,81 @@ void print_geometry(dump_json::value obj)
     obj["geometry"] = "mesh"; // geometry carried in a `.mesh` member
 }
 
+// Container classification helpers (plain constexpr functions: MSVC's parser
+// is unreliable with nested-requires inside requires-expressions here).
+template <typename VT>
+constexpr bool dump_scalar_sequence()
+{
+  if constexpr(requires(VT v) {
+                 v.resize(3);
+                 v[0];
+               })
+    return std::is_arithmetic_v<std::decay_t<decltype(std::declval<VT&>()[0])>>;
+  else
+    return false;
+}
+template <typename VT>
+constexpr bool dump_scalar_fixed_array()
+{
+  if constexpr(dump_scalar_sequence<VT>())
+    return false;
+  else if constexpr(requires(VT v) {
+                      std::tuple_size<VT>::value;
+                      v[0];
+                    })
+    return std::is_arithmetic_v<std::decay_t<decltype(std::declval<VT&>()[0])>>;
+  else
+    return false;
+}
+template <typename VT>
+constexpr bool dump_scalar_aggregate()
+{
+  if constexpr(
+      std::is_aggregate_v<VT> && !dump_scalar_sequence<VT>()
+      && !dump_scalar_fixed_array<VT>() && !avnd::iterable_ish<VT>)
+  {
+    if constexpr(avnd::pfr::tuple_size_v<VT> > 0)
+      return boost::mp11::mp_all_of<avnd::as_typelist<VT>, std::is_arithmetic>::value;
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
 template <typename Field>
 void print_parameter(dump_json::value obj)
 {
   using type = typename Field::type;
   obj["value_type"] = parameter_value_type(Field{});
+
+  // Container / aggregate value types: refine the "unknown" classification so
+  // patch generators and harnesses know how to drive them (a list message).
+  if constexpr(requires { type{}.value; })
+  {
+    using vt = std::decay_t<decltype(type{}.value)>;
+    if constexpr(dump_scalar_sequence<vt>())
+    {
+      if(std::string_view{"unknown"} == parameter_value_type(Field{}))
+        obj["value_type"] = "list";
+    }
+    else if constexpr(dump_scalar_fixed_array<vt>())
+    {
+      if(std::string_view{"unknown"} == parameter_value_type(Field{}))
+      {
+        obj["value_type"] = "array";
+        obj["components"] = (int)std::tuple_size<vt>::value;
+      }
+    }
+    else if constexpr(dump_scalar_aggregate<vt>())
+    {
+      // Named shapes (xy/rgba/...) keep their specific value_type; generic
+      // scalar aggregates get their component count.
+      obj["components"] = (int)avnd::pfr::tuple_size_v<vt>;
+      if(std::string_view{"unknown"} == parameter_value_type(Field{}))
+        obj["value_type"] = "aggregate";
+    }
+  }
 
   if constexpr(avnd::control_port<type>)
     obj["control"] = true;
@@ -635,6 +718,14 @@ void dump(std::string_view path)
   if constexpr(avnd::messages_introspection<Processor>::size > 0)
   {
     print_messages<Processor>(obj["messages"]);
+  }
+
+  // Creation-argument signature (T::initialize), so patch generators can
+  // emit valid default arguments in the object box.
+  if constexpr(requires { avnd::function_reflection<&Processor::initialize>::count; })
+  {
+    print_arguments(
+        avnd::function_reflection<&Processor::initialize>{}, obj["init"]);
   }
 
   auto res = doc.dump();
