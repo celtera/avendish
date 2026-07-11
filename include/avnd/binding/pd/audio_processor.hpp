@@ -6,7 +6,9 @@
 #include <avnd/binding/pd/init.hpp>
 #include <avnd/binding/pd/inputs.hpp>
 #include <avnd/binding/pd/messages.hpp>
+#include <avnd/binding/pd/outputs.hpp>
 #include <avnd/common/export.hpp>
+#include <avnd/concepts/audio_port.hpp>
 #include <avnd/concepts/object.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/wrappers/controls.hpp>
@@ -23,8 +25,8 @@
  *
  * Inputs and outputs will be created according to the audio channel count.
  * Non-audio inputs will be processed through messages sent to the first port.
- *
- * TODO: support non-audio outputs.
+ * Non-audio outputs (e.g. an analyzer's control value) get message outlets
+ * after the signal outlets; their current values are emitted on bang.
  */
 
 namespace pd
@@ -67,6 +69,11 @@ struct audio_processor
   AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
   AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
+  // Message outlets for the non-audio outputs (analyzer values, callbacks...),
+  // created after the signal outlets, in port declaration order. Indexed by
+  // output port index; audio ports keep a null slot.
+  std::array<t_outlet*, avnd::output_introspection<T>::size> control_outlets = {};
+
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
   void init(int argc, t_atom* argv)
@@ -97,8 +104,58 @@ struct audio_processor
       avnd::init_controls(implementation);
     }
 
+    // Host-provided callables must never be left empty: prepare()/process()
+    // calling an empty std::function is a hard crash (e.g. variable_audio_bus
+    // request_channels).
+    if constexpr(avnd::audio_bus_input_introspection<T>::size > 0)
+      avnd::audio_bus_input_introspection<T>::for_all(
+          avnd::get_inputs<T>(implementation), [](auto& p) {
+            if constexpr(requires { p.request_channels; })
+              if(!p.request_channels)
+                p.request_channels = [](int) {};
+          });
+    if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
+      avnd::audio_bus_output_introspection<T>::for_all(
+          avnd::get_outputs<T>(implementation), [](auto& p) {
+            if constexpr(requires { p.request_channels; })
+              if(!p.request_channels)
+                p.request_channels = [](int) {};
+          });
+
     /// Initialize polyphony
     implementation.init_channels(input_channels, output_channels);
+
+    // Message outlets for the non-audio outputs, created from the TYPE-level
+    // introspection so every container shape gets its outlets (multi-instance
+    // per-channel objects included -- their get_outputs() is a dummy and their
+    // control values cannot be committed, but the outlets must still exist so
+    // patches connecting to them stay valid).
+    if constexpr(avnd::output_introspection<T>::size > 0)
+    {
+      avnd::output_introspection<T>::for_all(
+          [this]<auto Idx, typename Field>(avnd::field_reflection<Idx, Field>) {
+            if constexpr(!avnd::audio_port<Field>)
+              control_outlets[Idx] = outlet_new(&x_obj, symbol_for_port<Field>());
+          });
+
+      // Wire callbacks so the object can fire them during processing (only
+      // possible when the container exposes single-instance outputs).
+      if constexpr(requires {
+                     avnd::output_introspection<T>::for_all(
+                         avnd::get_outputs(implementation), [](auto&) {});
+                   })
+      {
+        int out_k = 0;
+        avnd::output_introspection<T>::for_all(
+            avnd::get_outputs(implementation),
+            [this, &out_k]<typename Field>(Field& ctl) {
+              const int idx = out_k++;
+              if constexpr(avnd::callback<Field>)
+                if(control_outlets[idx])
+                  outputs<T>::setup(ctl, *control_outlets[idx]);
+            });
+      }
+    }
   }
 
   void destroy() { }
@@ -164,7 +221,56 @@ struct audio_processor
         implementation, avnd::span<t_sample*>{input, input_channels},
         avnd::span<t_sample*>{output, output_channels}, n);
 
+    // Impulse-like (optional) inputs are one-shot: consumed by this block,
+    // else a single [Bang< message would fire on every subsequent block.
+    if constexpr(
+        avnd::parameter_input_introspection<T>::size > 0
+        && requires {
+             avnd::parameter_input_introspection<T>::for_all(
+                 avnd::get_inputs<T>(implementation), [](auto&) {});
+           })
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs<T>(implementation), []<typename F>(F& field) {
+            if constexpr(requires { field.value.reset(); })
+              field.value.reset();
+          });
+
     return ++w;
+  }
+
+  // Emit the current value of every non-audio output through its outlet.
+  // Called on bang: the dsp system runs operator(), so a bang after a signal
+  // block flushes the control values that block produced (like [env~] etc.).
+  void commit_control_outputs()
+  {
+    if constexpr(
+        avnd::output_introspection<T>::size > 0
+        && requires {
+             avnd::output_introspection<T>::for_all(
+                 avnd::get_outputs(implementation), [](auto&) {});
+           })
+    {
+      int out_k = 0;
+      avnd::output_introspection<T>::for_all(
+          avnd::get_outputs(implementation),
+          [this, &out_k]<typename Field>(Field& ctl) {
+            const int idx = out_k++;
+            if(!control_outlets[idx])
+              return;
+            if constexpr(
+                avnd::parameter_port<Field>
+                && !avnd::sample_accurate_parameter_port<Field>)
+            {
+              value_to_pd_dispatch<Field>(control_outlets[idx], ctl.value);
+            }
+            else if constexpr(avnd::dynamic_sample_accurate_parameter_port<Field>)
+            {
+              for(auto& [timestamp, val] : ctl.values)
+                value_to_pd_dispatch<Field>(control_outlets[idx], val);
+              ctl.values.clear();
+            }
+          });
+    }
   }
 
   void process(t_symbol* s, int argc, t_atom* argv)
@@ -186,7 +292,7 @@ struct audio_processor
           // being run in the dsp system.
 
           // Just bang the outputs:
-          // output_setup.commit(implementation);
+          commit_control_outputs();
         }
         else
         {
@@ -197,10 +303,6 @@ struct audio_processor
       default: {
         // Apply the data to the inlets.
         // process_inlet_control(s, argc, argv); // -> done in input_setup.process_inputs
-
-        // Then bang
-        // output_setup.commit(implementation);
-
         break;
       }
     }

@@ -301,13 +301,33 @@ struct from_atoms
   template<avnd::optional_ish T>
   bool operator()(T& v) const noexcept
   {
-    if(ac < 1)
-      return false;
+    using value_type = typename T::value_type;
+    if constexpr(std::is_empty_v<value_type>)
+    {
+      // Impulse-like port: presence is the whole payload; any message
+      // ([Bang<, [Bang 1<...) engages it.
+      v.emplace();
+      return true;
+    }
+    else
+    {
+      if(ac < 1)
+      {
+        // Selector-only message: engage the optional with a default value,
+        // so bang-like ports can be triggered.
+        if constexpr(requires { v.emplace(); })
+        {
+          v.emplace();
+          return true;
+        }
+        return false;
+      }
 
-    typename T::value_type res;
-    (*this)(res);
-    v = std::move(res);
-    return true;
+      value_type res;
+      (*this)(res);
+      v = std::move(res);
+      return true;
+    }
   }
 
   template <typename T>
@@ -321,6 +341,7 @@ struct from_atoms
       {
         from_atom{av[i]}(field);
       }
+      ++i; // each field consumes the next atom (e.g. [In x y z( -> x, y, z)
     });
     return true;
   }
@@ -352,8 +373,18 @@ struct inputs
   void init(avnd::effect_container<T>& implementation, t_object& x_obj)
   {
     int k = 0;
+    int param_idx = 0;
     avnd::input_introspection<T>::for_all(
-        avnd::get_inputs<T>(implementation), [&x_obj, &k]<typename M>(M& ctl) {
+        avnd::get_inputs<T>(implementation),
+        [&x_obj, &k, &param_idx]<typename M>(M& ctl) {
+      // Unnamed parameter ports would all collide on the "unnamed" symbol (only
+      // the first would ever be settable); give them a positional selector
+      // instead -- p<index> within the parameter inputs, the same naming the
+      // introspection dump and the golden reference files use.
+      int this_param = -1;
+      if constexpr(avnd::parameter_port<M>)
+        this_param = param_idx++;
+
       // Skip the first port
       if(k++)
       {
@@ -365,7 +396,11 @@ struct inputs
 
           // Then the message through this inlet will be received by "process"
           // as [name 1 2 3)
-          auto name = pd::symbol_from_name<M>();
+          t_symbol* name{};
+          if constexpr(!pd::has_usable_name<M>())
+            name = gensym(("p" + std::to_string(std::max(this_param, 0))).c_str());
+          else
+            name = pd::symbol_from_name<M>();
 
           inlet_new(&x_obj, &x_obj.ob_pd, port_sym, name);
         }
@@ -420,11 +455,28 @@ struct inputs
 
       for(auto state : implementation.full_state())
       {
+        int param_idx = 0;
         avnd::parameter_input_introspection<T>::for_all(
             state.inputs, [&,&obj=state.effect]<typename M>(M& field) {
+          const int idx = param_idx++;
           if(ok)
             return;
-          if(symname == pd::get_name_symbol<M>())
+          bool matches = false;
+          if constexpr(pd::has_usable_name<M>())
+          {
+            matches = (symname == std::string_view{pd::get_name_symbol<M>().data()});
+          }
+          else
+          {
+            // Unnamed ports are addressable positionally as p<index> (the
+            // naming used by the inlets created in init, the introspection
+            // dump and the golden reference files); "unnamed" kept for
+            // backwards compatibility.
+            matches = (symname.size() > 1 && symname[0] == 'p'
+                       && symname.substr(1) == std::to_string(idx))
+                      || symname == "unnamed";
+          }
+          if(matches)
           {
             ok = process_inlet_control(obj, field, argc, argv);
           }
