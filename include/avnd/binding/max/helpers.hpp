@@ -34,6 +34,7 @@ concept convertible_to_atom_list_statically_impl
       (avnd::set_ish<T> && convertible_to_fundamental_value_type<typename T::value_type> && convertible_to_fundamental_value_type<typename T::mapped_type>) ||
       (avnd::map_ish<T> && convertible_to_fundamental_value_type<typename T::key_type> && convertible_to_fundamental_value_type<typename T::mapped_type>) ||
       (avnd::optional_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
+      (avnd::optional_ish<T> && std::is_empty_v<typename T::value_type> && std::is_default_constructible_v<typename T::value_type>) ||
       (avnd::variant_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
       (avnd::tuple_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
       (std::is_aggregate_v<T> && !avnd::iterable_ish<T> && boost::mp11::mp_all_of<avnd::as_typelist<T>, convertible_to_fundamental_value_type_pred>::value)

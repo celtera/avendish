@@ -324,13 +324,33 @@ struct from_atoms
   template<avnd::optional_ish T>
   bool operator()(T& v) const noexcept
   {
-    if(ac < 1)
-      return false;
+    using value_type = typename T::value_type;
+    if constexpr(std::is_empty_v<value_type>)
+    {
+      // Impulse-like port: presence is the whole payload; any message
+      // ([Bang], [Bang 1]...) engages it.
+      v.emplace();
+      return true;
+    }
+    else
+    {
+      if(ac < 1)
+      {
+        // Selector-only message: engage the optional with a default value,
+        // so bang-like ports can be triggered.
+        if constexpr(requires { v.emplace(); })
+        {
+          v.emplace();
+          return true;
+        }
+        return false;
+      }
 
-    typename T::value_type res;
-    (*this)(res);
-    v = std::move(res);
-    return true;
+      value_type res;
+      (*this)(res);
+      v = std::move(res);
+      return true;
+    }
   }
 
   template <typename T>
@@ -344,6 +364,7 @@ struct from_atoms
       {
         from_atom{av[i]}(field);
       }
+      ++i; // each field consumes the next atom (e.g. [In x y z( -> x, y, z)
     });
     return true;
   }
