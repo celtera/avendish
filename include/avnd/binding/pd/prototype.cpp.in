@@ -17,10 +17,12 @@ extern "C" AVND_EXPORTED_SYMBOL void @AVND_C_NAME@_setup()
   // Pd never finds it, and its loader retries until it hits the recursion limit.
   t_symbol* const avnd_class_name = gensym("@AVND_C_NAME@");
   [avnd_class_name]<typename T = type> {
-    if constexpr(
-        avnd::monophonic_audio_processor<T> || avnd::polyphonic_audio_processor<T>)
+    if constexpr(avnd::audio_processor<T>)
     {
-      // If we're an audio effect, make a type with the whole DSP stuff
+      // If we process audio in any shape -- effect, generator or analyzer
+      // (audio in, control out: NOT covered by the mono/polyphonic effect
+      // concepts, which require matching in/out shapes) -- make a type with
+      // the whole DSP stuff.
       static const pd::audio_processor_metaclass<T> instance{avnd_class_name};
     }
     else

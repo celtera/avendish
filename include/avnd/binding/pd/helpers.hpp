@@ -32,6 +32,7 @@ concept convertible_to_atom_list_statically_impl
       (avnd::pair_ish<T> && convertible_to_fundamental_value_type<typename T::first_type> && convertible_to_fundamental_value_type<typename T::second_type>) ||
       (avnd::map_ish<T> && convertible_to_fundamental_value_type<typename T::key_type> && convertible_to_fundamental_value_type<typename T::mapped_type>) ||
       (avnd::optional_ish<T> && convertible_to_fundamental_value_type<typename T::value_type>) ||
+      (avnd::optional_ish<T> && std::is_empty_v<typename T::value_type> && std::is_default_constructible_v<typename T::value_type>) ||
       (avnd::variant_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
       (avnd::tuple_ish<T> && boost::mp11::mp_all_of<T, convertible_to_fundamental_value_type_pred>::value) ||
       (std::is_aggregate_v<T> && !avnd::iterable_ish<T> && boost::mp11::mp_all_of<avnd::as_typelist<T>, convertible_to_fundamental_value_type_pred>::value)
@@ -51,6 +52,21 @@ template <typename T>
 static constexpr auto get_name_symbol()
 {
   return avnd::get_static_symbol<T, pd::valid_char_for_name>();
+}
+
+// Whether a port carries an explicit, usable name (name / symbol / c_name
+// metadata). Ports without one get a positional p<index> selector: their
+// reflected fallback is either "unnamed" or a compiler-mangled placeholder,
+// neither of which is addressable or stable.
+template <typename T>
+consteval bool has_usable_name()
+{
+  if constexpr(avnd::has_symbol<T> || avnd::has_c_name<T>)
+    return true;
+  else if constexpr(avnd::has_name<T>)
+    return !std::string_view{avnd::get_name<T>()}.empty();
+  else
+    return false;
 }
 
 template <typename T>

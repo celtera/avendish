@@ -112,7 +112,16 @@ struct message_processor
       };
     }
 
-    avnd::prepare(implementation, {});
+    // A message object has no DSP context, so rate-dependent objects (e.g.
+    // tick-driven filters) get a fixed default rate. One frame per processing
+    // pass (= per bang), matching the synthesized tick below.
+    avnd::prepare(
+        implementation,
+        avnd::process_setup{
+            .input_channels = 0,
+            .output_channels = 0,
+            .frames_per_buffer = 1,
+            .rate = 44100.});
 
     /// Pass arguments
     if constexpr(avnd::can_initialize<T>)
@@ -156,13 +165,41 @@ struct message_processor
 
     // Do our stuff if it makes sense - some objects may not
     // even have a "processing" method
-    if_possible(implementation.effect()) else if_possible(implementation.effect(1));
+    if constexpr(avnd::has_tick<T>)
+    {
+      // Objects taking a host tick: synthesize one processing pass (frames=1,
+      // matching what the golden reference generator does for them).
+      typename T::tick t{};
+      if constexpr(requires { t.frames; })
+        t.frames = 1;
+      if_possible(implementation.effect(t))
+      else if_possible(implementation.effect()) else if_possible(implementation.effect(1));
+    }
+    else
+    {
+      if_possible(implementation.effect()) else if_possible(implementation.effect(1));
+    }
 
     // Then bang
     output_setup.commit(*this);
 
     // Then clean the inlets if needed
     this->control_buffers.clear_inputs(this->implementation);
+
+    // Impulse-like (optional) inputs are one-shot: they are only "present" for
+    // the processing pass that consumed them, else a single [Bang< message
+    // would keep firing on every subsequent processing pass.
+    if constexpr(
+        avnd::parameter_input_introspection<T>::size > 0
+        && requires {
+             avnd::parameter_input_introspection<T>::for_all(
+                 avnd::get_inputs<T>(implementation), [](auto&) {});
+           })
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs<T>(implementation), []<typename F>(F& field) {
+            if constexpr(requires { field.value.reset(); })
+              field.value.reset();
+          });
   }
 
   void process(t_symbol* s, int argc, t_atom* argv)
