@@ -15,10 +15,12 @@ extern "C" AVND_EXPORTED_SYMBOL void ext_main(void* r)
   common_symbols_init();
 
   []<typename T = type> {
-    if constexpr(
-        avnd::monophonic_audio_processor<T> || avnd::polyphonic_audio_processor<T>)
+    if constexpr(avnd::audio_processor<T>)
     {
-      // If we're an audio effect, make a type with the whole DSP stuff
+      // If we process audio in any shape -- effect, generator or analyzer
+      // (audio in, control out: NOT covered by the mono/polyphonic effect
+      // concepts, which require matching in/out shapes) -- make a type with
+      // the whole DSP stuff.
       static const max::audio_processor_metaclass<T> instance{};
     }
     else if constexpr(max::max_jit_input_introspection<T>::size > 0

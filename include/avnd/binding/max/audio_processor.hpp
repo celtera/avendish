@@ -6,7 +6,9 @@
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/binding/max/init.hpp>
 #include <avnd/binding/max/messages.hpp>
+#include <avnd/binding/max/outputs.hpp>
 #include <avnd/common/export.hpp>
+#include <avnd/concepts/audio_port.hpp>
 #include <avnd/wrappers/avnd.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
@@ -23,8 +25,8 @@
  *
  * Inputs and outputs will be created according to the audio channel count.
  * Non-audio inputs will be processed through messages sent to the first port.
- *
- * TODO: support non-audio outputs.
+ * Non-audio outputs (e.g. an analyzer's control value) get message outlets
+ * after the signal outlet; their current values are emitted on bang.
  */
 
 namespace max
@@ -55,6 +57,11 @@ struct audio_processor : processor_common<T>
   AVND_NO_UNIQUE_ADDRESS init_arguments<T> init_setup;
   AVND_NO_UNIQUE_ADDRESS messages<T> messages_setup;
 
+  // Message outlets for the non-audio outputs (analyzer values, callbacks...),
+  // to the right of the signal outlet. Indexed by output port index; audio
+  // ports keep a null slot.
+  std::array<t_outlet*, avnd::output_introspection<T>::size> control_outlets = {};
+
   int m_runtime_input_count{};
   int m_runtime_output_count{};
 
@@ -72,6 +79,40 @@ struct audio_processor : processor_common<T>
     // Audio inlet already created as we're a t_pxobject
     dsp_setup(&x_obj, 1);
 
+    // Message outlets for the non-audio outputs (analyzer values, callbacks).
+    // Max creates outlets right-to-left, so they are created BEFORE the signal
+    // outlet (ending up to its right), in reverse declaration order.
+    // Multi-instance containers whose get_outputs() yields a dummy
+    // (per-sample-port objects) are skipped.
+    if constexpr(
+        avnd::output_introspection<T>::size > 0
+        && requires {
+             avnd::output_introspection<T>::for_all(
+                 avnd::get_outputs(implementation), [](auto&) {});
+           })
+    {
+      static constexpr auto N = avnd::output_introspection<T>::size;
+      std::array<bool, N> is_control{};
+      int out_k = 0;
+      avnd::output_introspection<T>::for_all(
+          avnd::get_outputs(implementation), [&is_control, &out_k]<typename C>(C&) {
+            is_control[out_k++] = !avnd::audio_port<C>;
+          });
+      for(int i = N; i-- > 0;)
+        if(is_control[i])
+          control_outlets[i] = static_cast<t_outlet*>(outlet_new(&x_obj, nullptr));
+
+      // Wire callbacks so the object can fire them during processing.
+      out_k = 0;
+      avnd::output_introspection<T>::for_all(
+          avnd::get_outputs(implementation), [this, &out_k]<typename C>(C& ctl) {
+            const int idx = out_k++;
+            if constexpr(avnd::callback<C>)
+              if(control_outlets[idx])
+                outputs<T>::setup(ctl, *control_outlets[idx]);
+          });
+    }
+
     // Create an audio outlet
     if constexpr(output_channels != 0)
     {
@@ -83,8 +124,59 @@ struct audio_processor : processor_common<T>
     /// Initialize controls
     avnd::init_controls(implementation);
 
+    // Host-provided callables must never be left empty: prepare()/process()
+    // calling an empty std::function is a hard crash (e.g. variable_audio_bus
+    // request_channels).
+    if constexpr(avnd::audio_bus_input_introspection<T>::size > 0)
+      avnd::audio_bus_input_introspection<T>::for_all(
+          avnd::get_inputs<T>(implementation), [](auto& p) {
+            if constexpr(requires { p.request_channels; })
+              if(!p.request_channels)
+                p.request_channels = [](int) {};
+          });
+    if constexpr(avnd::audio_bus_output_introspection<T>::size > 0)
+      avnd::audio_bus_output_introspection<T>::for_all(
+          avnd::get_outputs<T>(implementation), [](auto& p) {
+            if constexpr(requires { p.request_channels; })
+              if(!p.request_channels)
+                p.request_channels = [](int) {};
+          });
+
     /// Initialize polyphony
     implementation.init_channels(input_channels, output_channels);
+  }
+
+  // Emit the current value of every non-audio output through its outlet.
+  // Called on bang: the dsp system runs operator(), so a bang after a signal
+  // block flushes the control values that block produced.
+  void commit_control_outputs()
+  {
+    if constexpr(
+        avnd::output_introspection<T>::size > 0
+        && requires {
+             avnd::output_introspection<T>::for_all(
+                 avnd::get_outputs(implementation), [](auto&) {});
+           })
+    {
+      int out_k = 0;
+      avnd::output_introspection<T>::for_all(
+          avnd::get_outputs(implementation), [this, &out_k]<typename C>(C& ctl) {
+            const int idx = out_k++;
+            if(!control_outlets[idx])
+              return;
+            if constexpr(
+                avnd::parameter_port<C> && !avnd::sample_accurate_parameter_port<C>)
+            {
+              value_to_max_dispatch<C>(control_outlets[idx], ctl.value);
+            }
+            else if constexpr(avnd::dynamic_sample_accurate_parameter_port<C>)
+            {
+              for(auto& [timestamp, val] : ctl.values)
+                value_to_max_dispatch<C>(control_outlets[idx], val);
+              ctl.values.clear();
+            }
+          });
+    }
   }
 
   void destroy() { }
@@ -131,6 +223,20 @@ struct audio_processor : processor_common<T>
     processor.process(
         implementation, avnd::span<double*>{ins, std::size_t(numins)},
         avnd::span<double*>{outs, std::size_t(numouts)}, sampleframes);
+
+    // Impulse-like (optional) inputs are one-shot: consumed by this block,
+    // else a single [Bang< message would fire on every subsequent block.
+    if constexpr(
+        avnd::parameter_input_introspection<T>::size > 0
+        && requires {
+             avnd::parameter_input_introspection<T>::for_all(
+                 avnd::get_inputs(implementation), [](auto&) {});
+           })
+      avnd::parameter_input_introspection<T>::for_all(
+          avnd::get_inputs(implementation), []<typename F>(F& field) {
+            if constexpr(requires { field.value.reset(); })
+              field.value.reset();
+          });
   }
 
   void process_inlet_control(t_symbol* s, long argc, t_atom* argv)
@@ -222,7 +328,7 @@ struct audio_processor : processor_common<T>
           // being run in the dsp system.
 
           // Just bang the outputs:
-          // output_setup.commit(implementation);
+          commit_control_outputs();
         }
         else
         {
@@ -233,10 +339,6 @@ struct audio_processor : processor_common<T>
       default: {
         // Apply the data to the inlets.
         process_inlet_control(s, argc, argv);
-
-        // Then bang
-        // output_setup.commit(implementation);
-
         break;
       }
     }
