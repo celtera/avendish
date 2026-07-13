@@ -13,7 +13,7 @@ if(NOT CLAP_HEADER)
   FetchContent_Declare(
     avnd_clap_headers
     GIT_REPOSITORY "https://github.com/free-audio/clap"
-    GIT_TAG 1.2.9
+    GIT_TAG 1.2.10
     GIT_PROGRESS true
   )
   FetchContent_GetProperties(avnd_clap_headers)
