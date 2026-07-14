@@ -13,9 +13,15 @@ namespace halp
 {
 // Combobox whose items are the files of a sibling folder port, listed by the
 // host at edit time (and refreshed when the folder changes) — no execution
-// needed. `folder_port` names the sibling path/folder port; `extensions` is a
-// space-separated list of accepted suffixes (empty = all files).
-template <static_string lit, static_string folder = "Folder", static_string exts = "">
+// needed. The VALUE is the selected file name (a string), so an object can use
+// it directly as a file name. `folder_port` names the sibling path/folder
+// port; `extensions` is a space-separated list of accepted suffixes (empty =
+// all files); `init` is the initially selected file name — it stays selected
+// even while the file does not exist yet, so chains of processes that write
+// then read conventionally-named files keep working with default values.
+template <
+    static_string lit, static_string folder = "Folder", static_string exts = "",
+    static_string init_value = "-">
 struct folder_combobox
 {
   enum widget
@@ -25,21 +31,21 @@ struct folder_combobox
 
   struct range
   {
-    std::array<std::string_view, 1> values{"-"};
-    int init{0};
+    std::array<std::string_view, 1> values{init_value.value};
+    std::string_view init{init_value.value};
   };
 
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
   static clang_buggy_consteval auto folder_port() { return std::string_view{folder.value}; }
   static clang_buggy_consteval auto extensions() { return std::string_view{exts.value}; }
 
-  int value{0};
+  std::string value{};
 
-  operator int&() noexcept { return value; }
-  operator const int&() const noexcept { return value; }
-  auto& operator=(int t) noexcept
+  operator std::string&() noexcept { return value; }
+  operator const std::string&() const noexcept { return value; }
+  auto& operator=(std::string t) noexcept
   {
-    value = t;
+    value = std::move(t);
     return *this;
   }
 };
