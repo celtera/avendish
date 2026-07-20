@@ -154,6 +154,42 @@ avnd_make_audioplug(
   C_NAME avnd_midi
 )
 
+# Tier C custom-UI example: the plug-in ships its own editor (raw Win32 /
+# raw Xlib) through the avnd::gui_windowed_ui seam instead of the soft editor.
+avnd_make_audioplug(
+  TARGET CustomUiWindow
+  MAIN_FILE examples/Advanced/UI/CustomUiWindow.hpp
+  MAIN_CLASS examples::CustomUiWindow
+  C_NAME avnd_custom_ui_window
+)
+# The editor's two platform implementations live in their own translation
+# units (behind the pimpl in CustomUiWindow.hpp). Compile the matching one into
+# each plug-in module, and link its windowing library: a host has no reason to
+# have libX11 loaded when it dlopens the module. Without an implementation for
+# the platform (or, on Linux, without the X11 headers) the example simply has
+# no editor, matching the header's own guard.
+set(_avnd_customui_impl "")
+set(_avnd_customui_x11 0)
+if(WIN32)
+  set(_avnd_customui_impl "${CMAKE_CURRENT_SOURCE_DIR}/examples/Advanced/UI/CustomUiWindow.win32.cpp")
+elseif(UNIX AND NOT APPLE)
+  find_package(X11 QUIET)
+  if(X11_FOUND)
+    set(_avnd_customui_impl "${CMAKE_CURRENT_SOURCE_DIR}/examples/Advanced/UI/CustomUiWindow.x11.cpp")
+    set(_avnd_customui_x11 1)
+  endif()
+endif()
+if(_avnd_customui_impl)
+  foreach(_avnd_backend clap vst3 vintage)
+    if(TARGET CustomUiWindow_${_avnd_backend})
+      target_sources(CustomUiWindow_${_avnd_backend} PRIVATE "${_avnd_customui_impl}")
+      if(_avnd_customui_x11)
+        target_link_libraries(CustomUiWindow_${_avnd_backend} PRIVATE X11::X11)
+      endif()
+    endif()
+  endforeach()
+endif()
+
 # GCC segfaults with those two...
 if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   avnd_make_all(

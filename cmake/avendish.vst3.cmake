@@ -161,8 +161,10 @@ function(avnd_make_vst3)
     PUBLIC
       Avendish::Avendish_vst3
       sdk_common pluginterfaces
+      concurrentqueue
       DisableExceptions
   )
+
   if(APPLE)
     find_library(COREFOUNDATION_FK CoreFoundation)
     target_link_libraries(

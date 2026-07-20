@@ -4,6 +4,7 @@
 
 #include <avnd/binding/vintage/atomic_controls.hpp>
 #include <avnd/binding/vintage/dispatch.hpp>
+#include <avnd/binding/vintage/gui.hpp>
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/midi_processor.hpp>
 #include <avnd/binding/vintage/processor_setup.hpp>
@@ -37,6 +38,8 @@ struct SimpleAudioEffect : vintage::Effect
   vintage::HostCallback master{};
 
   AVND_NO_UNIQUE_ADDRESS Controls<T> controls;
+
+  AVND_NO_UNIQUE_ADDRESS gui_state_t<T> gui;
 
   AVND_NO_UNIQUE_ADDRESS ProcessorSetup processorSetup;
 
@@ -73,6 +76,8 @@ struct SimpleAudioEffect : vintage::Effect
       Effect::flags |= EffectFlags::CanDoubleReplacing;
     if constexpr(avnd::midi_input_introspection<T>::size > 0)
       Effect::flags |= EffectFlags::IsSynth;
+    if constexpr(avnd::has_ui_editor<T>)
+      Effect::flags |= EffectFlags::HasEditor;
 
     Effect::ioRatio = 1.;
     Effect::object = this;
@@ -185,6 +190,11 @@ struct SimpleAudioEffect : vintage::Effect
 
     // Before processing starts, we copy all our atomics back into the struct
     controls.write(effect);
+
+    // Drain UI → processor bus messages queued by the editor -- after the
+    // atomics so a process_message() writing control values wins over the
+    // mirror for this block.
+    gui_drain_to_processor(*this);
 
     // Actual processing
     using fp_t = std::decay_t<decltype(inputs[0][0])>;

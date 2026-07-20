@@ -36,6 +36,22 @@ extern "C" AVND_EXPORTED_SYMBOL Steinberg::IPluginFactory* GetPluginFactory()
 // clang-format on
 namespace Steinberg
 {
+DEF_CLASS_IID(IPlugView)
+DEF_CLASS_IID(IPlugFrame)
+DEF_CLASS_IID(IPlugViewContentScaleSupport)
+
+#if defined(__linux__)
+// Define the Linux windowing IIDs here too: an unresolved reference to any
+// of them would pull commoniids.cpp.o out of libsdk_common.a, which then
+// collides with every definition in this file under GNU ld.
+namespace Linux
+{
+DEF_CLASS_IID(IEventHandler)
+DEF_CLASS_IID(ITimerHandler)
+DEF_CLASS_IID(IRunLoop)
+}
+#endif
+
 namespace Vst
 {
 
