@@ -562,6 +562,7 @@ struct SimpleAudioEffect : clap_plugin
         }
         i++;
       });
+      avnd::update_controls(state);
     }
 
     // Then the custom blob (tier 1): it wins where the two overlap.
@@ -594,6 +595,8 @@ struct SimpleAudioEffect : clap_plugin
     // (per-channel) instance; guard the whole assignment, as the conversion
     // is also well-formed for controls whose value cannot be assigned from
     // it, such as the optional payload of an impulse button.
+    // Ports with an update() callback get it invoked with the new value in
+    // place, like in init_controls.
     for(auto state : this->effect.full_state())
       param_in_info::for_nth_raw(
           state.inputs, p.param_id, [&]<typename C>(C& field) {
@@ -601,6 +604,7 @@ struct SimpleAudioEffect : clap_plugin
                            field.value = avnd::map_control_from_double<C>(p.value);
                          })
               field.value = avnd::map_control_from_double<C>(p.value);
+            if_possible(field.update(state.effect));
           });
   }
 
