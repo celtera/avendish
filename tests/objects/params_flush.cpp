@@ -98,3 +98,51 @@ TEST_CASE("clap params: flush applies events on a deactivated plug-in", "[params
   params->flush(fx.get(), nullptr, nullptr);
   REQUIRE(fx->effect.effect.inputs.gain.value == Catch::Approx(0.75f));
 }
+
+namespace
+{
+// Non-trivial plain-value range: catches any normalized/plain confusion.
+struct HzFx
+{
+  static consteval auto name() { return "HzFx"; }
+  static consteval auto c_name() { return "hz_fx"; }
+  static consteval auto uuid() { return "0d3f7a92-5b6e-4f1c-8d2a-b91e6c4a7f01"; }
+
+  struct
+  {
+    struct
+    {
+      static consteval auto name() { return "Freq"; }
+      struct range
+      {
+        float min = 20.f, max = 20000.f, init = 440.f;
+      };
+      float value = 440.f;
+    } freq;
+  } inputs;
+  struct
+  {
+  } outputs;
+  void operator()(int) { }
+};
+}
+
+TEST_CASE("clap params: ids and values are consistent across the vtable",
+          "[params]")
+{
+  auto fx = std::make_unique<avnd_clap::SimpleAudioEffect<HzFx>>(&fake_host);
+  auto* params = fx->get_params();
+
+  clap_param_info_t info{};
+  REQUIRE(params->get_info(fx.get(), 0, &info));
+  REQUIRE(info.min_value == Catch::Approx(20.));
+  REQUIRE(info.max_value == Catch::Approx(20000.));
+
+  // Write a PLAIN value through flush at the advertised id; read it back.
+  event_list events{info.id, 12345.};
+  params->flush(fx.get(), &events.in, &events.out);
+  REQUIRE(fx->effect.effect.inputs.freq.value == Catch::Approx(12345.f));
+  double reported = 0.;
+  REQUIRE(params->get_value(fx.get(), info.id, &reported));
+  REQUIRE(reported == Catch::Approx(12345.));
+}
