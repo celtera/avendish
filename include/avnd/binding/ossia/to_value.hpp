@@ -188,6 +188,15 @@ struct to_ossia_value_impl
     val = std::move(v);
   }
 
+  void operator()(const std::vector<bool>& f)
+  {
+    std::vector<ossia::value> v;
+    v.resize(f.size());
+    for(std::size_t i = 0, n = f.size(); i < n; i++)
+      v[i] = bool(f[i]);
+    val = std::move(v);
+  }
+
   template <typename T>
     requires avnd::tensor_like<T>
   void operator()(const T& t)
