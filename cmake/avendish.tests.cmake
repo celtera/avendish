@@ -49,6 +49,10 @@ if(BUILD_TESTING)
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
 
+  # Custom-state feature
+  avnd_add_catch_test(test_state_serial tests/test_state_serial.cpp)
+  avnd_add_catch_test(test_state_object tests/test_state_object.cpp)
+
   # clap_plugin_params::flush event application.
   if(AVND_ENABLE_CLAP AND CLAP_HEADER)
     avnd_add_catch_test(test_params_flush tests/objects/params_flush.cpp)
