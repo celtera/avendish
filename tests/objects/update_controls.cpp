@@ -84,7 +84,7 @@ TEST_CASE("clap: param event fires update() once with the new value", "[update]"
 
   clap_event_param_value ev{};
   ev.param_id = 0; // Freq
-  ev.value = 0.5;  // normalized -> 50.
+  ev.value = 50.;  // plain value, per the advertised min/max
   fx->process_param(ev);
 
   REQUIRE(obj.update_count == base + 1);
@@ -165,4 +165,41 @@ TEST_CASE("clap: state load dispatches update() with restored values", "[update]
   REQUIRE(obj.inputs.freq.value == Catch::Approx(80.f));
   REQUIRE(obj.observed == Catch::Approx(80.f)); // update() saw the restore
   REQUIRE(obj.update_count > base);
+}
+
+TEST_CASE("clap: params flush dispatches update() on a deactivated plug-in",
+          "[update]")
+{
+  auto fx = std::make_unique<avnd_clap::SimpleAudioEffect<UpdateFx>>(&fake_host);
+  auto& obj = fx->effect.effect;
+  const int base = obj.update_count;
+
+  clap_event_param_value_t ev{};
+  ev.header.size = sizeof(ev);
+  ev.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
+  ev.header.type = CLAP_EVENT_PARAM_VALUE;
+  ev.param_id = 0; // Freq
+  ev.note_id = -1;
+  ev.port_index = -1;
+  ev.channel = -1;
+  ev.key = -1;
+  ev.value = 50.; // plain value
+
+  struct one_event
+  {
+    const clap_event_header_t* h;
+    clap_input_events_t in{
+        .ctx = this,
+        .size = [](const clap_input_events_t*) -> uint32_t { return 1; },
+        .get = [](const clap_input_events_t* list,
+                  uint32_t) -> const clap_event_header_t* {
+          return static_cast<one_event*>(list->ctx)->h;
+        }};
+  } events{&ev.header};
+
+  fx->get_params()->flush(fx.get(), &events.in, nullptr);
+
+  REQUIRE(obj.inputs.freq.value == Catch::Approx(50.f));
+  REQUIRE(obj.update_count == base + 1); // exactly one dispatch
+  REQUIRE(obj.observed == Catch::Approx(50.f));
 }
