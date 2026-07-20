@@ -59,6 +59,11 @@ if(BUILD_TESTING)
 
     avnd_add_catch_test(test_state_clap tests/objects/state_clap.cpp)
     target_include_directories(test_state_clap PRIVATE "${CLAP_HEADER}")
+
+    # Transport-to-tick conversion (uses the clap headers for the clap
+    # converter; the vst3 converter is tested through a structural mirror).
+    avnd_add_catch_test(test_transport tests/test_transport.cpp)
+    target_include_directories(test_transport PRIVATE "${CLAP_HEADER}")
   endif()
 endif()
 
