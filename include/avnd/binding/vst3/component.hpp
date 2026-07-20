@@ -13,6 +13,8 @@
 #include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <type_traits>
+#include <vector>
 
 namespace stv3
 {
@@ -88,9 +90,16 @@ struct Component final
   using inputs_info_t = avnd::parameter_input_introspection<T>;
   static const constexpr int32_t parameter_count = inputs_info_t::size;
 
+  // Bool parameters whose same-block press+release was latched; released at
+  // the start of the next block (see processControl / processControls).
+  std::vector<int> m_pendingButtonReleases;
+
   Component()
   {
     using namespace Steinberg::Vst;
+
+    // Never allocates on the audio thread: at most one entry per parameter.
+    m_pendingButtonReleases.reserve(parameter_count);
 
     currentProcessMode = -1;
     processSetup.maxSamplesPerBlock = 1024;
@@ -365,23 +374,64 @@ struct Component final
     int32 numPoints = queue.getPointCount();
 
     int id = queue.getParameterId();
-    if(queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
+    if(queue.getPoint(numPoints - 1, sampleOffset, value) != Steinberg::kResultTrue)
+      return;
+
+    // Momentary buttons can emit press + release within one block (VSTGUI's
+    // kick style even fires both edits back-to-back on mouse-up); keeping
+    // only the last point would drop the press entirely. For bool parameters,
+    // latch a pressed point so the processor sees it for this whole block,
+    // and apply the release at the start of the next one.
+    ParamValue max_value = value;
+    for(int32 i = 0; i < numPoints - 1; i++)
     {
-      // Apply the host parameter change to every (per-channel) instance so all
-      // voices of a polyphonic effect track automation, not just instance 0.
-      for(auto state : this->effect.full_state())
-        avnd::parameter_input_introspection<T>::for_nth_raw(
-            state.inputs, id, [&]<typename C>(C& ctl) {
-              if constexpr(requires { avnd::map_control_from_01<C>(value); })
+      ParamValue v;
+      int32 off;
+      if(queue.getPoint(i, off, v) == Steinberg::kResultTrue && v > max_value)
+        max_value = v;
+    }
+
+    // Apply the host parameter change to every (per-channel) instance so all
+    // voices of a polyphonic effect track automation, not just instance 0.
+    for(auto state : this->effect.full_state())
+      avnd::parameter_input_introspection<T>::for_nth_raw(
+          state.inputs, id, [&]<typename C>(C& ctl) {
+            if constexpr(requires { avnd::map_control_from_01<C>(value); })
+            {
+              if constexpr(std::is_same_v<std::decay_t<decltype(ctl.value)>, bool>)
+              {
+                const bool pressed = max_value >= 0.5;
+                assign_if_assignable(ctl.value, pressed);
+                if(pressed && value < 0.5)
+                  m_pendingButtonReleases.push_back(id);
+              }
+              else
+              {
                 assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
-            });
-    };
+              }
+            }
+          });
   }
 
   void processControls(ProcessData& data)
   {
     using namespace Steinberg;
     using namespace Steinberg::Vst;
+
+    // Releases latched from the previous block (see processControl): the
+    // button was pressed and released within one block, the press was held
+    // for that block, now let it go back to false (a new press in this
+    // block's queues will simply re-latch it below).
+    for(int id : m_pendingButtonReleases)
+    {
+      for(auto state : this->effect.full_state())
+        avnd::parameter_input_introspection<T>::for_nth_raw(
+            state.inputs, id, [&]<typename C>(C& ctl) {
+              if constexpr(std::is_same_v<std::decay_t<decltype(ctl.value)>, bool>)
+                assign_if_assignable(ctl.value, false);
+            });
+    }
+    m_pendingButtonReleases.clear();
 
     if(auto paramChanges = data.inputParameterChanges)
     {
