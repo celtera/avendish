@@ -4,6 +4,7 @@
 
 #include <avnd/binding/clap/bus_info.hpp>
 #include <avnd/binding/clap/helpers.hpp>
+#include <avnd/binding/clap/transport.hpp>
 #include <avnd/common/export.hpp>
 #include <avnd/concepts/state.hpp>
 #include <avnd/introspection/channels.hpp>
@@ -137,6 +138,12 @@ struct SimpleAudioEffect : clap_plugin
   AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
 
   clap_plugin_state state_ext{};
+
+  // Latest transport information: clap_process::transport at block start,
+  // then any CLAP_EVENT_TRANSPORT in-events. When no transport was ever
+  // provided, processors receive the frames-only tick as before.
+  clap_event_transport_t transport_state{};
+  bool transport_known{false};
 
   float sample_rate{44100.};
   int buffer_size{512};
@@ -307,9 +314,22 @@ struct SimpleAudioEffect : clap_plugin
       if(!outputs[i])
         outputs[i] = trash_buffer<samples_t>();
 
-    processor.process(
-        effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
-        avnd::span<samples_t*>{outputs, std::size_t(out_N)}, process.frames_count);
+    if(transport_known)
+    {
+      processor.process(
+          effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
+          avnd::span<samples_t*>{outputs, std::size_t(out_N)},
+          tick_from_transport(
+              transport_state, process.frames_count, sample_rate,
+              process.steady_time));
+    }
+    else
+    {
+      processor.process(
+          effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
+          avnd::span<samples_t*>{outputs, std::size_t(out_N)},
+          process.frames_count);
+    }
   }
 
   // Scratch rows substituted for null host channel pointers. Sized in
@@ -344,6 +364,13 @@ struct SimpleAudioEffect : clap_plugin
 
     // Clear the midi out ports
     midi.clear_outputs(this->effect);
+
+    // Block-start transport; CLAP_EVENT_TRANSPORT in-events refine it below.
+    if(process.transport)
+    {
+      transport_state = *process.transport;
+      transport_known = true;
+    }
 
     // Process the input events
     process_in_events(process);
@@ -579,7 +606,8 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_transport(const clap_event_transport& transport)
   {
-    // TODO
+    transport_state = transport;
+    transport_known = true;
   }
 
   void process_in_events(const clap_process& p)
