@@ -641,7 +641,22 @@ struct SimpleAudioEffect : clap_plugin
 
       .flush
       = [](const clap_plugin* plugin, const clap_input_events_t* input_parameter_changes,
-           const clap_output_events_t* output_parameter_changes) -> void {}};
+           const clap_output_events_t* output_parameter_changes) -> void {
+    // Same application path as process(): required to work on the main
+    // thread while the plug-in is deactivated.
+    if(!input_parameter_changes)
+      return;
+    auto& p = *self(plugin);
+    const uint32_t n = input_parameter_changes->size(input_parameter_changes);
+    for(uint32_t i = 0; i < n; i++)
+    {
+      const clap_event_header_t* ev
+          = input_parameter_changes->get(input_parameter_changes, i);
+      if(ev && ev->space_id == CLAP_CORE_EVENT_SPACE_ID
+         && ev->type == CLAP_EVENT_PARAM_VALUE)
+        p.process_param(*(const clap_event_param_value_t*)ev);
+    }
+  }};
     return &params;
   }
 

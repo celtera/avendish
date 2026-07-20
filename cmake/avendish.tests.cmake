@@ -48,5 +48,11 @@ if(BUILD_TESTING)
 
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
+
+  # clap_plugin_params::flush event application.
+  if(AVND_ENABLE_CLAP AND CLAP_HEADER)
+    avnd_add_catch_test(test_params_flush tests/objects/params_flush.cpp)
+    target_include_directories(test_params_flush PRIVATE "${CLAP_HEADER}")
+  endif()
 endif()
 
