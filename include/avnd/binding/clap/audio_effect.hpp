@@ -398,13 +398,16 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_param(const clap_event_param_value& p)
   {
-    // Apply to every (per-channel) instance; map_control_from_01 is deleted for
-    // non-scalar controls, so guard it.
+    // Parameter ids are the RAW field indices (as advertised by
+    // get_param_info) and values are PLAIN, in the [min_value, max_value]
+    // range of the param info -- matching get_value. Apply to every
+    // (per-channel) instance; the conversion is deleted for non-scalar
+    // controls, so guard it.
     for(auto state : this->effect.full_state())
-      param_in_info::for_nth_mapped(
+      param_in_info::for_nth_raw(
           state.inputs, p.param_id, [&]<typename C>(C& field) {
-            if constexpr(requires { avnd::map_control_from_01<C>(p.value); })
-              field.value = avnd::map_control_from_01<C>(p.value);
+            if constexpr(requires { avnd::map_control_from_double<C>(p.value); })
+              field.value = avnd::map_control_from_double<C>(p.value);
           });
   }
 
