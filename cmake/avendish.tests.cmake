@@ -57,6 +57,7 @@ if(BUILD_TESTING)
     avnd_add_catch_test(test_params_flush tests/objects/params_flush.cpp)
     target_include_directories(test_params_flush PRIVATE "${CLAP_HEADER}")
 
+
     avnd_add_catch_test(test_state_clap tests/objects/state_clap.cpp)
     target_include_directories(test_state_clap PRIVATE "${CLAP_HEADER}")
   endif()
