@@ -5,6 +5,7 @@
 #include <avnd/binding/clap/bus_info.hpp>
 #include <avnd/binding/clap/helpers.hpp>
 #include <avnd/common/export.hpp>
+#include <avnd/concepts/state.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/midi.hpp>
 #include <avnd/wrappers/control_display.hpp>
@@ -14,10 +15,12 @@
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <avnd/wrappers/state.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <clap/all.h>
 
 #include <algorithm>
+#include <vector>
 
 namespace avnd_clap
 {
@@ -133,6 +136,8 @@ struct SimpleAudioEffect : clap_plugin
   AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
   AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
 
+  clap_plugin_state state_ext{};
+
   float sample_rate{44100.};
   int buffer_size{512};
 
@@ -185,8 +190,22 @@ struct SimpleAudioEffect : clap_plugin
         return &p.audio_ports;
       if(id_sv == "clap.note-ports")
         return &p.note_ports;
+      if(id_sv == CLAP_EXT_STATE)
+        return &p.state_ext;
 
       return nullptr;
+    };
+
+    // Session persistence: parameter values + the object's opaque custom
+    // state when it models avnd::has_custom_state (container format in
+    // STATE_SUPPORT_DESIGN.md).
+    state_ext.save
+        = [](const clap_plugin* plugin, const clap_ostream* stream) -> bool {
+      return self(plugin)->save_state_impl(stream);
+    };
+    state_ext.load
+        = [](const clap_plugin* plugin, const clap_istream* stream) -> bool {
+      return self(plugin)->load_state_impl(stream);
     };
 
     clap_plugin::on_main_thread = [](const struct clap_plugin* plugin) {};
@@ -401,6 +420,143 @@ struct SimpleAudioEffect : clap_plugin
       static typename avnd::inputs_type<T>::type empty{};
       return (empty);
     }
+  }
+
+  /*****************/
+  /**** STATE ******/
+  /*****************/
+  // Container format (native little-endian; STATE_SUPPORT_DESIGN.md):
+  //   u32 'AVCS'  u32 version=1  u32 param_count  u32 reserved
+  //   param_count x f64 normalized values (port order)
+  //   u64 blob_size  [blob bytes]
+  static constexpr uint32_t state_magic = 0x41564353; // 'AVCS'
+  static constexpr uint32_t state_version = 1;
+  static constexpr uint64_t state_max_blob = 1024 * 1024 * 1024; // sanity
+
+  static bool
+  write_all(const clap_ostream* os, const void* data, uint64_t size) noexcept
+  {
+    auto p = static_cast<const uint8_t*>(data);
+    while(size > 0)
+    {
+      const int64_t n = os->write(os, p, size);
+      if(n <= 0)
+        return false;
+      p += n;
+      size -= uint64_t(n);
+    }
+    return true;
+  }
+
+  static bool
+  read_exact(const clap_istream* is, void* data, uint64_t size) noexcept
+  {
+    auto p = static_cast<uint8_t*>(data);
+    while(size > 0)
+    {
+      const int64_t n = is->read(is, p, size);
+      if(n <= 0)
+        return false;
+      p += n;
+      size -= uint64_t(n);
+    }
+    return true;
+  }
+
+  bool save_state_impl(const clap_ostream* os)
+  {
+    const uint32_t header[4]
+        = {state_magic, state_version, uint32_t(parameter_count), 0};
+    if(!write_all(os, header, sizeof(header)))
+      return false;
+
+    bool ok = true;
+    if constexpr(parameter_count > 0)
+    {
+      param_in_info::for_all(controls_inputs(), [&]<typename C>(C& field) {
+        double v{};
+        if_possible(v = avnd::map_control_to_01<C>(field.value));
+        ok &= write_all(os, &v, sizeof(v));
+      });
+      if(!ok)
+        return false;
+    }
+
+    uint64_t blob_size = 0;
+    if constexpr(avnd::has_custom_state<T>)
+    {
+      // Save from the first instance (polyphonic instances share state).
+      std::vector<uint8_t> blob;
+      for(auto state : this->effect.full_state())
+      {
+        avnd::save_state(state.effect, [&](const void* d, std::size_t n) {
+          auto b = static_cast<const uint8_t*>(d);
+          blob.insert(blob.end(), b, b + n);
+        });
+        break;
+      }
+      blob_size = blob.size();
+      if(!write_all(os, &blob_size, sizeof(blob_size)))
+        return false;
+      if(blob_size > 0 && !write_all(os, blob.data(), blob_size))
+        return false;
+    }
+    else
+    {
+      if(!write_all(os, &blob_size, sizeof(blob_size)))
+        return false;
+    }
+    return true;
+  }
+
+  bool load_state_impl(const clap_istream* is)
+  {
+    uint32_t header[4]{};
+    if(!read_exact(is, header, sizeof(header)))
+      return false;
+    if(header[0] != state_magic || header[1] != state_version)
+      return false;
+    const uint32_t stored_params = header[2];
+    if(stored_params > 65536)
+      return false;
+
+    // Parameters first (tier 0): apply the common ordinal prefix.
+    std::vector<double> values(stored_params);
+    if(stored_params > 0 && !read_exact(is, values.data(), stored_params * 8))
+      return false;
+    for(auto state : this->effect.full_state())
+    {
+      std::size_t i = 0;
+      param_in_info::for_all(state.inputs, [&]<typename C>(C& field) {
+        if(i < values.size())
+        {
+          if constexpr(requires { avnd::map_control_from_01<C>(values[i]); })
+            field.value = avnd::map_control_from_01<C>(values[i]);
+        }
+        i++;
+      });
+    }
+
+    // Then the custom blob (tier 1): it wins where the two overlap.
+    uint64_t blob_size = 0;
+    if(!read_exact(is, &blob_size, sizeof(blob_size)))
+      return false;
+    if(blob_size > state_max_blob)
+      return false;
+    if constexpr(avnd::has_custom_state<T>)
+    {
+      if(blob_size > 0)
+      {
+        std::vector<uint8_t> blob(blob_size);
+        if(!read_exact(is, blob.data(), blob_size))
+          return false;
+        bool ok = true;
+        for(auto state : this->effect.full_state())
+          ok &= avnd::load_state(state.effect, blob.data(), blob.size());
+        return ok;
+      }
+    }
+    return true;
   }
 
   void process_param(const clap_event_param_value& p)

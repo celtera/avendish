@@ -6,6 +6,7 @@
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/helpers.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/concepts/state.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/midi.hpp>
 #include <avnd/introspection/output.hpp>
@@ -13,6 +14,9 @@
 #include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <avnd/wrappers/state.hpp>
+
+#include <vector>
 
 namespace stv3
 {
@@ -567,6 +571,15 @@ struct Component final
   /**** SAVING ****/
   /****************/
 
+  // Custom-state trailer, appended after the parameter doubles so existing
+  // session data stays byte-compatible (STATE_SUPPORT_DESIGN.md):
+  //   u32 'AVCS'  u32 version=1  u64 blob_size  [blob bytes]
+  // The controller's setComponentState reads only the doubles and never
+  // sees the trailer; old sessions simply end at EOF before it.
+  static constexpr Steinberg::uint32 state_trailer_magic = 0x41564353; // AVCS
+  static constexpr Steinberg::uint32 state_trailer_version = 1;
+  static constexpr Steinberg::uint64 state_max_blob = 1024 * 1024 * 1024;
+
   tresult setState(IBStream* state) override
   {
     using namespace Steinberg;
@@ -592,13 +605,36 @@ struct Component final
       // One representative control set => exactly inputs_info_t::size doubles,
       // matching getState and the controller's setComponentState.
       bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), read_one);
+      if(!ok)
+        return Steinberg::kResultFalse;
+    }
 
-      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
-    }
-    else
+    if constexpr(avnd::has_custom_state<T>)
     {
-      return Steinberg::kResultOk;
+      // Optional trailer: absent in pre-feature sessions (EOF here is fine).
+      uint32 magic{};
+      if(streamer.readInt32u(magic) == false)
+        return Steinberg::kResultOk;
+      if(magic != state_trailer_magic)
+        return Steinberg::kResultOk; // unknown data: leave defaults, don't fail
+      uint32 version{};
+      if(streamer.readInt32u(version) == false || version != state_trailer_version)
+        return Steinberg::kResultOk;
+      uint64 blob_size{};
+      if(streamer.readInt64u(blob_size) == false || blob_size > state_max_blob)
+        return Steinberg::kResultFalse;
+      if(blob_size > 0)
+      {
+        std::vector<uint8_t> blob(blob_size);
+        if(streamer.readRaw(blob.data(), int32(blob_size)) != int32(blob_size))
+          return Steinberg::kResultFalse;
+        bool ok = true;
+        for(auto st : this->effect.full_state())
+          ok &= avnd::load_state(st.effect, blob.data(), blob.size());
+        return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+      }
     }
+    return Steinberg::kResultOk;
   }
 
   tresult getState(IBStream* state) override
@@ -617,13 +653,33 @@ struct Component final
       };
 
       bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), write_one);
+      if(!ok)
+        return Steinberg::kResultFalse;
+    }
 
-      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
-    }
-    else
+    if constexpr(avnd::has_custom_state<T>)
     {
-      return Steinberg::kResultOk;
+      // Save from the first instance (polyphonic instances share state).
+      std::vector<uint8_t> blob;
+      for(auto st : this->effect.full_state())
+      {
+        avnd::save_state(st.effect, [&](const void* d, std::size_t n) {
+          auto b = static_cast<const uint8_t*>(d);
+          blob.insert(blob.end(), b, b + n);
+        });
+        break;
+      }
+      if(streamer.writeInt32u(state_trailer_magic) == false)
+        return Steinberg::kResultFalse;
+      if(streamer.writeInt32u(state_trailer_version) == false)
+        return Steinberg::kResultFalse;
+      if(streamer.writeInt64u(uint64(blob.size())) == false)
+        return Steinberg::kResultFalse;
+      if(!blob.empty())
+        if(streamer.writeRaw(blob.data(), int32(blob.size())) == false)
+          return Steinberg::kResultFalse;
     }
+    return Steinberg::kResultOk;
   }
 
   /****************/
