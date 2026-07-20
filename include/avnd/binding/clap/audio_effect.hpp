@@ -471,7 +471,9 @@ struct SimpleAudioEffect : clap_plugin
         }
 
         case CLAP_EVENT_PARAM_VALUE: {
-          process_param(*((clap_event_param_value_t*)ev));
+          // Event type ids are only meaningful within the core namespace.
+          if(ev->space_id == CLAP_CORE_EVENT_SPACE_ID)
+            process_param(*((clap_event_param_value_t*)ev));
           break;
         }
         case CLAP_EVENT_PARAM_MOD:
