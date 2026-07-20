@@ -200,6 +200,13 @@ struct SimpleAudioEffect : clap_plugin
     // Safe no-op handlers for worker.request / request_channels members:
     // an empty std::function call terminates under -fno-exceptions.
     avnd::wire_fallback_callbacks(effect);
+
+    // Polyphonic containers keep their instances in a vector populated by
+    // init_channels at activation -- but hosts drive the state and parameter
+    // entry points on deactivated plug-ins (state loads, main-thread flush),
+    // and every full_state() consumer silently does nothing on an empty
+    // container. Guarantee one live instance from construction.
+    effect.init_channels(1, 1);
   }
 
   void start()
@@ -494,6 +501,9 @@ struct SimpleAudioEffect : clap_plugin
       return false;
 
     info->id = param_in_info::index_map[param_index];
+    // Hosts only automate (and validators only exercise) parameters that
+    // advertise it; the flags field arrives uninitialized from the host.
+    info->flags = CLAP_PARAM_IS_AUTOMATABLE;
     param_in_info::for_nth_raw(
         info->id,
         [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C> field) {
