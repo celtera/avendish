@@ -5,6 +5,7 @@
 #include <avnd/binding/vst3/bus_info.hpp>
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/helpers.hpp>
+#include <avnd/binding/vst3/param_apply.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
 #include <avnd/binding/vst3/transport.hpp>
 #include <avnd/concepts/state.hpp>
@@ -372,14 +373,7 @@ struct Component final
     int id = queue.getParameterId();
     if(queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
     {
-      // Apply the host parameter change to every (per-channel) instance so all
-      // voices of a polyphonic effect track automation, not just instance 0.
-      for(auto state : this->effect.full_state())
-        avnd::parameter_input_introspection<T>::for_nth_raw(
-            state.inputs, id, [&]<typename C>(C& ctl) {
-              if constexpr(requires { avnd::map_control_from_01<C>(value); })
-                assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
-            });
+      stv3::apply_control(this->effect, id, value);
     };
   }
 
@@ -615,6 +609,14 @@ struct Component final
       bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), read_one);
       if(!ok)
         return Steinberg::kResultFalse;
+
+      // Restored values are host-driven changes: dispatch update() on the
+      // instance the values landed in.
+      for(auto st : this->effect.full_state())
+      {
+        avnd::update_controls(st);
+        break;
+      }
     }
 
     if constexpr(avnd::has_custom_state<T>)

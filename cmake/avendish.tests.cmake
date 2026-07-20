@@ -65,6 +65,10 @@ if(BUILD_TESTING)
     # converter; the vst3 converter is tested through a structural mirror).
     avnd_add_catch_test(test_transport tests/test_transport.cpp)
     target_include_directories(test_transport PRIVATE "${CLAP_HEADER}")
+
+    # update() dispatch on host parameter changes.
+    avnd_add_catch_test(test_update_controls tests/objects/update_controls.cpp)
+    target_include_directories(test_update_controls PRIVATE "${CLAP_HEADER}")
   endif()
 endif()
 

@@ -50,6 +50,17 @@ static constexpr void init_controls(F& state)
   }
 }
 
+// Dispatch the update() callback of every input port without touching the
+// values: used after bulk value restores (state loads), so ports observe
+// their new values just like after individual host parameter changes.
+template <typename F>
+static constexpr void update_controls(F& state)
+{
+  avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
+    if_possible(ctl.update(state.effect));
+  });
+}
+
 /**
  * @brief Used to set the initial value for controls when
  * the plug-in is first loaded.
