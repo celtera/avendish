@@ -6,6 +6,7 @@
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/helpers.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/binding/vst3/transport.hpp>
 #include <avnd/concepts/state.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/midi.hpp>
@@ -513,24 +514,31 @@ struct Component final
     auto out = stv3::getChannelBuffersPointer(processSetup, data.outputs[0]);
 
     data.outputs[0].silenceFlags = 0;
+
+    // With a ProcessContext, hand the processor a transport-filled tick;
+    // otherwise keep the frames-only invocation.
+    auto invoke = [&]<typename Sample>() {
+      auto ins = avnd::span<Sample*>{
+          (Sample**)in, std::size_t(data.inputs[0].numChannels)};
+      auto outs = avnd::span<Sample*>{
+          (Sample**)out, std::size_t(data.outputs[0].numChannels)};
+      if(data.processContext)
+      {
+        processor.process(
+            effect, ins, outs,
+            stv3::tick_from_context(
+                *data.processContext, data.numSamples, processSetup.sampleRate));
+      }
+      else
+      {
+        processor.process(effect, ins, outs, data.numSamples);
+      }
+    };
+
     if(data.symbolicSampleSize == kSample32)
-    {
-      processor.process(
-          effect,
-          avnd::span<Sample32*>{(Sample32**)in, std::size_t(data.inputs[0].numChannels)},
-          avnd::span<Sample32*>{
-              (Sample32**)out, std::size_t(data.outputs[0].numChannels)},
-          data.numSamples);
-    }
+      invoke.template operator()<Sample32>();
     else
-    {
-      processor.process(
-          effect,
-          avnd::span<Sample64*>{(Sample64**)in, std::size_t(data.inputs[0].numChannels)},
-          avnd::span<Sample64*>{
-              (Sample64**)out, std::size_t(data.outputs[0].numChannels)},
-          data.numSamples);
-    }
+      invoke.template operator()<Sample64>();
   }
 
   void processOutputs(ProcessData& data)
