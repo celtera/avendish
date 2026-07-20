@@ -207,3 +207,110 @@ TEST_CASE("clap state: tier-0 only (no custom state)", "[state]")
   REQUIRE(fx->state_ext.load(fx.get(), &mem.in));
   REQUIRE(fx->effect.effect.inputs.amount.value == Catch::Approx(0.9f));
 }
+
+// ---------------------------------------------------------------------------
+// Mixed-port shape: an audio port BEFORE the parameters, so raw field
+// indices differ from dense parameter ordinals; includes an enum-ish param
+// whose update() derives another port (must not clobber restored values).
+namespace
+{
+struct MixedFx
+{
+  static consteval auto name() { return "MixedFx"; }
+  static consteval auto c_name() { return "mixed_fx"; }
+  static consteval auto uuid() { return "aa1541cf-3f2b-4b8e-9f0d-77f5f7f0c9e2"; }
+
+  struct
+  {
+    struct
+    {
+      static consteval auto name() { return "In"; }
+      const float** samples{};
+      int channels{};
+    } audio;
+
+    struct
+    {
+      static consteval auto name() { return "Mix"; }
+      struct range
+      {
+        float min = 0.f, max = 1.f, init = 1.f;
+      };
+      float value = 1.f;
+    } mix;
+
+    struct
+    {
+      static consteval auto name() { return "Freq"; }
+      struct range
+      {
+        float min = 20.f, max = 20000.f, init = 440.f;
+      };
+      float value = 440.f;
+    } freq;
+
+    struct
+    {
+      static consteval auto name() { return "Mode"; }
+      struct range
+      {
+        int min = 0, max = 3, init = 0;
+      };
+      int value = 0;
+      // Derive-style handler: on change, repaint Mix (like a preset would).
+      void update(struct MixedFx& self)
+      {
+        self.inputs.mix.value = 1.f;
+        self.mode_updates++;
+      }
+    } mode;
+  } inputs;
+  struct
+  {
+  } outputs;
+
+  int mode_updates = 0;
+  void operator()(int) { }
+};
+}
+
+TEST_CASE("clap state: mixed-port shape round-trips by id, not ordinal",
+          "[state]")
+{
+  auto fx = std::make_unique<avnd_clap::SimpleAudioEffect<MixedFx>>(&fake_host);
+  auto* params = fx->get_params();
+
+  // Raw ids as advertised.
+  clap_param_info_t i0{}, i1{}, i2{};
+  REQUIRE(params->get_info(fx.get(), 0, &i0)); // Mix
+  REQUIRE(params->get_info(fx.get(), 1, &i1)); // Freq
+  REQUIRE(params->get_info(fx.get(), 2, &i2)); // Mode
+  REQUIRE(i0.id != 0); // audio + midi come first: raw != ordinal
+
+  auto& obj = fx->effect.effect;
+  obj.inputs.mix.value = 0.109f;
+  obj.inputs.freq.value = 1234.f;
+  obj.inputs.mode.value = 2;
+
+  memory_streams mem;
+  REQUIRE(fx->state_ext.save(fx.get(), &mem.out));
+
+  // Fresh instance: restore and verify every param through the vtable.
+  auto fx2 = std::make_unique<avnd_clap::SimpleAudioEffect<MixedFx>>(&fake_host);
+  auto& obj2 = fx2->effect.effect;
+  const int updates_before = obj2.mode_updates;
+  REQUIRE(fx2->state_ext.load(fx2.get(), &mem.in));
+
+  double v = 0.;
+  REQUIRE(params->get_value(fx2.get(), i0.id, &v));
+  REQUIRE(v == Catch::Approx(0.109).margin(1e-4));
+  REQUIRE(params->get_value(fx2.get(), i1.id, &v));
+  REQUIRE(v == Catch::Approx(1234.));
+  REQUIRE(params->get_value(fx2.get(), i2.id, &v));
+  REQUIRE(v == Catch::Approx(2.));
+
+  // A restore is a bulk assignment: no update() dispatch, so the Mode
+  // handler must NOT have run and cannot clobber the restored Mix.
+  REQUIRE(obj2.mode_updates == updates_before);
+  REQUIRE(obj2.inputs.mix.value == Catch::Approx(0.109f).margin(1e-4));
+}

@@ -598,7 +598,10 @@ struct Component final
         double param = 0.f;
         if(streamer.readDouble(param) == false)
           return false;
-        // map_control_from_01 is deleted for non-scalar controls.
+        // map_control_from_01 is deleted for non-scalar controls. A state
+        // restore is an opaque bulk assignment, not a host gesture: update()
+        // is not dispatched here (derive-style handlers would clobber other
+        // freshly restored values in save-order-dependent ways).
         if constexpr(requires { avnd::map_control_from_01<C>(param); })
           assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
         return true;
@@ -610,13 +613,6 @@ struct Component final
       if(!ok)
         return Steinberg::kResultFalse;
 
-      // Restored values are host-driven changes: dispatch update() on the
-      // instance the values landed in.
-      for(auto st : this->effect.full_state())
-      {
-        avnd::update_controls(st);
-        break;
-      }
     }
 
     if constexpr(avnd::has_custom_state<T>)

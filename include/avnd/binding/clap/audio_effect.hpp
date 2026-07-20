@@ -457,7 +457,7 @@ struct SimpleAudioEffect : clap_plugin
   //   param_count x f64 normalized values (port order)
   //   u64 blob_size  [blob bytes]
   static constexpr uint32_t state_magic = 0x41564353; // 'AVCS'
-  static constexpr uint32_t state_version = 1;
+  static constexpr uint32_t state_version = 2;
   static constexpr uint64_t state_max_blob = 1024 * 1024 * 1024; // sanity
 
   static bool
@@ -500,9 +500,14 @@ struct SimpleAudioEffect : clap_plugin
     bool ok = true;
     if constexpr(parameter_count > 0)
     {
+      // (raw id, plain value) pairs: the same id and value space as the
+      // params extension, robust to parameter reordering across versions.
+      std::size_t ordinal = 0;
       param_in_info::for_all(controls_inputs(), [&]<typename C>(C& field) {
+        const uint32_t id = uint32_t(param_in_info::index_map[ordinal++]);
         double v{};
-        if_possible(v = avnd::map_control_to_01<C>(field.value));
+        if_possible(v = avnd::map_control_to_double(field));
+        ok &= write_all(os, &id, sizeof(id));
         ok &= write_all(os, &v, sizeof(v));
       });
       if(!ok)
@@ -547,22 +552,27 @@ struct SimpleAudioEffect : clap_plugin
     if(stored_params > 65536)
       return false;
 
-    // Parameters first (tier 0): apply the common ordinal prefix.
-    std::vector<double> values(stored_params);
-    if(stored_params > 0 && !read_exact(is, values.data(), stored_params * 8))
-      return false;
-    for(auto state : this->effect.full_state())
+    // Parameters first (tier 0): (raw id, plain value) pairs; unknown ids
+    // are skipped (parameter removed in a newer version). A state restore
+    // is an opaque bulk assignment, not a host gesture: update() callbacks
+    // are NOT dispatched here -- a derive-style handler (one that rewrites
+    // other ports) would otherwise clobber freshly restored values in
+    // save-order-dependent ways. Processors that derive internal state
+    // from their ports reconcile in their custom-state load.
+    for(uint32_t k = 0; k < stored_params; k++)
     {
-      std::size_t i = 0;
-      param_in_info::for_all(state.inputs, [&]<typename C>(C& field) {
-        if(i < values.size())
-        {
-          if constexpr(requires { avnd::map_control_from_01<C>(values[i]); })
-            field.value = avnd::map_control_from_01<C>(values[i]);
-        }
-        i++;
-      });
-      avnd::update_controls(state);
+      uint32_t id{};
+      double v{};
+      if(!read_exact(is, &id, sizeof(id)) || !read_exact(is, &v, sizeof(v)))
+        return false;
+      for(auto state : this->effect.full_state())
+        param_in_info::for_nth_raw(
+            state.inputs, int(id), [&]<typename C>(C& field) {
+              if constexpr(requires {
+                             field.value = avnd::map_control_from_double<C>(v);
+                           })
+                field.value = avnd::map_control_from_double<C>(v);
+            });
     }
 
     // Then the custom blob (tier 1): it wins where the two overlap.

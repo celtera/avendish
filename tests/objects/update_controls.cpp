@@ -125,7 +125,7 @@ TEST_CASE("vst3: apply_control fires update() once with the new value", "[update
   REQUIRE(obj.observed == Catch::Approx(75.f));
 }
 
-TEST_CASE("clap: state load dispatches update() with restored values", "[update]")
+TEST_CASE("clap: state load restores values without update() dispatch", "[update]")
 {
   auto fx = std::make_unique<avnd_clap::SimpleAudioEffect<UpdateFx>>(&fake_host);
   auto& obj = fx->effect.effect;
@@ -163,8 +163,8 @@ TEST_CASE("clap: state load dispatches update() with restored values", "[update]
   REQUIRE(fx->state_ext.load(fx.get(), &mem.in));
 
   REQUIRE(obj.inputs.freq.value == Catch::Approx(80.f));
-  REQUIRE(obj.observed == Catch::Approx(80.f)); // update() saw the restore
-  REQUIRE(obj.update_count > base);
+  // A restore is an opaque bulk assignment: no update() dispatch.
+  REQUIRE(obj.update_count == base);
 }
 
 TEST_CASE("clap: params flush dispatches update() on a deactivated plug-in",
