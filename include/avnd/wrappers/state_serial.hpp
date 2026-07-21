@@ -46,6 +46,9 @@
 
 #include <boost/pfr.hpp>
 
+#include <array>
+#include <tuple>
+
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -85,6 +88,73 @@ concept list_container = requires(T t) {
   t.end();
 } && !contiguous_container<T>;
 
+// A type that only borrows its data: trivially copyable, so it would be
+// written out as raw bytes, and those bytes are an address that means
+// nothing in the process that reads them back.
+template <typename T>
+concept view_like = requires(const T& t) {
+  t.data();
+  { t.size() } -> std::convertible_to<std::size_t>;
+} && std::is_pointer_v<decltype(std::declval<const T&>().data())>
+     && !requires(T& t) { t.resize(std::size_t{}); };
+
+template <typename T>
+constexpr bool borrows_memory();
+
+template <typename T, std::size_t... I>
+constexpr bool any_member_borrows(std::index_sequence<I...>)
+{
+  return (borrows_memory<boost::pfr::tuple_element_t<I, T>>() || ...);
+}
+
+// Persisted state has to own what it describes. Pointers, references and
+// views survive a memcpy syntactically and mean nothing once reloaded, so
+// they are refused rather than written into a session file.
+// std::array, pair and tuple carry a std::tuple_size, which the aggregate
+// reflection cannot decompose on every compiler. They are handled through
+// the standard interface instead of being taken apart field by field.
+template <typename T>
+concept tuple_like = requires { std::tuple_size<std::remove_cvref_t<T>>::value; };
+
+// std::array is the one tuple-like type worth supporting: it is a fixed
+// block of elements and, when they are trivially copyable, it is one too.
+// Whether std::pair and std::tuple are trivially copyable differs between
+// standard libraries, so accepting them on that basis would make a state
+// struct compile on one toolchain and not another. They are refused
+// everywhere instead.
+template <typename T>
+inline constexpr bool is_std_array_v = false;
+template <typename T, std::size_t N>
+inline constexpr bool is_std_array_v<std::array<T, N>> = true;
+
+template <typename T>
+constexpr bool borrows_memory()
+{
+  using type = std::remove_cvref_t<T>;
+  if constexpr(std::is_pointer_v<type> || std::is_reference_v<type>)
+    return true;
+  else if constexpr(std::is_array_v<type>)
+    return borrows_memory<std::remove_extent_t<type>>();
+  else if constexpr(tuple_like<type>)
+  {
+    // Same element type throughout for std::array; for pair and tuple this
+    // only inspects the first, which is enough to reject the obvious cases
+    // -- they are not serializable anyway unless trivially copyable.
+    if constexpr(std::tuple_size_v<type> > 0)
+      return borrows_memory<std::tuple_element_t<0, type>>();
+    else
+      return false;
+  }
+  // An aggregate owns whatever it holds; look at what that is.
+  else if constexpr(std::is_aggregate_v<type>)
+    return any_member_borrows<type>(
+        std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+  else if constexpr(view_like<type>)
+    return true;
+  else
+    return false;
+}
+
 template <typename T>
 constexpr bool serializable_impl();
 
@@ -98,13 +168,21 @@ template <typename T>
 constexpr bool serializable_impl()
 {
   using type = std::remove_cvref_t<T>;
-  if constexpr(trivial_member<type>)
+  if constexpr(borrows_memory<type>())
+    return false;
+  else if constexpr(tuple_like<type> && !is_std_array_v<type>)
+    return false;
+  else if constexpr(trivial_member<type>)
     return true;
   else if constexpr(contiguous_container<type>)
     return true;
   else if constexpr(list_container<type>)
     return serializable_impl<typename type::value_type>();
-  else if constexpr(std::is_aggregate_v<type>)
+  // A tuple-like type that got this far is not trivially copyable, so it
+  // would have to be taken apart -- which is exactly what the aggregate
+  // reflection cannot do for them. std::array of non-trivial elements ends
+  // up here, and is left to the processor's own save/load.
+  else if constexpr(std::is_aggregate_v<type> && !tuple_like<type>)
     return aggregate_serializable<type>(
         std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
   else

@@ -8,6 +8,13 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
+#include <map>
+#include <optional>
+#include <string_view>
+#include <tuple>
+#include <utility>
+#include <variant>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -324,4 +331,48 @@ TEST_CASE("state: unnamed state structs work", "[state][schema]")
   REQUIRE_FALSE(res.type_mismatch);
   REQUIRE(out.state.a == 9);
   REQUIRE(out.state.s == "inline");
+}
+
+TEST_CASE("state: borrowed memory is refused", "[state]")
+{
+  // A pointer survives a memcpy syntactically and means nothing in the
+  // process that reads the session back, so these never reach a file.
+  struct has_pointer
+  {
+    int n;
+    float* buffer;
+  };
+  struct has_view
+  {
+    std::string_view sv;
+  };
+  static_assert(!avnd::state::serializable<float*>);
+  static_assert(!avnd::state::serializable<has_pointer>);
+  static_assert(!avnd::state::serializable<std::string_view>);
+  static_assert(!avnd::state::serializable<has_view>);
+
+  // Owning containers that look like views -- data() and size(), no
+  // resize() -- are still fine.
+  static_assert(avnd::state::serializable<std::array<int, 4>>);
+  // A fixed array of non-trivial elements is not: taking it apart needs
+  // reflection that does not work on tuple-like types everywhere.
+  static_assert(!avnd::state::serializable<std::array<std::string, 2>>);
+  SUCCEED();
+}
+
+TEST_CASE("state: the supported type surface", "[state]")
+{
+  // Trivially-copyable types are written as bytes, which covers optional
+  // and variant of trivial alternatives.
+  static_assert(avnd::state::serializable<std::optional<int>>);
+  static_assert(avnd::state::serializable<std::variant<int, float>>);
+
+  // Their non-trivial forms, and the associative/tuple containers, are not
+  // supported: a processor needing one provides save/load on its state.
+  static_assert(!avnd::state::serializable<std::optional<std::string>>);
+  static_assert(!avnd::state::serializable<std::variant<int, std::string>>);
+  static_assert(!avnd::state::serializable<std::map<std::string, int>>);
+  static_assert(!avnd::state::serializable<std::pair<int, float>>);
+  static_assert(!avnd::state::serializable<std::tuple<int, float>>);
+  SUCCEED();
 }
