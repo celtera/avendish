@@ -16,13 +16,12 @@ namespace test_state_objects
 // Reflected: no save/load anywhere.
 struct Plain
 {
-  struct state_t
+  struct
   {
     int mode{7};
     float gain{0.5f};
     std::string label{"init"};
-  };
-  state_t state;
+  } state;
 };
 
 // The state object serializes itself; reflection must not be used.
@@ -53,14 +52,13 @@ struct Versioned
 {
   static constexpr int state_version = 2;
 
-  struct state_t
+  struct
   {
     float cutoff{1000.f};
     int migrated_from{-1};
-  };
-  state_t state;
+  } state;
 
-  static void migrate_state(state_t& s, int from)
+  static void migrate_state(decltype(state)& s, int from)
   {
     s.migrated_from = from;
     if(from < 2)

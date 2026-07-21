@@ -91,7 +91,7 @@ TEST_CASE("state: aggregates round-trip", "[state]")
   REQUIRE(!bytes.empty());
 
   simple out{};
-  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()));
+  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()).ok);
   REQUIRE(out.a == -7);
   REQUIRE(out.b == Catch::Approx(2.5f));
   REQUIRE(out.c == true);
@@ -103,7 +103,7 @@ TEST_CASE("state: nested aggregates round-trip", "[state]")
   const auto bytes = avnd::state::save(in);
 
   nested out{};
-  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()));
+  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()).ok);
   REQUIRE(out.id == 3);
   REQUIRE(out.inner.a == 1);
   REQUIRE(out.inner.b == Catch::Approx(-0.5f));
@@ -119,7 +119,7 @@ TEST_CASE("state: strings and vectors round-trip", "[state]")
   const auto bytes = avnd::state::save(in);
 
   with_containers out;
-  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()));
+  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()).ok);
   REQUIRE(out.name == "hello state");
   REQUIRE(out.blob == std::vector<std::uint8_t>{0, 1, 2, 250, 255});
   REQUIRE(out.numbers == std::vector<int>{-1, 0, 99999});
@@ -133,7 +133,7 @@ TEST_CASE("state: empty containers round-trip", "[state]")
   with_containers out;
   out.name = "clobber me";
   out.numbers = {1, 2, 3};
-  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()));
+  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()).ok);
   REQUIRE(out.name.empty());
   REQUIRE(out.numbers.empty());
 }
@@ -146,7 +146,7 @@ TEST_CASE("state: lists of aggregates round-trip", "[state]")
   const auto bytes = avnd::state::save(in);
 
   with_list out;
-  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()));
+  REQUIRE(avnd::state::load(out, bytes.data(), bytes.size()).ok);
   REQUIRE(out.items.size() == 3);
   REQUIRE(out.items[1].a == 2);
   REQUIRE(out.items[1].b == Catch::Approx(-2.5f));
@@ -154,37 +154,48 @@ TEST_CASE("state: lists of aggregates round-trip", "[state]")
   REQUIRE(out.trailing == 77); // the record after the list is still found
 }
 
-TEST_CASE("state: a member added later keeps its default", "[state][schema]")
+TEST_CASE("state: appending a member keeps its default", "[state][schema]")
 {
   const v1::cfg old{.mode = 5, .gain = 0.25f};
   const auto bytes = avnd::state::save(old);
 
   v2_added::cfg loaded{};
-  REQUIRE(avnd::state::load(loaded, bytes.data(), bytes.size()));
+  const auto res = avnd::state::load(loaded, bytes.data(), bytes.size());
+  REQUIRE(res.ok);
   REQUIRE(loaded.mode == 5);
   REQUIRE(loaded.gain == Catch::Approx(0.25f));
-  REQUIRE(loaded.extra == 42); // untouched default, no migration code
+  REQUIRE(loaded.extra == 42); // appended member keeps its default
+  REQUIRE(res.layout_drift); // but the change is reported
 }
 
-TEST_CASE("state: a removed member is skipped", "[state][schema]")
+TEST_CASE("state: dropping a trailing member skips its record",
+          "[state][schema]")
 {
   const v1::cfg old{.mode = 5, .gain = 0.25f};
   const auto bytes = avnd::state::save(old);
 
   v2_removed::cfg loaded{};
-  REQUIRE(avnd::state::load(loaded, bytes.data(), bytes.size()));
-  REQUIRE(loaded.mode == 5); // the record after the unknown one still lands
+  const auto res = avnd::state::load(loaded, bytes.data(), bytes.size());
+  REQUIRE(res.ok);
+  REQUIRE(loaded.mode == 5); // the surviving member is still read
+  REQUIRE(res.layout_drift); // and the change is reported
 }
 
-TEST_CASE("state: reordering members does not shuffle values", "[state][schema]")
+TEST_CASE("state: reordering members is reported as layout drift",
+          "[state][schema]")
 {
+  // Positional encoding cannot follow a reorder. What it can do is notice:
+  // the layout hash differs, so the caller is told rather than silently
+  // handed values that landed on the wrong members.
   const v1::cfg old{.mode = 5, .gain = 0.25f};
   const auto bytes = avnd::state::save(old);
 
   v2_reordered::cfg loaded{};
-  REQUIRE(avnd::state::load(loaded, bytes.data(), bytes.size()));
-  REQUIRE(loaded.mode == 5);
-  REQUIRE(loaded.gain == Catch::Approx(0.25f));
+  const auto res = avnd::state::load(loaded, bytes.data(), bytes.size());
+  REQUIRE(res.layout_drift);
+  // The two members have different tags-with-sizes, so neither is applied.
+  REQUIRE(loaded.mode == 0);
+  REQUIRE(loaded.gain == Catch::Approx(0.f));
 }
 
 TEST_CASE("state: a member that changed type keeps its default", "[state][schema]")
@@ -193,7 +204,7 @@ TEST_CASE("state: a member that changed type keeps its default", "[state][schema
   const auto bytes = avnd::state::save(old);
 
   v2_retyped::cfg loaded{};
-  REQUIRE(avnd::state::load(loaded, bytes.data(), bytes.size()));
+  REQUIRE(avnd::state::load(loaded, bytes.data(), bytes.size()).ok);
   REQUIRE(loaded.mode == 5);
   // The float bytes are NOT reinterpreted as a string.
   REQUIRE(loaded.gain == "untouched");
@@ -231,7 +242,7 @@ TEST_CASE("state: truncated and corrupt blobs are rejected", "[state]")
 TEST_CASE("state: empty input leaves the target untouched", "[state]")
 {
   simple out{.a = 11, .b = 1.f, .c = true};
-  REQUIRE(avnd::state::load(out, nullptr, 0));
+  REQUIRE(avnd::state::load(out, nullptr, 0).ok);
   REQUIRE(out.a == 11); // nothing said about it, nothing changed
 }
 
@@ -249,4 +260,64 @@ TEST_CASE("state: serializability is detected statically", "[state]")
   // Nested lists resolve too: list -> list -> bytes.
   static_assert(avnd::state::serializable<deep>);
   SUCCEED();
+}
+
+TEST_CASE("state: an unchanged layout reports no drift", "[state][schema]")
+{
+  const v1::cfg a{.mode = 1, .gain = 2.f};
+  const auto bytes = avnd::state::save(a);
+  v1::cfg b{};
+  const auto res = avnd::state::load(b, bytes.data(), bytes.size());
+  REQUIRE(res.ok);
+  REQUIRE_FALSE(res.layout_drift);
+  REQUIRE(b.mode == 1);
+  REQUIRE(b.gain == Catch::Approx(2.f));
+}
+
+TEST_CASE("state: the layout hash distinguishes shapes", "[state][schema]")
+{
+  // Same members, different order or count: different hash.
+  REQUIRE(
+      avnd::state::layout_hash<v1::cfg>()
+      != avnd::state::layout_hash<v2_reordered::cfg>());
+  REQUIRE(
+      avnd::state::layout_hash<v1::cfg>()
+      != avnd::state::layout_hash<v2_added::cfg>());
+  REQUIRE(
+      avnd::state::layout_hash<v1::cfg>()
+      != avnd::state::layout_hash<v2_retyped::cfg>());
+  // Renaming a member without touching its shape is invisible, by design:
+  // positionally the two structs are the same state.
+  struct renamed
+  {
+    int operating_mode{};
+    float level{};
+  };
+  REQUIRE(
+      avnd::state::layout_hash<v1::cfg>() == avnd::state::layout_hash<renamed>());
+}
+
+TEST_CASE("state: unnamed state structs work", "[state][schema]")
+{
+  // The point of positional encoding: state can be declared inline, like
+  // the inputs and outputs groups.
+  struct Host
+  {
+    struct
+    {
+      int a{};
+      std::string s;
+    } state;
+  };
+  Host in;
+  in.state.a = 9;
+  in.state.s = "inline";
+  const auto bytes = avnd::state::save(in.state);
+
+  Host out;
+  const auto res = avnd::state::load(out.state, bytes.data(), bytes.size());
+  REQUIRE(res.ok);
+  REQUIRE_FALSE(res.layout_drift);
+  REQUIRE(out.state.a == 9);
+  REQUIRE(out.state.s == "inline");
 }

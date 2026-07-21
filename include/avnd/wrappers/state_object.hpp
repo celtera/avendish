@@ -14,9 +14,13 @@
  *       struct { std::vector<uint8_t> program; int mode{}; } state;
  *     };
  *
- * Members are saved and restored by name through the reflection-based
- * format in state_serial.hpp, so adding, removing and reordering them does
- * not invalidate existing session data.
+ * Members are saved and restored positionally through the reflection-based
+ * format in state_serial.hpp. Appending members, dropping trailing ones and
+ * changing a member's type are absorbed without any bookkeeping; a change
+ * the layout hash notices but the format cannot interpret on its own --
+ * members reordered or inserted in the middle -- is a layout change, and
+ * loading data across one requires the processor to declare a new
+ * state_version and a migration.
  *
  * A processor that wants to control its own bytes defines save/load on the
  * state object; those take precedence over reflection:
@@ -145,7 +149,24 @@ bool load_object_state(
   }
   else
   {
-    ok = avnd::state::load(obj.state, data, n);
+    const auto res = avnd::state::load(obj.state, data, n);
+    ok = res.ok;
+    // The struct's layout changed since this data was written. Whatever
+    // still lined up has been applied, but the rest cannot be recovered by
+    // position alone -- only the processor knows what moved where. Without a
+    // migration to say so, refuse rather than hand back a half-filled state.
+    if(ok && res.layout_drift)
+    {
+      if constexpr(has_migration<T>)
+      {
+        if(written_version >= current)
+          return false; // drift with nothing to migrate from
+      }
+      else
+      {
+        return false;
+      }
+    }
   }
 
   if(!ok)
