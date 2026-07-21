@@ -15,12 +15,13 @@
  *     };
  *
  * Members are saved and restored positionally through the reflection-based
- * format in state_serial.hpp. Appending members, dropping trailing ones and
- * changing a member's type are absorbed without any bookkeeping; a change
- * the layout hash notices but the format cannot interpret on its own --
- * members reordered or inserted in the middle -- is a layout change, and
- * loading data across one requires the processor to declare a new
- * state_version and a migration.
+ * format in state_serial.hpp, so state members -- like inlets -- are added
+ * at the end. Appending, dropping trailing members and changing a member's
+ * type are absorbed without any bookkeeping. Reordering or inserting in the
+ * middle is detected and refused unless the processor declares a new
+ * state_version together with a migration; the one edit nothing can detect
+ * is swapping two members of the identical type, which is exactly what the
+ * version is there to cover.
  *
  * A processor that wants to control its own bytes defines save/load on the
  * state object; those take precedence over reflection:
@@ -151,16 +152,16 @@ bool load_object_state(
   {
     const auto res = avnd::state::load(obj.state, data, n);
     ok = res.ok;
-    // The struct's layout changed since this data was written. Whatever
-    // still lined up has been applied, but the rest cannot be recovered by
-    // position alone -- only the processor knows what moved where. Without a
-    // migration to say so, refuse rather than hand back a half-filled state.
-    if(ok && res.layout_drift)
+    // A record described something other than the member at its position, so
+    // the members after it cannot be trusted either -- only the processor
+    // knows what moved where. Members merely appended since the data was
+    // written are not this: those load cleanly and keep their defaults.
+    if(ok && res.type_mismatch)
     {
       if constexpr(has_migration<T>)
       {
         if(written_version >= current)
-          return false; // drift with nothing to migrate from
+          return false; // nothing to migrate from
       }
       else
       {

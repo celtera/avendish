@@ -177,3 +177,39 @@ TEST_CASE("state object: unversioned processors round-trip at version 0", "[stat
   REQUIRE(avnd::load_object_state(b, blob.data(), blob.size(), 0));
   REQUIRE(b.state.mode == 3);
 }
+
+TEST_CASE("state object: appending a member does not need a migration",
+          "[state][schema]")
+{
+  // The documented rule for both state members and inlets: append at the
+  // end. Doing so must load cleanly on a processor that declares no
+  // migration at all.
+  struct Before
+  {
+    struct
+    {
+      int mode{};
+      float gain{};
+    } state;
+  };
+  struct After
+  {
+    struct
+    {
+      int mode{};
+      float gain{};
+      int added{99};
+    } state;
+  };
+
+  Before a;
+  a.state.mode = 5;
+  a.state.gain = 0.5f;
+  const auto blob = avnd::save_object_state(a);
+
+  After b;
+  REQUIRE(avnd::load_object_state(b, blob.data(), blob.size(), 0));
+  REQUIRE(b.state.mode == 5);
+  REQUIRE(b.state.gain == Catch::Approx(0.5f));
+  REQUIRE(b.state.added == 99);
+}

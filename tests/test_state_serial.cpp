@@ -165,7 +165,8 @@ TEST_CASE("state: appending a member keeps its default", "[state][schema]")
   REQUIRE(loaded.mode == 5);
   REQUIRE(loaded.gain == Catch::Approx(0.25f));
   REQUIRE(loaded.extra == 42); // appended member keeps its default
-  REQUIRE(res.layout_drift); // but the change is reported
+  REQUIRE(res.layout_changed); // the change is visible, but benign
+  REQUIRE_FALSE(res.type_mismatch);
 }
 
 TEST_CASE("state: dropping a trailing member skips its record",
@@ -178,7 +179,8 @@ TEST_CASE("state: dropping a trailing member skips its record",
   const auto res = avnd::state::load(loaded, bytes.data(), bytes.size());
   REQUIRE(res.ok);
   REQUIRE(loaded.mode == 5); // the surviving member is still read
-  REQUIRE(res.layout_drift); // and the change is reported
+  REQUIRE(res.layout_changed);
+  REQUIRE_FALSE(res.type_mismatch); // dropping a trailing member is benign
 }
 
 TEST_CASE("state: reordering members is reported as layout drift",
@@ -192,7 +194,7 @@ TEST_CASE("state: reordering members is reported as layout drift",
 
   v2_reordered::cfg loaded{};
   const auto res = avnd::state::load(loaded, bytes.data(), bytes.size());
-  REQUIRE(res.layout_drift);
+  REQUIRE(res.type_mismatch);
   // The two members have different tags-with-sizes, so neither is applied.
   REQUIRE(loaded.mode == 0);
   REQUIRE(loaded.gain == Catch::Approx(0.f));
@@ -269,7 +271,8 @@ TEST_CASE("state: an unchanged layout reports no drift", "[state][schema]")
   v1::cfg b{};
   const auto res = avnd::state::load(b, bytes.data(), bytes.size());
   REQUIRE(res.ok);
-  REQUIRE_FALSE(res.layout_drift);
+  REQUIRE_FALSE(res.layout_changed);
+  REQUIRE_FALSE(res.type_mismatch);
   REQUIRE(b.mode == 1);
   REQUIRE(b.gain == Catch::Approx(2.f));
 }
@@ -317,7 +320,8 @@ TEST_CASE("state: unnamed state structs work", "[state][schema]")
   Host out;
   const auto res = avnd::state::load(out.state, bytes.data(), bytes.size());
   REQUIRE(res.ok);
-  REQUIRE_FALSE(res.layout_drift);
+  REQUIRE_FALSE(res.layout_changed);
+  REQUIRE_FALSE(res.type_mismatch);
   REQUIRE(out.state.a == 9);
   REQUIRE(out.state.s == "inline");
 }

@@ -30,9 +30,10 @@
  * shape changes it); the second is what `state_version` and `migrate_state`
  * are for.
  *
- * On a layout-hash mismatch the reader does not guess: it decodes what
- * still matches record-by-record and reports the drift, so the caller can
- * refuse the load when the processor has not declared a migration.
+ * A record that does not describe the member at its position is reported as
+ * a type mismatch, which tells the caller the remaining positions cannot be
+ * trusted; it refuses the load unless the processor declared a migration.
+ * Appending members and dropping trailing ones are not mismatches.
  *
  * Supported members, recursively: trivially-copyable types, contiguous
  * containers of them (std::string, std::vector<int>, ...), aggregates, and
@@ -340,10 +341,16 @@ struct reader
 struct load_result
 {
   bool ok{false};
-  // The data was written from a struct whose layout differs from this one:
-  // records still matched by position and tag were applied, the rest were
-  // left at their defaults.
-  bool layout_drift{false};
+
+  // A record did not describe the member sitting at its position. Members
+  // appended since, and records left over from members since removed, do
+  // *not* set this: only a genuine disagreement about what lives where,
+  // which means the remaining positions can no longer be trusted.
+  bool type_mismatch{false};
+
+  // The layout hash differed. True for any structural edit, including the
+  // benign ones, so it is informational rather than a reason to refuse.
+  bool layout_changed{false};
 
   explicit operator bool() const noexcept { return ok; }
 };
@@ -352,7 +359,8 @@ template <typename T>
 bool decode_value(reader& r, T& v, std::size_t payload_size);
 
 template <typename T>
-bool decode_fields(reader& r, T& agg, std::size_t payload_size, bool& drift)
+bool decode_fields(
+    reader& r, T& agg, std::size_t payload_size, bool& mismatch, bool& changed)
 {
   const std::size_t end = r.pos + payload_size;
 
@@ -364,11 +372,11 @@ bool decode_fields(reader& r, T& agg, std::size_t payload_size, bool& drift)
   if(fmt != format_version)
     return false;
   if(hash != layout_hash_of<T>())
-    drift = true;
+    changed = true;
 
   constexpr std::size_t fields = boost::pfr::tuple_size_v<T>;
   if(count != fields)
-    drift = true;
+    changed = true;
 
   for(std::size_t index = 0; index < count && r.ok && r.pos < end; index++)
   {
@@ -393,7 +401,7 @@ bool decode_fields(reader& r, T& agg, std::size_t payload_size, bool& drift)
             // reinterpreted.
             if(t != tag_of<field_t>() || k != std::uint8_t(kind_of<field_t>()))
             {
-              drift = true;
+              mismatch = true;
               return;
             }
             decode_value(r, boost::pfr::get<I>(agg), size);
@@ -447,8 +455,8 @@ bool decode_value(reader& r, T& v, std::size_t payload_size)
   }
   else
   {
-    bool nested_drift = false;
-    return decode_fields(r, v, payload_size, nested_drift);
+    bool nested_mismatch = false, nested_changed = false;
+    return decode_fields(r, v, payload_size, nested_mismatch, nested_changed);
   }
 }
 
@@ -474,12 +482,12 @@ template <typename S>
 load_result load(S& s, const std::uint8_t* data, std::size_t n)
 {
   if(n == 0)
-    return {.ok = true, .layout_drift = false};
+    return {.ok = true};
   if(!data)
     return {};
   reader r{data, n, 0, true};
   load_result res;
-  res.ok = decode_fields(r, s, n, res.layout_drift);
+  res.ok = decode_fields(r, s, n, res.type_mismatch, res.layout_changed);
   return res;
 }
 
