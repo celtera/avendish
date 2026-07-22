@@ -227,11 +227,9 @@ struct SimpleAudioEffect : clap_plugin
     // an empty std::function call terminates under -fno-exceptions.
     avnd::wire_fallback_callbacks(effect);
 
-    // Polyphonic containers keep their instances in a vector populated by
-    // init_channels at activation -- but hosts drive the state and parameter
-    // entry points on deactivated plug-ins (state loads, main-thread flush),
-    // and every full_state() consumer silently does nothing on an empty
-    // container. Guarantee one live instance from construction.
+    // full_state() iterates the instance vector, which init_channels only
+    // fills at activation; hosts drive state and parameters (loads,
+    // main-thread flush) while deactivated, so keep one instance always live.
     effect.init_channels(1, 1);
   }
 
@@ -599,14 +597,11 @@ struct SimpleAudioEffect : clap_plugin
 
   void process_param(const clap_event_param_value& p)
   {
-    // Parameter ids are the RAW field indices (as advertised by
-    // get_param_info) and values are PLAIN, in the [min_value, max_value]
-    // range of the param info -- matching get_value. Apply to every
-    // (per-channel) instance; guard the whole assignment, as the conversion
-    // is also well-formed for controls whose value cannot be assigned from
-    // it, such as the optional payload of an impulse button.
-    // Ports with an update() callback get it invoked with the new value in
-    // place, like in init_controls.
+    // Ids are raw field indices and values are plain [min, max], matching
+    // get_param_info / get_value. The assignment is guarded rather than the
+    // conversion: the conversion is well-formed even where its result is not
+    // assignable (an impulse button's optional payload). update() runs per
+    // change, as in init_controls.
     for(auto state : this->effect.full_state())
       param_in_info::for_nth_raw(
           state.inputs, p.param_id, [&]<typename C>(C& field) {
