@@ -120,6 +120,24 @@ function(avnd_make_max)
     set_source_files_properties("${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_max.cpp" PROPERTIES COMPILE_FLAGS -Wno-unreachable-code)
   endif()
 
+  # Max externals must link the static CRT (/MT), which the MSVC_RUNTIME_LIBRARY
+  # property below only delivers when CMP0091 is NEW in the scope that creates
+  # the target -- i.e. in the consumer's CMakeLists, which a function here cannot
+  # change. If the consumer pins an older policy (cmake_minimum_required < 3.15,
+  # or an explicit OLD), the request is silently ignored and the external ships
+  # /MD, which corrupts Max's heap at load. Warn loudly rather than fail quietly.
+  if(MSVC)
+    cmake_policy(GET CMP0091 _avnd_cmp0091)
+    if(NOT _avnd_cmp0091 STREQUAL "NEW")
+      message(WARNING
+        "Avendish Max backend: policy CMP0091 is not NEW in this scope, so the "
+        "static-CRT (/MT) request for '${AVND_C_NAME}' will be ignored and the "
+        "external will build /MD -- which crashes Max on load. Raise the "
+        "consuming project's cmake_minimum_required to >= 3.15 (3.25 recommended) "
+        "or set(CMP0091 NEW) before creating targets.")
+    endif()
+  endif()
+
   set(AVND_FX_TARGET "${AVND_TARGET}_max")
   add_library(${AVND_FX_TARGET} MODULE)
 
