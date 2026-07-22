@@ -51,7 +51,8 @@
 
 #include <avnd/concepts/generic.hpp>
 
-#include <boost/pfr.hpp>
+#include <avnd/common/aggregates.hpp>
+#include <avnd/common/for_nth.hpp>
 
 #include <array>
 #include <cstdint>
@@ -117,7 +118,7 @@ constexpr bool borrows_memory();
 template <typename T, std::size_t... I>
 constexpr bool any_member_borrows(std::index_sequence<I...>)
 {
-  return (borrows_memory<boost::pfr::tuple_element_t<I, T>>() || ...);
+  return (borrows_memory<avnd::pfr::tuple_element_t<I, T>>() || ...);
 }
 
 template <typename T, std::size_t... I>
@@ -161,7 +162,7 @@ constexpr bool borrows_memory()
     return true;
   else if constexpr(std::is_aggregate_v<type>)
     return any_member_borrows<type>(
-        std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+        std::make_index_sequence<avnd::pfr::tuple_size_v<type>>{});
   else
     return false;
 }
@@ -172,7 +173,7 @@ constexpr bool serializable_impl();
 template <typename T, std::size_t... I>
 constexpr bool aggregate_serializable(std::index_sequence<I...>)
 {
-  return (serializable_impl<boost::pfr::tuple_element_t<I, T>>() && ...);
+  return (serializable_impl<avnd::pfr::tuple_element_t<I, T>>() && ...);
 }
 
 template <typename T, std::size_t... I>
@@ -216,7 +217,7 @@ constexpr bool serializable_impl()
     return true;
   else if constexpr(std::is_aggregate_v<type>)
     return aggregate_serializable<type>(
-        std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+        std::make_index_sequence<avnd::pfr::tuple_size_v<type>>{});
   else
     return false;
 }
@@ -300,7 +301,7 @@ template <typename T, std::size_t... I>
 constexpr std::uint32_t
 layout_hash_fields(std::uint32_t h, std::index_sequence<I...>)
 {
-  ((h = layout_hash_of<boost::pfr::tuple_element_t<I, T>>(h)), ...);
+  ((h = layout_hash_of<avnd::pfr::tuple_element_t<I, T>>(h)), ...);
   return h;
 }
 
@@ -352,14 +353,14 @@ constexpr std::uint32_t layout_hash_of(std::uint32_t h)
   // shapes still feed the hash so that {int, float} and {float, int} differ.
   else if constexpr(std::is_aggregate_v<type> && !std::is_array_v<type>)
     return layout_hash_fields<type>(
-        hash_step(h, std::uint32_t(boost::pfr::tuple_size_v<type>)),
-        std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+        hash_step(h, std::uint32_t(avnd::pfr::tuple_size_v<type>)),
+        std::make_index_sequence<avnd::pfr::tuple_size_v<type>>{});
   else if constexpr(trivial_member<type>)
     return hash_step(h, std::uint32_t(sizeof(type)));
   else
     return layout_hash_fields<type>(
-        hash_step(h, std::uint32_t(boost::pfr::tuple_size_v<type>)),
-        std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+        hash_step(h, std::uint32_t(avnd::pfr::tuple_size_v<type>)),
+        std::make_index_sequence<avnd::pfr::tuple_size_v<type>>{});
 }
 
 // ---------------------------------------------------------------------------
@@ -418,11 +419,11 @@ void encode_fields(writer& w, const T& agg)
 {
   w.pod(format_version);
   w.pod(layout_hash_of<T>());
-  w.pod(std::uint16_t(boost::pfr::tuple_size_v<T>));
+  w.pod(std::uint16_t(avnd::pfr::tuple_size_v<T>));
 
-  [&]<std::size_t... I>(std::index_sequence<I...>) {
-    (encode_record(w, boost::pfr::get<I>(agg)), ...);
-  }(std::make_index_sequence<boost::pfr::tuple_size_v<T>>{});
+  avnd::for_each_field_ref(agg, [&](const auto& field) {
+    encode_record(w, field);
+  });
 }
 
 template <typename T>
@@ -584,42 +585,49 @@ bool decode_fields(
   if(hash != layout_hash_of<T>())
     changed = true;
 
-  constexpr std::size_t fields = boost::pfr::tuple_size_v<T>;
+  constexpr std::size_t fields = avnd::pfr::tuple_size_v<T>;
   if(count != fields)
     changed = true;
 
-  for(std::size_t index = 0; index < count && r.ok && r.pos < end; index++)
+  // One record per field, in declaration order. A record whose shape does
+  // not match its field is skipped (mismatch); a field with no record left
+  // keeps its default (appended member).
+  std::size_t index = 0;
+  avnd::for_each_field_ref(agg, [&](auto& field) {
+    if(!r.ok || index >= count)
+    {
+      index++;
+      return;
+    }
+    tag t{};
+    std::uint8_t k{};
+    std::uint32_t size{};
+    if(!(r.pod(t) && r.pod(k) && r.pod(size) && r.has(size)))
+    {
+      r.ok = false;
+      return;
+    }
+    const std::size_t payload_start = r.pos;
+    using field_t = std::remove_cvref_t<decltype(field)>;
+    if(t != tag_of<field_t>() || k != std::uint8_t(kind_of<field_t>()))
+      mismatch = true;
+    else
+      decode_value(r, field, size);
+    r.pos = payload_start;
+    r.skip(size);
+    index++;
+  });
+
+  // Records past the last field (members removed since) are skipped.
+  while(r.ok && index < count && r.pos < end)
   {
     tag t{};
     std::uint8_t k{};
     std::uint32_t size{};
-    if(!r.pod(t) || !r.pod(k) || !r.pod(size))
+    if(!(r.pod(t) && r.pod(k) && r.pod(size) && r.has(size)))
       return false;
-    if(!r.has(size))
-      return false;
-
-    const std::size_t payload_start = r.pos;
-
-    [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (
-          [&] {
-            if(I != index)
-              return;
-            using field_t = boost::pfr::tuple_element_t<I, T>;
-            if(t != tag_of<field_t>() || k != std::uint8_t(kind_of<field_t>()))
-            {
-              mismatch = true;
-              return;
-            }
-            decode_value(r, boost::pfr::get<I>(agg), size);
-          }(),
-          ...);
-    }(std::make_index_sequence<fields>{});
-
-    // Trailing records, mismatched ones and partially-read ones all resume
-    // at the next record.
-    r.pos = payload_start;
     r.skip(size);
+    index++;
   }
   return r.ok;
 }
