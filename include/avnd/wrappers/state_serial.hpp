@@ -19,84 +19,97 @@
  *  - appending a member: older data simply has fewer records, and the new
  *    member keeps its default;
  *  - dropping trailing members: the extra records are skipped;
- *  - a member whose type changed: the record no longer matches the member
+ *  - a member whose type changed: the record no longer describes the member
  *    at that position -- including an int becoming a float, which the
  *    scalar kind distinguishes despite the identical width -- so it is
  *    skipped instead of being reinterpreted.
- *
- * What it cannot see is a change that leaves the layout identical -- two
- * members of the same type swapped, or a member's *meaning* changed. The
- * layout hash catches the first class (any change of field count, order or
- * shape changes it); the second is what `state_version` and `migrate_state`
- * are for.
  *
  * A record that does not describe the member at its position is reported as
  * a type mismatch, which tells the caller the remaining positions cannot be
  * trusted; it refuses the load unless the processor declared a migration.
  * Appending members and dropping trailing ones are not mismatches.
  *
- * Supported members, recursively: trivially-copyable types, contiguous
- * containers of them (std::string, std::vector<int>, ...), aggregates, and
- * lists of any of those.
+ * The one edit nothing here can see is a swap of two members of the
+ * identical type, or a change in what a member *means*: that is what
+ * state_version and migrate_state are for.
+ *
+ * Member types are classified with the same concepts the value bindings
+ * use (avnd/concepts/generic.hpp), so anything a processor may carry is
+ * covered: scalars and enums, strings, vectors and other list containers,
+ * sets and maps, optionals, variants, pairs and tuples, fixed arrays,
+ * aggregates, and any nesting of those.
+ *
+ * What is refused, at compile time: anything that only *borrows* its data.
+ * A pointer, reference or view is trivially copyable, so it would be
+ * written out as an address that means nothing to the process reading it
+ * back. A processor needing one provides save/load on its state instead.
  *
  * Byte order is native: writer and reader are the same binary. Sizes and
  * tags are fixed-width so a foreign-endian reader can at least skip records
  * rather than misparse them.
  */
 
+#include <avnd/concepts/generic.hpp>
+
 #include <boost/pfr.hpp>
 
 #include <array>
-#include <tuple>
-
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <tuple>
 #include <type_traits>
+#include <utility>
+#include <variant>
 #include <vector>
 
 namespace avnd::state
 {
 enum class tag : std::uint8_t
 {
-  raw = 0,       // trivially copyable: payload is the object's bytes
-  bytes = 1,     // contiguous container of trivially copyable elements
-  aggregate = 2, // nested records, one per field
-  list = 3,      // u32 count followed by that many encoded elements
-  unknown = 255
+  raw = 0,        // trivially copyable: payload is the object's bytes
+  bytes = 1,      // contiguous block of trivially copyable elements
+  aggregate = 2,  // nested records, one per field
+  list = 3,       // u32 count, then that many encoded elements
+  optional = 4,   // u8 engaged, then the value if engaged
+  variant = 5,    // u32 alternative index, then that alternative
+  map = 6,        // u32 count, then key/value pairs
+  set = 7,        // u32 count, then keys
+  tuple = 8,      // the elements in order, no count
+  fixed_array = 9 // u32 count, then that many elements
 };
 
 // ---------------------------------------------------------------------------
-// Type classification
+// Classification.
+//
+// Order matters: a std::string is span_ish and list_ish, a std::array is
+// span_ish and tuple_ish, so the more specific test comes first.
 
 template <typename T>
 concept trivial_member = std::is_trivially_copyable_v<std::remove_cvref_t<T>>;
 
 template <typename T>
-concept contiguous_container = requires(T t) {
-  { t.size() } -> std::convertible_to<std::size_t>;
-  t.resize(std::size_t{});
+concept byte_block = avnd::vector_ish<T> && requires(T t) {
   t.data();
-} && trivial_member<std::remove_cvref_t<decltype(*std::declval<T&>().data())>>;
+} && trivial_member<typename std::remove_cvref_t<T>::value_type>;
 
+// A string we own. std::string_view is string_ish too, but it borrows its
+// characters, so it must not take this path.
 template <typename T>
-concept list_container = requires(T t) {
-  { t.size() } -> std::convertible_to<std::size_t>;
-  t.clear();
-  t.emplace_back();
-  t.begin();
-  t.end();
-} && !contiguous_container<T>;
+concept string_member = avnd::string_ish<T> && requires(T& t) {
+  t.resize(std::size_t{});
+  { t.data() } -> std::convertible_to<const char*>;
+};
 
-// A type that only borrows its data: trivially copyable, so it would be
-// written out as raw bytes, and those bytes are an address that means
-// nothing in the process that reads them back.
+// A type that only borrows: data() is a pointer and the size is not ours to
+// change, so the bytes we would store are an address.
 template <typename T>
 concept view_like = requires(const T& t) {
   t.data();
   { t.size() } -> std::convertible_to<std::size_t>;
 } && std::is_pointer_v<decltype(std::declval<const T&>().data())>
-     && !requires(T& t) { t.resize(std::size_t{}); };
+     && !requires(T& t) { t.resize(std::size_t{}); }
+     && !avnd::tuple_ish<std::remove_cvref_t<T>>;
 
 template <typename T>
 constexpr bool borrows_memory();
@@ -107,25 +120,17 @@ constexpr bool any_member_borrows(std::index_sequence<I...>)
   return (borrows_memory<boost::pfr::tuple_element_t<I, T>>() || ...);
 }
 
-// Persisted state has to own what it describes. Pointers, references and
-// views survive a memcpy syntactically and mean nothing once reloaded, so
-// they are refused rather than written into a session file.
-// std::array, pair and tuple carry a std::tuple_size, which the aggregate
-// reflection cannot decompose on every compiler. They are handled through
-// the standard interface instead of being taken apart field by field.
-template <typename T>
-concept tuple_like = requires { std::tuple_size<std::remove_cvref_t<T>>::value; };
+template <typename T, std::size_t... I>
+constexpr bool any_element_borrows(std::index_sequence<I...>)
+{
+  return (borrows_memory<std::tuple_element_t<I, T>>() || ...);
+}
 
-// std::array is the one tuple-like type worth supporting: it is a fixed
-// block of elements and, when they are trivially copyable, it is one too.
-// Whether std::pair and std::tuple are trivially copyable differs between
-// standard libraries, so accepting them on that basis would make a state
-// struct compile on one toolchain and not another. They are refused
-// everywhere instead.
-template <typename T>
-inline constexpr bool is_std_array_v = false;
-template <typename T, std::size_t N>
-inline constexpr bool is_std_array_v<std::array<T, N>> = true;
+template <typename T, std::size_t... I>
+constexpr bool any_alternative_borrows(std::index_sequence<I...>)
+{
+  return (borrows_memory<std::variant_alternative_t<I, T>>() || ...);
+}
 
 template <typename T>
 constexpr bool borrows_memory()
@@ -135,22 +140,28 @@ constexpr bool borrows_memory()
     return true;
   else if constexpr(std::is_array_v<type>)
     return borrows_memory<std::remove_extent_t<type>>();
-  else if constexpr(tuple_like<type>)
-  {
-    // Same element type throughout for std::array; for pair and tuple this
-    // only inspects the first, which is enough to reject the obvious cases
-    // -- they are not serializable anyway unless trivially copyable.
-    if constexpr(std::tuple_size_v<type> > 0)
-      return borrows_memory<std::tuple_element_t<0, type>>();
-    else
-      return false;
-  }
-  // An aggregate owns whatever it holds; look at what that is.
+  else if constexpr(string_member<type>)
+    return false;
+  else if constexpr(avnd::optional_ish<type>)
+    return borrows_memory<typename type::value_type>();
+  else if constexpr(avnd::variant_ish<type>)
+    return any_alternative_borrows<type>(
+        std::make_index_sequence<std::variant_size_v<type>>{});
+  else if constexpr(avnd::map_ish<type>)
+    return borrows_memory<typename type::key_type>()
+           || borrows_memory<typename type::mapped_type>();
+  else if constexpr(avnd::set_ish<type>)
+    return borrows_memory<typename type::key_type>();
+  else if constexpr(avnd::vector_ish<type>)
+    return borrows_memory<typename type::value_type>();
+  else if constexpr(avnd::tuple_ish<type>)
+    return any_element_borrows<type>(
+        std::make_index_sequence<std::tuple_size_v<type>>{});
+  else if constexpr(view_like<type>)
+    return true;
   else if constexpr(std::is_aggregate_v<type>)
     return any_member_borrows<type>(
         std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
-  else if constexpr(view_like<type>)
-    return true;
   else
     return false;
 }
@@ -164,25 +175,46 @@ constexpr bool aggregate_serializable(std::index_sequence<I...>)
   return (serializable_impl<boost::pfr::tuple_element_t<I, T>>() && ...);
 }
 
+template <typename T, std::size_t... I>
+constexpr bool elements_serializable(std::index_sequence<I...>)
+{
+  return (serializable_impl<std::tuple_element_t<I, T>>() && ...);
+}
+
+template <typename T, std::size_t... I>
+constexpr bool alternatives_serializable(std::index_sequence<I...>)
+{
+  return (serializable_impl<std::variant_alternative_t<I, T>>() && ...);
+}
+
 template <typename T>
 constexpr bool serializable_impl()
 {
   using type = std::remove_cvref_t<T>;
   if constexpr(borrows_memory<type>())
     return false;
-  else if constexpr(tuple_like<type> && !is_std_array_v<type>)
-    return false;
+  else if constexpr(string_member<type>)
+    return true;
+  else if constexpr(avnd::optional_ish<type>)
+    return serializable_impl<typename type::value_type>();
+  else if constexpr(avnd::variant_ish<type>)
+    return alternatives_serializable<type>(
+        std::make_index_sequence<std::variant_size_v<type>>{});
+  else if constexpr(avnd::map_ish<type>)
+    return serializable_impl<typename type::key_type>()
+           && serializable_impl<typename type::mapped_type>();
+  else if constexpr(avnd::set_ish<type>)
+    return serializable_impl<typename type::key_type>();
+  else if constexpr(byte_block<type>)
+    return true;
+  else if constexpr(avnd::vector_ish<type>)
+    return serializable_impl<typename type::value_type>();
+  else if constexpr(avnd::tuple_ish<type>)
+    return elements_serializable<type>(
+        std::make_index_sequence<std::tuple_size_v<type>>{});
   else if constexpr(trivial_member<type>)
     return true;
-  else if constexpr(contiguous_container<type>)
-    return true;
-  else if constexpr(list_container<type>)
-    return serializable_impl<typename type::value_type>();
-  // A tuple-like type that got this far is not trivially copyable, so it
-  // would have to be taken apart -- which is exactly what the aggregate
-  // reflection cannot do for them. std::array of non-trivial elements ends
-  // up here, and is left to the processor's own save/load.
-  else if constexpr(std::is_aggregate_v<type> && !tuple_like<type>)
+  else if constexpr(std::is_aggregate_v<type>)
     return aggregate_serializable<type>(
         std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
   else
@@ -196,50 +228,41 @@ template <typename T>
 constexpr tag tag_of()
 {
   using type = std::remove_cvref_t<T>;
-  if constexpr(trivial_member<type>)
-    return tag::raw;
-  else if constexpr(contiguous_container<type>)
+  if constexpr(string_member<type>)
     return tag::bytes;
-  else if constexpr(list_container<type>)
+  else if constexpr(avnd::optional_ish<type>)
+    return tag::optional;
+  else if constexpr(avnd::variant_ish<type>)
+    return tag::variant;
+  else if constexpr(avnd::map_ish<type>)
+    return tag::map;
+  else if constexpr(avnd::set_ish<type>)
+    return tag::set;
+  else if constexpr(byte_block<type>)
+    return tag::bytes;
+  else if constexpr(avnd::vector_ish<type>)
     return tag::list;
+  else if constexpr(avnd::tuple_ish<type>)
+    return std::is_trivially_copyable_v<type> ? tag::raw : tag::tuple;
+  else if constexpr(trivial_member<type>)
+    return tag::raw;
   else
     return tag::aggregate;
 }
 
 // ---------------------------------------------------------------------------
-// Layout hash: field count, order and shape. Two structs with the same hash
-// are interchangeable as far as this format is concerned; any structural
-// edit changes it.
+// Scalar kind: size alone does not identify a scalar, and an int read back
+// as a float of the same width is silent corruption.
 
-constexpr std::uint32_t hash_step(std::uint32_t h, std::uint32_t v)
-{
-  h ^= v;
-  return h * 16777619u; // FNV-1a
-}
-
-template <typename T>
-constexpr std::uint32_t layout_hash_of(std::uint32_t h = 2166136261u);
-
-template <typename T, std::size_t... I>
-constexpr std::uint32_t
-layout_hash_fields(std::uint32_t h, std::index_sequence<I...>)
-{
-  ((h = layout_hash_of<boost::pfr::tuple_element_t<I, T>>(h)), ...);
-  return h;
-}
-
-// Size alone does not identify a scalar: an int and a float of the same
-// width would hash the same, and swapping them would reinterpret one as the
-// other. Encode what kind of scalar it is as well.
 enum class scalar_kind : std::uint32_t
 {
+  none = 0,
   boolean = 1,
   signed_int = 2,
   unsigned_int = 3,
   floating = 4,
   enumeration = 5,
-  pointer = 6,
-  other = 7
+  composite = 6
 };
 
 template <typename T>
@@ -255,10 +278,49 @@ constexpr scalar_kind kind_of()
   else if constexpr(std::is_integral_v<type>)
     return std::is_signed_v<type> ? scalar_kind::signed_int
                                   : scalar_kind::unsigned_int;
-  else if constexpr(std::is_pointer_v<type>)
-    return scalar_kind::pointer;
+  else if constexpr(trivial_member<type>)
+    return scalar_kind::composite;
   else
-    return scalar_kind::other;
+    return scalar_kind::none;
+}
+
+// ---------------------------------------------------------------------------
+// Layout hash
+
+constexpr std::uint32_t hash_step(std::uint32_t h, std::uint32_t v)
+{
+  h ^= v;
+  return h * 16777619u; // FNV-1a
+}
+
+template <typename T>
+constexpr std::uint32_t layout_hash_of(std::uint32_t h = 2166136261u);
+
+template <typename T, std::size_t... I>
+constexpr std::uint32_t
+layout_hash_fields(std::uint32_t h, std::index_sequence<I...>)
+{
+  // Fold the position in between fields so that {int, float} and
+  // {float, int} do not hash alike -- the FNV step alone is too symmetric
+  // over short runs of small values.
+  ((h = layout_hash_of<boost::pfr::tuple_element_t<I, T>>(hash_step(h, I))), ...);
+  return h;
+}
+
+template <typename T, std::size_t... I>
+constexpr std::uint32_t
+layout_hash_elements(std::uint32_t h, std::index_sequence<I...>)
+{
+  ((h = layout_hash_of<std::tuple_element_t<I, T>>(h)), ...);
+  return h;
+}
+
+template <typename T, std::size_t... I>
+constexpr std::uint32_t
+layout_hash_alternatives(std::uint32_t h, std::index_sequence<I...>)
+{
+  ((h = layout_hash_of<std::variant_alternative_t<I, T>>(h)), ...);
+  return h;
 }
 
 template <typename T>
@@ -266,26 +328,38 @@ constexpr std::uint32_t layout_hash_of(std::uint32_t h)
 {
   using type = std::remove_cvref_t<T>;
   h = hash_step(h, std::uint32_t(tag_of<type>()));
-  if constexpr(trivial_member<type>)
-  {
-    h = hash_step(h, std::uint32_t(sizeof(type)));
-    h = hash_step(h, std::uint32_t(kind_of<type>()));
-    // A trivially-copyable aggregate is memcpy'd, but its shape still has to
-    // be part of the hash: two structs of the same size are not the same
-    // state.
-    if constexpr(std::is_aggregate_v<type> && !std::is_array_v<type>)
-      return layout_hash_fields<type>(
-          h, std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+  h = hash_step(h, std::uint32_t(kind_of<type>()));
+
+  if constexpr(string_member<type>)
     return h;
-  }
-  else if constexpr(contiguous_container<type>)
-  {
-    using elem = std::remove_cvref_t<decltype(*std::declval<type&>().data())>;
-    h = hash_step(h, std::uint32_t(sizeof(elem)));
-    return hash_step(h, std::uint32_t(kind_of<elem>()));
-  }
-  else if constexpr(list_container<type>)
+  else if constexpr(avnd::optional_ish<type>)
     return layout_hash_of<typename type::value_type>(h);
+  else if constexpr(avnd::variant_ish<type>)
+    return layout_hash_alternatives<type>(
+        hash_step(h, std::uint32_t(std::variant_size_v<type>)),
+        std::make_index_sequence<std::variant_size_v<type>>{});
+  else if constexpr(avnd::map_ish<type>)
+    return layout_hash_of<typename type::mapped_type>(
+        layout_hash_of<typename type::key_type>(h));
+  else if constexpr(avnd::set_ish<type>)
+    return layout_hash_of<typename type::key_type>(h);
+  else if constexpr(byte_block<type>)
+    return layout_hash_of<typename type::value_type>(h);
+  else if constexpr(avnd::vector_ish<type>)
+    return layout_hash_of<typename type::value_type>(h);
+  else if constexpr(avnd::tuple_ish<type>)
+    return layout_hash_elements<type>(
+        hash_step(h, std::uint32_t(std::tuple_size_v<type>)),
+        std::make_index_sequence<std::tuple_size_v<type>>{});
+  // A trivially-copyable aggregate is written as one blob, but its shape
+  // still has to reach the hash: two 8-byte structs are not the same state
+  // just because they memcpy the same way ({int,float} vs {float,int}).
+  else if constexpr(std::is_aggregate_v<type> && !std::is_array_v<type>)
+    return layout_hash_fields<type>(
+        hash_step(h, std::uint32_t(boost::pfr::tuple_size_v<type>)),
+        std::make_index_sequence<boost::pfr::tuple_size_v<type>>{});
+  else if constexpr(trivial_member<type>)
+    return hash_step(h, std::uint32_t(sizeof(type)));
   else
     return layout_hash_fields<type>(
         hash_step(h, std::uint32_t(boost::pfr::tuple_size_v<type>)),
@@ -332,6 +406,17 @@ struct writer
 template <typename T>
 void encode_value(writer& w, const T& v);
 
+// One record: what it is, then how long it is, then it.
+template <typename T>
+void encode_record(writer& w, const T& v)
+{
+  w.pod(tag_of<T>());
+  w.pod(std::uint8_t(kind_of<T>()));
+  const auto slot = w.begin_sized();
+  encode_value(w, v);
+  w.end_sized(slot);
+}
+
 template <typename T>
 void encode_fields(writer& w, const T& agg)
 {
@@ -340,15 +425,7 @@ void encode_fields(writer& w, const T& agg)
   w.pod(std::uint16_t(boost::pfr::tuple_size_v<T>));
 
   [&]<std::size_t... I>(std::index_sequence<I...>) {
-    (
-        [&] {
-          w.pod(tag_of<boost::pfr::tuple_element_t<I, T>>());
-          w.pod(std::uint8_t(kind_of<boost::pfr::tuple_element_t<I, T>>()));
-          const auto slot = w.begin_sized();
-          encode_value(w, boost::pfr::get<I>(agg));
-          w.end_sized(slot);
-        }(),
-        ...);
+    (encode_record(w, boost::pfr::get<I>(agg)), ...);
   }(std::make_index_sequence<boost::pfr::tuple_size_v<T>>{});
 }
 
@@ -356,21 +433,58 @@ template <typename T>
 void encode_value(writer& w, const T& v)
 {
   using type = std::remove_cvref_t<T>;
-  if constexpr(trivial_member<type>)
+  if constexpr(string_member<type>)
   {
-    w.pod(v);
+    w.pod(std::uint32_t(v.size()));
+    w.raw(v.data(), v.size());
   }
-  else if constexpr(contiguous_container<type>)
+  else if constexpr(avnd::optional_ish<type>)
   {
-    using elem = std::remove_cvref_t<decltype(*v.data())>;
+    w.pod(std::uint8_t(bool(v) ? 1 : 0));
+    if(bool(v))
+      encode_value(w, *v);
+  }
+  else if constexpr(avnd::variant_ish<type>)
+  {
+    w.pod(std::uint32_t(v.index()));
+    std::visit([&](const auto& alt) { encode_value(w, alt); }, v);
+  }
+  else if constexpr(avnd::map_ish<type>)
+  {
+    w.pod(std::uint32_t(v.size()));
+    for(const auto& [key, mapped] : v)
+    {
+      encode_value(w, key);
+      encode_value(w, mapped);
+    }
+  }
+  else if constexpr(avnd::set_ish<type>)
+  {
+    w.pod(std::uint32_t(v.size()));
+    for(const auto& key : v)
+      encode_value(w, key);
+  }
+  else if constexpr(byte_block<type>)
+  {
+    using elem = typename type::value_type;
     w.pod(std::uint32_t(v.size()));
     w.raw(v.data(), v.size() * sizeof(elem));
   }
-  else if constexpr(list_container<type>)
+  else if constexpr(avnd::vector_ish<type>)
   {
     w.pod(std::uint32_t(v.size()));
     for(const auto& e : v)
       encode_value(w, e);
+  }
+  else if constexpr(avnd::tuple_ish<type> && !std::is_trivially_copyable_v<type>)
+  {
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (encode_value(w, std::get<I>(v)), ...);
+    }(std::make_index_sequence<std::tuple_size_v<type>>{});
+  }
+  else if constexpr(trivial_member<type>)
+  {
+    w.pod(v);
   }
   else
   {
@@ -436,6 +550,28 @@ struct load_result
 template <typename T>
 bool decode_value(reader& r, T& v, std::size_t payload_size);
 
+// Construct variant alternative `index` and decode into it.
+template <typename V, std::size_t I = 0>
+bool decode_variant(reader& r, V& v, std::uint32_t index, std::size_t payload)
+{
+  if constexpr(I < std::variant_size_v<V>)
+  {
+    if(index == I)
+    {
+      std::variant_alternative_t<I, V> alt{};
+      if(!decode_value(r, alt, payload))
+        return false;
+      v = std::move(alt);
+      return true;
+    }
+    return decode_variant<V, I + 1>(r, v, index, payload);
+  }
+  else
+  {
+    return false; // an alternative this build does not have
+  }
+}
+
 template <typename T>
 bool decode_fields(
     reader& r, T& agg, std::size_t payload_size, bool& mismatch, bool& changed)
@@ -474,9 +610,6 @@ bool decode_fields(
             if(I != index)
               return;
             using field_t = boost::pfr::tuple_element_t<I, T>;
-            // A record whose shape no longer matches the member at this
-            // position keeps the member's default rather than being
-            // reinterpreted.
             if(t != tag_of<field_t>() || k != std::uint8_t(kind_of<field_t>()))
             {
               mismatch = true;
@@ -487,8 +620,8 @@ bool decode_fields(
           ...);
     }(std::make_index_sequence<fields>{});
 
-    // Trailing records (members since removed), mismatched ones, and
-    // partially-read ones all resume at the next record.
+    // Trailing records, mismatched ones and partially-read ones all resume
+    // at the next record.
     r.pos = payload_start;
     r.skip(size);
   }
@@ -499,37 +632,113 @@ template <typename T>
 bool decode_value(reader& r, T& v, std::size_t payload_size)
 {
   using type = std::remove_cvref_t<T>;
-  if constexpr(trivial_member<type>)
+  const std::size_t end = r.pos + payload_size;
+
+  if constexpr(string_member<type>)
   {
-    return r.pod(v);
-  }
-  else if constexpr(contiguous_container<type>)
-  {
-    using elem = std::remove_cvref_t<decltype(*v.data())>;
     std::uint32_t count{};
     if(!r.pod(count))
       return false;
-    // Trust the record size, not the count: a corrupt count must not make us
-    // allocate or read out of bounds.
-    if(count > (payload_size - sizeof(count)) / sizeof(elem))
+    if(count > payload_size - sizeof(count))
       return false;
     v.resize(count);
-    return r.raw(v.data(), std::size_t(count) * sizeof(elem));
+    return count == 0 ? true : r.raw(v.data(), count);
   }
-  else if constexpr(list_container<type>)
+  else if constexpr(avnd::optional_ish<type>)
+  {
+    std::uint8_t engaged{};
+    if(!r.pod(engaged))
+      return false;
+    if(!engaged)
+    {
+      v.reset();
+      return true;
+    }
+    typename type::value_type inner{};
+    if(!decode_value(r, inner, end - r.pos))
+      return false;
+    v = std::move(inner);
+    return true;
+  }
+  else if constexpr(avnd::variant_ish<type>)
+  {
+    std::uint32_t index{};
+    if(!r.pod(index))
+      return false;
+    return decode_variant(r, v, index, end - r.pos);
+  }
+  else if constexpr(avnd::map_ish<type>)
   {
     std::uint32_t count{};
     if(!r.pod(count))
       return false;
     v.clear();
-    const std::size_t end = r.pos + (payload_size - sizeof(count));
     for(std::uint32_t i = 0; i < count && r.ok && r.pos < end; i++)
     {
-      v.emplace_back();
-      if(!decode_value(r, *std::prev(v.end()), end - r.pos))
+      std::remove_const_t<typename type::key_type> key{};
+      typename type::mapped_type mapped{};
+      if(!decode_value(r, key, end - r.pos))
         return false;
+      if(!decode_value(r, mapped, end - r.pos))
+        return false;
+      v.insert(typename type::value_type(std::move(key), std::move(mapped)));
     }
     return r.ok;
+  }
+  else if constexpr(avnd::set_ish<type>)
+  {
+    std::uint32_t count{};
+    if(!r.pod(count))
+      return false;
+    v.clear();
+    for(std::uint32_t i = 0; i < count && r.ok && r.pos < end; i++)
+    {
+      std::remove_const_t<typename type::key_type> key{};
+      if(!decode_value(r, key, end - r.pos))
+        return false;
+      v.insert(std::move(key));
+    }
+    return r.ok;
+  }
+  else if constexpr(byte_block<type>)
+  {
+    using elem = typename type::value_type;
+    std::uint32_t count{};
+    if(!r.pod(count))
+      return false;
+    // Trust the record size, not the count: a corrupt count must not make
+    // us allocate or read out of bounds.
+    if(count > (payload_size - sizeof(count)) / sizeof(elem))
+      return false;
+    v.resize(count);
+    return r.raw(v.data(), std::size_t(count) * sizeof(elem));
+  }
+  else if constexpr(avnd::vector_ish<type>)
+  {
+    std::uint32_t count{};
+    if(!r.pod(count))
+      return false;
+    v.clear();
+    for(std::uint32_t i = 0; i < count && r.ok && r.pos < end; i++)
+    {
+      typename type::value_type elem{};
+      if(!decode_value(r, elem, end - r.pos))
+        return false;
+      v.push_back(std::move(elem));
+    }
+    return r.ok;
+  }
+  else if constexpr(avnd::tuple_ish<type> && !std::is_trivially_copyable_v<type>)
+  {
+    bool ok = true;
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      ((ok = ok && decode_value(r, std::get<I>(v), end - r.pos)), ...);
+    }(std::make_index_sequence<std::tuple_size_v<type>>{});
+    return ok;
+  }
+  else if constexpr(trivial_member<type>)
+  {
+    return r.pod(v);
   }
   else
   {
@@ -552,8 +761,8 @@ std::vector<std::uint8_t> save(const S& s)
 
 // Members no record covers keep the value they already hold, so the caller
 // decides what "missing" means by pre-seeding defaults. An empty payload
-// covers nothing and therefore succeeds without changing anything; whether a
-// host handing over no state at all is an error belongs to the container
+// covers nothing and therefore succeeds without changing anything; whether
+// a host handing over no state at all is an error belongs to the container
 // above this one.
 template <typename S>
   requires serializable<S>

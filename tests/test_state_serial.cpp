@@ -14,6 +14,8 @@
 #include <string_view>
 #include <tuple>
 #include <utility>
+#include <set>
+#include <unordered_map>
 #include <variant>
 #include <cstdint>
 #include <string>
@@ -352,27 +354,93 @@ TEST_CASE("state: borrowed memory is refused", "[state]")
   static_assert(!avnd::state::serializable<has_view>);
 
   // Owning containers that look like views -- data() and size(), no
-  // resize() -- are still fine.
+  // resize() -- are fine, including of non-trivial elements.
   static_assert(avnd::state::serializable<std::array<int, 4>>);
-  // A fixed array of non-trivial elements is not: taking it apart needs
-  // reflection that does not work on tuple-like types everywhere.
-  static_assert(!avnd::state::serializable<std::array<std::string, 2>>);
+  static_assert(avnd::state::serializable<std::array<std::string, 2>>);
   SUCCEED();
 }
 
 TEST_CASE("state: the supported type surface", "[state]")
 {
-  // Trivially-copyable types are written as bytes, which covers optional
-  // and variant of trivial alternatives.
+  // Everything the value bindings can carry, in any combination.
   static_assert(avnd::state::serializable<std::optional<int>>);
+  static_assert(avnd::state::serializable<std::optional<std::string>>);
   static_assert(avnd::state::serializable<std::variant<int, float>>);
-
-  // Their non-trivial forms, and the associative/tuple containers, are not
-  // supported: a processor needing one provides save/load on its state.
-  static_assert(!avnd::state::serializable<std::optional<std::string>>);
-  static_assert(!avnd::state::serializable<std::variant<int, std::string>>);
-  static_assert(!avnd::state::serializable<std::map<std::string, int>>);
-  static_assert(!avnd::state::serializable<std::pair<int, float>>);
-  static_assert(!avnd::state::serializable<std::tuple<int, float>>);
+  static_assert(avnd::state::serializable<std::variant<int, std::string>>);
+  static_assert(avnd::state::serializable<std::map<std::string, int>>);
+  static_assert(avnd::state::serializable<std::set<std::string>>);
+  static_assert(avnd::state::serializable<std::pair<int, float>>);
+  static_assert(avnd::state::serializable<std::tuple<int, float, std::string>>);
+  static_assert(
+      avnd::state::serializable<std::map<std::string, std::vector<int>>>);
   SUCCEED();
+}
+
+// ---------------------------------------------------------------------------
+// The full type surface, classified with the same concepts the value
+// bindings use. Anything a processor can carry should survive a round-trip.
+
+namespace
+{
+enum class Mode
+{
+  A,
+  B,
+  C
+};
+
+template <typename T>
+bool round_trips(const T& in)
+{
+  struct Box
+  {
+    T v;
+  };
+  Box b{in};
+  const auto bytes = avnd::state::save(b);
+  Box out{};
+  const auto r = avnd::state::load(out, bytes.data(), bytes.size());
+  return r.ok && !r.type_mismatch && !r.layout_changed && out.v == in;
+}
+}
+
+TEST_CASE("state: optionals and variants", "[state][types]")
+{
+  CHECK(round_trips(std::optional<std::string>{"hi"}));
+  CHECK(round_trips(std::optional<std::string>{}));
+  CHECK(round_trips(std::optional<int>{42}));
+  CHECK(round_trips(std::optional<std::vector<std::string>>{
+      std::vector<std::string>{"n1", "n2"}}));
+  CHECK(round_trips(std::variant<int, std::string>{std::string("v")}));
+  CHECK(round_trips(std::variant<int, std::string>{7}));
+  CHECK(round_trips(std::variant<int, float>{2.5f}));
+}
+
+TEST_CASE("state: associative containers", "[state][types]")
+{
+  CHECK(round_trips(std::map<std::string, int>{{"a", 1}, {"b", 2}}));
+  CHECK(round_trips(std::map<int, std::string>{{1, "x"}, {2, "y"}}));
+  CHECK(round_trips(std::unordered_map<std::string, int>{{"k", 9}}));
+  CHECK(round_trips(std::set<std::string>{"p", "q"}));
+  CHECK(round_trips(std::set<int>{3, 1, 2}));
+  CHECK(round_trips(std::map<std::string, std::vector<int>>{{"k", {1, 2, 3}}}));
+}
+
+TEST_CASE("state: tuples, pairs and fixed arrays", "[state][types]")
+{
+  CHECK(round_trips(std::pair<int, std::string>{4, "pair"}));
+  CHECK(round_trips(std::tuple<int, float, std::string>{1, 2.f, "t"}));
+  CHECK(round_trips(std::array<std::string, 2>{"a0", "a1"}));
+  CHECK(round_trips(std::array<int, 4>{1, 2, 3, 4}));
+  CHECK(round_trips(std::vector<std::pair<int, std::string>>{{1, "a"}, {2, "b"}}));
+}
+
+TEST_CASE("state: enums and nesting", "[state][types]")
+{
+  CHECK(round_trips(Mode::B));
+  CHECK(round_trips(std::vector<Mode>{Mode::A, Mode::C}));
+  CHECK(round_trips(std::vector<std::optional<int>>{1, std::nullopt, 3}));
+  CHECK(round_trips(std::vector<std::vector<std::string>>{{"a"}, {"b", "c"}}));
+  CHECK(round_trips(std::string("plain")));
+  CHECK(round_trips(std::vector<int>{1, 2, 3}));
 }
