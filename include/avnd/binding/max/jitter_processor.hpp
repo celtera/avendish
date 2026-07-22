@@ -409,8 +409,13 @@ struct jitter_processor_metaclass
 
   static inline const auto jit_class_name = gensym(fmt::format("jit_avnd_{}", avnd::get_c_name<T>()).c_str());
 
-  jitter_processor_metaclass()
+  // The Max class symbol; ext_main passes the external's own C_NAME so the
+  // registered class matches the file Max loaded (nullptr -> introspected c_name).
+  static inline t_symbol* registered_class_name = nullptr;
+
+  jitter_processor_metaclass(t_symbol* class_name = nullptr)
   {
+    registered_class_name = class_name;
     instance = this;
 
     this->jit_class_init();
@@ -460,7 +465,9 @@ struct jitter_processor_metaclass
     using instance = max_jit_wrapper<T>;
     t_class *jclass{};
 
-    static const std::string max_class_name = std::string(avnd::get_c_name<T>().data());
+    static const std::string max_class_name = std::string(
+        registered_class_name ? registered_class_name->s_name
+                              : avnd::get_c_name<T>().data());
 
     static constexpr auto obj_new = +[](t_symbol* s, long argc, t_atom* argv)
     {

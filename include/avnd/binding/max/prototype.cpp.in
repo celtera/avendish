@@ -14,25 +14,30 @@ extern "C" AVND_EXPORTED_SYMBOL void ext_main(void* r)
 {
   common_symbols_init();
 
-  []<typename T = type> {
+  // Register the class under the external's own name (the file Max just loaded
+  // is @AVND_C_NAME@.mxe64/.mxo). Max looks up an object box by that filename,
+  // so the registered class symbol must match it exactly; the class's own
+  // c_name() metadata may differ, which would leave the object unloadable.
+  t_symbol* const avnd_class_name = gensym("@AVND_C_NAME@");
+  [avnd_class_name]<typename T = type> {
     if constexpr(avnd::audio_processor<T>)
     {
       // If we process audio in any shape -- effect, generator or analyzer
       // (audio in, control out: NOT covered by the mono/polyphonic effect
       // concepts, which require matching in/out shapes) -- make a type with
       // the whole DSP stuff.
-      static const max::audio_processor_metaclass<T> instance{};
+      static const max::audio_processor_metaclass<T> instance{avnd_class_name};
     }
     else if constexpr(max::max_jit_input_introspection<T>::size > 0
                    || max::max_jit_output_introspection<T>::size > 0
                    )
     {
-      static const max::jitter_processor_metaclass<T> instance{};
+      static const max::jitter_processor_metaclass<T> instance{avnd_class_name};
     }
     else
     {
       // Simpler case which just processes messages
-      static const max::message_processor_metaclass<T> instance{};
+      static const max::message_processor_metaclass<T> instance{avnd_class_name};
     }
   }();
 }

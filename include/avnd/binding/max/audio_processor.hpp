@@ -37,7 +37,9 @@ struct audio_processor_metaclass
   static inline t_class* g_class{};
   static inline audio_processor_metaclass* instance{};
 
-  audio_processor_metaclass();
+  // class_name is the Max class symbol; ext_main passes the external's own
+  // C_NAME so the registered class matches the file Max loaded.
+  audio_processor_metaclass(t_symbol* class_name = nullptr);
 };
 
 template <typename T>
@@ -346,7 +348,7 @@ struct audio_processor : processor_common<T>
 };
 
 template <typename T>
-audio_processor_metaclass<T>::audio_processor_metaclass()
+audio_processor_metaclass<T>::audio_processor_metaclass(t_symbol* class_name)
 {
   audio_processor_metaclass::instance = this;
   using instance = audio_processor<T>;
@@ -421,7 +423,8 @@ audio_processor_metaclass<T>::audio_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      avnd::get_c_name<T>().data(), (method)obj_new, (method)obj_free,
+      class_name ? class_name->s_name : avnd::get_c_name<T>().data(),
+      (method)obj_new, (method)obj_free,
       sizeof(audio_processor<T>), 0L, A_GIMME, 0);
 
   class_dspinit(g_class);
