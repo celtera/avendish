@@ -207,7 +207,14 @@ struct message_processor
     // First try to process messages handled explicitely in the object
     if(messages_setup.process_messages(implementation, s, argc, argv))
       return;
-    if(input_setup.process_inputs(implementation, s, argc, argv))
+
+    // Cold inlets (the second and following parameters, which have their own Pd
+    // inlets) only store their value. The leftmost inlet is hot: a message
+    // addressed to the first parameter -- like raw data or a bang -- falls
+    // through to default_process, which stores it *and* runs a processing pass
+    // so the object produces output. skip_first keeps the first parameter out of
+    // the set-only path here.
+    if(input_setup.process_inputs(implementation, s, argc, argv, /* skip_first */ true))
       return;
 
     // Then some default behaviour

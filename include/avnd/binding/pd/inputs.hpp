@@ -444,8 +444,14 @@ struct inputs
     return false;
   }
 
+  // skip_first leaves the leftmost (hot) inlet's parameter to the caller: in a
+  // message object that inlet is hot, so a message addressed to it must set the
+  // value AND run a processing pass, which the caller does through
+  // default_process. The cold inlets (params 1..n, which have their own Pd
+  // inlets) are still handled here as set-only.
   bool process_inputs(
-      avnd::effect_container<T>& implementation, t_symbol* s, int argc, t_atom* argv)
+      avnd::effect_container<T>& implementation, t_symbol* s, int argc, t_atom* argv,
+      bool skip_first = false)
   {
     // FIXME create static pointer tables instead
     if constexpr(avnd::parameter_input_introspection<T>::size > 0)
@@ -460,6 +466,8 @@ struct inputs
             state.inputs, [&,&obj=state.effect]<typename M>(M& field) {
           const int idx = param_idx++;
           if(ok)
+            return;
+          if(skip_first && idx == 0)
             return;
           bool matches = false;
           if constexpr(pd::has_usable_name<M>())
