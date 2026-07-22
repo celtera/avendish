@@ -5,7 +5,10 @@
 #include <avnd/binding/vst3/bus_info.hpp>
 #include <avnd/binding/vst3/component_base.hpp>
 #include <avnd/binding/vst3/helpers.hpp>
+#include <avnd/binding/vst3/param_apply.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/binding/vst3/transport.hpp>
+#include <avnd/concepts/state.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/midi.hpp>
 #include <avnd/introspection/output.hpp>
@@ -13,6 +16,9 @@
 #include <avnd/wrappers/controls_storage.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <avnd/wrappers/state.hpp>
+
+#include <vector>
 
 namespace stv3
 {
@@ -367,14 +373,7 @@ struct Component final
     int id = queue.getParameterId();
     if(queue.getPoint(numPoints - 1, sampleOffset, value) == Steinberg::kResultTrue)
     {
-      // Apply the host parameter change to every (per-channel) instance so all
-      // voices of a polyphonic effect track automation, not just instance 0.
-      for(auto state : this->effect.full_state())
-        avnd::parameter_input_introspection<T>::for_nth_raw(
-            state.inputs, id, [&]<typename C>(C& ctl) {
-              if constexpr(requires { avnd::map_control_from_01<C>(value); })
-                assign_if_assignable(ctl.value, avnd::map_control_from_01<C>(value));
-            });
+      stv3::apply_control(this->effect, id, value);
     };
   }
 
@@ -509,24 +508,31 @@ struct Component final
     auto out = stv3::getChannelBuffersPointer(processSetup, data.outputs[0]);
 
     data.outputs[0].silenceFlags = 0;
+
+    // With a ProcessContext, hand the processor a transport-filled tick;
+    // otherwise keep the frames-only invocation.
+    auto invoke = [&]<typename Sample>() {
+      auto ins = avnd::span<Sample*>{
+          (Sample**)in, std::size_t(data.inputs[0].numChannels)};
+      auto outs = avnd::span<Sample*>{
+          (Sample**)out, std::size_t(data.outputs[0].numChannels)};
+      if(data.processContext)
+      {
+        processor.process(
+            effect, ins, outs,
+            stv3::tick_from_context(
+                *data.processContext, data.numSamples, processSetup.sampleRate));
+      }
+      else
+      {
+        processor.process(effect, ins, outs, data.numSamples);
+      }
+    };
+
     if(data.symbolicSampleSize == kSample32)
-    {
-      processor.process(
-          effect,
-          avnd::span<Sample32*>{(Sample32**)in, std::size_t(data.inputs[0].numChannels)},
-          avnd::span<Sample32*>{
-              (Sample32**)out, std::size_t(data.outputs[0].numChannels)},
-          data.numSamples);
-    }
+      invoke.template operator()<Sample32>();
     else
-    {
-      processor.process(
-          effect,
-          avnd::span<Sample64*>{(Sample64**)in, std::size_t(data.inputs[0].numChannels)},
-          avnd::span<Sample64*>{
-              (Sample64**)out, std::size_t(data.outputs[0].numChannels)},
-          data.numSamples);
-    }
+      invoke.template operator()<Sample64>();
   }
 
   void processOutputs(ProcessData& data)
@@ -567,6 +573,15 @@ struct Component final
   /**** SAVING ****/
   /****************/
 
+  // Custom-state trailer, appended after the parameter doubles so existing
+  // session data stays byte-compatible:
+  //   u32 'AVCS'  u32 version=1  u64 blob_size  [blob bytes]
+  // The controller's setComponentState reads only the doubles and never
+  // sees the trailer; old sessions simply end at EOF before it.
+  static constexpr Steinberg::uint32 state_trailer_magic = 0x41564353; // AVCS
+  static constexpr Steinberg::uint32 state_trailer_version = 1;
+  static constexpr Steinberg::uint64 state_max_blob = 1024 * 1024 * 1024;
+
   tresult setState(IBStream* state) override
   {
     using namespace Steinberg;
@@ -583,7 +598,10 @@ struct Component final
         double param = 0.f;
         if(streamer.readDouble(param) == false)
           return false;
-        // map_control_from_01 is deleted for non-scalar controls.
+        // map_control_from_01 is deleted for non-scalar controls. A state
+        // restore is an opaque bulk assignment, not a host gesture: update()
+        // is not dispatched here (derive-style handlers would clobber other
+        // freshly restored values in save-order-dependent ways).
         if constexpr(requires { avnd::map_control_from_01<C>(param); })
           assign_if_assignable(field.value, avnd::map_control_from_01<C>(param));
         return true;
@@ -592,13 +610,37 @@ struct Component final
       // One representative control set => exactly inputs_info_t::size doubles,
       // matching getState and the controller's setComponentState.
       bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), read_one);
+      if(!ok)
+        return Steinberg::kResultFalse;
 
-      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
     }
-    else
+
+    if constexpr(avnd::has_custom_state<T>)
     {
-      return Steinberg::kResultOk;
+      // Optional trailer: absent in pre-feature sessions (EOF here is fine).
+      uint32 magic{};
+      if(streamer.readInt32u(magic) == false)
+        return Steinberg::kResultOk;
+      if(magic != state_trailer_magic)
+        return Steinberg::kResultOk; // unknown data: leave defaults, don't fail
+      uint32 version{};
+      if(streamer.readInt32u(version) == false || version != state_trailer_version)
+        return Steinberg::kResultOk;
+      uint64 blob_size{};
+      if(streamer.readInt64u(blob_size) == false || blob_size > state_max_blob)
+        return Steinberg::kResultFalse;
+      if(blob_size > 0)
+      {
+        std::vector<uint8_t> blob(blob_size);
+        if(streamer.readRaw(blob.data(), int32(blob_size)) != int32(blob_size))
+          return Steinberg::kResultFalse;
+        bool ok = true;
+        for(auto st : this->effect.full_state())
+          ok &= avnd::load_state(st.effect, blob.data(), blob.size());
+        return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
+      }
     }
+    return Steinberg::kResultOk;
   }
 
   tresult getState(IBStream* state) override
@@ -617,13 +659,33 @@ struct Component final
       };
 
       bool ok = inputs_info_t::for_all_unless(this->controls_inputs(), write_one);
+      if(!ok)
+        return Steinberg::kResultFalse;
+    }
 
-      return ok ? Steinberg::kResultOk : Steinberg::kResultFalse;
-    }
-    else
+    if constexpr(avnd::has_custom_state<T>)
     {
-      return Steinberg::kResultOk;
+      // Save from the first instance (polyphonic instances share state).
+      std::vector<uint8_t> blob;
+      for(auto st : this->effect.full_state())
+      {
+        avnd::save_state(st.effect, [&](const void* d, std::size_t n) {
+          auto b = static_cast<const uint8_t*>(d);
+          blob.insert(blob.end(), b, b + n);
+        });
+        break;
+      }
+      if(streamer.writeInt32u(state_trailer_magic) == false)
+        return Steinberg::kResultFalse;
+      if(streamer.writeInt32u(state_trailer_version) == false)
+        return Steinberg::kResultFalse;
+      if(streamer.writeInt64u(uint64(blob.size())) == false)
+        return Steinberg::kResultFalse;
+      if(!blob.empty())
+        if(streamer.writeRaw(blob.data(), int32(blob.size())) == false)
+          return Steinberg::kResultFalse;
     }
+    return Steinberg::kResultOk;
   }
 
   /****************/

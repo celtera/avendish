@@ -4,7 +4,9 @@
 
 #include <avnd/binding/clap/bus_info.hpp>
 #include <avnd/binding/clap/helpers.hpp>
+#include <avnd/binding/clap/transport.hpp>
 #include <avnd/common/export.hpp>
+#include <avnd/concepts/state.hpp>
 #include <avnd/introspection/channels.hpp>
 #include <avnd/introspection/midi.hpp>
 #include <avnd/wrappers/control_display.hpp>
@@ -14,10 +16,12 @@
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/prepare.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
+#include <avnd/wrappers/state.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <clap/all.h>
 
 #include <algorithm>
+#include <vector>
 
 namespace avnd_clap
 {
@@ -133,6 +137,14 @@ struct SimpleAudioEffect : clap_plugin
   AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
   AVND_NO_UNIQUE_ADDRESS midi_processor<T> midi;
 
+  clap_plugin_state state_ext{};
+
+  // Latest transport information: clap_process::transport at block start,
+  // then any CLAP_EVENT_TRANSPORT in-events. When no transport was ever
+  // provided, processors receive the frames-only tick as before.
+  clap_event_transport_t transport_state{};
+  bool transport_known{false};
+
   float sample_rate{44100.};
   int buffer_size{512};
 
@@ -185,8 +197,22 @@ struct SimpleAudioEffect : clap_plugin
         return &p.audio_ports;
       if(id_sv == "clap.note-ports")
         return &p.note_ports;
+      if(id_sv == CLAP_EXT_STATE)
+        return &p.state_ext;
 
       return nullptr;
+    };
+
+    // Session persistence: parameter values + the object's opaque custom
+    // state when it models avnd::has_custom_state (container format
+    // described below).
+    state_ext.save
+        = [](const clap_plugin* plugin, const clap_ostream* stream) -> bool {
+      return self(plugin)->save_state_impl(stream);
+    };
+    state_ext.load
+        = [](const clap_plugin* plugin, const clap_istream* stream) -> bool {
+      return self(plugin)->load_state_impl(stream);
     };
 
     clap_plugin::on_main_thread = [](const struct clap_plugin* plugin) {};
@@ -201,11 +227,9 @@ struct SimpleAudioEffect : clap_plugin
     // an empty std::function call terminates under -fno-exceptions.
     avnd::wire_fallback_callbacks(effect);
 
-    // Polyphonic containers keep their instances in a vector populated by
-    // init_channels at activation -- but hosts drive the state and parameter
-    // entry points on deactivated plug-ins (state loads, main-thread flush),
-    // and every full_state() consumer silently does nothing on an empty
-    // container. Guarantee one live instance from construction.
+    // full_state() iterates the instance vector, which init_channels only
+    // fills at activation; hosts drive state and parameters (loads,
+    // main-thread flush) while deactivated, so keep one instance always live.
     effect.init_channels(1, 1);
   }
 
@@ -288,9 +312,22 @@ struct SimpleAudioEffect : clap_plugin
       if(!outputs[i])
         outputs[i] = trash_buffer<samples_t>();
 
-    processor.process(
-        effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
-        avnd::span<samples_t*>{outputs, std::size_t(out_N)}, process.frames_count);
+    if(transport_known)
+    {
+      processor.process(
+          effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
+          avnd::span<samples_t*>{outputs, std::size_t(out_N)},
+          tick_from_transport(
+              transport_state, process.frames_count, sample_rate,
+              process.steady_time));
+    }
+    else
+    {
+      processor.process(
+          effect, avnd::span<samples_t*>{inputs, std::size_t(in_N)},
+          avnd::span<samples_t*>{outputs, std::size_t(out_N)},
+          process.frames_count);
+    }
   }
 
   // Scratch rows substituted for null host channel pointers. Sized in
@@ -325,6 +362,13 @@ struct SimpleAudioEffect : clap_plugin
 
     // Clear the midi out ports
     midi.clear_outputs(this->effect);
+
+    // Block-start transport; CLAP_EVENT_TRANSPORT in-events refine it below.
+    if(process.transport)
+    {
+      transport_state = *process.transport;
+      transport_known = true;
+    }
 
     // Process the input events
     process_in_events(process);
@@ -403,14 +447,161 @@ struct SimpleAudioEffect : clap_plugin
     }
   }
 
+  /*****************/
+  /**** STATE ******/
+  /*****************/
+  // Container format (native little-endian):
+  //   u32 'AVCS'  u32 version=1  u32 param_count  u32 reserved
+  //   param_count x f64 normalized values (port order)
+  //   u64 blob_size  [blob bytes]
+  static constexpr uint32_t state_magic = 0x41564353; // 'AVCS'
+  static constexpr uint32_t state_version = 2;
+  static constexpr uint64_t state_max_blob = 1024 * 1024 * 1024; // sanity
+
+  static bool
+  write_all(const clap_ostream* os, const void* data, uint64_t size) noexcept
+  {
+    auto p = static_cast<const uint8_t*>(data);
+    while(size > 0)
+    {
+      const int64_t n = os->write(os, p, size);
+      if(n <= 0)
+        return false;
+      p += n;
+      size -= uint64_t(n);
+    }
+    return true;
+  }
+
+  static bool
+  read_exact(const clap_istream* is, void* data, uint64_t size) noexcept
+  {
+    auto p = static_cast<uint8_t*>(data);
+    while(size > 0)
+    {
+      const int64_t n = is->read(is, p, size);
+      if(n <= 0)
+        return false;
+      p += n;
+      size -= uint64_t(n);
+    }
+    return true;
+  }
+
+  bool save_state_impl(const clap_ostream* os)
+  {
+    const uint32_t header[4]
+        = {state_magic, state_version, uint32_t(parameter_count), 0};
+    if(!write_all(os, header, sizeof(header)))
+      return false;
+
+    bool ok = true;
+    if constexpr(parameter_count > 0)
+    {
+      // (raw id, plain value) pairs: the same id and value space as the
+      // params extension, robust to parameter reordering across versions.
+      std::size_t ordinal = 0;
+      param_in_info::for_all(controls_inputs(), [&]<typename C>(C& field) {
+        const uint32_t id = uint32_t(param_in_info::index_map[ordinal++]);
+        double v{};
+        if_possible(v = avnd::map_control_to_double(field));
+        ok &= write_all(os, &id, sizeof(id));
+        ok &= write_all(os, &v, sizeof(v));
+      });
+      if(!ok)
+        return false;
+    }
+
+    uint64_t blob_size = 0;
+    if constexpr(avnd::has_custom_state<T>)
+    {
+      // Save from the first instance (polyphonic instances share state).
+      std::vector<uint8_t> blob;
+      for(auto state : this->effect.full_state())
+      {
+        avnd::save_state(state.effect, [&](const void* d, std::size_t n) {
+          auto b = static_cast<const uint8_t*>(d);
+          blob.insert(blob.end(), b, b + n);
+        });
+        break;
+      }
+      blob_size = blob.size();
+      if(!write_all(os, &blob_size, sizeof(blob_size)))
+        return false;
+      if(blob_size > 0 && !write_all(os, blob.data(), blob_size))
+        return false;
+    }
+    else
+    {
+      if(!write_all(os, &blob_size, sizeof(blob_size)))
+        return false;
+    }
+    return true;
+  }
+
+  bool load_state_impl(const clap_istream* is)
+  {
+    uint32_t header[4]{};
+    if(!read_exact(is, header, sizeof(header)))
+      return false;
+    if(header[0] != state_magic || header[1] != state_version)
+      return false;
+    const uint32_t stored_params = header[2];
+    if(stored_params > 65536)
+      return false;
+
+    // Parameters first (tier 0): (raw id, plain value) pairs; unknown ids
+    // are skipped (parameter removed in a newer version). A state restore
+    // is an opaque bulk assignment, not a host gesture: update() callbacks
+    // are NOT dispatched here -- a derive-style handler (one that rewrites
+    // other ports) would otherwise clobber freshly restored values in
+    // save-order-dependent ways. Processors that derive internal state
+    // from their ports reconcile in their custom-state load.
+    for(uint32_t k = 0; k < stored_params; k++)
+    {
+      uint32_t id{};
+      double v{};
+      if(!read_exact(is, &id, sizeof(id)) || !read_exact(is, &v, sizeof(v)))
+        return false;
+      for(auto state : this->effect.full_state())
+        param_in_info::for_nth_raw(
+            state.inputs, int(id), [&]<typename C>(C& field) {
+              if constexpr(requires {
+                             field.value = avnd::map_control_from_double<C>(v);
+                           })
+                field.value = avnd::map_control_from_double<C>(v);
+            });
+    }
+
+    // Then the custom blob (tier 1): it wins where the two overlap.
+    uint64_t blob_size = 0;
+    if(!read_exact(is, &blob_size, sizeof(blob_size)))
+      return false;
+    if(blob_size > state_max_blob)
+      return false;
+    if constexpr(avnd::has_custom_state<T>)
+    {
+      if(blob_size > 0)
+      {
+        std::vector<uint8_t> blob(blob_size);
+        if(!read_exact(is, blob.data(), blob_size))
+          return false;
+        bool ok = true;
+        for(auto state : this->effect.full_state())
+          ok &= avnd::load_state(state.effect, blob.data(), blob.size());
+        return ok;
+      }
+    }
+    return true;
+  }
+
   void process_param(const clap_event_param_value& p)
   {
-    // Parameter ids are the RAW field indices (as advertised by
-    // get_param_info) and values are PLAIN, in the [min_value, max_value]
-    // range of the param info -- matching get_value. Apply to every
-    // (per-channel) instance; guard the whole assignment, as the conversion
-    // is also well-formed for controls whose value cannot be assigned from
-    // it, such as the optional payload of an impulse button.
+    // Ids are raw field indices and values are plain [min, max], matching
+    // get_param_info / get_value. The assignment is guarded rather than the
+    // conversion: the conversion is well-formed even where its result is not
+    // assignable (an impulse button's optional payload). update() runs per
+    // change, as in init_controls.
     for(auto state : this->effect.full_state())
       param_in_info::for_nth_raw(
           state.inputs, p.param_id, [&]<typename C>(C& field) {
@@ -418,12 +609,14 @@ struct SimpleAudioEffect : clap_plugin
                            field.value = avnd::map_control_from_double<C>(p.value);
                          })
               field.value = avnd::map_control_from_double<C>(p.value);
+            if_possible(field.update(state.effect));
           });
   }
 
   void process_transport(const clap_event_transport& transport)
   {
-    // TODO
+    transport_state = transport;
+    transport_known = true;
   }
 
   void process_in_events(const clap_process& p)

@@ -49,10 +49,25 @@ if(BUILD_TESTING)
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
 
-  # clap_plugin_params::flush event application.
+  # Custom-state feature
+  avnd_add_static_test(test_state tests/test_state.cpp)
+
   if(AVND_ENABLE_CLAP AND CLAP_HEADER)
+    # clap_plugin_params::flush event application.
     avnd_add_catch_test(test_params_flush tests/objects/params_flush.cpp)
     target_include_directories(test_params_flush PRIVATE "${CLAP_HEADER}")
+
+    avnd_add_catch_test(test_state_clap tests/objects/state_clap.cpp)
+    target_include_directories(test_state_clap PRIVATE "${CLAP_HEADER}")
+
+    # Transport-to-tick conversion (uses the clap headers for the clap
+    # converter; the vst3 converter is tested through a structural mirror).
+    avnd_add_catch_test(test_transport tests/test_transport.cpp)
+    target_include_directories(test_transport PRIVATE "${CLAP_HEADER}")
+
+    # update() dispatch on host parameter changes.
+    avnd_add_catch_test(test_update_controls tests/objects/update_controls.cpp)
+    target_include_directories(test_update_controls PRIVATE "${CLAP_HEADER}")
   endif()
 endif()
 
