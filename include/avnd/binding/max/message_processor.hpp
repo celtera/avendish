@@ -29,7 +29,10 @@ struct message_processor_metaclass
   static inline std::array<t_object*, num_attributes> attributes;
 
   static t_symbol* symbol_from_name();
-  message_processor_metaclass();
+  // class_name is the Max class symbol; ext_main passes the external's own
+  // C_NAME so the registered class matches the file Max loaded (nullptr ->
+  // fall back to the introspected c_name).
+  message_processor_metaclass(t_symbol* class_name = nullptr);
 };
 
 template <typename T>
@@ -183,9 +186,15 @@ struct message_processor : processor_common<T>
     // First try to process messages handled explicitely in the object
     if(inlet == 0 && messages<T>{}.process_messages(implementation, s, argc, argv))
       return;
-    // Then try to find if any message matches the name of a port
+    // Then try to find if any message matches the name of a port. The leftmost
+    // inlet is hot, so setting a parameter through it also runs a processing
+    // pass -- otherwise a [Name v1 v2( message sets the value but the object
+    // never produces output.
     if(inlet == 0 && processor_common<T>::process_inputs(this->implementation, s, argc, argv))
+    {
+      process();
       return;
+    }
 
     // Then some default behaviour
     switch(argc)
@@ -224,7 +233,7 @@ struct message_processor : processor_common<T>
 };
 
 template <typename T>
-message_processor_metaclass<T>::message_processor_metaclass()
+message_processor_metaclass<T>::message_processor_metaclass(t_symbol* class_name)
 {
   message_processor_metaclass::instance = this;
   using instance = message_processor<T>;
@@ -284,7 +293,8 @@ message_processor_metaclass<T>::message_processor_metaclass()
 
   /// Class creation ///
   g_class = class_new(
-      avnd::get_c_name<T>().data(), (method)obj_new, (method)obj_free,
+      class_name ? class_name->s_name : avnd::get_c_name<T>().data(),
+      (method)obj_new, (method)obj_free,
       sizeof(message_processor<T>), 0L, A_GIMME, 0);
 
   // Connect our methods
