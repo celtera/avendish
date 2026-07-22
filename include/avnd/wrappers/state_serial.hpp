@@ -251,8 +251,8 @@ constexpr tag tag_of()
 }
 
 // ---------------------------------------------------------------------------
-// Scalar kind: size alone does not identify a scalar, and an int read back
-// as a float of the same width is silent corruption.
+// Scalar kind: distinguishes types of equal width (an int from a float) so
+// one is never read back as the other.
 
 enum class scalar_kind : std::uint32_t
 {
@@ -300,10 +300,7 @@ template <typename T, std::size_t... I>
 constexpr std::uint32_t
 layout_hash_fields(std::uint32_t h, std::index_sequence<I...>)
 {
-  // Fold the position in between fields so that {int, float} and
-  // {float, int} do not hash alike -- the FNV step alone is too symmetric
-  // over short runs of small values.
-  ((h = layout_hash_of<boost::pfr::tuple_element_t<I, T>>(hash_step(h, I))), ...);
+  ((h = layout_hash_of<boost::pfr::tuple_element_t<I, T>>(h)), ...);
   return h;
 }
 
@@ -351,9 +348,8 @@ constexpr std::uint32_t layout_hash_of(std::uint32_t h)
     return layout_hash_elements<type>(
         hash_step(h, std::uint32_t(std::tuple_size_v<type>)),
         std::make_index_sequence<std::tuple_size_v<type>>{});
-  // A trivially-copyable aggregate is written as one blob, but its shape
-  // still has to reach the hash: two 8-byte structs are not the same state
-  // just because they memcpy the same way ({int,float} vs {float,int}).
+  // A trivially-copyable aggregate is one blob on the wire, but its field
+  // shapes still feed the hash so that {int, float} and {float, int} differ.
   else if constexpr(std::is_aggregate_v<type> && !std::is_array_v<type>)
     return layout_hash_fields<type>(
         hash_step(h, std::uint32_t(boost::pfr::tuple_size_v<type>)),
