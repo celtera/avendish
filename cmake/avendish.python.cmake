@@ -12,16 +12,48 @@ if(CMAKE_SYSTEM_NAME MATCHES "WAS.*")
   return()
 endif()
 
-find_package(Python COMPONENTS Interpreter Development GLOBAL)
+# Opt-in stable-ABI build: one module that loads on any CPython >= the version
+# below (Py_LIMITED_API / python3.dll) instead of a version-locked build that
+# only imports on the exact interpreter it was compiled against (python3XY.dll).
+#
+# OFF by default: pybind11 uses the full CPython C API (PyFrameObject /
+# PyCodeObject internals, PyList_GET_ITEM, ...) and does not compile under
+# Py_LIMITED_API, so the stable-ABI path only works with a limited-API-capable
+# binding. When on and available it is wired correctly (links python3.lib); the
+# default keeps the working version-specific build. Build the module against the
+# Python version you ship for.
+option(AVND_PYTHON_STABLE_ABI "Build Python modules against the stable ABI (needs a limited-API-capable binding; pybind11 is not)" OFF)
+set(AVND_PYTHON_SABI_VERSION "3.12" CACHE STRING "Minimum CPython version for the stable-ABI build (Python_add_library USE_SABI value)")
+
+# Development.Module (not full Development) is what a loadable extension needs.
+# Development.SABIModule (CMake >= 3.26) additionally provides the stable-ABI
+# import library that Python_add_library(USE_SABI) links against; without it
+# USE_SABI silently falls back to the version-specific library.
+find_package(Python COMPONENTS Interpreter Development.Module
+  OPTIONAL_COMPONENTS Development.SABIModule GLOBAL)
+if(NOT Python_Development.Module_FOUND)
+  find_package(Python COMPONENTS Interpreter Development GLOBAL)
+endif()
 find_package(pybind11 CONFIG GLOBAL)
-if(NOT TARGET pybind11::module)
+if(NOT TARGET pybind11::headers)
   function(avnd_make_python)
   endfunction()
 
   return()
 endif()
+# A true stable-ABI build needs Python_add_library(USE_SABI ...) so the module
+# links the stable import library (python3.lib -> python3.dll) rather than the
+# version-specific one; that command is available from CMake 3.26.
+# Stored in the cache so avnd_make_python() sees it: that function is called from
+# the consumer's scope, which the plain variable set here does not reach.
+set(_avnd_python_can_sabi FALSE CACHE INTERNAL "")
+if(AVND_PYTHON_STABLE_ABI AND Python_Development.SABIModule_FOUND
+   AND NOT CMAKE_VERSION VERSION_LESS "3.26")
+  set(_avnd_python_can_sabi TRUE CACHE INTERNAL "")
+endif()
+
 function(avnd_make_python)
-  if(NOT TARGET pybind11::module)
+  if(NOT TARGET pybind11::headers)
     return()
   endif()
 
@@ -37,44 +69,39 @@ function(avnd_make_python)
   )
 
   set(AVND_FX_TARGET "${AVND_TARGET}_python")
-  add_library(${AVND_FX_TARGET} SHARED)
+  set(_srcs
+    "${AVND_MAIN_FILE}"
+    "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_python.cpp")
 
-  if(WIN32)
-    set_target_properties(
-      ${AVND_FX_TARGET}
-      PROPERTIES
-        OUTPUT_NAME "py${AVND_C_NAME}"
-        PREFIX ""
-        SUFFIX ".pyd"
-        LIBRARY_OUTPUT_DIRECTORY python
-        RUNTIME_OUTPUT_DIRECTORY python
-    )
+  if(_avnd_python_can_sabi)
+    # WITH_SOABI stamps the extension suffix (.abi3.pyd / .abi3.so); USE_SABI
+    # compiles with Py_LIMITED_API and links the stable import lib. The result
+    # imports on any CPython >= AVND_PYTHON_SABI_VERSION.
+    Python_add_library(${AVND_FX_TARGET} MODULE WITH_SOABI USE_SABI "${AVND_PYTHON_SABI_VERSION}"
+      ${_srcs})
+    set_target_properties(${AVND_FX_TARGET} PROPERTIES
+      OUTPUT_NAME "py${AVND_C_NAME}"
+      LIBRARY_OUTPUT_DIRECTORY python
+      RUNTIME_OUTPUT_DIRECTORY python)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE Avendish::Avendish_python pybind11::headers)
   else()
-    # CPython convention: py<name>.so on both Linux and macOS, no lib prefix.
-    set_target_properties(
-      ${AVND_FX_TARGET}
-      PROPERTIES
-        OUTPUT_NAME "py${AVND_C_NAME}"
-        PREFIX ""
-        SUFFIX ".so"
-        LIBRARY_OUTPUT_DIRECTORY python
-        RUNTIME_OUTPUT_DIRECTORY python
-    )
+    # Classic version-specific module (imports python3XY.dll). Used when the
+    # stable ABI is disabled or unavailable (CMake < 3.26 / no Development.Module).
+    add_library(${AVND_FX_TARGET} SHARED ${_srcs})
+    if(WIN32)
+      set(_pysuffix ".pyd")
+    else()
+      # CPython convention: py<name>.so on both Linux and macOS, no lib prefix.
+      set(_pysuffix ".so")
+    endif()
+    set_target_properties(${AVND_FX_TARGET} PROPERTIES
+      OUTPUT_NAME "py${AVND_C_NAME}"
+      PREFIX ""
+      SUFFIX "${_pysuffix}"
+      LIBRARY_OUTPUT_DIRECTORY python
+      RUNTIME_OUTPUT_DIRECTORY python)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE Avendish::Avendish_python pybind11::module)
   endif()
-
-  target_sources(
-    ${AVND_FX_TARGET}
-    PRIVATE
-      "${AVND_MAIN_FILE}"
-      "${CMAKE_BINARY_DIR}/${MAIN_OUT_FILE}_python.cpp"
-  )
-
-  target_link_libraries(
-    ${AVND_FX_TARGET}
-    PRIVATE
-      Avendish::Avendish_python
-      pybind11::module
-  )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
 
