@@ -131,8 +131,8 @@ public:
     samples.clear();
     for(const auto [u, v] : inputs.positions.value)
     {
-      const int x = std::clamp(int(u * in_tex.width), (int)0, (int)in_tex.width);
-      const int y = std::clamp(int(v * in_tex.height), (int)0, (int)in_tex.height);
+      const int x = std::clamp(int(u * in_tex.width), (int)0, (int)in_tex.width - 1);
+      const int y = std::clamp(int(v * in_tex.height), (int)0, (int)in_tex.height - 1);
 
       const auto [r, g, b, a] = inputs.image.get(x, y);
       const auto lightness = linear_to_y(r / 255.f, g / 255.f, b / 255.f);
