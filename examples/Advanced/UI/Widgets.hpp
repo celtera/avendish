@@ -58,7 +58,62 @@ struct Impulse
     halp::callback<"Impulse"> out;
   } outputs;
 
-  void operator()() noexcept { }
+  void operator()() noexcept {
+  }
+};
+
+struct Bang
+{
+  halp_meta(name, "Bang")
+  halp_meta(c_name, "avnd_bang")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send an impulse whenever the button is pressed")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#bang")
+  halp_meta(uuid, "b7929156-35f4-4572-aa32-090e3704d702")
+
+  struct
+  {
+    halp::impulse_button<"Bang"> bang;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Impulse"> out;
+  } outputs;
+
+  void operator()() noexcept {
+    if(inputs.bang.value)
+      outputs.out();
+  }
+};
+
+struct HeldButton
+{
+  halp_meta(name, "Button")
+  halp_meta(c_name, "avnd_button")
+  halp_meta(category, "Control/Basic")
+  halp_meta(author, "Jean-Michaël Celerier")
+  halp_meta(description, "Send an impulse for as long as the button is pressed")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/mapping-utilities.html#button")
+  halp_meta(uuid, "3fc9274c-791b-4640-8613-032dd351c64d")
+
+  struct
+  {
+    halp::maintained_button<"Hold"> hold;
+  } inputs;
+
+  struct
+  {
+    halp::callback<"Impulse"> out;
+  } outputs;
+
+  void operator()() noexcept {
+    if(inputs.hold.value)
+      outputs.out();
+  }
 };
 
 struct Integer
