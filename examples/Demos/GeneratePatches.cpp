@@ -75,6 +75,15 @@ struct port_t
   std::string audio_sample_format; // float / double
   std::string audio_port_format;   // sample / channel / bus / frame
   int audio_channels = 0;          // statically-known channel count, 0 = dynamic
+
+  // type == "texture": "cpu" (a Jitter matrix in Max), "gpu", "gpu_binding".
+  std::string storage;
+
+  // A CPU texture / buffer is what makes an object a Jitter matrix operator.
+  bool is_matrix() const
+  {
+    return (type == "texture" && storage == "cpu") || type == "tensor";
+  }
 };
 
 // The number of Pd signal inlets/outlets a set of audio ports expands to:
@@ -156,6 +165,7 @@ port_t parse_port(const json& p)
   out.description = str(p, "description");
   out.type = str(p, "type", "unknown");
   out.is_attribute = p.value("class_attribute", false);
+  out.storage = str(p, "storage");
   // symbol() wins over c_name(): the bindings test has_symbol first.
   out.out_selector = str(p, "symbol");
   if(out.out_selector.empty())
@@ -261,6 +271,13 @@ model_t parse_model(const json& j)
 struct topology
 {
   bool is_audio = false; // the object has audio ports -> DSP binding
+  // A CPU matrix / texture port turns the Max object into a Jitter matrix
+  // operator (binding/max/prototype.cpp.in picks jitter_processor when
+  // max_jit_*_introspection > 0), which Max gives its own matrix inlet 0 and
+  // matrix outlet 0 through max_jit_mop_setup.
+  bool is_max_jitter = false;
+  int max_matrix_in = 0;
+  int max_matrix_out = 0;
 
   int pd_signal_inlets = 0;
   int pd_signal_outlets = 0;
@@ -290,6 +307,16 @@ topology compute_topology(const model_t& m)
   t.is_audio = !audio_in.empty() || !audio_out.empty();
   t.pd_signal_inlets = pd_signal_count(audio_in);
   t.pd_signal_outlets = pd_signal_count(audio_out);
+
+  for(const auto& p : m.inputs)
+    if(p.is_matrix())
+      t.max_matrix_in++;
+  for(const auto& p : m.outputs)
+    if(p.is_matrix())
+      t.max_matrix_out++;
+  // The audio branch is tested first in prototype.cpp.in, so an object doing
+  // both is a DSP object, not a matrix operator.
+  t.is_max_jitter = !t.is_audio && (t.max_matrix_in > 0 || t.max_matrix_out > 0);
 
   t.pd_inlet.assign(m.inputs.size(), -1);
   t.max_inlet.assign(m.inputs.size(), -1);
@@ -351,7 +378,12 @@ topology compute_topology(const model_t& m)
   // max/inputs.hpp: one inlet per *explicit* (non-attribute) parameter, shifted
   // by one when the first parameter port is an attribute (inlet 0 then serves
   // the attributes). Non-parameter inputs get no inlet.
-  if(!t.is_audio)
+  // A matrix operator gets its inlets from max_jit_mop_setup() before the
+  // parameter proxies are created, so the plain "inlet k == explicit parameter
+  // k" arithmetic no longer holds. Controls are driven with a
+  // "<name> <value>" message on inlet 0 instead, which the binding routes
+  // through process_inputs() just the same.
+  if(!t.is_audio && !t.is_max_jitter)
   {
     bool first_param_is_explicit = true;
     bool seen_param = false;
@@ -1781,7 +1813,7 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
   const topology t = compute_topology(m);
   max_patch p;
 
-  std::vector<std::size_t> controls, audio_in_idx, other_in;
+  std::vector<std::size_t> controls, audio_in_idx, matrix_in, other_in;
   for(std::size_t i = 0; i < m.inputs.size(); ++i)
   {
     const auto& c = m.inputs[i];
@@ -1789,6 +1821,8 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
       controls.push_back(i);
     else if(c.type == "audio")
       audio_in_idx.push_back(i);
+    else if(t.is_max_jitter && c.is_matrix())
+      matrix_in.push_back(i); // the object's jit_matrix inlet, not "unsupported"
     else
       other_in.push_back(i);
   }
@@ -1918,6 +1952,34 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
     obj_y = y + 46;
   }
 
+  // --- Jitter source ------------------------------------------------------
+  // A matrix operator is useless without a picture: drive it from a
+  // [jit.noise] (or just a metro, for a generator) into the matrix inlet 0 and
+  // show the result in a [jit.pwindow] below. A toggle starts the clock, so the
+  // patch does something the moment the user clicks it.
+  std::string matrix_src;
+  if(t.is_max_jitter)
+  {
+    const std::string tgl = p.box("toggle", "", left, y, 24, 24);
+    const std::string met = p.box("newobj", "qmetro 50", left + 34, y, 90, 22);
+    p.line(tgl, 0, met, 0);
+    double sy = y + 34;
+    if(!matrix_in.empty())
+    {
+      const std::string body = "jit.noise 4 char 320 240";
+      matrix_src = p.box(
+          "newobj", body, left, sy, body.size() * MAX_CHAR_W + 12.0, 22);
+      p.line(met, 0, matrix_src, 0);
+      obj_y = sy + 46;
+    }
+    else
+    {
+      // Generator: the bang itself cooks the object.
+      matrix_src = met;
+      obj_y = sy + 12;
+    }
+  }
+
   // --- the object ---------------------------------------------------------
   int obj_inlets = 1, obj_outlets = 1;
   for(std::size_t i = 0; i < m.inputs.size(); ++i)
@@ -1930,6 +1992,8 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
       = p.box("newobj", create, left, obj_y, obj_w, 22, obj_inlets, obj_outlets);
   if(!audio_src.empty())
     p.line(audio_src, 0, obj, 0);
+  if(!matrix_src.empty())
+    p.line(matrix_src, 0, obj, 0); // matrix (or the cooking bang) on inlet 0
   for(const auto& w : to_object)
     p.line(w.source, 0, obj, w.inlet);
 
@@ -1938,6 +2002,30 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
   // --- outputs ------------------------------------------------------------
   double ox = left;
   double row_bottom = y;
+
+  // Matrix outputs go to a [jit.pwindow] so the result is actually visible.
+  for(std::size_t i = 0; i < m.outputs.size() && t.is_max_jitter; ++i)
+  {
+    if(!m.outputs[i].is_matrix())
+      continue;
+    const std::string pw = p.box(
+        "jit.pwindow", "", ox, y, 322, 242, 1, 2,
+        json{{"rounded", 0}});
+    p.line(obj, t.max_outlet[i], pw, 0);
+    const std::string tag
+        = std::to_string(t.max_outlet[i]) + ") " + m.outputs[i].name + " - matrix";
+    const int cols = std::max<int>(6, std::min<int>(34, (int)tag.size()));
+    p.comment(tag, ox, y + 246, cols, json{{"textcolor", {0.3, 0.3, 0.3, 1.0}}});
+    row_bottom = std::max(row_bottom, y + 246 + p.comment_h(tag, cols));
+    ox += 340;
+  }
+  if(ox > left)
+  {
+    ox = left;
+    y = row_bottom + 16;
+    row_bottom = y;
+  }
+
   if(!m.outputs.empty())
   {
     bool any_audio = false;
@@ -1960,6 +2048,8 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
       const auto& o = m.outputs[i];
       if(o.type == "audio")
         continue;
+      if(t.is_max_jitter && o.is_matrix())
+        continue; // already shown in a jit.pwindow
       if(ox > left + 560)
       {
         ox = left;
@@ -1996,13 +2086,18 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
   if(t.is_audio)
     entry("inlet 0: multichannel signal. Controls are set with a "
           "\"<name> <value>\" message on it.");
+  if(t.is_max_jitter)
+    entry("This is a Jitter matrix operator: inlet 0 takes a jit_matrix, and "
+          "controls are set with a \"<name> <value>\" message on it.");
   for(std::size_t i = 0; i < m.inputs.size(); ++i)
   {
     const auto& c = m.inputs[i];
     if(c.type == "audio")
       continue;
     std::string line;
-    if(c.is_attribute)
+    if(t.is_max_jitter && c.is_matrix())
+      line = "inlet 0 (jit_matrix): ";
+    else if(c.is_attribute)
       line = "@" + selector(c.name) + " (attribute): ";
     else if(t.max_inlet[i] >= 0)
       line = "inlet " + std::to_string(t.max_inlet[i]) + ": ";
