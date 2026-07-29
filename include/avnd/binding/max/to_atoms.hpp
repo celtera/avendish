@@ -341,17 +341,17 @@ struct to_atoms
       else if constexpr(std::is_floating_point_v<span_val_type>)
       {
         for(auto& v : arg)
-          atom_setfloat(&atoms[i], v);
+          atom_setfloat(&atoms[i++], v);
       }
       else if constexpr(avnd::string_ish<span_val_type>)
       {
         for(auto& v : arg)
-          atom_setsym(&atoms[i], gensym(v.data()));
+          atom_setsym(&atoms[i++], gensym(v.data()));
       }
       else if constexpr(std::is_enum_v<span_val_type>)
       {
         for(auto& v : arg)
-          atom_setsym(&atoms[i], enum_sym(v));
+          atom_setsym(&atoms[i++], enum_sym(v));
       }
       return MAX_ERR_NONE;
     }

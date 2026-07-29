@@ -336,9 +336,9 @@ struct do_value_to_pd_typed
   {
     boost::container::small_vector<t_atom, 512> atoms;
     const int N = v.size();
-    atoms.resize(2 * N);
+    atoms.resize(N); // one atom per bit
 
-    for(int i = 0, N = v.size(); i < N; i++)
+    for(int i = 0; i < N; i++)
     {
       value_to_pd(atoms[i], v.test(i) ? 1 : 0);
     }
@@ -553,9 +553,9 @@ struct do_value_to_pd_anything
   {
     boost::container::small_vector<t_atom, 512> atoms;
     const int N = v.size();
-    atoms.resize(2 * N);
+    atoms.resize(N); // one atom per bit
 
-    for(int i = 0, N = v.size(); i < N; i++)
+    for(int i = 0; i < N; i++)
     {
       value_to_pd(atoms[i], v.test(i) ? 1 : 0);
     }

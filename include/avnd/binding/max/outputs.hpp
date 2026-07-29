@@ -293,9 +293,11 @@ struct do_value_to_max_typed
   {
     boost::container::small_vector<t_atom, 512> atoms;
     const int N = v.size();
-    atoms.resize(2 * N);
+    // One atom per bit: sizing for 2 * N (and then sending atoms.size()) put N
+    // uninitialised atoms on the wire after the data.
+    atoms.resize(N);
 
-    for(int i = 0, N = v.size(); i < N; i++)
+    for(int i = 0; i < N; i++)
     {
       value_to_max(atoms[i], v.test(i) ? 1 : 0);
     }
