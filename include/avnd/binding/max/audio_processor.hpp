@@ -215,6 +215,15 @@ struct audio_processor : processor_common<T>
         .rate = rate};
     processor.allocate_buffers(setup_info, double{});
 
+    // Re-do the polyphony for the channel count we actually got. init() can
+    // only use the compile-time counts, and for a mono/per-sample object that
+    // is 1 -- so with a multichannel inlet every channel above the first ran
+    // through instance 0 and came out a copy of channel 0. The golden generator
+    // gets this right (init_channels with the runtime counts, then prepare),
+    // which is why Max disagreed with it on exactly the mono and per-sample
+    // objects.
+    implementation.init_channels(input_chans, output_chans);
+
     // Allocate buffers if supported
     avnd::prepare(implementation, setup_info);
 
