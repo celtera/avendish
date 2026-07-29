@@ -8,7 +8,7 @@
 //
 // backend ∈ { pd, max, godot, td, python }
 //
-// Design notes (see HELP_PATCH_QUALITY_PLAN.md):
+// Design notes:
 //
 //  * Every emitted box is *measured* with the host's real font metrics and
 //    placed by a flow layout, so no two boxes can overlap and the canvas is

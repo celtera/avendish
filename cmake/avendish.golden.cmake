@@ -3,8 +3,7 @@
 # Mirrors avendish.dump: for each object we build a small executable that
 # instantiates the raw C++ object, feeds it deterministic test input, runs its
 # processing, and writes golden/<c_name>.json (inputs + outputs + meta). That
-# file is the oracle every backend binding must reproduce (see
-# OUTPUT_VERIFICATION_PLAN.md).
+# file is the oracle every backend binding must reproduce.
 
 function(avnd_make_golden)
   cmake_parse_arguments(AVND "" "TARGET;MAIN_FILE;MAIN_CLASS;C_NAME" "" ${ARGN})

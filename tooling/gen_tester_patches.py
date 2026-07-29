@@ -2,7 +2,7 @@
 """Generate per-backend tester patches from Avendish dump JSON.
 
 Every Avendish object emits ``dump/<c_name>.json`` describing its metadata and
-ports (see AVND_TEST_HARNESS_PLAN.md). That JSON is the single contract this tool
+ports. That JSON is the single contract this tool
 consumes: for each object it places a driver on every input and a sink on every
 output, so the object can be exercised by hand on a given backend.
 
