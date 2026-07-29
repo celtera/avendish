@@ -113,6 +113,45 @@ class CapLayout(unittest.TestCase):
         self.assertEqual(caps, [["parameter", "peak"]])
 
 
+class ObjectKind(unittest.TestCase):
+    """Which driver builds an object -- and therefore what it is fed."""
+
+    @staticmethod
+    def kind_of(golden):
+        with tempfile.TemporaryDirectory() as tmp:
+            objs = G.gen_data_js([golden], os.path.join(tmp, "data.js"), None)
+        return objs[0]["kind"]
+
+    def test_texture_filter(self):
+        g = {"c_name": "f", "_stem": "f", "cases": [{
+            "inputs": {"texture": [{"width": 16, "height": 16}]},
+            "outputs": {"texture": [{"width": 16, "height": 16}]}}]}
+        self.assertEqual(self.kind_of(g), "texture")
+
+    def test_texture_analyzer_is_a_matrix_operator_not_a_control_object(self):
+        # The regression: texture IN, control OUT, no texture out. Classified
+        # "control" it was built by buildControl, which never sends a
+        # jit_matrix -- so it analyzed an image it had never been given.
+        g = {"c_name": "a", "_stem": "a", "cases": [{
+            "inputs": {"texture": [{"width": 16, "height": 16}]},
+            "outputs": {"controls": [{"index": 0, "name": "Width", "value": 16}]}}]}
+        self.assertEqual(self.kind_of(g), "texture")
+
+    def test_plain_control_object(self):
+        g = {"c_name": "c", "_stem": "c", "cases": [{
+            "inputs": {"controls": [{"index": 0, "name": "In", "value": 1}]},
+            "outputs": {"controls": [{"index": 0, "name": "Out", "value": 1}]}}]}
+        self.assertEqual(self.kind_of(g), "control")
+
+    def test_audio_wins_over_a_matrix_port(self):
+        # prototype.cpp.in tests the audio branch first, so an object with both
+        # is a DSP object, not a matrix operator.
+        g = {"c_name": "m", "_stem": "m", "cases": [{
+            "inputs": {"audio": [[0.0]], "texture": [{"width": 4, "height": 4}]},
+            "outputs": {"audio": [[0.0]]}}]}
+        self.assertEqual(self.kind_of(g), "audio")
+
+
 class Stall(unittest.TestCase):
     """The stall detector that used to blame slow objects for crashing Max."""
 
