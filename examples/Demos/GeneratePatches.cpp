@@ -994,6 +994,28 @@ pd_sink pd_emit_sink(pd_patch& p, const port_t& o, int x, int y)
               size_t2{18, 18}};
     if(o.value_type == "string" || o.value_type == "enum")
       return {p.symbolatom(px, py, 12), size_t2{12 * PD_FW + 5, PD_FH + 4}};
+    // A fixed-arity output sends a list: [unpack] it into one number box per
+    // component, so the values are readable at a glance rather than scrolling
+    // past in the console.
+    if(const int nc = component_count(o); nc >= 2 && nc <= 6
+                                          && o.value_type != "list")
+    {
+      std::string body = "unpack";
+      for(int i = 0; i < nc; i++)
+        body += " f";
+      const int u = p.obj(px, py, body);
+      const auto us = pd_box_size(body);
+      const int fy = py + us.h + 8;
+      constexpr int fw = 7 * PD_FW + 5;
+      int fx = px;
+      for(int i = 0; i < nc; i++)
+      {
+        const int fa = p.floatatom(fx, fy, 7);
+        p.connect(u, i, fa, 0);
+        fx += fw + 6;
+      }
+      return {u, size_t2{std::max(us.w, nc * (fw + 6) - 6), us.h + 8 + PD_FH + 4}};
+    }
     if(component_count(o) > 0)
     {
       const std::string body = "print " + sel;
