@@ -49,6 +49,23 @@ if(BUILD_TESTING)
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
 
+  # Polyphony: one effect instance per channel, each seeing only its own
+  # samples (a binding calling init_channels with the compile-time count made
+  # channel 1 a copy of channel 0).
+  avnd_add_catch_test(test_polyphony_channels tests/objects/polyphony_channels.cpp)
+
+  # Report parsing / stall detection of the Max golden harness. Pure Python, no
+  # Max needed -- these cover the bugs that once made the harness blame slow
+  # objects for crashing Max.
+  find_package(Python3 QUIET COMPONENTS Interpreter)
+  if(Python3_Interpreter_FOUND)
+    add_test(
+      NAME test_max_golden_harness
+      COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+              -s "${AVND_SOURCE_DIR}/tooling/tests"
+      WORKING_DIRECTORY "${AVND_SOURCE_DIR}")
+  endif()
+
   # clap_plugin_params::flush event application.
   if(AVND_ENABLE_CLAP AND CLAP_HEADER)
     avnd_add_catch_test(test_params_flush tests/objects/params_flush.cpp)
