@@ -79,8 +79,16 @@ struct avnd_jit_class
 
   t_jit_err process(void* inputs, void* outputs)
   {
-    if(!inputs || !outputs)
-      return JIT_ERR_INVALID_PTR;
+    // Only require the lists we are actually going to read: an operator with
+    // matrix inputs but no matrix output (an analyzer -- it reports through
+    // control outlets) legitimately gets a null output list, and failing it
+    // here made every bang an error.
+    if constexpr(matrix_input_count > 0)
+      if(!inputs)
+        return JIT_ERR_INVALID_PTR;
+    if constexpr(matrix_output_count > 0)
+      if(!outputs)
+        return JIT_ERR_INVALID_PTR;
 
     if constexpr(matrix_input_count > 0)
     {
@@ -450,8 +458,15 @@ struct jitter_processor_metaclass
 
     // Add matrix_calc method (required for MOP)
 
+    // Must return the t_jit_err: process_mop() reads this method's return value
+    // through jit_object_method and feeds it to jit_error_code(). Returning void
+    // left whatever happened to be in the return register there, and
+    // jit_error_code dereferences codes it does not know -> crash in jitlib
+    // (avnd_test_gpu_buffer_in died on every bang this way).
     static constexpr auto obj_matrix_calc
-        = +[](avnd_jit_class<T>* obj, void* ins, void* outs) -> void { obj->process(ins, outs); };
+        = +[](avnd_jit_class<T>* obj, void* ins, void* outs) -> t_jit_err {
+      return obj->process(ins, outs);
+    };
 
     jit_class_addmethod(g_jit_class, (method)obj_matrix_calc, "matrix_calc", A_CANT, 0L);
 
