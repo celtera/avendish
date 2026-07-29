@@ -620,6 +620,20 @@ void emit_port(Field wrap, dump_json::value obj)
   if constexpr(avnd::attribute_port<type>)
     obj["class_attribute"] = true;
 
+  // Whether a texture lives on the CPU decides whether the object is a Jitter
+  // matrix operator in Max (binding/max/inputs.hpp max_jit_input excludes the
+  // GPU-side ports), so "texture" alone is not enough for a consumer to know
+  // if the port is addressable from a patch.
+  if constexpr(avnd::texture_port<type>)
+  {
+    if constexpr(avnd::cpu_texture_port<type>)
+      obj["storage"] = "cpu";
+    else if constexpr(avnd::gpu_texture_port<type>)
+      obj["storage"] = "gpu";
+    else
+      obj["storage"] = "gpu_binding"; // sampler / image / attachment
+  }
+
   if constexpr(avnd::tensor_port<type>)
     print_tensor<Field>(obj["tensor"]);
   else if constexpr(avnd::buffer_port<type>)
