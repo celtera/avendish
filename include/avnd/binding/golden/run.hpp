@@ -4,8 +4,8 @@
 
 // Golden-output generator: runs an avendish object offline with deterministic
 // test input and writes golden/<c_name>.json (inputs + outputs + meta). The
-// file is the oracle every backend binding must reproduce -- see
-// OUTPUT_VERIFICATION_PLAN.md. Mirrors what a real binding does (the example
+// file is the oracle every backend binding must reproduce.
+// Mirrors what a real binding does (the example
 // host in binding/example/example_processor.hpp is the reference), kept to the
 // subset needed to feed inputs and read outputs.
 

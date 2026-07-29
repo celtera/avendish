@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Validate generated Max/MSP and Pure Data help patches.
 
-The help patches produced by ``generate_patches`` (see
-HELP_PATCH_QUALITY_PLAN.md) must be *readable*, not merely parseable: no two
-boxes may overlap, no box may fall outside the saved canvas, and no comment may
-be clipped by its own rectangle. This tool checks exactly that, using each
-host's real font metrics, plus the structural integrity of the connections.
+The help patches produced by ``generate_patches`` must be *readable*, not merely
+parseable: no two boxes may overlap, no box may fall outside the saved canvas,
+and no comment may be clipped by its own rectangle. This tool checks exactly
+that, using each host's real font metrics, plus the structural integrity of the
+connections -- dangling boxes, out-of-range ports, and (with --dumps) that every
+declared port actually appears in the patch.
 
     py check_help_patches.py --pd  build/pd
     py check_help_patches.py --max build/max/help
-    py check_help_patches.py --pd build/pd --max build/max/help --json report.json
+    py check_help_patches.py --pd build/pd --max build/max/help --dumps build/dump
 
 Exit status is non-zero when any patch has a problem, so it can gate CI.
 """

@@ -1,5 +1,5 @@
 # Test-OBJECT battery (distinct from avendish.tests.cmake, which is the Catch2/CTest
-# unit tests). See AVND_FEATURE_CATALOG.md / AVND_TEST_HARNESS_PLAN.md.
+# unit tests): one small object per feature, built for every enabled backend.
 #
 # One isolated plugin object PER FILE so a failure on a given backend points at
 # exactly one thing. Texture objects use avnd_make_texture (max/jitter, td:TOP,

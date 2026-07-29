@@ -15,7 +15,6 @@ target_link_libraries(generate_pd_help PRIVATE Avendish)
 
 # Help / example patch generator: consumes an object's dump JSON and emits a
 # help/example patch for one backend (pd, max, godot, td, python).
-# See HELP_PATCH_GENERATION_PLAN.md.
 if(TARGET nlohmann_json::nlohmann_json)
   message("Building generate_patches")
   add_executable(generate_patches examples/Demos/GeneratePatches.cpp)
