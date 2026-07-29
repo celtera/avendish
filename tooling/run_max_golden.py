@@ -234,7 +234,11 @@ def gen_data_js(goldens, out_path, dumps_dir):
             has_tex = bool(outs.get("texture"))
             if has_aout or has_ain:
                 kind = "audio"
-            elif has_tex and kind != "audio":
+            elif (has_tex or tex_in) and kind != "audio":
+                # An analyzer -- texture IN, control OUT, no texture out -- was
+                # classified "control" and so was never sent a jit_matrix at
+                # all: it reported on an image it had not been given. Anything
+                # with a matrix on either side is a matrix operator.
                 kind = "texture"
             elif has_cout and kind not in ("audio", "texture"):
                 kind = "control"

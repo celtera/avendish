@@ -33,7 +33,12 @@ include("avnd_max_data.js");   // -> AVND_DATA [{name, kind, cases:[...]}]
 var FRAMES = 64;
 var RATE = 44100;
 var BUFSAMPS = 64;   // == FRAMES: record~ (loop off) auto-stops after one block
-var CHANS = 2;
+// Must not exceed the number of buffer~ avin<n>/avout<n> pairs in
+// avnd_max_driver.maxpat. At 2 this silently truncated every object needing
+// more -- a 4-in object (avnd_modular) or a 4-out one (avnd_vb_fourses_tilde)
+// was fed/recorded on 2 channels and then reported as a MISMATCH against a
+// golden that used all of them.
+var CHANS = 8;
 
 var allLines = [];      // raw report lines (prior + new), rewritten each object
 var doneNames = {};     // objects already reported (resume after crash)
@@ -432,12 +437,20 @@ function buildTexture(obj, c) {
   cur.push(o);
   curObj = o;
   // Receiving matrix adapts to whatever the MOP outputs (dims + planes).
-  var mout = p.newdefault(220, 430, "jit.matrix", "avndtexout", "@adapt", 1);
-  cur.push(mout);
-  p.connect(o, 0, mout, 0);
-  // reset the receiver to a 1x1 so stale dims from a previous case can never
-  // masquerade as this case's output.
-  mout.message("dim", 1, 1);
+  // A matrix operator can also report through control outlets -- an analyzer
+  // (matrix in, no matrix out) reports ONLY that way -- so these must be wired
+  // here too, not just in buildControl.
+  wireCaps(p, o, obj);
+  // Only a matrix OUTPUT gets a jit.matrix receiver. An analyzer's outlet 0 is
+  // a control outlet -- wiring that into jit.matrix would be nonsense.
+  if (c.nTexOut > 0) {
+    var mout = p.newdefault(220, 470, "jit.matrix", "avndtexout", "@adapt", 1);
+    cur.push(mout);
+    p.connect(o, 0, mout, 0);
+    // reset the receiver to a 1x1 so stale dims from a previous case can never
+    // masquerade as this case's output.
+    mout.message("dim", 1, 1);
+  }
   // Texture filters: feed a deterministic char 4-plane matrix of the golden's
   // recorded input size (content is informational only -- Jitter plane order
   // is ARGB vs the object's RGBA, and the dims diff is what's authoritative).
@@ -472,7 +485,16 @@ function buildAudio(obj, c) {
   wireCaps(p, o, obj);   // control/callback outlets right of the signal outlet
   var nin = c.audioIn.length;
   var nout = c.nAudioOut;  // 0 for analyzers: nothing to record~, controls only
-  if (nout > CHANS) nout = CHANS;
+  // Never truncate silently: a capped run produces a MISMATCH that looks like
+  // an object bug rather than a missing buffer~ pair.
+  if (nout > CHANS) {
+    post_("WARN " + obj.name + ": " + nout + " audio outputs but only " + CHANS
+          + " buffers; add buffer~ avout" + CHANS + " to the driver patch");
+    nout = CHANS;
+  }
+  if (nin > CHANS)
+    post_("WARN " + obj.name + ": " + nin + " audio inputs but only " + CHANS
+          + " buffers; add buffer~ avin" + CHANS + " to the driver patch");
 
   if (nin > 0) {
     // count~ only advances while its left inlet carries a NONZERO signal; with
@@ -555,6 +577,10 @@ function readControl(obj, c, ci) {
 }
 
 function readTexture(obj, c, ci) {
+  // An analyzer has no matrix output: reporting a phantom one would be compared
+  // against the golden's (empty) texture list. Its result is in the caps.
+  if (c.nTexOut <= 0)
+    return "{\"index\":" + ci + ",\"caps\":" + jcaps(obj.caps.length) + "}";
   var jm = new JitterMatrix("avndtexout");
   var dim = jm.dim;
   var w = 0, h = 1;
