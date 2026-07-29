@@ -2,16 +2,25 @@
 
 // Generate help / example patches for an avendish object, for one backend, from
 // the object's introspection dump (dump/<c_name>.json produced by the dump
-// backend). This is the JSON-driven generalization of GeneratePdHelp.cpp; it is
-// invoked per object at build time, mirroring json_to_maxref.
+// backend). It is invoked per object at build time, mirroring json_to_maxref.
 //
-//   generate_patches <backend> <input.json> <output-path>
+//   generate_patches <backend> <input.json> <output-path> [hint]
 //
 // backend ∈ { pd, max, godot, td, python }
 //
-// Phase 0: scaffolding — the model parser, the per-backend dispatch and minimal
-// but valid stub emitters. Phases 1-4 flesh out each emitter (see
-// HELP_PATCH_GENERATION_PLAN.md).
+// Design notes (see HELP_PATCH_QUALITY_PLAN.md):
+//
+//  * Every emitted box is *measured* with the host's real font metrics and
+//    placed by a flow layout, so no two boxes can overlap and the canvas is
+//    sized from the content. Pd's metrics come from its own font table
+//    (tcl/pd-gui.tcl); Max needs an explicit rect + linecount per comment
+//    because it never auto-sizes one.
+//  * Connections follow the topology the bindings actually build (one inlet per
+//    port for message objects, a single multichannel signal inlet for Max audio
+//    objects, ...) rather than assuming port index == inlet index.
+//  * Value outputs land in number / toggle / symbol boxes, because that is what
+//    the bindings send; `print` is reserved for the callbacks and messages that
+//    are genuinely selector-prefixed.
 
 #include <nlohmann/json.hpp>
 
@@ -44,15 +53,22 @@ struct port_t
   std::string description;
   std::string type; // parameter / audio / midi / texture / message / callback / ...
 
+  // Ports declaring symbol()/c_name() have their outlet messages prefixed with
+  // that selector (value_to_pd_dispatch / max::outputs), so a numeric sink
+  // needs a [route <selector>] in front of it.
+  std::string out_selector;
+
   // type == "parameter"
   std::string value_type; // float / int / bool / string / enum / list / array /
                           // aggregate / xy / rgba / ... / unknown
   bool is_control = false;
   bool is_value_port = false;
+  bool is_attribute = false; // class_attribute: no inlet, set with [name value(
   std::optional<range_t> range;
-  std::vector<std::string> choices; // enum
+  std::vector<std::string> choices; // enum / combobox
   std::optional<json> default_value;
   std::string widget;
+  std::string unit;
   int components = 0; // fixed arity of array / aggregate value types
 
   // type == "audio"
@@ -139,6 +155,11 @@ port_t parse_port(const json& p)
   out.name = str(p, "name");
   out.description = str(p, "description");
   out.type = str(p, "type", "unknown");
+  out.is_attribute = p.value("class_attribute", false);
+  // symbol() wins over c_name(): the bindings test has_symbol first.
+  out.out_selector = str(p, "symbol");
+  if(out.out_selector.empty())
+    out.out_selector = str(p, "c_name");
 
   if(auto pit = p.find("parameter"); pit != p.end())
   {
@@ -147,6 +168,7 @@ port_t parse_port(const json& p)
     out.is_control = par.value("control", false);
     out.is_value_port = par.value("value_port", false);
     out.widget = str(par, "widget");
+    out.unit = str(par, "unit");
     if(auto rit = par.find("range"); rit != par.end())
       out.range = parse_range(*rit);
     if(auto cit = par.find("choices"); cit != par.end() && cit->is_array())
@@ -181,6 +203,8 @@ model_t parse_model(const json& j)
     m.description = str(md, "description");
     m.short_description = str(md, "short_description");
     m.author = str(md, "author");
+    if(m.author.empty())
+      m.author = str(md, "vendor");
     m.version = str(md, "version");
   }
   // Unnamed parameter ports get the same positional fallback name the
@@ -228,24 +252,160 @@ model_t parse_model(const json& j)
   return m;
 }
 
-std::string blurb(const model_t& m)
+// ---------------------------------------------------------------------------
+// Binding topology: which inlet / outlet does a port actually get?
+//
+// This mirrors the bindings exactly and is the difference between a patch whose
+// connections load and one where Pd/Max silently drop half of them.
+// ---------------------------------------------------------------------------
+struct topology
 {
-  if(!m.short_description.empty())
-    return m.short_description;
-  if(!m.description.empty())
-    return m.description;
-  return "auto-generated help patch";
+  bool is_audio = false; // the object has audio ports -> DSP binding
+
+  int pd_signal_inlets = 0;
+  int pd_signal_outlets = 0;
+
+  // Per input-port index: the inlet a widget can connect straight into, or -1
+  // when the port has none (attributes, and every control of an audio object)
+  // and must be driven by a [name value( message on inlet 0.
+  std::vector<int> pd_inlet;
+  std::vector<int> max_inlet;
+
+  // Per output-port index: the outlet index, or -1 when the port has none.
+  std::vector<int> pd_outlet;
+  std::vector<int> max_outlet;
+};
+
+topology compute_topology(const model_t& m)
+{
+  topology t;
+
+  std::vector<const port_t*> audio_in, audio_out;
+  for(const auto& p : m.inputs)
+    if(p.type == "audio")
+      audio_in.push_back(&p);
+  for(const auto& p : m.outputs)
+    if(p.type == "audio")
+      audio_out.push_back(&p);
+  t.is_audio = !audio_in.empty() || !audio_out.empty();
+  t.pd_signal_inlets = pd_signal_count(audio_in);
+  t.pd_signal_outlets = pd_signal_count(audio_out);
+
+  t.pd_inlet.assign(m.inputs.size(), -1);
+  t.max_inlet.assign(m.inputs.size(), -1);
+  t.pd_outlet.assign(m.outputs.size(), -1);
+  t.max_outlet.assign(m.outputs.size(), -1);
+
+  // --- Pd inlets ---
+  // pd::inputs::init creates one inlet per input port, skipping the very first
+  // port (Pd gives every object a left inlet) and every attribute. An audio
+  // object never gets control inlets at all: pd/audio_processor.hpp creates
+  // only signal inlets and routes every message through the left inlet.
+  if(!t.is_audio)
+  {
+    int next = 1;
+    for(std::size_t i = 0; i < m.inputs.size(); ++i)
+    {
+      if(i == 0)
+      {
+        // The first port is addressed through the default left inlet.
+        t.pd_inlet[i] = m.inputs[i].is_attribute ? -1 : 0;
+        continue;
+      }
+      if(m.inputs[i].is_attribute)
+        continue;
+      t.pd_inlet[i] = next++;
+    }
+  }
+
+  // --- Pd outlets ---
+  if(t.is_audio)
+  {
+    // Signal outlets first, then one message outlet per non-audio output in
+    // declaration order (pd/audio_processor.hpp).
+    int next = t.pd_signal_outlets;
+    int sig = 0;
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+    {
+      if(m.outputs[i].type == "audio")
+      {
+        t.pd_outlet[i] = sig;
+        sig += m.outputs[i].audio_channels > 0 ? m.outputs[i].audio_channels : 1;
+      }
+      else
+      {
+        t.pd_outlet[i] = next++;
+      }
+    }
+  }
+  else
+  {
+    // pd::outputs::init: one outlet per output port, in declaration order.
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+      t.pd_outlet[i] = static_cast<int>(i);
+  }
+
+  // --- Max inlets ---
+  // max/audio_processor.hpp: dsp_setup(&x_obj, 1) -- a single multichannel
+  // signal inlet, controls only through messages on it.
+  // max/inputs.hpp: one inlet per *explicit* (non-attribute) parameter, shifted
+  // by one when the first parameter port is an attribute (inlet 0 then serves
+  // the attributes). Non-parameter inputs get no inlet.
+  if(!t.is_audio)
+  {
+    bool first_param_is_explicit = true;
+    bool seen_param = false;
+    for(const auto& p : m.inputs)
+    {
+      if(p.type != "parameter")
+        continue;
+      first_param_is_explicit = !p.is_attribute;
+      seen_param = true;
+      break;
+    }
+    if(seen_param)
+    {
+      int j = 0;
+      for(std::size_t i = 0; i < m.inputs.size(); ++i)
+      {
+        const auto& p = m.inputs[i];
+        if(p.type != "parameter" || p.is_attribute)
+          continue;
+        t.max_inlet[i] = first_param_is_explicit ? j : j + 1;
+        j++;
+      }
+    }
+  }
+
+  // --- Max outlets ---
+  if(t.is_audio)
+  {
+    // The "multichannelsignal" outlet is created last and therefore ends up
+    // leftmost (index 0); the control outlets sit to its right, in declaration
+    // order. With no audio output at all they start at 0.
+    const bool has_signal_out = !audio_out.empty();
+    int next = has_signal_out ? 1 : 0;
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+    {
+      if(m.outputs[i].type == "audio")
+        t.max_outlet[i] = 0;
+      else
+        t.max_outlet[i] = next++;
+    }
+  }
+  else
+  {
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+      t.max_outlet[i] = static_cast<int>(i);
+  }
+  return t;
 }
 
 // ---------------------------------------------------------------------------
-// Emitters. Phase 0: minimal but valid output that instantiates the object and
-// carries the title/description, so later phases can flesh out the demo,
-// sections and per-port text without changing the plumbing.
+// Shared text helpers
 // ---------------------------------------------------------------------------
 
-// --- Pure Data helpers -----------------------------------------------------
-
-// The selector the Pd binding routes control messages by: the control name with
+// The selector the bindings route control messages by: the control name with
 // every character outside [a-zA-Z0-9.~] replaced by '_' (mirrors
 // avnd::fixup_identifier with pd::valid_char_for_name). A message
 // [<selector> <value>( sent to the object's left inlet sets that control.
@@ -262,20 +422,6 @@ std::string selector(std::string_view name)
   return s;
 }
 
-// Escape Pd's structural characters in free text (comments / message contents).
-std::string pd_escape(std::string_view s)
-{
-  std::string r;
-  r.reserve(s.size());
-  for(char c : s)
-  {
-    if(c == ',' || c == ';' || c == '\\')
-      r += '\\';
-    r += c;
-  }
-  return r;
-}
-
 std::string trim_num(double v)
 {
   std::string s = std::to_string(v);
@@ -289,53 +435,96 @@ std::string trim_num(double v)
   return s;
 }
 
-// Accumulates objects (each gets an index in creation order) and connections,
-// which Pd references by that index. Objects are written first, connections
-// after.
-struct pd_patch
+// Number of lines one paragraph occupies in a box `width` characters wide,
+// using the same greedy break-at-the-last-space rule Pd's rtext and Max's
+// comment renderer both apply. Words longer than the box are hard-broken.
+int wrapped_lines_one(std::string_view text, int width)
 {
-  std::vector<std::string> objects;
-  std::vector<std::string> connections;
+  int lines = 0;
+  std::size_t i = 0;
+  const std::size_t n = text.size();
+  if(n == 0)
+    return 1;
+  while(i < n)
+  {
+    if(n - i <= static_cast<std::size_t>(width))
+    {
+      lines++;
+      break;
+    }
+    const std::size_t limit = i + static_cast<std::size_t>(width);
+    std::size_t brk = text.rfind(' ', limit);
+    if(brk == std::string_view::npos || brk <= i)
+    {
+      lines++;
+      i = limit; // a single word wider than the box
+    }
+    else
+    {
+      lines++;
+      i = brk + 1;
+    }
+  }
+  return lines > 0 ? lines : 1;
+}
 
-  int add(std::string line)
+// Total rendered line count, honouring the hard line breaks a description may
+// carry (both hosts break on them, so they must be measured, not ignored).
+int wrapped_lines(std::string_view text, int width)
+{
+  if(width <= 0)
+    width = 60;
+  int lines = 0;
+  std::size_t start = 0;
+  while(true)
   {
-    objects.push_back(std::move(line));
-    return static_cast<int>(objects.size()) - 1;
+    const std::size_t nl = text.find('\n', start);
+    lines += wrapped_lines_one(text.substr(start, nl - start), width);
+    if(nl == std::string_view::npos)
+      break;
+    start = nl + 1;
   }
-  void connect(int src, int outlet, int dst, int inlet)
+  return lines > 0 ? lines : 1;
+}
+
+// Pd stores a comment as a flat run of atoms: a raw newline is just whitespace
+// there, so it must be folded away before measuring, or the box is sized for
+// lines Pd will never draw.
+std::string one_line(std::string_view s)
+{
+  std::string r;
+  r.reserve(s.size());
+  bool space = false;
+  for(char c : s)
   {
-    connections.push_back(
-        "#X connect " + std::to_string(src) + " " + std::to_string(outlet) + " "
-        + std::to_string(dst) + " " + std::to_string(inlet) + ";");
+    if(c == '\n' || c == '\r' || c == '\t' || c == ' ')
+      space = true;
+    else
+    {
+      if(space && !r.empty())
+        r += ' ';
+      space = false;
+      r += c;
+    }
   }
-  // Emit a comment with an explicit character width (the `, f <n>` flag) so Pd's
-  // line-wrapping is deterministic, and return the vertical space it occupies in
-  // pixels. Callers advance Y by this so a comment that wraps to several lines
-  // never collides with the next one.
-  int text(int x, int y, std::string_view t, int width_chars = 60)
-  {
-    add("#X text " + std::to_string(x) + " " + std::to_string(y) + " "
-        + pd_escape(t) + ", f " + std::to_string(width_chars) + ";");
-    const int len = static_cast<int>(t.size());
-    const int lines = len <= width_chars ? 1 : (len + width_chars - 1) / width_chars;
-    return lines * 15; // ~one line height at font size 12
-  }
-  // A section-header divider bar, in the ELSE help-patch idiom.
-  void divider(int x, int y, std::string_view label)
-  {
-    add("#X obj " + std::to_string(x) + " " + std::to_string(y)
-        + " cnv 3 550 3 empty empty " + pd_escape(label)
-        + " 8 12 0 13 #dcdcdc #000000 0;");
-  }
-  void write(std::ostream& o, int w, int h) const
-  {
-    o << "#N canvas 50 50 " << w << " " << h << " 12;\n";
-    for(const auto& l : objects)
-      o << l << '\n';
-    for(const auto& c : connections)
-      o << c << '\n';
-  }
-};
+  return r;
+}
+
+// halp::impulse_button: the value is a std::optional<impulse_type>, so it is
+// engaged by *any* message carrying its name -- a bare [<name>( -- and a "$1"
+// message box would be a hard error when fed a bang.
+bool is_impulse(const port_t& c)
+{
+  return c.widget == "bang" || c.widget == "impulse";
+}
+
+// halp::maintained_button: widget=button/pushbutton but the value is a plain
+// bool, so it is driven exactly like a toggle.
+bool is_bool_like(const port_t& c)
+{
+  return c.value_type == "bool" || c.widget == "toggle" || c.widget == "checkbox"
+         || c.widget == "button" || c.widget == "pushbutton";
+}
 
 // Number of scalar components a multi-component control's demo message should
 // carry: named shapes have a fixed arity, arrays/aggregates declare theirs in
@@ -369,120 +558,7 @@ std::string component_default(const port_t& c)
   return "0.5";
 }
 
-bool is_impulse(const port_t& c)
-{
-  return c.widget == "bang" || c.widget == "button" || c.widget == "pushbutton"
-         || c.widget == "impulse";
-}
-
-// Emit the widget that drives one control. Returns {widget_index, message_index}
-// where the message [selector ...( is wired to the object's left inlet. Returns
-// widget_index = -1 when only a message box (no live widget) is produced.
-struct pd_driver { int widget = -1; int message = -1; };
-
-pd_driver pd_emit_control(pd_patch& p, const port_t& c, int x, int y)
-{
-  const std::string sel = selector(c.name);
-  pd_driver d;
-
-  auto msg = [&](const std::string& body) {
-    d.message = p.add(
-        "#X msg " + std::to_string(x + 150) + " " + std::to_string(y) + " " + body
-        + ";");
-  };
-
-  if(is_impulse(c))
-  {
-    // Bang/impulse port: [<name>( engages it, the following bang runs the
-    // object -- both fired sequentially from one clickable message box
-    // (the escaped comma is Pd's in-box message separator).
-    d.widget = p.add(
-        "#X obj " + std::to_string(x) + " " + std::to_string(y)
-        + " bng 17 250 50 0 empty empty empty 17 7 0 10 #fcfcfc #000000 "
-          "#000000;");
-    msg(sel + " \\, bang");
-  }
-  else if(c.value_type == "bool" || c.widget == "toggle" || c.widget == "checkbox")
-  {
-    d.widget = p.add(
-        "#X obj " + std::to_string(x) + " " + std::to_string(y)
-        + " tgl 17 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1;");
-    msg(sel + " \\$1");
-  }
-  else if(c.value_type == "enum")
-  {
-    if(!c.choices.empty())
-    {
-      // hradio args: size new_old init NUMBER ... (number of cells is 4th)
-      const int n = static_cast<int>(c.choices.size());
-      d.widget = p.add(
-          "#X obj " + std::to_string(x) + " " + std::to_string(y)
-          + " hradio 17 1 0 " + std::to_string(n)
-          + " empty empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0;");
-    }
-    else
-    {
-      d.widget
-          = p.add("#X floatatom " + std::to_string(x) + " " + std::to_string(y)
-                  + " 5 0 0 0 - - - 0;");
-    }
-    msg(sel + " \\$1"); // enum settable by index
-  }
-  else if(c.value_type == "string")
-  {
-    // A symbol-atom box is its own record type in the Pd file format
-    // (not an object named "symbolatom" -- that would fail to instantiate).
-    d.widget = p.add(
-        "#X symbolatom " + std::to_string(x) + " " + std::to_string(y)
-        + " 12 0 0 0 - - - 0;");
-    msg(sel + " \\$1");
-  }
-  else if(c.value_type == "int")
-  {
-    d.widget
-        = p.add("#X floatatom " + std::to_string(x) + " " + std::to_string(y)
-                + " 5 0 0 0 - - - 0;");
-    msg(sel + " \\$1");
-  }
-  else if(c.value_type == "float")
-  {
-    if(c.range && c.range->min && c.range->max)
-    {
-      d.widget = p.add(
-          "#X obj " + std::to_string(x) + " " + std::to_string(y) + " hsl 128 15 "
-          + trim_num(*c.range->min) + " " + trim_num(*c.range->max)
-          + " 0 0 empty empty empty -2 -8 0 10 #fcfcfc #000000 #000000 0 1;");
-    }
-    else
-    {
-      d.widget
-          = p.add("#X floatatom " + std::to_string(x) + " " + std::to_string(y)
-                  + " 5 0 0 0 - - - 0;");
-    }
-    msg(sel + " \\$1");
-  }
-  else if(const int nc = component_count(c); nc > 0)
-  {
-    // Multi-component control (xy / rgb / ...): a clickable message prefilled
-    // with one demo value per component (the binding accepts a value list).
-    std::string body = sel;
-    for(int i = 0; i < nc; i++)
-      body += " " + component_default(c);
-    msg(body);
-  }
-  else
-  {
-    // A complex/container control: emit an editable message box the user can
-    // click, prefilled with the selector.
-    msg(sel);
-  }
-
-  if(d.widget >= 0 && d.message >= 0)
-    p.connect(d.widget, 0, d.message, 0);
-  return d;
-}
-
-std::string pd_port_typestr(const port_t& c)
+std::string port_typestr(const port_t& c)
 {
   if(c.type == "parameter")
   {
@@ -494,12 +570,14 @@ std::string pd_port_typestr(const port_t& c)
     else if(c.value_type == "list")
       s += " (any number of values)";
     if(c.range && c.range->min && c.range->max)
-      s += " (" + trim_num(*c.range->min) + ".." + trim_num(*c.range->max) + ")";
+      s += " " + trim_num(*c.range->min) + ".." + trim_num(*c.range->max);
+    if(!c.unit.empty())
+      s += " " + c.unit;
     if(!c.choices.empty())
     {
       s += " [";
       for(std::size_t i = 0; i < c.choices.size(); ++i)
-        s += (i ? " | " : "") + std::to_string(i) + "=" + c.choices[i];
+        s += (i ? ", " : "") + std::to_string(i) + "=" + c.choices[i];
       s += "]";
     }
     return s;
@@ -509,198 +587,842 @@ std::string pd_port_typestr(const port_t& c)
   return c.type;
 }
 
-// Pure Data netlist help patch: title, description, a live interactive demo
-// (a widget wired to each control's left-inlet message, osc~ sources for audio
-// in, clip~/dac~ for audio out, sinks on outlets), and labelled
-// inlets/outlets/arguments sections. `external_name` is the name the external
-// is registered under (the CMake C_NAME); the class's own c_name() may differ,
-// and the object box must use the registered one.
-void emit_pd(const model_t& m, std::ostream& out, const std::string& external_name)
+// The one-line explanation shown next to a control in the demo.
+std::string port_label(const port_t& c)
 {
-  pd_patch p;
+  std::string s = c.name + " - " + port_typestr(c);
+  if(!c.description.empty())
+    s += ": " + c.description;
+  return s;
+}
 
-  // --- header: title + library badge ---
-  p.add("#X obj 4 5 cnv 15 360 42 empty empty " + pd_escape(m.name)
-        + " 20 20 2 37 #e0e0e0 #000000 0;");
-  p.add("#X obj 470 5 cnv 15 130 42 empty empty avendish 12 13 0 18 #7c7c7c "
-        "#e0e4dc 0;");
+// The blurb under the title. Most objects declare no description, so synthesize
+// something that still tells the user what they are looking at rather than
+// printing "auto-generated help patch".
+std::string blurb(const model_t& m, const topology& t)
+{
+  if(!m.short_description.empty())
+    return m.short_description;
+  if(!m.description.empty())
+    return m.description;
 
-  // --- description ---
-  p.text(8, 54, blurb(m), 86);
-
-  // --- the object (created early so its index is known to connections) ---
-  std::vector<const port_t*> controls, audio_in, other_in;
-  for(const auto& c : m.inputs)
+  int controls = 0, others = 0;
+  for(const auto& p : m.inputs)
   {
-    if(c.type == "parameter")
-      controls.push_back(&c);
-    else if(c.type == "audio")
-      audio_in.push_back(&c);
+    if(p.type == "parameter")
+      controls++;
+    else if(p.type != "audio")
+      others++;
+  }
+  std::string s = t.is_audio ? "audio object" : "control object";
+  if(!m.category.empty())
+    s = m.category + " " + s;
+  s += " with " + std::to_string(controls)
+       + (controls == 1 ? " control" : " controls");
+  if(!m.outputs.empty())
+    s += ", " + std::to_string(m.outputs.size())
+         + (m.outputs.size() == 1 ? " output" : " outputs");
+  if(!m.messages.empty())
+    s += ", " + std::to_string(m.messages.size())
+         + (m.messages.size() == 1 ? " message" : " messages");
+  if(others > 0)
+    s += ", " + std::to_string(others) + " non-audio data port(s)";
+  s += ".";
+  return s;
+}
+
+// ---------------------------------------------------------------------------
+// Pure Data emitter
+// ---------------------------------------------------------------------------
+
+// Pd's fixed font sizes -> (char width, line height) in pixels, straight from
+// `font_metrics` in Pd's tcl/pd-gui.tcl. We emit everything at size 12.
+constexpr int PD_FW = 7;
+constexpr int PD_FH = 16;
+constexpr int PD_MAX_TEXT_COLS = 62; // comment width before wrapping
+
+// Escape Pd's structural characters in free text (comments / message contents).
+//
+// A ',' or ';' must become an atom *of its own* -- "word \, next", the way Pd
+// itself saves. Written glued to the previous word ("word\,") Pd displays the
+// backslash; separated, it renders as plain "word, next", so the escaping costs
+// nothing in the rendered width.
+std::string pd_escape(std::string_view s)
+{
+  std::string r;
+  r.reserve(s.size() + 8);
+  for(char c : s)
+  {
+    if(c == ',' || c == ';')
+    {
+      if(!r.empty() && r.back() != ' ')
+        r += ' ';
+      r += '\\';
+      r += c;
+    }
+    else if(c == '\\')
+    {
+      r += "\\\\";
+    }
     else
-      other_in.push_back(&c); // midi / texture / buffer / ...: documented below
+    {
+      r += c;
+    }
+  }
+  return r;
+}
+
+// An iemgui label (cnv / hsl / tgl ...) is a *single atom*: an unescaped space
+// ends it and every following argument shifts, which makes Pd reject the whole
+// object and fall back to its default geometry. Escaped spaces are accepted and
+// render as real spaces.
+std::string pd_label(std::string_view s)
+{
+  if(s.empty())
+    return "empty";
+  std::string r;
+  r.reserve(s.size() + 8);
+  for(char c : s)
+  {
+    if(c == ' ' || c == ',' || c == ';' || c == '\\' || c == '$')
+      r += '\\';
+    r += c;
+  }
+  return r;
+}
+
+struct size_t2
+{
+  int w = 0, h = 0;
+};
+
+size_t2 pd_text_size(std::string_view t, int cols)
+{
+  const int lines = wrapped_lines(t, cols);
+  const int used = lines == 1 ? static_cast<int>(std::min<std::size_t>(t.size(), cols))
+                              : cols;
+  return {used * PD_FW + 6, lines * PD_FH + 4};
+}
+
+size_t2 pd_box_size(std::string_view t)
+{
+  const int lines = wrapped_lines(t, PD_MAX_TEXT_COLS);
+  const int used = lines == 1 ? static_cast<int>(t.size()) : PD_MAX_TEXT_COLS;
+  return {used * PD_FW + 10, lines * PD_FH + 6};
+}
+
+// Accumulates objects (each gets an index in creation order) and connections,
+// which Pd references by that index. Objects are written first, connections
+// after. Every add_* returns the index *and* records the box's extent so the
+// canvas can be sized from the content.
+struct pd_patch
+{
+  std::vector<std::string> objects; // one entry = one Pd index (may be multi-line)
+  std::vector<std::string> connections;
+  int max_x = 0, max_y = 0;
+
+  void extend(int x, int y, int w, int h)
+  {
+    max_x = std::max(max_x, x + w);
+    max_y = std::max(max_y, y + h);
   }
 
-  const int demo_top = 92;
-  const int row = 30;
-  const int rows_per_col = 18; // wrap long control lists into columns
-  const int col_w = 330;
-  const int nctrl = static_cast<int>(controls.size());
-  const int tallest = nctrl > 0 ? std::min(nctrl, rows_per_col) : 0;
-  const int msgs_h = static_cast<int>(m.messages.size()) * row;
-  const int y_obj = demo_top + tallest * row + msgs_h + 50;
+  int add(std::string line, int x, int y, int w, int h)
+  {
+    objects.push_back(std::move(line));
+    extend(x, y, w, h);
+    return static_cast<int>(objects.size()) - 1;
+  }
+
+  void connect(int src, int outlet, int dst, int inlet)
+  {
+    if(src < 0 || dst < 0)
+      return;
+    connections.push_back(
+        "#X connect " + std::to_string(src) + " " + std::to_string(outlet) + " "
+        + std::to_string(dst) + " " + std::to_string(inlet) + ";");
+  }
+
+  int obj(int x, int y, const std::string& body)
+  {
+    const auto s = pd_box_size(body);
+    return add(
+        "#X obj " + std::to_string(x) + " " + std::to_string(y) + " " + body + ";",
+        x, y, s.w, s.h);
+  }
+  int msg(int x, int y, const std::string& body)
+  {
+    const auto s = pd_box_size(body);
+    return add(
+        "#X msg " + std::to_string(x) + " " + std::to_string(y) + " " + body + ";",
+        x, y, s.w, s.h);
+  }
+  int floatatom(int x, int y, int digits = 6)
+  {
+    return add(
+        "#X floatatom " + std::to_string(x) + " " + std::to_string(y) + " "
+            + std::to_string(digits) + " 0 0 0 - - - 0;",
+        x, y, digits * PD_FW + 5, PD_FH + 4);
+  }
+  int symbolatom(int x, int y, int digits = 12)
+  {
+    return add(
+        "#X symbolatom " + std::to_string(x) + " " + std::to_string(y) + " "
+            + std::to_string(digits) + " 0 0 0 - - - 0;",
+        x, y, digits * PD_FW + 5, PD_FH + 4);
+  }
+
+  // A comment. Returns the height it occupies so callers advance Y by the real
+  // rendered height instead of guessing.
+  int text(int x, int y, std::string_view t, int cols = PD_MAX_TEXT_COLS)
+  {
+    const std::string flat = one_line(t);
+    const auto s = pd_text_size(flat, cols);
+    add("#X text " + std::to_string(x) + " " + std::to_string(y) + " "
+            + pd_escape(flat) + ", f " + std::to_string(cols) + ";",
+        x, y, s.w, s.h);
+    return s.h;
+  }
+
+  // A full-width horizontal rule, the vanilla-help separator.
+  void rule(int x, int y, int w)
+  {
+    add("#X obj " + std::to_string(x) + " " + std::to_string(y) + " cnv 1 "
+            + std::to_string(w) + " 1 empty empty empty 8 12 0 13 #909090 #909090 0;",
+        x, y, w, 1);
+  }
+
+  // A section-header bar carrying a label, in the ELSE / vanilla idiom.
+  void divider(int x, int y, int w, std::string_view label)
+  {
+    add("#X obj " + std::to_string(x) + " " + std::to_string(y) + " cnv 3 "
+            + std::to_string(w) + " 3 empty empty " + pd_label(label)
+            + " 8 12 0 13 #dcdcdc #000000 0;",
+        x, y, w, 3);
+  }
+
+  // A subpatch occupying one index on the parent canvas. `body` is the already
+  // rendered content of the child canvas.
+  int subpatch(
+      int x, int y, const std::string& name, int w, int h,
+      const std::string& body)
+  {
+    std::string block = "#N canvas 80 80 " + std::to_string(w) + " "
+                        + std::to_string(h) + " " + name + " 0;\n" + body
+                        + "#X restore " + std::to_string(x) + " " + std::to_string(y)
+                        + " pd " + name + ";";
+    const auto s = pd_box_size("pd " + name);
+    return add(std::move(block), x, y, s.w, s.h);
+  }
+
+  void write(std::ostream& o, int w, int h) const
+  {
+    o << "#N canvas 50 50 " << w << " " << h << " 12;\n";
+    for(const auto& l : objects)
+      o << l << '\n';
+    for(const auto& c : connections)
+      o << c << '\n';
+  }
+};
+
+// The widget driving one control, plus how it reaches the object.
+struct pd_driver
+{
+  int source = -1; // box whose outlet 0 carries the value
+  int inlet = 0;   // object inlet it should be connected to
+  int height = 0;  // vertical extent of everything emitted
+  int width = 0;   // horizontal extent
+};
+
+// Emit the demo widget for one control at (x, y).
+//
+// `inlet` is the object inlet the port is reachable on, or -1 when it has none
+// (attributes, and every control of an audio object) -- then the widget is
+// routed through a [<selector> $1( message into inlet 0, which every binding
+// accepts.
+pd_driver pd_emit_control(pd_patch& p, const port_t& c, int x, int y, int inlet)
+{
+  const std::string sel = selector(c.name);
+  pd_driver d;
+  d.inlet = inlet >= 0 ? inlet : 0;
+
+  int widget = -1;
+  int w = 0, h = 0;
+
+  if(is_impulse(c))
+  {
+    // A bare [<name>( engages the impulse; the message box is itself the
+    // clickable widget, so no bng -> "$1" indirection (which would error).
+    const int mi = p.msg(x, y, sel);
+    const auto s = pd_box_size(sel);
+    d.source = mi;
+    d.inlet = 0;
+    d.width = s.w;
+    d.height = s.h;
+    return d;
+  }
+  else if(is_bool_like(c))
+  {
+    widget = p.obj(
+        x, y, "tgl 17 0 empty empty empty 17 7 0 10 #fcfcfc #000000 #000000 0 1");
+    w = 18;
+    h = 18;
+  }
+  else if(!c.choices.empty())
+  {
+    // Enums and comboboxes: a radio gives every option one click, and the
+    // bindings accept the index as a float (from_atom on an enum rounds a
+    // A_FLOAT and also resolves A_SYMBOL names).
+    const int n = static_cast<int>(c.choices.size());
+    widget = p.obj(
+        x, y,
+        "hradio 17 1 0 " + std::to_string(n)
+            + " empty empty empty 0 -8 0 10 #fcfcfc #000000 #000000 0");
+    w = 17 * n + 1;
+    h = 18;
+  }
+  else if(c.value_type == "enum")
+  {
+    widget = p.floatatom(x, y, 5);
+    w = 5 * PD_FW + 5;
+    h = PD_FH + 4;
+  }
+  else if(c.value_type == "string")
+  {
+    widget = p.symbolatom(x, y, 12);
+    w = 12 * PD_FW + 5;
+    h = PD_FH + 4;
+  }
+  else if(c.value_type == "int")
+  {
+    widget = p.floatatom(x, y, 6);
+    w = 6 * PD_FW + 5;
+    h = PD_FH + 4;
+  }
+  else if(c.value_type == "float")
+  {
+    if(c.range && c.range->min && c.range->max)
+    {
+      widget = p.obj(
+          x, y,
+          "hsl 128 15 " + trim_num(*c.range->min) + " " + trim_num(*c.range->max)
+              + " 0 0 empty empty empty -2 -8 0 10 #fcfcfc #000000 #000000 0 1");
+      w = 131;
+      h = 18;
+    }
+    else
+    {
+      widget = p.floatatom(x, y, 6);
+      w = 6 * PD_FW + 5;
+      h = PD_FH + 4;
+    }
+  }
+  else if(const int nc = component_count(c); nc > 0)
+  {
+    // Multi-component control (xy / rgb / list ...): a clickable message
+    // prefilled with one demo value per component.
+    std::string body = sel;
+    for(int i = 0; i < nc; i++)
+      body += " " + component_default(c);
+    widget = p.msg(x, y, body);
+    const auto s = pd_box_size(body);
+    w = s.w;
+    h = s.h;
+    d.source = widget;
+    d.inlet = 0; // the message carries the selector, so it goes to the left inlet
+    d.width = w;
+    d.height = h;
+    return d;
+  }
+  else
+  {
+    // A container/opaque control: an editable message box prefilled with the
+    // selector, for the user to complete.
+    widget = p.msg(x, y, sel);
+    const auto s = pd_box_size(sel);
+    d.source = widget;
+    d.inlet = 0;
+    d.width = s.w;
+    d.height = s.h;
+    return d;
+  }
+
+  if(inlet >= 0)
+  {
+    // The port has its own inlet: the widget's raw value goes straight in.
+    d.source = widget;
+    d.width = w;
+    d.height = h;
+  }
+  else
+  {
+    // No inlet: wrap the value in a [<selector> $1( message on the left inlet.
+    const std::string body = sel + " \\$1";
+    const int mx = x + w + 12;
+    const int mi = p.msg(mx, y, body);
+    p.connect(widget, 0, mi, 0);
+    const auto s = pd_box_size(body);
+    d.source = mi;
+    d.inlet = 0;
+    d.width = w + 12 + s.w;
+    d.height = std::max(h, s.h);
+  }
+  return d;
+}
+
+// The sink an output port's value should land in. Value ports emit bare
+// floats/symbols/lists, so a number box shows them directly; only ports that
+// declare symbol()/c_name() are selector-prefixed and need a [route] first.
+// Callbacks carrying arguments stay on [print], which is what they are for.
+struct pd_sink
+{
+  int box = -1;  // the box connected to the object's outlet
+  int width = 0;
+  int height = 0;
+};
+
+pd_sink pd_emit_sink(pd_patch& p, const port_t& o, int x, int y)
+{
+  pd_sink s;
+  const std::string sel = selector(o.name);
+
+  auto place_value_box = [&](int px, int py) -> std::pair<int, size_t2> {
+    if(o.value_type == "bool")
+      return {p.obj(px, py,
+                    "tgl 17 0 empty empty empty 17 7 0 10 #fcfcfc #000000 "
+                    "#000000 0 1"),
+              size_t2{18, 18}};
+    if(o.value_type == "string" || o.value_type == "enum")
+      return {p.symbolatom(px, py, 12), size_t2{12 * PD_FW + 5, PD_FH + 4}};
+    if(component_count(o) > 0)
+    {
+      const std::string body = "print " + sel;
+      return {p.obj(px, py, body), pd_box_size(body)};
+    }
+    return {p.floatatom(px, py, 7), size_t2{7 * PD_FW + 5, PD_FH + 4}};
+  };
+
+  if(o.type == "audio")
+    return s; // handled by the audio chain
+
+  const bool prefixed = !o.out_selector.empty();
+  const bool message_like = o.type == "message" || o.type == "callback";
+
+  if(message_like || o.type == "midi")
+  {
+    const std::string body = "print " + sel;
+    s.box = p.obj(x, y, body);
+    const auto sz = pd_box_size(body);
+    s.width = sz.w;
+    s.height = sz.h;
+    return s;
+  }
+
+  if(prefixed)
+  {
+    // [route <selector>] strips the prefix the binding adds, then the value
+    // reaches a real number box.
+    const std::string body = "route " + selector(o.out_selector);
+    const int r = p.obj(x, y, body);
+    const auto rs = pd_box_size(body);
+    auto [vb, vs] = place_value_box(x, y + rs.h + 8);
+    p.connect(r, 0, vb, 0);
+    s.box = r;
+    s.width = std::max(rs.w, vs.w);
+    s.height = rs.h + 8 + vs.h;
+    return s;
+  }
+
+  auto [vb, vs] = place_value_box(x, y);
+  s.box = vb;
+  s.width = vs.w;
+  s.height = vs.h;
+  return s;
+}
+
+// The reference sections, rendered into the `pd reference` subpatch the way
+// vanilla's own help patches do (doc/5.reference/*-help.pd). Keeping the dry
+// documentation off the main canvas is what makes the demo readable.
+std::string pd_reference_body(
+    const model_t& m, const topology& t, const std::string& create, int& out_w,
+    int& out_h)
+{
+  pd_patch r;
+  const int col = 74; // the reference canvas is wider than the main one
+  const int x = 12;
+  int y = 10;
+
+  y += r.text(x, y, m.name + " - " + blurb(m, t), col) + 6;
+
+  auto section = [&](std::string_view title) {
+    r.divider(x - 4, y, 550, title);
+    y += 22;
+  };
+
+  section("INLETS");
+  {
+    const std::string intro
+        = t.is_audio
+              ? "Controls are set with a [<name> <value>( message on the left "
+                "inlet; the signal inlets take audio."
+              : "Each port below has its own inlet. Any [<name> <value>( "
+                "message on the left inlet also works.";
+    y += r.text(x + 8, y, intro, col);
+    if(t.is_audio && t.pd_signal_inlets > 0)
+      y += r.text(
+          x + 8, y,
+          "inlets 0.." + std::to_string(t.pd_signal_inlets - 1) + ": signal",
+          col);
+    for(std::size_t i = 0; i < m.inputs.size(); ++i)
+    {
+      const auto& c = m.inputs[i];
+      if(c.type == "audio")
+        continue;
+      std::string line;
+      if(t.pd_inlet[i] >= 0)
+        line = "inlet " + std::to_string(t.pd_inlet[i]) + ": ";
+      else if(c.is_attribute)
+        line = "attribute (left inlet or creation arg): ";
+      else
+        line = "left inlet: ";
+      line += port_label(c);
+      y += r.text(x + 8, y, line, col);
+    }
+  }
+
+  if(!m.messages.empty())
+  {
+    y += 8;
+    section("MESSAGES");
+    for(const auto& msg : m.messages)
+    {
+      std::string line = selector(msg.name);
+      for(const auto& a : msg.arguments)
+        line += " <" + a + ">";
+      if(!msg.return_type.empty() && msg.return_type != "void")
+        line += " -> " + msg.return_type;
+      y += r.text(x + 8, y, line, col);
+    }
+  }
+
+  if(!m.outputs.empty())
+  {
+    y += 8;
+    section("OUTLETS");
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+    {
+      const auto& o = m.outputs[i];
+      std::string line = "outlet " + std::to_string(t.pd_outlet[i]) + ": "
+                         + port_label(o);
+      if(!o.out_selector.empty())
+        line += " (prefixed with '" + selector(o.out_selector) + "')";
+      y += r.text(x + 8, y, line, col);
+    }
+  }
+
+  if(!m.init_arguments.empty())
+  {
+    y += 8;
+    section("ARGUMENTS");
+    y += r.text(x + 8, y, "creation: [" + create + "]", col);
+    for(std::size_t i = 0; i < m.init_arguments.size(); ++i)
+      y += r.text(
+          x + 8, y,
+          std::to_string(i + 1) + ") " + m.init_arguments[i], col);
+  }
+
+  y += 8;
+  section("ABOUT");
+  if(!m.author.empty())
+    y += r.text(x + 8, y, "author: " + m.author, col);
+  if(!m.version.empty())
+    y += r.text(x + 8, y, "version: " + m.version, col);
+  if(!m.category.empty())
+    y += r.text(x + 8, y, "category: " + m.category, col);
+  y += r.text(x + 8, y, "generated by avendish from " + m.c_name, col);
+
+  out_w = std::max(600, r.max_x + 30);
+  out_h = std::max(300, r.max_y + 30);
+
+  std::string body;
+  for(const auto& l : r.objects)
+    body += l + "\n";
+  for(const auto& c : r.connections)
+    body += c + "\n";
+  return body;
+}
+
+void emit_pd(const model_t& m, std::ostream& out, const std::string& external_name)
+{
+  const topology t = compute_topology(m);
+  pd_patch p;
+
+  std::vector<std::size_t> controls, audio_in_idx, other_in;
+  for(std::size_t i = 0; i < m.inputs.size(); ++i)
+  {
+    const auto& c = m.inputs[i];
+    if(c.type == "parameter")
+      controls.push_back(i);
+    else if(c.type == "audio")
+      audio_in_idx.push_back(i);
+    else
+      other_in.push_back(i);
+  }
 
   const std::string create
       = (!external_name.empty() ? external_name
          : m.c_name.empty()     ? m.name
                                 : m.c_name)
         + default_init_args(m);
-  const int obj_idx = p.add(
-      "#X obj 24 " + std::to_string(y_obj) + " " + pd_escape(create) + ";");
 
-  // --- controls: one driver per control, wired to the left inlet; per-control
-  // descriptions live in the inlets section below to keep the demo compact ---
-  for(int i = 0; i < nctrl; ++i)
+  // --- header -------------------------------------------------------------
+  const int left = 16;
+  int y = 8;
+  p.add("#X obj " + std::to_string(left) + " " + std::to_string(y)
+            + " cnv 15 400 40 empty empty " + pd_label(m.name)
+            + " 20 24 2 20 #e8e8e8 #000000 0;",
+        left, y, 400, 40);
+  p.add("#X obj " + std::to_string(left + 412) + " " + std::to_string(y)
+            + " cnv 15 128 40 empty empty avendish 12 16 0 14 #7c7c7c #e0e4dc 0;",
+        left + 412, y, 128, 40);
+  y += 48;
+
+  y += p.text(left, y, blurb(m, t), PD_MAX_TEXT_COLS + 12);
+  y += 6;
+  p.rule(left, y, 540);
+  y += 12;
+
+  // --- controls -----------------------------------------------------------
+  // Every control gets a widget and a label beside it. Rows are as tall as the
+  // tallest thing in them, so nothing can collide; long control lists wrap into
+  // columns once a column reaches the row budget.
+  constexpr int rows_per_col = 16;
+  constexpr int row_gap = 8;
+  constexpr int label_gap = 14;
+  const int demo_top = y;
+
+  int col_x = left;
+  int col_y = demo_top;
+  int col_widest = 0;
+  int rows_in_col = 0;
+  int demo_bottom = demo_top;
+
+  struct wired
   {
-    const int cx = 24 + (i / rows_per_col) * col_w;
-    const int cy = demo_top + (i % rows_per_col) * row;
-    pd_driver d = pd_emit_control(p, *controls[i], cx, cy);
-    if(d.message >= 0)
-      p.connect(d.message, 0, obj_idx, 0);
-  }
+    int source;
+    int inlet;
+  };
+  std::vector<wired> to_object;
 
-  // --- messages: clickable message boxes into the left inlet ---
-  int y = demo_top + tallest * row + 10;
+  auto flush_column = [&] {
+    demo_bottom = std::max(demo_bottom, col_y);
+    col_x += col_widest + 40;
+    col_y = demo_top;
+    col_widest = 0;
+    rows_in_col = 0;
+  };
+
+  for(std::size_t k = 0; k < controls.size(); ++k)
+  {
+    if(rows_in_col >= rows_per_col)
+      flush_column();
+
+    const std::size_t i = controls[k];
+    const port_t& c = m.inputs[i];
+    const int inlet = t.pd_inlet[i];
+
+    const pd_driver d = pd_emit_control(p, c, col_x, col_y, inlet);
+    if(d.source >= 0)
+      to_object.push_back({d.source, d.inlet});
+
+    // Label to the right of the widget, vertically centred on it.
+    const std::string label = one_line(port_label(c));
+    const int label_cols = std::min<int>(46, std::max<int>(12, (int)label.size()));
+    const auto ls = pd_text_size(label, label_cols);
+    const int lx = col_x + d.width + label_gap;
+    const int ly = col_y + std::max(0, (d.height - ls.h) / 2);
+    p.text(lx, ly, label, label_cols);
+
+    const int row_h = std::max(d.height, ls.h);
+    col_widest = std::max(col_widest, d.width + label_gap + ls.w);
+    col_y += row_h + row_gap;
+    rows_in_col++;
+  }
+  flush_column();
+  y = std::max(demo_bottom, demo_top);
+
+  // --- messages -----------------------------------------------------------
+  int msg_x = left;
   for(const auto& msg : m.messages)
   {
-    const int mi = p.add(
-        "#X msg 24 " + std::to_string(y) + " " + selector(msg.name) + ";");
-    p.connect(mi, 0, obj_idx, 0);
-    y += row;
+    std::string body = selector(msg.name);
+    for(const auto& a : msg.arguments)
+    {
+      if(a == "float" || a == "double")
+        body += " 0.5";
+      else if(a == "int" || a == "bool")
+        body += " 1";
+      else if(a == "string" || a == "symbol" || a == "std::string")
+        body += " sym";
+    }
+    const auto s = pd_box_size(body);
+    if(msg_x + s.w > left + 540)
+    {
+      msg_x = left;
+      y += s.h + 8;
+    }
+    const int mi = p.msg(msg_x, y, body);
+    to_object.push_back({mi, 0});
+    msg_x += s.w + 12;
+  }
+  if(!m.messages.empty())
+    y += PD_FH + 6 + 8;
+
+  y += 16;
+
+  // --- audio sources ------------------------------------------------------
+  int obj_y = y;
+  std::vector<int> audio_sources;
+  if(t.pd_signal_inlets > 0)
+  {
+    int ax = left;
+    for(int k = 0; k < t.pd_signal_inlets; ++k)
+    {
+      const std::string body = k == 0 ? "osc~ 220" : "osc~ 330";
+      const int o = p.obj(ax, y, body);
+      audio_sources.push_back(o);
+      ax += pd_box_size(body).w + 14;
+    }
+    obj_y = y + PD_FH + 6 + 20;
   }
 
-  // --- audio inputs: osc~ sources into the signal inlets. The binding turns
-  // the audio input ports into pd_signal_count() signal inlets, so wire one
-  // source per signal inlet (not per port). ---
-  const int in_sig = pd_signal_count(audio_in);
-  int ax = 24;
-  for(int k = 0; k < in_sig; ++k)
+  // --- the object ---------------------------------------------------------
+  const int obj_idx = p.obj(left, obj_y, pd_escape(create));
+  for(std::size_t k = 0; k < audio_sources.size(); ++k)
+    p.connect(audio_sources[k], 0, obj_idx, static_cast<int>(k));
+  for(const auto& w : to_object)
+    p.connect(w.source, 0, obj_idx, w.inlet);
+
+  y = obj_y + pd_box_size(create).h + 20;
+
+  // --- outputs ------------------------------------------------------------
+  int ox = left;
+  int row_bottom = y;
+  auto advance = [&](int w, int h) {
+    ox += w + 16;
+    row_bottom = std::max(row_bottom, y + h);
+    if(ox > left + 520)
+    {
+      ox = left;
+      y = row_bottom + 12;
+      row_bottom = y;
+    }
+  };
+
+  if(t.pd_signal_outlets > 0)
   {
-    const int osc = p.add(
-        "#X obj " + std::to_string(ax) + " " + std::to_string(y_obj - 40)
-        + " osc~ 220;");
-    p.connect(osc, 0, obj_idx, k);
-    ax += 70;
+    // vanilla's own idiom: clip the signal, scale it, then to the DAC.
+    int dac = -1;
+    for(int k = 0; k < t.pd_signal_outlets; ++k)
+    {
+      const std::string body = "clip~ -0.95 0.95";
+      const int clip = p.obj(ox, y, body);
+      p.connect(obj_idx, k, clip, 0);
+      const auto cs = pd_box_size(body);
+      if(dac < 0)
+      {
+        dac = p.obj(left, y + cs.h + 24, "dac~");
+        row_bottom = std::max(row_bottom, y + cs.h + 24 + PD_FH + 6);
+      }
+      p.connect(clip, 0, dac, k % 2);
+      ox += cs.w + 16;
+    }
+    y = row_bottom + 12;
+    ox = left;
+    row_bottom = y;
   }
 
-  // --- outputs: the audio binding exposes one signal outlet per channel,
-  // then one message outlet per non-audio output in declaration order. ---
-  std::vector<const port_t*> audio_out;
-  for(const auto& o : m.outputs)
-    if(o.type == "audio")
-      audio_out.push_back(&o);
-  const int out_sig = pd_signal_count(audio_out);
-
-  int dac_idx = -1;
-  int ox = 24, oy = y_obj + 44;
-  for(int k = 0; k < out_sig; ++k)
+  for(std::size_t i = 0; i < m.outputs.size(); ++i)
   {
-    const int clip = p.add(
-        "#X obj " + std::to_string(ox) + " " + std::to_string(oy)
-        + " clip~ -0.95 0.95;");
-    p.connect(obj_idx, k, clip, 0);
-    if(dac_idx < 0)
-      dac_idx = p.add("#X obj 24 " + std::to_string(oy + 40) + " dac~;");
-    p.connect(clip, 0, dac_idx, k % 2);
-    ox += 70;
-  }
-  int ctl_outlet = out_sig;
-  for(const auto& o : m.outputs)
-  {
+    const auto& o = m.outputs[i];
     if(o.type == "audio")
       continue;
-    if(o.type == "message" || o.type == "callback")
-    {
-      const int pr = p.add(
-          "#X obj " + std::to_string(ox) + " " + std::to_string(oy) + " print "
-          + selector(o.name) + ";");
-      p.connect(obj_idx, ctl_outlet, pr, 0);
-      ox += 90;
-    }
-    else
-    {
-      const int fa = p.add(
-          "#X floatatom " + std::to_string(ox) + " " + std::to_string(oy)
-          + " 5 0 0 0 - - - 0;");
-      p.connect(obj_idx, ctl_outlet, fa, 0);
-      ox += 60;
-    }
-    ctl_outlet++;
+    const pd_sink s = pd_emit_sink(p, o, ox, y);
+    if(s.box < 0)
+      continue;
+    p.connect(obj_idx, t.pd_outlet[i], s.box, 0);
+    // Name the sink so the user knows which outlet it belongs to.
+    const std::string tag = std::to_string(t.pd_outlet[i]) + ") " + o.name;
+    const int tag_cols = std::max<int>(6, std::min<int>(24, (int)tag.size()));
+    const auto ts = pd_text_size(tag, tag_cols);
+    p.text(ox, y + s.height + 2, tag, tag_cols);
+    advance(std::max(s.width, ts.w), s.height + 2 + ts.h);
   }
+  y = row_bottom + 16;
 
-  // --- reference sections (text only) below the demo ---
-  int sy = (dac_idx >= 0 ? y_obj + 44 + 80 : oy + 40);
-  if(sy < y_obj + 90)
-    sy = y_obj + 90;
-  p.divider(8, sy, "inlets");
-  sy += 20;
-  sy += p.text(
-      20, sy, "left inlet: any [name value( message sets the matching control");
-  for(const auto* c : controls)
-    sy += p.text(20, sy, selector(c->name) + " - " + pd_port_typestr(*c)
-                             + (c->description.empty() ? "" : ": " + c->description));
-  for(const auto& msg : m.messages)
-    sy += p.text(20, sy, selector(msg.name) + " - message");
-  for(const auto* c : other_in)
-    sy += p.text(20, sy, c->name + " - " + pd_port_typestr(*c)
-                             + " (no Pd representation)"
-                             + (c->description.empty() ? "" : ": " + c->description));
+  // --- footer: the reference subpatch + see-also --------------------------
+  p.rule(left, y, 540);
+  y += 12;
 
-  if(!m.outputs.empty())
+  int ref_w = 640, ref_h = 480;
+  const std::string ref = pd_reference_body(m, t, create, ref_w, ref_h);
+  const int ref_idx = p.subpatch(left, y, "reference", ref_w, ref_h, ref);
+  (void)ref_idx;
+  p.text(left + 110, y + 2, "<= click to open the full reference", 40);
+  y += PD_FH + 6 + 10;
+
+  if(!other_in.empty())
   {
-    sy += 10;
-    p.divider(8, sy, "outlets");
-    sy += 20;
-    int sig_k = 0, oi = out_sig;
-    for(const auto& o : m.outputs)
-    {
-      std::string label;
-      if(o.type == "audio")
-      {
-        const int nch = o.audio_channels > 0 ? o.audio_channels
-                        : (out_sig > sig_k ? out_sig - sig_k : 1);
-        label = std::to_string(sig_k);
-        if(nch > 1)
-          label += ".." + std::to_string(sig_k + nch - 1);
-        sig_k += nch;
-      }
-      else
-      {
-        label = std::to_string(oi++);
-      }
-      sy += p.text(20, sy, label + ") " + o.name + " - " + pd_port_typestr(o)
-                               + (o.description.empty() ? "" : ": " + o.description));
-    }
+    std::string s = "not representable in Pd: ";
+    for(std::size_t k = 0; k < other_in.size(); ++k)
+      s += (k ? ", " : "") + m.inputs[other_in[k]].name + " ("
+           + m.inputs[other_in[k]].type + ")";
+    y += p.text(left, y, s, PD_MAX_TEXT_COLS + 12);
   }
 
-  const int ncols = nctrl > 0 ? (nctrl + rows_per_col - 1) / rows_per_col : 1;
-  const int width = std::max(620, 24 + ncols * col_w + 80);
-  const int height = sy + 40;
-  p.write(out, width, height < 300 ? 300 : height);
+  const int width = std::max(620, p.max_x + 40);
+  const int height = std::max(320, std::max(p.max_y, y) + 40);
+  p.write(out, width, height);
 }
 
-// Max/MSP .maxhelp is a JSON patcher (same schema family as .maxpat). Controls
-// are driven exactly like Pd: a [selector value( message into the object's left
-// inlet (the binding registers an "anything" A_GIMME method), with the same
-// name normalization.
+// ---------------------------------------------------------------------------
+// Max/MSP emitter
+// ---------------------------------------------------------------------------
+//
+// .maxhelp is a JSON patcher (same schema family as .maxpat). Two things Max
+// does differently from Pd drive this code:
+//  - a `comment` is *not* auto-sized: it is drawn into patching_rect with the
+//    saved `linecount`, so text longer than the rect is silently clipped. Every
+//    comment here is measured and given a matching rect + linecount.
+//  - inlets/outlets come from the binding, not from the port order: see
+//    compute_topology().
+
+// Arial 12 (the help-patch default) measures ~6.05 px per character. Size boxes
+// with a slightly wider figure so nothing ever clips.
+constexpr double MAX_CHAR_W = 7.0;
+constexpr double MAX_LINE_H = 19.0;
+constexpr int MAX_COMMENT_COLS = 46;
+
 struct max_patch
 {
   json boxes = json::array();
+  // Max draws the boxes array front-to-back, so a decoration emitted before the
+  // text it sits behind hides it. Background boxes are collected separately and
+  // appended last.
+  json background = json::array();
   json lines = json::array();
   int n = 0;
+  double max_x = 0, max_y = 0;
+
+  void extend(double x, double y, double w, double h)
+  {
+    max_x = std::max(max_x, x + w);
+    max_y = std::max(max_y, y + h);
+  }
 
   std::string box(
       std::string_view maxclass, std::string_view text, double x, double y,
-      double w, double h, int nin = 1, int nout = 1)
+      double w, double h, int nin = 1, int nout = 1, json extra = json::object())
   {
     std::string id = "obj-" + std::to_string(++n);
     json b;
@@ -709,213 +1431,597 @@ struct max_patch
     b["numinlets"] = nin;
     b["numoutlets"] = nout;
     b["patching_rect"] = {x, y, w, h};
+    b["fontname"] = "Arial";
+    b["fontsize"] = 12.0;
     if(!text.empty())
       b["text"] = text;
     if(nout > 0)
       b["outlettype"] = std::vector<std::string>(static_cast<std::size_t>(nout), "");
-    boxes.push_back(json{{"box", b}});
+    for(auto it = extra.begin(); it != extra.end(); ++it)
+      b[it.key()] = it.value();
+    if(maxclass == "panel")
+      background.push_back(json{{"box", b}});
+    else
+      boxes.push_back(json{{"box", b}});
+    extend(x, y, w, h);
     return id;
   }
+
+  // A measured comment: the rect and linecount always match the text, so Max
+  // never clips it.
+  std::string comment(
+      std::string_view text, double x, double y, int cols = MAX_COMMENT_COLS,
+      json extra = json::object())
+  {
+    const int lines = wrapped_lines(text, cols);
+    const int used
+        = lines == 1 ? static_cast<int>(text.size()) : cols;
+    const double w = std::max(24.0, used * MAX_CHAR_W + 8.0);
+    const double h = lines * MAX_LINE_H + 4.0;
+    if(lines > 1)
+      extra["linecount"] = lines;
+    return box("comment", text, x, y, w, h, 1, 0, std::move(extra));
+  }
+
+  double comment_h(std::string_view text, int cols = MAX_COMMENT_COLS) const
+  {
+    return wrapped_lines(text, cols) * MAX_LINE_H + 4.0;
+  }
+  double comment_w(std::string_view text, int cols = MAX_COMMENT_COLS) const
+  {
+    const int lines = wrapped_lines(text, cols);
+    const int used = lines == 1 ? static_cast<int>(text.size()) : cols;
+    return std::max(24.0, used * MAX_CHAR_W + 8.0);
+  }
+
   void line(const std::string& s, int so, const std::string& d, int di)
   {
-    lines.push_back(json{
-        {"patchline",
-         {{"source", {s, so}}, {"destination", {d, di}}}}});
+    if(s.empty() || d.empty() || so < 0 || di < 0)
+      return;
+    lines.push_back(
+        json{{"patchline", {{"source", {s, so}}, {"destination", {d, di}}}}});
   }
-  void write(std::ostream& o) const
+
+  void write(std::ostream& o, double w, double h) const
   {
     json p;
-    p["patcher"] = {
-        {"fileversion", 1},
-        {"appversion",
-         {{"major", 8}, {"minor", 5}, {"revision", 0}, {"architecture", "x64"},
-          {"modernui", 1}}},
-        {"classnamespace", "box"},
-        {"rect", {80.0, 80.0, 900.0, 600.0}},
-        {"boxes", boxes},
-        {"lines", lines}};
+    p["fileversion"] = 1;
+    p["appversion"]
+        = {{"major", 8},   {"minor", 5},     {"revision", 0},
+           {"architecture", "x64"}, {"modernui", 1}};
+    p["classnamespace"] = "box";
+    p["rect"] = {80.0, 80.0, w, h};
+    p["bglocked"] = 0;
+    p["openinpresentation"] = 0;
+    p["default_fontsize"] = 12.0;
+    p["default_fontface"] = 0;
+    p["default_fontname"] = "Arial";
+    p["gridonopen"] = 1;
+    p["gridsize"] = {15.0, 15.0};
+    p["gridsnaponopen"] = 1;
+    p["objectsnaponopen"] = 1;
+    p["statusbarvisible"] = 2;
+    p["toolbarvisible"] = 1;
+    p["enablehscroll"] = 1;
+    p["enablevscroll"] = 1;
+    p["devicewidth"] = 0.0;
+    p["description"] = "";
+    p["digest"] = "";
+    p["tags"] = "";
+    p["style"] = "";
+    p["subpatcher_template"] = "";
+    p["assistshowspatchername"] = 0;
+    json all = boxes;
+    for(const auto& b : background)
+      all.push_back(b);
+    p["boxes"] = all;
+    p["lines"] = lines;
     json doc;
-    doc["patcher"] = p["patcher"];
+    doc["patcher"] = p;
     o << doc.dump(2) << '\n';
   }
 };
 
-void emit_max(const model_t& m, std::ostream& out, const std::string& external_name)
+// The Max UI object that drives one control, and the box whose outlet 0 carries
+// its value into the object.
+struct max_driver
 {
-  max_patch p;
+  std::string source;
+  int inlet = 0;
+  double width = 0, height = 0;
+};
 
-  p.box("comment", m.name, 40, 16, 400, 20, 1, 0);
-  p.box("comment", blurb(m), 40, 38, 600, 20, 1, 0);
+max_driver max_emit_control(max_patch& p, const port_t& c, double x, double y, int inlet)
+{
+  const std::string sel = selector(c.name);
+  max_driver d;
+  d.inlet = inlet >= 0 ? inlet : 0;
 
-  std::vector<const port_t*> controls, audio_in, other_in;
-  for(const auto& c : m.inputs)
+  std::string widget;
+  double w = 0, h = 0;
+
+  if(c.is_attribute)
   {
-    if(c.type == "parameter")
-      controls.push_back(&c);
-    else if(c.type == "audio")
-      audio_in.push_back(&c);
-    else
-      other_in.push_back(&c); // midi / texture / buffer / ...: documented below
+    // Attributes have a first-class editor in Max: attrui drives them by name,
+    // no message plumbing needed. It talks to the object's left inlet.
+    const std::string a = p.box(
+        "attrui", "", x, y, 260, 23, 1, 1,
+        json{{"attr", sel}, {"parameter_enable", 0}});
+    d.source = a;
+    d.inlet = 0;
+    d.width = 260;
+    d.height = 23;
+    return d;
   }
 
-  const double row = 36;
-  const double demo_top = 90;
-  const double y_obj
-      = demo_top + (controls.size() + m.messages.size()) * row + 60;
-
-  const std::string create
-      = (!external_name.empty() ? external_name
-         : m.c_name.empty()     ? m.name
-                                : m.c_name)
-        + default_init_args(m);
-  const std::string obj = p.box(
-      "newobj", create, 40, y_obj, 240, 22,
-      std::max<int>(1, static_cast<int>(audio_in.size())),
-      std::max<int>(1, static_cast<int>(m.outputs.size())));
-
-  double y = demo_top;
-  for(const auto* c : controls)
+  if(is_impulse(c))
   {
-    const std::string sel = selector(c->name);
-    std::string widget, body = sel + " $1";
-    std::string maxclass;
-    if(is_impulse(*c))
-    {
-      // engage the impulse, then run the object -- both from one click
-      // (the comma is Max's in-box message separator).
-      maxclass = "button";
-      body = sel + ", bang";
-    }
-    else if(c->value_type == "bool")
-      maxclass = "toggle";
-    else if(c->value_type == "int" || c->value_type == "enum")
-      maxclass = "number";
-    else if(c->value_type == "float")
-      maxclass = "flonum";
-    else if(c->value_type == "string")
-      maxclass = ""; // message-only
-    else if(const int nc = component_count(*c); nc > 0)
-    {
-      maxclass = "";
-      body = sel;
-      for(int i = 0; i < nc; i++)
-        body += " " + component_default(*c);
-    }
-    else
-    {
-      maxclass = "";
-      body = sel;
-    }
-
-    if(!maxclass.empty())
-    {
-      widget = p.box(maxclass, "", 40, y, 50, 22);
-      const std::string msg = p.box("message", body, 200, y, 140, 22);
-      p.line(widget, 0, msg, 0);
-      p.line(msg, 0, obj, 0);
-    }
-    else
-    {
-      if(c->value_type == "string")
-        body = sel + " test";
-      const std::string msg = p.box("message", body, 200, y, 140, 22);
-      p.line(msg, 0, obj, 0);
-    }
-    p.box("comment", c->name + " - " + pd_port_typestr(*c)
-                         + (c->description.empty() ? "" : ": " + c->description),
-          350, y, 240, 20, 1, 0);
-    y += row;
+    // See the Pd emitter: an impulse is engaged by a bare "<name>" message, and
+    // a "$1" message box fed a bang is an error.
+    const double bw = std::max(60.0, sel.size() * MAX_CHAR_W + 12.0);
+    const std::string mb = p.box("message", sel, x, y, bw, 22);
+    d.source = mb;
+    d.inlet = 0;
+    d.width = bw;
+    d.height = 22;
+    return d;
   }
-
-  for(const auto& msg : m.messages)
+  else if(is_bool_like(c))
   {
-    const std::string mb = p.box("message", selector(msg.name), 40, y, 140, 22);
-    p.line(mb, 0, obj, 0);
-    y += row;
+    widget = p.box("toggle", "", x, y, 24, 24);
+    w = 24;
+    h = 24;
   }
-
-  double ax = 40;
-  for(std::size_t k = 0; k < audio_in.size(); ++k)
+  else if(!c.choices.empty())
   {
-    const std::string src = p.box("newobj", "cycle~ 220", ax, y_obj - 40, 90, 22);
-    p.line(src, 0, obj, static_cast<int>(k));
-    ax += 100;
+    std::string items;
+    for(std::size_t i = 0; i < c.choices.size(); ++i)
+      items += (i ? " " : "") + c.choices[i];
+    widget = p.box(
+        "umenu", "", x, y, 140, 22, 1, 3,
+        json{{"items", items}, {"parameter_enable", 0}});
+    w = 140;
+    h = 22;
   }
-
-  double ox = 40;
-  const double oy = y_obj + 50;
-  std::string dac;
-  for(std::size_t i = 0; i < m.outputs.size(); ++i)
+  else if(c.value_type == "int" || c.value_type == "enum")
   {
-    const port_t& o = m.outputs[i];
-    if(o.type == "audio")
+    widget = p.box("number", "", x, y, 60, 22);
+    w = 60;
+    h = 22;
+  }
+  else if(c.value_type == "float")
+  {
+    if(c.range && c.range->min && c.range->max)
     {
-      const std::string g = p.box("newobj", "*~ 0.2", ox, oy, 60, 22);
-      p.line(obj, static_cast<int>(i), g, 0);
-      if(dac.empty())
-        dac = p.box("newobj", "ezdac~", 40, oy + 40, 45, 45, 2, 0);
-      p.line(g, 0, dac, static_cast<int>(i) % 2);
-      ox += 80;
+      const double lo = *c.range->min, hi = *c.range->max;
+      widget = p.box(
+          "slider", "", x, y, 140, 22, 1, 1,
+          json{{"floatoutput", 1},
+               {"size", hi - lo},
+               {"min", lo},
+               {"orientation", 1},
+               {"parameter_enable", 0}});
+      w = 140;
+      h = 22;
     }
     else
     {
-      const std::string pr
-          = p.box("newobj", "print " + selector(o.name), ox, oy, 140, 22, 1, 0);
-      p.line(obj, static_cast<int>(i), pr, 0);
-      ox += 150;
+      widget = p.box("flonum", "", x, y, 60, 22);
+      w = 60;
+      h = 22;
     }
+  }
+  else if(c.value_type == "string")
+  {
+    const std::string body = sel + " symbol";
+    const double bw = std::max(80.0, body.size() * MAX_CHAR_W + 12.0);
+    const std::string mb = p.box("message", body, x, y, bw, 22);
+    d.source = mb;
+    d.inlet = 0;
+    d.width = bw;
+    d.height = 22;
+    return d;
+  }
+  else if(const int nc = component_count(c); nc > 0)
+  {
+    std::string body = sel;
+    for(int i = 0; i < nc; i++)
+      body += " " + component_default(c);
+    const double bw = std::max(80.0, body.size() * MAX_CHAR_W + 12.0);
+    const std::string mb = p.box("message", body, x, y, bw, 22);
+    d.source = mb;
+    d.inlet = 0;
+    d.width = bw;
+    d.height = 22;
+    return d;
+  }
+  else
+  {
+    const double bw = std::max(80.0, sel.size() * MAX_CHAR_W + 12.0);
+    const std::string mb = p.box("message", sel, x, y, bw, 22);
+    d.source = mb;
+    d.inlet = 0;
+    d.width = bw;
+    d.height = 22;
+    return d;
   }
 
-  // --- reference sections (comments) below the demo ---
-  double sy = oy + (dac.empty() ? 50 : 110);
-  auto section = [&](std::string_view title) {
-    p.box("comment", title, 40, sy, 500, 20, 1, 0);
-    sy += 24;
-  };
-  if(!m.messages.empty())
+  if(inlet >= 0)
   {
-    section("messages:");
-    for(const auto& msg : m.messages)
-    {
-      std::string args;
-      for(const auto& a : msg.arguments)
-        args += " <" + a + ">";
-      p.box("comment", selector(msg.name) + args, 60, sy, 500, 20, 1, 0);
-      sy += 22;
-    }
+    d.source = widget;
+    d.width = w;
+    d.height = h;
   }
-  if(!other_in.empty())
+  else
   {
-    section("other inputs:");
-    for(const auto* c : other_in)
-    {
-      p.box("comment", c->name + " - " + pd_port_typestr(*c)
-                           + (c->description.empty() ? "" : ": " + c->description),
-            60, sy, 500, 20, 1, 0);
-      sy += 22;
-    }
+    const std::string body = sel + " $1";
+    const double bw = std::max(80.0, body.size() * MAX_CHAR_W + 12.0);
+    const std::string mb = p.box("message", body, x + w + 12, y, bw, 22);
+    p.line(widget, 0, mb, 0);
+    d.source = mb;
+    d.inlet = 0;
+    d.width = w + 12 + bw;
+    d.height = std::max(h, 22.0);
   }
-  if(!m.outputs.empty())
-  {
-    section("outlets:");
-    int oi = 0;
-    for(const auto& o : m.outputs)
-    {
-      p.box("comment", std::to_string(oi++) + ") " + o.name + " - "
-                           + pd_port_typestr(o)
-                           + (o.description.empty() ? "" : ": " + o.description),
-            60, sy, 500, 20, 1, 0);
-      sy += 22;
-    }
-  }
-
-  p.write(out);
+  return d;
 }
 
+struct max_sink
+{
+  std::string box;
+  double width = 0, height = 0;
+};
+
+max_sink max_emit_sink(max_patch& p, const port_t& o, double x, double y)
+{
+  max_sink s;
+  const std::string sel = selector(o.name);
+
+  auto value_box = [&](double px, double py) -> std::pair<std::string, size_t2> {
+    if(o.value_type == "bool")
+      return {p.box("toggle", "", px, py, 24, 24), {24, 24}};
+    if(o.value_type == "int")
+      return {p.box("number", "", px, py, 60, 22), {60, 22}};
+    if(o.value_type == "string" || o.value_type == "enum")
+      return {p.box("comment", "", px, py, 120, 22, 1, 0), {120, 22}};
+    if(component_count(o) > 0)
+      return {p.box("multislider", "", px, py, 140, 60, 1, 2), {140, 60}};
+    return {p.box("flonum", "", px, py, 60, 22), {60, 22}};
+  };
+
+  if(o.type == "audio")
+    return s;
+
+  if(o.type == "message" || o.type == "callback" || o.type == "midi")
+  {
+    const std::string body = "print " + sel;
+    const double bw = std::max(80.0, body.size() * MAX_CHAR_W + 12.0);
+    s.box = p.box("newobj", body, x, y, bw, 22, 1, 0);
+    s.width = bw;
+    s.height = 22;
+    return s;
+  }
+
+  if(!o.out_selector.empty())
+  {
+    const std::string body = "route " + selector(o.out_selector);
+    const double bw = std::max(80.0, body.size() * MAX_CHAR_W + 12.0);
+    const std::string r = p.box("newobj", body, x, y, bw, 22, 1, 2);
+    auto [vb, vs] = value_box(x, y + 32);
+    p.line(r, 0, vb, 0);
+    s.box = r;
+    s.width = std::max<double>(bw, vs.w);
+    s.height = 32 + vs.h;
+    return s;
+  }
+
+  auto [vb, vs] = value_box(x, y);
+  s.box = vb;
+  s.width = vs.w;
+  s.height = vs.h;
+  return s;
+}
+
+void emit_max(const model_t& m, std::ostream& out, const std::string& external_name)
+{
+  const topology t = compute_topology(m);
+  max_patch p;
+
+  std::vector<std::size_t> controls, audio_in_idx, other_in;
+  for(std::size_t i = 0; i < m.inputs.size(); ++i)
+  {
+    const auto& c = m.inputs[i];
+    if(c.type == "parameter")
+      controls.push_back(i);
+    else if(c.type == "audio")
+      audio_in_idx.push_back(i);
+    else
+      other_in.push_back(i);
+  }
+
+  const std::string base = !external_name.empty() ? external_name
+                           : m.c_name.empty()     ? m.name
+                                                  : m.c_name;
+  const std::string create = base + default_init_args(m);
+
+  const double left = 30;
+  double y = 20;
+
+  // --- header -------------------------------------------------------------
+  p.box("panel", "", left - 10, y - 8, 640, 62, 1, 0,
+        json{{"bgfillcolor_type", "color"},
+             {"bgfillcolor_color", {0.9, 0.9, 0.9, 1.0}},
+             {"rounded", 6},
+             {"border", 0}});
+  p.comment(m.name, left, y, 60,
+            json{{"fontsize", 18.0}, {"fontface", 1}});
+  y += 26;
+  {
+    const std::string b = blurb(m, t);
+    p.comment(b, left, y, 78);
+    y += p.comment_h(b, 78);
+  }
+  y += 18;
+
+  // --- controls -----------------------------------------------------------
+  constexpr int rows_per_col = 14;
+  const double row_gap = 12;
+  const double label_gap = 14;
+  const double demo_top = y;
+
+  double col_x = left;
+  double col_y = demo_top;
+  double col_widest = 0;
+  int rows_in_col = 0;
+  double demo_bottom = demo_top;
+
+  struct wired
+  {
+    std::string source;
+    int inlet;
+  };
+  std::vector<wired> to_object;
+
+  auto flush_column = [&] {
+    demo_bottom = std::max(demo_bottom, col_y);
+    col_x += col_widest + 44;
+    col_y = demo_top;
+    col_widest = 0;
+    rows_in_col = 0;
+  };
+
+  for(std::size_t k = 0; k < controls.size(); ++k)
+  {
+    if(rows_in_col >= rows_per_col)
+      flush_column();
+
+    const std::size_t i = controls[k];
+    const port_t& c = m.inputs[i];
+    const max_driver d = max_emit_control(p, c, col_x, col_y, t.max_inlet[i]);
+    if(!d.source.empty())
+      to_object.push_back({d.source, d.inlet});
+
+    const std::string label = port_label(c);
+    const int cols = std::min<int>(MAX_COMMENT_COLS, std::max<int>(10, (int)label.size()));
+    const double lw = p.comment_w(label, cols);
+    const double lh = p.comment_h(label, cols);
+    p.comment(label, col_x + d.width + label_gap,
+              col_y + std::max(0.0, (d.height - lh) / 2), cols,
+              json{{"textcolor", {0.3, 0.3, 0.3, 1.0}}});
+
+    col_widest = std::max(col_widest, d.width + label_gap + lw);
+    col_y += std::max(d.height, lh) + row_gap;
+    rows_in_col++;
+  }
+  flush_column();
+  y = std::max(demo_bottom, demo_top);
+
+  // --- messages -----------------------------------------------------------
+  double mx = left;
+  double msg_bottom = y;
+  for(const auto& msg : m.messages)
+  {
+    std::string body = selector(msg.name);
+    for(const auto& a : msg.arguments)
+    {
+      if(a == "float" || a == "double")
+        body += " 0.5";
+      else if(a == "int" || a == "bool")
+        body += " 1";
+      else if(a == "string" || a == "symbol" || a == "std::string")
+        body += " sym";
+    }
+    const double bw = std::max(60.0, body.size() * MAX_CHAR_W + 12.0);
+    if(mx + bw > left + 620)
+    {
+      mx = left;
+      y = msg_bottom + 10;
+    }
+    const std::string mb = p.box("message", body, mx, y, bw, 22);
+    to_object.push_back({mb, 0});
+    mx += bw + 12;
+    msg_bottom = std::max(msg_bottom, y + 22);
+  }
+  y = msg_bottom + 26;
+
+  // --- audio source -------------------------------------------------------
+  // Max's audio binding builds a single multichannel signal inlet, so one
+  // source feeds the object regardless of how many audio ports it declares.
+  std::string audio_src;
+  double obj_y = y;
+  if(!audio_in_idx.empty())
+  {
+    const int nch = pd_signal_count([&] {
+      std::vector<const port_t*> v;
+      for(auto i : audio_in_idx)
+        v.push_back(&m.inputs[i]);
+      return v;
+    }());
+    const std::string body
+        = nch > 1 ? "mc.cycle~ " + std::to_string(nch) + " 220" : "cycle~ 220";
+    const double bw = std::max(90.0, body.size() * MAX_CHAR_W + 12.0);
+    audio_src = p.box("newobj", body, left, y, bw, 22);
+    obj_y = y + 46;
+  }
+
+  // --- the object ---------------------------------------------------------
+  int obj_inlets = 1, obj_outlets = 1;
+  for(std::size_t i = 0; i < m.inputs.size(); ++i)
+    obj_inlets = std::max(obj_inlets, t.max_inlet[i] + 1);
+  for(std::size_t i = 0; i < m.outputs.size(); ++i)
+    obj_outlets = std::max(obj_outlets, t.max_outlet[i] + 1);
+
+  const double obj_w = std::max(160.0, create.size() * MAX_CHAR_W + 20.0);
+  const std::string obj
+      = p.box("newobj", create, left, obj_y, obj_w, 22, obj_inlets, obj_outlets);
+  if(!audio_src.empty())
+    p.line(audio_src, 0, obj, 0);
+  for(const auto& w : to_object)
+    p.line(w.source, 0, obj, w.inlet);
+
+  y = obj_y + 46;
+
+  // --- outputs ------------------------------------------------------------
+  double ox = left;
+  double row_bottom = y;
+  if(!m.outputs.empty())
+  {
+    bool any_audio = false;
+    for(const auto& o : m.outputs)
+      any_audio |= o.type == "audio";
+    if(any_audio)
+    {
+      const std::string g = p.box("newobj", "*~ 0.2", ox, y, 70, 22);
+      p.line(obj, 0, g, 0);
+      const std::string dac = p.box("newobj", "ezdac~", ox, y + 40, 45, 45, 2, 0);
+      p.line(g, 0, dac, 0);
+      p.line(g, 0, dac, 1);
+      const std::string sc = p.box("newobj", "scope~", ox + 90, y, 130, 90, 2, 0);
+      p.line(g, 0, sc, 0);
+      row_bottom = std::max(row_bottom, y + 90);
+      ox += 240;
+    }
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+    {
+      const auto& o = m.outputs[i];
+      if(o.type == "audio")
+        continue;
+      if(ox > left + 560)
+      {
+        ox = left;
+        y = row_bottom + 16;
+        row_bottom = y;
+      }
+      const max_sink s = max_emit_sink(p, o, ox, y);
+      if(s.box.empty())
+        continue;
+      p.line(obj, t.max_outlet[i], s.box, 0);
+      const std::string tag = std::to_string(t.max_outlet[i]) + ") " + o.name;
+      const int cols = std::max<int>(6, std::min<int>(28, (int)tag.size()));
+      p.comment(tag, ox, y + s.height + 4, cols,
+                json{{"textcolor", {0.3, 0.3, 0.3, 1.0}}});
+      row_bottom = std::max(row_bottom, y + s.height + 4 + p.comment_h(tag, cols));
+      ox += std::max(s.width, p.comment_w(tag, cols)) + 20;
+    }
+  }
+  y = row_bottom + 26;
+
+  // --- reference ----------------------------------------------------------
+  auto section = [&](std::string_view title) {
+    p.comment(title, left, y, 40,
+              json{{"fontface", 1}, {"fontsize", 13.0}});
+    y += p.comment_h(title, 40) + 4;
+  };
+  auto entry = [&](const std::string& s) {
+    const int cols = 78;
+    p.comment(s, left + 14, y, cols);
+    y += p.comment_h(s, cols) + 2;
+  };
+
+  section("Inlets");
+  if(t.is_audio)
+    entry("inlet 0: multichannel signal. Controls are set with a "
+          "\"<name> <value>\" message on it.");
+  for(std::size_t i = 0; i < m.inputs.size(); ++i)
+  {
+    const auto& c = m.inputs[i];
+    if(c.type == "audio")
+      continue;
+    std::string line;
+    if(c.is_attribute)
+      line = "@" + selector(c.name) + " (attribute): ";
+    else if(t.max_inlet[i] >= 0)
+      line = "inlet " + std::to_string(t.max_inlet[i]) + ": ";
+    else
+      line = "left inlet: ";
+    line += port_label(c);
+    entry(line);
+  }
+
+  if(!m.messages.empty())
+  {
+    y += 8;
+    section("Messages");
+    for(const auto& msg : m.messages)
+    {
+      std::string line = selector(msg.name);
+      for(const auto& a : msg.arguments)
+        line += " <" + a + ">";
+      entry(line);
+    }
+  }
+
+  if(!m.outputs.empty())
+  {
+    y += 8;
+    section("Outlets");
+    for(std::size_t i = 0; i < m.outputs.size(); ++i)
+    {
+      const auto& o = m.outputs[i];
+      std::string line = "outlet " + std::to_string(t.max_outlet[i]) + ": "
+                         + port_label(o);
+      if(!o.out_selector.empty())
+        line += " (prefixed with '" + selector(o.out_selector) + "')";
+      entry(line);
+    }
+  }
+
+  if(!m.init_arguments.empty())
+  {
+    y += 8;
+    section("Arguments");
+    for(std::size_t i = 0; i < m.init_arguments.size(); ++i)
+      entry(std::to_string(i + 1) + ") " + m.init_arguments[i]);
+  }
+
+  if(!other_in.empty())
+  {
+    y += 8;
+    section("Not representable in Max");
+    for(auto i : other_in)
+      entry(m.inputs[i].name + " - " + m.inputs[i].type);
+  }
+
+  y += 8;
+  {
+    std::string about = "Generated by avendish";
+    if(!m.author.empty())
+      about += " - " + m.author;
+    if(!m.version.empty())
+      about += " - v" + m.version;
+    p.comment(about, left, y, 60, json{{"textcolor", {0.5, 0.5, 0.5, 1.0}}});
+    y += p.comment_h(about, 60);
+  }
+
+  p.write(out, std::max(700.0, p.max_x + 40), std::max(500.0, p.max_y + 40));
+}
+
+// ---------------------------------------------------------------------------
 // Godot text scene (.tscn) — fully text-emittable. Instantiates the
 // extension-registered class and sets a few exported properties to their init
 // values. `cls` is the registered class name (avnd_<c_name><suffix>); when
 // absent we fall back to avnd_<c_name>.
+// ---------------------------------------------------------------------------
 bool valid_gd_ident(std::string_view s)
 {
   if(s.empty())
@@ -941,12 +2047,12 @@ std::string gd_node_name(std::string_view s)
 
 void emit_godot(const model_t& m, std::ostream& out, const std::string& cls)
 {
+  const topology t = compute_topology(m);
   const std::string klass
-      = !cls.empty() ? cls
-                     : "avnd_" + (m.c_name.empty() ? m.name : m.c_name);
+      = !cls.empty() ? cls : "avnd_" + (m.c_name.empty() ? m.name : m.c_name);
 
   out << "[gd_scene format=3]\n\n";
-  out << "; " << m.name << " - " << blurb(m) << " (auto-generated example)\n\n";
+  out << "; " << m.name << " - " << blurb(m, t) << " (auto-generated example)\n\n";
   out << "[node name=\"" << gd_node_name(m.name) << "\" type=\"" << klass << "\"]\n";
 
   // Exported properties (Avendish parameters). Property names are the control
@@ -985,9 +2091,10 @@ void emit_godot(const model_t& m, std::ostream& out, const std::string& cls)
 // c_name.
 void emit_td(const model_t& m, std::ostream& out, const std::string& optype)
 {
+  const topology t = compute_topology(m);
   const std::string ty = optype.empty() ? m.c_name : optype;
   out << "# TouchDesigner example builder for " << m.name << "\n";
-  out << "# " << blurb(m) << "\n";
+  out << "# " << blurb(m, t) << "\n";
   out << "#\n";
   out << "# Run inside TouchDesigner (paste into a Text DAT and run it, or call\n";
   out << "# build(op('/')) ) to create an example network for this operator.\n";
@@ -998,7 +2105,7 @@ void emit_td(const model_t& m, std::ostream& out, const std::string& optype)
   {
     if(c.type != "parameter")
       continue;
-    out << "#   - " << c.name << " : " << pd_port_typestr(c);
+    out << "#   - " << c.name << " : " << port_typestr(c);
     if(!c.description.empty())
       out << " - " << c.description;
     out << "\n";
@@ -1026,8 +2133,9 @@ void emit_td(const model_t& m, std::ostream& out, const std::string& optype)
 // Python example script: import the module and exercise the object.
 void emit_python(const model_t& m, std::ostream& out)
 {
+  const topology t = compute_topology(m);
   out << "#!/usr/bin/env python3\n";
-  out << "\"\"\"" << m.name << " - " << blurb(m) << "\n\n";
+  out << "\"\"\"" << m.name << " - " << blurb(m, t) << "\n\n";
   out << "Auto-generated usage example.\n\"\"\"\n\n";
   out << "import " << m.c_name << " as mod\n\n";
   out << "obj = mod." << m.c_name << "()\n\n";

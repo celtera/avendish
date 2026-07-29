@@ -52,7 +52,11 @@ void print_metadatas(dump_json::value j)
       avnd::prop_product, avnd::prop_version, avnd::prop_label, avnd::prop_short_label,
       avnd::prop_category, avnd::prop_copyright, avnd::prop_license, avnd::prop_url,
       avnd::prop_email, avnd::prop_manual_url, avnd::prop_support_url,
-      avnd::prop_description>;
+      avnd::prop_description, avnd::prop_short_description,
+      // Ports declaring a symbol() have their outlet messages prefixed with it
+      // (see value_to_pd_dispatch / max::outputs); help-patch generators need
+      // to know that to insert a [route] before a numeric sink.
+      avnd::prop_symbol>;
 
   auto test = [&j]<typename Arg>(Arg& args) {
     if constexpr(Arg::template has<T>())
@@ -503,11 +507,28 @@ void print_parameter(dump_json::value obj)
     if_possible(obj["default"] = type{}.value);
   }
 
+  // A combobox names its options through range::values (halp::combo_pair) even
+  // when the underlying value is a plain float, so it is neither a
+  // minmax-ranged nor an enum parameter: emit its labels too, otherwise a
+  // generated patch has no way to offer the choices.
+  if constexpr(
+      !avnd::enum_parameter<type>
+      && (requires { std::size(avnd::get_range<type>().values()); }
+          || requires { std::size(avnd::get_range<type>().values); }))
+  {
+    obj["choices"] = avnd::get_enum_choices<type>();
+  }
+
   if constexpr(avnd::has_widget<type>)
   {
     const auto& p1  = avnd::get_widget<type>();
     const auto& p2 = p1.name();
     obj["widget"] = p2;
+  }
+
+  if constexpr(avnd::has_unit<type>)
+  {
+    obj["unit"] = avnd::get_unit<type>();
   }
 
   if constexpr(avnd::smooth_parameter_port<type>)
@@ -592,6 +613,12 @@ void emit_port(Field wrap, dump_json::value obj)
   using type = typename Field::type;
   print_metadatas<type>(obj);
   obj["type"] = port_type(wrap);
+
+  // Attributes are not inlets: Max exposes them through attrui / "@name value"
+  // and Pd only through a message on the left inlet. Every consumer that has to
+  // compute an inlet index needs this distinction.
+  if constexpr(avnd::attribute_port<type>)
+    obj["class_attribute"] = true;
 
   if constexpr(avnd::tensor_port<type>)
     print_tensor<Field>(obj["tensor"]);

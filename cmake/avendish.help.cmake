@@ -21,6 +21,19 @@ function(avnd_generate_help)
     return()
   endif()
 
+  # One object can produce several targets in the same backend (TouchDesigner
+  # emits e.g. Foo_CHOP_AUDIO and Foo_CHOP_MESSAGE for one C_NAME), and they all
+  # ask for the same per-c_name help file. Two rules writing one path is a hard
+  # error with Ninja ("multiple rules generate ..."), so the first one wins and
+  # the rest just inherit the property.
+  get_property(_avnd_help_seen GLOBAL PROPERTY AVND_HELP_DESTINATIONS)
+  if("${AVND_DESTINATION}" IN_LIST _avnd_help_seen)
+    set_target_properties(${AVND_FX_TARGET}
+      PROPERTIES "${AVND_PROPERTY}" "${AVND_DESTINATION}")
+    return()
+  endif()
+  set_property(GLOBAL APPEND PROPERTY AVND_HELP_DESTINATIONS "${AVND_DESTINATION}")
+
   # 1) Explicit per-object override: copy it verbatim to the expected place.
   if(AVND_OVERRIDE)
     if(NOT IS_ABSOLUTE "${AVND_OVERRIDE}")
