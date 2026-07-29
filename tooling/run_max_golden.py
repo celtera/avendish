@@ -275,6 +275,41 @@ def load_goldens(goldens_dir):
     return out
 
 
+class StallTracker:
+    """Decides whether a Max launch is still making progress.
+
+    Progress is the breadcrumb advancing -- it changes once per object, seconds
+    apart. Counting *parseable report entries* instead (as this used to) mistook
+    "slow to report" for "wedged": an object whose entry is too long to be
+    written in one piece never produces a parseable entry at all, so the timer
+    fired and the harness blamed whichever object happened to be current.
+
+    Nothing counts until the first breadcrumb appears, because Max takes 30-45 s
+    to boot and the clock must not run during that.
+    """
+
+    def __init__(self, now, stall_seconds=60):
+        self.stall_seconds = stall_seconds
+        self.started = False
+        self.stall_since = now
+        self.last_crumb = None
+        self.last_entries = None
+
+    def update(self, now, crumb, n_entries):
+        if crumb and not self.started:
+            self.started = True
+            self.stall_since = now
+        if crumb and crumb != self.last_crumb:
+            self.last_crumb = crumb
+            self.stall_since = now
+        if self.last_entries is None or n_entries != self.last_entries:
+            self.last_entries = n_entries
+            self.stall_since = now
+
+    def stalled(self, now):
+        return self.started and (now - self.stall_since) > self.stall_seconds
+
+
 def parse_report(path):
     """Report is JSON-lines (one object per line), written by the js driver and
     appended-to by us on crash. Returns {name: entry}.
@@ -288,7 +323,9 @@ def parse_report(path):
     if not os.path.exists(path):
         return entries
     buf = ""
-    for line in open(path, encoding="utf-8"):
+    with open(path, encoding="utf-8") as fp:
+        lines = fp.readlines()
+    for line in lines:
         line = line.rstrip("\n")
         if not line.strip() and not buf:
             continue
@@ -413,35 +450,17 @@ def main():
 
         proc = subprocess.Popen([args.max, patch])
         deadline = time.time() + args.timeout
-        last_progress = len(done)
-        stall_since = time.time()
         # Max is slow to start (~30-45s) and may hand off to another process
-        # instance (so proc.poll() exiting is NOT a reason to stop). Give a
-        # generous grace period until the driver first writes its breadcrumb,
-        # then apply a stall timeout.
-        started = False
-        last_crumb = None
+        # instance (so proc.poll() exiting is NOT a reason to stop).
+        tracker = StallTracker(time.time())
         while time.time() < deadline:
             dismissed += dismiss_dialogs()
             crumb_val = _read(breadcrumb)
             if crumb_val == "DONE":
                 break
-            if crumb_val and not started:
-                started = True
-                stall_since = time.time()
-            # Progress = the breadcrumb moving on. It changes once per object,
-            # seconds apart, whereas a parseable report entry may not appear for
-            # a long time (or at all, for an object whose line is huge) -- so
-            # counting entries mistook "slow to report" for "wedged".
-            if crumb_val and crumb_val != last_crumb:
-                last_crumb = crumb_val
-                stall_since = time.time()
-            cur = parse_report(report)
-            if len(cur) != last_progress:
-                last_progress = len(cur)
-                stall_since = time.time()
-            elif started and time.time() - stall_since > 60:
-                break  # driver was running but wedged for 60s -> crash/hang
+            tracker.update(time.time(), crumb_val, len(parse_report(report)))
+            if tracker.stalled(time.time()):
+                break  # driver was running but wedged -> crash/hang
             time.sleep(1)
         try:
             proc.kill()
