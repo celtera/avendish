@@ -119,8 +119,16 @@ def compare_textures(textures, golden, atol, rtol, content="hash"):
         return ("no-backend-texture", "")
     n = min(len(textures), len(golden))
     hashes_match = True
+    degenerate = 0
     for i in range(n):
         t, g = textures[i], golden[i]
+        # A 0-sized golden output (e.g. a filter downscaling 16x16 by 32) is a
+        # degenerate image no host texture/matrix type can represent -- Jitter
+        # has no 0x0 matrix, so the backend necessarily reports something else.
+        # There is nothing meaningful to diff; don't call it a failure.
+        if not g.get("width") or not g.get("height"):
+            degenerate += 1
+            continue
         if (t.get("width"), t.get("height")) != (g.get("width"), g.get("height")):
             return ("MISMATCH",
                     f"tex{i} size {t.get('width')}x{t.get('height')} "
@@ -129,10 +137,13 @@ def compare_textures(textures, golden, atol, rtol, content="hash"):
             hashes_match = False
             if content == "hash":
                 return ("MISMATCH", f"tex{i} content hash differs")
+    skipped = f", {degenerate} degenerate skipped" if degenerate else ""
+    if degenerate == n:
+        return ("no-golden-texture", f"{n} degenerate (0-sized) golden textures")
     if content == "dims":
         note = "content byte-identical" if hashes_match else "dims only"
-        return ("match", f"{n} textures ({note})")
-    return ("match", f"{n} textures")
+        return ("match", f"{n} textures ({note}{skipped})")
+    return ("match", f"{n} textures{skipped}")
 
 
 def compare_callbacks(events, golden_events, atol, rtol):
