@@ -16,8 +16,10 @@
 #include <ext.h>
 #include <z_dsp.h>
 
+#include <algorithm>
 #include <cstring>
 #include <span>
+#include <vector>
 #include <string>
 
 /**
@@ -66,6 +68,15 @@ struct audio_processor : processor_common<T>
 
   int m_runtime_input_count{};
   int m_runtime_output_count{};
+
+  // Max hands perform() only the channels it actually wired up, but the object
+  // was prepared for max(declared, actual) and iterates its *declared* channel
+  // count -- so a 2-channel object fed 1 channel reads ins[1] out of bounds
+  // (this is the input-side counterpart of the fixed-output-bus bug in #127).
+  // These re-point the missing channels at silence / a scratch sink.
+  std::vector<double*> m_in_ptrs, m_out_ptrs;
+  std::vector<double> m_silence, m_scratch;
+  int m_prepared_inputs{}, m_prepared_outputs{};
 
   // we don't use ctor / dtor, because
   // this breaks aggregate-ness...
@@ -207,6 +218,14 @@ struct audio_processor : processor_common<T>
     // Allocate buffers if supported
     avnd::prepare(implementation, setup_info);
 
+    // Backing storage for the channels Max will not supply (see the members).
+    m_prepared_inputs = input_chans;
+    m_prepared_outputs = output_chans;
+    m_silence.assign(std::size_t(N), 0.0);
+    m_scratch.assign(std::size_t(N), 0.0);
+    m_in_ptrs.assign(std::size_t(input_chans), nullptr);
+    m_out_ptrs.assign(std::size_t(output_chans), nullptr);
+
     // Notify puredata of the dsp execution
     constexpr t_perfroutine64 perf
         = +[](t_object* x, t_object* dsp64, double** ins, long numins, double** outs,
@@ -222,9 +241,36 @@ struct audio_processor : processor_common<T>
       double** ins, long numins, double** outs, long numouts, long sampleframes,
       long flags, void* userparam)
   {
+    // Present exactly the channel counts the object was prepared for: Max's own
+    // buffers where it gave us one, silence / a scratch sink for the rest.
+    // Anything else and the adapter walks off the end of ins/outs.
+    auto nin = std::size_t(std::max<int>(m_prepared_inputs, 0));
+    auto nout = std::size_t(std::max<int>(m_prepared_outputs, 0));
+    double** in_ptr = ins;
+    double** out_ptr = outs;
+    if(m_in_ptrs.size() >= nin && m_out_ptrs.size() >= nout
+       && std::ptrdiff_t(m_silence.size()) >= sampleframes
+       && std::ptrdiff_t(m_scratch.size()) >= sampleframes)
+    {
+      for(std::size_t c = 0; c < nin; c++)
+        m_in_ptrs[c] = (c < std::size_t(numins) && ins[c]) ? ins[c] : m_silence.data();
+      for(std::size_t c = 0; c < nout; c++)
+        m_out_ptrs[c]
+            = (c < std::size_t(numouts) && outs[c]) ? outs[c] : m_scratch.data();
+      in_ptr = m_in_ptrs.data();
+      out_ptr = m_out_ptrs.data();
+    }
+    else
+    {
+      // dsp() has not run for this configuration yet: pass through what Max
+      // gave us rather than silence, exactly as before.
+      nin = std::size_t(numins);
+      nout = std::size_t(numouts);
+    }
+
     processor.process(
-        implementation, avnd::span<double*>{ins, std::size_t(numins)},
-        avnd::span<double*>{outs, std::size_t(numouts)}, sampleframes);
+        implementation, avnd::span<double*>{in_ptr, nin},
+        avnd::span<double*>{out_ptr, nout}, sampleframes);
 
     // Impulse-like (optional) inputs are one-shot: consumed by this block,
     // else a single [Bang< message would fire on every subsequent block.
