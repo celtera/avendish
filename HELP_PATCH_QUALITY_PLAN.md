@@ -244,6 +244,53 @@ Three defects only the real applications exposed, now fixed:
 Remaining: phase 6 (authoring `description()` on the objects themselves — 24/112
 objects and 3/469 ports declare one today) and a Max-side automated load sweep.
 
+## 2c. Full sweep — everything built, everything checked
+
+Built from scratch and checked: **avendish** 98 Pd externals + 112 Max externals
+(+ their help patches), **score-addon-puara** 26 + 26, **score-addon-cv** 49 Max,
+**score-addon-onnx** 3 + 15. Zero build failures.
+
+Static checks (`tooling/check_help_patches.py`) now cover, per patch **and per
+subpatch**:
+
+* geometry — overlap, out-of-canvas, using each host's real font metrics;
+* Max comment clipping (rect + linecount vs the text);
+* connection integrity — Pd connect indices in range, Max patchlines referencing
+  existing boxes and in-range ports;
+* **dangling boxes** — anything wired at neither end;
+* **the documented object is actually instantiated**;
+* **port coverage** — every port in the introspection dump appears in the patch
+  (`--dumps`).
+
+Result: **0 issues across 259 help patches**. Each check was negative-tested
+against a deliberately broken patch, so the clean result is not vacuous.
+
+The coverage check earned its keep immediately: audio *input* ports were named
+nowhere in either backend (both reference sections skipped them for a generic
+"signal inlet" line), so with `AudioSidechainExample` there was no way to learn
+which input is the sidechain. Fixed.
+
+Runtime: `tooling/run_help_patch_smoke.py` loads every Pd patch in a headless Pd
+with the real externals — **0 errors across 127 patches** (98 avendish + 26 puara
++ 3 onnx), with the detector proven by a negative test.
+
+### Open: Max reports connection errors that no static check can catch
+
+Opening the generated `.maxhelp` files in Max surfaces console errors of the form
+`<obj> • error connecting outlet N to number inlet 1` for a handful of objects
+(`avnd_all_ports_types` extensively, plus `avnd_complete_message_example`,
+`avnd_noisebuffer`, `cv_blob_stats`). A saved patchline is validated against the
+**real** outlet count of the instantiated object, which no amount of reading the
+`.maxhelp` can predict — the Pd equivalent ("connection failed") is caught by the
+headless smoke test, but Max has no headless mode.
+
+The vehicle for closing this is the existing golden harness
+(`tooling/run_max_golden.py` + `tooling/max/avnd_max_driver.js`), which already
+runs *inside* Max and writes a per-object report. Whether the root cause is the
+help generator's outlet mapping or the Max binding's outlet creation is not yet
+established — `avnd_all_ports_types` is a 96-output stress object, so it may be a
+binding limit rather than a patch bug.
+
 ## 3. Acceptance criteria
 
 * 0 overlapping box pairs and 0 out-of-canvas boxes across every generated Pd

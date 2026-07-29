@@ -1781,7 +1781,15 @@ max_sink max_emit_sink(max_patch& p, const port_t& o, double x, double y)
     if(o.value_type == "int")
       return {p.box("number", "", px, py, 60, 22), {60, 22}};
     if(o.value_type == "string" || o.value_type == "enum")
-      return {p.box("comment", "", px, py, 120, 22, 1, 0), {120, 22}};
+    {
+      // A comment has NO inlet -- wiring one is an "error connecting outlet N
+      // to comment inlet" at load. Max's idiom for showing a symbol is
+      // [prepend set] into a message box.
+      const std::string pre = p.box("newobj", "prepend set", px, py, 100, 22);
+      const std::string msg = p.box("message", "", px, py + 32, 120, 22);
+      p.line(pre, 0, msg, 0);
+      return {pre, {120, 54}};
+    }
     if(component_count(o) > 0)
       return {p.box("multislider", "", px, py, 140, 60, 1, 2), {140, 60}};
     return {p.box("flonum", "", px, py, 60, 22), {60, 22}};

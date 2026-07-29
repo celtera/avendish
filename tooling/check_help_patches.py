@@ -337,6 +337,26 @@ def pd_check(path):
 MAX_CHAR_W = 6.2
 MAX_LINE_H = 18.0
 
+# Real inlet/outlet counts of the stock Max classes the generator emits. The
+# saved numinlets/numoutlets in a .maxpat are NOT authoritative -- Max validates
+# a patchline against the instantiated object -- so a box claiming an inlet it
+# does not have loads with "error connecting outlet N to <class> inlet M".
+# A `comment` in particular has no inlet at all.
+MAX_CLASS_PORTS = {
+    "comment": (0, 0),
+    "panel": (0, 0),
+    "number": (1, 2),
+    "flonum": (1, 2),
+    "toggle": (1, 1),
+    "button": (1, 1),
+    "slider": (1, 1),
+    "umenu": (1, 3),
+    "message": (2, 1),
+    "multislider": (1, 2),
+    "attrui": (1, 1),
+    "jit.pwindow": (1, 2),
+}
+
 # Boxes that are decoration and may legitimately sit under other boxes.
 MAX_BACKGROUND = {"panel", "bpatcher"}
 # Boxes with no visual extent worth checking.
@@ -443,9 +463,20 @@ def max_check(path):
                 continue
             key = "numoutlets" if end == "source" else "numinlets"
             count = int(b.get(key, 0) or 0)
+            cls = b.get("maxclass", "")
             if port < 0 or port >= count:
                 issues.append("patchline %s %s port %d out of range (%s=%d, %s)"
-                              % (end, bid, port, key, count, b.get("maxclass")))
+                              % (end, bid, port, key, count, cls))
+            # The saved count can simply be wrong: check the stock classes
+            # against what Max really instantiates.
+            real = MAX_CLASS_PORTS.get(cls)
+            if real is not None:
+                real_count = real[1] if end == "source" else real[0]
+                if port >= real_count:
+                    issues.append(
+                        "patchline %s to %s (%s) port %d: the class really has "
+                        "%d %s" % (end, bid, cls, port, real_count,
+                                   "outlets" if end == "source" else "inlets"))
     return issues
 
 
