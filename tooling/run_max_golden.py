@@ -403,6 +403,14 @@ def main():
             break
         print(f"launch #{attempt}: {len(done)}/{len(goldens)} done, "
               f"{len(remaining)} remaining -> next '{remaining[0]['c_name']}'")
+        # Drop the previous launch's breadcrumb: left in place it reads as
+        # "already started" the instant this launch begins, so the stall clock
+        # runs during Max's own 30-45s startup and the kill lands on whatever
+        # object happens to be current -- which is how objects that are merely
+        # slow get reported as crashes.
+        if os.path.exists(breadcrumb):
+            os.remove(breadcrumb)
+
         proc = subprocess.Popen([args.max, patch])
         deadline = time.time() + args.timeout
         last_progress = len(done)
@@ -410,8 +418,9 @@ def main():
         # Max is slow to start (~30-45s) and may hand off to another process
         # instance (so proc.poll() exiting is NOT a reason to stop). Give a
         # generous grace period until the driver first writes its breadcrumb,
-        # then apply a stall timeout on lack of new objects.
+        # then apply a stall timeout.
         started = False
+        last_crumb = None
         while time.time() < deadline:
             dismissed += dismiss_dialogs()
             crumb_val = _read(breadcrumb)
@@ -419,6 +428,13 @@ def main():
                 break
             if crumb_val and not started:
                 started = True
+                stall_since = time.time()
+            # Progress = the breadcrumb moving on. It changes once per object,
+            # seconds apart, whereas a parseable report entry may not appear for
+            # a long time (or at all, for an object whose line is huge) -- so
+            # counting entries mistook "slow to report" for "wedged".
+            if crumb_val and crumb_val != last_crumb:
+                last_crumb = crumb_val
                 stall_since = time.time()
             cur = parse_report(report)
             if len(cur) != last_progress:

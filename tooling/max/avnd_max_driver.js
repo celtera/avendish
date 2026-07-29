@@ -103,23 +103,47 @@ function crumb(s) {
 function loadExisting() {
   var f = new File(AVND_CFG.report, "read");
   if (!f.isopen) return;
+  // A long entry can arrive as several physical lines (Max flushes its write
+  // buffer with a raw newline). Only a line starting with '{' begins a new
+  // entry; anything else continues the previous one. Without this the tail of a
+  // split entry carries no "name" field, the object never counts as done, and
+  // every relaunch re-runs it -- including past a crash it already survived.
   while (!f.eof) {
     var ln = f.readline(2000000);
-    if (ln && ln.length > 0) {
+    if (!ln || ln.length === 0)
+      continue;
+    var isNew = ln.charAt(0) === "{" || allLines.length === 0;
+    if (isNew)
       allLines.push(ln);
-      var m = ln.indexOf("\"name\":\"");
-      if (m >= 0) {
-        var s = m + 8, e = ln.indexOf("\"", s);
-        if (e > s) doneNames[ln.substring(s, e)] = 1;
-      }
+    else
+      allLines[allLines.length - 1] += ln;
+
+    var cur = allLines[allLines.length - 1];
+    var m = cur.indexOf("\"name\":\"");
+    if (m >= 0) {
+      var s = m + 8, e = cur.indexOf("\"", s);
+      if (e > s) doneNames[cur.substring(s, e)] = 1;
     }
   }
   f.close();
 }
+// Max's File.writeline TRUNCATES at 32767 characters -- it does not split. An
+// object with many outlets or long lists (avnd_all_ports_types, avnd_poles)
+// produces longer lines than that, and a truncated line is unparseable JSON, so
+// python never sees the object as done and eventually kills Max and blames it
+// for a crash it never had. Emit long lines in sub-32K writestring() chunks
+// with a single newline at the end, which parse_report rejoins.
+var WRITE_CHUNK = 16000;
+function writeLineChunked(f, line) {
+  if (line.length < WRITE_CHUNK) { f.writeline(line); return; }
+  for (var o = 0; o < line.length; o += WRITE_CHUNK)
+    f.writestring(line.substr(o, WRITE_CHUNK));
+  f.writestring("\n");
+}
 function writeReport() {
   var f = new File(AVND_CFG.report, "write");
   if (!f.isopen) { post_("ERR cannot open report for write"); return; }
-  for (var i = 0; i < allLines.length; i++) f.writeline(allLines[i]);
+  for (var i = 0; i < allLines.length; i++) writeLineChunked(f, allLines[i]);
   f.close();
 }
 
