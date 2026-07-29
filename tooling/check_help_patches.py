@@ -259,10 +259,49 @@ def overlap(a, b):
                 or a["y"] + a["h"] <= b["y"] or b["y"] + b["h"] <= a["y"])
 
 
+# Boxes that exist only to be looked at: they never need a patch cord.
+PD_DECORATION = {"cnv", "text"}
+# Boxes that carry a signal/message and therefore should be wired to something.
+PD_WIRED = {"msg", "floatatom", "symbolatom", "listbox", "hsl", "vsl", "tgl",
+            "bng", "hradio", "vradio", "nbx"}
+
+
 def pd_check(path):
     issues = []
+    stem = os.path.basename(path)
+    expected = stem[:-len("-help.pd")] if stem.endswith("-help.pd") else None
+
     for c in pd_parse(path):
         where = "" if c.name == "(root)" else "[%s] " % c.name
+
+        # Dangling boxes: a widget or message box with no cord at either end is
+        # a generator bug (a driver that drives nothing, a sink fed by nobody).
+        if c.name == "(root)":
+            wired = set()
+            for (src, _so, dst, _di) in c.connects:
+                wired.add(src)
+                wired.add(dst)
+            for i, b in enumerate(c.boxes):
+                kind = b["kind"]
+                if kind in PD_DECORATION:
+                    continue
+                if kind == "obj" and b["text"].startswith("pd "):
+                    continue  # subpatch box
+                if kind not in PD_WIRED and kind != "obj":
+                    continue
+                if kind == "obj" and expected and b["text"].split(" ")[0] == expected:
+                    continue  # the object under test
+                if i not in wired:
+                    issues.append("%sunconnected box %d [%s] %r"
+                                  % (where, i, kind, b["text"][:40]))
+
+            # The object being documented must actually be instantiated.
+            if expected:
+                names = [b["text"].split(" ")[0] for b in c.boxes
+                         if b["kind"] == "obj"]
+                if expected not in names:
+                    issues.append("the documented object [%s] is not in the patch "
+                                  "(object boxes: %s)" % (expected, names[:6]))
         fg = [b for b in c.boxes if b["kind"] not in PD_BACKGROUND]
         for i in range(len(fg)):
             for j in range(i + 1, len(fg)):
@@ -364,6 +403,32 @@ def max_check(path):
                               % (a[0], a[1], a[2], a[3], a[4], a[5],
                                  bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]))
 
+    # Dangling boxes: anything that carries a signal but is wired to nothing.
+    wired = set()
+    for entry in p.get("lines", []):
+        pl = entry.get("patchline", {})
+        for end in ("source", "destination"):
+            ref = pl.get(end)
+            if isinstance(ref, list) and len(ref) == 2:
+                wired.add(ref[0])
+    decoration = {"comment", "panel", "bpatcher", "jit.pwindow", "scope~"}
+    stem = os.path.splitext(os.path.basename(path))[0]
+    obj_found = False
+    for bid, b in boxes.items():
+        cls = b.get("maxclass", "")
+        text = (b.get("text") or "").split(" ")[0]
+        if cls == "newobj" and text == stem:
+            obj_found = True
+            continue
+        if cls in decoration:
+            continue
+        if bid not in wired:
+            issues.append("unconnected box %s (%s) %r"
+                          % (bid, cls, (b.get("text") or "")[:40]))
+    if boxes and not obj_found:
+        issues.append("the documented object [%s] is not instantiated in the patch"
+                      % stem)
+
     for entry in p.get("lines", []):
         pl = entry.get("patchline", {})
         for end in ("source", "destination"):
@@ -385,6 +450,83 @@ def max_check(path):
 
 
 # --------------------------------------------------------------------------
+
+def selector(name):
+    """The selector the bindings route a port name by (fixup_identifier)."""
+    return re.sub(r"[^A-Za-z0-9.~]", "_", str(name))
+
+
+def patch_text_pd(path):
+    return open(path, encoding="utf-8", errors="replace").read()
+
+
+def patch_text_max(path):
+    try:
+        doc = json.load(open(path, encoding="utf-8", errors="replace"))
+    except Exception:                                          # noqa: BLE001
+        return ""
+    out = []
+
+    def walk(p):
+        for e in p.get("boxes", []):
+            b = e.get("box", {})
+            if b.get("text"):
+                out.append(str(b["text"]))
+            for k in ("items", "attr"):
+                if k in b:
+                    out.append(json.dumps(b[k]))
+            if "patcher" in b:
+                walk(b["patcher"])
+    walk(doc.get("patcher", {}))
+    return "\n".join(out)
+
+
+def dump_for(dumps_dir, stem, c_name_index):
+    """The dump JSON for a help patch, matched by the object's c_name."""
+    return c_name_index.get(stem)
+
+
+def build_cname_index(dumps_dir):
+    """c_name -> dump JSON. Help patches are named by c_name, dumps by target."""
+    idx = {}
+    for f in glob.glob(os.path.join(dumps_dir, "*.json")):
+        try:
+            d = json.load(open(f, encoding="utf-8", errors="replace"))
+        except Exception:                                      # noqa: BLE001
+            continue
+        cn = (d.get("metadatas") or {}).get("c_name")
+        if cn:
+            idx[cn] = d
+    return idx
+
+
+def coverage_check(path, text, c_name_index, backend):
+    """Every declared port must be reachable or at least documented.
+
+    A port that appears nowhere in the patch is a generator bug: the user has no
+    way to learn it exists. Ports the host genuinely cannot represent are fine
+    as long as the reference section names them -- which this still sees.
+    """
+    stem = os.path.basename(path)
+    for suffix in ("-help.pd", ".maxhelp"):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
+    d = c_name_index.get(stem)
+    if d is None:
+        return []
+    issues = []
+    for side in ("inputs", "outputs"):
+        for i, p in enumerate(d.get(side) or []):
+            name = p.get("name")
+            if not name:
+                continue
+            if name in text or selector(name) in text:
+                continue
+            issues.append("%s port %d %r (%s) appears nowhere in the patch"
+                          % (side[:-1], i, name, p.get("type")))
+    return issues
+
 
 def run(kind, paths, checker, verbose):
     bad = 0
@@ -412,6 +554,9 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--pd", metavar="DIR", help="directory holding *-help.pd")
     ap.add_argument("--max", metavar="DIR", help="directory holding *.maxhelp")
+    ap.add_argument("--dumps", metavar="DIR",
+                    help="introspection dump dir: also verify every declared "
+                         "port is present in the patch")
     ap.add_argument("--json", metavar="FILE", help="write a machine-readable report")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
@@ -419,16 +564,29 @@ def main():
     if not args.pd and not args.max:
         ap.error("nothing to check: pass --pd and/or --max")
 
+    idx = build_cname_index(args.dumps) if args.dumps else {}
+
+    def with_coverage(checker, reader):
+        def run_one(path):
+            issues = checker(path)
+            if idx:
+                issues += coverage_check(path, reader(path), idx, checker)
+            return issues
+        return run_one
+
     bad = 0
     report = {}
     if args.pd:
         files = glob.glob(os.path.join(args.pd, "*-help.pd")) or \
                 glob.glob(os.path.join(args.pd, "*.pd"))
-        n, report["pd"] = run("pd", files, pd_check, args.verbose)
+        n, report["pd"] = run("pd", files,
+                              with_coverage(pd_check, patch_text_pd), args.verbose)
         bad += n
     if args.max:
         files = glob.glob(os.path.join(args.max, "*.maxhelp"))
-        n, report["max"] = run("max", files, max_check, args.verbose)
+        n, report["max"] = run("max", files,
+                               with_coverage(max_check, patch_text_max),
+                               args.verbose)
         bad += n
 
     if args.json:
