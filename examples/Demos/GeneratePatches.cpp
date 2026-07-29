@@ -1425,6 +1425,41 @@ constexpr double MAX_CHAR_W = 7.0;
 constexpr double MAX_LINE_H = 19.0;
 constexpr int MAX_COMMENT_COLS = 46;
 
+// A umenu's "items" is an array of *atoms* with "," entries separating the
+// entries -- ["Up", ",", "Down", ",", "Up", "&", "Down"] is three items, the
+// last one two words long. Handed a single space-separated string instead, Max
+// reads one item whose label is the whole list, so the menu shows every choice
+// at once rather than the selected one.
+json max_umenu_items(const std::vector<std::string>& choices)
+{
+  json items = json::array();
+  for(std::size_t i = 0; i < choices.size(); ++i)
+  {
+    if(i)
+      items.push_back(",");
+    // Multi-word labels are several atoms; an empty label would vanish.
+    const std::string& c = choices[i];
+    std::size_t start = 0;
+    bool any = false;
+    while(start < c.size())
+    {
+      const std::size_t sp = c.find(' ', start);
+      const std::string word = c.substr(start, sp - start);
+      if(!word.empty())
+      {
+        items.push_back(word);
+        any = true;
+      }
+      if(sp == std::string::npos)
+        break;
+      start = sp + 1;
+    }
+    if(!any)
+      items.push_back("<empty>");
+  }
+  return items;
+}
+
 struct max_patch
 {
   json boxes = json::array();
@@ -1596,12 +1631,9 @@ max_driver max_emit_control(max_patch& p, const port_t& c, double x, double y, i
   }
   else if(!c.choices.empty())
   {
-    std::string items;
-    for(std::size_t i = 0; i < c.choices.size(); ++i)
-      items += (i ? " " : "") + c.choices[i];
     widget = p.box(
         "umenu", "", x, y, 140, 22, 1, 3,
-        json{{"items", items}, {"parameter_enable", 0}});
+        json{{"items", max_umenu_items(c.choices)}, {"parameter_enable", 0}});
     w = 140;
     h = 22;
   }
