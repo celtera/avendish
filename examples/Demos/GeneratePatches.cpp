@@ -1122,11 +1122,23 @@ std::string pd_reference_body(
               : "Each port below has its own inlet. Any [<name> <value>( "
                 "message on the left inlet also works.";
     y += r.text(x + 8, y, intro, col);
-    if(t.is_audio && t.pd_signal_inlets > 0)
-      y += r.text(
-          x + 8, y,
-          "inlets 0.." + std::to_string(t.pd_signal_inlets - 1) + ": signal",
-          col);
+    // Name the audio inputs: which signal inlet is the sidechain is exactly
+    // what a user needs the reference for.
+    int sig_k = 0;
+    for(const auto& c : m.inputs)
+    {
+      if(c.type != "audio")
+        continue;
+      const int nch = c.audio_channels > 0 ? c.audio_channels : 1;
+      std::string label = "inlet " + std::to_string(sig_k);
+      if(nch > 1)
+        label += ".." + std::to_string(sig_k + nch - 1);
+      label += " (signal): " + c.name;
+      if(!c.description.empty())
+        label += " - " + c.description;
+      y += r.text(x + 8, y, label, col);
+      sig_k += nch;
+    }
     for(std::size_t i = 0; i < m.inputs.size(); ++i)
     {
       const auto& c = m.inputs[i];
@@ -1966,7 +1978,12 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
     double sy = y + 34;
     if(!matrix_in.empty())
     {
-      const std::string body = "jit.noise 4 char 320 240";
+      // One of Max's own bundled clips (resources/media/jitter is on the
+      // default search path, so the bare filename resolves): real footage shows
+      // what an image operator does far better than noise, and @moviefile keeps
+      // it to a single self-contained box -- no loadbang/read plumbing.
+      const std::string body
+          = "jit.movie @moviefile chickens.mp4 @loop 1 @autostart 1 @vol 0";
       matrix_src = p.box(
           "newobj", body, left, sy, body.size() * MAX_CHAR_W + 12.0, 22);
       p.line(met, 0, matrix_src, 0);
@@ -2084,8 +2101,27 @@ void emit_max(const model_t& m, std::ostream& out, const std::string& external_n
 
   section("Inlets");
   if(t.is_audio)
+  {
     entry("inlet 0: multichannel signal. Controls are set with a "
           "\"<name> <value>\" message on it.");
+    // The binding folds every audio input into that one multichannel inlet, so
+    // name them: which channels carry the sidechain is not guessable otherwise.
+    int ch = 0;
+    for(const auto& c : m.inputs)
+    {
+      if(c.type != "audio")
+        continue;
+      const int nch = c.audio_channels > 0 ? c.audio_channels : 1;
+      std::string line = "  channel " + std::to_string(ch);
+      if(nch > 1)
+        line += ".." + std::to_string(ch + nch - 1);
+      line += ": " + c.name;
+      if(!c.description.empty())
+        line += " - " + c.description;
+      entry(line);
+      ch += nch;
+    }
+  }
   if(t.is_max_jitter)
     entry("This is a Jitter matrix operator: inlet 0 takes a jit_matrix, and "
           "controls are set with a \"<name> <value>\" message on it.");
