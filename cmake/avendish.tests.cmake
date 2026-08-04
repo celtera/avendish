@@ -46,6 +46,7 @@ if(BUILD_TESTING)
   avnd_add_executable_test(test_introspection_many tests/test_introspection_many.cpp)
   avnd_add_executable_test(test_reflection tests/test_reflection.cpp)
 
+  avnd_add_catch_test(test_quantification tests/quantification.cpp)
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
 
