@@ -10,7 +10,8 @@ on:
 jobs:
   matrix:
     name: ${{ matrix.compiler }} c++${{ matrix.std }} ${{ matrix.backend }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux, x64, sat-builder]
+    container: ubuntu:noble
     strategy:
       fail-fast: false
       matrix:
