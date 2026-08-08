@@ -153,7 +153,7 @@ jobs:
             ${{ matrix.config.common_flags }} \
             ${{ matrix.config.debug_flags }}
 
-          cmake --build . -- ${{ matrix.config.build_flags }}
+          cmake --build . --parallel -- ${{ matrix.config.build_flags }}
 
       - name: Test debug
         shell: bash
@@ -194,7 +194,7 @@ jobs:
             ${{ matrix.config.common_flags }} \
             ${{ matrix.config.release_flags }}
 
-          cmake --build . -- ${{ matrix.config.build_flags }}
+          cmake --build . --parallel -- ${{ matrix.config.build_flags }}
 
       - name: Test release
         shell: bash
