@@ -75,7 +75,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             -G "Visual Studio 18 2026"
 
-          cmake --build . --parallel --config Debug
+          cmake --build . --parallel "$(nproc)" --config Debug
 
       - name: Test debug
         shell: bash
@@ -104,7 +104,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             -G "Visual Studio 18 2026"
 
-          cmake --build . --parallel --config Release
+          cmake --build . --parallel "$(nproc)" --config Release
 
       - name: Test release
         shell: bash
