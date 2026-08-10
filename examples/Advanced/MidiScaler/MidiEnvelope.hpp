@@ -245,12 +245,38 @@ public:
   {
     halp::accurate<halp::val_port_01<"Out", float>> out;
     halp::val_port_01<"Gate", float> gate;
-    halp::val_port_01<"Pitch", std::optional<float>> pitch;
+    // Raw MIDI note number, not a 0-1 port. The declared range becomes the
+    // ossia port domain at execution time, so it has to be the real one.
+    struct : halp::val_port<"Pitch", std::optional<float>>
+    {
+      struct range
+      {
+        const float min = 0.f;
+        const float max = 127.f;
+        const float init = 0.f;
+      };
+    } pitch;
+
     halp::val_port_01<"Velocity", std::optional<float>> velocity;
-    halp::val_port<"Active", int> active;
+
+    struct : halp::val_port<"Active", int>
+    {
+      struct range
+      {
+        const int min = 0;
+        const int max = max_voices;
+        const int init = 0;
+      };
+    } active;
+
     halp::val_port<"Voices", std::vector<float>> voices;
     halp::midi_bus<"MIDI out", libremidi::message> midi;
   } outputs;
+
+  //! The per-voice output is a std::vector, and emit_auxiliary_outputs resizes
+  //! it whenever the voice count changes. Reserving the maximum here keeps that
+  //! resize from ever reallocating on the audio thread.
+  MidiEnvelope() { outputs.voices.value.reserve(max_voices); }
 
   void prepare(halp::setup info) noexcept
   {
@@ -275,7 +301,10 @@ public:
     const int interval
         = std::max({1, m_resolution_samples, (frames + max_points_per_tick - 1)
                                                  / max_points_per_tick});
-    m_smooth_alpha = alpha_for(interval);
+    // Emissions are `interval` apart inside a block, but never further apart
+    // than the block itself: when the resolution is coarser than the buffer we
+    // still emit once per buffer, so that is the real time step.
+    m_smooth_alpha = alpha_for(std::min(interval, frames));
 
     const auto& msgs = inputs.midi.midi_messages;
     const int n_msgs = (int)msgs.size();
@@ -515,30 +544,51 @@ private:
     m_priority = inputs.priority.value;
     m_combine = inputs.combine.value;
 
-    m_delay = inputs.delay;
-    m_attack = inputs.attack;
-    m_hold = inputs.hold;
-    m_decay = inputs.decay;
+    // score does not clamp control inlets to their declared domain, so a preset
+    // can supply anything at all. Everything used as a duration, an exponent or
+    // a loop bound is clamped here rather than trusted.
+    const auto seconds = [](auto v) {
+      return std::isfinite((float)v) ? std::clamp((float)v, 0.f, 3600.f) : 0.f;
+    };
+
+    m_delay = seconds(inputs.delay);
+    m_attack = seconds(inputs.attack);
+    m_hold = seconds(inputs.hold);
+    m_decay = seconds(inputs.decay);
     m_sustain = std::clamp((float)inputs.sustain, 0.f, 1.f);
-    m_release = inputs.release;
-    m_duration = std::max(1e-4f, (float)inputs.curve_duration);
+    m_release = seconds(inputs.release);
+    m_duration = std::max(1e-4f, seconds(inputs.curve_duration));
     m_sustain_point = std::clamp((float)inputs.sustain_point, 0.f, 1.f);
 
-    m_attack_curve = inputs.attack_curve;
-    m_decay_curve = inputs.decay_curve;
+    // Feeds pow(8, curve): an out-of-range value would give an infinite exponent
+    m_attack_curve = std::clamp((float)inputs.attack_curve, -1.f, 1.f);
+    m_decay_curve = std::clamp((float)inputs.decay_curve, -1.f, 1.f);
     m_vel_amount = std::clamp((float)inputs.velocity_amount, 0.f, 1.f);
-    m_keytrack = inputs.key_tracking;
+    // Feeds pow(2, -keytrack * semitones): likewise, and an infinite time_scale
+    // freezes the voice in whatever stage it is in.
+    m_keytrack = std::clamp((float)inputs.key_tracking, -1.f, 1.f);
 
     const auto [lo, hi] = inputs.output_range.value;
-    m_out_lo = lo;
-    m_out_hi = hi;
+    m_out_lo = std::isfinite(lo) ? lo : 0.f;
+    m_out_hi = std::isfinite(hi) ? hi : 1.f;
 
-    m_smooth = inputs.smooth;
-    m_resolution_samples = (int)std::lround(double(inputs.resolution) * m_rate);
+    m_smooth = seconds(inputs.smooth);
+    m_resolution_samples
+        = (int)std::lround(std::clamp(double(seconds(inputs.resolution)) * m_rate, 1., 1e7));
 
     const int requested
         = std::clamp((int)inputs.voice_count, 1, max_voices);
-    m_voice_count = (m_voicing == Mono) ? 1 : requested;
+    const int wanted = (m_voicing == Mono) ? 1 : requested;
+
+    if(wanted < m_voice_count)
+    {
+      // Every loop below runs over [0; m_voice_count[. Voices that drop out of
+      // that range would otherwise never be advanced or released again, and
+      // would come back at their frozen level as soon as the count grows.
+      for(int i = wanted; i < m_voice_count; i++)
+        m_voices[i] = {};
+    }
+    m_voice_count = wanted;
   }
 
   // -------------------------------------------------------- envelope stages
@@ -552,7 +602,11 @@ private:
     return stage::attack;
   }
 
-  stage next_stage(stage s) const noexcept
+  //! A holding stage waits for a note-off, so it may only be entered while the
+  //! note is actually down. Otherwise a voice whose note-off was ignored -- a
+  //! percussive mode, or a one-shot curve -- would land in one when the mode is
+  //! switched mid-flight and stay there for good: nothing would ever release it.
+  stage next_stage(const voice& v, stage s) const noexcept
   {
     switch(s)
     {
@@ -563,11 +617,15 @@ private:
       case stage::hold:
         return stage::decay;
       case stage::decay:
-        return has_sustain_stage() ? stage::sustain : stage::idle;
+        if(!has_sustain_stage())
+          return stage::idle;
+        return v.held ? stage::sustain : stage::release;
       case stage::release:
         return stage::idle;
       case stage::curve_rise:
-        return (m_envelope == CurveSustain) ? stage::curve_hold : stage::idle;
+        if(m_envelope != CurveSustain)
+          return stage::idle;
+        return v.held ? stage::curve_hold : stage::curve_fall;
       case stage::curve_fall:
         return stage::idle;
       default:
@@ -695,7 +753,7 @@ private:
       n -= std::max(0., remaining);
       v.t = dur;
       v.from = level_for(v); // level reached at the end of the stage
-      v.st = next_stage(v.st);
+      v.st = next_stage(v, v.st);
       v.t = 0.;
 
       if(v.st == stage::idle)
@@ -720,10 +778,11 @@ private:
 
   // ------------------------------------------------------------- triggering
 
-  void trigger(voice& v, int note, float vel) noexcept
+  //! @param legato true when another note was already down. Legato suppresses
+  //! the restart only then -- a still-ringing release tail is not a held note,
+  //! so a detached note must retrigger even under a long release.
+  void trigger(voice& v, int note, float vel, bool legato) noexcept
   {
-    const bool was_active = v.st != stage::idle;
-
     v.note = note;
     v.held = true;
     v.velocity = vel;
@@ -734,7 +793,7 @@ private:
               : 1.;
     v.age = ++m_age_counter;
 
-    if(m_trigger == Legato && was_active)
+    if(m_trigger == Legato && legato && v.st != stage::idle)
       return; // retarget only: the envelope keeps running
 
     v.from = (m_trigger == Reset) ? 0.f : v.level;
@@ -769,7 +828,11 @@ private:
         return;
 
       default:
-        if(!has_sustain_stage())
+        // Keyed on the voice, not on the current mode. Switching the envelope
+        // type to a one-shot one while a note is held would otherwise strand a
+        // voice in sustain -- a holding stage that advance() never leaves, so
+        // the voice would stay at its sustain level for good.
+        if(v.st != stage::sustain && !has_sustain_stage())
           return; // AD / AHD: percussive, let it finish
         v.from = v.level;
         v.t = 0.;
@@ -826,30 +889,40 @@ private:
     // The held-note stack tracks what is physically down: it drives the gate
     // output in both modes, and the note priority in monophonic mode.
     erase_held(note);
-    if((int)m_held.size() < max_voices)
-      m_held.push_back({note, vel});
+    // Bounded, but the note just pressed must always make it in -- otherwise it
+    // would lose the priority contest against a note it should have replaced and
+    // simply never sound. Drop the oldest key instead; poly release does not go
+    // through this table, so nothing is stranded by that.
+    if((int)m_held.size() >= max_voices)
+      m_held.erase(m_held.begin());
+    m_held.push_back({note, vel});
 
     if(m_voicing == Mono)
-      retarget_mono(/* allow_trigger */ true);
+      retarget_mono(/* pressed */ note);
     else
-      trigger(m_voices[allocate(note)], note, vel);
+      // Legato is a monophonic notion: in poly every note gets its own voice.
+      trigger(m_voices[allocate(note)], note, vel, /* legato */ false);
   }
 
   void note_off(int note) noexcept
   {
-    if(!erase_held(note))
-      return;
+    const bool was_held = erase_held(note);
 
     if(m_voicing == Mono)
     {
+      if(!was_held)
+        return; // not a note we were tracking
+
       if(m_held.empty())
         release_voice(m_voices[0]);
       else
         // Fall back to another held note without restarting the envelope
-        retarget_mono(/* allow_trigger */ false);
+        retarget_mono(/* pressed */ -1);
     }
     else
     {
+      // Deliberately not gated on was_held: the held stack is bounded, and a
+      // note that overflowed it must still be able to release its voice.
       for(int i = 0; i < m_voice_count; i++)
         if(m_voices[i].note == note && m_voices[i].held)
           release_voice(m_voices[i]);
@@ -899,16 +972,21 @@ private:
     }
   }
 
-  void retarget_mono(bool allow_trigger) noexcept
+  //! @param pressed the note that was just played, or -1 on a note-off.
+  //! The envelope only restarts when the note that was just pressed is the one
+  //! that wins the priority contest: under Highest priority, pressing a note
+  //! below the one already sounding must not retrigger anything.
+  void retarget_mono(int pressed) noexcept
   {
     const held_note* sel = selected_note();
     if(!sel)
       return;
 
     voice& v = m_voices[0];
-    if(allow_trigger)
+    if(pressed >= 0 && sel->note == pressed)
     {
-      trigger(v, sel->note, sel->velocity);
+      // More than the note just pressed is down, i.e. this is a legato move
+      trigger(v, sel->note, sel->velocity, /* legato */ m_held.size() > 1);
     }
     else
     {
@@ -1024,7 +1102,9 @@ private:
     }
 
     outputs.gate = m_held.empty() ? 0.f : 1.f;
-    outputs.active = active;
+    // .value, not operator=: these ports are derived structs, whose implicit
+    // copy-assignment hides the base's operator=.
+    outputs.active.value = active;
 
     if(newest >= 0 && m_voices[newest].note >= 0)
     {
@@ -1032,7 +1112,7 @@ private:
       const float vel = m_voices[newest].velocity;
       if(p != m_last_pitch)
       {
-        outputs.pitch = p;
+        outputs.pitch.value = p;
         m_last_pitch = p;
       }
       if(vel != m_last_velocity)
@@ -1063,7 +1143,9 @@ private:
   // ------------------------------------------------------------------ state
 
   voice m_voices[max_voices]{};
-  ossia::small_vector<held_note, 16> m_held;
+  //! Inline capacity matches the cap enforced in note_on, so holding a lot of
+  //! notes never allocates on the audio thread.
+  ossia::small_vector<held_note, max_voices> m_held;
 
   double m_rate{48000.};
   int64_t m_age_counter{};
