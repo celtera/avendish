@@ -24,7 +24,7 @@ struct typelist
     #define AVND_USE_BOOST_PFR 1   // clang < 21: no P1061 packs
   #elif defined(_MSC_VER) && (!defined(__clang_major__) || (__clang_major__ < 21))
     #define AVND_USE_BOOST_PFR 1   // MSVC (cl, or clang-cl < 21)
-  #elif !defined(__cpp_structured_bindings) || (__cpp_structured_bindings < 202403L) \
+  #elif !defined(__cpp_structured_bindings) || (__cpp_structured_bindings < 202411L) \
         || !defined(__cpp_pack_indexing) || (__cpp_pack_indexing < 202311L)
     #define AVND_USE_BOOST_PFR 1   // no P1061 / pack indexing (e.g. gcc < 16)
   #else
