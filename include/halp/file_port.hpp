@@ -49,6 +49,15 @@ struct mmap_file_view
   };
 };
 
+struct output_file_view
+{
+  std::string_view filename;
+  enum
+  {
+    file_create
+  };
+};
+
 template <halp::static_string lit, typename FileType = text_file_view>
 struct file_port
 {
@@ -63,6 +72,17 @@ struct file_port
 };
 
 template <halp::static_string lit>
+struct file_write_port
+{
+  using file_type = output_file_view;
+  static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
+
+  HALP_INLINE_FLATTEN operator output_file_view&() noexcept { return file; }
+  HALP_INLINE_FLATTEN operator const output_file_view&() const noexcept { return file; }
+
+  output_file_view file;
+};
+
 struct folder_port
 {
   enum widget { folder };
