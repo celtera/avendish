@@ -70,14 +70,20 @@ struct basic_diagnostics
     std::string_view message() const noexcept { return {text.data(), length}; }
   };
 
+  static_assert(MaxEntries > 0 && MaxEntries <= 255, "count is a uint8_t");
+
   std::array<entry, MaxEntries> entries{};
   uint8_t count{};
-  uint8_t dropped{};
+  uint16_t dropped{};
+  // Severity of the most serious entry that had to be dropped, so a host can
+  // report the overflow at the right level rather than always as an error.
+  avnd::diagnostic_severity dropped_severity{};
 
   void clear() noexcept
   {
     count = 0;
     dropped = 0;
+    dropped_severity = avnd::diagnostic_severity::info;
   }
 
   bool empty() const noexcept { return count == 0; }
@@ -180,7 +186,14 @@ private:
       if(entries[i].severity < entries[weakest].severity)
         weakest = i;
 
-    ++dropped;
+    if(dropped < 0xFFFF)
+      ++dropped;
+
+    // Whichever of the two loses, its severity is what was dropped.
+    const auto lost = entries[weakest].severity >= s ? s : entries[weakest].severity;
+    if(lost > dropped_severity)
+      dropped_severity = lost;
+
     if(entries[weakest].severity >= s)
       return nullptr;
 

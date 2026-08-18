@@ -72,9 +72,25 @@ struct diagnostics_state
 
       if(d.dropped > 0)
       {
-        if(!error.empty())
-          error += '\n';
-        error += "... and " + std::to_string(d.dropped) + " more";
+        // Report the overflow at the severity of what was actually lost:
+        // always using the error channel would turn a node red for dropped
+        // informational messages.
+        std::string* dst = &info;
+        switch(d.dropped_severity)
+        {
+          case avnd::diagnostic_severity::warning:
+            dst = &warning;
+            break;
+          case avnd::diagnostic_severity::error:
+          case avnd::diagnostic_severity::fatal:
+            dst = &error;
+            break;
+          case avnd::diagnostic_severity::info:
+            break;
+        }
+        if(!dst->empty())
+          *dst += '\n';
+        *dst += "... and " + std::to_string(d.dropped) + " more";
       }
     }
   }
