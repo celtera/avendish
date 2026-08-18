@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <avnd/binding/touchdesigner/configure.hpp>
+#include <avnd/binding/touchdesigner/diagnostics.hpp>
 #include <avnd/binding/touchdesigner/geometry_helpers.hpp>
 #include <avnd/binding/touchdesigner/helpers.hpp>
 #include <avnd/binding/touchdesigner/file_ports.hpp>
@@ -56,6 +57,7 @@ struct particle_processor : public TD::POP_CPlusPlusBase
   touchdesigner::file_ports<T> file_setup;
   TD::POP_Context* context{};
   std::vector<TD::OP_SmartRef<TD::POP_Buffer>> m_input_buffers;
+  touchdesigner::diagnostics_state m_diagnostics;
 
   explicit particle_processor(const TD::OP_NodeInfo* info, TD::POP_Context* ctx)
       : context{ctx}
@@ -77,6 +79,9 @@ struct particle_processor : public TD::POP_CPlusPlusBase
 
   void execute(TD::POP_Output* output, const TD::OP_Inputs* inputs, void* reserved) override
   {
+    // Diagnostics are scoped to one cook: the object restates what still holds.
+    m_diagnostics.begin(implementation.effect);
+
     update_controls(inputs);
 
     // Read POP inputs into Avendish geometry inputs if applicable
@@ -95,6 +100,8 @@ struct particle_processor : public TD::POP_CPlusPlusBase
       // CPU path: run processor, then upload results
       execute_cpu(output, inputs);
     }
+
+    m_diagnostics.end(implementation.effect);
   }
 
   void execute_cpu(TD::POP_Output* output, const TD::OP_Inputs* inputs)
@@ -281,11 +288,20 @@ struct particle_processor : public TD::POP_CPlusPlusBase
     info_output<T>::get_info_dat_entries(implementation, index, nEntries, entries);
   }
 
-  void getWarningString(TD::OP_String* warning, void* reserved) override {}
+  void getWarningString(TD::OP_String* warning, void* reserved) override
+  {
+    touchdesigner::set_string(warning, m_diagnostics.warning);
+  }
 
-  void getErrorString(TD::OP_String* error, void* reserved) override {}
+  void getErrorString(TD::OP_String* error, void* reserved) override
+  {
+    touchdesigner::set_string(error, m_diagnostics.error);
+  }
 
-  void getInfoPopupString(TD::OP_String* info, void* reserved) override {}
+  void getInfoPopupString(TD::OP_String* info, void* reserved) override
+  {
+    touchdesigner::set_string(info, m_diagnostics.info);
+  }
 
 private:
   // ===== Output: write Avendish data to POP =====
