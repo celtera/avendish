@@ -96,8 +96,10 @@ struct soundfile_storage : soundfile_input_storage<T>
     }
   }
 
+  //! Returns the handle that the caller is now responsible for disposing of,
+  //! in a thread where deallocating is allowed.
   template <std::size_t N, std::size_t NField>
-  void load(
+  ossia::audio_handle load(
       avnd::effect_container<T>& t, ossia::audio_handle& hdl, avnd::predicate_index<N>,
       avnd::field_index<NField>)
   {
@@ -111,8 +113,11 @@ struct soundfile_storage : soundfile_input_storage<T>
     {
       ossia::audio_handle& g = get<N>(this->handles);
 
-      // Store the handle to keep the memory from being freed
-      std::exchange(g, hdl);
+      // Store the handle to keep the memory from being freed.
+      // The previous one is given back to the caller: the ports still point
+      // into it until they are updated below, and freeing it here would happen
+      // in whichever thread called us - generally the audio thread.
+      ossia::audio_handle previous = std::exchange(g, hdl);
       buf.resize(chans);
 
       // Copy the pointers in our storage if no conversion is needed
@@ -131,6 +136,7 @@ struct soundfile_storage : soundfile_input_storage<T>
 
         if_possible(port.update(state.effect));
       }
+      return previous;
     }
     else
     {
@@ -161,6 +167,9 @@ struct soundfile_storage : soundfile_input_storage<T>
 
         if_possible(port.update(state.effect));
       }
+
+      // The samples were copied into our own storage: nothing keeps hdl alive
+      return hdl;
     }
   }
 
@@ -207,15 +216,17 @@ struct midifile_storage : midifile_input_storage<T>
 {
   void init(avnd::effect_container<T>& t) { }
 
+  //! \see soundfile_storage::load
   template <std::size_t N, std::size_t NField>
-  void load(
+  std::shared_ptr<midifile_data> load(
       avnd::effect_container<T>& t, const std::shared_ptr<midifile_data>& hdl,
       avnd::predicate_index<N>, avnd::field_index<NField>)
   {
     std::shared_ptr<midifile_data>& g = get<N>(this->handles);
 
-    // Store the handle to keep the memory from being freed
-    std::exchange(g, hdl);
+    // Store the handle to keep the memory from being freed.
+    // The previous one is given back to the caller, see soundfile_storage::load
+    std::shared_ptr<midifile_data> previous = std::exchange(g, hdl);
 
     for(auto state : t.full_state())
     {
@@ -289,6 +300,7 @@ struct midifile_storage : midifile_input_storage<T>
 
       if_possible(port.update(state.effect));
     }
+    return previous;
   }
 };
 }
@@ -334,14 +346,18 @@ struct raw_file_storage : raw_file_input_storage<T>
 {
   void init(avnd::effect_container<T>& t) { }
 
+  //! \see soundfile_storage::load
   template <std::size_t N, std::size_t NField>
-  void load(
+  std::shared_ptr<raw_file_data> load(
       avnd::effect_container<T>& t, const std::shared_ptr<raw_file_data>& hdl,
       avnd::predicate_index<N>, avnd::field_index<NField>)
   {
     std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
 
-    const std::shared_ptr<raw_file_data> previous = std::exchange(g, hdl);
+    // The previous handle has to stay alive until the ports have been
+    // repointed below; it is then given back to the caller so that it is not
+    // freed in whichever thread called us.
+    std::shared_ptr<raw_file_data> previous = std::exchange(g, hdl);
 
     for(auto state : t.full_state())
     {
@@ -361,16 +377,21 @@ struct raw_file_storage : raw_file_input_storage<T>
         if_possible(port.update(state.effect));
       }
     }
+    return previous;
   }
 
+  //! \see soundfile_storage::load
   template <std::size_t N, std::size_t NField>
-  void load(
+  std::shared_ptr<raw_file_data> load(
       T& state, const std::shared_ptr<raw_file_data>& hdl, avnd::predicate_index<N>,
       avnd::field_index<NField>)
   {
     std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
 
-    const std::shared_ptr<raw_file_data> previous = std::exchange(g, hdl);
+    // The previous handle has to stay alive until the ports have been
+    // repointed below; it is then given back to the caller so that it is not
+    // freed in whichever thread called us.
+    std::shared_ptr<raw_file_data> previous = std::exchange(g, hdl);
 
     // FIXME not generic enough.. GPU should also use effect_container
     avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
@@ -385,6 +406,7 @@ struct raw_file_storage : raw_file_input_storage<T>
     {
       if_possible(port.update(state));
     }
+    return previous;
   }
 };
 }

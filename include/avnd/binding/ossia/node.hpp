@@ -125,6 +125,14 @@ public:
   double sample_rate{};
   double tempo{ossia::root_tempo};
 
+  AVND_NO_UNIQUE_ADDRESS oscr::soundfile_storage<T> soundfiles;
+
+  AVND_NO_UNIQUE_ADDRESS oscr::midifile_storage<T> midifiles;
+
+#if defined(OSCR_HAS_MMAP_FILE_STORAGE)
+  AVND_NO_UNIQUE_ADDRESS oscr::raw_file_storage<T> rawfiles;
+#endif
+
   AVND_NO_UNIQUE_ADDRESS avnd::effect_container<T> impl;
 
   AVND_NO_UNIQUE_ADDRESS oscr::builtin_arg_audio_ports<T> audio_ports;
@@ -148,14 +156,6 @@ public:
   AVND_NO_UNIQUE_ADDRESS avnd::callback_storage<T> callbacks;
 
   AVND_NO_UNIQUE_ADDRESS avnd::smooth_storage<T> smooth;
-
-  AVND_NO_UNIQUE_ADDRESS oscr::soundfile_storage<T> soundfiles;
-
-  AVND_NO_UNIQUE_ADDRESS oscr::midifile_storage<T> midifiles;
-
-#if defined(OSCR_HAS_MMAP_FILE_STORAGE)
-  AVND_NO_UNIQUE_ADDRESS oscr::raw_file_storage<T> rawfiles;
-#endif
 
   AVND_NO_UNIQUE_ADDRESS oscr::spectrum_storage<T> spectrums;
 
@@ -668,29 +668,29 @@ public:
   }
 
   template <std::size_t N, std::size_t NField>
-  void soundfile_loaded(
+  ossia::audio_handle soundfile_loaded(
       ossia::audio_handle& hdl, avnd::predicate_index<N>, avnd::field_index<NField>)
   {
-    this->soundfiles.load(
+    return this->soundfiles.load(
         this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
 
   template <std::size_t N, std::size_t NField>
-  void midifile_loaded(
+  std::shared_ptr<oscr::midifile_data> midifile_loaded(
       const std::shared_ptr<oscr::midifile_data>& hdl, avnd::predicate_index<N>,
       avnd::field_index<NField>)
   {
-    this->midifiles.load(
+    return this->midifiles.load(
         this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
 
 #if OSCR_HAS_MMAP_FILE_STORAGE
   template <std::size_t N, std::size_t NField>
-  void file_loaded(
+  std::shared_ptr<oscr::raw_file_data> file_loaded(
       const std::shared_ptr<oscr::raw_file_data>& hdl, avnd::predicate_index<N>,
       avnd::field_index<NField>)
   {
-    this->rawfiles.load(
+    return this->rawfiles.load(
         this->impl, hdl, avnd::predicate_index<N>{}, avnd::field_index<NField>{});
   }
 #endif
