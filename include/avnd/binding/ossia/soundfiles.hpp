@@ -137,6 +137,7 @@ struct soundfile_storage : soundfile_input_storage<T>
       audio_data_t<double>& g = get<N>(this->handles);
 
       // FIXME this allocates. :(
+      g.data.clear();
       g.data.reserve(chans * frames);
       buf.resize(chans);
       g.path = hdl->path;
@@ -340,19 +341,23 @@ struct raw_file_storage : raw_file_input_storage<T>
   {
     std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
 
-    // Store the handle to keep the memory from being freed
-    std::exchange(g, hdl);
+    const std::shared_ptr<raw_file_data> previous = std::exchange(g, hdl);
 
     for(auto state : t.full_state())
     {
       avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-      if(port.file.filename != hdl->filename)
-      {
-        port.file.bytes
-            = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
-        port.file.filename = hdl->filename;
+      const bool changed = port.file.filename != hdl->filename;
 
+      // The views are always repointed to the new handle, even when the file
+      // name did not change: they would otherwise dangle as soon as the
+      // previous handle is released at the end of this function.
+      port.file.bytes
+          = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+      port.file.filename = hdl->filename;
+
+      if(changed)
+      {
         if_possible(port.update(state.effect));
       }
     }
@@ -365,18 +370,19 @@ struct raw_file_storage : raw_file_input_storage<T>
   {
     std::shared_ptr<raw_file_data>& g = get<N>(this->handles);
 
-    // Store the handle to keep the memory from being freed
-    std::exchange(g, hdl);
+    const std::shared_ptr<raw_file_data> previous = std::exchange(g, hdl);
 
     // FIXME not generic enough.. GPU should also use effect_container
     avnd::raw_file_port auto& port = avnd::pfr::get<NField>(state.inputs);
 
-    if(port.file.filename != hdl->filename)
-    {
-      port.file.bytes
-          = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
-      port.file.filename = hdl->filename;
+    const bool changed = port.file.filename != hdl->filename;
 
+    port.file.bytes
+        = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+    port.file.filename = hdl->filename;
+
+    if(changed)
+    {
       if_possible(port.update(state));
     }
   }
