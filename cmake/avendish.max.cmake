@@ -268,14 +268,19 @@ EXPORTS
       message(STATUS "_dump_path: ${_dump_path}")
       set(_maxref_template "${AVND_SOURCE_DIR}/examples/Demos/maxref_template.xml")
       set(_maxref_destination "max/$<IF:${multi_config},$<CONFIG>/,>${AVND_C_NAME}.maxref.xml")
+      # Depend on the target that owns the dump JSON, not on the file: see
+      # avendish.dump.cmake for why depending on the path races under VS.
       add_custom_target(dump_maxref_${AVND_FX_TARGET} ALL
           json_to_maxref "${_maxref_template}" "${_dump_path}" "${_maxref_destination}"
           DEPENDS
-            "${_dump_path}"
             json_to_maxref
           BYPRODUCTS
             "${_maxref_destination}"
         )
+      get_target_property(_dump_target ${AVND_TARGET} AVND_DUMP_TARGET)
+      if(_dump_target)
+        add_dependencies(dump_maxref_${AVND_FX_TARGET} ${_dump_target})
+      endif()
       set_target_properties(${AVND_FX_TARGET}
         PROPERTIES
           AVND_MAX_MAXREF_XML "${_maxref_destination}"
