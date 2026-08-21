@@ -1,0 +1,59 @@
+name: "Build parallelism"
+description: >-
+  Export CMAKE_BUILD_PARALLEL_LEVEL with a job count that is safe on this
+  runner: bounded by the CPUs *and* by the memory available to the build.
+
+runs:
+  using: composite
+  steps:
+    - name: Compute build parallelism
+      shell: bash
+      run: |
+        set -u
+
+        # nproc is coreutils: it exists on Linux and in MSYS2/Git bash, but not
+        # on macOS. `--parallel "$(nproc)"` there expanded to an empty argument,
+        # which CMake turns into a bare `make -j` -- unbounded parallelism, and
+        # the build died forking ("Resource temporarily unavailable").
+        if command -v nproc > /dev/null 2>&1; then
+          cpus=$(nproc)
+        elif command -v sysctl > /dev/null 2>&1 && sysctl -n hw.logicalcpu > /dev/null 2>&1; then
+          cpus=$(sysctl -n hw.logicalcpu)
+        else
+          cpus=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)
+        fi
+        case "$cpus" in ''|*[!0-9]*) cpus=2 ;; esac
+        [ "$cpus" -ge 1 ] || cpus=2
+
+        # Avendish translation units are template-heavy and each compiler
+        # process can hold well over a gigabyte, so the core count alone is not
+        # a safe bound: on a container the cgroup gets a slice of the memory
+        # while nproc still reports every host core. Allow one job per 2 GB.
+        mem_mb=""
+        if [ -r /sys/fs/cgroup/memory.max ]; then
+          v=$(cat /sys/fs/cgroup/memory.max)
+          [ "$v" != "max" ] && mem_mb=$((v / 1024 / 1024))
+        elif [ -r /sys/fs/cgroup/memory/memory.limit_in_bytes ]; then
+          v=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)
+          # Unlimited is reported as a huge sentinel value.
+          [ "$v" -lt 4611686018427387904 ] 2>/dev/null && mem_mb=$((v / 1024 / 1024))
+        fi
+        if [ -z "$mem_mb" ] && command -v sysctl > /dev/null 2>&1 && sysctl -n hw.memsize > /dev/null 2>&1; then
+          mem_mb=$(( $(sysctl -n hw.memsize) / 1024 / 1024 ))
+        fi
+        if [ -z "$mem_mb" ] && [ -r /proc/meminfo ]; then
+          mem_mb=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) / 1024 ))
+        fi
+
+        jobs=$cpus
+        case "${mem_mb:-}" in
+          ''|*[!0-9]*) ;;
+          *)
+            by_mem=$((mem_mb / 2048))
+            [ "$by_mem" -lt 1 ] && by_mem=1
+            [ "$by_mem" -lt "$jobs" ] && jobs=$by_mem
+            ;;
+        esac
+
+        echo "CMAKE_BUILD_PARALLEL_LEVEL=$jobs" >> "$GITHUB_ENV"
+        echo "Using $jobs build jobs (cpus=$cpus, memory=${mem_mb:-unknown} MiB)"
