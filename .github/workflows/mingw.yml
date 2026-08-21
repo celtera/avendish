@@ -50,6 +50,9 @@ jobs:
             boost:p
             gstreamer:p
 
+      - name: Compute build parallelism
+        uses: ./.github/actions/parallelism
+
       - name: Build debug
         shell: msys2 {0}
         run: |
@@ -68,7 +71,7 @@ jobs:
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src"
 
-          cmake --build . --parallel "$(nproc)"
+          cmake --build .
 
       - name: Test debug
         shell: msys2 {0}
@@ -94,7 +97,7 @@ jobs:
             -DVST3_SDK_ROOT=$SDK_3RDPARTY/vst3 \
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src"
 
-          cmake --build . --parallel "$(nproc)"
+          cmake --build .
 
       - name: Test release
         shell: msys2 {0}

@@ -51,6 +51,9 @@ jobs:
           chmod +x ./fetch-sdk.sh
           ./fetch-sdk.sh
 
+      - name: Compute build parallelism
+        uses: ./.github/actions/parallelism
+
       - name: Build debug
         shell: bash
         run: |
@@ -75,7 +78,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             -G "Visual Studio 18 2026"
 
-          cmake --build . --parallel "$(nproc)" --config Debug
+          cmake --build . --config Debug
 
       - name: Test debug
         shell: bash
@@ -104,7 +107,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$SDK_3RDPARTY/libpd/pure-data/src" \
             -G "Visual Studio 18 2026"
 
-          cmake --build . --parallel "$(nproc)" --config Release
+          cmake --build . --config Release
 
       - name: Test release
         shell: bash
