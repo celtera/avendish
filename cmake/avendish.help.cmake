@@ -67,17 +67,24 @@ function(avnd_generate_help)
   if(NOT _dump_path)
     return()
   endif()
+  get_target_property(_dump_target ${AVND_SOURCE_TARGET} AVND_DUMP_TARGET)
+  if(NOT _dump_target)
+    set(_dump_target "")
+  endif()
 
+  # Only consume the dump JSON here: depending on the file would attach another
+  # copy of the rule that produces it to this target, and the copies race under
+  # the VS generator. See avendish.dump.cmake.
   add_custom_target(${AVND_FX_TARGET}_help ALL
       "$<TARGET_FILE:generate_patches>" "${AVND_BACKEND}" "${_dump_path}" "${AVND_DESTINATION}" ${AVND_EXTRA_ARG}
-      DEPENDS "${_dump_path}" generate_patches
       BYPRODUCTS "${AVND_DESTINATION}"
     )
   # DEPENDS on a target in add_custom_target does not reliably force build
   # ordering (esp. with the VS generator + parallel MSBuild): the help step
   # could run before generate_patches or the dump JSON existed (exit code 3).
   # Force it explicitly.
-  add_dependencies(${AVND_FX_TARGET}_help generate_patches ${AVND_SOURCE_TARGET})
+  add_dependencies(${AVND_FX_TARGET}_help
+    generate_patches ${AVND_SOURCE_TARGET} ${_dump_target})
   set_target_properties(${AVND_FX_TARGET}
     PROPERTIES "${AVND_PROPERTY}" "${AVND_DESTINATION}")
 endfunction()

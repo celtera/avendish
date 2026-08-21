@@ -60,8 +60,19 @@ function(avnd_make_dump)
     VERBATIM
   )
 
+  # A custom command with no owning target is copied into *every* target that
+  # lists its output in DEPENDS. Ninja and Make fold those copies back into one
+  # graph node, but the Visual Studio generator emits one custom build step per
+  # .vcxproj and MSBuild builds projects in parallel, so several copies rewrite
+  # the same JSON at once while another one is reading it -- generate_patches
+  # then fails with "attempting to parse an empty input" (exit code 3), which
+  # made the VS lane fail at random. Give the command one owning target and let
+  # every consumer order itself against that target instead of against the file.
+  add_custom_target(${AVND_FX_TARGET}_json DEPENDS "${_dump_file_path}")
+
   set_target_properties(${AVND_TARGET} PROPERTIES
     AVND_DUMP_PATH "${_dump_file_path}"
+    AVND_DUMP_TARGET "${AVND_FX_TARGET}_json"
   )
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
