@@ -348,6 +348,12 @@ struct from_ossia_value_impl
     constexpr int sz = avnd::pfr::tuple_size_v<F>;
     if constexpr(avnd::vecf_compatible<F>())
     {
+      // A struct with 2/3/4 float fields AND field names is serialized as a
+      // value_map by to_ossia_value_impl (the field-names branch wins there);
+      // ossia::convert<vecNf>(map) returns zeroes, so route maps through the
+      // field-order decoder instead of the vecNf shortcut.
+      if(src.get_type() == ossia::val_type::MAP)
+        return from_vector(src, dst);
       if constexpr(sz == 2)
       {
         auto [x, y] = ossia::convert<ossia::vec2f>(src);
@@ -1388,6 +1394,11 @@ bool from_ossia_value(const ossia::value& src, T& dst)
   }
   else if constexpr(avnd::vecf_compatible<type>())
   {
+    // See from_ossia_value_impl: a named all-float struct arrives as a
+    // value_map when produced by a nested context; decode it by field order
+    // instead of ossia::convert<vecNf>(map) which returns zeroes.
+    if(src.get_type() == ossia::val_type::MAP)
+      return from_ossia_value_rec(src, dst);
     if constexpr(sz == 2)
     {
       auto [x, y] = ossia::convert<ossia::vec2f>(src);
