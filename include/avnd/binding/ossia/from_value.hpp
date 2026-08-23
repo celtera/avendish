@@ -1504,10 +1504,10 @@ from_ossia_value(const ossia::value& src, T<N>& dst)
 }
 
 template <typename T>
-  requires(
+  requires(!avnd::type_wrapper<T> && (
       avnd::variant_ish<T> || avnd::set_ish<T> || avnd::map_ish<T> || avnd::bitset_ish<T>
       || avnd::pair_ish<T> || avnd::tuple_ish<T> || avnd::iterable_ish<T>
-      || (avnd::vector_ish<T> && !avnd::string_ish<T>))
+      || (avnd::vector_ish<T> && !avnd::string_ish<T>)))
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   return from_ossia_value_impl{}(src, dst);

@@ -525,10 +525,13 @@ ossia::value to_ossia_value(const std::floating_point auto& v)
 {
   return (float)v;
 }
-ossia::value to_ossia_value(const avnd::variant_ish auto& v)
+template<avnd::variant_ish T>
+  requires (!avnd::type_wrapper<T>)
+ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);
 }
+
 template <avnd::optional_ish T>
   requires(!std::is_same_v<std::optional<ossia::value>, T>)
 ossia::value to_ossia_value(const T& v)
