@@ -24,6 +24,16 @@ struct ControllerCommon
 public:
   ControllerCommon() { Steinberg::UpdateHandler::instance(); }
 
+  // True for momentary (bang / push-button) parameters: pressed = 1,
+  // released = 0, no latched state. The generic VSTGUI editor uses this to
+  // draw a kick-style button instead of an on/off toggle. ParameterInfo has
+  // no such notion, so the typed Controller overrides this from the control
+  // type's widget.
+  virtual bool isMomentaryParameter(Steinberg::Vst::ParamID) const noexcept
+  {
+    return false;
+  }
+
   Steinberg::tresult initialize(Steinberg::FUnknown* context) final override
   {
     {
