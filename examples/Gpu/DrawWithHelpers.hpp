@@ -1,6 +1,7 @@
 #pragma once
 #include <avnd/common/member_reflection.hpp>
 #include <cmath>
+#include <vector>
 #include <gpp/commands.hpp>
 #include <gpp/meta.hpp>
 #include <gpp/ports.hpp>

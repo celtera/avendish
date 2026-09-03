@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/container/small_vector.hpp>
 #include <cmath>
+#include <vector>
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>

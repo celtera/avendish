@@ -8,6 +8,7 @@
 #include <ossia/network/value/value_conversion.hpp>
 
 #include <optional>
+#include <vector>
 namespace oscr
 {
 struct convert_to_curve

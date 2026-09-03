@@ -308,6 +308,7 @@ struct midifile_storage : midifile_input_storage<T>
 #if __has_include(<QFile>)
 #define OSCR_HAS_MMAP_FILE_STORAGE 1
 #include <QFile>
+#include <vector>
 namespace oscr
 {
 struct raw_file_data

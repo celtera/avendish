@@ -1,6 +1,7 @@
 
 #pragma once
 #include <cmath>
+#include <vector>
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>

@@ -30,6 +30,7 @@
 
 #if __has_include(<mdspan>)
 #include <mdspan>
+#include <vector>
 namespace std
 {
 template <typename T, typename Ext, typename L, typename A>

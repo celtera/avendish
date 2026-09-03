@@ -3,6 +3,7 @@
 #include <avnd/binding/gstreamer/utils.hpp>
 #include <avnd/wrappers/process_adapter.hpp>
 #include <cmath>
+#include <vector>
 
 namespace gst
 {

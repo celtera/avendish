@@ -2,6 +2,9 @@
 #include "MapTool.hpp"
 
 #include <halp/callback.hpp>
+
+#include <vector>
+
 namespace ao
 {
 /**

@@ -5,6 +5,9 @@
 #include <halp/audio.hpp>
 #include <halp/meta.hpp>
 #include <halp/smooth_controls.hpp>
+
+#include <vector>
+
 namespace ao
 {
 class MonoMix

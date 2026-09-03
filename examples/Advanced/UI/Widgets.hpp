@@ -5,6 +5,8 @@
 #include <halp/meta.hpp>
 #include <ossia/network/value/value.hpp>
 
+#include <vector>
+
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 namespace uo

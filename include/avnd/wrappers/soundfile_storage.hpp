@@ -9,6 +9,8 @@
 #include <avnd/introspection/port.hpp>
 #include <boost/mp11.hpp>
 
+#include <vector>
+
 namespace avnd
 {
 // Field: struct { struct { float** data; } soundfile; }

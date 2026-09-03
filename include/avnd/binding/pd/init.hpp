@@ -7,6 +7,8 @@
 #include <avnd/concepts/generic.hpp>
 #include <avnd/concepts/object.hpp>
 
+#include <vector>
+
 namespace pd
 {
 

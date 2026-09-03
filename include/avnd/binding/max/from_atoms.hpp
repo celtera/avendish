@@ -14,6 +14,7 @@
 #include <ext.h>
 
 #include <string>
+#include <vector>
 
 namespace max
 {

@@ -14,6 +14,8 @@
 #include <fmt/printf.h>
 #include <fmt/ranges.h>
 
+#include <vector>
+
 namespace dump_text
 {
 template <typename T>

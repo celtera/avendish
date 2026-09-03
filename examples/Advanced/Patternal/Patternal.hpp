@@ -5,6 +5,9 @@
 #include <halp/audio.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
+
+#include <vector>
+
 namespace patternal
 {
 

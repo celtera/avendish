@@ -6,6 +6,7 @@
 
 #include <optional>
 #include <tuple>
+#include <vector>
 
 namespace oscr
 {

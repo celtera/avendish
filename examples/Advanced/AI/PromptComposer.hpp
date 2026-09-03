@@ -10,6 +10,7 @@
 #include <ossia/detail/small_vector.hpp>
 
 #include <algorithm>
+#include <vector>
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 

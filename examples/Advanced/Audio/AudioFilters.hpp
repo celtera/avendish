@@ -10,6 +10,8 @@
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
 
+#include <vector>
+
 namespace Dsp
 {
 template <class StateType>

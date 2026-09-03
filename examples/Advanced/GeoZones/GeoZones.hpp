@@ -8,6 +8,9 @@
 #include <ossia/detail/flat_map.hpp>
 #include <ossia/detail/flat_set.hpp>
 #include <ossia/network/value/value.hpp>
+
+#include <vector>
+
 namespace co
 {
 

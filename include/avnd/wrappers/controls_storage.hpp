@@ -8,6 +8,9 @@
 #include <avnd/introspection/output.hpp>
 #include <avnd/introspection/port.hpp>
 #include <boost/mp11.hpp>
+
+#include <vector>
+
 namespace avnd
 {
 // Field:

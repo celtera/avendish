@@ -3,6 +3,8 @@
 #include <ossia/dataflow/value_port.hpp>
 #include <tuplet/tuple.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 

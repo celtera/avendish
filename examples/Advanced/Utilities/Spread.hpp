@@ -4,6 +4,8 @@
 #include <halp/meta.hpp>
 #include <ossia/network/value/value.hpp>
 
+#include <vector>
+
 namespace ao
 {
 struct Spread

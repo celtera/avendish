@@ -19,6 +19,8 @@
 #include <ossia/protocols/midi/midi.hpp>
 #include <ossia/protocols/oscquery/oscquery_server_asio.hpp>
 
+#include <vector>
+
 namespace standalone
 {
 template <typename T>

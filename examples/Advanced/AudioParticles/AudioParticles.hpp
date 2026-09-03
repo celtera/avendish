@@ -7,6 +7,7 @@
 #include <rnd/random.hpp>
 
 #include <QFile>
+#include <vector>
 
 // Note: this example leverages a lot of built-in Qt & ossia score API features,
 // in particular to decode audio files on the fly.

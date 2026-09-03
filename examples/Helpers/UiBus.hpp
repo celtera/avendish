@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <variant>
+#include <vector>
 
 namespace examples::helpers
 {

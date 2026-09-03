@@ -7,6 +7,7 @@
 #include <optional>
 #include <span>
 #include <type_traits>
+#include <vector>
 
 namespace avnd
 {

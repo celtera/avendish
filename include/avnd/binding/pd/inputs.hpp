@@ -14,6 +14,7 @@
 #include <cstring>
 #include <cmath>
 #include <mutex>
+#include <vector>
 namespace pd
 {
 
