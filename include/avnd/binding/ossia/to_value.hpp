@@ -6,6 +6,8 @@
 #include <avnd/concepts/tensor.hpp>
 #include <ossia/network/value/value.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 namespace tensor_detail

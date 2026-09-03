@@ -11,6 +11,8 @@
 #include <halp/log.hpp>
 #include <halp/meta.hpp>
 
+#include <vector>
+
 namespace examples::helpers
 {
 /**

@@ -9,6 +9,8 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/variant2/variant.hpp>
 
+#include <vector>
+
 namespace pd
 {
 template <typename T>

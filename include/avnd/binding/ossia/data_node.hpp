@@ -2,6 +2,8 @@
 #include <avnd/binding/ossia/node.hpp>
 #include <avnd/concepts/temporality.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 

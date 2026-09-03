@@ -1,5 +1,8 @@
 #pragma once
 #include <avnd/binding/ossia/node.hpp>
+
+#include <vector>
+
 namespace oscr
 {
 #if 0

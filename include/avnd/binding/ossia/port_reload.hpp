@@ -1,6 +1,9 @@
 #pragma once
 #include <avnd/binding/ossia/dynamic_ports.hpp>
 #include <avnd/binding/ossia/port_setup.hpp>
+
+#include <vector>
+
 namespace oscr
 {
 template <typename T>

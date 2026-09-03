@@ -11,6 +11,8 @@
 #include <ossia/audio/fft.hpp>
 #include <ossia/dataflow/nodes/media.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 template <typename Field>

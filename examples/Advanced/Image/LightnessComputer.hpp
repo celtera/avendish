@@ -7,6 +7,7 @@
 #include <halp/texture.hpp>
 
 #include <chrono>
+#include <vector>
 
 #include <halp/controls.enums.hpp>
 

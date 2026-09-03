@@ -5,6 +5,8 @@
 #include <avnd/binding/vintage/helpers.hpp>
 #include <avnd/binding/vintage/vintage.hpp>
 
+#include <vector>
+
 namespace vintage
 {
 

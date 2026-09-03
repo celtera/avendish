@@ -22,6 +22,8 @@
 #include <ossia/network/base/parameter.hpp>
 #include <ossia/network/value/format_value.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 template <typename Field, std::size_t Idx>

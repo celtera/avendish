@@ -11,6 +11,8 @@
 #include <ossia/network/dataspace/dataspace_visitors.hpp>
 #include <tuplet/tuple.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 // Compile-time map of avnd concept to ossia port

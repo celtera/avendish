@@ -18,6 +18,7 @@
 #include <clap/all.h>
 
 #include <algorithm>
+#include <vector>
 
 namespace avnd_clap
 {

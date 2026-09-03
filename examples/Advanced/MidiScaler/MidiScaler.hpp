@@ -23,6 +23,7 @@
 #include <istream>
 #include <optional>
 #include <sstream>
+#include <vector>
 
 namespace mtk
 {

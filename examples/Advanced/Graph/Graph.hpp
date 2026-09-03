@@ -4,6 +4,8 @@
 
 #include <halp/meta.hpp>
 
+#include <vector>
+
 namespace grph
 {
 

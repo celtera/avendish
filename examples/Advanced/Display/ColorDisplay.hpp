@@ -9,6 +9,7 @@
 #include <halp/layout.hpp>
 
 #include <cstdio>
+#include <vector>
 
 namespace dspl
 {

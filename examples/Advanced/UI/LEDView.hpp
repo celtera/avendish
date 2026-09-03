@@ -18,6 +18,7 @@
 #include <score/model/Skin.hpp>
 
 #include <QPainter>
+#include <vector>
 namespace uo
 {
 #if 0

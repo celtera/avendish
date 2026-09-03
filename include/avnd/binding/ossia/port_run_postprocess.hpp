@@ -13,6 +13,8 @@
 #include <ossia/dataflow/graph_node.hpp>
 #include <ossia/dataflow/port.hpp>
 
+#include <vector>
+
 namespace oscr
 {
 static inline auto& thread_local_midi_1to2_converter_instance()

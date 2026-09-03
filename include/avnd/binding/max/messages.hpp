@@ -6,6 +6,8 @@
 #include <avnd/binding/max/helpers.hpp>
 #include <avnd/introspection/messages.hpp>
 
+#include <vector>
+
 namespace max
 {
 template <typename T>

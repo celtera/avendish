@@ -9,6 +9,7 @@
 #include <halp/smoothers.hpp>
 
 #include <variant>
+#include <vector>
 
 namespace ao
 {

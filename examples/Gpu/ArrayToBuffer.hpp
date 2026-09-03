@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <variant>
+#include <vector>
 
 namespace uo
 {

@@ -8,6 +8,7 @@
 #include <halp/meta.hpp>
 
 #include <cstring>
+#include <vector>
 
 namespace examples
 {

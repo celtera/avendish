@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <algorithm>
+#include <vector>
 
 namespace vo
 {

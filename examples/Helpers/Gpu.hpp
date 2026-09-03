@@ -16,6 +16,7 @@
 
 /*
 #include <cmath>
+#include <vector>
 #include <halp/audio.hpp>
 #include <halp/sample_accurate_controls.hpp>
 #include <halp/texture.hpp>

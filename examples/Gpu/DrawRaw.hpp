@@ -4,6 +4,8 @@
 #include <gpp/meta.hpp>
 #include <gpp/ports.hpp>
 
+#include <vector>
+
 namespace examples
 {
 struct GpuRawExample
