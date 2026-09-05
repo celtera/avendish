@@ -358,7 +358,9 @@ struct setup_value_port
     port.domain = setup_value_port::range_to_domain<Field>();
   }
 
+  // These concepts nest: an xyzw value also satisfies xyz and xy.
   template <avnd::xy_parameter Field>
+    requires(!avnd::xyz_parameter<Field>)
   static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
@@ -366,7 +368,34 @@ struct setup_value_port
     port.domain = setup_value_port::range_to_domain<Field>();
   }
 
+  template <avnd::xyz_parameter Field>
+    requires(!avnd::xyzw_parameter<Field>)
+  static void setup(ossia::value_port& port)
+  {
+    setup_port_is_event<Field>(port);
+    port.type = ossia::cartesian_3d_u{};
+    port.domain = setup_value_port::range_to_domain<Field>();
+  }
+
+  template <avnd::xyzw_parameter Field>
+  static void setup(ossia::value_port& port)
+  {
+    setup_port_is_event<Field>(port);
+    // No unit: orientation.axis is the only xyzw one and means something else.
+    port.type = ossia::val_type::VEC4F;
+    port.domain = setup_value_port::range_to_domain<Field>();
+  }
+
   template <avnd::rgb_parameter Field>
+    requires(!avnd::rgba_parameter<Field>)
+  static void setup(ossia::value_port& port)
+  {
+    setup_port_is_event<Field>(port);
+    port.type = ossia::rgb_u{};
+    port.domain = {};
+  }
+
+  template <avnd::rgba_parameter Field>
   static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
@@ -400,6 +429,29 @@ struct setup_value_port
         port.is_event = true;
     }
   }
+
+  //! halp_meta(unit, "..."), which takes precedence over the shape of the value.
+  template <typename Field>
+  static void setup_declared_unit(ossia::value_port& port)
+  {
+    if constexpr(avnd::has_unit<Field>)
+    {
+      static constexpr auto unit = avnd::get_unit<Field>();
+      if(!unit.empty())
+      {
+        // Not parse_dataspace: that one only knows the eight dataspace names.
+        if(auto u = ossia::parse_pretty_unit(unit))
+          port.type = u;
+      }
+    }
+  }
+
+  template <typename Field>
+  static void setup_port(ossia::value_port& port)
+  {
+    setup_value_port{}.setup<Field>(port);
+    setup_declared_unit<Field>(port);
+  }
 };
 
 template <typename Exec_T>
@@ -414,14 +466,7 @@ struct setup_inlets
   {
     inlets.push_back(std::addressof(port));
 
-    setup_value_port{}.setup<Field>(*port);
-
-    if constexpr(avnd::has_unit<Field>)
-    {
-      static constexpr auto unit = avnd::get_unit<Field>();
-      if(!unit.empty())
-        port->type = ossia::parse_dataspace(unit);
-    }
+    setup_value_port::setup_port<Field>(*port);
   }
 
   template <std::size_t Idx, typename Field, typename OssiaPortType>
@@ -478,14 +523,7 @@ struct setup_outlets
   {
     outlets.push_back(std::addressof(port));
 
-    setup_value_port{}.setup<Field>(*port);
-
-    if constexpr(avnd::has_unit<Field>)
-    {
-      static constexpr auto unit = avnd::get_unit<Field>();
-      if(!unit.empty())
-        port->type = ossia::parse_dataspace(unit);
-    }
+    setup_value_port::setup_port<Field>(*port);
   }
 
   template <std::size_t Idx, typename Field, typename OssiaPortType>
