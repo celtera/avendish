@@ -404,10 +404,17 @@ public:
     this->control.inputs_set.set(N);
   }
 
+  // N is the index of the port in dynamic_ports_input_introspection<T>.
+  // The value is dropped if dynamic_port is out of range: the UI may send an
+  // update for a port that has just been removed, or before the port vector
+  // was resized here.
   template <typename Val, std::size_t N>
   void control_updated_from_ui(Val&& new_value, int dynamic_port)
   {
-    // FIXME how to combine dynamic_ports and control_input
+    if(dynamic_port < 0)
+      return;
+    const auto k = static_cast<std::size_t>(dynamic_port);
+
     if constexpr(requires { avnd::effect_container<T>::multi_instance; })
     {
       for(const auto& state : this->impl.full_state())
@@ -415,7 +422,9 @@ public:
         // Replace the value in the field
         auto& field = avnd::dynamic_ports_input_introspection<T>::template field<N>(
             state.inputs);
-        auto& port = field.ports[dynamic_port];
+        if(k >= field.ports.size())
+          continue;
+        auto& port = field.ports[k];
 
         // OPTIMIZEME we're loosing a few allocations here that should be gc'd
         port.value = new_value;
@@ -428,15 +437,18 @@ public:
       // Replace the value in the field
       auto& field = avnd::dynamic_ports_input_introspection<T>::template field<N>(
           this->impl.inputs());
-      auto& port = field.ports[dynamic_port];
+      if(k >= field.ports.size())
+        return;
+      auto& port = field.ports[k];
 
       std::swap(port.value, new_value);
 
       if_possible(port.update(this->impl.effect));
     }
 
-    // Mark the control as changed
-    this->control.inputs_set.set(N);
+    // Not marked in control.inputs_set: that bitset is indexed by control input
+    // (control_input_introspection), not by dynamic port, and with more dynamic
+    // ports than controls the index would fall outside the bitset.
   }
   void audio_configuration_changed(ossia::exec_state_facade st)
   {
