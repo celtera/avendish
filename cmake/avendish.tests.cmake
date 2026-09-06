@@ -50,6 +50,11 @@ if(BUILD_TESTING)
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
 
+  if(TARGET ossia::ossia)
+    avnd_add_catch_test(test_ossia_values tests/test_ossia_values.cpp)
+    target_link_libraries(test_ossia_values PRIVATE ossia::ossia)
+  endif()
+
   # Polyphony: one effect instance per channel, each seeing only its own
   # samples (a binding calling init_channels with the compile-time count made
   # channel 1 a copy of channel 0).
