@@ -11,6 +11,10 @@
 #include <ossia/network/dataspace/dataspace_visitors.hpp>
 #include <tuplet/tuple.hpp>
 
+#include <algorithm>
+#include <iterator>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace oscr
@@ -176,6 +180,33 @@ struct get_ossia_outlet_type<N, T>
   using type = ossia::geometry_outlet;
 };
 
+template <typename Tuple, typename F, std::size_t... I>
+void for_each_port_slot_impl(Tuple& t, F&& f, std::index_sequence<I...>)
+{
+  (f(tuplet::get<I>(t)), ...);
+}
+template <typename Tuple, typename F>
+void for_each_port_slot(Tuple& t, F&& f)
+{
+  for_each_port_slot_impl(
+      t, f, std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>{});
+}
+
+//! Frees the ports held in every vector slot of a port tuple: the dynamic
+//! ports are heap-allocated, the others are members of the tuple itself.
+template <typename Tuple>
+void delete_dynamic_ports(Tuple& t) noexcept
+{
+  for_each_port_slot(t, [](auto& slot) {
+    if constexpr(requires { slot.begin(); slot.clear(); })
+    {
+      for(auto p : slot)
+        delete p;
+      slot.clear();
+    }
+  });
+}
+
 template <typename T>
 struct inlet_storage
 {
@@ -198,6 +229,11 @@ struct inlet_storage
   using ossia_inputs_tuple = boost::mp11::mp_rename<
       boost::mp11::mp_transform<inputs_getter, inputs_tuple>, tuplet::tuple>;
   ossia_inputs_tuple ports;
+
+  inlet_storage() = default;
+  inlet_storage(const inlet_storage&) = delete;
+  inlet_storage& operator=(const inlet_storage&) = delete;
+  ~inlet_storage() { delete_dynamic_ports(ports); }
 };
 
 template <typename T>
@@ -212,6 +248,11 @@ struct outlet_storage
   using ossia_outputs_tuple = boost::mp11::mp_rename<
       boost::mp11::mp_transform<outputs_getter, outputs_tuple>, tuplet::tuple>;
   ossia_outputs_tuple ports;
+
+  outlet_storage() = default;
+  outlet_storage(const outlet_storage&) = delete;
+  outlet_storage& operator=(const outlet_storage&) = delete;
+  ~outlet_storage() { delete_dynamic_ports(ports); }
 };
 
 struct setup_value_port
@@ -476,11 +517,15 @@ struct setup_inlets
       avnd::field_reflection<Idx, Field> ctrl,
       std::vector<OssiaPortType*>& port) const noexcept
   {
-    int expected = self.dynamic_ports.num_in_ports(avnd::field_index<Idx>{});
-    while(port.size() < expected)
-      port.push_back(new OssiaPortType); // FIXME not freed
-    while(port.size() > expected)
+    const int expected
+        = std::max(0, self.dynamic_ports.num_in_ports(avnd::field_index<Idx>{}));
+    while(std::ssize(port) < expected)
+      port.push_back(new OssiaPortType); // Freed by inlet_storage / delete_dynamic_ports
+    while(std::ssize(port) > expected)
+    {
+      delete port.back();
       port.pop_back();
+    }
 
     for(auto& p : port)
       (*this)(ctrl, *p);
@@ -533,12 +578,15 @@ struct setup_outlets
       avnd::field_reflection<Idx, Field> ctrl,
       std::vector<OssiaPortType*>& port) const noexcept
   {
-    const std::size_t expected
-        = self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{});
-    while(port.size() < expected)
-      port.push_back(new OssiaPortType); // FIXME not freed
-    while(port.size() > expected)
+    const int expected
+        = std::max(0, self.dynamic_ports.num_out_ports(avnd::field_index<Idx>{}));
+    while(std::ssize(port) < expected)
+      port.push_back(new OssiaPortType); // Freed by outlet_storage / delete_dynamic_ports
+    while(std::ssize(port) > expected)
+    {
+      delete port.back();
       port.pop_back();
+    }
 
     for(auto& p : port)
       (*this)(ctrl, *p);
