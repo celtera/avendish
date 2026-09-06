@@ -40,8 +40,7 @@ inline ossia::value build_tensor_value(
   }
   return result;
 }
-}  // namespace tensor_detail
-
+} // namespace tensor_detail
 
 struct to_ossia_value_impl
 {
@@ -55,8 +54,7 @@ struct to_ossia_value_impl
     v.resize(fields);
 
     int k = 0;
-    avnd::pfr::for_each_field(
-        f, [&](const auto& f) { to_ossia_value_impl{v[k++]}(f); });
+    avnd::pfr::for_each_field(f, [&](const auto& f) { to_ossia_value_impl{v[k++]}(f); });
 
     val = std::move(v);
   }
@@ -139,6 +137,8 @@ struct to_ossia_value_impl
 
   void operator()(const std::string& f) { val = f; }
 
+  void operator()(const avnd::string_ish auto& f) { (*this)(std::string_view{f}); }
+
   void operator()(bool f) { val = f; }
 
   template <template <typename> typename T, typename V>
@@ -181,7 +181,11 @@ struct to_ossia_value_impl
     val = std::vector<ossia::value>(f.begin(), f.end());
   }
 
-  void operator()(const avnd::vector_ish auto& f)
+  template <avnd::vector_ish T>
+    requires(
+        !avnd::string_ish<T> && !avnd::vector_v_strict<T, int>
+        && !avnd::vector_v_strict<T, float>)
+  void operator()(const T& f)
   {
     std::vector<ossia::value> v;
     v.resize(f.size());
@@ -280,9 +284,9 @@ struct to_ossia_value_impl
     std::vector<ossia::value> v;
     v.resize(std::tuple_size_v<U>);
 
-    std::apply(
-        [&, k = 0](auto&&... args) mutable { (to_ossia_value_impl{v[k++]}(args), ...); },
-        f);
+    std::apply([&, k = 0](auto&&... args) mutable {
+      (to_ossia_value_impl{v[k++]}(args), ...);
+    }, f);
     val = std::move(v);
   }
 
@@ -322,7 +326,8 @@ struct to_ossia_value_impl
   void operator()(const T& f)
   {
     using key_type = typename T::key_type;
-    if constexpr(std::is_convertible_v<key_type, std::string>)
+    if constexpr(
+        avnd::string_ish<key_type> || std::is_convertible_v<key_type, std::string>)
     {
       ossia::value_map_type v;
       v.reserve(f.size());
@@ -332,7 +337,10 @@ struct to_ossia_value_impl
         ossia::value sub;
         to_ossia_value_impl{sub}(map_v);
 
-        v.emplace_back(map_k, std::move(sub));
+        if constexpr(avnd::string_ish<key_type>)
+          v.emplace_back(std::string_view{map_k}, std::move(sub));
+        else
+          v.emplace_back(map_k, std::move(sub));
       }
       val = std::move(v);
     }
@@ -527,8 +535,8 @@ ossia::value to_ossia_value(const std::floating_point auto& v)
 {
   return (float)v;
 }
-template<avnd::variant_ish T>
-  requires (!avnd::type_wrapper<T>)
+template <avnd::variant_ish T>
+  requires(!avnd::type_wrapper<T>)
 ossia::value to_ossia_value(const T& v)
 {
   return to_ossia_value_rec(v);
