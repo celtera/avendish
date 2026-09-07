@@ -221,10 +221,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::folder; })
   {
     return widget_reflection<std::string>{widget_type::folder};
+  }
   else if constexpr(requires { T::widget::string_list; })
   {
     return widget_reflection<value_type>{widget_type::string_list};
-  }
   }
   else if constexpr(requires { T::widget::multi_slider; })
   {
