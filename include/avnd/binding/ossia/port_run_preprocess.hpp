@@ -116,12 +116,16 @@ struct process_before_run
     for(auto pport : ports)
     {
       auto& port = *pport;
+      if constexpr(ossia_port<avnd::dynamic_port_type<Field>>)
+        ctrl.ports[p].value = &port.data;
       if(!port.data.get_data().empty())
       {
         auto& last = port.data.get_data().back().value;
 
         // FIXME check optional ports case
-        written |= self.from_ossia_value(ctrl.ports[p], last, ctrl.ports[p].value, idx);
+        if constexpr(!ossia_port<avnd::dynamic_port_type<Field>>)
+          written
+              |= self.from_ossia_value(ctrl.ports[p], last, ctrl.ports[p].value, idx);
 
         // FIXME
         // if constexpr(avnd::control_port<Field>)
@@ -477,10 +481,16 @@ struct process_before_run
       avnd::field_index<Idx>) const noexcept
   {
     ctrl.ports.resize(ports.size());
-    for(auto& port_value : ctrl.ports)
+    for(std::size_t i = 0; i < ports.size(); ++i)
     {
-      using type = std::remove_cvref_t<decltype(port_value.value)>;
-      port_value.value = type{};
+      auto& port_value = ctrl.ports[i];
+      if constexpr(ossia_port<avnd::dynamic_port_type<Field>>)
+        port_value.value = &ports[i]->data;
+      else
+      {
+        using type = std::remove_cvref_t<decltype(port_value.value)>;
+        port_value.value = type{};
+      }
     }
   }
 
