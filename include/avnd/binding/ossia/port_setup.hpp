@@ -464,7 +464,9 @@ struct setup_value_port
   template <typename Field>
   static void setup(ossia::value_port& port)
   {
-    if constexpr(requires { bool(Field::event); })
+    if constexpr(ossia_value_port<Field>)
+      port.is_event = Field::is_event();
+    else if constexpr(requires { bool(Field::event); })
       port.is_event = Field::event;
     if constexpr(requires { Field::value; })
     {
@@ -492,8 +494,9 @@ struct setup_value_port
   template <typename Field>
   static void setup_port(ossia::value_port& port)
   {
-    setup_value_port{}.setup<Field>(port);
-    setup_declared_unit<Field>(port);
+    using Port = avnd::concrete_port_type<Field>;
+    setup_value_port{}.setup<Port>(port);
+    setup_declared_unit<Port>(port);
   }
 };
 

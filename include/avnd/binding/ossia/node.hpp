@@ -795,7 +795,7 @@ struct tick_info
 namespace avnd
 {
 
-template <typename T, typename Tick>
+template <typename T>
   requires(std::same_as<std::remove_cvref_t<typename T::tick>, ossia::token_request>)
 inline constexpr const ossia::token_request&
 get_tick_or_frames(avnd::effect_container<T>& implementation, const oscr::tick_info& v)

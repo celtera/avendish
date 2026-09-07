@@ -23,6 +23,9 @@ AVND_DEFINE_TAG(fully_custom_item)
  */
 AVND_DEFINE_TAG(no_background)
 
+/** Hide a tab layout's selector; its model controls the visible page. */
+AVND_DEFINE_TAG(hide_tabs)
+
 type_or_value_qualification(ui)
 type_or_value_reflection(ui)
 
