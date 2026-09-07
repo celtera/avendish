@@ -29,6 +29,7 @@ enum class widget_type
   iknob,
   lineedit,
   combobox,
+  string_list,
   choices,
   xy,
   xy_spinbox,
@@ -82,6 +83,8 @@ struct widget_reflection
         return "lineedit";
       case widget_type::combobox:
         return "combobox";
+      case widget_type::string_list:
+        return "string_list";
       case widget_type::choices:
         return "choices";
       case widget_type::xy:
@@ -218,6 +221,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::folder; })
   {
     return widget_reflection<std::string>{widget_type::folder};
+  }
+  else if constexpr(requires { T::widget::string_list; })
+  {
+    return widget_reflection<value_type>{widget_type::string_list};
   }
   else if constexpr(requires { T::widget::multi_slider; })
   {

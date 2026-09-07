@@ -140,12 +140,13 @@ struct process_after_run
   {
     int N = port.size();
     assert(N == ctrl.ports.size());
-    for(int i = 0; i < N; i++)
-    {
-      // FIXME double-check all the "0", most likely they should be the tick start timestamp instead
-      write_value(
-          ctrl.ports[i], *port[i], ctrl.ports[i].value, 0, avnd::field_index<Idx>{});
-    }
+    if constexpr(!ossia_port<avnd::dynamic_port_type<Field>>)
+      for(int i = 0; i < N; i++)
+      {
+        // FIXME double-check all the "0", most likely they should be the tick start timestamp instead
+        write_value(
+            ctrl.ports[i], *port[i], ctrl.ports[i].value, 0, avnd::field_index<Idx>{});
+      }
   }
 
   template <avnd::linear_sample_accurate_parameter_port Field, std::size_t Idx>
