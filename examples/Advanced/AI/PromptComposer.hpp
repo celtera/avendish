@@ -1,13 +1,14 @@
 #pragma once
-#include <boost/algorithm/string.hpp>
 #include <cmath>
 #include <fmt/format.h>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
+#include <halp/string_list.hpp>
 #include <ossia/detail/pod_vector.hpp>
 #include <ossia/detail/small_vector.hpp>
+#include <ossia/network/value/value.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -28,14 +29,40 @@ struct PromptComposer
 
   struct inputs
   {
-    struct : halp::lineedit<"Keywords", "">
+    struct keyword_list : halp::string_list<"Keywords">
     {
-      static std::function<void(PromptComposer&, const std::string&)>
+      // Retain the old empty keyword and its first dynamic weight by default.
+      keyword_list() { value.emplace_back(12000, ""); }
+
+      // Versioned by representation: old documents/presets stored a STRING;
+      // current ones store LISTs of [stable port identity, keyword]. Preserve
+      // all rows, including empty and trailing rows, and their old weight IDs.
+      static ossia::value migrate_value(const ossia::value& previous)
+      {
+        if(auto text = previous.target<std::string>())
+        {
+          std::vector<ossia::value> rows;
+          std::size_t start = 0;
+          do
+          {
+            auto end = text->find('\n', start);
+            rows.emplace_back(
+                std::vector<ossia::value>{
+                    12000 + int(rows.size()), text->substr(start, end - start)});
+            if(end == std::string::npos)
+              break;
+            start = end + 1;
+          } while(true);
+          return rows;
+        }
+        return previous;
+      }
+
+      static std::function<void(PromptComposer&, const halp::string_list_value&)>
       on_controller_interaction()
       {
-        return [](PromptComposer& object, std::string_view value) {
-          int n = std::count(value.begin(), value.end(), '\n');
-          object.inputs.in_i.request_port_resize(n + 1);
+        return [](PromptComposer& object, const halp::string_list_value& rows) {
+          object.inputs.in_i.set_rows(rows);
         };
       }
     } controller;
@@ -57,7 +84,7 @@ struct PromptComposer
       void update(PromptComposer& obj) { }
     };
 
-    halp::dynamic_port<weight_port> in_i;
+    halp::keyed_dynamic_port<weight_port> in_i;
   } inputs;
 
   struct
@@ -67,17 +94,17 @@ struct PromptComposer
 
   void operator()()
   {
-    outputs.out.value = "";
-    splitted.clear();
-    boost::split(splitted, inputs.controller.value, boost::is_any_of("\n"));
-    auto it = splitted.begin();
-    for(auto& val : inputs.in_i.ports)
+    outputs.out.value.clear();
+    const auto count
+        = std::min(inputs.controller.value.size(), inputs.in_i.ports.size());
+    for(std::size_t i = 0; i < count; ++i)
     {
-      if(it == splitted.end())
-        break;
-      boost::trim_if(*it, [](char c) { return c <= 32; });
-      outputs.out.value += fmt::format("({}:{}), ", *it, val.value);
-      ++it;
+      std::string_view text = inputs.controller.value[i].second;
+      while(!text.empty() && static_cast<unsigned char>(text.front()) <= 32)
+        text.remove_prefix(1);
+      while(!text.empty() && static_cast<unsigned char>(text.back()) <= 32)
+        text.remove_suffix(1);
+      outputs.out.value += fmt::format("({}:{}), ", text, inputs.in_i.ports[i].value);
     }
 
     if(outputs.out.value.ends_with(", "))
@@ -86,8 +113,6 @@ struct PromptComposer
       outputs.out.value.pop_back();
     }
   }
-
-  std::vector<std::string> splitted;
 };
 
 
