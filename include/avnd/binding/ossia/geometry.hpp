@@ -6,6 +6,7 @@
 #include <halp/polyfill.hpp>
 #include <ossia/dataflow/geometry_port.hpp>
 
+#include <cassert>
 #include <memory>
 
 namespace oscr
@@ -733,8 +734,7 @@ update_buffer(T& buf, std::size_t buf_k, ossia::geometry& geom)
   gpu_buf.handle = buf.handle;
   gpu_buf.byte_size = buf.byte_size;
 
-  SCORE_ASSERT(buf_k >= 0);
-  SCORE_ASSERT(buf_k < geom.buffers.size());
+  assert(buf_k < geom.buffers.size());
   auto& in = geom.buffers[buf_k];
   in.data = gpu_buf;
 
