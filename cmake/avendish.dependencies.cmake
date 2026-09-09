@@ -53,7 +53,7 @@ if(NOT TARGET yyjson)
   FetchContent_Declare(
     yyjson
     GIT_REPOSITORY "https://github.com/ibireme/yyjson"
-    GIT_TAG 0.12.0
+    GIT_TAG 0.13.0
     GIT_PROGRESS true
   )
   FetchContent_MakeAvailable(yyjson)
