@@ -18,9 +18,28 @@
 #include <score/application/GUIApplicationContext.hpp>
 
 #include <QPainter>
+
+#include <cmath>
 #include <vector>
 namespace uo
 {
+//! Where \p v lands in [0;1] across the range [\p min ; \p max].
+//!
+//! A range whose min is greater than its max reads the other way round rather
+//! than being rejected: that is how an axis is inverted, and it is the only way
+//! to point Y downwards.
+inline double axisRatio(double v, double min, double max) noexcept
+{
+  return (v - min) / (max - min);
+}
+
+//! A range is unusable when its two ends meet, not when they are the wrong way
+//! round.
+inline bool axisUsable(double min, double max) noexcept
+{
+  return std::abs(max - min) > 1e-6;
+}
+
 struct Point2DView
 {
   halp_meta(name, "Point2D View")
@@ -138,12 +157,8 @@ struct Point2DView
     void paint_impl(QPainter* p) const override
     {
       static constexpr auto side = 3.;
-      if(m_points.empty())
-        return;
 
-      float scalex = max_x - min_x;
-      float scaley = max_y - min_y;
-      if(scalex < 0.000001f || scaley < 0.000001f)
+      if(!axisUsable(min_x, max_x) || !axisUsable(min_y, max_y))
         return;
 
       p->setRenderHint(QPainter::RenderHint::Antialiasing, true);
@@ -151,13 +166,29 @@ struct Point2DView
       const auto w = rect.width();
       const auto h = rect.height();
       auto& skin = score::Skin::instance();
+      p->translate(1, 1);
+
+      // The origin, when it is in view: two short ticks crossing where (0,0)
+      // falls, so that a range straddling zero -- or one running backwards --
+      // says which way round it is.
+      {
+        const auto ox = axisRatio(0., min_x, max_x);
+        const auto oy = 1. - axisRatio(0., min_y, max_y);
+        constexpr auto tick = 6.;
+        p->setBrush(skin.NoBrush);
+        p->setPen(skin.Gray.main.pen1);
+        if(ox >= 0. && ox <= 1.)
+          p->drawLine(QPointF{w * ox, h * oy - tick}, QPointF{w * ox, h * oy + tick});
+        if(oy >= 0. && oy <= 1.)
+          p->drawLine(QPointF{w * ox - tick, h * oy}, QPointF{w * ox + tick, h * oy});
+      }
+
       p->setPen(skin.NoPen);
       p->setBrush(skin.Base1);
-      p->translate(1, 1);
       for(QPointF pix : m_points)
       {
-        const auto x01 = (pix.x() - min_x) / scalex;
-        const auto y01 = 1. - (pix.y() - min_y) / scaley;
+        const auto x01 = axisRatio(pix.x(), min_x, max_x);
+        const auto y01 = 1. - axisRatio(pix.y(), min_y, max_y);
         p->drawEllipse(QPointF{w * x01 - side / 2., h * y01 - side / 2.}, side, side);
       }
       p->resetTransform();
