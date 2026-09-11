@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <avnd/binding/ossia/current_buffer_midi.hpp>
 #include <avnd/binding/ossia/geometry.hpp>
 #include <avnd/binding/ossia/port_base.hpp>
 #include <avnd/binding/ossia/to_value.hpp>
@@ -14,6 +15,7 @@
 #include <ossia/dataflow/port.hpp>
 
 #include <vector>
+#include <span>
 
 namespace oscr
 {
@@ -201,79 +203,89 @@ struct process_after_run
   {
   }
 
-  template <avnd::raw_container_midi_port Field, std::size_t Idx>
-  void operator()(
-      Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
+  template <std::size_t Idx, typename Messages>
+  void write_midi_output(const Messages& messages, ossia::midi_outlet& port) const noexcept
   {
-    const int N = ctrl.midi_messages.size;
-    port.data.messages.clear();
-    if(N > 0)
+    auto& output = [&]() -> auto& {
+      if constexpr(use_local_midi_tick_batch<Obj_T>)
+        return self.midi_tick_batch.template messages<Idx>();
+      else
+      {
+        port.data.messages.clear();
+        return port.data.messages;
+      }
+    }();
+
+    if(!messages.empty())
     {
       auto& conv = thread_local_midi_1to2_converter_instance();
       cmidi2_midi_conversion_context_initialize(&conv.context);
-      port.data.messages.reserve(N);
-      for(int i = 0; i < N; i++)
+      if constexpr(!use_local_midi_tick_batch<Obj_T>)
+        output.reserve(messages.size());
+      for(const auto& m : messages)
       {
-        avnd::midi_message auto& m = ctrl.midi_messages[i];
-        using msg_type = std::remove_reference_t<decltype(m)>;
-        if constexpr(std::is_same_v<msg_type, libremidi::message>)
+        if constexpr(std::is_same_v<std::remove_cvref_t<decltype(m)>, libremidi::ump>)
         {
-          m.timestamp += start;
-          port.data.messages.push_back(std::move(m));
+          auto packet = m;
+          packet.timestamp = start + m.timestamp;
+          output.push_back(packet);
         }
         else
         {
+          const auto* bytes = std::data(m.bytes);
+          const auto size = std::size(m.bytes);
+          libremidi::ump packet{};
+          // The stream converter consumes bank/RPN controllers as state, which
+          // its per-invocation reset would then drop.
+          if(size >= 2 && size <= 3 && bytes[0] >= 0x80 && bytes[0] < 0xf0
+             && (size == 3 || (bytes[0] & 0xe0) == 0xc0)
+             && cmidi2_midi1_channel_voice_to_midi2(bytes, size, packet.data))
+          {
+            packet.timestamp = start + m.timestamp;
+            output.push_back(packet);
+            continue;
+          }
           conv.convert(
-              m.data(), m.size(), start + m.timestamp,
+              bytes, size, start + m.timestamp,
               [&](const uint32_t* ump, int count, int64_t ts) {
-            libremidi::ump u;
-            std::copy_n(ump, std::min(count, 4), u.data);
-            u.timestamp = ts;
-            port.data.messages.push_back(std::move(u));
+            while(count > 0)
+            {
+              const int words = cmidi2_ump_get_num_bytes(*ump) / 4;
+              if(words <= 0 || words > count)
+                return stdx::error{std::errc::invalid_argument};
+              libremidi::ump packet{};
+              std::copy_n(ump, words, packet.data);
+              packet.timestamp = ts;
+              output.push_back(packet);
+              ump += words;
+              count -= words;
+            }
             return stdx::error{};
           });
         }
       }
     }
+
+    if constexpr(use_local_midi_tick_batch<Obj_T>)
+    {
+      // Unconditional: a consumer may have moved or cleared the port between slices.
+      port.data.messages.assign(output.begin(), output.end());
+    }
   }
 
-  // TODO UMP ports
-  // TODO note ports
+  template <avnd::raw_container_midi_port Field, std::size_t Idx>
+  void operator()(
+      Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
+  {
+    write_midi_output<Idx>(
+        std::span{ctrl.midi_messages, std::size_t(ctrl.size)}, port);
+  }
 
   template <avnd::dynamic_container_midi_port Field, std::size_t Idx>
   void operator()(
       Field& ctrl, ossia::midi_outlet& port, avnd::field_index<Idx>) const noexcept
   {
-    const int N = ctrl.midi_messages.size();
-    port.data.messages.clear();
-
-    if(N > 0)
-    {
-      auto& conv = thread_local_midi_1to2_converter_instance();
-      cmidi2_midi_conversion_context_initialize(&conv.context);
-      port.data.messages.reserve(N);
-      for(auto& m : ctrl.midi_messages)
-      {
-        using msg_type = std::remove_reference_t<decltype(m)>;
-        if constexpr(std::is_same_v<msg_type, libremidi::message>)
-        {
-          m.timestamp += start;
-          port.data.messages.push_back(libremidi::ump_from_midi1(m));
-        }
-        else
-        {
-          conv.convert(
-              m.bytes.data(), m.bytes.size(), start + m.timestamp,
-              [&](const uint32_t* ump, int count, int64_t ts) {
-            libremidi::ump u;
-            std::copy_n(ump, std::min(count, 4), u.data);
-            u.timestamp = ts;
-            port.data.messages.push_back(std::move(u));
-            return stdx::error{};
-          });
-        }
-      }
-    }
+    write_midi_output<Idx>(ctrl.midi_messages, port);
   }
 
   template <typename Field, std::size_t Idx>

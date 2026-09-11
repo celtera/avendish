@@ -8,10 +8,12 @@
 #include <avnd/concepts/soundfile.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
+#include <avnd/introspection/midi.hpp>
 #include <avnd/wrappers/controls.hpp>
 #include <avnd/wrappers/metadatas.hpp>
 #include <avnd/wrappers/widgets.hpp>
 #include <fmt/printf.h>
+#include <libremidi/detail/conversion.hpp>
 #include <ossia/audio/fft.hpp>
 #include <ossia/dataflow/dataflow.hpp>
 #include <ossia/dataflow/graph_node.hpp>
@@ -339,11 +341,46 @@ struct process_before_run
     ctrl.ports.resize(ports.size());
   }
 
+  template <typename Message>
+  bool copy_midi_input(Message& dst, const libremidi::ump& src) const noexcept
+  {
+    if constexpr(std::is_same_v<Message, libremidi::ump>)
+    {
+      dst = src;
+    }
+    else
+    {
+      auto converted = libremidi::midi1_from_ump(src);
+      if(converted.empty())
+        return false;
+      if constexpr(requires { dst.bytes.resize(converted.size()); })
+        dst.bytes.resize(converted.size());
+      else if(converted.size() > std::size(dst.bytes))
+        return false;
+      std::copy(converted.begin(), converted.end(), std::begin(dst.bytes));
+    }
+    dst.timestamp = src.timestamp - start;
+    return true;
+  }
+
   template <avnd::raw_container_midi_port Field, std::size_t Idx>
   void
   operator()(Field& ctrl, ossia::midi_inlet& port, avnd::field_index<Idx>) const noexcept
   {
-    // FIXME
+    constexpr auto index
+        = avnd::raw_container_midi_input_introspection<Obj_T>::field_index_to_index(
+            avnd::field_index<Idx>{});
+    auto& storage = tpl::get<std::size_t(index)>(self.midi_buffers.inputs_storage);
+    if(storage.size() < port.data.messages.size())
+      storage.resize(port.data.messages.size());
+    ctrl.midi_messages = storage.data();
+    ctrl.size = 0;
+    for(const auto& msg : port.data.messages)
+    {
+      if(msg.timestamp >= start && msg.timestamp < start + frames
+         && copy_midi_input(storage[ctrl.size], msg))
+        ++ctrl.size;
+    }
   }
 
   template <typename Field, std::size_t Idx>
@@ -442,35 +479,15 @@ struct process_before_run
     using midi_msg_type =
         typename std::remove_cvref_t<decltype(Field::midi_messages)>::value_type;
 
-    if constexpr(std::is_same_v<midi_msg_type, libremidi::message>)
+    ctrl.midi_messages.clear();
+    ctrl.midi_messages.reserve(port.data.messages.size());
+    for(const auto& msg_in : port.data.messages)
     {
-      ctrl.midi_messages.reserve(port.data.messages.size());
-      for(const libremidi::ump& msg_in : port.data.messages)
+      if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
       {
-        if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
-        {
-          if(auto mm = libremidi::midi1_from_ump(msg_in); !mm.empty())
-          {
-            ctrl.midi_messages.push_back(std::move(mm));
-            ctrl.midi_messages.back().timestamp -= start;
-          }
-        }
-      }
-    }
-    else
-    {
-      static_assert((requires { std::declval<midi_msg_type>().bytes.resize(123); }));
-      // we must make sure that the MIDI data is copied, not referenced
-      ctrl.midi_messages.reserve(port.data.messages.size());
-      for(const libremidi::ump& msg_in : port.data.messages)
-      {
-        if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
-        {
-          auto msg = libremidi::midi1_from_ump(msg_in);
-          ctrl.midi_messages.push_back(
-              {.bytes{msg.begin(), msg.end()}, .timestamp{(int)msg_in.timestamp}});
-          ctrl.midi_messages.back().timestamp -= start;
-        }
+        midi_msg_type msg{};
+        if(copy_midi_input(msg, msg_in))
+          ctrl.midi_messages.push_back(std::move(msg));
       }
     }
   }

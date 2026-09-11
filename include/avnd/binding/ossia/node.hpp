@@ -8,6 +8,7 @@ class safe_node;
 #include <avnd/binding/ossia/callbacks.hpp>
 #include <avnd/binding/ossia/configure.hpp>
 #include <avnd/binding/ossia/controls.hpp>
+#include <avnd/binding/ossia/current_buffer_midi.hpp>
 #include <avnd/binding/ossia/dynamic_ports.hpp>
 #include <avnd/binding/ossia/ffts.hpp>
 #include <avnd/binding/ossia/message_process.hpp>
@@ -148,6 +149,12 @@ public:
   AVND_NO_UNIQUE_ADDRESS avnd::audio_channel_manager<T> channels;
 
   AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi_buffers;
+  AVND_NO_UNIQUE_ADDRESS oscr::current_buffer_midi<T> midi_tick_batch;
+
+  void begin_execution() noexcept override
+  {
+    this->midi_tick_batch.clear();
+  }
 
   AVND_NO_UNIQUE_ADDRESS avnd::control_storage<T> control_buffers;
 
@@ -484,6 +491,15 @@ public:
 
     {
       this->midi_buffers.reserve_space(this->impl, this->buffer_size);
+      if constexpr(oscr::use_local_midi_tick_batch<T>)
+      {
+        if constexpr(requires { T::local_midi_tick_batch_reserve(); })
+          this->midi_tick_batch.reserve(T::local_midi_tick_batch_reserve());
+        else if constexpr(requires { T::local_midi_tick_batch_reserve; })
+          this->midi_tick_batch.reserve(T::local_midi_tick_batch_reserve);
+        else
+          this->midi_tick_batch.reserve(this->buffer_size);
+      }
       this->control_buffers.reserve_space(this->impl, this->buffer_size);
       this->spectrums.reserve_space(this->impl, this->buffer_size);
     }
