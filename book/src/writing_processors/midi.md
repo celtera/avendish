@@ -66,3 +66,37 @@ halp::midi_bus<"In"> midi;
 ```
 
 
+## Message lifetime and sliced ossia execution
+
+MIDI ports are scratch storage for the current invocation. Keep pending starts,
+active-note identity, future release deadlines, and cleanup debt in the processor,
+not in a port. Do not retain pointers, references, or iterators into its messages.
+Output timestamps are slice-relative and must lie in `[0, frames)`; the ossia
+binding adds the slice offset once without changing the processor's timestamp.
+A one-sample note starting on the last frame therefore releases at frame zero of
+the next writable invocation. A zero-frame invocation cannot publish that release.
+
+The ossia graph initializes native ports, runs all requested token slices, then
+publishes the node's aggregate output. Processors that need all slices preserved
+can opt in:
+
+```cpp
+halp_meta(local_midi_tick_batch, true)
+halp_meta(local_midi_tick_batch_reserve, 4096) // Optional per-MIDI-port reserve.
+```
+
+This stores only already-produced packets in executor-local storage. The
+`ossia::graph_node::begin_execution()` hook resets it before each graph execution,
+independently of seeks, repeated positions, callback counters, and buffer sizes.
+The native output is rebuilt from the batch even for empty slices. Bindings
+without the opt-in retain per-slice replacement; an explicit `false` disables
+batching. Direct users of `safe_node::run()` must call `begin_execution()` once
+before each group of slices they will publish together. This requires a libossia
+version providing that graph hook. A reserve is a capacity hint, not a bound or
+an allocation-free guarantee for arbitrary host traffic.
+
+A lifecycle callback such as `stop()` is not itself a writable publication
+window. A host must run and publish a final release-only invocation before
+disconnecting or destroying a processor that owns notes. In score's current
+hard-stop/removal path, such an invocation is not automatically supplied;
+locally queued cleanup releases alone cannot guarantee delivered note-offs.
