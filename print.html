@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-c29f2a46.js";
+            window.path_to_searchindex_js = "searchindex-4f8c5fee.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ae0bcd33.js"></script>
@@ -2026,6 +2026,34 @@ struct
 <p>The type is very simple:</p>
 <pre><code class="language-cpp">halp::midi_bus&lt;"In"&gt; midi;
 </code></pre>
+<h2 id="message-lifetime-and-sliced-ossia-execution"><a class="header" href="#message-lifetime-and-sliced-ossia-execution">Message lifetime and sliced ossia execution</a></h2>
+<p>MIDI ports are scratch storage for the current invocation. Keep pending starts,
+active-note identity, future release deadlines, and cleanup debt in the processor,
+not in a port. Do not retain pointers, references, or iterators into its messages.
+Output timestamps are slice-relative and must lie in <code>[0, frames)</code>; the ossia
+binding adds the slice offset once without changing the processor’s timestamp.
+A one-sample note starting on the last frame therefore releases at frame zero of
+the next writable invocation. A zero-frame invocation cannot publish that release.</p>
+<p>The ossia graph initializes native ports, runs all requested token slices, then
+publishes the node’s aggregate output. Processors that need all slices preserved
+can opt in:</p>
+<pre><code class="language-cpp">halp_meta(local_midi_tick_batch, true)
+halp_meta(local_midi_tick_batch_reserve, 4096) // Optional per-MIDI-port reserve.
+</code></pre>
+<p>This stores only already-produced packets in executor-local storage. The
+<code>ossia::graph_node::begin_execution()</code> hook resets it before each graph execution,
+independently of seeks, repeated positions, callback counters, and buffer sizes.
+The native output is rebuilt from the batch even for empty slices. Bindings
+without the opt-in retain per-slice replacement; an explicit <code>false</code> disables
+batching. Direct users of <code>safe_node::run()</code> must call <code>begin_execution()</code> once
+before each group of slices they will publish together. This requires a libossia
+version providing that graph hook. A reserve is a capacity hint, not a bound or
+an allocation-free guarantee for arbitrary host traffic.</p>
+<p>A lifecycle callback such as <code>stop()</code> is not itself a writable publication
+window. A host must run and publish a final release-only invocation before
+disconnecting or destroying a processor that owns notes. In score’s current
+hard-stop/removal path, such an invocation is not automatically supplied;
+locally queued cleanup releases alone cannot guarantee delivered note-offs.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="midi-synth-example"><a class="header" href="#midi-synth-example">MIDI synth example</a></h1>
 <p>This example is a very simple synthesizer. Note that for the sake of simplicity for the implementer, we use two additional libraries:</p>
