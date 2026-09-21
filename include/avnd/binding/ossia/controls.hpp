@@ -4,6 +4,7 @@
 // #include <boost/smart_ptr/atomic_shared_ptr.hpp>
 #include <ossia/detail/lockfree_queue.hpp>
 
+#include <atomic>
 #include <bitset>
 
 namespace oscr
@@ -91,6 +92,11 @@ struct controls_output_queue<T>
   ossia::mpmc_queue<o_tuple> outs_queue;
 
   std::bitset<o_size> outputs_set;
+
+  //! Whether anything is draining outs_queue. The host clears it when it
+  //! installs no reader: enqueuing then grows the queue without bound and
+  //! allocates inside the audio callback for a value nobody reads.
+  std::atomic_bool notify_ui{true};
 };
 
 template <typename T>

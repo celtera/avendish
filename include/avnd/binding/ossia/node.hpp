@@ -634,8 +634,9 @@ public:
     {
       if(this->control.outputs_set.any())
       {
-        // Notify the UI
-        this->control.outs_queue.enqueue(make_controls_out_tuple());
+        // Notify the UI, unless nothing is listening
+        if(this->control.notify_ui.load(std::memory_order_relaxed))
+          this->control.outs_queue.enqueue(make_controls_out_tuple());
         this->control.outputs_set.reset();
       }
     }
