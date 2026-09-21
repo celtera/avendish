@@ -9,11 +9,14 @@
 #include <avnd/introspection/type_wrapper.hpp>
 #include <avnd/introspection/vecf.hpp>
 #include <boost/mp11/algorithm.hpp>
+#include <ossia/detail/parse_strict.hpp>
 #include <ossia/network/value/value.hpp>
 #include <ossia/network/value/value_conversion.hpp>
 
 #include <algorithm>
 #include <memory>
+#include <optional>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 namespace oscr
@@ -1719,68 +1722,102 @@ OSSIA_INLINE void from_ossia_value(auto& field, const ossia::value& src, auto& d
   from_ossia_value(src, dst);
 }
 
+//! Resolve an incoming value against a field's declared enumeration.
 template <avnd::enum_ish_parameter Field, typename Val>
 struct enum_from_ossia_visitor
 {
-  Val operator()(const float& v) const noexcept { return (*this)(int(v)); }
+  static constexpr auto range = avnd::get_range<Field>();
+  static constexpr int count = int(std::size(range.values));
+  static_assert(count > 0);
 
-  Val operator()(const int& v) const noexcept
+  //! Entry i's name, whether the range lists names or (name, value) pairs.
+  static std::string_view name_of(int i) noexcept
   {
-    static constexpr auto range = avnd::get_range<Field>();
-    static_assert(std::size(range.values) > 0);
-    if constexpr(requires(Val v) { v = range.values[0].second; })
-    {
-      if(v >= 0 && v < std::size(range.values))
-        return range.values[v].second;
-
-      return range.values[0].second;
-    }
-    else if constexpr(requires(Val v) { v = range.values[0]; })
-    {
-      if(v >= 0 && v < std::size(range.values))
-        return range.values[v];
-
-      return range.values[0];
-    }
+    if constexpr(requires { std::string_view{range.values[0].first}; })
+      return std::string_view{range.values[i].first};
     else
-    {
-      return static_cast<Val>(v);
-    }
+      return std::string_view{range.values[i]};
   }
 
-  Val operator()(const std::string& v) const noexcept
+  //! What entry i stands for, in the field's own type. Direct-initialized: a
+  //! range of string_views feeds a std::string field, and that conversion is
+  //! explicit.
+  static Val value_of(int i) noexcept
   {
-    static constexpr auto range = avnd::get_range<Field>();
-    for(int i = 0; i < std::size(range.values); i++)
-    {
-      if constexpr(requires { v == range.values[i].first; })
-      {
-        if(v == range.values[i].first)
-          return (*this)((int)i);
-      }
-      else
-      {
-        if(v == range.values[i])
-          return (*this)((int)i);
-      }
-    }
-    return (*this)(0);
+    if constexpr(requires(Val v) { v = range.values[0].second; })
+      return Val(range.values[i].second);
+    else if constexpr(requires(Val v) { v = range.values[0]; })
+      return Val(range.values[i]);
+    else
+      return static_cast<Val>(i);
   }
-  Val operator()(const auto& v) const noexcept { return Val{}; }
-  Val operator()() const noexcept { return Val{}; }
+
+  //! Out of range picks the nearest entry, the way the widgets clamp.
+  static int clamp(int64_t i) noexcept
+  {
+    return int(i < 0 ? 0 : (i >= count ? count - 1 : i));
+  }
+
+  //! Position of the entry with that name, or -1.
+  static int index_of_name(std::string_view v) noexcept
+  {
+    for(int i = 0; i < count; i++)
+      if(v == name_of(i))
+        return i;
+    return -1;
+  }
+
+  //! Position a string of digits denotes, or -1. A port typed STRING -- which
+  //! is what Process::Enum sets up -- turns an incoming integer into its
+  //! digits before anyone here sees it.
+  static int index_of_digits(std::string_view v) noexcept
+  {
+    const auto parsed = ossia::parse_strict<int64_t>(v);
+    return parsed ? clamp(*parsed) : -1;
+  }
+
+  std::optional<Val> operator()(const int& v) const noexcept
+  {
+    return value_of(clamp(v));
+  }
+  std::optional<Val> operator()(const float& v) const noexcept
+  {
+    return (*this)(int(v));
+  }
+  std::optional<Val> operator()(const std::string& v) const noexcept
+  {
+    if(const int i = index_of_name(v); i >= 0)
+      return value_of(i);
+    if(const int i = index_of_digits(v); i >= 0)
+      return value_of(i);
+    return std::nullopt;
+  }
+  std::optional<Val> operator()(const auto& v) const noexcept { return std::nullopt; }
+  std::optional<Val> operator()() const noexcept { return std::nullopt; }
 };
 
 template <avnd::enum_ish_parameter Field, typename Val>
 inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
 {
+  using resolver = enum_from_ossia_visitor<Field, Val>;
+
   if constexpr(avnd::enum_parameter<Field>)
   {
-    dst = src.apply(enum_from_ossia_visitor<Field, Val>{});
+    if(auto v = src.apply(resolver{}))
+      dst = std::move(*v);
   }
   else
   {
-    // In score we already get the correct value corresponding to the
-    // choosen element in the combobox so we just have to unpack it:
+    // Entries that are themselves numbers are addressed by value, not by
+    // position. score sends that value already resolved, so it only has to be unpacked. 
+    // A name is the exception: no conversion could ever turn one into the value it stands for.
+    if(auto* str = src.target<std::string>())
+      if(const int i = resolver::index_of_name(*str); i >= 0)
+      {
+        dst = resolver::value_of(i);
+        return;
+      }
+
     from_ossia_value(src, dst);
   }
 }
