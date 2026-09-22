@@ -416,7 +416,9 @@ struct setup_value_port
   static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
-    port.type = ossia::cartesian_3d_u{};
+    // No unit: a rotation and a scale have three components too, and neither
+    // is a position. A port that is one says so with halp_meta(unit, ...).
+    port.type = ossia::val_type::VEC3F;
     port.domain = setup_value_port::range_to_domain<Field>();
   }
 
