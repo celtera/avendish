@@ -74,7 +74,8 @@ public:
     adsr.set_sample_rate(info.rate);
     ad.finish();
     adsr.finish();
-    was_holding = false;
+    was_holding = inputs.hold;
+    outputs.out.value = 0.f;
   }
 
   void operator()(int frames) noexcept
@@ -86,7 +87,8 @@ public:
 
     if(inputs.hold != was_holding)
     {
-      if(inputs.hold)
+      was_holding = inputs.hold;
+      if(was_holding)
       {
         adsr.reset();
       }
@@ -95,26 +97,26 @@ public:
         adsr.release();
       }
     }
-    was_holding = inputs.hold;
 
-    if(!adsr.done())
+    // The envelopes run at audio rate but the output is a single value per
+    // buffer: report the loudest sample of the buffer so that envelopes
+    // shorter than one buffer are still visible.
+    float peak = 0.f;
+    for(int i = 0; i < frames; i++)
     {
-      outputs.out.value = adsr();
+      const bool ad_running = !ad.done();
+      const bool adsr_running = !adsr.done();
+      if(!ad_running && !adsr_running)
+        break;
 
-      // We skip the next values in the buffer. Since the buffer
-      // size are variables it's pretty much the only correct thing to do:
-      // we "sample" an audio-level signal
-      for(int i = 1; i < frames && !adsr.done(); i++)
-        adsr();
+      const float a = ad_running ? ad() : 0.f;
+      const float b = adsr_running ? adsr() : 0.f;
+      const float v = a > b ? a : b;
+      if(v > peak)
+        peak = v;
     }
 
-    // Trigger envelope overwrites held envelope
-    if(!ad.done())
-    {
-      outputs.out.value = ad();
-      for(int i = 1; i < frames && !ad.done(); i++)
-        ad();
-    }
+    outputs.out.value = peak;
   }
 
 private:
