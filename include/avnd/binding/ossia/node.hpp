@@ -586,26 +586,38 @@ public:
 
   void process_smooth() { this->smooth.smooth_all(this->impl); }
 
-  typename controls_input_queue<T>::i_tuple make_controls_in_tuple()
+  // Copies the control values field by field into a buffer that was written
+  // before, so that the values that hold memory reuse it.
+  void publish_controls_in()
   {
+    auto& buf = this->control.ins_buffer.write_buffer();
     // We only care about the inputs of the first one, since they're all the same
     for(auto state : this->impl.full_state())
     {
-      return avnd::control_input_introspection<T>::filter_tuple(
-          state.inputs, [](auto& field) { return field.value; });
+      avnd::control_input_introspection<T>::for_all_n(
+          state.inputs, [&]<std::size_t N>(auto& field, avnd::predicate_index<N>) {
+        using namespace std;
+        get<N>(buf) = field.value;
+      });
+      this->control.ins_buffer.publish();
+      break;
     }
-    return {};
   }
 
-  typename controls_output_queue<T>::o_tuple make_controls_out_tuple()
+  void publish_controls_out()
   {
+    auto& buf = this->control.outs_buffer.write_buffer();
     // Note that this does not yet make a lot of sens for polyphonic effects
     for(auto state : this->impl.full_state())
     {
-      return avnd::control_output_introspection<T>::filter_tuple(
-          state.outputs, [](auto& field) { return field.value; });
+      avnd::control_output_introspection<T>::for_all_n(
+          state.outputs, [&]<std::size_t N>(auto& field, avnd::predicate_index<N>) {
+        using namespace std;
+        get<N>(buf) = field.value;
+      });
+      this->control.outs_buffer.publish();
+      break;
     }
-    return {};
   }
 
   void finish_run()
@@ -615,8 +627,9 @@ public:
     {
       if(this->control.inputs_set.any())
       {
-        // Notify the UI
-        this->control.ins_queue.enqueue(make_controls_in_tuple());
+        // Notify the UI, unless nothing is listening
+        if(this->control.notify_ui.load(std::memory_order_relaxed))
+          publish_controls_in();
         this->control.inputs_set.reset();
       }
     }
@@ -636,7 +649,7 @@ public:
       {
         // Notify the UI, unless nothing is listening
         if(this->control.notify_ui.load(std::memory_order_relaxed))
-          this->control.outs_queue.enqueue(make_controls_out_tuple());
+          publish_controls_out();
         this->control.outputs_set.reset();
       }
     }

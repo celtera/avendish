@@ -2,7 +2,7 @@
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 // #include <boost/smart_ptr/atomic_shared_ptr.hpp>
-#include <ossia/detail/lockfree_queue.hpp>
+#include <ossia/detail/triple_buffer.hpp>
 
 #include <atomic>
 #include <bitset>
@@ -77,7 +77,8 @@ struct controls_input_queue<T>
   using i_tuple
       = avnd::filter_and_apply<controls_type_t, avnd::control_input_introspection, T>;
 
-  ossia::mpmc_queue<i_tuple> ins_queue;
+  //! The latest control values, for the UI.
+  ossia::triple_buffer<i_tuple> ins_buffer;
   std::bitset<i_size> inputs_set;
 };
 
@@ -89,14 +90,10 @@ struct controls_output_queue<T>
   using o_tuple
       = avnd::filter_and_apply<controls_type_t, avnd::control_output_introspection, T>;
 
-  ossia::mpmc_queue<o_tuple> outs_queue;
+  //! The latest control output values, for the UI.
+  ossia::triple_buffer<o_tuple> outs_buffer;
 
   std::bitset<o_size> outputs_set;
-
-  //! Whether anything is draining outs_queue. The host clears it when it
-  //! installs no reader: enqueuing then grows the queue without bound and
-  //! allocates inside the audio callback for a value nobody reads.
-  std::atomic_bool notify_ui{true};
 };
 
 template <typename T>
@@ -104,6 +101,9 @@ struct controls_queue
     : controls_input_queue<T>
     , controls_output_queue<T>
 {
+  //! Whether the host reads the values above. When it does not, the node
+  //! does not copy them.
+  std::atomic_bool notify_ui{true};
 };
 
 }
