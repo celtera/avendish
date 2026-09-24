@@ -105,30 +105,33 @@ struct GpuComputeExample
     return R"_(
 void main()
 {
-  // Note: the algorithm is most likely wrong as I know FUCK ALL
-  // about compute shaders ; fixes welcome ;p
+  const ivec2 block_size = ivec2(gl_WorkGroupSize.xy);
+  ivec2 blocks = (ivec2(width, height) + block_size - 1) / block_size;
+  ivec2 block = ivec2(gl_GlobalInvocationID.xy);
+  if(block.x >= blocks.x || block.y >= blocks.y)
+    return;
 
-  ivec2 call = ivec2(gl_GlobalInvocationID.xy);
-  vec4 color = vec4(0.0, 0.0,0,0);
+  ivec2 area = min(ivec2(width, height), imageSize(img));
+  ivec2 origin = block * block_size;
 
-  for(int i = 0; i < gl_WorkGroupSize.x; i++)
+  vec4 color = vec4(0.0);
+  float count = 0.0;
+  for(int j = 0; j < block_size.y; j++)
   {
-    for(int j = 0; j < gl_WorkGroupSize.y; j++)
+    for(int i = 0; i < block_size.x; i++)
     {
-      uint x = call.x * gl_WorkGroupSize.x + i;
-      uint y = call.y * gl_WorkGroupSize.y + j;
-
-      if (x < width && y < height)
+      ivec2 p = origin + ivec2(i, j);
+      if(p.x < area.x && p.y < area.y)
       {
-        color += imageLoad(img, ivec2(x,y));
+        color += imageLoad(img, p);
+        count += 1.0;
       }
     }
   }
 
-  if(gl_LocalInvocationIndex < ((width * height) / gl_WorkGroupSize.x * gl_WorkGroupSize.y))
-  {
-    result[gl_GlobalInvocationID.y * gl_WorkGroupSize.x + gl_GlobalInvocationID.x] = color;
-  }
+  int index = 2 * (block.y * blocks.x + block.x);
+  result[index] = color;
+  result[index + 1] = vec4(count);
 }
 )_";
   }
@@ -137,8 +140,8 @@ void main()
   gpp::co_update update()
   {
     // Deallocate if the size changed
-    const int w = this->inputs.width / downscale;
-    const int h = this->inputs.height / downscale;
+    const int w = blocks(this->inputs.width);
+    const int h = blocks(this->inputs.height);
 
     if(last_w != w || last_h != h)
     {
@@ -154,7 +157,7 @@ void main()
     if(w > 0 && h > 0)
     {
       // No buffer: reallocate
-      const int bytes = w * h * sizeof(float) * 4;
+      const int bytes = w * h * 2 * sizeof(float) * 4;
       if(!this->buf)
       {
         this->buf = co_yield gpp::static_allocation{
@@ -179,15 +182,16 @@ void main()
     if(!buf)
       co_return;
 
-    const int w = this->inputs.width / downscale;
-    const int h = this->inputs.height / downscale;
-    const int downscaled_pixels_count = w * h;
-    const int bytes = downscaled_pixels_count * sizeof(float) * 4;
+    const int w = blocks(this->inputs.width);
+    const int h = blocks(this->inputs.height);
+    const int block_count = w * h;
+    const int bytes = block_count * 2 * sizeof(float) * 4;
 
     // Run a pass
     co_yield gpp::begin_compute_pass{};
 
-    co_yield gpp::compute_dispatch{.x = 1, .y = 1, .z = 1};
+    co_yield gpp::compute_dispatch{
+        .x = (w + downscale - 1) / downscale, .y = (h + downscale - 1) / downscale, .z = 1};
 
     // Request an asynchronous readback
     gpp::buffer_awaiter readback
@@ -198,6 +202,8 @@ void main()
     // The readback can be fetched once the compute pass is done
     // (this needs to be improved in terms of asyncness)
     auto [data, size] = co_yield readback;
+    if(!data || size < std::size_t(bytes))
+      co_return;
 
     using color = float[4];
     auto flt = reinterpret_cast<const color*>(data);
@@ -205,26 +211,25 @@ void main()
     // finish summing on the cpu
     auto& final = outputs.color_out.value;
 
-    final[0] = 0.f;
-    final[1] = 0.f;
-    final[2] = 0.f;
-    final[3] = 0.f;
-
-    for(int i = 0; i < downscaled_pixels_count; i++)
+    double sum[4]{};
+    double count = 0.;
+    for(int i = 0; i < block_count; i++)
     {
       for(int j = 0; j < 4; j++)
-      {
-        final[j] += flt[i][j];
-      }
+        sum[j] += flt[2 * i][j];
+      count += flt[2 * i + 1][0];
     }
 
-    final[0] /= downscaled_pixels_count;
-    final[1] /= downscaled_pixels_count;
-    final[2] /= downscaled_pixels_count;
-    final[3] /= downscaled_pixels_count;
+    for(int j = 0; j < 4; j++)
+      final[j] = count > 0. ? float(sum[j] / count) : 0.f;
   }
 
 private:
+  static int blocks(int pixels) noexcept
+  {
+    return pixels > 0 ? (pixels + downscale - 1) / downscale : 0;
+  }
+
   static constexpr auto lay = layout{};
   int last_w{}, last_h{};
   gpp::buffer_handle buf{};
