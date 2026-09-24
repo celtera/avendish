@@ -370,7 +370,7 @@ struct raw_file_storage : raw_file_input_storage<T>
       // name did not change: they would otherwise dangle as soon as the
       // previous handle is released at the end of this function.
       port.file.bytes
-          = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+          = decltype(port.file.bytes)(hdl->data.constData(), hdl->data.size());
       port.file.filename = hdl->filename;
 
       if(changed)
@@ -400,7 +400,7 @@ struct raw_file_storage : raw_file_input_storage<T>
     const bool changed = port.file.filename != hdl->filename;
 
     port.file.bytes
-        = decltype(port.file.bytes)(hdl->data.constData(), hdl->file.size());
+        = decltype(port.file.bytes)(hdl->data.constData(), hdl->data.size());
     port.file.filename = hdl->filename;
 
     if(changed)
