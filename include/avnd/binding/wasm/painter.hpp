@@ -101,7 +101,7 @@ public:
     m_font_family.assign(name.begin(), name.end());
     apply_font();
   }
-  // In pixels, as the painter concept says: apply_font emits "<n>px"
+  // In pixels
   void set_font_size(double px)
   {
     m_font_size = px;

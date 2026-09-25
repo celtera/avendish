@@ -30,18 +30,13 @@ enum class layouts
   custom,
   custom_control,
   multi_control,
-  // A titled group of controls: its name is shown above its content, which
-  // is stacked vertically and padded on every side. Appended so that the
-  // other enumerators keep their values.
+  // Appended: existing values unchanged
+  // Titled, padded vbox
   section,
-  // Rows of controls under shared column titles: each member is a named row
-  // (e.g. one per operator), each column as wide as its widest cell. Column
-  // titles come from a static columns() list; controls in a table show no
-  // name of their own unless their look gives one.
+  // Named rows under shared column titles, from a static columns().
+  // Controls hide their names unless their look sets one.
   table,
-  // Pages of which one is shown at a time, like tabs, but selected from a
-  // strip of cells: each page may have a `summary` member, whose items are
-  // shown in its cell (e.g. a drum channel's engine and a button to play it).
+  // Tabs selected from a strip of cells, showing each page's `summary` member
   strip_detail
 };
 
@@ -88,36 +83,34 @@ struct item_base
   double scale = 1.0;
 };
 
-// ("compact" rather than "small": <windows.h> defines small as a macro)
+// Not "small": a <windows.h> macro
 enum class control_size
 {
   normal,
-  compact, // secondary controls in dense rows
-  large    // the one or two controls a section is about
+  compact,
+  large
 };
 
 enum class value_display
 {
   always,
-  hover // only while the control is hovered or dragged
+  hover // while hovered or dragged
 };
 
-// A widget other than the parameter's own, where the host supports it.
+// Widget override, where the host supports it
 enum class control_widget
 {
   automatic,
   knob, // for a slider parameter
-  combo // for an enumeration: one dropdown instead of a row of buttons
+  combo // for an enumeration
 };
 
-// How a control presents itself in a layout. Hosts that do not support an
-// option draw the control as usual. The default changes nothing.
+// Presentation of a control in a layout. Unsupported options are ignored.
 //
 //   halp::item<&ins::ratio_0, halp::look{.label = "Ratio"}> ratio;
 struct look
 {
-  // Replaces the parameter's name on screen. The parameter keeps its name,
-  // which is what automation and addresses refer to. Empty: the name.
+  // Display only: the parameter keeps its name. Empty: unchanged.
   char label[64]{};
   bool hide_label{false};
   control_size size{control_size::normal};
@@ -125,7 +118,6 @@ struct look
   control_widget widget{control_widget::automatic};
 };
 
-// The common case: a control shown under a shorter name.
 //
 //   halp::item<&ins::ratio_0, halp::label_as("Ratio")> ratio;
 consteval look label_as(std::string_view name)
@@ -136,9 +128,7 @@ consteval look label_as(std::string_view name)
   return l;
 }
 
-// Base of a layout struct: its controls are drawn greyed out and cannot be
-// edited unless the control F holds one of Values (e.g. the engines they
-// apply to). They keep their place, so nothing moves when F changes.
+// Controls greyed out unless F holds one of Values. Layout is unchanged.
 //
 //   struct : halp::enabled_when<&ins::engine, engine::plate, engine::cymbal>
 //   {
@@ -153,8 +143,7 @@ struct enabled_when
   static constexpr bool condition_hides = false;
 };
 
-// Same, but the controls are hidden instead of greyed out. Their place is
-// kept all the same.
+// Hidden instead of greyed out; the space is kept
 template <auto F, auto... Values>
 struct visible_when : enabled_when<F, Values...>
 {
@@ -172,13 +161,12 @@ struct item : item_base
 
 enum class display_style
 {
-  text, // the value, or the name of the selected entry
-  bar,  // a thin bar filled over the parameter's range
-  title // in place of the name of the strip cell it is in, while not empty
+  text, // value, or entry name
+  bar,  // position in the range
+  title // as the enclosing strip cell's title, while not empty
 };
 
-// A read-only view of a parameter's value, e.g. in the summary cell of a
-// strip_detail page. Hosts without a dedicated display show the control.
+// Read-only view of a parameter. Hosts without one show the control.
 template <auto F, display_style S = display_style::text>
 struct display : item_base
 {
@@ -271,10 +259,7 @@ struct multi_control : T
   decltype(F) model = F;
 };
 
-// A custom widget editing several parameters at once, e.g. an envelope drawn
-// from its attack, decay, sustain and release. T provides, like a
-// custom_control widget, width(), height(), paint() and the mouse handlers,
-// plus:
+// Custom widget editing several parameters. T: as custom_control, plus:
 //   std::array<double, sizeof...(F)> values;  // normalized, kept up to date
 //   halp::multi_transaction transaction;       // to edit them
 template <typename T, auto... F>
