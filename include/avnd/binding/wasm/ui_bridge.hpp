@@ -61,16 +61,19 @@ concept marker_spacing = requires(I i) { i.spacing; };
 
 template <typename I>
 concept is_hbox = marker_hbox<I> || avnd::hbox_layout<I>;
+// A table degrades to its rows stacked vertically, without column titles.
 template <typename I>
-concept is_vbox = marker_vbox<I> || avnd::vbox_layout<I>;
+concept is_vbox = marker_vbox<I> || avnd::vbox_layout<I> || avnd::table_layout<I>;
 template <typename I>
 concept is_split = marker_split<I> || avnd::split_layout<I>;
 template <typename I>
 concept is_grid = marker_grid<I> || avnd::grid_layout<I>;
+// A section is drawn like a group: a titled frame around its content.
 template <typename I>
-concept is_group = marker_group<I> || avnd::group_layout<I>;
+concept is_group = marker_group<I> || avnd::group_layout<I> || avnd::section_layout<I>;
+// A strip of page cells degrades to tabs, without the cells' summaries.
 template <typename I>
-concept is_tabs = marker_tabs<I> || avnd::tab_layout<I>;
+concept is_tabs = marker_tabs<I> || avnd::tab_layout<I> || avnd::strip_detail_layout<I>;
 template <typename I>
 concept is_container = avnd::container_layout<I>;
 template <typename I>

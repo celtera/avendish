@@ -47,6 +47,15 @@ template <typename T>
 concept group_layout = (T::layout() == decltype(T::layout())::group)
                        || (T::layout == decltype(T::layout)::group);
 template <typename T>
+concept section_layout = (T::layout() == decltype(T::layout())::section)
+                         || (T::layout == decltype(T::layout)::section);
+template <typename T>
+concept table_layout = (T::layout() == decltype(T::layout())::table)
+                       || (T::layout == decltype(T::layout)::table);
+template <typename T>
+concept strip_detail_layout = (T::layout() == decltype(T::layout())::strip_detail)
+                              || (T::layout == decltype(T::layout)::strip_detail);
+template <typename T>
 concept recursive_group_layout = requires { sizeof(typename T::group_ui); };
 
 template <typename T>
@@ -64,6 +73,11 @@ concept control_layout = (T::layout() == decltype(T::layout())::control)
 template <typename T>
 concept custom_control_layout = (T::layout() == decltype(T::layout())::custom_control)
                                 || (T::layout == decltype(T::layout)::custom_control);
+template <typename T>
+concept custom_multi_control_layout
+    = ((T::layout() == decltype(T::layout())::multi_control)
+       || (T::layout == decltype(T::layout)::multi_control))
+      && requires { T::models(); };
 template <typename T>
 concept custom_layout = (T::layout() == decltype(T::layout())::custom)
                         || (T::layout == decltype(T::layout)::custom);
