@@ -3,6 +3,7 @@
 #include <examples/Advanced/Utilities/ArrayCombiner.hpp>
 
 #include <cmath>
+#include <limits>
 
 using M = ao::ArrayCombinerMode;
 using V = std::vector<float>;
@@ -122,4 +123,71 @@ TEST_CASE("Array best match", "[array_best]")
   b();
   CHECK(b.outputs.index.value == -1);
   CHECK(b.outputs.probabilities.value.empty());
+}
+
+// Non-finite values and out-of-range controls: no NaN out of the softmax, no
+// undefined behaviour in the median.
+TEST_CASE("Array best match: non-finite input and scale", "[array_best]")
+{
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  const float inf = std::numeric_limits<float>::infinity();
+  auto finite = [](const V& v) {
+    for(float x : v)
+      if(!std::isfinite(x))
+        return false;
+    return true;
+  };
+  auto total = [](const V& v) {
+    float s = 0.f;
+    for(float x : v)
+      s += x;
+    return s;
+  };
+
+  ao::ArrayBest b;
+  b.inputs.scale.value = 100.f;
+
+  // NaN and infinities are skipped: the best finite element wins.
+  b.inputs.in.value = {nan, 0.5f, inf, -inf, 0.9f};
+  b();
+  CHECK(b.outputs.index.value == 4);
+  CHECK(b.outputs.value.value == 0.9f);
+  CHECK(finite(b.outputs.probabilities.value));
+  CHECK(std::abs(total(b.outputs.probabilities.value) - 1.f) < 1e-5f);
+  CHECK(b.outputs.probabilities.value[0] == 0.f);
+  CHECK(b.outputs.probabilities.value[2] == 0.f);
+
+  b.inputs.mode.value = ao::ArrayBestMode::Lowest;
+  b();
+  CHECK(b.outputs.index.value == 1);
+  CHECK(finite(b.outputs.probabilities.value));
+
+  // Nothing finite: no best, all probabilities 0.
+  b.inputs.in.value = {nan, inf};
+  b();
+  CHECK(b.outputs.index.value == -1);
+  CHECK(b.outputs.probabilities.value == V{0.f, 0.f});
+
+  // A scale sent by message outside the control's range.
+  b.inputs.mode.value = ao::ArrayBestMode::Highest;
+  b.inputs.in.value = {0.f, 1e30f, -1e30f};
+  for(float scale : {-5.f, nan, inf, 1e9f})
+  {
+    b.inputs.scale.value = scale;
+    b();
+    INFO("scale " << scale);
+    CHECK(b.outputs.index.value == 1);
+    CHECK(finite(b.outputs.probabilities.value));
+    CHECK(std::abs(total(b.outputs.probabilities.value) - 1.f) < 1e-5f);
+  }
+}
+
+TEST_CASE("Array combiner: median leaves NaN out", "[array_combiner]")
+{
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  auto out = combine(M::Median, {{nan, 1, nan}, {2, nan, nan}, {4, 3, nan}});
+  REQUIRE(out.size() == 3);
+  CHECK(out[0] == 3.f);
+  CHECK(out[1] == 2.f);
+  CHECK(std::isnan(out[2])); // only NaN there
 }
