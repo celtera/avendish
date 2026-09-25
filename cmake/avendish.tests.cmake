@@ -50,6 +50,7 @@ if(BUILD_TESTING)
   avnd_add_catch_test(test_quantification tests/quantification.cpp)
   avnd_add_catch_test(test_gain tests/objects/gain.cpp)
   avnd_add_catch_test(test_patternal tests/objects/patternal.cpp)
+  avnd_add_catch_test(test_array_combiner tests/objects/array_combiner.cpp)
 
   if(TARGET ossia::ossia)
     avnd_add_catch_test(test_ossia_values tests/test_ossia_values.cpp)
