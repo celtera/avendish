@@ -39,7 +39,7 @@ concept painter = requires(T t) {
 
                     // Text:
                     t.set_font("Comic Sans");
-                    t.set_font_size(10.0); // In points
+                    t.set_font_size(10.0); // In pixels
 
                     //          x , y , text
                     t.draw_text(0., 0., "Hello World");

@@ -101,9 +101,10 @@ public:
     m_font_family.assign(name.begin(), name.end());
     apply_font();
   }
-  void set_font_size(double pts)
+  // In pixels, as the painter concept says: apply_font emits "<n>px"
+  void set_font_size(double px)
   {
-    m_font_size = pts;
+    m_font_size = px;
     apply_font();
   }
   void draw_text(double x, double y, std::string_view str)
