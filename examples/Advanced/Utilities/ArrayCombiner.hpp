@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <vector>
 #include <halp/controls.hpp>
 #include <halp/dynamic_port.hpp>
@@ -318,16 +319,21 @@ struct ArrayCombiner
       }
 
       case ao::ArrayCombinerMode::Median: {
-        // Per element, over the inputs long enough to have it.
+        // Per element, over the inputs long enough to have it. NaN is left
+        // out: it has no order, and sorting it is undefined behaviour. An
+        // element with only NaN stays NaN.
         const std::size_t n = longest();
-        out.assign(n, 0.f);
+        out.assign(n, std::numeric_limits<float>::quiet_NaN());
+        m_scratch.reserve(num_ports);
         for(std::size_t i = 0; i < n; i++)
         {
           m_scratch.clear();
           for(auto& v : ports)
-            if(i < v.value.size())
+            if(i < v.value.size() && !std::isnan(v.value[i]))
               m_scratch.push_back(v.value[i]);
           const std::size_t k = m_scratch.size();
+          if(k == 0)
+            continue;
           std::sort(m_scratch.begin(), m_scratch.end());
           out[i] = (k % 2) ? m_scratch[k / 2]
                            : 0.5f * (m_scratch[k / 2 - 1] + m_scratch[k / 2]);
