@@ -11,14 +11,10 @@
 
 namespace halp
 {
-// An ADSR envelope drawn from its four parameters and edited by dragging its
-// points: the peak sets the attack, the knee the decay (sideways) and the
-// sustain level (up and down), the end the release.
+// ADSR editor: drag the peak (attack), knee (decay, sustain) and end (release).
 //
 //   halp::custom_multi_control<halp::envelope_editor,
 //       &ins::attack, &ins::decay, &ins::sustain, &ins::release> env;
-//
-// basic_envelope_editor<W, H> draws it at another size.
 template <int Width = 96, int Height = 32>
 struct basic_envelope_editor
 {
@@ -30,9 +26,7 @@ struct basic_envelope_editor
   std::array<double, 4> values{0.1, 0.3, 0.7, 0.4};
   multi_transaction transaction;
 
-  // ---- geometry: A, D and R get at most a quarter of the width each, the
-  // sustain plateau keeps the rest. Times are shown on a square-root scale,
-  // so that short ones - the usual case - stay wide enough to grab.
+  // A, D, R: up to a quarter of the width each. Times on a sqrt scale.
   static constexpr double pad = 3.;
   static constexpr double segment = (w - 2. * pad) / 4.;
 
@@ -60,7 +54,6 @@ struct basic_envelope_editor
     return p;
   }
 
-  // ---- painting
   template <typename Ctx>
   static auto colors(Ctx& ctx)
   {
@@ -121,7 +114,6 @@ struct basic_envelope_editor
     ctx.fill();
   }
 
-  // ---- interaction
   enum grabbed_point
   {
     none = -1,
@@ -131,8 +123,7 @@ struct basic_envelope_editor
   };
   grabbed_point dragging{none};
 
-  // Drags are relative: a full sweep of a time takes this many pixels, far
-  // more than the drawing gives it, for fine control in a small widget.
+  // Relative drags: pixels for a full sweep
   static constexpr double time_span = 120.;
   static constexpr double level_span = 60.;
   double press_x{}, press_y{};
@@ -174,7 +165,6 @@ struct basic_envelope_editor
   {
     if(dragging == none)
       return false;
-    // Times move on the same square-root scale they are drawn with
     auto time = [&](int index) {
       const double t = std::sqrt(press_values[index]) + (x - press_x) / time_span;
       return std::pow(std::clamp(t, 0., 1.), 2.);
@@ -211,6 +201,5 @@ struct basic_envelope_editor
   }
 };
 
-// Thumbnail size, e.g. in a table cell
 using envelope_editor = basic_envelope_editor<>;
 }
