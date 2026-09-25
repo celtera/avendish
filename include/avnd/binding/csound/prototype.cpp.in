@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+// clang-format off
+#include <@AVND_MAIN_FILE@>
+
+#include <avnd/binding/csound/audio_processor.hpp>
+#include <avnd/binding/csound/message_processor.hpp>
+#include <avnd/binding/csound/configure.hpp>
+#include <avnd/common/export.hpp>
+
+using type = decltype(avnd::configure<csound::config, @AVND_MAIN_CLASS@>())::type;
+// clang-format on
+
+// Csound calls these four entry points on every plugin shared object it loads
+// from its opcode directory. One Avendish processor is compiled per library, so
+// csoundModuleInit registers exactly one opcode.
+extern "C" {
+
+AVND_EXPORTED_SYMBOL int csoundModuleCreate(CSOUND* csound)
+{
+  (void)csound;
+  return 0;
+}
+
+AVND_EXPORTED_SYMBOL int csoundModuleInit(CSOUND* csound)
+{
+  return []<typename T = type>(CSOUND* cs) {
+    if constexpr(avnd::audio_processor<T>)
+      return csound::audio_opcode<T>::register_opcode(cs);
+    else
+      return csound::message_opcode<T>::register_opcode(cs);
+  }(csound);
+}
+
+AVND_EXPORTED_SYMBOL int csoundModuleDestroy(CSOUND* csound)
+{
+  (void)csound;
+  return 0;
+}
+
+// Reports the Csound API version + sizeof(MYFLT) so the engine can reject an
+// ABI-incompatible plugin (cf. the LINKAGE macro in csdl.h).
+AVND_EXPORTED_SYMBOL int csoundModuleInfo(void)
+{
+  return (CS_APIVERSION << 16) + (CS_APISUBVER << 8) + (int)sizeof(MYFLT);
+}
+}
