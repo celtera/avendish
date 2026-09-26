@@ -351,6 +351,9 @@ struct setup_value_port
       concrete_val_type value;
     };
     setup<fake_parameter>(port);
+    // The value is only there when something arrived: an event port, whatever
+    // the concrete type's own setup did (an ossia::value one sets nothing).
+    setup_port_is_event<Field>(port);
   }
 
   template <avnd::int_parameter Field>
