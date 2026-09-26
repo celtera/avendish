@@ -8,12 +8,12 @@
 namespace ao
 {
 /**
- * @brief Repears the last value
+ * @brief Lets the input messages through while enabled
  */
 struct Spigot
 {
   halp_meta(name, "Spigot")
-  halp_meta(c_name, "Spigot")
+  halp_meta(c_name, "spigot")
   halp_meta(category, "Control/Mappings")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Outputs the input value only if the toggle is on")
@@ -30,11 +30,14 @@ struct Spigot
 
   struct
   {
-    halp::val_port<"Output", ossia::value> output;
+    // Only what came through this tick: a plain value would be sent again at
+    // every tick, while disabled too.
+    halp::val_port<"Output", std::optional<ossia::value>> output;
   } outputs;
 
   void operator()()
   {
+    outputs.output.value.reset();
     if(inputs.enabled && inputs.input.value)
       outputs.output.value = *inputs.input.value;
   }
