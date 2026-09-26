@@ -13,6 +13,10 @@
 #include <halp/meta.hpp>
 #include <ossia/detail/math.hpp>
 
+#include <array>
+#include <memory>
+#include <optional>
+
 namespace ao
 {
 namespace ba = boost::accumulators;
@@ -32,31 +36,31 @@ public:
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/accumulator.html")
   halp_meta(uuid, "5c5b37b5-da06-432a-bc51-81657b6d59e1")
 
+  enum OutputMode
+  {
+    EveryTick,
+    OnInput,
+    Manually
+  };
+
   struct inputs_t
   {
     halp::val_port<"In", std::optional<float>> in;
     struct : halp::toggle<"Reset">
     {
-      void update(Accumulator& self)
-      {
-        std::destroy_at(&self.minmax);
-        std::construct_at(&self.minmax);
-        self.outputs.count.value = 0;
-        self.outputs.sum.value = 0;
-        self.outputs.diff.value = 0;
-        self.outputs.min.value = 0;
-        self.outputs.max.value = 0;
-        self.outputs.mean.value = 0;
-        self.outputs.variance.value = 0;
-        self.outputs.median.value = 0;
-        self.outputs.kurtosis.value = 0;
-      }
+      void update(Accumulator& self) { self.reset(); }
     } reset;
+    struct : halp::impulse_button<"Output">
+    {
+      void update(Accumulator& self) { self.bang = true; }
+    } output;
+    //! Every tick (the default), on each input, or only on the Output bang.
+    halp::combobox_t<"Send", OutputMode> when;
   } inputs;
 
   struct
   {
-    struct : halp::val_port<"Sum", float>
+    struct : halp::val_port<"Sum", std::optional<float>>
     {
       struct range
       {
@@ -65,7 +69,7 @@ public:
         const float init = 0.f;
       };
     } sum;
-    struct : halp::val_port<"Count", float>
+    struct : halp::val_port<"Count", std::optional<float>>
     {
       struct range
       {
@@ -74,7 +78,7 @@ public:
         const float init = 0.f;
       };
     } count;
-    struct : halp::val_port<"Consecutive difference", float>
+    struct : halp::val_port<"Consecutive difference", std::optional<float>>
     {
       struct range
       {
@@ -83,7 +87,7 @@ public:
         const float init = 0.f;
       };
     } diff;
-    struct : halp::val_port<"Mean", float>
+    struct : halp::val_port<"Mean", std::optional<float>>
     {
       struct range
       {
@@ -92,7 +96,7 @@ public:
         const float init = 0.f;
       };
     } mean;
-    struct : halp::val_port<"Variance", float>
+    struct : halp::val_port<"Variance", std::optional<float>>
     {
       struct range
       {
@@ -101,7 +105,7 @@ public:
         const float init = 0.f;
       };
     } variance;
-    struct : halp::val_port<"Median", float>
+    struct : halp::val_port<"Median", std::optional<float>>
     {
       struct range
       {
@@ -110,7 +114,7 @@ public:
         const float init = 0.f;
       };
     } median;
-    struct : halp::val_port<"Kurtosis", float>
+    struct : halp::val_port<"Kurtosis", std::optional<float>>
     {
       struct range
       {
@@ -120,7 +124,7 @@ public:
       };
     } kurtosis;
 
-    struct : halp::val_port<"Min", float>
+    struct : halp::val_port<"Min", std::optional<float>>
     {
       struct range
       {
@@ -129,7 +133,7 @@ public:
         const float init = 0.f;
       };
     } min;
-    struct : halp::val_port<"Max", float>
+    struct : halp::val_port<"Max", std::optional<float>>
     {
       struct range
       {
@@ -150,10 +154,51 @@ public:
   float consecutive_difference{};
   bool consecutive_difference_sign{};
 
+  bool bang{};
+  // A reset is news: in "on input" mode it sends the zeros once.
+  bool reset_pending{};
+
+  void reset()
+  {
+    std::destroy_at(&minmax);
+    std::construct_at(&minmax);
+    consecutive_difference = 0.f;
+    consecutive_difference_sign = false;
+    reset_pending = true;
+  }
+
+  std::array<std::optional<float>*, 9> all_outputs() noexcept
+  {
+    return {&outputs.count.value,    &outputs.sum.value,    &outputs.diff.value,
+            &outputs.min.value,      &outputs.max.value,    &outputs.mean.value,
+            &outputs.variance.value, &outputs.median.value, &outputs.kurtosis.value};
+  }
+
+  void send()
+  {
+    // Nothing accumulated (start, reset): zeros rather than the NaNs some
+    // statistics of an empty set give.
+    if(ba::extract::count(minmax) == 0)
+    {
+      for(auto* p : all_outputs())
+        *p = 0.f;
+      return;
+    }
+    outputs.count.value = ba::extract::count(minmax);
+    outputs.sum.value = ba::extract::sum(minmax);
+    outputs.diff.value = consecutive_difference;
+    outputs.min.value = ba::extract::min(minmax);
+    outputs.max.value = ba::extract::max(minmax);
+    outputs.mean.value = ba::extract::mean(minmax);
+    outputs.variance.value = ba::extract::variance(minmax);
+    outputs.median.value = ba::extract::median(minmax);
+    outputs.kurtosis.value = ba::extract::kurtosis(minmax);
+  }
+
   void operator()() noexcept
   {
-    using namespace ba;
-    if(inputs.in.value)
+    const bool input = bool(inputs.in.value);
+    if(input)
     {
       float v = *inputs.in.value;
       this->minmax(v);
@@ -161,18 +206,32 @@ public:
         consecutive_difference += v;
       else
         consecutive_difference -= v;
-
-      outputs.count.value = ba::extract::count(minmax);
-      outputs.sum.value = ba::extract::sum(minmax);
-      outputs.diff.value = consecutive_difference;
-      outputs.min.value = ba::extract::min(minmax);
-      outputs.max.value = ba::extract::max(minmax);
-      outputs.mean.value = ba::extract::mean(minmax);
-      outputs.variance.value = ba::extract::variance(minmax);
-      outputs.median.value = ba::extract::median(minmax);
-      outputs.kurtosis.value = ba::extract::kurtosis(minmax);
     }
+
+    bool out{};
+    switch(inputs.when)
+    {
+      default:
+      case EveryTick:
+        out = true;
+        break;
+      case OnInput:
+        out = input || reset_pending;
+        break;
+      case Manually:
+        out = bang;
+        break;
+    }
+    if(out)
+      send();
+    else
+      for(auto* p : all_outputs())
+        p->reset();
+    reset_pending = false;
+    bang = false;
   }
+
+
 };
 
 }
