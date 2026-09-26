@@ -5,6 +5,8 @@
 #include <halp/meta.hpp>
 #include <ossia/detail/math.hpp>
 
+#include <optional>
+
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 namespace examples
@@ -21,34 +23,62 @@ struct Counter
   halp_meta(uuid, "acdc0a7e-676f-462c-b46d-c6cd99fa74a2")
 
   int64_t count{};
-  void increase()
+  // Set when a message or a bang asks for the count to go out. The output is
+  // written by operator(): the binding clears the outputs after the controls'
+  // update() ran and before operator(), and the inspector's buttons run
+  // update() between two ticks.
+  bool pending{};
+
+  //! The count as the Mode shapes it: clipped, wrapped or folded to Max.
+  int64_t shaped() const noexcept
   {
-    ++count;
+    const auto max = (int64_t)inputs.max.value;
     switch(inputs.ceil)
     {
       default:
       case Free:
-        outputs.count = count;
-        break;
+        return count;
       case Clip:
-        outputs.count = std::min(count, (int64_t)inputs.max.value);
-        break;
+        return std::min(count, max);
       case Wrap:
-        outputs.count = ossia::wrap(count, (int64_t)0, (int64_t)inputs.max.value);
-        break;
+        return ossia::wrap(count, (int64_t)0, max);
       case Fold:
-        outputs.count = ossia::fold(count, (int64_t)0, (int64_t)inputs.max.value);
-        break;
+        return ossia::fold(count, (int64_t)0, max);
     }
+  }
+
+  void send() { pending = true; }
+
+  void increase()
+  {
+    ++count;
+    if(inputs.when == OnInput)
+      send();
     if(count >= inputs.max.value)
       outputs.ceiling();
   }
 
   void bang()
   {
-    outputs.count = count;
+    send();
     if(count >= inputs.max.value)
       outputs.ceiling();
+  }
+
+  void reset()
+  {
+    count = 0;
+    if(inputs.when != Manually)
+      send();
+  }
+
+  void operator()()
+  {
+    if(pending || inputs.when == EveryTick)
+      outputs.count.value = int(shaped());
+    else
+      outputs.count.value.reset();
+    pending = false;
   }
 
   enum Mode
@@ -59,6 +89,13 @@ struct Counter
     Fold
   };
 
+  enum OutputMode
+  {
+    EveryTick,
+    OnInput,
+    Manually
+  };
+
   struct
   {
     halp::enum_t<Mode, "Mode"> ceil;
@@ -67,6 +104,12 @@ struct Counter
     {
       void update(Counter& self) { self.bang(); }
     } output;
+    struct : halp::impulse_button<"Reset">
+    {
+      void update(Counter& self) { self.reset(); }
+    } reset;
+    //! Every tick, on each message, or only on the Output bang.
+    halp::combobox_t<"Send", OutputMode> when;
   } inputs;
 
   struct messages
@@ -77,7 +120,7 @@ struct Counter
 
   struct
   {
-    halp::val_port<"Count", int> count;
+    halp::val_port<"Count", std::optional<int>> count;
     halp::callback<"Ceiling"> ceiling;
   } outputs;
 };
