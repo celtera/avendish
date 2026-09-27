@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <vector>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
@@ -32,10 +33,13 @@ struct ArrayBest
 
   struct
   {
-    halp::val_port<"Input", std::vector<float>> in;
+    // Kept until the next one: a new array, a Mode or a Softmax scale change
+    // sends the results; nothing is sent again in between.
+    halp::val_port<"Input", std::optional<std::vector<float>>> in;
     struct : halp::enum_t<ao::ArrayBestMode, "Mode">
     {
       halp_meta(description, "Highest for similarities and scores, Lowest for distances");
+      void update(ArrayBest& self) { self.dirty = true; }
     } mode;
     struct : halp::knob_f32<"Softmax scale", halp::range{0., 1000., 1.}>
     {
@@ -43,20 +47,42 @@ struct ArrayBest
           description,
           "Sharpness of the probabilities. CLIP multiplies its cosine "
           "similarities by 100.")
+      void update(ArrayBest& self) { self.dirty = true; }
     } scale;
   } inputs;
 
   struct
   {
-    halp::val_port<"Index", int> index;
-    halp::val_port<"Value", float> value;
-    halp::val_port<"Probabilities", std::vector<float>> probabilities;
+    halp::val_port<"Index", std::optional<int>> index;
+    halp::val_port<"Value", std::optional<float>> value;
+    halp::val_port<"Probabilities", std::optional<std::vector<float>>> probabilities;
   } outputs;
+
+  std::vector<float> m_in;
+  bool m_received{};
+  bool dirty{};
 
   void operator()()
   {
-    const auto& in = inputs.in.value;
-    auto& p = outputs.probabilities.value;
+    outputs.index.value.reset();
+    outputs.value.value.reset();
+    outputs.probabilities.value.reset();
+    if(auto& in = inputs.in.value)
+    {
+      m_in = std::move(*in);
+      in.reset();
+      m_received = true;
+      dirty = true;
+    }
+    if(!std::exchange(dirty, false) || !m_received)
+      return;
+    compute();
+  }
+
+  void compute()
+  {
+    const auto& in = m_in;
+    auto& p = outputs.probabilities.value.emplace();
     p.assign(in.size(), 0.f);
 
     // Only finite elements compete: NaN would make min / max meaningless and

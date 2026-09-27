@@ -1685,15 +1685,22 @@ bool from_ossia_value(const ossia::value& src, T& dst)
 
 inline bool from_ossia_value(const ossia::value& src, bool& dst)
 {
+  // Numbers too, as ossia::convert<bool> does (non-zero is true): a toggle
+  // driven by a cable or an OSC controller mostly gets 0 / 1 rather than a
+  // bool. An impulse or a string is still no boolean.
   switch(src.get_type())
   {
     case ossia::val_type::BOOL:
       dst = *src.target<bool>();
       return true;
-      break;
+    case ossia::val_type::INT:
+      dst = *src.target<int>() != 0;
+      return true;
+    case ossia::val_type::FLOAT:
+      dst = *src.target<float>() != 0.f;
+      return true;
     default:
       return false;
-      break;
   }
 }
 
