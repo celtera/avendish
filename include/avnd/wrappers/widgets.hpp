@@ -50,6 +50,8 @@ enum class widget_type
   log_knob,
   control,
   no_control,
+  //! A file path, picked with a file dialog
+  file
 };
 
 enum class slider_orientation
@@ -105,6 +107,8 @@ struct widget_reflection
         return "time_chooser";
       case widget_type::folder:
         return "folder";
+      case widget_type::file:
+        return "file";
       case widget_type::bargraph:
         return "bargraph";
       case widget_type::range_slider:
@@ -221,6 +225,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::folder; })
   {
     return widget_reflection<std::string>{widget_type::folder};
+  }
+  else if constexpr(requires { T::widget::file; })
+  {
+    return widget_reflection<std::string>{widget_type::file};
   }
   else if constexpr(requires { T::widget::string_list; })
   {

@@ -4,6 +4,7 @@
 
 #include <halp/callback.hpp>
 #include <halp/controls.hpp>
+#include <halp/file_port.hpp>
 #include <halp/meta.hpp>
 #include <ossia/dataflow/value_port.hpp>
 
@@ -664,7 +665,7 @@ struct FileRead
 
   struct
   {
-    halp::lineedit<"Path", ""> path;
+    halp::file_path<"Path"> path;
     halp::enum_t<FileIOMode, "Execution"> mode;
     halp::spinbox_i32<"Maximum bytes", halp::range{1, file_io::max_file_bytes, 1048576}>
         max_bytes;
@@ -929,7 +930,7 @@ struct FileReadLine
 
   struct
   {
-    halp::lineedit<"Path", ""> path;
+    halp::file_path<"Path"> path;
     halp::enum_t<FileIOMode, "Mode"> mode;
     halp::spinbox_i32<
         "Maximum line bytes", halp::range{1, file_io::max_line_bytes, 65536}>
@@ -1073,7 +1074,8 @@ struct FileWrite
           "timestamp, triggers Mode. No retained value is replayed.")
       ossia::value_port* value{};
     } data;
-    halp::lineedit<"Path", ""> path;
+    // %t and %n in the path are expanded by the host (date/time, unique number)
+    halp::save_file_path<"Path"> path;
     struct : halp::enum_t<FileWriteMode, "Mode">
     {
       using halp::enum_t<FileWriteMode, "Mode">::operator=;
