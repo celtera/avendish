@@ -67,7 +67,11 @@ void AudioParticles::operator()(const halp::tick_musical& t)
     bool is_in_frame = false;
     if(inputs.frequency.sync)
     {
-      is_in_frame = !t.get_quantification_date(1. / inputs.frequency.value).empty();
+      // The binding hands a synced value over in seconds at the current tempo;
+      // the grid wants its rate (1 a whole note, 4 a quarter...).
+      const double secs = inputs.frequency.value;
+      if(secs > 0. && t.tempo > 0.)
+        is_in_frame = !t.get_quantification_date(240. / (secs * t.tempo)).empty();
     }
     else
     {
