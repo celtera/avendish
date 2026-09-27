@@ -11,31 +11,45 @@
 
 namespace uo
 {
+// A dot in the runtime-value (accent) colour, lit when a message arrives and
+// fading out over 300 ms of wall-clock time.
 struct PulseItem
 {
   static constexpr double width() { return 10.; }
   static constexpr double height() { return 10.; }
+  static constexpr auto fade = std::chrono::milliseconds{300};
+
+  void pulse()
+  {
+    m_last = std::chrono::steady_clock::now();
+    m_lit = true;
+  }
 
   void paint(auto ctx)
   {
-    if(ratio <= 0.)
+    if(!m_lit)
       return;
+    const auto elapsed = std::chrono::steady_clock::now() - m_last;
+    const double level
+        = 1. - std::chrono::duration<double>(elapsed) / std::chrono::duration<double>(fade);
+    if(level <= 0.)
+    {
+      m_lit = false;
+      return;
+    }
 
-    constexpr double side = 10.;
     ctx.begin_path();
-    auto col = ctx.to_rgba(halp::colors::light);
-    ctx.set_stroke_color(col);
-    col.a *= ratio;
+    auto col = ctx.to_rgba(halp::colors::runtime_value_mid);
+    col.a = uint8_t(col.a * level);
     ctx.set_fill_color(col);
-    ctx.draw_rect(0, 0, side, side);
+    ctx.draw_circle(5., 5., 3.);
     ctx.fill();
+    // Repaint until it has faded
     ctx.update();
-
-    ratio = std::max(0.0, ratio - 0.25 / 240.0);
   }
 
-  double ratio = 0.0;
   std::chrono::steady_clock::time_point m_last;
+  bool m_lit{};
   smallfun::function<void()> update;
 };
 
@@ -81,7 +95,7 @@ struct PulseView
     {
       static void process_message(ui& self)
       {
-        self.anim.ratio = 1.0;
+        self.anim.pulse();
         self.anim.update();
       }
     };
