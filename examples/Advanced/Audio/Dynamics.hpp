@@ -8,6 +8,7 @@
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 
+#include <algorithm>
 #include <vector>
 
 namespace ao
@@ -15,13 +16,22 @@ namespace ao
 struct DynamicsProcessor
 {
   halp::setup info;
+  //! Longest lookahead: the size of the delay lines
+  static constexpr double max_lookahead = 0.1;
+
   void prepare(halp::setup info) noexcept
   {
+    // prepare() also re-runs from the audio thread when the buffer size grows:
+    // the delay lines are only reallocated for a new rate.
+    if(info.rate != this->info.rate)
+      this->m_lookahead.clear();
+    else
+      for(auto& dl : this->m_lookahead)
+        dl.zero();
+
     this->info = info;
     this->m_ampEnvelope = 0;
     this->m_gainEnvelope = 1;
-
-    this->m_lookahead.clear();
   }
 
   float t60ToOnePoleCoef(double t60s)
@@ -38,7 +48,7 @@ struct DynamicsProcessor
   void process(
       int frames, double** const in, double** const sc_in, double** const out,
       int in_channels, int sc_channels, double attackCoef, double releaseCoef,
-      double threshold, double ratio, double lookaheadTime, double makeup)
+      double threshold, double ratio, double lookaheadTime)
   {
     using namespace std;
 
@@ -49,10 +59,14 @@ struct DynamicsProcessor
       for(int c = 0; c < in_channels; c++)
       {
         m_lookahead[c].set_sample_rate(info.rate);
-        m_lookahead[c].maxDelay(0.1, false);
+        m_lookahead[c].maxDelay(max_lookahead, false);
       }
     }
 
+    // Beyond the line, the read position wraps around; at 0 it reads the
+    // oldest sample instead of the newest, as the line is read before written.
+    const double one_sample = 1. / info.rate;
+    lookaheadTime = std::clamp(lookaheadTime, one_sample, max_lookahead - one_sample);
     for(auto& dl : m_lookahead)
     {
       dl.delay(lookaheadTime);
@@ -119,8 +133,7 @@ struct DynamicsProcessor
     }
   }
 
-  void postprocess_compress(
-      int frames, int in_channels, double** out, double makeupGain, double threshold)
+  void postprocess_compress(int frames, int in_channels, double** out, double makeupGain)
   {
     using namespace std;
     for(int c = 0; c < in_channels; c++)
@@ -179,6 +192,51 @@ struct DynamicsProcessor
     }
   }
 
+  //! Linear up to a knee below `ceiling`, then a tanh curve reaching it
+  //! asymptotically: the output never exceeds the ceiling, which is the
+  //! threshold of the gain computer. softlimit() instead tends to 1 - t.
+  static double softclip(double x, double ceiling) noexcept
+  {
+    if(ceiling <= 0.)
+      return 0.;
+    const double knee = std::min(0.03, 0.5 * ceiling);
+    const double lin = ceiling - knee;
+    const double ax = std::abs(x);
+    if(BOOST_LIKELY(ax <= lin))
+      return x;
+    return std::copysign(lin + knee * std::tanh((ax - lin) / knee), x);
+  }
+
+  void postprocess_softclip(
+      int frames, int in_channels, double** out, double makeupGain, double ceiling)
+  {
+    for(int c = 0; c < in_channels; c++)
+      for(int i = 0; i < frames; i++)
+        out[c][i] = softclip(makeupGain * out[c][i], ceiling);
+  }
+
+  //! Compresses `in` into `out` with the attack, release, threshold and
+  //! lookahead controls of `in`; false when there is no input.
+  template <typename Inputs>
+  bool run(int frames, const Inputs& in, double** out, double ratio)
+  {
+    const int in_channels = in.audio.channels;
+    if(in_channels == 0)
+      return false;
+
+    this->process(
+        frames, in.audio.samples, in.sidechain.samples, out, in_channels,
+        in.sidechain.channels, t60ToOnePoleCoef(std::max(0.f, in.attack.value)),
+        t60ToOnePoleCoef(std::max(0.f, in.release.value)),
+        std::max(0.f, in.threshold.value), ratio, in.lookahead.value);
+    return true;
+  }
+
+  //! A ratio of 0 would divide by zero
+  static double compression_ratio(float r) noexcept { return std::max(0.05f, r); }
+  static constexpr double limiter_ratio = 9999999999.;
+  static double makeup_gain(float m) noexcept { return std::max(0.f, 1.f + m); }
+
 private:
   double m_ampEnvelope = 0;
   double m_gainEnvelope = 1;
@@ -191,11 +249,12 @@ private:
  */
 struct Compressor : DynamicsProcessor
 {
-  halp_meta(name, "Compressor")
+  halp_meta(name, "Compressor (old)")
   halp_meta(category, "Audio/Effects")
   halp_meta(author, "ofxTonic library authors")
   halp_meta(c_name, "ofxtonic_compressor")
   halp_meta(description, "Dynamics compressor")
+  halp_flag(deprecated);
   halp_meta(uuid, "352ba9b1-eeab-4408-9b98-aa2c2585508a")
   halp_meta(
       manual_url, "https://ossia.io/score-docs/processes/audio-effects.html#compressor")
@@ -219,38 +278,60 @@ struct Compressor : DynamicsProcessor
 
   void operator()(int frames)
   {
-    using namespace std;
+    if(run(frames, inputs, outputs.audio.samples, compression_ratio(inputs.ratio)))
+      postprocess_compress(
+          frames, inputs.audio.channels, outputs.audio.samples,
+          makeup_gain(inputs.makeup));
+  }
+};
 
-    const auto in_channels = this->inputs.audio.channels;
-    const auto sc_channels = this->inputs.sidechain.channels;
-    if(in_channels == 0)
-      return;
+struct Compressor_v2 : DynamicsProcessor
+{
+  halp_meta(name, "Compressor")
+  halp_meta(category, "Audio/Effects")
+  halp_meta(author, "ofxTonic library authors")
+  halp_meta(c_name, "ofxtonic_compressor_v2")
+  halp_meta(description, "Dynamics compressor")
+  halp_meta(uuid, "3e9688b1-cfb3-4e01-a8ca-c24e189d8572")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/audio-effects.html#compressor")
+  struct
+  {
+    halp::dynamic_audio_bus<"Audio", double> audio;
+    halp::dynamic_audio_bus<"Sidechain", double> sidechain;
 
-    // Setup parameters
-    const double attackCoef = t60ToOnePoleCoef(max(0.f, inputs.attack.value));
-    const double releaseCoef = t60ToOnePoleCoef(max(0.f, inputs.release.value));
-    const double threshold = max(0.f, inputs.threshold.value);
-    const double ratio = max(0.f, inputs.ratio.value);
-    const double lookaheadTime = max(0.f, inputs.lookahead.value);
-    const double makeup = max(0.f, 1.f + inputs.makeup.value);
+    halp::knob_f32<"Makeup", halp::range{0, 30, 0}> makeup;
+    halp::time_chooser<"Attack", halp::range{0., 1., 0.001}> attack;
+    //! Synced to a note value, the gain comes back in time with the beat.
+    halp::time_chooser<"Release", halp::range{0., 2., 0.05}> release;
+    halp::knob_f32<"Threshold", halp::range{0., 1., 0.5}> threshold;
+    halp::knob_f32<"Ratio", halp::range{0.05, 50., 1.}> ratio;
+    halp::knob_f32<"Lookahead", halp::range{0.001, 0.005, 0.001}> lookahead;
+  } inputs;
 
-    this->process(
-        frames, inputs.audio.samples, inputs.sidechain.samples, outputs.audio.samples,
-        in_channels, sc_channels, attackCoef, releaseCoef, threshold, ratio,
-        lookaheadTime, makeup);
-    this->postprocess_compress(
-        frames, in_channels, outputs.audio.samples, makeup, threshold);
+  struct
+  {
+    halp::dynamic_audio_bus<"Output", double> audio;
+  } outputs;
+
+  void operator()(int frames)
+  {
+    if(run(frames, inputs, outputs.audio.samples, compression_ratio(inputs.ratio)))
+      postprocess_compress(
+          frames, inputs.audio.channels, outputs.audio.samples,
+          makeup_gain(inputs.makeup));
   }
 };
 struct Limiter : DynamicsProcessor
 {
-  halp_meta(name, "Limiter")
+  halp_meta(name, "Limiter (old)")
   halp_meta(category, "Audio/Effects")
   halp_meta(author, "ofxTonic library authors")
   halp_meta(c_name, "ofxtonic_limiter")
   halp_meta(description, "Dynamics limiter")
   halp_meta(
       manual_url, "https://ossia.io/score-docs/processes/audio-effects.html#limiter")
+  halp_flag(deprecated);
   halp_meta(uuid, "7570d058-d243-4c74-84cc-f5b3f5d752bd")
   struct
   {
@@ -271,27 +352,47 @@ struct Limiter : DynamicsProcessor
 
   void operator()(int frames)
   {
-    using namespace std;
+    if(run(frames, inputs, outputs.audio.samples, limiter_ratio))
+      postprocess_softlimit(
+          frames, inputs.audio.channels, outputs.audio.samples,
+          makeup_gain(inputs.makeup), std::max(0.f, inputs.threshold.value));
+  }
+};
 
-    const auto in_channels = this->inputs.audio.channels;
-    const auto sc_channels = this->inputs.sidechain.channels;
-    if(in_channels == 0)
-      return;
+struct Limiter_v2 : DynamicsProcessor
+{
+  halp_meta(name, "Limiter")
+  halp_meta(category, "Audio/Effects")
+  halp_meta(author, "ofxTonic library authors")
+  halp_meta(c_name, "ofxtonic_limiter_v2")
+  halp_meta(description, "Dynamics limiter")
+  halp_meta(
+      manual_url, "https://ossia.io/score-docs/processes/audio-effects.html#limiter")
+  halp_meta(uuid, "1413ed74-1c9f-4433-976a-f588d4027735")
+  struct
+  {
+    halp::dynamic_audio_bus<"Audio", double> audio;
+    halp::dynamic_audio_bus<"Sidechain", double> sidechain;
 
-    // Setup parameters
-    const double attackCoef = t60ToOnePoleCoef(max(0.f, inputs.attack.value));
-    const double releaseCoef = t60ToOnePoleCoef(max(0.f, inputs.release.value));
-    const double threshold = max(0.f, inputs.threshold.value);
-    const double ratio = 9999999999.;
-    const double lookaheadTime = max(0.f, inputs.lookahead.value);
-    const double makeup = max(0.f, 1.f + inputs.makeup.value);
+    halp::knob_f32<"Makeup", halp::range{0, 30, 0}> makeup;
+    halp::time_chooser<"Attack", halp::range{0., 1., 0.0001}> attack;
+    //! Synced to a note value, the gain comes back in time with the beat.
+    halp::time_chooser<"Release", halp::range{0., 2., 0.08}> release;
+    halp::knob_f32<"Threshold", halp::range{0., 1., 0.98}> threshold;
+    halp::knob_f32<"Lookahead", halp::range{0.001, 0.005, 0.003}> lookahead;
+  } inputs;
 
-    this->process(
-        frames, inputs.audio.samples, inputs.sidechain.samples, outputs.audio.samples,
-        in_channels, sc_channels, attackCoef, releaseCoef, threshold, ratio,
-        lookaheadTime, makeup);
-    this->postprocess_softlimit(
-        frames, in_channels, outputs.audio.samples, makeup, threshold);
+  struct
+  {
+    halp::dynamic_audio_bus<"Output", double> audio;
+  } outputs;
+
+  void operator()(int frames)
+  {
+    if(run(frames, inputs, outputs.audio.samples, limiter_ratio))
+      postprocess_softclip(
+          frames, inputs.audio.channels, outputs.audio.samples,
+          makeup_gain(inputs.makeup), std::max(0.f, inputs.threshold.value));
   }
 };
 }
