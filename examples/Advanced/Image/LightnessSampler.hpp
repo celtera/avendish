@@ -24,8 +24,9 @@ struct LightnessSamplerTextureDisplay
     if(m_w <= 0 || m_h <= 0)
       return;
 
-    // Render the texture
-    ctx.draw_bytes(0, 0, width(), height(), m_bytes.data(), m_w, m_h);
+    // Render the texture at its aspect ratio, centered (letterboxed).
+    const auto [x0, y0, w, h] = imageRect(m_w, m_h);
+    ctx.draw_bytes(x0, y0, w, h, m_bytes.data(), m_w, m_h);
 
     // Render the circles
     std::uint32_t k = 342457370;
@@ -41,11 +42,25 @@ struct LightnessSamplerTextureDisplay
            .b = uint8_t((h & 0xFF)),
            .a = 255});
       ctx.set_stroke_color({.r = 255, .g = 255, .b = 255, .a = 255});
-      ctx.draw_circle(x * width(), y * height(), 5);
+      ctx.draw_circle(x0 + x * w, y0 + y * h, 5);
       ctx.stroke();
       ctx.fill();
     }
     ctx.update();
+  }
+
+  struct rect
+  {
+    double x, y, w, h;
+  };
+  //! Where an image of w x h pixels is drawn: as large as fits, centered.
+  static constexpr rect imageRect(int w, int h) noexcept
+  {
+    if(w <= 0 || h <= 0)
+      return {0., 0., width(), height()};
+    const double scale = std::min(width() / w, height() / h);
+    const double dw = w * scale, dh = h * scale;
+    return {(width() - dw) / 2., (height() - dh) / 2., dw, dh};
   }
 
   void update(
