@@ -18,6 +18,29 @@ namespace avnd
 // because MSVC:
 // error C2039: 'effect': is not a member of 'examples::helpers::SpriteReader'
 
+//! A port whose value is an optional: it may hold no value at all.
+template <typename T>
+concept optional_value_field = requires(T& t) { t.value; }
+                               && optional_ish<std::decay_t<decltype(std::declval<T&>().value)>>;
+
+//! Calls ctl.update(state.effect), except for a port whose optional value holds
+//! nothing: that is no value to report, and an impulse button's update() is
+//! its press, which must not happen at init. Decided at compile time for every
+//! other port.
+template <typename State, typename T>
+static constexpr void update_if_holding_value(State& state, T& ctl)
+{
+  if constexpr(optional_value_field<T>)
+  {
+    if(ctl.value)
+      if_possible(ctl.update(state.effect));
+  }
+  else
+  {
+    if_possible(ctl.update(state.effect));
+  }
+}
+
 template <typename F, typename T>
 static constexpr inline void init_controls_impl(F& state, T& ctl)
 {
@@ -31,7 +54,7 @@ static constexpr inline void init_controls_impl(F& state, T& ctl)
     // clang-format on
   }
 
-  if_possible(ctl.update(state.effect));
+  update_if_holding_value(state, ctl);
 }
 
 template <typename F>
@@ -40,7 +63,7 @@ static constexpr void init_controls(F& state)
   if constexpr(avnd::tag_skip_init<F>)
   {
     avnd::for_each_field_ref(state.inputs, [&]<typename T>(T& ctl) {
-      if_possible(ctl.update(state.effect));
+      update_if_holding_value(state, ctl);
     });
   }
   else
