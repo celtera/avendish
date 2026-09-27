@@ -610,6 +610,21 @@ public:
 
   void finish_run()
   {
+    // Maintained buttons pressed by an impulse were held for this tick only
+    if constexpr(avnd::control_input_introspection<T>::size > 0)
+    {
+      if(this->control.momentary_presses.any())
+      {
+        // Inputs only: the indices are control-input indices
+        for(auto [impl, i, o] : this->impl.full_state())
+        {
+          release_momentary_buttons<safe_node_base, T> f{*this, impl};
+          this->process_inputs_impl(f, i);
+        }
+        this->control.momentary_presses.reset();
+      }
+    }
+
     // Clear control bitsets for UI
     if constexpr(avnd::control_input_introspection<T>::size > 0)
     {

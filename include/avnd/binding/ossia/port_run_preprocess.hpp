@@ -64,6 +64,39 @@ struct set_ossia_node_in_port
   }
 };
 
+//! A maintained button: a bool control whose widget is a (push)button. It is
+//! true while held. An impulse -- which converts to false -- is taken as a
+//! press lasting one tick instead, so that messages and cables can trigger it.
+template <typename T>
+concept held_button_port
+    = (requires { T::widget::button; } || requires { T::widget::pushbutton; })
+      && std::is_same_v<std::decay_t<decltype(T::value)>, bool>;
+
+//! Releases the maintained buttons an impulse pressed during this tick.
+template <typename Exec_T, typename Obj_T>
+struct release_momentary_buttons
+{
+  Exec_T& self;
+  Obj_T& impl;
+
+  template <typename Field, std::size_t Idx>
+  void operator()(Field& ctrl, auto& port, avnd::field_index<Idx> idx) const noexcept
+  {
+    if constexpr(held_button_port<Field> && avnd::control_port<Field>)
+    {
+      using type = typename Exec_T::processor_type;
+      using controls = avnd::control_input_introspection<type>;
+      constexpr int control_index = controls::field_index_to_index(idx);
+      if(self.control.momentary_presses.test(control_index))
+      {
+        ctrl.value = false;
+        if_possible(ctrl.update(impl));
+        self.control.inputs_set.set(control_index);
+      }
+    }
+  }
+};
+
 template <typename Exec_T, typename Obj_T>
 struct process_before_run
 {
@@ -92,6 +125,28 @@ struct process_before_run
     if(!port.data.get_data().empty())
     {
       auto& last = port.data.get_data().back().value;
+
+      if constexpr(held_button_port<Field> && avnd::control_port<Field>)
+      {
+        if(last.template target<ossia::impulse>())
+        {
+          using type = typename Exec_T::processor_type;
+          using controls = avnd::control_input_introspection<type>;
+          constexpr int control_index = controls::field_index_to_index(idx);
+
+          // A press for this tick; released in finish_run. A button already
+          // held stays held.
+          if(!ctrl.value)
+          {
+            ctrl.value = true;
+            if_possible(ctrl.update(impl));
+            self.control.momentary_presses.set(control_index);
+          }
+          self.control.inputs_set.set(control_index);
+          return;
+        }
+      }
+
       update_value(self, impl, ctrl, last, ctrl.value, idx);
 
       if constexpr(avnd::control_port<Field>)

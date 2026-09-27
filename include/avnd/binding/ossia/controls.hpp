@@ -79,6 +79,9 @@ struct controls_input_queue<T>
 
   ossia::mpmc_queue<i_tuple> ins_queue;
   std::bitset<i_size> inputs_set;
+  //! Maintained buttons pressed by an impulse in this tick: released once the
+  //! tick is processed (see held_button_port).
+  std::bitset<i_size> momentary_presses;
 };
 
 template <typename T>
