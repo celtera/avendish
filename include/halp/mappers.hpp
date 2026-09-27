@@ -35,4 +35,9 @@ struct inverse_mapper
   static double unmap(double v) noexcept { return T::map(v); }
 };
 
+//! The taper of time choosers in free mode: the value grows as the cube of the
+//! knob's travel, so short times (envelope attacks, a few milliseconds) get
+//! most of the travel while the whole range stays reachable.
+using time_chooser_mapper = inverse_mapper<pow_mapper<3>>;
+
 }
