@@ -685,7 +685,20 @@ public:
   inline bool from_ossia_value(
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
   {
-    auto vec = ossia::convert<ossia::vec2f>(src);
+    // The inspector sends {time, mode}: mode 0 is seconds, anything else a
+    // musical ratio. A plain number (a cable, an OSC message) is seconds.
+    ossia::vec2f vec;
+    switch(src.get_type())
+    {
+      case ossia::val_type::FLOAT:
+      case ossia::val_type::INT:
+      case ossia::val_type::BOOL:
+        vec = {ossia::convert<float>(src), 0.f};
+        break;
+      default:
+        vec = ossia::convert<ossia::vec2f>(src);
+        break;
+    }
     if(vec[1] == 0.)
     {
       // Time in seconds, free mode

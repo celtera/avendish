@@ -220,6 +220,14 @@ void invoke_effect(avnd::effect_container<T>& implementation, const Tick& t)
   if constexpr(std::is_integral_v<Tick>)
   {
     static_assert(!has_tick<T>);
+    // An operator() that is not called at all is a silent no-op process: it
+    // happens when it takes a tick type the object did not declare.
+    static_assert(
+        !requires { &T::operator(); }
+            || requires { implementation.effect(t); }
+            || requires { implementation.effect(); },
+        "operator() cannot be called: if it takes a tick, declare `using tick = "
+        "<that type>;` in the object");
     if_possible(implementation.effect(t))
     else if_possible(implementation.effect());
   }
