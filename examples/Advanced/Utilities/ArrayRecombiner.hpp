@@ -6,6 +6,7 @@
 #include <halp/dynamic_port.hpp>
 #include <halp/meta.hpp>
 #include <ossia/network/value/value.hpp>
+#include <ossia/network/value/value_conversion.hpp>
 
 namespace ao
 {
@@ -36,7 +37,19 @@ struct ArrayRecombiner
   {
     std::vector<ossia::value> res;
 
-    if(auto pvec = in.target<std::vector<ossia::value>>())
+    // vec2f / vec3f / vec4f are fixed-size arrays too: the list of their
+    // components.
+    std::vector<ossia::value> components;
+    auto* pvec = in.target<std::vector<ossia::value>>();
+    if(!pvec
+       && (in.target<ossia::vec2f>() || in.target<ossia::vec3f>()
+           || in.target<ossia::vec4f>()))
+    {
+      components = ossia::convert<std::vector<ossia::value>>(in);
+      pvec = &components;
+    }
+
+    if(pvec)
     {
       auto& vec = *pvec;
       if(inputs.elements <= 0)
