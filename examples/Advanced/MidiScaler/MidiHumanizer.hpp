@@ -141,6 +141,15 @@ public:
           "0 keeps running freely; any other value gives a reproducible take, "
           "restarted whenever the transport rewinds")
     } seed;
+
+    // ---- Pitch ----------------------------------------------------------
+    struct : halp::hslider_i32<"Pitch", halp::range{0, 12, 0}>
+    {
+      halp_meta(
+          description,
+          "Standard deviation, in semitones, of a random transposition of each "
+          "note (its note-off follows it)")
+    } pitch;
   } inputs;
 
   struct
@@ -237,6 +246,7 @@ public:
       halp::item<&ins::velocity_range> velocity_range;
       halp::item<&ins::length> length;
       halp::item<&ins::chance> chance;
+      halp::item<&ins::pitch> pitch;
     } notes;
 
     struct
@@ -384,6 +394,9 @@ private:
   {
     int64_t at{};
     libremidi::message msg;
+    //! The note a note-on / note-off belongs to; 0 when untracked (a note
+    //! outside the scope, or a note-off we never saw the note-on of).
+    uint32_t note{};
   };
 
   struct active_note
@@ -391,12 +404,14 @@ private:
     int64_t arrival_on{}; //!< when the note-on arrived
     int64_t on_at{};      //!< when the note-on was scheduled
     double length_scale{1.};
+    uint32_t id{};
     uint8_t channel{};
-    uint8_t pitch{};
+    uint8_t pitch{};     //!< as received: what the note-off is matched with
+    uint8_t out_pitch{}; //!< as sent, after the Pitch transposition
     bool dropped{};
   };
 
-  void schedule(int64_t at, const libremidi::message& m) noexcept
+  void schedule(int64_t at, const libremidi::message& m, uint32_t note = 0) noexcept
   {
     // Never emit in the past
     if(at < m_now)
@@ -428,8 +443,57 @@ private:
         m_pending.begin(), m_pending.end(), at,
         [](int64_t v, const scheduled& s) { return v < s.at; });
 
-    auto& e = *m_pending.insert(it, scheduled{at, m});
+    auto& e = *m_pending.insert(it, scheduled{at, m, note});
     e.msg.timestamp = 0;
+  }
+
+  static constexpr uint32_t untracked_sounding = UINT32_MAX;
+
+  static bool is_note_on_msg(const libremidi::message& m) noexcept
+  {
+    return m.get_message_type() == libremidi::message_type::NOTE_ON && m.size() >= 3
+           && m.bytes[2] != 0;
+  }
+
+  //! Sends a message, keeping the output well-formed: per channel and pitch,
+  //! note-ons and note-offs alternate. The deviations can make a note of a
+  //! pitch start before the previous one of that pitch has ended, or its
+  //! note-off land after the next note-on: the previous note is then ended
+  //! first, and a note-off for a note that is no longer the one sounding is
+  //! dropped -- it would cut the next note, or be a stray note-off.
+  void send(libremidi::message msg, uint32_t note, int64_t ts) noexcept
+  {
+    msg.timestamp = ts;
+    const bool on = is_note_on_msg(msg);
+    const bool off = !on && is_note_off_msg(msg);
+    if(!on && !off)
+    {
+      outputs.midi.push_back(std::move(msg));
+      return;
+    }
+
+    auto& sounding = m_sounding[(msg.get_channel() - 1) & 15][msg.bytes[1] & 127];
+    if(on)
+    {
+      if(sounding != 0)
+      {
+        auto end = libremidi::channel_events::note_off(
+            msg.get_channel(), msg.bytes[1], 0);
+        end.timestamp = ts;
+        outputs.midi.push_back(std::move(end));
+      }
+      sounding = note != 0 ? note : untracked_sounding;
+      outputs.midi.push_back(std::move(msg));
+    }
+    else
+    {
+      if(sounding == 0)
+        return;
+      if(note != 0 && sounding != untracked_sounding && sounding != note)
+        return;
+      sounding = 0;
+      outputs.midi.push_back(std::move(msg));
+    }
   }
 
   void release(int frames) noexcept
@@ -438,11 +502,9 @@ private:
 
     auto it = m_pending.begin();
     for(; it != m_pending.end() && it->at < limit; ++it)
-    {
-      auto msg = it->msg;
-      msg.timestamp = int64_t(std::clamp<int64_t>(it->at - m_now, 0, frames - 1));
-      outputs.midi.push_back(std::move(msg));
-    }
+      send(
+          it->msg, it->note,
+          int64_t(std::clamp<int64_t>(it->at - m_now, 0, frames - 1)));
     m_pending.erase(m_pending.begin(), it);
   }
 
@@ -542,13 +604,15 @@ private:
       return;
     }
 
-    // Any previous instance of the same note is superseded: its note-off will
-    // be matched against this one.
-    forget(m.get_channel(), pitch);
-
+    // A previous instance of the same note stays tracked: note-offs match the
+    // oldest one first, as MIDI does, and the output stage ends it if this
+    // one starts before its note-off.
     const bool dropped = (m_chance < 1.f) && (uniform() > m_chance);
 
     active_note note;
+    note.id = m_next_id++;
+    if(m_next_id == 0 || m_next_id == untracked_sounding)
+      m_next_id = 1;
     note.arrival_on = arrival;
     note.channel = uint8_t(m.get_channel());
     note.pitch = uint8_t(pitch);
@@ -560,6 +624,9 @@ private:
     const int64_t offset = next_timing_offset(arrival);
     const float vel_dev = m_velocity_noise.next(gaussian());
     const float len_dev = m_length_noise.next(gaussian());
+    const float pitch_dev = m_pitch_noise.next(gaussian());
+    note.out_pitch = uint8_t(std::clamp(
+        pitch + int(std::lround(double(m_pitch) * double(pitch_dev))), 0, 127));
 
     note.on_at = std::max(arrival, arrival + m_latency + offset);
     note.length_scale
@@ -574,8 +641,9 @@ private:
       const active_note& victim = m_active.front();
       if(!victim.dropped)
       {
-        auto off = libremidi::channel_events::note_off(victim.channel, victim.pitch, 0);
-        schedule(std::max(m_now, victim.on_at + 1), off);
+        auto off
+            = libremidi::channel_events::note_off(victim.channel, victim.out_pitch, 0);
+        schedule(std::max(m_now, victim.on_at + 1), off, victim.id);
       }
       m_active.erase(m_active.begin());
     }
@@ -586,8 +654,9 @@ private:
 
     auto out = m;
     const int vel = int(std::lround(double(m.bytes[2]) + double(m_velocity) * double(vel_dev)));
+    out.bytes[1] = note.out_pitch;
     out.bytes[2] = uint8_t(std::clamp(vel, m_vel_lo, m_vel_hi));
-    schedule(note.on_at, out);
+    schedule(note.on_at, out, note.id);
   }
 
   void note_off(const libremidi::message& m, int64_t arrival) noexcept
@@ -621,17 +690,11 @@ private:
     const int64_t scaled
         = std::max<int64_t>(1, int64_t(std::llround(double(duration) * note.length_scale)));
 
-    schedule(note.on_at + scaled, m);
+    auto out = m;
+    out.bytes[1] = note.out_pitch;
+    schedule(note.on_at + scaled, out, note.id);
   }
 
-  void forget(int channel, int pitch) noexcept
-  {
-    const auto it = std::remove_if(
-        m_active.begin(), m_active.end(), [&](const active_note& n) {
-      return n.pitch == pitch && n.channel == channel;
-    });
-    m_active.erase(it, m_active.end());
-  }
 
   // --------------------------------------------------------------- settings
 
@@ -660,10 +723,12 @@ private:
     m_timing_noise.set_beta(colour);
     m_velocity_noise.set_beta(colour);
     m_length_noise.set_beta(colour);
+    m_pitch_noise.set_beta(colour);
 
     m_velocity = inputs.velocity;
     m_length = std::clamp((float)inputs.length, 0.f, 1.f);
     m_chance = std::clamp((float)inputs.chance, 0.f, 1.f);
+    m_pitch = std::clamp(int(inputs.pitch), 0, 12);
     m_channel = inputs.channel;
 
     const auto [vlo, vhi] = inputs.velocity_range.value;
@@ -682,6 +747,7 @@ private:
     m_timing_noise.reset();
     m_velocity_noise.reset();
     m_length_noise.reset();
+    m_pitch_noise.reset();
     m_have_spare = false;
     m_chord_open = false;
     m_chord_index = 0;
@@ -717,40 +783,35 @@ private:
   //! note-off has not even arrived. Dropping the queue without this hangs them.
   void flush_sounding(int ts) noexcept
   {
+    // Queued controller state goes out -- a sustain-pedal release, say --
+    // since dropping it would leave that state stuck downstream. All-notes-off
+    // does not reset the pedal.
     for(const auto& e : m_pending)
     {
-      // Note-offs, obviously. But also anything that is not a note at all: a
-      // queued CC is controller state -- a sustain-pedal release, say -- and
-      // dropping it would leave that state stuck downstream. All-notes-off does
-      // not reset the pedal.
       const auto type = e.msg.get_message_type();
       const bool is_note = type == libremidi::message_type::NOTE_ON
                            || type == libremidi::message_type::NOTE_OFF;
-      if(is_note && !is_note_off_msg(e.msg))
-        continue;
-
-      auto msg = e.msg;
-      msg.timestamp = ts;
-      outputs.midi.push_back(std::move(msg));
+      if(!is_note)
+      {
+        auto msg = e.msg;
+        msg.timestamp = ts;
+        outputs.midi.push_back(std::move(msg));
+      }
     }
 
-    for(const auto& n : m_active)
-    {
-      if(n.dropped)
-        continue;
-
-      // Anything at or past the cursor is still sitting in the queue -- release()
-      // has not run for it yet -- so it never sounded and is about to be dropped
-      // along with the rest of the queue. Sending a note-off for it would just
-      // be noise.
-      if(n.on_at >= m_now)
-        continue;
-
-      auto msg = libremidi::channel_events::note_off(n.channel, n.pitch, 0);
-      msg.timestamp = ts;
-      outputs.midi.push_back(std::move(msg));
-    }
+    // Then every note the output stage knows to be sounding is ended: exactly
+    // those, no stray note-off for notes still queued or never sent.
+    for(int c = 0; c < 16; c++)
+      for(int p = 0; p < 128; p++)
+        if(m_sounding[c][p] != 0)
+        {
+          auto msg = libremidi::channel_events::note_off(c + 1, p, 0);
+          msg.timestamp = ts;
+          outputs.midi.push_back(std::move(msg));
+          m_sounding[c][p] = 0;
+        }
   }
+
 
   // ------------------------------------------------------------------ state
 
@@ -760,6 +821,11 @@ private:
   fractional_noise m_timing_noise;
   fractional_noise m_velocity_noise;
   fractional_noise m_length_noise;
+  fractional_noise m_pitch_noise;
+
+  //! Per channel and pitch, the note sounding at the output (0: none).
+  uint32_t m_sounding[16][128]{};
+  uint32_t m_next_id{1};
 
   rnd::pcg m_rng;
   //! Drawn once at construction, so a free-running seed never needs entropy
@@ -785,6 +851,7 @@ private:
   int m_velocity{};
   float m_length{};
   float m_chance{1.f};
+  int m_pitch{};
   int m_channel{};
   int m_vel_lo{1}, m_vel_hi{127};
   int m_key_lo{0}, m_key_hi{127};
