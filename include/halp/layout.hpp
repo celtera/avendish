@@ -129,10 +129,16 @@ consteval look label_as(std::string_view name)
 }
 
 // Controls greyed out unless F holds one of Values. Layout is unchanged.
+// Returned by a static condition() rather than inherited: layouts are walked
+// as aggregates, and Boost.PFR (used without P1061) rejects any base class.
 //
-//   struct : halp::enabled_when<&ins::engine, engine::plate, engine::cymbal>
+//   struct
 //   {
 //     halp_meta(layout, halp::layouts::hbox)
+//     static constexpr auto condition()
+//     {
+//       return halp::enabled_when<&ins::engine, engine::plate, engine::cymbal>{};
+//     }
 //     halp::item<&ins::cascade> cascade;
 //   } cascade;
 template <auto F, auto... Values>
