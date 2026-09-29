@@ -59,6 +59,9 @@ public:
     uint16_t channel{};
   };
 
+  //! Sounds playing at once: reserved in prepare(), so that a new one never
+  //! allocates on the audio thread.
+  static constexpr std::size_t max_playheads = 1024;
   std::vector<Playhead> m_playheads;
   double rate{};
   std::random_device m_rdev;
