@@ -14,6 +14,7 @@ void AudioParticles::prepare(halp::setup info)
   // Initialization, this method will be called with buffer size, etc.
   m_sounds.clear();
   m_sounds.reserve(1000);
+  m_playheads.reserve(max_playheads);
 
   // FIXME move to worker thread
   score::for_all_files(inputs.folder.value, [this](std::string_view v) {
@@ -31,7 +32,7 @@ void AudioParticles::prepare(halp::setup info)
 }
 
 std::optional<int>
-frame_in_interval(int start_frame, int end_frame, double rate, double freq)
+frame_in_interval(int64_t start_frame, int64_t end_frame, double rate, double freq)
 {
   if(rate <= 0.)
     return std::nullopt;
@@ -79,7 +80,7 @@ void AudioParticles::operator()(const halp::tick_musical& t)
           t.position_in_frames, t.position_in_frames + t.frames, rate,
           inputs.frequency));
     }
-    if(is_in_frame)
+    if(is_in_frame && m_playheads.size() < max_playheads)
     {
       if((1. - inputs.density) < std::exponential_distribution<float>()(m_rng))
         m_playheads.push_back(
