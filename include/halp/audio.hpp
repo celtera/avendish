@@ -12,12 +12,33 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <functional>
 #include <optional>
 #include <string_view>
 HALP_MODULE_EXPORT
 namespace halp
 {
+//! The frame, counted from the start of a span of `frames` frames covering the
+//! musical positions [start; end[ (]end; start] rewinding), a musical position
+//! falls in. Not clamped. Kept identical to ossia::musical_to_frame.
+[[nodiscard]] constexpr int64_t musical_to_frame(
+    double position, double start, double end, int64_t frames) noexcept
+{
+  const auto abs = [](double x) { return x < 0. ? -x : x; };
+  const double duration = end - start;
+  const double r = (position - start) / duration;
+  // The positions are exact only to the few ulps of their magnitude the
+  // arithmetic that made them rounds off: a point that close below a sample
+  // boundary is on it, not one sample early.
+  const double tolerance = 16. * std::numeric_limits<double>::epsilon()
+                           * std::max({abs(position), abs(start), abs(end)})
+                           / abs(duration);
+  const double v = (r + tolerance) * double(frames);
+  const auto i = int64_t(v);
+  return double(i) > v ? i - 1 : i;
+}
+
 template <static_string Name, typename FP, static_string Desc = "">
 struct audio_sample
 {
@@ -324,9 +345,8 @@ struct tick_musical
 
     // Rewinding, end is before start and the numerator is negative too, so the
     // ratio still grows with the buffer position.
-    const double percent = (musical_pos - start) / duration;
-    const int f = percent * this->frames;
-    return std::clamp(f, 0, frames - 1);
+    const int64_t f = musical_to_frame(musical_pos, start, end, frames);
+    return int(std::clamp(f, int64_t(0), int64_t(frames - 1)));
   }
   constexpr int64_t prev_frame() const noexcept { return position_in_frames; }
   constexpr int64_t end_frame() const noexcept { return position_in_frames + frames; }
@@ -398,15 +418,18 @@ struct tick_musical
 
     // A point falling exactly on the end of the tick belongs to the next one,
     // so the interval is half-open at the end the tick heads towards.
+    // Past the end is decided on the musical position: a point within the
+    // tolerance below the end maps to one past the last frame and is clamped.
     const auto try_push = [&](double musical_position, int index) {
-      const double ratio
-          = (musical_position - start_position_in_quarters) / musical_tick_duration;
-      int f = int(std::floor(ratio * this->frames));
-      if(f < 0)
-        f = 0;
-      if(f >= this->frames)
+      if(rewinding ? musical_position <= end_position_in_quarters
+                   : musical_position >= end_position_in_quarters)
         return false;
-      res.emplace_back(f, index);
+      const int64_t f = std::clamp(
+          musical_to_frame(
+              musical_position, start_position_in_quarters, end_position_in_quarters,
+              this->frames),
+          int64_t(0), int64_t(this->frames - 1));
+      res.emplace_back(int(f), index);
       return res.size() < 1024;
     };
 
@@ -548,9 +571,9 @@ struct tick_musical
     const double hi = rewinding ? start_position_in_quarters : end_position_in_quarters;
 
     const auto frame_of = [&](double musical_position) {
-      const double ratio
-          = (musical_position - start_position_in_quarters) / musical_tick_duration;
-      int64_t f = int64_t(std::floor(ratio * this->frames));
+      int64_t f = musical_to_frame(
+          musical_position, start_position_in_quarters, end_position_in_quarters,
+          this->frames);
       if(f < 0)
         f = 0;
       if(f >= this->frames)
