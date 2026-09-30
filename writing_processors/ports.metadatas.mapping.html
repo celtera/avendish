@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-31035666.js";
+            window.path_to_searchindex_js = "../searchindex-ac4dcba8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ae0bcd33.js"></script>
@@ -254,6 +254,11 @@ struct inverse_mapper
   static double map(double v) noexcept { return T::unmap(v); }
   static double unmap(double v) noexcept { return T::map(v); }
 };
+
+//! The taper of time choosers in free mode: the value grows as the cube of the
+//! knob's travel, so short times (envelope attacks, a few milliseconds) get
+//! most of the travel while the whole range stays reachable.
+using time_chooser_mapper = inverse_mapper&lt;pow_mapper&lt;3&gt;&gt;;
 
 }
 </code></pre>
