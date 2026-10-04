@@ -1729,6 +1729,57 @@ OSSIA_INLINE void from_ossia_value(auto& field, const ossia::value& src, auto& d
   from_ossia_value(src, dst);
 }
 
+template <avnd::multi_value_parameter Field, typename Val>
+inline void from_ossia_value(Field& field, const ossia::value& src, Val& dst)
+{
+  using elt = std::decay_t<decltype(field.value)>;
+  auto& list = field.list;
+  list.clear();
+  auto push = [&](const ossia::value& v) {
+    if(list.size() >= list.capacity())
+      return;
+    switch(v.get_type())
+    {
+      case ossia::val_type::FLOAT:
+      case ossia::val_type::INT:
+      case ossia::val_type::BOOL:
+        list.push_back(ossia::convert<elt>(v));
+        break;
+      default:
+        break;
+    }
+  };
+  auto push_vec = [&](const auto& vec) {
+    for(float f : vec)
+      if(list.size() < list.capacity())
+        list.push_back(static_cast<elt>(f));
+  };
+
+  switch(src.get_type())
+  {
+    case ossia::val_type::LIST:
+      for(const auto& v : *src.target<std::vector<ossia::value>>())
+        push(v);
+      break;
+    case ossia::val_type::VEC2F:
+      push_vec(*src.target<ossia::vec2f>());
+      break;
+    case ossia::val_type::VEC3F:
+      push_vec(*src.target<ossia::vec3f>());
+      break;
+    case ossia::val_type::VEC4F:
+      push_vec(*src.target<ossia::vec4f>());
+      break;
+    default:
+      from_ossia_value(src, dst);
+      if(list.capacity() > 0)
+        list.push_back(dst);
+      return;
+  }
+  if(!list.empty())
+    dst = list.front();
+}
+
 //! Resolve an incoming value against a field's declared enumeration.
 template <avnd::enum_ish_parameter Field, typename Val>
 struct enum_from_ossia_visitor

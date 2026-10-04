@@ -6,10 +6,23 @@
 #include <halp/controls.hpp>
 #include <halp/curve.hpp>
 #include <halp/meta.hpp>
-#include <halp/smoothers.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <vector>
 
 namespace ao
 {
+/**
+ * Plays a hand-drawn cycle at one frequency, or at several: a list, vec2,
+ * vec3 or vec4 sent to the frequency plays one voice per value, mixed.
+ *
+ * Each voice runs its own phase, so that a frequency change bends the pitch
+ * instead of jumping to another point of the cycle, and glides to its new
+ * frequency sample by sample. Voices fade in and out when the list grows and
+ * shrinks.
+ */
 struct Wavecycle
 {
 public:
@@ -21,12 +34,15 @@ public:
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(uuid, "494bd8a3-e973-4fb0-b84b-b4ed3c0068a1")
 
+  static constexpr int max_voices = 64;
+
   struct
   {
     halp::curve_port<"Curve"> curve;
     struct : halp::spinbox_f32<"Frequency", halp::range{1, 20000, 1000}>
     {
-      using smooth = halp::milliseconds_smooth<20>;
+      // One frequency per voice when a list or a vec is sent.
+      std::vector<float> list;
     } frequency;
   } inputs;
 
@@ -35,24 +51,98 @@ public:
     halp::audio_channel<"Out", double> audio;
   } outputs;
 
-  int rate{};
-  void prepare(halp::setup info) noexcept { this->rate = info.rate; }
+  struct voice
+  {
+    double phase{};
+    double frequency{};
+    double target_frequency{};
+    double gain{};
+    double target_gain{};
+  };
+  std::array<voice, max_voices> voices{};
+
+  double rate{48000.};
+  double frequency_smooth{};
+  double gain_smooth{};
+  double norm{1.};
+  int64_t expected_position{-1};
+
+  void prepare(halp::setup info) noexcept
+  {
+    this->rate = info.rate > 0 ? info.rate : 48000.;
+    // One-pole smoothing, as avendish's smooth parameters: 20 ms for the
+    // pitch, 5 ms for voices coming and going.
+    constexpr double two_pi = 6.283185307179586;
+    frequency_smooth = std::exp(-two_pi / (20e-3 * rate));
+    gain_smooth = std::exp(-two_pi / (5e-3 * rate));
+    inputs.frequency.list.reserve(max_voices);
+  }
 
   using tick = halp::tick_musical;
   void operator()(halp::tick_musical frames) noexcept
   {
-    if(inputs.frequency <= 0)
-      return;
+    auto& list = inputs.frequency.list;
+    const int count
+        = list.empty() ? 1 : std::min<int>(int(list.size()), max_voices);
+    auto frequency_of = [&](int i) -> double {
+      return list.empty() ? inputs.frequency.value : list[i];
+    };
 
-    const double seconds = 1. / inputs.frequency;
-    const double samples = seconds * this->rate;
-    const int64_t isamples = std::floor(samples);
-    int current_sample = frames.position_in_frames;
-    for(int i = 0; i < frames.frames; i++, current_sample++)
+    // A jump of the transport restarts every phase where the position puts it,
+    // as if the voice had played at its frequency since the start.
+    const int64_t position = frames.position_in_frames;
+    const bool jumped = position != expected_position;
+    expected_position = position + frames.frames;
+
+    int playing = 0;
+    for(int i = 0; i < max_voices; i++)
     {
-      outputs.audio.channel[i]
-          = inputs.curve.value.value_at((current_sample % isamples) / double(samples))
-            - 0.5;
+      auto& v = voices[i];
+      const double f = i < count ? frequency_of(i) : 0.;
+      if(i < count && f > 0. && f < rate / 2.)
+      {
+        // A voice that was silent starts on its frequency, without gliding
+        // from the one it had before.
+        if(v.gain <= 0. && v.target_gain <= 0.)
+          v.frequency = f;
+        v.target_frequency = f;
+        v.target_gain = 1.;
+        playing++;
+      }
+      else
+      {
+        v.target_gain = 0.;
+      }
+      if(jumped && (v.target_gain > 0. || v.gain > 0.))
+      {
+        const double cycles = double(position) * v.frequency / rate;
+        v.phase = cycles - std::floor(cycles);
+      }
+    }
+    const double target_norm = 1. / std::max(1, playing);
+
+    auto& curve = inputs.curve.value;
+    double* out = outputs.audio.channel;
+    for(int s = 0; s < frames.frames; s++)
+    {
+      norm = target_norm - gain_smooth * (target_norm - norm);
+      double sample = 0.;
+      for(auto& v : voices)
+      {
+        if(v.gain <= 0. && v.target_gain <= 0.)
+          continue;
+        v.gain = v.target_gain - gain_smooth * (v.target_gain - v.gain);
+        if(v.target_gain <= 0. && v.gain < 1e-5)
+          v.gain = 0.;
+        v.frequency
+            = v.target_frequency - frequency_smooth * (v.target_frequency - v.frequency);
+
+        sample += v.gain * (curve.value_at(v.phase) - 0.5);
+
+        v.phase += v.frequency / rate;
+        v.phase -= std::floor(v.phase);
+      }
+      out[s] = sample * norm;
     }
   }
 };
