@@ -39,7 +39,7 @@ public:
   struct
   {
     halp::curve_port<"Curve"> curve;
-    struct : halp::spinbox_f32<"Frequency", halp::range{1, 20000, 1000}>
+    struct : halp::spinbox_f32<"Frequency", halp::range{1, 20000, 220}>
     {
       // One frequency per voice when a list or a vec is sent.
       std::vector<float> list;
