@@ -148,10 +148,10 @@ private:
   };
   static uint8_t make_command(const message_type type, const int channel) noexcept
   {
-    // MIDI channels are 0..15 (low nibble of the status byte). The previous
-    // upper bound `channel - 1` was both off-by-one and UB for channel == 0
-    // (std::clamp requires lo <= hi).
-    return (uint8_t)((uint8_t)type | (uint8_t)std::clamp(channel, 0, 15));
+    // Channels count from 1, as libremidi::message::get_channel() returns them
+    // and libremidi::message::make_command takes them: 1..16 is the low nibble
+    // 0..15 of the status byte.
+    return (uint8_t)((uint8_t)type | (uint8_t)std::clamp(channel - 1, 0, 15));
   }
 
   // Assign bytes whether MessageType::bytes is a resizable container
