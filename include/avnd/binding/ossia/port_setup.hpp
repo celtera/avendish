@@ -396,11 +396,13 @@ struct setup_value_port
     port.domain = ossia::domain{};
   }
 
+  // Strings, like the domain: a port of another type would turn the names
+  // into numbers before they are resolved. Indices still resolve as digits.
   template <avnd::enum_parameter Field>
   static void setup(ossia::value_port& port)
   {
     setup_port_is_event<Field>(port);
-    port.type = ossia::val_type::INT;
+    port.type = ossia::val_type::STRING;
     port.domain = setup_value_port::range_to_domain<Field>();
   }
 
