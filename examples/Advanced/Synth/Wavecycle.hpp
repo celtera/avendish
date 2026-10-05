@@ -15,13 +15,9 @@
 namespace ao
 {
 /**
- * Plays a hand-drawn cycle at one frequency, or at several: a list, vec2,
- * vec3 or vec4 sent to the frequency plays one voice per value, mixed.
- *
- * Each voice runs its own phase, so that a frequency change bends the pitch
- * instead of jumping to another point of the cycle, and glides to its new
- * frequency sample by sample. Voices fade in and out when the list grows and
- * shrinks.
+ * Plays a hand-drawn cycle; a list or vec sent to the frequency plays one
+ * voice per value, mixed. Each voice keeps its own phase, so a frequency
+ * change bends the pitch instead of jumping to another point of the cycle.
  */
 struct Wavecycle
 {
@@ -70,8 +66,7 @@ public:
   void prepare(halp::setup info) noexcept
   {
     this->rate = info.rate > 0 ? info.rate : 48000.;
-    // One-pole smoothing, as avendish's smooth parameters: 20 ms for the
-    // pitch, 5 ms for voices coming and going.
+    // One-pole smoothing: 20 ms for the pitch, 5 ms for voice gains.
     constexpr double two_pi = 6.283185307179586;
     frequency_smooth = std::exp(-two_pi / (20e-3 * rate));
     gain_smooth = std::exp(-two_pi / (5e-3 * rate));
@@ -88,8 +83,8 @@ public:
       return list.empty() ? inputs.frequency.value : list[i];
     };
 
-    // A jump of the transport restarts every phase where the position puts it,
-    // as if the voice had played at its frequency since the start.
+    // On a transport jump, each phase is set as if the voice had played at its
+    // frequency since position 0.
     const int64_t position = frames.position_in_frames;
     const bool jumped = position != expected_position;
     expected_position = position + frames.frames;
@@ -101,8 +96,7 @@ public:
       const double f = i < count ? frequency_of(i) : 0.;
       if(i < count && f > 0. && f < rate / 2.)
       {
-        // A voice that was silent starts on its frequency, without gliding
-        // from the one it had before.
+        // A silent voice starts at its frequency instead of gliding to it.
         if(v.gain <= 0. && v.target_gain <= 0.)
           v.frequency = f;
         v.target_frequency = f;

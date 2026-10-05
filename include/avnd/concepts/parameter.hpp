@@ -249,11 +249,10 @@ concept dynamic_sample_accurate_parameter_port
       && dynamic_timed_values<std::decay_t<decltype(T::values)>>;
 
 /**
- * Parameters that also take several values at once, e.g. one per voice: they
- * declare `list`, a container of their value type. A list, vec2, vec3 or vec4
- * sent to the parameter fills it, a single value makes it one long, and
- * `value` is its first element. Bindings never grow `list` past its
- * capacity(): an object reserving it once does not allocate while processing.
+ * Parameters that also take several values at once (e.g. one per voice) in
+ * `list`, a container of their value type; `value` is its first element.
+ * Bindings never grow `list` past its capacity(), so reserving it once avoids
+ * allocating while processing.
  */
 template <typename T>
 concept multi_value_parameter = parameter_port<T> && requires(T t) {

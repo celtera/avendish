@@ -148,9 +148,8 @@ private:
   };
   static uint8_t make_command(const message_type type, const int channel) noexcept
   {
-    // Channels count from 1, as libremidi::message::get_channel() returns them
-    // and libremidi::message::make_command takes them: 1..16 is the low nibble
-    // 0..15 of the status byte.
+    // Channels count from 1, as in libremidi; the status byte's low nibble is
+    // channel - 1.
     return (uint8_t)((uint8_t)type | (uint8_t)std::clamp(channel - 1, 0, 15));
   }
 
