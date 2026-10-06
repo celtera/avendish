@@ -610,7 +610,7 @@ public:
 
   void finish_run()
   {
-    // Maintained buttons pressed by an impulse were held for this tick only
+    // Bool controls pressed by an impulse were on for this tick only
     if constexpr(avnd::control_input_introspection<T>::size > 0)
     {
       if(this->control.momentary_presses.any())
