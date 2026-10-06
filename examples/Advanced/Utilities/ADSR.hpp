@@ -119,6 +119,7 @@ public:
   {
     struct
     {
+      halp_meta(name, "Envelope")
       float value{};
     } out;
   } outputs;
@@ -190,6 +191,7 @@ public:
   {
     struct
     {
+      halp_meta(name, "Envelope")
       float value{};
     } out;
   } outputs;

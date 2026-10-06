@@ -14,6 +14,7 @@ struct Object1
   {
     struct
     {
+      static consteval auto name() { return "Out"; }
       float value;
     } out;
   } outputs;
@@ -27,10 +28,12 @@ struct Object2
   {
     struct
     {
+      static consteval auto name() { return "Out 1"; }
       float value;
     } out1;
     struct
     {
+      static consteval auto name() { return "Out 2"; }
       float value;
     } out2;
   } outputs;

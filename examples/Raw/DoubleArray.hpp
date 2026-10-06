@@ -17,8 +17,9 @@ struct DoubleArray
 
   struct
   {
-    struct { std::vector<float> value; } a;
+    struct { static consteval auto name() { return "In"; } std::vector<float> value; } a;
     struct {
+      static consteval auto name() { return "Gain"; }
       enum widget { knob };
       struct range {
         float min = 0.f;
@@ -31,7 +32,7 @@ struct DoubleArray
 
   struct
   {
-    struct { std::vector<float> value; } out;
+    struct { static consteval auto name() { return "Out"; } std::vector<float> value; } out;
   } outputs;
 
   void operator()() {

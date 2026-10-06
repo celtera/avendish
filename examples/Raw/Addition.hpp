@@ -15,13 +15,13 @@ struct Addition
 
   struct
   {
-    struct { float value; } a;
-    struct { float value; } b;
+    struct { static consteval auto name() { return "A"; } float value; } a;
+    struct { static consteval auto name() { return "B"; } float value; } b;
   } inputs;
 
   struct
   {
-    struct { float value; } out;
+    struct { static consteval auto name() { return "Sum"; } float value; } out;
   } outputs;
 
   void operator()() { outputs.out.value = inputs.a.value + inputs.b.value; }

@@ -37,6 +37,7 @@ struct Processor
   {
     struct
     {
+      halp_meta(name, "Patterns")
       std::vector<Pattern> value;
     } patterns;
   } inputs;
