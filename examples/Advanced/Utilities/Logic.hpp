@@ -10,6 +10,8 @@ struct Choice : Triop
 {
   static consteval auto name() { return "Choice"; }
   static consteval auto c_name() { return "choice"; }
+  static consteval auto category() { return "Control/Mappings"; }
+  static consteval auto description() { return "Output the first input when the third input is nonzero, otherwise the second."; }
   static consteval auto uuid() { return "3d51274b-0dac-4b9f-9867-d3d303468ebb"; }
 
   void operator()()
@@ -48,6 +50,8 @@ struct Spigot : Base
 
   static consteval auto name() { return "Spigot"; }
   static consteval auto c_name() { return "spigot"; }
+  static consteval auto category() { return "Control/Mappings"; }
+  static consteval auto description() { return "Pass the first input only while the second input is nonzero."; }
   static consteval auto uuid() { return "b7dfb274-b443-4121-8398-21b34446044d"; }
   void operator()()
   {
@@ -62,6 +66,8 @@ struct Stutter : Base
 {
   static consteval auto name() { return "Stutter"; }
   static consteval auto c_name() { return "stutter"; }
+  static consteval auto category() { return "Control/Mappings"; }
+  static consteval auto description() { return "Pass the first input only while the second input is nonzero."; }
   static consteval auto uuid() { return "073a983b-abcb-42f1-afa4-49172a044d6c"; }
 
   struct
