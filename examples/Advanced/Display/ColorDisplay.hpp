@@ -2,13 +2,18 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <ossia/network/dataspace/color.hpp>
+
 #include <avnd/concepts/painter.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/wrappers/controls.hpp>
-#include <cmath>
+#include <halp/controls.hpp>
 #include <halp/layout.hpp>
 
-#include <cstdio>
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <functional>
 #include <vector>
 
 namespace dspl
@@ -45,27 +50,10 @@ struct ColorDisplay
 {
   static consteval auto name() { return "Color display"; }
   static consteval auto c_name() { return "avnd_color_display"; }
+  static consteval auto author() { return "Jean-Michaël Celerier"; }
   static consteval auto category() { return "Monitoring"; }
   static consteval auto description() { return "Display an incoming color using a selectable color representation."; }
   static consteval auto uuid() { return "4473f4fb-509c-4aff-8762-e32f383673ec"; }
-
-  ossia::argb_u m_value0;
-
-  ossia::rgba_u m_value1;
-
-  ossia::rgb_u m_value2;
-
-  ossia::bgr_u m_value3;
-
-  ossia::argb8_u m_value4;
-
-  ossia::rgba8_u m_value5;
-
-  ossia::hsv_u m_value6;
-
-  ossia::cmy8_u m_value7;
-
-  ossia::xyz_u m_value8;
 
   struct ins
   {
@@ -120,8 +108,18 @@ struct ColorDisplay
     rgba[2] = std::clamp(rgbaf[2], 0.f, 255.f);
     rgba[3] = std::clamp(rgbaf[3], 0.f, 255.f);
 
-    send_message(rgba);
+    // A UI created after the last change must still get the color, so an
+    // unchanged one is sent again every few ticks.
+    if(rgba != last || ++unchanged_ticks >= 16)
+    {
+      last = rgba;
+      unchanged_ticks = 0;
+      send_message(rgba);
+    }
   }
+
+  std::array<uint8_t, 4> last{};
+  int unchanged_ticks{};
 
   std::function<void(std::array<uint8_t, 4>)> send_message;
 
