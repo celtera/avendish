@@ -14,9 +14,9 @@ struct TrivialFilterExample
 {
   halp_meta(name, "My trivial filter");
   halp_meta(c_name, "oscr_TrivialFilterExample")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Control/Math");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Convert positive inputs to integer natural-logarithm values and return zero otherwise.");
   halp_meta(uuid, "d02006f0-3e71-465b-989c-7c53aaa885e5");
 
   /**

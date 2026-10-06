@@ -14,9 +14,9 @@ struct AudioSidechainExample
 {
   halp_meta(name, "Sidechain example");
   halp_meta(c_name, "oscr_AudioSidechainExample");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Audio/Effects");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Gate and amplify audio using a sidechain signal, with an additional mono mix output.");
   halp_meta(uuid, "6fcfa5ad-ac5e-4851-a7bc-72f6fbf57dcd");
 
   struct

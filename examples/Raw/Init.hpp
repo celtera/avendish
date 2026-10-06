@@ -26,6 +26,8 @@ struct Init
 {
   static consteval auto name() { return "Init"; }
   static consteval auto c_name() { return "avnd_init"; }
+  static consteval auto category() { return "Control"; }
+  static consteval auto description() { return "Demonstrate initialization arguments and message handling for a value processor."; }
   static consteval auto uuid() { return "1d9071aa-c314-45d6-b40b-422106f11773"; }
 
   struct

@@ -21,6 +21,8 @@ class ResonantBandpassFilter
 public:
   static consteval auto name() { return "GPT-3 Resonant Bandpass"; }
   static consteval auto c_name() { return "avnd_gpt3_resonant_bandpass"; }
+  static consteval auto category() { return "Audio/Effects/Filters"; }
+  static consteval auto description() { return "Apply a resonant band-pass filter with cutoff and resonance controls."; }
   static consteval auto uuid() { return "49ae1c97-8ff5-47fc-8f53-1d73f8b99c39"; }
 
   struct inputs

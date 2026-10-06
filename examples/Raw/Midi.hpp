@@ -17,6 +17,8 @@ struct Midi
 {
   static consteval auto name() { return "MIDI example"; }
   static consteval auto c_name() { return "avnd_midi"; }
+  static consteval auto category() { return "Audio/Synth"; }
+  static consteval auto description() { return "Demonstrate a polyphonic synthesizer driven by MIDI messages."; }
   static consteval auto uuid() { return "8e2d87fc-dd8f-4e70-9b71-8a977d8aa58b"; }
 
   struct

@@ -22,9 +22,9 @@ struct ControlGallery
 {
   halp_meta(name, "Control gallery");
   halp_meta(c_name, "oscr_ControlGallery");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Control");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Demonstrate sample-accurate buttons, sliders, knobs, toggles and enumeration controls.");
   halp_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
   struct

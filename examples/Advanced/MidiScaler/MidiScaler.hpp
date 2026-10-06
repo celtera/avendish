@@ -39,6 +39,7 @@ struct MidiScaler
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-scaler.html")
   halp_meta(uuid, "c43300b0-6c98-4a38-81f2-b549f0297e38")
   halp_meta(category, "Midi")
+  halp_meta(description, "Convert active MIDI notes to frequencies using Scala tuning and keyboard-mapping files.")
 
   struct
   {

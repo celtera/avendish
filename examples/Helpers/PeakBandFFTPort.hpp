@@ -16,6 +16,8 @@ struct PeakBandFFTPort
 {
   halp_meta(name, "Peak band (FFT port)")
   halp_meta(c_name, "avnd_peak_band_fft_port")
+  halp_meta(category, "Analysis/Audio")
+  halp_meta(description, "Demonstrate peak-bin extraction from host-provided audio spectrum ports.")
   halp_meta(uuid, "143f5cb8-d0b1-44de-a1a4-ccd5315192fa")
 
   // TODO implement user-controllable buffering to allow various fft sizes...

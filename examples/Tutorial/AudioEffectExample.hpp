@@ -14,9 +14,9 @@ struct AudioEffectExample
 {
   halp_meta(name, "My example effect");
   halp_meta(c_name, "oscr_AudioEffectExample");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Audio/Utilities");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Apply an adjustable gain to every input audio channel.");
   halp_meta(uuid, "c8b57fff-c34c-4772-8f72-fe5267527ece");
 
   /**

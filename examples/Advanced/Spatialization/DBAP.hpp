@@ -17,7 +17,7 @@ struct DBAP_2d
       author,
       "Trond Lossius, Pia Baltazar, Théo de la Hogue, Matsuura Tomya, François Weber, "
       "Jean-Michaël Celerier")
-  halp_meta(category, "Spatialization")
+  halp_meta(category, "Spatial")
   halp_meta(description, "DBAP algorithm")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/dbap.html")
   halp_meta(uuid, "0679feac-2b80-4e23-bb36-25e3a37e4e7e")
@@ -83,7 +83,7 @@ struct DBAP_3d
       author,
       "Trond Lossius, Pia Baltazar, Théo de la Hogue, Matsuura Tomya, François Weber, "
       "Jean-Michaël Celerier")
-  halp_meta(category, "Spatialization")
+  halp_meta(category, "Spatial")
   halp_meta(description, "DBAP algorithm")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/dbap.html")
   halp_meta(uuid, "16baf7fa-89ed-4984-825b-be3eca5b879e")

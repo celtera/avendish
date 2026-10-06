@@ -11,6 +11,8 @@ struct DoubleArray
 {
   static consteval auto name() { return "Double Array"; }
   static consteval auto c_name() { return "avnd_doublearray"; }
+  static consteval auto category() { return "Control/Math"; }
+  static consteval auto description() { return "Multiply every value in an input array by a scalar."; }
   static consteval auto uuid() { return "fe91368b-8e01-4603-b111-931dbd51d27f"; }
 
   struct

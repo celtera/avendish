@@ -21,6 +21,8 @@ struct Ui
 {
   static consteval auto name() { return "UI example (helpers)"; }
   static consteval auto c_name() { return "avnd_helpers_ui"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Demonstrate a helper-defined control layout with an animated output meter."; }
   static consteval auto uuid() { return "68d2f22d-6fbc-44da-807a-e77484e56e5a"; }
 
   struct ins

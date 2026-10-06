@@ -20,6 +20,8 @@ class CustomChannels
 public:
   halp_meta(name, "Multichannel (helpers)")
   halp_meta(c_name, "avnd_helpers_multichannel")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Copy the first audio-input channel to a user-selected number of output channels.")
   halp_meta(uuid, "814d70ef-c675-41de-b4db-997323feb7cf")
 
   using setup = halp::setup;

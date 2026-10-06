@@ -51,6 +51,8 @@ struct FFTDisplay
 {
   static consteval auto name() { return "FFT Display"; }
   static consteval auto c_name() { return "avnd_fft_display"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Display the frequency spectra of incoming audio channels."; }
   halp_meta(
       manual_url,
       "https://ossia.io/score-docs/processes/"

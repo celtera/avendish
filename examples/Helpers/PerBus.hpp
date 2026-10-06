@@ -14,6 +14,8 @@ struct PerBusAsArgs
 {
   halp_meta(name, "Per-bus processing (args, helpers)")
   halp_meta(c_name, "avnd_helpers_per_bus_as_args")
+  halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Apply tanh saturation to stereo audio passed as buffer arguments.")
   halp_meta(uuid, "23a4de57-800b-453a-99b6-481db19d834f")
   halp_meta(input_channels, 2)
   halp_meta(output_channels, 2)
@@ -36,6 +38,8 @@ struct PerBusAsPortsFixed
 {
   halp_meta(name, "Per-bus processing (fixed ports, helpers)")
   halp_meta(c_name, "avnd_helpers_per_bus_as_ports_fixed")
+  halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Sum stereo main and sidechain inputs and apply tanh saturation.")
   halp_meta(uuid, "0dd7b1df-7c84-49e9-8427-0532a87bccbe")
 
   struct
@@ -70,6 +74,8 @@ struct PerBusAsPortsDynamic
 {
   halp_meta(name, "Per-bus processing (dynamic ports, helpers)")
   halp_meta(c_name, "avnd_helpers_per_bus_as_ports_dynamic")
+  halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Apply tanh saturation to dynamically sized audio buses.")
   halp_meta(uuid, "119d7020-6b7b-4dc9-af7d-ecfb23c5994d")
 
   struct

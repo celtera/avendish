@@ -52,6 +52,8 @@ struct AllPortsTypes
 {
   static consteval auto name() { return "AllPortsTypes"; }
   static consteval auto c_name() { return "avnd_all_ports_types"; }
+  static consteval auto category() { return "Tests/Values"; }
+  static consteval auto description() { return "Exercise scalar, aggregate, optional and container value-port types."; }
   static consteval auto uuid() { return "7713f267-4ced-4bf0-87d6-f56e368c2be8"; }
 
   // clang-format off

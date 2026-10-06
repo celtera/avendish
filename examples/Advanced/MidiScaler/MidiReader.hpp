@@ -25,6 +25,7 @@ struct MidiFileReader
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-reader.html")
   halp_meta(uuid, "f2972e8f-17c3-40bb-919e-2663fe6fb3a5")
   halp_meta(category, "Midi")
+  halp_meta(description, "Play a selected MIDI-file track in musical time.")
 
   struct
   {

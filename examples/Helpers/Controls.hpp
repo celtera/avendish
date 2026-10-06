@@ -24,6 +24,8 @@ struct Controls
   // Hopefully C++ would use a similar syntax for reflexion.
   halp_meta(name, "Controls helpers")
   halp_meta(c_name, "avnd_helpers_controls")
+  halp_meta(category, "Control")
+  halp_meta(description, "Demonstrate helper-defined sliders, knobs, buttons, text and enumeration controls.")
   halp_meta(uuid, "9d356a4b-a104-4b2a-a33e-c6828135d5c6")
 
   // Helper types for defining common cases of UI controls

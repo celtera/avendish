@@ -40,7 +40,7 @@ struct fourses_tilde
 {
   halp_meta(name, "vb.fourses~");
   halp_meta(c_name, "avnd_vb_fourses_tilde");
-  halp_meta(category, "Ports");
+  halp_meta(category, "Audio/Generators");
   halp_meta(author, "Volker Böhm");
   halp_meta(description, "vb.fourses~ by volker böhm");
   halp_meta(uuid, "9db0af3c-8573-4541-95d4-cf7902cdbedb");

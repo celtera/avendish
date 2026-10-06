@@ -18,7 +18,7 @@ struct WasmCanvasUI
 {
   halp_meta(name, "Wasm Canvas UI")
   halp_meta(c_name, "wasm_canvas_ui")
-  halp_meta(category, "Demo")
+  halp_meta(category, "Audio/Utilities")
   halp_meta(author, "Avendish")
   halp_meta(description, "Gain with a custom Canvas2D meter UI")
   halp_meta(uuid, "0d6f6a64-1c2e-4f7a-9b1a-2f4d6e8c0a11")

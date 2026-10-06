@@ -18,9 +18,9 @@ struct EmptyExample
   /** Here are the metadata of the plug-ins, to display to the user **/
   halp_meta(name, "Hello world");
   halp_meta(c_name, "oscr_EmptyExample");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Monitoring");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Log a greeting on every processing tick as a minimal processor example.");
   halp_meta(uuid, "1c0f91ee-52da-4a49-a70a-4530a24b152b");
 
   /** This function will be called repeatedly at the tick rate of the environment **/

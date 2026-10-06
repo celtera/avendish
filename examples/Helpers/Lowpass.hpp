@@ -19,6 +19,8 @@ class Lowpass
 public:
   halp_meta(name, "Lowpass (helpers)")
   halp_meta(c_name, "avnd_helpers_lowpass")
+  halp_meta(category, "Audio/Effects/Filters")
+  halp_meta(description, "Apply a one-pole low-pass filter independently to each audio channel.")
   halp_meta(uuid, "82bdb9b5-9cf8-440e-8675-c0caf4fc59b9")
 
   using setup = halp::setup;

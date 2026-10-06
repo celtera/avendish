@@ -105,6 +105,8 @@ struct AdvancedUi
 {
   static consteval auto name() { return "ImageUI example"; }
   static consteval auto c_name() { return "avnd_image_ui"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Demonstrate a custom image-backed interface with an interactive slider and animation."; }
   static consteval auto uuid() { return "001a50e1-828e-4f10-973c-bf750f6c6fc7"; }
 
   struct ins

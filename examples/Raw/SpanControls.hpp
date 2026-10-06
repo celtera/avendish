@@ -15,6 +15,8 @@ struct SpanControls
 {
   static consteval auto name() { return "Span example"; }
   static consteval auto c_name() { return "avnd_span"; }
+  static consteval auto category() { return "Control/Math"; }
+  static consteval auto description() { return "Sum the floating-point values in an input span."; }
   static consteval auto uuid() { return "c701fea2-be38-4759-944a-cd4745162ffe"; }
 
   struct inputs_t

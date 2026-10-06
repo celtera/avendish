@@ -19,6 +19,8 @@ class SmoothGainPoly
 public:
   halp_meta(name, "Smooth Gain")
   halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Apply a smoothed gain control to multichannel audio buffers.")
   halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   using setup = halp::setup;
@@ -65,6 +67,8 @@ class SmoothGainPerSample
 public:
   halp_meta(name, "Smooth Gain")
   halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Apply a smoothed gain control to individual audio samples.")
   halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   struct inputs

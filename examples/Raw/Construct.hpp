@@ -46,6 +46,8 @@ struct Construct
 {
   static consteval auto name() { return "Init"; }
   static consteval auto c_name() { return "avnd_construct"; }
+  static consteval auto category() { return "Control"; }
+  static consteval auto description() { return "Demonstrate selecting an object implementation from construction arguments."; }
   static consteval auto uuid() { return "65f01367-9d0a-4769-8eda-61f7b11ae8d8"; }
 
   static std::variant<Object1, Object2> construct() { return Object1{}; }

@@ -15,6 +15,8 @@ struct Modular
 {
   static consteval auto name() { return "Modular example"; }
   static consteval auto c_name() { return "avnd_modular"; }
+  static consteval auto category() { return "Audio/Effects"; }
+  static consteval auto description() { return "Demonstrate stereo per-sample audio processing with sidechain inputs and a level output."; }
   static consteval auto uuid() { return "2c82e37a-9caa-4e69-9255-2e131a2e6bab"; }
 
   struct

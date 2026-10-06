@@ -25,6 +25,8 @@ struct Aggregate
 {
   static consteval auto name() { return "Aggregate Input"; }
   static consteval auto c_name() { return "avnd_aggregate"; }
+  static consteval auto category() { return "Control/Data Processing"; }
+  static consteval auto description() { return "Pass a nested aggregate value through unchanged."; }
   static consteval auto uuid() { return "a66648f4-85d9-46dc-9a11-0b8dc700e1af"; }
 
   struct TestAggregate

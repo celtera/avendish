@@ -20,6 +20,8 @@ struct OptionalTest
 {
   static consteval auto name() { return "Optional Input"; }
   static consteval auto c_name() { return "avnd_optional"; }
+  static consteval auto category() { return "Control/Data Processing"; }
+  static consteval auto description() { return "Demonstrate event-driven input and output values represented by optional types."; }
   static consteval auto uuid() { return "d7cb78dd-46bc-4b49-8f23-262cb0b457b7"; }
 
   struct TestAggregate

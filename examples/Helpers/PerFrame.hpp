@@ -14,6 +14,8 @@ struct PerFrameAsPorts
 {
   halp_meta(name, "Per-frame processing (ports, helpers)")
   halp_meta(c_name, "avnd_helpers_per_frame_as_ports")
+  halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Apply adjustable tanh saturation one multichannel audio frame at a time.")
   halp_meta(uuid, "cdb48431-be3c-41e2-8c2d-7e68fa69a9e3")
 
   struct inputs

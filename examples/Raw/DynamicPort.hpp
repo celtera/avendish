@@ -13,7 +13,7 @@ struct SumPorts
   static constexpr auto name() { return "Sum"; }
   static constexpr auto c_name() { return "avnd_sumports"; }
   static constexpr auto author() { return "Jean-Michaël Celerier"; }
-  static constexpr auto category() { return "Debug"; }
+  static constexpr auto category() { return "Control/Basic"; }
   static constexpr auto description()
   {
     return "Example of an object with dynamic number of inputs";

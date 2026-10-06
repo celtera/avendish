@@ -21,6 +21,7 @@ public:
   halp_meta(name, "Audio particles")
   halp_meta(category, "Audio/Generators")
   halp_meta(c_name, "avnd_audio_particles")
+  halp_meta(description, "Trigger overlapping sounds from a folder across multiple audio channels with controllable timing and density.")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/audio-particles.html")
   halp_meta(uuid, "e7f2b091-0de0-49cd-a581-d4087d901fbb")
 

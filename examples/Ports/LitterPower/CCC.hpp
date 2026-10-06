@@ -16,7 +16,7 @@ struct CCC
 {
   halp_meta(name, "CCC");
   halp_meta(c_name, "avnd_lp_ccc");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Audio/Generators");
   halp_meta(author, "Peter Castine");
   halp_meta(
       description,

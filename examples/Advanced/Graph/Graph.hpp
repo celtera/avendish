@@ -185,6 +185,7 @@ public:
   halp_meta(name, "Graph")
   halp_meta(c_name, "avnd_graph")
   halp_meta(category, "Script")
+  halp_meta(description, "Demonstrate execution of an editable graph of value-processing nodes.")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(uuid, "42050fb9-2983-4982-afd1-f94bdf0f2ba1")
 

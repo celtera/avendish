@@ -16,6 +16,8 @@ struct FilterGeometry
 {
   static consteval auto name() { return "Filter Geometry"; }
   static consteval auto c_name() { return "avnd_filter_geometry"; }
+  static consteval auto category() { return "Visuals/Meshes/Modifiers"; }
+  static consteval auto description() { return "Translate each geometry vertex by 0.01 along every axis on each processing call."; }
   static consteval auto uuid() { return "4f493663-3739-43df-94b5-20a31c4dc8aa"; }
 
   struct

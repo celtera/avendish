@@ -9,6 +9,8 @@ struct Random
 {
   static consteval auto name() { return "random"; }
   static consteval auto c_name() { return "avnd_random"; }
+  static consteval auto category() { return "Control/Generators"; }
+  static consteval auto description() { return "Generate uniformly distributed random values between zero and one."; }
   static consteval auto uuid() { return "0c638609-20ca-48e7-a5d1-099f33dc944f"; }
 
   struct

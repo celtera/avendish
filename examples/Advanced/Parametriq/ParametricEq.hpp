@@ -26,7 +26,7 @@ struct ParametricEq
   static constexpr auto name() { return "Parametric Equalizer"; }
   static constexpr auto c_name() { return "ngry_parameq"; }
   static constexpr auto author() { return "Nicolas Gry"; }
-  static constexpr auto category() { return "Demo"; }
+  static constexpr auto category() { return "Audio/Effects/Filters"; }
   static constexpr auto description()
   {
     return "Parametric Equalizer, using Butterworth equations for all filters except "
