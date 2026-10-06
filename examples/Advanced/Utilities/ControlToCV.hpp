@@ -7,9 +7,6 @@
 
 namespace ao
 {
-/**
- * @brief Simple bitcrush based on Lance Putnam's Gamma library
- */
 struct ControlToCV
 {
 public:
@@ -29,8 +26,6 @@ public:
   {
     halp::audio_sample<"Output", float> audio;
   } outputs;
-
-  float interpolation{};
 
   void operator()() noexcept { outputs.audio = inputs.value; }
 };
