@@ -17,6 +17,7 @@ struct Random
   {
     struct
     {
+      static consteval auto name() { return "Random"; }
       float value;
     } out;
   } outputs;

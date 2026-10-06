@@ -198,6 +198,7 @@ public:
   {
     struct
     {
+      static consteval auto name() { return "Out"; }
       float value;
     } main;
   } outputs;

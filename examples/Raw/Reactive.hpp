@@ -19,6 +19,7 @@ struct Addition
   {
     struct
     {
+      static consteval auto name() { return "In"; }
       float value;
     } a;
   } inputs;
@@ -27,6 +28,7 @@ struct Addition
   {
     struct
     {
+      static consteval auto name() { return "Out"; }
       halp::reactive_value<float> value;
     } out;
   } outputs;

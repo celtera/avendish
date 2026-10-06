@@ -38,6 +38,7 @@ struct Processor
   {
     struct
     {
+      halp_meta(name, "Pattern")
       Pattern value;
     } pattern;
   } inputs;
