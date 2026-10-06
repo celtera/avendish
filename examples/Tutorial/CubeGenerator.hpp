@@ -23,7 +23,7 @@ struct CubeGenerator
 {
   halp_meta(name, "Cube Generator");
   halp_meta(c_name, "avnd_cube");
-  halp_meta(category, "Generator");
+  halp_meta(category, "Visuals/Meshes/Primitives");
   halp_meta(author, "Avendish");
   halp_meta(description, "Generate a cube with customizable size and color");
   halp_meta(uuid, "ca657864-3086-4626-adc2-fd485f677601");

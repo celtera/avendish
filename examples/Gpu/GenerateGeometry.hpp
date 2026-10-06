@@ -163,6 +163,8 @@ struct GenerateGeometryNonInterleaved
 {
   static consteval auto name() { return "Generate Geometry"; }
   static consteval auto c_name() { return "avnd_generate_geometry"; }
+  static consteval auto category() { return "Visuals/Meshes/Primitives"; }
+  static consteval auto description() { return "Generate a scaled cube using separate, non-indexed position and texture-coordinate arrays."; }
   static consteval auto uuid() { return "253aa25d-db82-4295-9156-386322573c65"; }
 
   struct
@@ -359,6 +361,8 @@ struct GenerateGeometryNonInterleavedIndexed
 {
   static consteval auto name() { return "Generate Geometry"; }
   static consteval auto c_name() { return "avnd_generate_geometry"; }
+  static consteval auto category() { return "Visuals/Meshes/Primitives"; }
+  static consteval auto description() { return "Generate a scaled cube using indexed, non-interleaved vertex arrays."; }
   static consteval auto uuid() { return "253aa25d-db82-4295-9156-386322573c65"; }
 
   struct
@@ -560,6 +564,8 @@ struct GenerateGeometryInterleaved
 {
   static consteval auto name() { return "Generate Geometry"; }
   static consteval auto c_name() { return "avnd_generate_geometry"; }
+  static consteval auto category() { return "Visuals/Meshes/Primitives"; }
+  static consteval auto description() { return "Generate a scaled cube using interleaved vertex attributes."; }
   static consteval auto uuid() { return "253aa25d-db82-4295-9156-386322573c65"; }
 
   struct

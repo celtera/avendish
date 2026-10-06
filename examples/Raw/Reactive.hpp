@@ -11,6 +11,8 @@ struct Addition
 {
   static consteval auto name() { return "Addition"; }
   static consteval auto c_name() { return "addition"; }
+  static consteval auto category() { return "Control/Math"; }
+  static consteval auto description() { return "Multiply the input by one hundred and publish it through a reactive value."; }
   static consteval auto uuid() { return "21bf52fe-487b-426b-8fc8-ea9d7249fd3c"; }
 
   struct

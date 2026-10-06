@@ -13,9 +13,9 @@ struct SampleAccurateGeneratorExample
 {
   halp_meta(name, "My sample-accurate generator");
   halp_meta(c_name, "oscr_SampleAccurateGeneratorExample")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Control/Generators");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Emit a random integer from 0 to 99 at the first sample of each processing block.");
   halp_meta(uuid, "c519b3c4-326e-4e80-8dec-d465264c5b08");
 
   /**

@@ -422,7 +422,7 @@ struct GpuFilterExample
 {
   halp_meta(name, "My GPU texture filter");
   halp_meta(c_name, "gpu_filt");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Visuals/Textures");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Example GPU filter");
   halp_meta(uuid, "542f7838-0f3f-4301-b158-f516f51d4427");

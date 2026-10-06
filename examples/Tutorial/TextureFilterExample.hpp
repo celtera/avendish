@@ -13,7 +13,7 @@ struct TextureFilterExample
 {
   halp_meta(name, "My example texture filter");
   halp_meta(c_name, "oscr_TextureFilterExample")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Visuals/Textures");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Example texture filter");
   halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");

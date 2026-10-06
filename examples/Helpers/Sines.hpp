@@ -24,6 +24,8 @@ struct Sine
 {
   halp_meta(name, "Sines (helpers)")
   halp_meta(c_name, "avnd_helpers_sines")
+  halp_meta(category, "Audio/Generators")
+  halp_meta(description, "Mix four sine oscillators controlled by differently mapped frequency controls.")
   halp_meta(uuid, "0fa646c2-b292-4a03-9b7b-8c73f1dbd81b")
 
   struct inputs

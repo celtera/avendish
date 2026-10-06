@@ -20,7 +20,7 @@ struct CompleteMessageExample
   halp_meta(name, "CompleteMessageExample")
   halp_meta(c_name, "avnd_complete_message_example")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(category, "Examples")
+  halp_meta(category, "Control")
   halp_meta(description, "Test all the Max & Pd features at once")
   halp_meta(uuid, "ecbf8e41-5596-4d13-8407-6b962a02fa54")
 

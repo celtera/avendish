@@ -20,6 +20,8 @@ struct Callback
 {
   static consteval auto name() { return "Callback"; }
   static consteval auto c_name() { return "avnd_callback"; }
+  static consteval auto category() { return "Control"; }
+  static consteval auto description() { return "Emit two scaled callback values when the work message is received."; }
   static consteval auto uuid() { return "38b72efd-33f7-4272-a15f-36c7d83b9165"; }
 
   struct

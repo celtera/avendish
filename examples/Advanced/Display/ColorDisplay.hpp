@@ -45,6 +45,8 @@ struct ColorDisplay
 {
   static consteval auto name() { return "Color display"; }
   static consteval auto c_name() { return "avnd_color_display"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Display an incoming color using a selectable color representation."; }
   static consteval auto uuid() { return "4473f4fb-509c-4aff-8762-e32f383673ec"; }
 
   ossia::argb_u m_value0;

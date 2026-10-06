@@ -28,6 +28,7 @@ struct MidiFilter
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-filter.html")
   halp_meta(uuid, "f66d6cf7-693a-47d4-a249-5978cc946e43")
   halp_meta(category, "Midi")
+  halp_meta(description, "Filter MIDI events by type, channel and index and expose raw or normalized values.")
 
   enum Mode
   {

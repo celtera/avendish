@@ -19,7 +19,7 @@ struct Synth
 {
   halp_meta(name, "My example synth");
   halp_meta(c_name, "oscr_Synth")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Audio/Synth");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "A demo synth");
   halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");

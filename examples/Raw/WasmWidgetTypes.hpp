@@ -16,6 +16,8 @@ struct WasmWidgetTypes
 {
   halp_meta(name, "WasmWidgetTypes")
   halp_meta(c_name, "avnd_wasm_widget_types")
+  halp_meta(category, "Tests/Controls")
+  halp_meta(description, "Exercise compound control types in the WebAssembly widget bridge.")
   halp_meta(uuid, "0e4d2a11-3c5b-4a90-9f01-2c8e7b6d4f10")
 
   enum class Mode

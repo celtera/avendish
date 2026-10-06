@@ -73,8 +73,9 @@ struct zone_display
 struct GeoZones
 {
   halp_meta(name, "Geo Zones")
-  halp_meta(category, "Spatialization")
+  halp_meta(category, "Spatial")
   halp_meta(c_name, "geozones")
+  halp_meta(description, "Evaluate a position against geographic zones and report distances, influence and zone attributes.")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/geo-zones.html")
   halp_meta(author, "Jean-Michaël Celerier, Brice Ammar-Khodja")
   halp_meta(uuid, "b5690418-5832-4038-9549-5cc69b77008c")

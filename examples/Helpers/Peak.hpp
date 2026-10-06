@@ -14,6 +14,8 @@ struct Peak
 {
   halp_meta(name, "Peak value")
   halp_meta(c_name, "avnd_peak")
+  halp_meta(category, "Analysis/Audio")
+  halp_meta(description, "Report the maximum absolute sample value in each audio block.")
   halp_meta(uuid, "57d3476d-9dbb-45ac-b76e-a2a51b48b8af")
 
   struct

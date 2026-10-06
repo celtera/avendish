@@ -30,9 +30,9 @@ struct TextureGeneratorExample
 {
   halp_meta(name, "My example texture generator")
   halp_meta(c_name, "oscr_TextureGeneratorExample")
-  halp_meta(category, "Demo")
+  halp_meta(category, "Visuals/Textures")
   halp_meta(author, "<AUTHOR>")
-  halp_meta(description, "<DESCRIPTION>")
+  halp_meta(description, "Generate an animated 480-by-270 RGBA texture with adjustable pixel variation.")
   halp_meta(uuid, "01247f4f-6b19-458d-845d-9f7cc2d9d663")
 
   // By know you know the drill: define inputs, outputs...

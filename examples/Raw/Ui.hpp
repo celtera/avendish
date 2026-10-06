@@ -13,6 +13,8 @@ struct Ui
 {
   static consteval auto name() { return "UI example"; }
   static consteval auto c_name() { return "avnd_ui"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Demonstrate a custom control interface using raw widget metadata."; }
   static consteval auto uuid() { return "e1f0f202-6732-4d2d-8ee9-5957a51ae667"; }
 
   struct ins

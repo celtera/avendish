@@ -13,7 +13,7 @@ struct SumPorts
   halp_meta(name, "Sum (helpers)")
   halp_meta(c_name, "avnd_sumports_helpers")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(category, "Debug")
+  halp_meta(category, "Control/Basic")
   halp_meta(description, "Example of an object with dynamic number of inputs")
   halp_meta(uuid, "191e6e08-a6c0-47d5-bd7b-a0f188cd273c")
 

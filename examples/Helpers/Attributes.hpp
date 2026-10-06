@@ -13,7 +13,7 @@ struct Attributes
   halp_meta(name, "Attributes")
   halp_meta(c_name, "avnd_attributes")
   halp_meta(author, "Jean-Michaël Celerier")
-  halp_meta(category, "Devices")
+  halp_meta(category, "Control")
   halp_meta(description, "Test class attribute inputs")
   halp_meta(uuid, "8a05bbf1-e8a5-44ec-8f37-b5e1d046bed8")
   struct

@@ -12,6 +12,8 @@ struct Presets
 {
   static consteval auto name() { return "Presets example"; }
   static consteval auto c_name() { return "avnd_presets"; }
+  static consteval auto category() { return "Audio/Effects"; }
+  static consteval auto description() { return "Demonstrate preset-controlled stereo saturation with preamp and volume controls."; }
   static consteval auto uuid() { return "08176877-ce82-4bee-b885-df42062fb8a2"; }
 
   // Here we force the presence of two channels.

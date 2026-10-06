@@ -13,9 +13,9 @@ struct SampleAccurateFilterExample
 {
   halp_meta(name, "My sample-accurate filter")
   halp_meta(c_name, "oscr_SampleAccurateFilterExample")
-  halp_meta(category, "Demo")
+  halp_meta(category, "Control/Mappings")
   halp_meta(author, "<AUTHOR>")
-  halp_meta(description, "<DESCRIPTION>")
+  halp_meta(description, "Transform each incoming value with cos(x*x)*cos(x) while preserving its sample timestamp.")
   halp_meta(uuid, "43818edd-63de-458b-a6a5-08033cefc051")
 
   /**

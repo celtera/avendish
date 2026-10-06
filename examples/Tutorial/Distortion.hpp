@@ -19,9 +19,9 @@ struct Distortion
    */
   halp_meta(name, "My pretty distortion");
   halp_meta(c_name, "oscr_Distortion");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Audio/Effects");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Sum input channels to mono, apply tanh distortion and bitcrushing, and produce stereo output.");
   halp_meta(uuid, "b9237d2a-1651-4dcc-920b-80e5e619c6c4");
 
   /** We define the input ports of our process: in this case,

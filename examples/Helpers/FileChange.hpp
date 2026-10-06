@@ -9,6 +9,8 @@ struct CSVFileReader
 {
   halp_meta(name, "CSV reader")
   halp_meta(c_name, "avnd_csv_reader")
+  halp_meta(category, "Control/Data Processing")
+  halp_meta(description, "Read comma- or newline-delimited fields sequentially from a watched file.")
   halp_meta(uuid, "2a0ca4bb-a3ee-47f2-9830-195b35663c0e")
 
   struct

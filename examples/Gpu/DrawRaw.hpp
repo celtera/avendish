@@ -11,6 +11,8 @@ namespace examples
 struct GpuRawExample
 {
   halp_meta(name, "Raw GPU pipeline");
+  halp_meta(category, "Visuals/3D");
+  halp_meta(description, "Demonstrate a graphics pipeline defined with raw C++ shader-interface structures.");
   halp_meta(uuid, "63612002-6b83-4b23-9844-9ec59badf1d5");
 
   // Define the layout of our pipeline in C++ simply thorugh the structure of a struct

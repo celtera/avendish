@@ -13,9 +13,9 @@ struct TrivialGeneratorExample
 {
   halp_meta(name, "My trivial generator");
   halp_meta(c_name, "oscr_TrivialGeneratorExample")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Control/Generators");
   halp_meta(author, "<AUTHOR>");
-  halp_meta(description, "<DESCRIPTION>");
+  halp_meta(description, "Increment an integer on each processing tick and wrap to zero after 100.");
   halp_meta(uuid, "29099d09-cbd1-451b-8394-972b0d5bfaf0");
 
   /**

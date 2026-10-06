@@ -9,6 +9,8 @@ struct Addition
 {
   static consteval auto name() { return "Addition"; }
   static consteval auto c_name() { return "avnd_addition"; }
+  static consteval auto category() { return "Control/Math"; }
+  static consteval auto description() { return "Add two floating-point inputs."; }
   static consteval auto uuid() { return "36427eb1-b5f4-4735-a383-6164cb9b2572"; }
 
   struct

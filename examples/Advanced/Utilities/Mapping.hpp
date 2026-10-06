@@ -89,7 +89,7 @@ struct Mapping : M<float>
 public:
   halp_meta(name, "Mapping")
   halp_meta(c_name, "mapping")
-  halp_meta(category, "Mappings")
+  halp_meta(category, "Control/Mappings")
   halp_meta(description, "Mapping curve")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/mapping-curve.html")

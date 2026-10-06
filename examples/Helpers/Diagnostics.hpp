@@ -23,7 +23,7 @@ struct Diagnostics
 {
   halp_meta(name, "Diagnostics")
   halp_meta(c_name, "avnd_helpers_diagnostics")
-  halp_meta(category, "Demo")
+  halp_meta(category, "Monitoring")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Reporting errors, warnings and info to the host")
   halp_meta(uuid, "8f6dc0a0-4c8a-4b16-9d47-2b4b3a8f1c02")

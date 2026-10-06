@@ -36,7 +36,7 @@ struct Jab
 {
   halp_meta(name, "Jab");
   halp_meta(c_name, "puara_jab");
-  halp_meta(category, "Gesture analysis");
+  halp_meta(category, "Analysis/Gestures");
   halp_meta(author, "Eduardo Meneses");
   halp_meta(description, "Compute jab");
   halp_meta(uuid, "0b197ebb-e403-4aea-a005-f7422b1942d4");

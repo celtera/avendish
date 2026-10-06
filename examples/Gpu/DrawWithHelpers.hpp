@@ -13,6 +13,8 @@ namespace examples
 struct GpuFilterExample
 {
   halp_meta(name, "Helpers GPU pipeline");
+  halp_meta(category, "Visuals/3D");
+  halp_meta(description, "Demonstrate a graphics pipeline defined with GPU attribute helpers.");
   halp_meta(uuid, "ebe6f07a-5e7f-4cf8-bd2b-e5dc3e22a1f9");
 
   // Define the layout of our pipeline in C++ simply through the structure of a struct

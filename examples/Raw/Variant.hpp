@@ -11,6 +11,8 @@ struct Variant
 {
   static consteval auto name() { return "Variant"; }
   static consteval auto c_name() { return "avnd_variant"; }
+  static consteval auto category() { return "Control/Data Processing"; }
+  static consteval auto description() { return "Pass variant-valued inputs through while preserving their active types."; }
   static consteval auto uuid() { return "54926bf8-9cfc-47c4-8549-4b25a4a8200d"; }
 
   struct

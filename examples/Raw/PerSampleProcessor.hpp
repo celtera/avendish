@@ -15,6 +15,8 @@ struct PerSampleProcessor
 {
   static consteval auto name() { return "Per-sample processor"; }
   static consteval auto c_name() { return "avnd_persample_1"; }
+  static consteval auto category() { return "Audio/Effects"; }
+  static consteval auto description() { return "Apply a stateful nonlinear transformation to individual audio samples."; }
   static consteval auto uuid() { return "c0ece845-2df7-486d-b096-6d507cbe23d1"; }
 
   // For per-sample processors, it is better to have inputs as a type:

@@ -17,6 +17,8 @@ class Granolette
 public:
   halp_meta(name, "Granolette")
   halp_meta(c_name, "granolette")
+  halp_meta(category, "Audio/Generators")
+  halp_meta(description, "Read a sound file from a controlled position and copy its first channel to the audio outputs.")
   halp_meta(uuid, "a8ffe1d1-152d-4bfc-9209-93cf8c0453ca")
 
   using setup = halp::setup;

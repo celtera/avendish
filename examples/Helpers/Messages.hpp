@@ -34,6 +34,8 @@ struct Messages
 {
   halp_meta(name, "Message helpers")
   halp_meta(c_name, "avnd_helpers_messages")
+  halp_meta(category, "Control")
+  halp_meta(description, "Demonstrate helper bindings for member, free, templated and lambda messages.")
   halp_meta(uuid, "0029b546-cddb-49b1-9c99-c659b16e58eb")
 
   [[no_unique_address]] typename C::logger_type logger;

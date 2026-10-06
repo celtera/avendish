@@ -83,6 +83,8 @@ struct MessageBusUi
 {
   static consteval auto name() { return "MessageBusUi example"; }
   static consteval auto c_name() { return "avnd_mbus_ui"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Demonstrate structured message exchange between the processor and its custom interface."; }
   static consteval auto uuid() { return "4ed8e7fd-a1fa-40a7-bbbe-13ee50044248"; }
 
   struct

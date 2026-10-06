@@ -18,6 +18,8 @@ struct Sine
 {
   static constexpr auto name() { return "Sines"; }
   static constexpr auto c_name() { return "avnd_sines"; }
+  static consteval auto category() { return "Audio/Generators"; }
+  static consteval auto description() { return "Demonstrate sine generation with custom control-mapping functions."; }
   static constexpr auto uuid() { return "ce5469ca-1be1-4846-b690-4f4d0081ecab"; }
 
   // FIXME: when clang supports double arguments we can use them here instead

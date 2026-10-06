@@ -18,6 +18,8 @@ struct SampleAccurateControls
 {
   static consteval auto name() { return "Sample accurate example"; }
   static consteval auto c_name() { return "avnd_sampleaccurate"; }
+  static consteval auto category() { return "Audio/Effects/Filters"; }
+  static consteval auto description() { return "Demonstrate low-pass processing with timestamped, sample-accurate control changes."; }
   static consteval auto uuid() { return "e6c34e9e-fc66-44d4-8798-dd3cd67b7fb2"; }
 
   struct inputs_t

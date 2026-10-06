@@ -24,6 +24,8 @@ struct PeakBand
 {
   halp_meta(name, "Peak band")
   halp_meta(c_name, "avnd_peak_band")
+  halp_meta(category, "Analysis/Audio")
+  halp_meta(description, "Report the strongest FFT bin and its magnitude using a host-provided FFT implementation.")
   halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
 
   struct

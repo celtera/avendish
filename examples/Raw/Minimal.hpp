@@ -20,6 +20,8 @@ struct Minimal
   static consteval auto name() { return "Minimal example"; }
 
   // c_name is used for environments such as Pd, Max where object names can't have spaces
+  halp_meta(category, "Audio/Effects")
+  halp_meta(description, "Demonstrate an audio effect with minimal metadata and no helper-library dependencies.")
   // or weird characters
   static consteval auto c_name() { return "avnd_minimal"; }
 

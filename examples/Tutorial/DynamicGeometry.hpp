@@ -20,6 +20,7 @@ struct DynamicGeometryExample
   halp_meta(name, "Dynamic geometry")
   halp_meta(c_name, "avnd_dynamic_geometry")
   halp_meta(category, "Visuals/3D")
+  halp_meta(description, "Generate an indexed quad with runtime-defined position, normal, texture-coordinate and color attributes.")
   halp_meta(uuid, "33b8f6f3-5b9f-4f9c-94a3-67de2eae3e44")
 
   struct

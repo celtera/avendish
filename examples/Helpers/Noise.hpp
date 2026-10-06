@@ -12,6 +12,8 @@ struct WhiteNoise
 {
   halp_meta(name, "White noise")
   halp_meta(c_name, "avnd_white_noise")
+  halp_meta(category, "Audio/Generators")
+  halp_meta(description, "Generate low-amplitude white-noise audio samples.")
   halp_meta(uuid, "5e98f775-b242-4cca-9a3e-1e74662a2c7d")
 
   struct inputs

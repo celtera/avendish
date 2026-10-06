@@ -24,6 +24,8 @@ struct ZeroDependencyAudioEffect
    */
   static constexpr auto name() { return "My zero-dependency effect"; }
   static constexpr auto c_name() { return "oscr_ZeroDependencyAudioEffect"; }
+  static consteval auto category() { return "Audio/Effects"; }
+  static consteval auto description() { return "Demonstrate nonlinear audio processing with raw ports and no helper-library dependencies."; }
   static constexpr auto uuid() { return "99fcf199-280c-4e7f-8be3-c34290073bb9"; }
 
   struct

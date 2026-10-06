@@ -19,6 +19,7 @@ struct GradientScrub
   halp_meta(name, "Gradient scrubber")
   halp_meta(c_name, "avnd_gradient_scrub")
   halp_meta(category, "Control/Color")
+  halp_meta(description, "Sample a two-color gradient at eight independently shaped positions.")
   halp_meta(
       manual_url,
       "https://ossia.io/score-docs/processes/"

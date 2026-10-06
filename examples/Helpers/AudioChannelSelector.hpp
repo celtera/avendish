@@ -12,6 +12,7 @@ struct AudioChannelSelector
   static constexpr auto c_name() { return "avnd_channel_extractor"; }
   static constexpr auto author() { return "Jean-Michaël Celerier"; }
   static consteval auto category() { return "Audio/Utilities"; }
+  static consteval auto description() { return "Extract an inclusive range of channels from a multichannel audio input."; }
   static consteval auto manual_url()
   {
     return "https://ossia.io/score-docs/processes/"

@@ -27,6 +27,8 @@ struct Logger
   // Hopefully C++ would use a similar syntax for reflexion.
   halp_meta(name, "Helpers")
   halp_meta(c_name, "avnd_helpers_logger")
+  halp_meta(category, "Monitoring")
+  halp_meta(description, "Demonstrate host-provided logging at multiple severity levels.")
   halp_meta(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
 
   // We store our logger in the class to make things simpler.

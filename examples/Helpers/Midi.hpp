@@ -21,6 +21,8 @@ struct Midi
 {
   halp_meta(name, "MIDI (helpers)")
   halp_meta(c_name, "avnd_helpers_midi")
+  halp_meta(category, "Midi")
+  halp_meta(description, "Pass incoming MIDI messages through unchanged.")
   halp_meta(uuid, "4ac4f822-9e36-416e-8d15-e461268c7233")
 
   struct
