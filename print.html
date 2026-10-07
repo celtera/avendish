@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-ac4dcba8.js";
+            window.path_to_searchindex_js = "searchindex-064e1a0a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ae0bcd33.js"></script>
@@ -1048,6 +1048,8 @@ class SmoothGainPoly
 public:
   halp_meta(name, "Smooth Gain")
   halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Apply a smoothed gain control to multichannel audio buffers.")
   halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   using setup = halp::setup;
@@ -1094,6 +1096,8 @@ class SmoothGainPerSample
 public:
   halp_meta(name, "Smooth Gain")
   halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Apply a smoothed gain control to individual audio samples.")
   halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   struct inputs
@@ -1714,6 +1718,8 @@ struct PeakBandFFTPort
 {
   halp_meta(name, "Peak band (FFT port)")
   halp_meta(c_name, "avnd_peak_band_fft_port")
+  halp_meta(category, "Analysis/Audio")
+  halp_meta(description, "Demonstrate peak-bin extraction from host-provided audio spectrum ports.")
   halp_meta(uuid, "143f5cb8-d0b1-44de-a1a4-ccd5315192fa")
 
   // TODO implement user-controllable buffering to allow various fft sizes...
@@ -2087,7 +2093,7 @@ struct Synth
 {
   halp_meta(name, "My example synth");
   halp_meta(c_name, "oscr_Synth")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Synths");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "A demo synth");
   halp_meta(uuid, "93eb0f78-3d97-4273-8a11-3df5714d66dc");
@@ -2233,7 +2239,7 @@ struct TextureFilterExample
 {
   halp_meta(name, "My example texture filter");
   halp_meta(c_name, "oscr_TextureFilterExample")
-  halp_meta(category, "Demo");
+  halp_meta(category, "Visuals/Textures");
   halp_meta(author, "Jean-Michaël Celerier");
   halp_meta(description, "Example texture filter");
   halp_meta(uuid, "3183d03e-9228-4d50-98e0-e7601dd16a2e");
@@ -2643,9 +2649,9 @@ struct ControlGallery
 {
   halp_meta(name, "Control gallery");
   halp_meta(c_name, "oscr_ControlGallery");
-  halp_meta(category, "Demo");
+  halp_meta(category, "Control");
   halp_meta(author, "&lt;AUTHOR&gt;");
-  halp_meta(description, "&lt;DESCRIPTION&gt;");
+  halp_meta(description, "Demonstrate sample-accurate buttons, sliders, knobs, toggles and enumeration controls.");
   halp_meta(uuid, "a9b0e2c6-61e9-45df-a75d-27abf7fb43d7");
 
   struct
@@ -3668,6 +3674,8 @@ struct MessageBusUi
 {
   static consteval auto name() { return "MessageBusUi example"; }
   static consteval auto c_name() { return "avnd_mbus_ui"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Demonstrate structured message exchange between the processor and its custom interface."; }
   static consteval auto uuid() { return "4ed8e7fd-a1fa-40a7-bbbe-13ee50044248"; }
 
   struct
@@ -3816,6 +3824,8 @@ struct Logger
   // Hopefully C++ would use a similar syntax for reflexion.
   halp_meta(name, "Helpers")
   halp_meta(c_name, "avnd_helpers_logger")
+  halp_meta(category, "Monitoring")
+  halp_meta(description, "Demonstrate host-provided logging at multiple severity levels.")
   halp_meta(uuid, "3a646521-48f4-429b-a2b1-d67beb0d65cf")
 
   // We store our logger in the class to make things simpler.
@@ -3878,6 +3888,8 @@ struct PeakBand
 {
   halp_meta(name, "Peak band")
   halp_meta(c_name, "avnd_peak_band")
+  halp_meta(category, "Analysis/Audio")
+  halp_meta(description, "Report the strongest FFT bin and its magnitude using a host-provided FFT implementation.")
   halp_meta(uuid, "5610b62e-ef1f-4a34-abe0-e57816bc44c2")
 
   struct
@@ -4023,9 +4035,9 @@ struct SampleAccurateFilterExample
 {
   halp_meta(name, "My sample-accurate filter")
   halp_meta(c_name, "oscr_SampleAccurateFilterExample")
-  halp_meta(category, "Demo")
+  halp_meta(category, "Control/Mappings")
   halp_meta(author, "&lt;AUTHOR&gt;")
-  halp_meta(description, "&lt;DESCRIPTION&gt;")
+  halp_meta(description, "Transform each incoming value with cos(x*x)*cos(x) while preserving its sample timestamp.")
   halp_meta(uuid, "43818edd-63de-458b-a6a5-08033cefc051")
 
   /**
@@ -4891,6 +4903,8 @@ namespace examples
 struct GpuFilterExample
 {
   halp_meta(name, "Helpers GPU pipeline");
+  halp_meta(category, "Visuals/3D");
+  halp_meta(description, "Demonstrate a graphics pipeline defined with GPU attribute helpers.");
   halp_meta(uuid, "ebe6f07a-5e7f-4cf8-bd2b-e5dc3e22a1f9");
 
   // Define the layout of our pipeline in C++ simply through the structure of a struct

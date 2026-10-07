@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-ac4dcba8.js";
+            window.path_to_searchindex_js = "../searchindex-064e1a0a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ae0bcd33.js"></script>
@@ -257,6 +257,8 @@ class SmoothGainPoly
 public:
   halp_meta(name, "Smooth Gain")
   halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Apply a smoothed gain control to multichannel audio buffers.")
   halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   using setup = halp::setup;
@@ -303,6 +305,8 @@ class SmoothGainPerSample
 public:
   halp_meta(name, "Smooth Gain")
   halp_meta(c_name, "avnd_helpers_smooth_gain")
+  halp_meta(category, "Audio/Utilities")
+  halp_meta(description, "Apply a smoothed gain control to individual audio samples.")
   halp_meta(uuid, "032e1734-f84a-4eb2-9d14-01fc3dea4c14")
 
   struct inputs

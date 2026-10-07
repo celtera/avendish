@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-ac4dcba8.js";
+            window.path_to_searchindex_js = "../searchindex-064e1a0a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ae0bcd33.js"></script>
@@ -260,6 +260,8 @@ struct MessageBusUi
 {
   static consteval auto name() { return "MessageBusUi example"; }
   static consteval auto c_name() { return "avnd_mbus_ui"; }
+  static consteval auto category() { return "Monitoring"; }
+  static consteval auto description() { return "Demonstrate structured message exchange between the processor and its custom interface."; }
   static consteval auto uuid() { return "4ed8e7fd-a1fa-40a7-bbbe-13ee50044248"; }
 
   struct
