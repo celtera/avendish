@@ -17,6 +17,7 @@ struct TestTickFlicks
   halp_meta(category, "Tests/Lifecycle")
   halp_meta(uuid, "da62cdc0-3293-4ead-a759-8409af222948")
   struct { halp::val_port<"Position", float> position; } outputs;
+  using tick = halp::tick_flicks;
   void operator()(halp::tick_flicks t)
   {
     outputs.position.value = static_cast<float>(t.relative_position);

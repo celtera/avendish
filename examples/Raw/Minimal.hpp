@@ -20,10 +20,14 @@ struct Minimal
   static consteval auto name() { return "Minimal example"; }
 
   // c_name is used for environments such as Pd, Max where object names can't have spaces
-  halp_meta(category, "Audio/Effects")
-  halp_meta(description, "Demonstrate an audio effect with minimal metadata and no helper-library dependencies.")
   // or weird characters
   static consteval auto c_name() { return "avnd_minimal"; }
+
+  static consteval auto category() { return "Audio/Effects"; }
+  static consteval auto description()
+  {
+    return "Demonstrate an audio effect with minimal metadata and no helper-library dependencies.";
+  }
 
   // Those are UUIDs in string form. Thankfully, it's possible to reduce those
   // to a binary form at compile time fairly easily (see score/uuid.hpp based on boost.uuid)

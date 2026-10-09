@@ -44,6 +44,11 @@ else()
       GIT_REPOSITORY  https://github.com/godotengine/godot-cpp.git
       GIT_TAG         4.5
       GIT_SHALLOW     TRUE
+      # Backport the allocation-header fix from godot-cpp PR #1961 without
+      # moving beyond the 4.5 API used by our Godot runtime.
+      PATCH_COMMAND "${CMAKE_COMMAND}"
+          "-DGODOT_CPP_SOURCE_DIR=<SOURCE_DIR>"
+          -P "${CMAKE_CURRENT_LIST_DIR}/patches/godot-cpp-stdlib.cmake"
   )
   FetchContent_MakeAvailable(godot-cpp)
 endif()

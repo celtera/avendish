@@ -19,6 +19,7 @@ struct TestTickMusical
     halp::val_port<"Tempo", float> tempo;
     halp::val_port<"Frames", int> frames;
   } outputs;
+  using tick = halp::tick_musical;
   void operator()(halp::tick_musical t)
   {
     outputs.tempo.value = t.tempo;

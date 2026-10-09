@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <ossia/network/dataspace/color.hpp>
+#include <ossia/network/dataspace/dataspace_base_defs_fwd.hpp>
 
 #include <avnd/concepts/painter.hpp>
 #include <avnd/concepts/processor.hpp>

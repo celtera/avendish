@@ -6,6 +6,8 @@
 #include <halp/meta.hpp>
 #include <halp/sample_accurate_controls.hpp>
 
+#include <cstdlib>
+
 namespace examples
 {
 

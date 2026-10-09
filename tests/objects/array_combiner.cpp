@@ -95,17 +95,24 @@ TEST_CASE("Array best match", "[array_best]")
   b.inputs.in.value = {0.2f, 0.9f, 0.5f};
   b.inputs.scale.value = 0.f;
   b();
+  REQUIRE(b.outputs.probabilities.value);
   CHECK(b.outputs.index.value == 1);
   CHECK(b.outputs.value.value == 0.9f);
   // Scale 0: every element equally likely.
-  CHECK(near(b.outputs.probabilities.value, {1.f / 3, 1.f / 3, 1.f / 3}));
+  CHECK(near(*b.outputs.probabilities.value, {1.f / 3, 1.f / 3, 1.f / 3}));
+  b();
+  CHECK_FALSE(b.outputs.index.value);
+  CHECK_FALSE(b.outputs.value.value);
+  CHECK_FALSE(b.outputs.probabilities.value);
 
   // CLIP's scale: the best label takes nearly all.
   b.inputs.scale.value = 100.f;
+  b.inputs.scale.update(b);
   b();
-  CHECK(b.outputs.probabilities.value[1] > 0.99f);
+  REQUIRE(b.outputs.probabilities.value);
+  CHECK((*b.outputs.probabilities.value)[1] > 0.99f);
   float sum = 0.f;
-  for(float p : b.outputs.probabilities.value)
+  for(float p : *b.outputs.probabilities.value)
     sum += p;
   CHECK(std::abs(sum - 1.f) < 1e-5f);
 
@@ -114,15 +121,17 @@ TEST_CASE("Array best match", "[array_best]")
   b.inputs.scale.value = 1.f;
   b.inputs.in.value = {3.f, 1.f, 2.f};
   b();
+  REQUIRE(b.outputs.probabilities.value);
   CHECK(b.outputs.index.value == 1);
   CHECK(b.outputs.value.value == 1.f);
-  CHECK(b.outputs.probabilities.value[1] > b.outputs.probabilities.value[2]);
-  CHECK(b.outputs.probabilities.value[2] > b.outputs.probabilities.value[0]);
+  CHECK((*b.outputs.probabilities.value)[1] > (*b.outputs.probabilities.value)[2]);
+  CHECK((*b.outputs.probabilities.value)[2] > (*b.outputs.probabilities.value)[0]);
 
-  b.inputs.in.value.clear();
+  b.inputs.in.value = V{};
   b();
+  REQUIRE(b.outputs.probabilities.value);
   CHECK(b.outputs.index.value == -1);
-  CHECK(b.outputs.probabilities.value.empty());
+  CHECK(b.outputs.probabilities.value->empty());
 }
 
 // Non-finite values and out-of-range controls: no NaN out of the softmax, no
@@ -150,18 +159,21 @@ TEST_CASE("Array best match: non-finite input and scale", "[array_best]")
   // NaN and infinities are skipped: the best finite element wins.
   b.inputs.in.value = {nan, 0.5f, inf, -inf, 0.9f};
   b();
+  REQUIRE(b.outputs.probabilities.value);
   CHECK(b.outputs.index.value == 4);
   CHECK(b.outputs.value.value == 0.9f);
-  CHECK(finite(b.outputs.probabilities.value));
-  CHECK(std::abs(total(b.outputs.probabilities.value) - 1.f) < 1e-5f);
-  CHECK(b.outputs.probabilities.value[0] == 0.f);
-  CHECK(b.outputs.probabilities.value[2] == 0.f);
+  CHECK(finite(*b.outputs.probabilities.value));
+  CHECK(std::abs(total(*b.outputs.probabilities.value) - 1.f) < 1e-5f);
+  CHECK((*b.outputs.probabilities.value)[0] == 0.f);
+  CHECK((*b.outputs.probabilities.value)[2] == 0.f);
 
   b.inputs.mode.value = ao::ArrayBestMode::Lowest;
+  b.inputs.mode.update(b);
   b();
+  REQUIRE(b.outputs.probabilities.value);
   CHECK(b.outputs.index.value == 1);
-  CHECK(finite(b.outputs.probabilities.value));
-
+  CHECK(finite(*b.outputs.probabilities.value));
+  CHECK(std::abs(total(*b.outputs.probabilities.value) - 1.f) < 1e-5f);
   // Nothing finite: no best, all probabilities 0.
   b.inputs.in.value = {nan, inf};
   b();
@@ -174,11 +186,13 @@ TEST_CASE("Array best match: non-finite input and scale", "[array_best]")
   for(float scale : {-5.f, nan, inf, 1e9f})
   {
     b.inputs.scale.value = scale;
+    b.inputs.scale.update(b);
     b();
+    REQUIRE(b.outputs.probabilities.value);
     INFO("scale " << scale);
     CHECK(b.outputs.index.value == 1);
-    CHECK(finite(b.outputs.probabilities.value));
-    CHECK(std::abs(total(b.outputs.probabilities.value) - 1.f) < 1e-5f);
+    CHECK(finite(*b.outputs.probabilities.value));
+    CHECK(std::abs(total(*b.outputs.probabilities.value) - 1.f) < 1e-5f);
   }
 }
 
