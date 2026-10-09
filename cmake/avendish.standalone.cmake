@@ -118,7 +118,7 @@ function(avnd_make_standalone)
     )
   endif()
 
-  if(TARGET GLEW::GLEW)
+  if((TARGET GLEW::GLEW) AND (TARGET glfw) AND (TARGET OpenGL::GL))
     target_link_libraries(
       ${AVND_FX_TARGET}
       PUBLIC
