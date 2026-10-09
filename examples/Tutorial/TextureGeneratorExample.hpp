@@ -8,6 +8,8 @@
 #include <halp/sample_accurate_controls.hpp>
 #include <halp/texture.hpp>
 
+#include <cstdlib>
+
 namespace examples
 {
 /**
