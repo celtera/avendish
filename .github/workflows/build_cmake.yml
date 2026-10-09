@@ -31,7 +31,7 @@ jobs:
             }
           - {
               name: "Ubuntu (clang)",
-              os: [self-hosted, linux, x64, sat-builder],
+              os: ubuntu-latest,
               container: "ubuntu:noble",
               path: "/opt/ossia-sdk-x86_64/llvm/bin",
               common_flags: "-DCMAKE_C_COMPILER=/usr/bin/clang-22 \
@@ -54,7 +54,7 @@ jobs:
             }
           - {
               name: "Ubuntu (GCC)",
-              os: [self-hosted, linux, x64, sat-builder],
+              os: ubuntu-latest,
               container: "ubuntu:noble",
               common_flags: "-DCMAKE_C_COMPILER=/usr/bin/gcc-16 \
                              -DCMAKE_CXX_COMPILER=/usr/bin/g++-16",
@@ -82,6 +82,12 @@ jobs:
             }
 
     steps:
+      - name: Bootstrap Linux container
+        if: runner.os == 'Linux'
+        run: |
+          apt-get update
+          apt-get install -y build-essential ca-certificates cmake curl file git python3 software-properties-common sudo unzip wget xz-utils
+
       - name: Use GitHub mirror for Eigen submodule
         shell: bash
         run: |

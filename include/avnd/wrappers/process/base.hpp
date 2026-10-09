@@ -90,7 +90,7 @@ struct process_adapter
     process_smooth(implementation, params...);
 
     // Audio buffers aren't used at all
-    invoke_effect(implementation, tick);
+    invoke_effect(implementation, get_tick_or_frames(implementation, tick));
   }
 };
 
