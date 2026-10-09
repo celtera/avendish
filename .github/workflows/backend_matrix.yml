@@ -10,7 +10,7 @@ on:
 jobs:
   matrix:
     name: ${{ matrix.compiler }} c++${{ matrix.std }} ${{ matrix.backend }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, sat-builder]
     container: ubuntu:resolute
     strategy:
       fail-fast: false
@@ -19,11 +19,6 @@ jobs:
         std: ["23", "26"]
         backend: [boost.pfr, p1061]
     steps:
-      - name: Bootstrap container
-        run: |
-          apt-get update
-          apt-get install -y ca-certificates git python3 software-properties-common sudo wget
-
       - uses: actions/checkout@v7
         with:
           submodules: false
