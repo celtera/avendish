@@ -15,6 +15,7 @@ struct TestTick
   halp_meta(category, "Tests/Lifecycle")
   halp_meta(uuid, "859afa1c-1934-477d-9429-1f3aab1596ff")
   struct { halp::val_port<"Frames", int> frames; } outputs;
+  using tick = halp::tick;
   void operator()(halp::tick t) { outputs.frames.value = t.frames; }
 };
 }
