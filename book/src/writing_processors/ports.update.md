@@ -1,6 +1,6 @@
 # Port update callback
 
-> Supported bindings: ossia
+> Supported bindings: ossia, clap, vst3
 
 It is possible to get a callback whenever the value of a (value) input port gets updated, to perform complex actions.
 `update` will always be called before the current tick starts.
