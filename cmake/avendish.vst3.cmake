@@ -6,6 +6,17 @@ if(DEFINED AVND_ENABLE_VST3 AND NOT AVND_ENABLE_VST3)
   return()
 endif()
 
+# Build a self-contained VSTGUI editor into VST3 plug-ins (no Qt). Needs the
+# VST3 SDK configured with SMTG_ADD_VSTGUI=ON so the `vstgui` target exists.
+option(AVND_ENABLE_VST3_VSTGUI "Embed a VSTGUI editor in VST3 plug-ins" ON)
+
+# VSTGUI on macOS compiles Objective-C++ sources, so the enclosing project must
+# enable those languages (a plain `project(Foo CXX)` does not).
+if(APPLE AND AVND_ENABLE_VST3_VSTGUI)
+  enable_language(OBJC)
+  enable_language(OBJCXX)
+endif()
+
 set(VST3_SDK_ROOT "" CACHE PATH "VST3 SDK path")
 option(AVND_FETCH_VST3_SDK "Fetch the VST3 SDK when VST3_SDK_ROOT is not set" OFF)
 
@@ -55,7 +66,11 @@ endif()
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0)
 set(SMTG_ADD_VST3_HOSTING_SAMPLES 0 CACHE INTERNAL "")
 
-add_definitions(-DDEVELOPMENT)
+# The SDK wants exactly one of DEVELOPMENT / RELEASE. DEVELOPMENT enables its
+# FDebugBreak assertions, which raise SIGTRAP inside the host process -- an
+# unconditional -DDEVELOPMENT made *release* plug-ins crash hosts on teardown
+# (e.g. VSTGUI editor close). Define it for Debug builds only.
+add_compile_definitions($<IF:$<CONFIG:Debug>,DEVELOPMENT=1,RELEASE=1>)
 include_directories("${VST3_SDK_ROOT}")
 
 # VST3 uses COM APIs which require no virtual dtors in interfaces
@@ -75,6 +90,22 @@ if(MSVC AND (AVND_ENABLE_MAX
     OR (CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "MultiThreaded"
         AND NOT CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "DLL")))
   set(SMTG_USE_STATIC_CRT ON CACHE BOOL "" FORCE)
+endif()
+
+# VSTGUI's variadic macros (vstgui_assert uses ,##__VA_ARGS__) require MSVC's
+# conformant preprocessor. Set it at directory scope before the SDK/VSTGUI
+# subdirectory so every SDK target inherits it (a per-target flag doesn't stick
+# reliably with the Visual Studio generator, and CMAKE_CXX_FLAGS gets clobbered).
+if(MSVC AND AVND_ENABLE_VST3_VSTGUI)
+  add_compile_options(/Zc:preprocessor)
+  # VSTGUI's vstgui_assert macro is defined via a vstguibase.h<->vstguidebug.h
+  # include cycle that leaves it undefined for some TUs under MSVC (malloc.h:
+  # "'vstgui_assert': identifier not found"). Force-include a shim that always
+  # defines it, and silence the redefinition warning from VSTGUI's own later
+  # definition (C4005).
+  add_compile_options(
+    "/FI${AVND_SOURCE_DIR}/include/avnd/binding/vst3/vstgui_msvc_assert_shim.h"
+    /wd4005)
 endif()
 
 add_subdirectory("${VST3_SDK_ROOT}" "${CMAKE_BINARY_DIR}/vst3_sdk")
@@ -170,6 +201,38 @@ function(avnd_make_vst3)
       PRIVATE
         ${COREFOUNDATION_FK}
     )
+  endif()
+
+  # Optional self-contained VSTGUI editor. Requires the VST3 SDK to have been
+  # configured with SMTG_ADD_VSTGUI=ON (which provides the `vstgui` target).
+  if(AVND_ENABLE_VST3_VSTGUI AND TARGET vstgui)
+    target_link_libraries(${AVND_FX_TARGET} PRIVATE vstgui)
+    target_compile_definitions(${AVND_FX_TARGET} PRIVATE AVND_VST3_VSTGUI=1)
+    # VSTGUI headers are included as <vstgui/...>; the include root is the
+    # vstgui4 dir (the `vstgui` target does not export it).
+    if(SMTG_VSTGUI_SOURCE_DIR)
+      target_include_directories(${AVND_FX_TARGET} PRIVATE "${SMTG_VSTGUI_SOURCE_DIR}")
+    else()
+      target_include_directories(${AVND_FX_TARGET} PRIVATE "${VST3_SDK_ROOT}/vstgui4")
+    endif()
+
+    # VSTGUI compiles its own sources with -Werror on macOS, which trips on
+    # recent AppleClang/macOS SDKs (e.g. unused-variable in cgbitmap.cpp).
+    # Don't let VSTGUI's internal warnings fail the addon build.
+    if(APPLE)
+      get_target_property(_avnd_vstgui_opts vstgui COMPILE_OPTIONS)
+      if(_avnd_vstgui_opts)
+        list(REMOVE_ITEM _avnd_vstgui_opts "-Werror")
+        set_target_properties(vstgui PROPERTIES COMPILE_OPTIONS "${_avnd_vstgui_opts}")
+      endif()
+    endif()
+
+    # VSTGUI's variadic macros (e.g. vstgui_assert with ##__VA_ARGS__) need
+    # MSVC's conformant preprocessor. Set it on the VSTGUI lib and the module.
+    if(MSVC)
+      target_compile_options(vstgui PRIVATE /Zc:preprocessor)
+      target_compile_options(${AVND_FX_TARGET} PRIVATE /Zc:preprocessor)
+    endif()
   endif()
 
   avnd_common_setup("${AVND_TARGET}" "${AVND_FX_TARGET}")
