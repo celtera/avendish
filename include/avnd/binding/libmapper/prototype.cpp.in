@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+#include <@AVND_MAIN_FILE@>
+#include <avnd/binding/libmapper/configure.hpp>
+#include <avnd/binding/libmapper/libmapper.hpp>
+
+void run(auto& t)
+{
+  if_possible(t());
+}
+
+int main(int argc, char** argv)
+{
+  // Create the object
+  using type = decltype(avnd::configure<libmapper::config, @AVND_MAIN_CLASS@>())::type;
+
+  type t;
+  static libmapper::processor< type > instance{t};
+
+  while (true)
+  {
+    instance.poll();
+    run(t);
+    instance.commit();
+  }
+}
