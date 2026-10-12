@@ -232,7 +232,7 @@ struct combobox_t
   enum enum_type                                         \
   {                                                      \
     __VA_ARGS__                                          \
-  } value;                                               \
+  } value = default_v;                                   \
                                                          \
   enum widget                                            \
   {                                                      \
@@ -270,7 +270,7 @@ struct combobox_t
   enum enum_type                                                               \
   {                                                                            \
     __VA_ARGS__                                                                \
-  } value;                                                                     \
+  } value = default_v;                                                         \
                                                                                \
   enum widget                                                                  \
   {                                                                            \
