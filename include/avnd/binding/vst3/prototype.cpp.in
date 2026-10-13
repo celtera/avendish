@@ -4,6 +4,17 @@
 #include <avnd/binding/vst3/configure.hpp>
 #include <avnd/common/export.hpp>
 
+#if defined(AVND_VST3_VSTGUI)
+// VSTGUI::init is the required library init: platform layer + global fonts
+// (kNormalFont & co.). Constructing any VSTGUI view without it crashes.
+#include <vstgui/lib/vstguiinit.h>
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+#endif
+
 // clang-format off
 #include <@AVND_MAIN_FILE@>
 
@@ -13,14 +24,57 @@ bool DeinitModule() { return true; }
 #if __APPLE__
 extern "C" AVND_EXPORTED_SYMBOL bool BundleEntry() { return true; }
 extern "C" AVND_EXPORTED_SYMBOL bool BundleExit() { return true; }
-extern "C" AVND_EXPORTED_SYMBOL bool bundleEntry() { return true; }
-extern "C" AVND_EXPORTED_SYMBOL bool bundleExit() { return true; }
+extern "C" AVND_EXPORTED_SYMBOL bool bundleEntry(CFBundleRef ref)
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::init(ref);
+#endif
+  return true;
+}
+extern "C" AVND_EXPORTED_SYMBOL bool bundleExit()
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::exit();
+#endif
+  return true;
+}
 #elif _WIN32
-extern "C" AVND_EXPORTED_SYMBOL bool InitDll() { return true; }
-extern "C" AVND_EXPORTED_SYMBOL bool ExitDll() { return true; }
+extern "C" AVND_EXPORTED_SYMBOL bool InitDll()
+{
+#if defined(AVND_VST3_VSTGUI)
+  HMODULE mod{};
+  GetModuleHandleExW(
+      GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+          | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+      reinterpret_cast<LPCWSTR>(&InitDll), &mod);
+  VSTGUI::init(mod);
+#endif
+  return true;
+}
+extern "C" AVND_EXPORTED_SYMBOL bool ExitDll()
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::exit();
+#endif
+  return true;
+}
 #elif __linux__
-extern "C" AVND_EXPORTED_SYMBOL bool ModuleEntry() { return true; }
-extern "C" AVND_EXPORTED_SYMBOL bool ModuleExit() { return true; }
+// The host passes the plugin's dlopen handle; VSTGUI needs it to initialise its
+// Linux (X11/fontconfig) platform.
+extern "C" AVND_EXPORTED_SYMBOL bool ModuleEntry(void* sharedLibraryHandle)
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::init(sharedLibraryHandle);
+#endif
+  return true;
+}
+extern "C" AVND_EXPORTED_SYMBOL bool ModuleExit()
+{
+#if defined(AVND_VST3_VSTGUI)
+  VSTGUI::exit();
+#endif
+  return true;
+}
 #endif
 
 extern "C" AVND_EXPORTED_SYMBOL Steinberg::IPluginFactory* GetPluginFactory()
