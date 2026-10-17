@@ -544,14 +544,17 @@ public:
     // Update metadatas
     this->update_tempo(tk.tempo);
 
-    // Check all the audio channels
-    bool changed = static_cast<AudioCount&>(*this).scan_audio_input_channels();
-
+    // Grow the buffer size first: the channel scan below sizes the audio
+    // channels to it, and the processor reads and writes `frames` samples.
+    bool changed = false;
     if(frames > this->buffer_size)
     {
       this->buffer_size = frames;
       changed = true;
     }
+
+    // Check all the audio channels
+    changed |= static_cast<AudioCount&>(*this).scan_audio_input_channels();
 
     changed |= std::exchange(this->audio_channels_changed, false);
 
