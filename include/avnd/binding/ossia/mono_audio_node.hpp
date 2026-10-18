@@ -69,7 +69,6 @@ public:
   OSSIA_MAXIMUM_INLINE
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
-    // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
     if(!this->prepare_run(tk, st, start, frames))
@@ -91,10 +90,11 @@ public:
 
     std::fill_n(audio_ins, 1 + current_input_channels, nullptr);
     std::fill_n(audio_outs, 1 + current_output_channels, nullptr);
+    // The ports span the whole engine buffer; this tick is [start, start + frames).
     for(int i = 0; i < current_input_channels; i++)
     {
-      audio_ins[i] = audio_in.channel(i).data();
-      audio_outs[i] = audio_out.channel(i).data();
+      audio_ins[i] = audio_in.channel(i).data() + start;
+      audio_outs[i] = audio_out.channel(i).data() + start;
     }
 
     // Run
@@ -138,7 +138,6 @@ public:
   OSSIA_MAXIMUM_INLINE
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
-    // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
     if(!this->prepare_run(tk, st, start, frames))
@@ -151,7 +150,7 @@ public:
     this->set_channels(audio_out, 1);
 
     // Initialize audio ports
-    double* audio_outs[1] = {audio_out.channel(0).data()};
+    double* audio_outs[1] = {audio_out.channel(0).data() + start};
 
     // Run
     this->processor.process(

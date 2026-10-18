@@ -545,11 +545,12 @@ public:
     this->update_tempo(tk.tempo);
 
     // Grow the buffer size first: the channel scan below sizes the audio
-    // channels to it, and the processor reads and writes `frames` samples.
+    // channels to it, and the processor reads and writes the samples
+    // [start, start + frames) of the engine buffer.
     bool changed = false;
-    if(frames > this->buffer_size)
+    if(start + frames > this->buffer_size)
     {
-      this->buffer_size = frames;
+      this->buffer_size = start + frames;
       changed = true;
     }
 

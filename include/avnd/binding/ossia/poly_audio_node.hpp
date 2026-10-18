@@ -96,13 +96,15 @@ public:
     double** outs{};
     std::size_t in_n{}, out_n{};
     int k = 0;
+    // The ports span the whole engine buffer; this tick starts at `start`.
+    int start = 0;
 
     void operator()(const ossia::audio_inlet& in) noexcept
     {
       for(const ossia::audio_channel& c : in.data)
       {
         if(k < in_n)
-          ins[k++] = c.data();
+          ins[k++] = c.data() + start;
       }
     }
 
@@ -111,7 +113,7 @@ public:
       for(ossia::audio_channel& c : out.data)
       {
         if(k < out_n)
-          outs[k++] = c.data();
+          outs[k++] = c.data() + start;
       }
     }
 
@@ -119,11 +121,11 @@ public:
   };
 
   void initialize_audio_arrays(
-      const double** ins, double** outs, std::size_t kin, std::size_t kout)
+      const double** ins, double** outs, std::size_t kin, std::size_t kout, int start)
   {
     tuplet::apply(
         [&](auto&&... ports) {
-      initialize_audio match{ins, outs, kin, kout, 0};
+      initialize_audio match{ins, outs, kin, kout, 0, start};
 
       if constexpr(requires { this->audio_ports.in; })
       {
@@ -136,7 +138,7 @@ public:
 
     tuplet::apply(
         [&](auto&&... ports) {
-      initialize_audio match{ins, outs, kin, kout, 0};
+      initialize_audio match{ins, outs, kin, kout, 0, start};
 
       if constexpr(requires { this->audio_ports.out; })
       {
@@ -151,7 +153,6 @@ public:
   OSSIA_MAXIMUM_INLINE
   void run(const ossia::token_request& tk, ossia::exec_state_facade st) noexcept override
   {
-    // FIXME start isn't handled
     auto [start, frames] = st.timings(tk);
 
     if(!this->prepare_run(tk, st, start, frames))
@@ -172,7 +173,7 @@ public:
     std::fill_n(audio_outs, 1 + current_output_channels, nullptr);
 
     this->initialize_audio_arrays(
-        audio_ins, audio_outs, current_input_channels, current_output_channels);
+        audio_ins, audio_outs, current_input_channels, current_output_channels, start);
 
     std::size_t init_audio_ins = 0;
     std::size_t init_audio_outs = 0;
