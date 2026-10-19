@@ -23,21 +23,19 @@ jobs:
         with:
           submodules: false
 
+      # ubuntu:resolute runs as root without sudo, and ships gcc-16 and
+      # clang-22 in its own archive: no PPA / apt.llvm.org needed.
       - name: Install compiler
         run: |
           set -e
-          sudo apt-get update
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
           if [ "${{ matrix.compiler }}" = "clang-22" ]; then
-            wget -q https://apt.llvm.org/llvm.sh
-            chmod +x llvm.sh
-            sudo ./llvm.sh 22
-            sudo apt-get install -y clang-22 libc++-22-dev libc++abi-22-dev
+            apt-get install -y clang-22 libc++-22-dev libc++abi-22-dev
             echo "CXX=clang++-22" >> "$GITHUB_ENV"
             echo "STDLIB=-stdlib=libc++" >> "$GITHUB_ENV"
           else
-            sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-            sudo apt-get update
-            sudo apt-get install -y gcc-16 g++-16
+            apt-get install -y gcc-16 g++-16
             echo "CXX=g++-16" >> "$GITHUB_ENV"
             echo "STDLIB=" >> "$GITHUB_ENV"
           fi
@@ -45,7 +43,8 @@ jobs:
       - name: Install dependencies
         run: |
           set -e
-          sudo apt-get install -y ninja-build libfmt-dev nlohmann-json3-dev
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get install -y ca-certificates git wget python3 ninja-build libfmt-dev nlohmann-json3-dev
           git clone --depth 1 https://github.com/Neargye/magic_enum /tmp/magic_enum
           # yyjson: header-only is enough; dump TUs are compiled with -c (no link).
           git clone --depth 1 --branch 0.12.0 https://github.com/ibireme/yyjson /tmp/yyjson
