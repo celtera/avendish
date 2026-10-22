@@ -1,7 +1,9 @@
 #pragma once
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <Advanced/MidiScaler/MidiCommon/EventQueue.hpp>
 #include <cmath>
+#include <halp/audio.hpp>
 #include <halp/callback.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
@@ -10,7 +12,9 @@
 #include <ossia/detail/pod_vector.hpp>
 #include <ossia/detail/small_vector.hpp>
 
+#include <algorithm>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <optional>
 
@@ -31,6 +35,7 @@ struct MIDISyncIn
   halp_meta(description, "Extract timecode from MIDI Time Code messages")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-timecode-input.html")
   halp_meta(uuid, "f8c7e2a3-9b4d-4e5f-a1c2-3d4e5f6a7b8c")
+  halp_flag(process_exec);
 
   enum class FrameRate
   {
@@ -75,6 +80,32 @@ struct MIDISyncIn
     halp::knob_f32<"Clock filter", halp::range{0., 1., 0.8}> clock_filter{0.8};
     halp::spinbox_i32<"Song Position", halp::irange{0, 16383, 0}> initial_song_position{
         0};
+
+    // Clock out processing
+    struct : halp::spinbox_i32<"Clock divide", halp::irange{1, 48, 1}>
+    {
+      halp_meta(
+          description,
+          "Clock out passes 1 of every N clocks, counted from each Start")
+    } clock_divide;
+
+    struct : halp::spinbox_i32<"Start shift", halp::irange{-48, 48, 0}>
+    {
+      halp_meta(
+          description,
+          "At each Start, Clock out drops this many clocks (positive, later) or "
+          "inserts them right after the Start (negative, earlier)")
+    } start_shift;
+
+    struct : halp::spinbox_f32<"Clock delay (ms)", halp::range{0., 1000., 0.}>
+    {
+      halp_meta(description, "Delays everything Clock out sends")
+    } clock_delay;
+
+    struct : halp::toggle<"Pass SPP", halp::default_on_toggle>
+    {
+      halp_meta(description, "Clock out passes Song Position Pointer messages")
+    } pass_spp;
   } inputs;
 
   struct
@@ -88,6 +119,14 @@ struct MIDISyncIn
 
     halp::val_port<"MTC Active", bool> mtc_active{false};
     halp::val_port<"Clock Active", bool> clock_active{false};
+
+    struct : halp::midi_bus<"Clock out", libremidi::message>
+    {
+      halp_meta(
+          description,
+          "The incoming clock, Start, Stop, Continue and Song Position, divided, "
+          "shifted and delayed")
+    } clock_out;
   } outputs;
 
   // MTC state tracking
@@ -534,7 +573,114 @@ struct MIDISyncIn
     }
   }
 
-  void operator()()
+  // Clock out state
+  static constexpr int max_delayed = 512;
+  mtk::event_queue<max_delayed> clock_queue;
+  //! Frames elapsed since the object started: the clock of clock_queue.
+  int64_t clock_now = 0;
+  double sample_rate = 0.;
+  int clock_counter = 0;
+  int clocks_to_drop = 0;
+  std::atomic_bool stop_requested{false};
+
+  void prepare(halp::setup s) noexcept
+  {
+    if(s.rate > 0.)
+      sample_rate = s.rate;
+  }
+
+  void stop() noexcept { stop_requested.store(true, std::memory_order_release); }
+
+  void schedule_clock_out(int64_t at, const libremidi::message& msg) noexcept
+  {
+    clock_queue.schedule(at, msg);
+  }
+
+  //! A clock that survived Start shift goes through the divider.
+  void divide_clock(int64_t at, const libremidi::message& msg) noexcept
+  {
+    const int n = std::max(1, inputs.clock_divide.value);
+    if(clock_counter % n == 0)
+      schedule_clock_out(at, msg);
+    clock_counter = (clock_counter + 1) % n;
+  }
+
+  void process_clock_out(const libremidi::message& msg, int64_t at) noexcept
+  {
+    if(msg.size() < 1)
+      return;
+
+    switch(msg.bytes[0])
+    {
+      case 0xFA: {
+        clock_counter = 0;
+        clocks_to_drop = std::max(0, inputs.start_shift.value);
+        schedule_clock_out(at, msg);
+
+        libremidi::message clk;
+        clk.bytes = {0xF8};
+        for(int i = 0; i < -inputs.start_shift.value; i++)
+          divide_clock(at, clk);
+        break;
+      }
+      case 0xFB:
+      case 0xFC:
+        schedule_clock_out(at, msg);
+        break;
+      case 0xF2:
+        if(inputs.pass_spp.value)
+          schedule_clock_out(at, msg);
+        break;
+      case 0xF8:
+        if(clocks_to_drop > 0)
+          clocks_to_drop--;
+        else
+          divide_clock(at, msg);
+        break;
+      default:
+        break;
+    }
+  }
+
+  //! On stop the delayed transport messages go out at once and the delayed
+  //! clocks are dropped, so that a delayed Stop is not lost.
+  void flush_clock_out() noexcept
+  {
+    clock_queue.remove_if([this](const auto& ev) {
+      if(ev.msg.size() > 0 && ev.msg.bytes[0] != 0xF8)
+      {
+        auto m = ev.msg;
+        m.timestamp = 0;
+        outputs.clock_out.push_back(std::move(m));
+      }
+      return true;
+    });
+    clock_counter = 0;
+    clocks_to_drop = 0;
+  }
+
+  void run_clock_out(int frames) noexcept
+  {
+    if(stop_requested.exchange(false, std::memory_order_acq_rel))
+      flush_clock_out();
+
+    const int64_t delay
+        = sample_rate > 0. ? mtk::seconds_to_frames(
+                                 double(inputs.clock_delay.value) / 1000., sample_rate)
+                           : 0;
+    const int64_t last = frames > 0 ? frames - 1 : 0;
+    for(const auto& msg : inputs.midi_in)
+      process_clock_out(
+          msg, clock_now + std::clamp<int64_t>(msg.timestamp, 0, last) + delay);
+
+    clock_queue.release(clock_now, frames, [this](libremidi::message&& m) {
+      outputs.clock_out.push_back(std::move(m));
+    });
+    if(frames > 0)
+      clock_now += frames;
+  }
+
+  void operator()(int frames)
   {
     // Process incoming MIDI messages
     for(const auto& msg : inputs.midi_in)
@@ -611,6 +757,8 @@ struct MIDISyncIn
 
     // Check for timeout
     check_timeout();
+
+    run_clock_out(frames);
   }
 };
 
