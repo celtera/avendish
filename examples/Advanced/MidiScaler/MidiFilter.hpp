@@ -2,6 +2,8 @@
 
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
+#include <Advanced/MidiScaler/MidiCommon/Messages.hpp>
+
 #include <cmath>
 #include <halp/audio.hpp>
 #include <halp/callback.hpp>
@@ -16,10 +18,216 @@
 #include <ossia/detail/small_vector.hpp>
 #include <ossia/detail/variant.hpp>
 
+#include <array>
+#include <cstdint>
+#include <string_view>
+
 namespace mtk
 {
 /**
- * This example extracts various kind of MIDI events
+ * @brief A set of message kinds written as text: "note, cc, bend, -sysex".
+ *
+ * Tokens are separated by commas or spaces, case does not matter. A token
+ * prefixed with '-' or '!' removes kinds; a list starting with a removal
+ * starts from every kind. Unknown tokens are ignored. Group names: all,
+ * channel, system, realtime, transport, note.
+ */
+struct kind_set
+{
+  uint32_t mask{};
+  bool empty{true};
+
+  bool contains(midi_kind k) const noexcept { return mask & (1u << int(k)); }
+
+  static constexpr uint32_t bit(midi_kind k) noexcept { return 1u << int(k); }
+
+  static uint32_t lookup(std::string_view t) noexcept
+  {
+    using enum midi_kind;
+    constexpr uint32_t all = (1u << midi_kind_count) - 1;
+    constexpr uint32_t channel = bit(note_on) | bit(note_off) | bit(control_change)
+                                 | bit(program_change) | bit(pitch_bend)
+                                 | bit(channel_pressure) | bit(poly_pressure);
+    constexpr uint32_t transport = bit(start) | bit(continue_) | bit(stop);
+    constexpr uint32_t realtime
+        = bit(clock) | transport | bit(active_sensing) | bit(reset);
+    struct entry
+    {
+      std::string_view name;
+      uint32_t mask;
+    };
+    static constexpr entry table[] = {
+        {"all", all},
+        {"channel", channel},
+        {"system", all & ~channel},
+        {"realtime", realtime},
+        {"transport", transport},
+        {"note", bit(note_on) | bit(note_off)},
+        {"notes", bit(note_on) | bit(note_off)},
+        {"noteon", bit(note_on)},
+        {"noteoff", bit(note_off)},
+        {"cc", bit(control_change)},
+        {"control", bit(control_change)},
+        {"program", bit(program_change)},
+        {"pc", bit(program_change)},
+        {"bend", bit(pitch_bend)},
+        {"pb", bit(pitch_bend)},
+        {"pressure", bit(channel_pressure)},
+        {"aftertouch", bit(channel_pressure)},
+        {"at", bit(channel_pressure)},
+        {"poly", bit(poly_pressure)},
+        {"sysex", bit(sysex)},
+        {"mtc", bit(time_code)},
+        {"spp", bit(song_position)},
+        {"song", bit(song_select)},
+        {"tune", bit(tune_request)},
+        {"clock", bit(clock)},
+        {"start", bit(start)},
+        {"continue", bit(continue_)},
+        {"stop", bit(stop)},
+        {"sensing", bit(active_sensing)},
+        {"reset", bit(reset)},
+    };
+    for(const auto& e : table)
+      if(e.name == t)
+        return e.mask;
+    return 0;
+  }
+
+  void parse(std::string_view s) noexcept
+  {
+    mask = 0;
+    empty = true;
+    bool first = true;
+    std::size_t i = 0;
+    while(i < s.size())
+    {
+      while(i < s.size()
+            && (s[i] == ',' || s[i] == ' ' || s[i] == '\t' || s[i] == ';'))
+        i++;
+      if(i >= s.size())
+        break;
+
+      bool remove = false;
+      if(s[i] == '-' || s[i] == '!')
+      {
+        remove = true;
+        i++;
+      }
+
+      char buf[16]{};
+      std::size_t n = 0;
+      while(i < s.size() && s[i] != ',' && s[i] != ' ' && s[i] != '\t' && s[i] != ';')
+      {
+        char c = s[i++];
+        if(c >= 'A' && c <= 'Z')
+          c = char(c - 'A' + 'a');
+        if(c == '_' || c == '-')
+          continue;
+        if(n < sizeof(buf))
+          buf[n] = c;
+        n++;
+      }
+      if(n > sizeof(buf))
+        continue;
+
+      const uint32_t k = lookup(std::string_view{buf, n});
+      if(k == 0)
+        continue;
+      if(remove)
+      {
+        if(first)
+          mask = (1u << midi_kind_count) - 1;
+        mask &= ~k;
+      }
+      else
+      {
+        mask |= k;
+      }
+      first = false;
+      empty = false;
+    }
+  }
+};
+
+//! Keeps a kind_set in sync with a text control without allocating.
+struct cached_kind_set
+{
+  static constexpr std::size_t max_text = 256;
+  kind_set set;
+
+  const kind_set& update(std::string_view text) noexcept
+  {
+    if(text.size() > max_text)
+      text = text.substr(0, max_text);
+    if(m_parsed && text == std::string_view{m_text.data(), m_size})
+      return set;
+    std::copy(text.begin(), text.end(), m_text.begin());
+    m_size = text.size();
+    m_parsed = true;
+    set.parse(text);
+    return set;
+  }
+
+private:
+  std::array<char, max_text> m_text{};
+  std::size_t m_size{};
+  bool m_parsed{};
+};
+
+/**
+ * @brief A linear map between two integer ranges, written "1-8 > 9-16".
+ *
+ * Empty or unparseable text gives an inactive map.
+ */
+struct cached_range_map
+{
+  cached_range_list in, out;
+  bool active{};
+
+  void update(std::string_view text, int min, int max, bool notes = false) noexcept
+  {
+    const auto sep = text.find('>');
+    if(sep == std::string_view::npos)
+    {
+      active = false;
+      return;
+    }
+    const auto& a = in.update(text.substr(0, sep), min, max, notes);
+    const auto& b = out.update(text.substr(sep + 1), min, max, notes);
+    active = in.valid && out.valid && a.count == 1 && b.count == 1;
+  }
+
+  bool contains(int v) const noexcept
+  {
+    return active && in.list.contains(v);
+  }
+
+  //! Rounds to the nearest output value.
+  int map(int v) const noexcept
+  {
+    const auto [lo, hi] = in.list.ranges[0];
+    const auto [olo, ohi] = out.list.ranges[0];
+    if(hi == lo)
+      return olo;
+    const int num = 2 * (v - lo) * (ohi - olo) + (hi - lo);
+    return olo + num / (2 * (hi - lo));
+  }
+};
+
+/**
+ * @brief Filters MIDI messages by kind, channel, note, controller and value,
+ * remaps channels, notes and controller numbers, and extracts values.
+ *
+ * Messages that are not kept go to the "Rejected" output, so the object also
+ * splits a keyboard or a set of channels.
+ *
+ * Text lists ("Channels", "Notes", "CCs", "Values") are comma-separated
+ * inclusive ranges such as "1-4, 6"; notes accept names such as "C-1-B2, C4".
+ * An empty list does not restrict anything.
+ *
+ * A note-off always goes to the output its note-on went to, with the same
+ * remapped channel and note, even when the settings changed in between.
  */
 struct MidiFilter
 {
@@ -28,7 +236,11 @@ struct MidiFilter
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-filter.html")
   halp_meta(uuid, "f66d6cf7-693a-47d4-a249-5978cc946e43")
   halp_meta(category, "Midi")
-  halp_meta(description, "Filter MIDI events by type, channel and index and expose raw or normalized values.")
+  halp_meta(author, "ossia score")
+  halp_meta(
+      description,
+      "Filter MIDI by kind, channel, note, controller and value, remap channels, "
+      "notes and controllers, and expose raw or normalized values.")
 
   enum Mode
   {
@@ -47,6 +259,16 @@ struct MidiFilter
     NoteAny,
     NoteRunning
   };
+  enum ValueTest
+  {
+    Inside,
+    Outside
+  };
+  enum OutOfMap
+  {
+    Pass,
+    Drop
+  };
 
   struct note_int
   {
@@ -62,7 +284,12 @@ struct MidiFilter
   struct
   {
     halp::midi_bus<"MIDI messages", libremidi::message> midi;
-    halp::enum_t<Type, "Filter type"> filter;
+    struct : halp::enum_t<Type, "Filter type">
+    {
+      halp_meta(
+          description,
+          "Kind of message kept when Kinds is empty, and kind of the value outputs")
+    } filter;
     struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}>
     {
       halp_meta(description, "Channel (0 = ALL)")
@@ -74,6 +301,60 @@ struct MidiFilter
     halp::enum_t<Mode, "Mode"> mode;
     halp::toggle<"Note off to zero"> note_off_to_zero;
     halp::toggle<"Zero to note off"> zero_to_note_off;
+
+    struct : halp::lineedit<"Kinds", "">
+    {
+      halp_meta(
+          description,
+          "Kinds kept, e.g. note, cc, program, bend, pressure, poly, sysex, mtc, "
+          "spp, song, tune, clock, start, continue, stop, sensing, reset, or the "
+          "groups all, channel, system, realtime, transport. A leading '-' "
+          "removes. Empty: Filter type decides.")
+    } kinds;
+    struct : halp::lineedit<"Channels", "">
+    {
+      halp_meta(description, "Channels kept, e.g. 1-4, 10. Empty: all.")
+    } channels;
+    struct : halp::lineedit<"Notes", "">
+    {
+      halp_meta(
+          description, "Notes kept, by number or name, e.g. C-1-B2, 60. Empty: all.")
+    } notes;
+    struct : halp::lineedit<"CCs", "">
+    {
+      halp_meta(description, "Controller numbers kept, e.g. 1, 7, 64-69. Empty: all.")
+    } ccs;
+    struct : halp::toggle<"Drop in range">
+    {
+      halp_meta(description, "Drop what Channels, Notes and CCs match instead of keeping it")
+    } drop_in_range;
+    struct : halp::lineedit<"Values", "">
+    {
+      halp_meta(
+          description,
+          "Second data byte tested (velocity, controller value, bend MSB, poly "
+          "pressure), e.g. 1-63. Empty: all.")
+    } values;
+    struct : halp::enum_t<ValueTest, "Value test">
+    {
+      halp_meta(description, "Keep values inside or outside the Values list")
+    } value_test;
+    struct : halp::lineedit<"Channel map", "">
+    {
+      halp_meta(description, "Linear channel remap, e.g. 1-8 > 9-16. Empty: none.")
+    } channel_map;
+    struct : halp::lineedit<"Note map", "">
+    {
+      halp_meta(description, "Linear note remap, e.g. C3-C4 > C4-C5. Empty: none.")
+    } note_map;
+    struct : halp::lineedit<"CC map", "">
+    {
+      halp_meta(description, "Linear controller number remap, e.g. 1-8 > 21-28. Empty: none.")
+    } cc_map;
+    struct : halp::enum_t<OutOfMap, "Out of map">
+    {
+      halp_meta(description, "What happens to kept messages outside a map's input range")
+    } out_of_map;
   } inputs;
 
   struct
@@ -88,6 +369,11 @@ struct MidiFilter
         ossia::variant<
             ossia::small_vector<uint8_t, 128>, ossia::small_vector<note_int, 128>>>
         poly_raw;
+
+    struct : halp::midi_bus<"Rejected", libremidi::message>
+    {
+      halp_meta(description, "Every message that was not kept")
+    } rejected;
   } outputs;
 
   ossia::small_flat_map<int, int, 128> running;
@@ -95,6 +381,290 @@ struct MidiFilter
   ossia::small_vector<note_int, 128> out_vel;
 
   using tick = halp::tick_musical;
+
+  void stop() noexcept { m_stop = true; }
+
+  void operator()() noexcept
+  {
+    update_settings();
+
+    if(m_stop)
+    {
+      m_stop = false;
+      release_held(0, 0);
+      running.clear();
+    }
+
+    for(const auto& m : inputs.midi)
+      process(m);
+  }
+
+private:
+  struct held_entry
+  {
+    bool to_main{}; //!< where the note-on went
+    bool base{};    //!< whether it passed the criteria and maps
+    bool pass{};    //!< whether it also passed the Index control
+    uint8_t channel{}; //!< 1 - 16, after the maps when base is set
+    uint8_t note{};    //!< after the maps when base is set
+  };
+  struct held_slot
+  {
+    static constexpr int depth = 4;
+    std::array<held_entry, depth> entries{};
+    uint8_t count{};
+  };
+
+  // Settings parsed from the text controls
+  cached_kind_set m_kinds;
+  cached_range_list m_channels, m_notes, m_ccs, m_values;
+  cached_range_map m_channel_map, m_note_map, m_cc_map;
+
+  //! Indexed by input (channel - 1) * 128 + note: what each held note-on became.
+  std::array<held_slot, 16 * 128> m_held{};
+  bool m_stop{};
+
+  void update_settings() noexcept
+  {
+    m_kinds.update(inputs.kinds.value);
+    m_channels.update(inputs.channels.value, 1, 16);
+    m_notes.update(inputs.notes.value, 0, 127, true);
+    m_ccs.update(inputs.ccs.value, 0, 127);
+    m_values.update(inputs.values.value, 0, 127);
+    m_channel_map.update(inputs.channel_map.value, 1, 16);
+    m_note_map.update(inputs.note_map.value, 0, 127, true);
+    m_cc_map.update(inputs.cc_map.value, 0, 127);
+  }
+
+  static bool is_note_kind(midi_kind k) noexcept
+  {
+    return k == midi_kind::note_on || k == midi_kind::note_off
+           || k == midi_kind::poly_pressure;
+  }
+
+  void send(bool to_main, const libremidi::message& m)
+  {
+    if(to_main)
+      outputs.midi.push_back(m);
+    else
+      outputs.rejected.push_back(m);
+  }
+
+  void push_held(int channel, int note, held_entry e) noexcept
+  {
+    auto& slot = m_held[(channel - 1) * 128 + note];
+    if(slot.count == held_slot::depth)
+    {
+      for(int i = 0; i + 1 < held_slot::depth; i++)
+        slot.entries[i] = slot.entries[i + 1];
+      slot.count--;
+    }
+    slot.entries[slot.count++] = e;
+  }
+
+  bool pop_held(int channel, int note, held_entry& e) noexcept
+  {
+    auto& slot = m_held[(channel - 1) * 128 + note];
+    if(slot.count == 0)
+      return false;
+    e = slot.entries[0];
+    for(int i = 0; i + 1 < slot.count; i++)
+      slot.entries[i] = slot.entries[i + 1];
+    slot.count--;
+    return true;
+  }
+
+  //! Sends a note-off for each held note of an input channel (0: all channels).
+  void release_held(int channel, int64_t ts)
+  {
+    for(int c = 1; c <= 16; c++)
+    {
+      if(channel != 0 && c != channel)
+        continue;
+      for(int n = 0; n < 128; n++)
+      {
+        auto& slot = m_held[(c - 1) * 128 + n];
+        for(int i = 0; i < slot.count; i++)
+        {
+          const auto& e = slot.entries[i];
+          auto off = e.to_main ? libremidi::channel_events::note_off(e.channel, e.note, 0)
+                               : libremidi::channel_events::note_off(c, n, 0);
+          off.timestamp = ts;
+          send(e.to_main, off);
+        }
+        slot.count = 0;
+      }
+    }
+  }
+
+  //! Kind selection: the Kinds list, or the legacy Filter type when it is empty.
+  bool kind_accepts(const libremidi::message& m, midi_kind k) const noexcept
+  {
+    if(!m_kinds.set.empty)
+      return m_kinds.set.contains(k);
+
+    using mt = libremidi::message_type;
+    const auto t = m.get_message_type();
+    const bool zero = m.size() >= 3 && m.bytes[2] == 0;
+    switch(inputs.filter)
+    {
+      case NoteOn:
+        return t == mt::NOTE_ON && !(inputs.zero_to_note_off && zero);
+      case NoteOff:
+        return t == mt::NOTE_OFF
+               || (t == mt::NOTE_ON && inputs.zero_to_note_off && zero);
+      case NoteAny:
+      case NoteRunning:
+        return t == mt::NOTE_ON || t == mt::NOTE_OFF;
+      case AfterTouch:
+        return t == mt::AFTERTOUCH;
+      case CC:
+        return t == mt::CONTROL_CHANGE;
+      case PolyPressure:
+        return t == mt::POLY_PRESSURE;
+      case PitchBend:
+        return t == mt::PITCH_BEND;
+    }
+    return false;
+  }
+
+  //! The Index control applies to notes, poly pressure and controllers.
+  bool index_accepts(const libremidi::message& m, midi_kind k) const noexcept
+  {
+    const bool keyed = is_note_kind(k) || k == midi_kind::control_change;
+    return !keyed || inputs.index == 0 || (m.size() >= 2 && m.bytes[1] == inputs.index);
+  }
+
+  //! Channel, range lists and value range. System messages always pass.
+  bool criteria(const libremidi::message& m, midi_kind k) const noexcept
+  {
+    if(!is_channel_message(m))
+      return true;
+
+    const int ch = channel_of(m);
+    if(inputs.channel != 0 && ch != inputs.channel)
+      return false;
+
+    const bool keyed = is_note_kind(k) || k == midi_kind::control_change;
+    bool tested = false;
+    bool inside = true;
+    if(!m_channels.list.empty())
+    {
+      tested = true;
+      inside = inside && m_channels.list.contains(ch);
+    }
+    if(is_note_kind(k) && !m_notes.list.empty() && m.size() >= 2)
+    {
+      tested = true;
+      inside = inside && m_notes.list.contains(m.bytes[1]);
+    }
+    if(k == midi_kind::control_change && !m_ccs.list.empty() && m.size() >= 2)
+    {
+      tested = true;
+      inside = inside && m_ccs.list.contains(m.bytes[1]);
+    }
+    if(tested && inside == bool(inputs.drop_in_range))
+      return false;
+
+    const bool has_value = keyed || k == midi_kind::pitch_bend;
+    if(has_value && !m_values.list.empty() && m.size() >= 3)
+    {
+      const bool in = m_values.list.contains(m.bytes[2]);
+      if(in != (inputs.value_test == Inside))
+        return false;
+    }
+    return true;
+  }
+
+  //! Applies the maps. Returns false when the message falls out of a map
+  //! that drops.
+  bool remap(libremidi::message& m, midi_kind k) const noexcept
+  {
+    if(!is_channel_message(m))
+      return true;
+    const bool drop = inputs.out_of_map == Drop;
+
+    if(m_channel_map.active)
+    {
+      const int ch = channel_of(m);
+      if(m_channel_map.contains(ch))
+        set_channel(m, m_channel_map.map(ch));
+      else if(drop)
+        return false;
+    }
+    if(is_note_kind(k) && m_note_map.active && m.size() >= 2)
+    {
+      if(m_note_map.contains(m.bytes[1]))
+        m.bytes[1] = uint8_t(m_note_map.map(m.bytes[1]));
+      else if(drop)
+        return false;
+    }
+    if(k == midi_kind::control_change && m_cc_map.active && m.size() >= 2)
+    {
+      if(m_cc_map.contains(m.bytes[1]))
+        m.bytes[1] = uint8_t(m_cc_map.map(m.bytes[1]));
+      else if(drop)
+        return false;
+    }
+    return true;
+  }
+
+  void process(const libremidi::message& in)
+  {
+    if(in.size() == 0)
+    {
+      outputs.rejected.push_back(in);
+      return;
+    }
+
+    const auto k = classify(in);
+    if(is_all_notes_off(in))
+      release_held(channel_of(in), in.timestamp);
+
+    const bool kind_ok = kind_accepts(in, k);
+
+    libremidi::message out = in;
+    held_entry tracked;
+    const bool is_tracked = k == midi_kind::note_off && in.size() >= 3
+                            && pop_held(channel_of(in), in.bytes[1], tracked);
+
+    // base: the criteria and maps, which also gate the value outputs.
+    // pass: base and the Index control.
+    bool base{}, pass{};
+    if(is_tracked)
+    {
+      base = tracked.base;
+      pass = tracked.pass;
+      if(base)
+      {
+        set_channel(out, tracked.channel);
+        out.bytes[1] = tracked.note;
+      }
+    }
+    else
+    {
+      base = criteria(in, k) && remap(out, k);
+      if(!base)
+        out = in;
+      pass = base && index_accepts(in, k);
+    }
+
+    const bool to_main = kind_ok && pass;
+    if(k == midi_kind::note_on)
+    {
+      push_held(
+          channel_of(in), in.bytes[1],
+          {to_main, base, pass, uint8_t(channel_of(out)), out.bytes[1]});
+    }
+
+    if(base)
+      extract(in, out);
+
+    send(to_main, to_main ? out : in);
+  }
+
+  // Value outputs, driven by the Filter type ------------------------------
+
   void push_poly(int ts)
   {
     out_no_vel.clear();
@@ -156,179 +726,166 @@ struct MidiFilter
   {
     const int pitch = (int)m.bytes[1];
     const int vel = (int)m.bytes[2];
-    if(inputs.index == 0 || inputs.index == pitch)
+    switch(inputs.mode)
     {
-      outputs.midi.push_back(m);
-      switch(inputs.mode)
-      {
-        case Both: {
-          outputs.raw(m.timestamp, note_int{pitch, vel});
-          outputs.normalized(m.timestamp, note_float{pitch, vel / 127.f});
-          break;
-        }
-        case Index: {
-          outputs.raw(m.timestamp, pitch);
-          outputs.normalized(m.timestamp, vel / 127.);
-          break;
-        }
-        case Value: {
-          outputs.raw(m.timestamp, vel);
-          outputs.normalized(m.timestamp, vel / 127.);
-          break;
-        }
+      case Both: {
+        outputs.raw(m.timestamp, note_int{pitch, vel});
+        outputs.normalized(m.timestamp, note_float{pitch, vel / 127.f});
+        break;
+      }
+      case Index: {
+        outputs.raw(m.timestamp, pitch);
+        outputs.normalized(m.timestamp, vel / 127.);
+        break;
+      }
+      case Value: {
+        outputs.raw(m.timestamp, vel);
+        outputs.normalized(m.timestamp, vel / 127.);
+        break;
       }
     }
   }
 
-  void operator()()
+  //! `in` decides (type, Index), `m` is what is sent out and gives the values.
+  void extract(const libremidi::message& in, const libremidi::message& m)
   {
-    for(auto& m : inputs.midi)
-    {
-      if(inputs.channel != 0 && m.get_channel() == inputs.channel)
-        continue;
+    using mt = libremidi::message_type;
+    const auto t = in.get_message_type();
+    if(m.size() < 2)
+      return;
+    const bool index_ok = inputs.index == 0 || inputs.index == in.bytes[1];
+    const bool zero = m.size() >= 3 && m.bytes[2] == 0;
 
-      auto add_note_on = [this, &m] {
-        running[m.bytes[1]] = m.bytes[2];
+    auto add_note_on = [&] {
+      running[m.bytes[1]] = m.bytes[2];
+      if(index_ok)
         output_2_bytes(m);
-        push_poly(m.timestamp);
-      };
-      auto remove_note_off = [this, &m] {
-        running.erase(m.bytes[1]);
+      push_poly(m.timestamp);
+    };
+    auto remove_note_off = [&] {
+      running.erase(m.bytes[1]);
+      if(index_ok)
         output_2_bytes(m);
-        push_poly(m.timestamp);
-      };
-      auto process_note_on = [&] {
-        if(inputs.zero_to_note_off && m.bytes[2] == 0)
-          remove_note_off();
-        else
-          add_note_on();
-      };
+      push_poly(m.timestamp);
+    };
+    auto process_note_on = [&] {
+      if(inputs.zero_to_note_off && zero)
+        remove_note_off();
+      else
+        add_note_on();
+    };
 
-      auto process_note_off_running = [&] {
-        const int pitch = (int)m.bytes[1];
-        running.erase(pitch);
+    // Note-offs only appear in the poly array, and as zero if requested
+    auto process_note_off_running = [&] {
+      const int pitch = (int)m.bytes[1];
+      running.erase(pitch);
 
-        if(inputs.index == 0 || inputs.index == m.bytes[1])
+      if(index_ok)
+      {
+        if(inputs.note_off_to_zero)
         {
-          outputs.midi.push_back(m);
-          if(inputs.note_off_to_zero)
+          switch(inputs.mode)
           {
-            switch(inputs.mode)
-            {
-              case Both: {
-                outputs.raw(m.timestamp, note_int{pitch, 0});
-                outputs.normalized(m.timestamp, note_float{pitch, 0.f});
-                break;
-              }
-              case Index: {
-                outputs.raw(m.timestamp, pitch);
-                outputs.normalized(m.timestamp, 0.);
-                break;
-              }
-              case Value: {
-                outputs.raw(m.timestamp, 0);
-                outputs.normalized(m.timestamp, 0.);
-                break;
-              }
+            case Both: {
+              outputs.raw(m.timestamp, note_int{pitch, 0});
+              outputs.normalized(m.timestamp, note_float{pitch, 0.f});
+              break;
             }
-            push_poly_with_note_offs(m.timestamp, pitch);
+            case Index: {
+              outputs.raw(m.timestamp, pitch);
+              outputs.normalized(m.timestamp, 0.);
+              break;
+            }
+            case Value: {
+              outputs.raw(m.timestamp, 0);
+              outputs.normalized(m.timestamp, 0.);
+              break;
+            }
+          }
+          push_poly_with_note_offs(m.timestamp, pitch);
+        }
+        else
+        {
+          push_poly(m.timestamp);
+        }
+      }
+    };
+
+    switch(inputs.filter)
+    {
+      case Type::NoteOn:
+        if(t == mt::NOTE_ON && m.size() >= 3)
+        {
+          if(inputs.zero_to_note_off && zero)
+          {
+            running.erase(m.bytes[1]);
+            push_poly(m.timestamp);
           }
           else
           {
-            push_poly(m.timestamp);
+            add_note_on();
           }
         }
-      };
+        break;
 
-      const auto t = m.get_message_type();
-      switch(inputs.filter)
-      {
-        case Type::NoteOn:
-          if(t == libremidi::message_type::NOTE_ON)
-          {
-            if(inputs.zero_to_note_off && m.bytes[2] == 0)
-            {
-              running.erase(m.bytes[1]);
-              push_poly(m.timestamp);
-            }
-            else
-            {
-              add_note_on();
-            }
-          }
+      case Type::NoteOff:
+        if(m.size() < 3)
           break;
-
-        case Type::NoteOff:
-          if(t == libremidi::message_type::NOTE_ON)
-          {
-            if(inputs.zero_to_note_off && m.bytes[2] == 0)
-              remove_note_off();
-          }
-          else if(t == libremidi::message_type::NOTE_OFF)
+        if(t == mt::NOTE_ON)
+        {
+          if(inputs.zero_to_note_off && zero)
             remove_note_off();
-          break;
+        }
+        else if(t == mt::NOTE_OFF)
+          remove_note_off();
+        break;
 
-        // In this case we transmit note ons / note offs normally
-        case Type::NoteAny:
-          if(t == libremidi::message_type::NOTE_ON)
-            process_note_on();
-          else if(t == libremidi::message_type::NOTE_OFF)
-            remove_note_off();
+      case Type::NoteAny:
+        if(m.size() < 3)
           break;
+        if(t == mt::NOTE_ON)
+          process_note_on();
+        else if(t == mt::NOTE_OFF)
+          remove_note_off();
+        break;
 
-        // In this case we want the poly array to inform us about the running notes
-        // In particular we take note off into account but we don't output them other than at zero if requested.
-        // They will still be output from the midi out.
-        case Type::NoteRunning:
-          if(t == libremidi::message_type::NOTE_ON)
-          {
-            if(inputs.zero_to_note_off && m.bytes[2] == 0)
-              process_note_off_running();
-            else
-              process_note_on();
-          }
-          else if(t == libremidi::message_type::NOTE_OFF)
+      case Type::NoteRunning:
+        if(m.size() < 3)
+          break;
+        if(t == mt::NOTE_ON)
+        {
+          if(inputs.zero_to_note_off && zero)
             process_note_off_running();
-          break;
+          else
+            process_note_on();
+        }
+        else if(t == mt::NOTE_OFF)
+          process_note_off_running();
+        break;
 
-        case Type::AfterTouch:
-          if(t == libremidi::message_type::AFTERTOUCH)
-          {
-            outputs.midi.push_back(m);
-            outputs.raw(m.timestamp, m.bytes[1]);
-            outputs.normalized(m.timestamp, m.bytes[1] / 127.);
-          }
-          break;
-        case Type::CC:
-          if(t == libremidi::message_type::CONTROL_CHANGE)
-          {
-            if(inputs.index == 0 || inputs.index == m.bytes[1])
-            {
-              outputs.midi.push_back(m);
-              output_2_bytes(m);
-            }
-          }
-          break;
-        case Type::PolyPressure:
-          if(t == libremidi::message_type::POLY_PRESSURE)
-          {
-            if(inputs.index == 0 || inputs.index == m.bytes[1])
-            {
-              outputs.midi.push_back(m);
-              output_2_bytes(m);
-            }
-          }
-          break;
-        case Type::PitchBend:
-          if(t == libremidi::message_type::PITCH_BEND)
-          {
-            outputs.midi.push_back(m);
-            const int pb = m.bytes[2] * 128 + m.bytes[1];
-            outputs.raw(m.timestamp, pb);
-            outputs.normalized(m.timestamp, pb / (128. * 128.) - 0.5);
-          }
-          break;
-      }
+      case Type::AfterTouch:
+        if(t == mt::AFTERTOUCH)
+        {
+          outputs.raw(m.timestamp, m.bytes[1]);
+          outputs.normalized(m.timestamp, m.bytes[1] / 127.);
+        }
+        break;
+      case Type::CC:
+        if(t == mt::CONTROL_CHANGE && index_ok && m.size() >= 3)
+          output_2_bytes(m);
+        break;
+      case Type::PolyPressure:
+        if(t == mt::POLY_PRESSURE && index_ok && m.size() >= 3)
+          output_2_bytes(m);
+        break;
+      case Type::PitchBend:
+        if(t == mt::PITCH_BEND && m.size() >= 3)
+        {
+          const int pb = m.bytes[2] * 128 + m.bytes[1];
+          outputs.raw(m.timestamp, pb);
+          outputs.normalized(m.timestamp, pb / (128. * 128.) - 0.5);
+        }
+        break;
     }
   }
 };
