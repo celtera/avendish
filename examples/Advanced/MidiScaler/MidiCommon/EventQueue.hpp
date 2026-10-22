@@ -39,9 +39,11 @@ struct event_queue
   {
     int64_t at{};
     libremidi::message msg;
+    //! Free for the owner, e.g. to know which input note an event belongs to.
+    uint32_t tag{};
   };
 
-  void schedule(int64_t at, const libremidi::message& m) noexcept
+  void schedule(int64_t at, const libremidi::message& m, uint32_t tag = 0) noexcept
   {
     if(m_size == Capacity)
     {
@@ -69,11 +71,13 @@ struct event_queue
     m_events[pos].at = at;
     m_events[pos].msg = m;
     m_events[pos].msg.timestamp = 0;
+    m_events[pos].tag = tag;
     m_size++;
   }
 
   //! Sends every message due before `now + frames`, with its offset in the
   //! tick as timestamp. Messages due in the past go out at offset 0.
+  //! `send` takes the message, and optionally the event's tag.
   template <typename Send>
   void release(int64_t now, int frames, Send&& send) noexcept
   {
@@ -85,7 +89,10 @@ struct event_queue
     {
       auto msg = m_events[n].msg;
       msg.timestamp = std::clamp<int64_t>(m_events[n].at - now, 0, frames - 1);
-      send(std::move(msg));
+      if constexpr(requires { send(std::move(msg), m_events[n].tag); })
+        send(std::move(msg), m_events[n].tag);
+      else
+        send(std::move(msg));
       n++;
     }
     if(n > 0)
