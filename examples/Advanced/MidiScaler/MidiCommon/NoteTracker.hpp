@@ -102,6 +102,15 @@ struct note_tracker
     return false;
   }
 
+  //! The oldest held instance of an input note, or nullptr.
+  held* find(int channel, int pitch) noexcept
+  {
+    for(int i = 0; i < m_count; i++)
+      if(m_held[i].channel == channel && m_held[i].pitch == pitch)
+        return &m_held[i];
+    return nullptr;
+  }
+
   int size() const noexcept { return m_count; }
   const held& operator[](int i) const noexcept { return m_held[i]; }
 
