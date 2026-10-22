@@ -9,6 +9,7 @@
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
+#include <Advanced/MidiScaler/MidiCommon/Rhythm.hpp>
 #include <libremidi/message.hpp>
 #include <rnd/random.hpp>
 
@@ -53,6 +54,14 @@ public:
   static constexpr int max_pending = 128;
   //! Maximum number of notes tracked between their note-on and note-off
   static constexpr int max_active = 64;
+
+  //! What one Chance draw covers.
+  enum ChanceUnit
+  {
+    Note,
+    Chord,
+    Period
+  };
 
   struct ins
   {
@@ -150,6 +159,77 @@ public:
           "Standard deviation, in semitones, of a random transposition of each "
           "note (its note-off follows it)")
     } pitch;
+
+    // ---- Chance, extended -----------------------------------------------
+    struct : halp::enum_t<ChanceUnit, "Chance per">
+    {
+      enum widget
+      {
+        combobox
+      };
+      halp_meta(
+          description,
+          "Note draws Chance for every note. Chord draws once for the notes "
+          "arriving within the Chord window. Period draws once per period: a "
+          "failed draw silences every note of that period.")
+    } chance_unit;
+
+    struct : halp::time_chooser<"Period", halp::range{0.01, 8., 0.5}>
+    {
+      halp_meta(description, "Length of a chance period, on the musical grid")
+    } chance_period;
+
+    struct : halp::toggle<"Vel. chance">
+    {
+      halp_meta(
+          description,
+          "The velocity is also a probability: 127 always plays, 64 plays about "
+          "half of the time")
+    } velocity_chance;
+
+    // ---- Euclid gate ----------------------------------------------------
+    struct : halp::toggle<"Euclid">
+    {
+      halp_meta(
+          description, "Drops the notes arriving on a rest of a euclidean rhythm")
+    } euclid;
+
+    struct : halp::spinbox_i32<"Steps", halp::range{1, 64, 16}>
+    {
+      halp_meta(description, "Steps in the euclidean rhythm")
+    } euclid_steps;
+
+    struct : halp::spinbox_i32<"Pulses", halp::range{0, 64, 4}>
+    {
+      halp_meta(description, "Hits spread as evenly as possible over the steps")
+    } euclid_pulses;
+
+    struct : halp::spinbox_i32<"Rotation", halp::range{0, 63, 0}>
+    {
+      halp_meta(description, "Turns the rhythm this many steps later")
+    } euclid_rotation;
+
+    struct : halp::time_chooser<"Step", halp::range{0.01, 2., 0.125}>
+    {
+      halp_meta(
+          description, "Length of a step, on the musical grid: the rhythm starts "
+                       "at the start of the timeline")
+    } euclid_step;
+
+    // ---- Controllers ----------------------------------------------------
+    struct : halp::spinbox_i32<"Rand. CC", halp::range{-1, 127, -1}>
+    {
+      halp_meta(
+          description, "Controller whose values get a random offset (-1: none)")
+    } random_cc;
+
+    struct : halp::range_slider_f32<
+                 "CC offset", halp::range_slider_range{-127., 127., {0., 0.}}>
+    {
+      halp_meta(
+          description, "The offset added to that controller is drawn uniformly "
+                       "in this range")
+    } random_cc_range;
   } inputs;
 
   struct
@@ -186,12 +266,30 @@ public:
     }
   }
 
+  //! Called by the host when playback stops; the next tick, which may have no
+  //! frames, ends every sounding note and drops the queue.
+  void stop() noexcept { m_stop_requested = true; }
+
   using tick = halp::tick_musical;
   void operator()(halp::tick_musical t) noexcept
   {
     const int frames = t.frames > 0 ? t.frames : 0;
 
     cache_parameters();
+
+    if(m_stop_requested)
+    {
+      m_stop_requested = false;
+      flush_sounding(0);
+      full_reset();
+    }
+
+    m_tempo = t.tempo > 0. ? t.tempo : 120.;
+    m_quarter_start = t.start_position_in_quarters;
+    m_quarters_per_frame
+        = (frames > 0 && t.end_position_in_quarters > t.start_position_in_quarters)
+              ? (t.end_position_in_quarters - t.start_position_in_quarters) / frames
+              : 0.;
 
     // A rewind restarts a seeded take, so that rendering twice gives the same
     // result. Free-running (seed 0) just keeps going. Anything already sent out
@@ -271,6 +369,34 @@ public:
         halp::item<&ins::key_range> key_range;
         halp::item<&ins::seed> seed;
       } scope;
+
+      struct
+      {
+        halp_meta(name, "Chance")
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::chance_unit> chance_unit;
+        halp::item<&ins::chance_period> chance_period;
+        halp::item<&ins::velocity_chance> velocity_chance;
+      } chance;
+
+      struct
+      {
+        halp_meta(name, "Gate")
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::euclid> euclid;
+        halp::item<&ins::euclid_steps> euclid_steps;
+        halp::item<&ins::euclid_pulses> euclid_pulses;
+        halp::item<&ins::euclid_rotation> euclid_rotation;
+        halp::item<&ins::euclid_step> euclid_step;
+      } gate;
+
+      struct
+      {
+        halp_meta(name, "CC")
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::random_cc> random_cc;
+        halp::item<&ins::random_cc_range> random_cc_range;
+      } cc;
     } settings;
   };
 
@@ -560,6 +686,14 @@ private:
           outputs.midi.push_back(std::move(msg));
           return;
         }
+        if(m.size() >= 3 && m_random_cc >= 0 && m.bytes[1] == m_random_cc
+           && (m_channel == 0 || m.get_channel() == m_channel))
+        {
+          auto msg = m;
+          msg.bytes[2] = uint8_t(random_cc_value(m.bytes[2]));
+          schedule(arrival + m_latency, msg);
+          return;
+        }
         break;
 
       default:
@@ -607,7 +741,8 @@ private:
     // A previous instance of the same note stays tracked: note-offs match the
     // oldest one first, as MIDI does, and the output stage ends it if this
     // one starts before its note-off.
-    const bool dropped = (m_chance < 1.f) && (uniform() > m_chance);
+    const bool gated = m_euclid && !euclid_hit_at(arrival);
+    const bool dropped = gated || !chance_passes(m, arrival);
 
     active_note note;
     note.id = m_next_id++;
@@ -657,6 +792,80 @@ private:
     out.bytes[1] = note.out_pitch;
     out.bytes[2] = uint8_t(std::clamp(vel, m_vel_lo, m_vel_hi));
     schedule(note.on_at, out, note.id);
+  }
+
+  //! Position of a date of the current tick on the musical grid, in quarter
+  //! notes. When the host gives no musical position, the frame clock and the
+  //! tempo stand in for it.
+  double quarter_at(int64_t arrival) const noexcept
+  {
+    if(m_quarters_per_frame > 0.)
+      return m_quarter_start + double(arrival - m_now) * m_quarters_per_frame;
+    return double(arrival) / m_rate * m_tempo / 60.;
+  }
+
+  //! Index of the grid cell of `length_s` seconds a date falls in. The small
+  //! bias keeps a note sitting exactly on a boundary in the cell it starts.
+  int64_t grid_index(int64_t arrival, double length_s) const noexcept
+  {
+    const double len_q = length_s * m_tempo / 60.;
+    if(len_q <= 0.)
+      return 0;
+    return int64_t(std::floor(quarter_at(arrival) / len_q + 1e-6));
+  }
+
+  bool euclid_hit_at(int64_t arrival) const noexcept
+  {
+    const int64_t idx = grid_index(arrival, m_euclid_step_s);
+    const int64_t step = ((idx % m_euclid_steps) + m_euclid_steps) % m_euclid_steps;
+    return mtk::euclid_hit(int(step), m_euclid_steps, m_euclid_pulses, m_euclid_rotation);
+  }
+
+  //! Draws as little as possible: with Chance at 1 and the velocity not used
+  //! as a probability, nothing is drawn, so the other generators keep their
+  //! sequence.
+  bool chance_passes(const libremidi::message& m, int64_t arrival) noexcept
+  {
+    const float vel_p = m_velocity_chance ? float(m.bytes[2]) / 127.f : 1.f;
+
+    switch(m_chance_unit)
+    {
+      case Note:
+      default: {
+        const float p = m_chance * vel_p;
+        return !((p < 1.f) && (uniform() > p));
+      }
+
+      case Chord: {
+        const bool new_chord
+            = !(m_chord_open && (arrival - m_chord_anchor) <= m_chord_window);
+        if(new_chord)
+          m_chord_draw = (m_chance < 1.f || m_velocity_chance) ? uniform() : 0.f;
+        return !(m_chord_draw > m_chance * vel_p);
+      }
+
+      case Period: {
+        const int64_t idx = grid_index(arrival, m_chance_period_s);
+        if(!m_period_valid || idx != m_period_index)
+        {
+          m_period_valid = true;
+          m_period_index = idx;
+          m_period_open = !((m_chance < 1.f) && (uniform() > m_chance));
+        }
+        if(!m_period_open)
+          return false;
+        return !((vel_p < 1.f) && (uniform() > vel_p));
+      }
+    }
+  }
+
+  //! The random offset of the controller selected by Rand. CC.
+  int random_cc_value(int value) noexcept
+  {
+    double offset = m_cc_lo;
+    if(m_cc_hi > m_cc_lo)
+      offset += double(uniform()) * (m_cc_hi - m_cc_lo);
+    return std::clamp(int(std::lround(double(value) + offset)), 0, 127);
   }
 
   void note_off(const libremidi::message& m, int64_t arrival) noexcept
@@ -738,6 +947,21 @@ private:
     const auto [klo, khi] = inputs.key_range.value;
     m_key_lo = std::clamp(int(std::lround(klo)), 0, 127);
     m_key_hi = std::clamp(int(std::lround(khi)), m_key_lo, 127);
+
+    m_chance_unit = inputs.chance_unit.value;
+    m_chance_period_s = std::max(0.001, double(inputs.chance_period.value));
+    m_velocity_chance = inputs.velocity_chance.value;
+
+    m_euclid = inputs.euclid.value;
+    m_euclid_steps = std::clamp(int(inputs.euclid_steps.value), 1, 64);
+    m_euclid_pulses = std::clamp(int(inputs.euclid_pulses.value), 0, 64);
+    m_euclid_rotation = std::clamp(int(inputs.euclid_rotation.value), 0, 63);
+    m_euclid_step_s = std::max(0.001, double(inputs.euclid_step.value));
+
+    m_random_cc = std::clamp(int(inputs.random_cc.value), -1, 127);
+    const auto [clo, chi] = inputs.random_cc_range.value;
+    m_cc_lo = std::clamp(double(clo), -127., 127.);
+    m_cc_hi = std::clamp(double(chi), m_cc_lo, 127.);
   }
 
   //! Random state only. Safe to call while notes are in flight: it touches
@@ -752,6 +976,8 @@ private:
     m_chord_open = false;
     m_chord_index = 0;
     m_chord_offset = 0;
+    m_chord_draw = 0.f;
+    m_period_valid = false;
 
     if(m_seed != 0)
       m_rng.seed(uint64_t(m_seed), UINT64_C(0x9e3779b97f4a7c15));
@@ -856,5 +1082,28 @@ private:
   int m_vel_lo{1}, m_vel_hi{127};
   int m_key_lo{0}, m_key_hi{127};
   int m_seed{};
+
+  ChanceUnit m_chance_unit{Note};
+  double m_chance_period_s{0.5};
+  bool m_velocity_chance{};
+  bool m_euclid{};
+  int m_euclid_steps{16};
+  int m_euclid_pulses{4};
+  int m_euclid_rotation{};
+  double m_euclid_step_s{0.125};
+  int m_random_cc{-1};
+  double m_cc_lo{}, m_cc_hi{};
+
+  //! The musical position of the current tick
+  double m_tempo{120.};
+  double m_quarter_start{};
+  double m_quarters_per_frame{};
+
+  float m_chord_draw{};
+  int64_t m_period_index{};
+  bool m_period_valid{};
+  bool m_period_open{true};
+
+  bool m_stop_requested{};
 };
 }
