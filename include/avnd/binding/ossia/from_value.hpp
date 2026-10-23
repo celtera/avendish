@@ -1090,8 +1090,12 @@ struct from_ossia_value_impl
       }
       case ossia::val_type::LIST: {
         const std::vector<ossia::value>& vl = *src.target<std::vector<ossia::value>>();
-        f.resize(vl.size());
-        for(int i = 0, n = vl.size(); i < n; i++)
+        std::size_t n = vl.size();
+        // Fixed-capacity containers keep their first elements
+        if constexpr(requires { T::static_capacity; })
+          n = std::min(n, std::size_t(T::static_capacity));
+        f.resize(n);
+        for(std::size_t i = 0; i < n; i++)
           (*this)(vl[i], f[i]);
         return true;
         break;

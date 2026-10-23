@@ -30,6 +30,12 @@ enum class widget_type
   lineedit,
   combobox,
   string_list,
+  //! Rows of numbers, see halp::value_list
+  value_list,
+  //! Degree to degree map, see halp::note_matrix
+  note_matrix,
+  //! The 16 MIDI channels, see halp::channel_mask
+  channel_mask,
   choices,
   xy,
   xy_spinbox,
@@ -87,6 +93,12 @@ struct widget_reflection
         return "combobox";
       case widget_type::string_list:
         return "string_list";
+      case widget_type::value_list:
+        return "value_list";
+      case widget_type::note_matrix:
+        return "note_matrix";
+      case widget_type::channel_mask:
+        return "channel_mask";
       case widget_type::choices:
         return "choices";
       case widget_type::xy:
@@ -233,6 +245,18 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::string_list; })
   {
     return widget_reflection<value_type>{widget_type::string_list};
+  }
+  else if constexpr(requires { T::widget::channel_mask; })
+  {
+    return widget_reflection<value_type>{widget_type::channel_mask};
+  }
+  else if constexpr(requires { T::widget::note_matrix; })
+  {
+    return widget_reflection<value_type>{widget_type::note_matrix};
+  }
+  else if constexpr(requires { T::widget::value_list; })
+  {
+    return widget_reflection<value_type>{widget_type::value_list};
   }
   else if constexpr(requires { T::widget::multi_slider; })
   {
