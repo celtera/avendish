@@ -7,6 +7,7 @@
 
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
@@ -106,7 +107,7 @@ struct MidiTransform
       "Song select", "Tune request", "Clock", "Start", "Continue", "Stop",        \
       "Active sensing", "Reset"
 #define MTK_SOURCE_NAMES                                                            \
-  "Arg 1", "Arg 2", "Channel arg", "Data byte 1", "Data byte 2", "Incoming channel"
+  "Value 1", "Value 2", "Fixed channel", "Data byte 1", "Data byte 2", "Incoming channel"
 
   struct ins
   {
@@ -200,36 +201,36 @@ struct MidiTransform
       halp_meta(description, "Source of the produced second data byte")
     } byte2_source;
 
-    struct : halp::spinbox_i32<"Arg 1", halp::range{0, 127, 0}>
+    struct : halp::spinbox_i32<"Value 1", halp::range{0, 127, 0}>
     {
       halp_meta(description, "Constant usable as a source")
     } arg1;
-    struct : halp::spinbox_i32<"Arg 2", halp::range{0, 127, 0}>
+    struct : halp::spinbox_i32<"Value 2", halp::range{0, 127, 0}>
     {
       halp_meta(description, "Constant usable as a source")
     } arg2;
-    struct : halp::spinbox_i32<"Channel arg", halp::range{1, 16, 1}>
+    struct : halp::spinbox_i32<"Fixed channel", halp::range{1, 16, 1}>
     {
       halp_meta(description, "Channel usable as a source")
     } channel_arg;
 
-    struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}>
+    struct : halp::spinbox_i32<"Only channel", halp::range{0, 16, 0}>
     {
       halp_meta(description, "Channel of the messages transformed (0 = all)")
     } channel;
-    struct : halp::lineedit<"Byte 1", "">
+    struct : halp::lineedit<"Byte 1 range", "">
     {
       halp_meta(description, "First data byte range tested, e.g. 0-63 or C3-B3. Empty: all.")
     } byte1_range;
-    struct : halp::enum_t<Test, "Byte 1 test">
+    struct : halp::enum_t<Test, "Byte 1 mode">
     {
       halp_meta(description, "Transform messages inside or outside the Byte 1 range")
     } byte1_test;
-    struct : halp::lineedit<"Byte 2", "">
+    struct : halp::lineedit<"Byte 2 range", "">
     {
       halp_meta(description, "Second data byte range tested, e.g. 1-127. Empty: all.")
     } byte2_range;
-    struct : halp::enum_t<Test, "Byte 2 test">
+    struct : halp::enum_t<Test, "Byte 2 mode">
     {
       halp_meta(description, "Transform messages inside or outside the Byte 2 range")
     } byte2_test;
@@ -250,6 +251,49 @@ struct MidiTransform
   {
     halp::midi_bus<"MIDI", libremidi::message> midi;
   } outputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi transform")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Convert")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::what> what;
+      halp::item<&ins::into> into;
+      halp::item<&ins::mode> mode;
+      halp::item<&ins::realtime_first> realtime_first;
+    } convert;
+
+    struct
+    {
+      halp_meta(name, "Output")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::channel_source> channel_source;
+      halp::item<&ins::byte1_source> byte1_source;
+      halp::item<&ins::byte2_source> byte2_source;
+      halp::item<&ins::arg1> arg1;
+      halp::item<&ins::arg2> arg2;
+      halp::item<&ins::channel_arg> channel_arg;
+    } output;
+
+    struct
+    {
+      halp_meta(name, "Input filter")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::channel> channel;
+      halp::item<&ins::byte1_range> byte1_range;
+      halp::item<&ins::byte1_test> byte1_test;
+      halp::item<&ins::byte2_range> byte2_range;
+      halp::item<&ins::byte2_test> byte2_test;
+    } filter;
+  };
 
   MidiTransform() noexcept
   {

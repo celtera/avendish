@@ -6,6 +6,7 @@
 #include <Advanced/MidiScaler/MidiCommon/Messages.hpp>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
@@ -117,6 +118,60 @@ struct MidiDelay
   {
     halp::midi_bus<"MIDI", libremidi::message> midi;
   } outputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi delay")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Echo")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::time> time;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        static constexpr auto condition()
+        {
+          return halp::enabled_when<&ins::infinite, false>{};
+        }
+        halp::item<&ins::repeats> repeats;
+      } repeats;
+      halp::item<&ins::infinite> infinite;
+      halp::item<&ins::feedback> feedback;
+      halp::item<&ins::floor> floor;
+      halp::item<&ins::pitch_step> pitch_step;
+    } echo;
+
+    struct
+    {
+      halp_meta(name, "Mix")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::mix> mix;
+      halp::item<&ins::mpe> mpe;
+    } mix;
+
+    struct
+    {
+      halp_meta(name, "Length")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::fixed> fixed;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        static constexpr auto condition()
+        {
+          return halp::enabled_when<&ins::fixed, true>{};
+        }
+        halp::item<&ins::length> length;
+      } length;
+    } length;
+  };
 
   void prepare(halp::setup s) noexcept
   {

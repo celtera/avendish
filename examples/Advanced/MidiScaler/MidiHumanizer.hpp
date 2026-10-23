@@ -217,14 +217,14 @@ public:
     } euclid_step;
 
     // ---- Controllers ----------------------------------------------------
-    struct : halp::spinbox_i32<"Rand. CC", halp::range{-1, 127, -1}>
+    struct : halp::spinbox_i32<"Random CC", halp::range{-1, 127, -1}>
     {
       halp_meta(
           description, "Controller whose values get a random offset (-1: none)")
     } random_cc;
 
     struct : halp::range_slider_f32<
-                 "CC offset", halp::range_slider_range{-127., 127., {0., 0.}}>
+                 "CC random range", halp::range_slider_range{-127., 127., {0., 0.}}>
     {
       halp_meta(
           description, "The offset added to that controller is drawn uniformly "
@@ -321,7 +321,7 @@ public:
     struct
     {
       halp_meta(name, "Timing")
-      halp_meta(layout, halp::layouts::vbox)
+      halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
 
       halp::item<&ins::timing> timing;
@@ -337,7 +337,7 @@ public:
     struct
     {
       halp_meta(name, "Notes")
-      halp_meta(layout, halp::layouts::vbox)
+      halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
 
       halp::item<&ins::velocity> velocity;
@@ -375,7 +375,15 @@ public:
         halp_meta(name, "Chance")
         halp_meta(layout, halp::layouts::vbox)
         halp::item<&ins::chance_unit> chance_unit;
-        halp::item<&ins::chance_period> chance_period;
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::chance_unit, Period>{};
+          }
+          halp::item<&ins::chance_period> chance_period;
+        } period;
         halp::item<&ins::velocity_chance> velocity_chance;
       } chance;
 
@@ -384,10 +392,18 @@ public:
         halp_meta(name, "Gate")
         halp_meta(layout, halp::layouts::vbox)
         halp::item<&ins::euclid> euclid;
-        halp::item<&ins::euclid_steps> euclid_steps;
-        halp::item<&ins::euclid_pulses> euclid_pulses;
-        halp::item<&ins::euclid_rotation> euclid_rotation;
-        halp::item<&ins::euclid_step> euclid_step;
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::euclid, true>{};
+          }
+          halp::item<&ins::euclid_steps> euclid_steps;
+          halp::item<&ins::euclid_pulses> euclid_pulses;
+          halp::item<&ins::euclid_rotation> euclid_rotation;
+          halp::item<&ins::euclid_step> euclid_step;
+        } rhythm;
       } gate;
 
       struct
@@ -859,7 +875,7 @@ private:
     }
   }
 
-  //! The random offset of the controller selected by Rand. CC.
+  //! The random offset of the controller selected by Random CC.
   int random_cc_value(int value) noexcept
   {
     double offset = m_cc_lo;
