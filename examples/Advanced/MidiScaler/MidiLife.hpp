@@ -11,6 +11,7 @@
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
+#include <halp/value_list.hpp>
 #include <libremidi/message.hpp>
 
 #include <algorithm>
@@ -144,51 +145,6 @@ inline pattern_cells parse_pattern(std::string_view s) noexcept
   p.height = std::min(p.height, max_height);
   return p;
 }
-
-//! Notes of a drum map or a melody, one per row: "36 38 42 46", "C2, D2, F#2".
-struct note_map
-{
-  static constexpr int max_notes = max_height;
-  std::array<uint8_t, max_notes> notes{};
-  int count{};
-  bool valid{true};
-
-  void parse(std::string_view s) noexcept
-  {
-    count = 0;
-    valid = true;
-    std::size_t i = 0;
-    while(i < s.size())
-    {
-      const char c = s[i];
-      if(c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' || c == '/')
-      {
-        i++;
-        continue;
-      }
-      int note = -1;
-      if(c >= '0' && c <= '9')
-      {
-        int v = 0;
-        while(i < s.size() && s[i] >= '0' && s[i] <= '9' && v <= 127)
-          v = v * 10 + (s[i++] - '0');
-        note = v;
-      }
-      else if(auto n = parse_note_name(s.substr(i)))
-      {
-        note = n->first;
-        i += n->second;
-      }
-      if(note < 0 || note > 127 || count >= max_notes)
-      {
-        valid = false;
-        count = 0;
-        return;
-      }
-      notes[count++] = uint8_t(note);
-    }
-  }
-};
 
 //! Keeps a parsed value in sync with a text control, parsing again only when
 //! the text changed; the last text is kept in a fixed buffer.
@@ -676,11 +632,15 @@ struct MidiLife
       };
       int value{9};
     } mode;
-    struct : halp::lineedit<"Note map", "">
+    struct : halp::value_list<"Note map", int, life::max_height>
     {
       halp_meta(
           description, "Notes of the rows from the bottom, e.g. 36 38 42 46 for drums; "
                        "rows past the list are silent. Empty: the scale.")
+      static constexpr std::array<halp::list_column, 1> columns()
+      {
+        return {halp::list_column{.name = "Note", .min = 0, .max = 127, .init = 36}};
+      }
     } note_map;
     struct : halp::spinbox_i32<"Channel", halp::irange{1, 16, 1}>
     {
@@ -1041,9 +1001,6 @@ private:
         break;
     }
 
-    m_note_map.update(inputs.note_map.value, [](std::string_view s, auto& m) {
-      m.parse(s);
-    });
     m_pattern.update(inputs.pattern.value, [](std::string_view s, auto& p) {
       p = life::parse_pattern(s);
     });
@@ -1225,9 +1182,9 @@ private:
   //! The note of a row, or -1 when the row is silent.
   int pitch_of(int y) const noexcept
   {
-    const auto& map = m_note_map.parsed;
-    if(map.count > 0)
-      return y < map.count ? map.notes[y] : -1;
+    const auto& map = inputs.note_map.value;
+    if(!map.empty())
+      return y < int(map.size()) ? std::clamp(map[y], 0, 127) : -1;
     const int lowest = (std::clamp(inputs.octave.value, -1, 9) + 1) * 12
                        + std::clamp(inputs.root.value, 0, 11);
     const int p = lowest + life::scale_semitones(inputs.mode.value, y);
@@ -1475,7 +1432,6 @@ private:
   life::grid m_previous{};
   life::rule m_rule{};
   life::cached_text<std::optional<life::rule>> m_custom_rule;
-  life::cached_text<life::note_map> m_note_map;
   life::cached_text<life::pattern_cells> m_pattern;
   std::array<uint64_t, 16> m_history{};
   int m_history_count{};

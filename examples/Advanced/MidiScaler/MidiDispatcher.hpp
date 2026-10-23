@@ -6,6 +6,7 @@
 #include <Advanced/MidiScaler/MidiCommon/Messages.hpp>
 #include <Advanced/MidiScaler/MidiCommon/NoteTracker.hpp>
 #include <halp/audio.hpp>
+#include <halp/channel_mask.hpp>
 #include <halp/controls.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
@@ -85,9 +86,9 @@ struct MidiDispatcher
 
     algorithm_control algorithm;
 
-    struct : halp::lineedit<"Channels", "1-4">
+    struct : halp::channel_mask<"Channels", 0x000F>
     {
-      halp_meta(description, "Channels the notes are spread over, for example 1-4, 6")
+      halp_meta(description, "Channels the notes are spread over")
     } channels;
 
     struct : halp::spinbox_i32<"Surplus channel", halp::range{0, 16, 0}>
@@ -263,12 +264,7 @@ private:
 
   void configure() noexcept
   {
-    const auto& list = m_channel_list.update(inputs.channels.value, 1, 16);
-    uint16_t mask = 0;
-    for(int ch = 1; ch <= 16; ch++)
-      if(list.contains(ch))
-        mask |= uint16_t(1u << (ch - 1));
-    m_alloc.set_channels(mask);
+    m_alloc.set_channels(inputs.channels.mask());
 
     const auto algo = inputs.algorithm.value;
     if(algo != m_algorithm)
@@ -523,7 +519,6 @@ private:
 
   note_tracker<128, 1> m_notes;
   channel_allocator m_alloc;
-  cached_range_list m_channel_list;
   //! Note-ons sent on each channel and not yet ended.
   std::array<int, 16> m_taken{};
 

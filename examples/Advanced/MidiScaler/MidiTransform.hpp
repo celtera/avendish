@@ -218,17 +218,23 @@ struct MidiTransform
     {
       halp_meta(description, "Channel of the messages transformed (0 = all)")
     } channel;
-    struct : halp::lineedit<"Byte 1 range", "">
+    struct : halp::range_spinbox_t<
+                 int, "Byte 1 range",
+                 halp::range_slider_range{.min = 0, .max = 127, .init = {0, 127}}>
     {
-      halp_meta(description, "First data byte range tested, e.g. 0-63 or C3-B3. Empty: all.")
+      halp_meta(
+          description, "First data byte range tested, e.g. 0 to 63. The whole range: all.")
     } byte1_range;
     struct : halp::enum_t<Test, "Byte 1 mode">
     {
       halp_meta(description, "Transform messages inside or outside the Byte 1 range")
     } byte1_test;
-    struct : halp::lineedit<"Byte 2 range", "">
+    struct : halp::range_spinbox_t<
+                 int, "Byte 2 range",
+                 halp::range_slider_range{.min = 0, .max = 127, .init = {0, 127}}>
     {
-      halp_meta(description, "Second data byte range tested, e.g. 1-127. Empty: all.")
+      halp_meta(
+          description, "Second data byte range tested, e.g. 1 to 127. The whole range: all.")
     } byte2_range;
     struct : halp::enum_t<Test, "Byte 2 mode">
     {
@@ -305,11 +311,19 @@ struct MidiTransform
 
   void stop() noexcept { m_stop = true; }
 
+  //! The whole 0-127 range tests nothing
+  static bool full(halp::range_slider_value<int> r) noexcept
+  {
+    return std::min(r.start, r.end) <= 0 && std::max(r.start, r.end) >= 127;
+  }
+  static bool in_range(halp::range_slider_value<int> r, int v) noexcept
+  {
+    return v >= std::min(r.start, r.end) && v <= std::max(r.start, r.end);
+  }
+
   using tick = halp::tick_musical;
   void operator()(halp::tick_musical) noexcept
   {
-    m_byte1.update(inputs.byte1_range.value, 0, 127, true);
-    m_byte2.update(inputs.byte2_range.value, 0, 127);
 
     if(m_stop)
     {
@@ -338,7 +352,6 @@ private:
   std::array<std::array<uint8_t, 128>, 16> m_passed{};
   //! Note-ons that were replaced or dropped, by input channel and note.
   std::array<std::array<uint8_t, 128>, 16> m_removed{};
-  cached_range_list m_byte1, m_byte2;
   bool m_stop{};
 
   void emit(const libremidi::message& m) { outputs.midi.push_back(m); }
@@ -376,11 +389,11 @@ private:
   {
     if(is_channel_message(m) && inputs.channel != 0 && channel_of(m) != inputs.channel)
       return false;
-    if(!m_byte1.list.empty()
-       && m_byte1.list.contains(byte(m, 1)) != (inputs.byte1_test == Inside))
+    if(!full(inputs.byte1_range.value)
+       && in_range(inputs.byte1_range.value, byte(m, 1)) != (inputs.byte1_test == Inside))
       return false;
-    if(!m_byte2.list.empty()
-       && m_byte2.list.contains(byte(m, 2)) != (inputs.byte2_test == Inside))
+    if(!full(inputs.byte2_range.value)
+       && in_range(inputs.byte2_range.value, byte(m, 2)) != (inputs.byte2_test == Inside))
       return false;
     return true;
   }
