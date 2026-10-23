@@ -6,6 +6,7 @@
 
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
@@ -52,7 +53,7 @@ struct MidiCCSnapshot
     halp_meta(description, "Value sent for this slot")
   };
 
-  struct
+  struct ins
   {
     halp::midi_bus<"MIDI", libremidi::message> midi;
     struct : halp::impulse_button<"Send">
@@ -101,6 +102,53 @@ struct MidiCCSnapshot
   {
     halp::midi_bus<"MIDI", libremidi::message> midi;
   } outputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi CC snapshot")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Send")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::send> send;
+      halp::item<&ins::on_change> on_change;
+      halp::item<&ins::mode> mode;
+      halp::item<&ins::channel> channel;
+      halp::item<&ins::count> count;
+    } send;
+
+    struct
+    {
+      halp_meta(name, "Slots")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      struct
+      {
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 2)
+        halp::item<&ins::cc1> cc1;
+        halp::item<&ins::value1> value1;
+        halp::item<&ins::cc2> cc2;
+        halp::item<&ins::value2> value2;
+        halp::item<&ins::cc3> cc3;
+        halp::item<&ins::value3> value3;
+        halp::item<&ins::cc4> cc4;
+        halp::item<&ins::value4> value4;
+        halp::item<&ins::cc5> cc5;
+        halp::item<&ins::value5> value5;
+        halp::item<&ins::cc6> cc6;
+        halp::item<&ins::value6> value6;
+        halp::item<&ins::cc7> cc7;
+        halp::item<&ins::value7> value7;
+        halp::item<&ins::cc8> cc8;
+        halp::item<&ins::value8> value8;
+      } grid;
+    } slot_grid;
+  };
 
   void stop() noexcept { m_stop = true; }
 

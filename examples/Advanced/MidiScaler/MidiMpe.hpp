@@ -152,7 +152,7 @@ struct MidiMpe
       halp_meta(description, "Pitch bend range in semitones of the member channels")
     } mpe_bend_range;
 
-    struct : halp::hslider_f32<"Release reserve", halp::range{0., 1000., 0.}>
+    struct : halp::hslider_f32<"Release reserve (ms)", halp::range{0., 1000., 0.}>
     {
       halp_meta(
           description,
@@ -195,6 +195,112 @@ struct MidiMpe
       halp_meta(description, "0 is free running, other values repeat")
     } seed;
   } inputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi MPE")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Zone")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::mode> mode;
+
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          halp::item<&ins::members> members;
+
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::mode, mode_control::midi_to_mpe>{};
+            }
+            halp::item<&ins::input_channel> input_channel;
+          } input;
+
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::mode, mode_control::mpe_to_midi>{};
+            }
+            halp::item<&ins::output_channel> output_channel;
+          } output;
+        } left;
+
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::mode, mode_control::midi_to_mpe>{};
+            }
+            halp::item<&ins::route> route;
+            halp::item<&ins::send_config> send_config;
+          } to_mpe;
+
+          halp::item<&ins::midi_bend_range> midi_bend_range;
+          halp::item<&ins::mpe_bend_range> mpe_bend_range;
+
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::mode, mode_control::midi_to_mpe>{};
+            }
+            halp::item<&ins::reserve> reserve;
+          } reserve;
+        } right;
+      } columns;
+    } zone;
+
+    struct
+    {
+      halp_meta(layout, halp::layouts::vbox)
+
+      struct
+      {
+        halp_meta(name, "Shaping")
+        halp_meta(layout, halp::layouts::section)
+        halp_meta(background, halp::colors::background_mid)
+
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::pressure_curve> pressure_curve;
+          halp::item<&ins::slide_curve> slide_curve;
+          halp::item<&ins::bend_scale> bend_scale;
+        } knobs;
+      } shaping;
+
+      struct
+      {
+        halp_meta(name, "Random")
+        halp_meta(layout, halp::layouts::section)
+        halp_meta(background, halp::colors::background_mid)
+        halp::item<&ins::random_bend> random_bend;
+        halp::item<&ins::random_pressure> random_pressure;
+        halp::item<&ins::random_slide> random_slide;
+        halp::item<&ins::seed> seed;
+      } random;
+    } expression;
+  };
 
   struct
   {
