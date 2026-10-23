@@ -6,6 +6,7 @@
 #include <halp/audio.hpp>
 #include <halp/callback.hpp>
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
@@ -62,18 +63,31 @@ struct MIDISyncIn
     MTC_With_Clock_Interpolation // Use MTC with clock interpolation (default)
   };
 
-  struct
+  struct ins
   {
     halp::midi_bus<"MIDI in", libremidi::message> midi_in;
 
     // Sync configuration
-    halp::combobox_t<"Sync Mode", SyncMode> sync_mode{
-        SyncMode::MTC_With_Clock_Interpolation};
+    struct : halp::combobox_t<"Sync Mode", SyncMode>
+    {
+      struct range
+      {
+        std::string_view values[3]{"MTC only", "Clock only", "MTC and clock"};
+        SyncMode init{SyncMode::MTC_With_Clock_Interpolation};
+      };
+    } sync_mode{{{SyncMode::MTC_With_Clock_Interpolation}}};
 
     // MTC configuration
     halp::spinbox_i32<"Offset (seconds)", halp::irange{-128000, 128000, 0}> offset{0};
     halp::combobox_t<"Output Format", OutputFormat> format{OutputFormat::Seconds};
-    halp::combobox_t<"Framerate", FrameRate> framerate{FrameRate::Auto};
+    struct : halp::combobox_t<"Framerate", FrameRate>
+    {
+      struct range
+      {
+        std::string_view values[5]{"24", "25", "29.97", "30", "Auto"};
+        FrameRate init{FrameRate::Auto};
+      };
+    } framerate{{{FrameRate::Auto}}};
 
     // Clock configuration
     halp::spinbox_f32<"Base Tempo", halp::range{20.0, 300.0, 120.0}> base_tempo{120.0};
@@ -128,6 +142,68 @@ struct MIDISyncIn
           "shifted and delayed")
     } clock_out;
   } outputs;
+
+  struct ui
+  {
+    halp_meta(name, "MIDI Sync In")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Decode")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::sync_mode> sync_mode;
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          halp::item<&ins::offset> offset;
+          halp::item<&ins::format> format;
+          halp::item<&ins::framerate> framerate;
+        } timecode;
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<
+                  &ins::sync_mode, SyncMode::Clock_Only,
+                  SyncMode::MTC_With_Clock_Interpolation>{};
+            }
+            halp::item<&ins::base_tempo> base_tempo;
+            halp::item<&ins::clock_filter> clock_filter;
+          } tempo;
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::sync_mode, SyncMode::Clock_Only>{};
+            }
+            halp::item<&ins::initial_song_position> initial_song_position;
+          } song_position;
+        } clock;
+      } columns;
+    } decode;
+
+    struct
+    {
+      halp_meta(name, "Clock out")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::clock_divide> clock_divide;
+      halp::item<&ins::start_shift> start_shift;
+      halp::item<&ins::clock_delay> clock_delay;
+      halp::item<&ins::pass_spp> pass_spp;
+    } clock_out;
+  };
 
   // MTC state tracking
   struct MTCState
@@ -249,9 +325,9 @@ struct MIDISyncIn
       case 0b01:
         return 25.0;
       case 0b10:
-        return 30.0;
-      case 0b11:
         return 29.97;
+      case 0b11:
+        return 30.0;
       default:
         return 30.0;
     }
@@ -266,9 +342,9 @@ struct MIDISyncIn
       case 0b01:
         return FrameRate::FPS_25;
       case 0b10:
-        return FrameRate::FPS_30;
-      case 0b11:
         return FrameRate::FPS_2997;
+      case 0b11:
+        return FrameRate::FPS_30;
       default:
         return FrameRate::FPS_30;
     }
@@ -375,7 +451,6 @@ struct MIDISyncIn
     // Full MTC message format: F0 7F 7F 01 01 hh mm ss ff F7
     if(msg.size() >= 10 && msg.bytes[0] == 0xF0 && // SysEx start
        msg.bytes[1] == 0x7F &&                     // Universal Real Time
-       msg.bytes[2] == 0x7F &&                     // Device ID (all devices)
        msg.bytes[3] == 0x01 &&                     // MTC
        msg.bytes[4] == 0x01)                       // Full message
     {
@@ -694,7 +769,7 @@ struct MIDISyncIn
         process_quarter_frame(msg.bytes[1]);
       }
       // Check for Full Frame MTC (SysEx)
-      else if(msg.is_meta_event() && msg.size() >= 10)
+      else if(msg.size() >= 10 && msg.bytes[0] == 0xF0)
       {
         process_full_frame(msg);
       }
