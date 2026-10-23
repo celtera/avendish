@@ -7,12 +7,14 @@
 #include <cmath>
 #include <halp/audio.hpp>
 #include <halp/callback.hpp>
+#include <halp/channel_mask.hpp>
 #include <halp/controls.hpp>
 #include <halp/layout.hpp>
 #include <halp/file_port.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <halp/midifile_port.hpp>
+#include <halp/value_list.hpp>
 #include <libremidi/message.hpp>
 #include <ossia/detail/flat_set.hpp>
 #include <ossia/detail/small_flat_map.hpp>
@@ -176,43 +178,60 @@ private:
   bool m_parsed{};
 };
 
-/**
- * @brief A linear map between two integer ranges, written "1-8 > 9-16".
- *
- * Empty or unparseable text gives an inactive map.
- */
-struct cached_range_map
+//! A linear map from [in_from, in_to] onto [out_from, out_to].
+struct range_map_row
 {
-  cached_range_list in, out;
-  bool active{};
+  int in_from{};
+  int in_to{};
+  int out_from{};
+  int out_to{};
+};
 
-  void update(std::string_view text, int min, int max, bool notes = false) noexcept
+/**
+ * @brief The linear maps of a list control: the first row whose input range
+ * holds a value maps it. No rows: inactive.
+ */
+struct range_maps
+{
+  static constexpr int max_rows = 4;
+  std::array<range_map_row, max_rows> rows{};
+  int count{};
+
+  bool active() const noexcept { return count > 0; }
+
+  void assign(const auto& list, int min, int max) noexcept
   {
-    const auto sep = text.find('>');
-    if(sep == std::string_view::npos)
+    count = 0;
+    for(range_map_row r : list)
     {
-      active = false;
-      return;
+      if(count >= max_rows)
+        break;
+      r.in_from = std::clamp(r.in_from, min, max);
+      r.in_to = std::clamp(r.in_to, min, max);
+      r.out_from = std::clamp(r.out_from, min, max);
+      r.out_to = std::clamp(r.out_to, min, max);
+      rows[count++] = r;
     }
-    const auto& a = in.update(text.substr(0, sep), min, max, notes);
-    const auto& b = out.update(text.substr(sep + 1), min, max, notes);
-    active = in.valid && out.valid && a.count == 1 && b.count == 1;
   }
 
-  bool contains(int v) const noexcept
+  const range_map_row* find(int v) const noexcept
   {
-    return active && in.list.contains(v);
+    for(int i = 0; i < count; i++)
+    {
+      const auto& r = rows[i];
+      if(v >= std::min(r.in_from, r.in_to) && v <= std::max(r.in_from, r.in_to))
+        return &r;
+    }
+    return nullptr;
   }
 
   //! Rounds to the nearest output value.
-  int map(int v) const noexcept
+  static int map(const range_map_row& r, int v) noexcept
   {
-    const auto [lo, hi] = in.list.ranges[0];
-    const auto [olo, ohi] = out.list.ranges[0];
-    if(hi == lo)
-      return olo;
-    const int num = 2 * (v - lo) * (ohi - olo) + (hi - lo);
-    return olo + num / (2 * (hi - lo));
+    if(r.in_to == r.in_from)
+      return r.out_from;
+    const double t = double(v - r.in_from) / double(r.in_to - r.in_from);
+    return r.out_from + int(std::floor(t * (r.out_to - r.out_from) + 0.5));
   }
 };
 
@@ -223,9 +242,9 @@ struct cached_range_map
  * Messages that are not kept go to the "Rejected" output, so the object also
  * splits a keyboard or a set of channels.
  *
- * Text lists ("Channels", "Notes", "CCs", "Value range") are comma-separated
- * inclusive ranges such as "1-4, 6"; notes accept names such as "C-1-B2, C4".
- * An empty list does not restrict anything.
+ * Text lists ("Notes", "CCs", "Value range") are comma-separated inclusive
+ * ranges such as "1-4, 6"; notes accept names such as "C-1-B2, C4". An empty
+ * list, as every channel on in "Channels", does not restrict anything.
  *
  * A note-off always goes to the output its note-on went to, with the same
  * remapped channel and note, even when the settings changed in between.
@@ -312,9 +331,9 @@ struct MidiFilter
           "groups all, channel, system, realtime, transport. A leading '-' "
           "removes. Empty: Filter type decides.")
     } kinds;
-    struct : halp::lineedit<"Channels", "">
+    struct : halp::channel_mask<"Channels">
     {
-      halp_meta(description, "Channels kept, e.g. 1-4, 10. Empty: all.")
+      halp_meta(description, "Channels kept")
     } channels;
     struct : halp::lineedit<"Notes", "">
     {
@@ -340,17 +359,50 @@ struct MidiFilter
     {
       halp_meta(description, "Keep values inside or outside the Values list")
     } value_test;
-    struct : halp::lineedit<"Channel map", "">
+    struct : halp::value_list<"Channel map", range_map_row, range_maps::max_rows>
     {
-      halp_meta(description, "Linear channel remap, e.g. 1-8 > 9-16. Empty: none.")
+      halp_meta(
+          description,
+          "Channels moved from one range onto another, e.g. 1 8 9 16. The first row "
+          "whose input range holds a value maps it. No rows: none.")
+      static constexpr std::array<halp::list_column, 4> columns()
+      {
+        return {
+            halp::list_column{.name = "In from", .min = 1, .max = 16, .init = 1},
+            halp::list_column{.name = "In to", .min = 1, .max = 16, .init = 16},
+            halp::list_column{.name = "Out from", .min = 1, .max = 16, .init = 1},
+            halp::list_column{.name = "Out to", .min = 1, .max = 16, .init = 16}};
+      }
     } channel_map;
-    struct : halp::lineedit<"Note map", "">
+    struct : halp::value_list<"Note map", range_map_row, range_maps::max_rows>
     {
-      halp_meta(description, "Linear note remap, e.g. C3-C4 > C4-C5. Empty: none.")
+      halp_meta(
+          description,
+          "Notes moved from one range onto another, e.g. 1 8 9 16. The first row "
+          "whose input range holds a value maps it. No rows: none.")
+      static constexpr std::array<halp::list_column, 4> columns()
+      {
+        return {
+            halp::list_column{.name = "In from", .min = 0, .max = 127, .init = 0},
+            halp::list_column{.name = "In to", .min = 0, .max = 127, .init = 127},
+            halp::list_column{.name = "Out from", .min = 0, .max = 127, .init = 0},
+            halp::list_column{.name = "Out to", .min = 0, .max = 127, .init = 127}};
+      }
     } note_map;
-    struct : halp::lineedit<"CC map", "">
+    struct : halp::value_list<"CC map", range_map_row, range_maps::max_rows>
     {
-      halp_meta(description, "Linear controller number remap, e.g. 1-8 > 21-28. Empty: none.")
+      halp_meta(
+          description,
+          "Controller numbers moved from one range onto another, e.g. 1 8 9 16. The first row "
+          "whose input range holds a value maps it. No rows: none.")
+      static constexpr std::array<halp::list_column, 4> columns()
+      {
+        return {
+            halp::list_column{.name = "In from", .min = 0, .max = 127, .init = 0},
+            halp::list_column{.name = "In to", .min = 0, .max = 127, .init = 127},
+            halp::list_column{.name = "Out from", .min = 0, .max = 127, .init = 0},
+            halp::list_column{.name = "Out to", .min = 0, .max = 127, .init = 127}};
+      }
     } cc_map;
     struct : halp::enum_t<OutOfMap, "Outside map">
     {
@@ -464,8 +516,8 @@ private:
 
   // Settings parsed from the text controls
   cached_kind_set m_kinds;
-  cached_range_list m_channels, m_notes, m_ccs, m_values;
-  cached_range_map m_channel_map, m_note_map, m_cc_map;
+  cached_range_list m_notes, m_ccs, m_values;
+  range_maps m_channel_map, m_note_map, m_cc_map;
 
   //! Indexed by input (channel - 1) * 128 + note: what each held note-on became.
   std::array<held_slot, 16 * 128> m_held{};
@@ -474,13 +526,12 @@ private:
   void update_settings() noexcept
   {
     m_kinds.update(inputs.kinds.value);
-    m_channels.update(inputs.channels.value, 1, 16);
     m_notes.update(inputs.notes.value, 0, 127, true);
     m_ccs.update(inputs.ccs.value, 0, 127);
     m_values.update(inputs.values.value, 0, 127);
-    m_channel_map.update(inputs.channel_map.value, 1, 16);
-    m_note_map.update(inputs.note_map.value, 0, 127, true);
-    m_cc_map.update(inputs.cc_map.value, 0, 127);
+    m_channel_map.assign(inputs.channel_map.value, 1, 16);
+    m_note_map.assign(inputs.note_map.value, 0, 127);
+    m_cc_map.assign(inputs.cc_map.value, 0, 127);
   }
 
   static bool is_note_kind(midi_kind k) noexcept
@@ -595,10 +646,11 @@ private:
     const bool keyed = is_note_kind(k) || k == midi_kind::control_change;
     bool tested = false;
     bool inside = true;
-    if(!m_channels.list.empty())
+    // Every channel on tests nothing, as an empty list
+    if(const uint16_t mask = inputs.channels.mask(); mask != 0xFFFF)
     {
       tested = true;
-      inside = inside && m_channels.list.contains(ch);
+      inside = inside && ((mask >> (ch - 1)) & 1);
     }
     if(is_note_kind(k) && !m_notes.list.empty() && m.size() >= 2)
     {
@@ -631,25 +683,25 @@ private:
       return true;
     const bool drop = inputs.out_of_map == Drop;
 
-    if(m_channel_map.active)
+    if(m_channel_map.active())
     {
       const int ch = channel_of(m);
-      if(m_channel_map.contains(ch))
-        set_channel(m, m_channel_map.map(ch));
+      if(auto r = m_channel_map.find(ch))
+        set_channel(m, range_maps::map(*r, ch));
       else if(drop)
         return false;
     }
-    if(is_note_kind(k) && m_note_map.active && m.size() >= 2)
+    if(is_note_kind(k) && m_note_map.active() && m.size() >= 2)
     {
-      if(m_note_map.contains(m.bytes[1]))
-        m.bytes[1] = uint8_t(m_note_map.map(m.bytes[1]));
+      if(auto r = m_note_map.find(m.bytes[1]))
+        m.bytes[1] = uint8_t(range_maps::map(*r, m.bytes[1]));
       else if(drop)
         return false;
     }
-    if(k == midi_kind::control_change && m_cc_map.active && m.size() >= 2)
+    if(k == midi_kind::control_change && m_cc_map.active() && m.size() >= 2)
     {
-      if(m_cc_map.contains(m.bytes[1]))
-        m.bytes[1] = uint8_t(m_cc_map.map(m.bytes[1]));
+      if(auto r = m_cc_map.find(m.bytes[1]))
+        m.bytes[1] = uint8_t(range_maps::map(*r, m.bytes[1]));
       else if(drop)
         return false;
     }
