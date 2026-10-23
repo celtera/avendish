@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <halp/audio.hpp>
+#include <halp/channel_mask.hpp>
 #include <halp/controls.hpp>
 #include <halp/file_port.hpp>
 #include <halp/layout.hpp>
@@ -156,12 +157,10 @@ struct MidiScaler
           "synths, 48 for MPE synths. Incoming pitch bend is read with the same range.")
     } bend_range;
 
-    struct : halp::lineedit<"Channels", "1-16">
+    struct : halp::channel_mask<"Channels">
     {
       halp_meta(
-          description,
-          "Channels the notes are spread over, for example 2-16. "
-          "Empty or invalid: all 16 channels.")
+          description, "Channels the notes are spread over. None: all 16 channels.")
     } channels;
 
     struct : halp::toggle<"Always send bend">
@@ -379,11 +378,7 @@ struct MidiScaler
   //! Bit n set: channel n + 1 is in the "Channels" control.
   uint16_t channel_mask() noexcept
   {
-    const auto& list = m_channel_list.update(inputs.channels.value, 1, 16);
-    uint16_t mask = 0;
-    for(int ch = 1; ch <= 16; ch++)
-      if(list.contains(ch))
-        mask |= uint16_t(1u << (ch - 1));
+    const uint16_t mask = inputs.channels.mask();
     return mask == 0 ? uint16_t(0xFFFF) : mask;
   }
 
@@ -614,7 +609,6 @@ struct MidiScaler
 
   note_tracker<128, 1> m_notes;
   channel_allocator m_alloc;
-  cached_range_list m_channel_list;
 
   //! Per output channel: tuning offset of its notes in semitones, last pitch
   //! bend sent (-1: unknown), and notes started on it.
