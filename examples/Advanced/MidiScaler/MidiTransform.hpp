@@ -45,7 +45,7 @@ struct MidiTransform
 {
   halp_meta(name, "Midi transform")
   halp_meta(c_name, "midi_transform")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Routing")
   halp_meta(author, "ossia score")
   halp_meta(
       description,

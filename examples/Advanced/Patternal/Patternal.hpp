@@ -21,7 +21,7 @@ struct Processor
 {
   halp_meta(name, "Patternal")
   halp_meta(c_name, "patternal")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Sequencers")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/patternal.html")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(

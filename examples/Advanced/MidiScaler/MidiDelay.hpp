@@ -44,7 +44,7 @@ struct MidiDelay
 {
   halp_meta(name, "Midi delay")
   halp_meta(c_name, "midi_delay")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Timing")
   halp_meta(author, "ossia score")
   halp_meta(description, "Repeat the incoming notes as echoes, with feedback and transposition")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-delay.html")

@@ -72,7 +72,7 @@ struct MidiRandomSequencer
 {
   halp_meta(name, "Midi random sequencer")
   halp_meta(c_name, "midi_random_sequencer")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Generators")
   halp_meta(author, "ossia score")
   halp_meta(
       description, "Random melodies from a shift register (Turing Machine) or a "

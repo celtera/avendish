@@ -37,7 +37,7 @@ struct MidiSustain
 {
   halp_meta(name, "Midi sustain")
   halp_meta(c_name, "midi_sustain")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Timing")
   halp_meta(author, "ossia score")
   halp_meta(description, "Hold notes after their key is released, like a sustain pedal")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-sustain.html")

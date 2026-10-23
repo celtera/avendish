@@ -48,7 +48,7 @@ struct MidiEnvelope
 public:
   halp_meta(name, "Midi Envelope")
   halp_meta(c_name, "midi_envelope")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Control")
   halp_meta(author, "ossia score")
   halp_meta(description, "Turn MIDI notes into control-rate envelopes")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-envelope.html")

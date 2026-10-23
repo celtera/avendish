@@ -44,7 +44,7 @@ struct MidiHumanizer
 public:
   halp_meta(name, "Midi Humanize")
   halp_meta(c_name, "midi_humanize")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Timing")
   halp_meta(author, "ossia score")
   halp_meta(description, "Loosen the timing, velocity and length of MIDI notes")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-humanize.html")
