@@ -28,7 +28,7 @@ struct MidiCCSnapshot
 {
   halp_meta(name, "Midi CC snapshot")
   halp_meta(c_name, "midi_cc_snapshot")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Control")
   halp_meta(author, "ossia score")
   halp_meta(description, "Send up to 8 stored controller values on a channel")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-cc-snapshot.html")

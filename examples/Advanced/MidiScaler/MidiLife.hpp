@@ -388,7 +388,7 @@ struct MidiLife
 {
   halp_meta(name, "Midi life")
   halp_meta(c_name, "midi_life")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Generators")
   halp_meta(author, "ossia score")
   halp_meta(
       description, "A Game of Life sequencer: a play-head sweeps the evolving grid and "

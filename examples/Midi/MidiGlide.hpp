@@ -14,7 +14,7 @@ struct MidiGlide
 {
   halp_meta(name, "Midi Glide")
   halp_meta(c_name, "midi_glide")
-  halp_meta(category, "Midi");
+  halp_meta(category, "Midi/Pitch");
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Midi Glide")
   halp_meta(

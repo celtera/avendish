@@ -58,7 +58,7 @@ struct MidiProgressionPlayer
 {
   halp_meta(name, "Midi progression player")
   halp_meta(c_name, "midi_progression_player")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Generators")
   halp_meta(author, "ossia score")
   halp_meta(
       description, "Play a chord progression in a key, step by step, and keep "

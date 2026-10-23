@@ -44,7 +44,7 @@ struct MidiValueShaper
 public:
   halp_meta(name, "Midi value shaper")
   halp_meta(c_name, "midi_value_shaper")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Control")
   halp_meta(author, "ossia score")
   halp_meta(
       description,

@@ -35,7 +35,7 @@ struct MidiDispatcher
 {
   halp_meta(name, "Midi dispatcher")
   halp_meta(c_name, "midi_dispatcher")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Routing")
   halp_meta(author, "ossia score")
   halp_meta(description, "Spread incoming notes over a set of MIDI channels")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-dispatcher.html")
