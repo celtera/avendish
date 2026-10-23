@@ -35,7 +35,7 @@ struct MidiMpe
 {
   halp_meta(name, "Midi MPE")
   halp_meta(c_name, "midi_mpe")
-  halp_meta(category, "Midi")
+  halp_meta(category, "Midi/Routing")
   halp_meta(author, "ossia score")
   halp_meta(
       description,
