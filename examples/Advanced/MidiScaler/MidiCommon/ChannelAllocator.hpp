@@ -110,6 +110,30 @@ struct channel_allocator
 
   int held(int ch) const noexcept { return m_ch[(ch - 1) & 15].held; }
 
+  //! The usable channel with no note held whose last note ended first, even
+  //! if it is still in its release reserve; nothing if every one holds a note.
+  std::optional<int> oldest_released() const noexcept
+  {
+    std::optional<int> best;
+    for(int ch = 1; ch <= 16; ch++)
+    {
+      if(!usable(ch) || m_ch[ch - 1].held != 0)
+        continue;
+      if(!best || m_ch[ch - 1].ended_at < m_ch[*best - 1].ended_at)
+        best = ch;
+    }
+    return best;
+  }
+
+  //! The n-th usable channel (0: the lowest), or nothing.
+  std::optional<int> nth_usable(int n) const noexcept
+  {
+    for(int ch = 1; ch <= 16; ch++)
+      if(usable(ch) && n-- == 0)
+        return ch;
+    return std::nullopt;
+  }
+
   void reset() noexcept
   {
     m_ch = {};

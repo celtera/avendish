@@ -7,6 +7,7 @@
 #include <Advanced/MidiScaler/MidiCommon/NoteTracker.hpp>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
@@ -89,14 +90,16 @@ struct MidiDispatcher
       halp_meta(description, "Channels the notes are spread over, for example 1-4, 6")
     } channels;
 
-    struct : halp::spinbox_i32<"Surplus", halp::range{0, 16, 0}>
+    struct : halp::spinbox_i32<"Surplus channel", halp::range{0, 16, 0}>
     {
       halp_meta(
           description,
-          "Channel for the notes that find no free channel (0: they are dropped)")
+          "Channel for the notes that find no free channel. 0: they take the "
+          "channel released longest ago, or else end the oldest note (in the "
+          "chord modes, the note on the channel of the same rank)")
     } surplus;
 
-    struct : halp::hslider_f32<"Grace", halp::range{0., 200., 20.}>
+    struct : halp::hslider_f32<"Grace (ms)", halp::range{0., 200., 20.}>
     {
       halp_meta(
           description,
@@ -104,7 +107,7 @@ struct MidiDispatcher
           "complete and dispatched")
     } grace;
 
-    struct : halp::hslider_f32<"Release reserve", halp::range{0., 1000., 0.}>
+    struct : halp::hslider_f32<"Release reserve (ms)", halp::range{0., 1000., 0.}>
     {
       halp_meta(
           description,
@@ -126,6 +129,55 @@ struct MidiDispatcher
           "them unchanged")
     } copy_to_all;
   } inputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi dispatcher")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Spread")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::algorithm> algorithm;
+      halp::item<&ins::channels> channels;
+      halp::item<&ins::surplus> surplus;
+      halp::item<&ins::copy_to_all> copy_to_all;
+    } spread;
+
+    struct
+    {
+      halp_meta(name, "Timing")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        static constexpr auto condition()
+        {
+          return halp::enabled_when<
+              &ins::algorithm, algorithm_control::chord, algorithm_control::chord_ascending,
+              algorithm_control::chord_descending>{};
+        }
+        halp::item<&ins::grace> grace;
+      } chord;
+
+      halp::item<&ins::reserve> reserve;
+
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        static constexpr auto condition()
+        {
+          return halp::enabled_when<&ins::algorithm, algorithm_control::random>{};
+        }
+        halp::item<&ins::seed> seed;
+      } random;
+    } timing;
+  };
 
   struct
   {
@@ -376,11 +428,59 @@ private:
     }
   }
 
-  void start_note(int in_ch, int pitch, int vel, std::optional<int> ch, int64_t ts) noexcept
+  //! A channel for a note that found none free, when there is no surplus
+  //! channel: the one released longest ago, or else the channel of a sounding
+  //! note, which is ended. The stolen input note stays tracked without output,
+  //! so that its own note-off is swallowed.
+  std::optional<int> steal(int64_t ts, int rank) noexcept
+  {
+    if(auto ch = m_alloc.oldest_released())
+    {
+      m_alloc.take(*ch);
+      return ch;
+    }
+
+    std::optional<int> target = rank >= 0 ? m_alloc.nth_usable(rank) : std::nullopt;
+    int victim = -1;
+    for(int i = 0; i < m_notes.size(); i++)
+    {
+      const auto& h = m_notes[i];
+      if(h.count == 0)
+        continue;
+      if(!target || h.outputs[0].channel == *target)
+      {
+        victim = i;
+        break;
+      }
+    }
+    if(victim < 0)
+    {
+      // The channel of that rank holds no note: fall back to the oldest one.
+      for(int i = 0; i < m_notes.size() && victim < 0; i++)
+        if(m_notes[i].count > 0)
+          victim = i;
+      if(victim < 0)
+        return std::nullopt;
+    }
+
+    const int ch = m_notes[victim].outputs[0].channel;
+    const int in_ch = m_notes[victim].channel;
+    const int in_pitch = m_notes[victim].pitch;
+    auto emit = emitter();
+    m_notes.end(in_ch, in_pitch, ts, 0, emit);
+    m_notes.begin(in_ch, in_pitch, ts, emit);
+    m_alloc.take(ch);
+    return ch;
+  }
+
+  void start_note(int in_ch, int pitch, int vel, std::optional<int> ch, int64_t ts, int rank = -1) noexcept
   {
     auto emit = emitter();
-    // A dropped note is still tracked, without output, so that its note-off
-    // is swallowed too.
+    if(!ch && m_surplus == 0)
+      ch = steal(ts, rank);
+
+    // A note with no channel is still tracked, without output, so that its
+    // note-off is swallowed too.
     auto& h = m_notes.begin(in_ch, pitch, ts, emit);
     if(!ch)
     {
@@ -417,7 +517,7 @@ private:
     for(int i = 0; i < n; i++)
     {
       auto ch = m_alloc.allocate(m_now + ts);
-      start_note(m_chord[i].channel, m_chord[i].pitch, m_chord[i].velocity, ch, ts);
+      start_note(m_chord[i].channel, m_chord[i].pitch, m_chord[i].velocity, ch, ts, i);
     }
   }
 
