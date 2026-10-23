@@ -14,6 +14,7 @@
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/file_port.hpp>
+#include <halp/layout.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <halp/midifile_port.hpp>
@@ -77,7 +78,7 @@ struct MidiScaler
     }
   };
 
-  struct
+  struct ins
   {
     // This port will read a midi file
     halp::midi_bus<"MIDI messages"> midi;
@@ -170,7 +171,54 @@ struct MidiScaler
           "Send a pitch bend before every note, even when the channel already "
           "has the right one")
     } always_bend;
+
+    struct : halp::spinbox_i32<"Input bend range", halp::range{1, 96, 2}>
+    {
+      halp_meta(
+          description,
+          "Range in semitones of the incoming pitch bend, e.g. 2 for a keyboard "
+          "wheel; the output uses Bend range")
+    } input_bend_range;
   } inputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi scaler")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Tuning")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::scala> scala;
+      halp::item<&ins::kbm> kbm;
+      halp::item<&ins::adjust> adjust;
+      halp::item<&ins::rescale> rescale;
+    } tuning;
+
+    struct
+    {
+      halp_meta(name, "MIDI output")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::output_mode> output_mode;
+
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        static constexpr auto condition()
+        {
+          return halp::enabled_when<&ins::output_mode, output_mode_control::pitch_bend>{};
+        }
+        halp::item<&ins::bend_range> bend_range;
+        halp::item<&ins::channels> channels;
+        halp::item<&ins::always_bend> always_bend;
+        halp::item<&ins::input_bend_range> input_bend_range;
+      } bend;
+    } output;
+  };
 
   struct
   {
@@ -451,7 +499,7 @@ struct MidiScaler
         if(m.size() < 3)
           break;
         const int v = m.bytes[1] | (m.bytes[2] << 7);
-        m_global_bend = double(v - 8192) / 8192. * m_range;
+        m_global_bend = double(v - 8192) / 8192. * inputs.input_bend_range.value;
         for(int ch = 1; ch <= 16; ch++)
           if(m_taken[ch - 1] > 0)
             send_bend(ch, ts, true, emit);
