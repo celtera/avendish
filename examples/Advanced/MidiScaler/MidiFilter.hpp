@@ -8,6 +8,7 @@
 #include <halp/audio.hpp>
 #include <halp/callback.hpp>
 #include <halp/controls.hpp>
+#include <halp/layout.hpp>
 #include <halp/file_port.hpp>
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
@@ -222,7 +223,7 @@ struct cached_range_map
  * Messages that are not kept go to the "Rejected" output, so the object also
  * splits a keyboard or a set of channels.
  *
- * Text lists ("Channels", "Notes", "CCs", "Values") are comma-separated
+ * Text lists ("Channels", "Notes", "CCs", "Value range") are comma-separated
  * inclusive ranges such as "1-4, 6"; notes accept names such as "C-1-B2, C4".
  * An empty list does not restrict anything.
  *
@@ -281,7 +282,7 @@ struct MidiFilter
     float velocity{};
   };
 
-  struct
+  struct ins
   {
     halp::midi_bus<"MIDI messages", libremidi::message> midi;
     struct : halp::enum_t<Type, "Filter type">
@@ -302,11 +303,11 @@ struct MidiFilter
     halp::toggle<"Note off to zero"> note_off_to_zero;
     halp::toggle<"Zero to note off"> zero_to_note_off;
 
-    struct : halp::lineedit<"Kinds", "">
+    struct : halp::lineedit<"Types", "">
     {
       halp_meta(
           description,
-          "Kinds kept, e.g. note, cc, program, bend, pressure, poly, sysex, mtc, "
+          "Message types kept, e.g. note, cc, program, bend, pressure, poly, sysex, mtc, "
           "spp, song, tune, clock, start, continue, stop, sensing, reset, or the "
           "groups all, channel, system, realtime, transport. A leading '-' "
           "removes. Empty: Filter type decides.")
@@ -324,18 +325,18 @@ struct MidiFilter
     {
       halp_meta(description, "Controller numbers kept, e.g. 1, 7, 64-69. Empty: all.")
     } ccs;
-    struct : halp::toggle<"Drop in range">
+    struct : halp::toggle<"Invert ranges">
     {
       halp_meta(description, "Drop what Channels, Notes and CCs match instead of keeping it")
     } drop_in_range;
-    struct : halp::lineedit<"Values", "">
+    struct : halp::lineedit<"Value range", "">
     {
       halp_meta(
           description,
           "Second data byte tested (velocity, controller value, bend MSB, poly "
           "pressure), e.g. 1-63. Empty: all.")
     } values;
-    struct : halp::enum_t<ValueTest, "Value test">
+    struct : halp::enum_t<ValueTest, "Value mode">
     {
       halp_meta(description, "Keep values inside or outside the Values list")
     } value_test;
@@ -351,7 +352,7 @@ struct MidiFilter
     {
       halp_meta(description, "Linear controller number remap, e.g. 1-8 > 21-28. Empty: none.")
     } cc_map;
-    struct : halp::enum_t<OutOfMap, "Out of map">
+    struct : halp::enum_t<OutOfMap, "Outside map">
     {
       halp_meta(description, "What happens to kept messages outside a map's input range")
     } out_of_map;
@@ -375,6 +376,52 @@ struct MidiFilter
       halp_meta(description, "Every message that was not kept")
     } rejected;
   } outputs;
+
+  struct ui
+  {
+    halp_meta(name, "Midi filter")
+    halp_meta(layout, halp::layouts::hbox)
+    halp_meta(background, halp::colors::background_dark)
+
+    struct
+    {
+      halp_meta(name, "Basic")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::filter> filter;
+      halp::item<&ins::channel> channel;
+      halp::item<&ins::index> index;
+      halp::item<&ins::mode> mode;
+      halp::item<&ins::note_off_to_zero> note_off_to_zero;
+      halp::item<&ins::zero_to_note_off> zero_to_note_off;
+    } basic;
+
+    struct
+    {
+      halp_meta(name, "Select")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::kinds> kinds;
+      halp::item<&ins::channels> channels;
+      halp::item<&ins::notes> notes;
+      halp::item<&ins::ccs> ccs;
+      halp::item<&ins::values> values;
+      halp::item<&ins::value_test> value_test;
+      halp::item<&ins::drop_in_range> drop_in_range;
+    } select;
+
+    struct
+    {
+      halp_meta(name, "Remap")
+      halp_meta(layout, halp::layouts::section)
+      halp_meta(background, halp::colors::background_mid)
+      halp::item<&ins::channel_map> channel_map;
+      halp::item<&ins::note_map> note_map;
+      halp::item<&ins::cc_map> cc_map;
+      halp::item<&ins::out_of_map> out_of_map;
+    } remap;
+
+  };
 
   ossia::small_flat_map<int, int, 128> running;
   ossia::small_vector<uint8_t, 128> out_no_vel;
@@ -649,7 +696,9 @@ private:
       pass = base && index_accepts(in, k);
     }
 
-    const bool to_main = kind_ok && pass;
+    // A note-off goes where its note-on went, whatever the type selection says,
+    // so that a kept note is always ended and a rejected one never is.
+    const bool to_main = is_tracked ? tracked.to_main : (kind_ok && pass);
     if(k == midi_kind::note_on)
     {
       push_held(
