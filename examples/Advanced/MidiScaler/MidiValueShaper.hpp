@@ -80,7 +80,7 @@ public:
           "controller, pitch bend, channel pressure or poly pressure")
     } kind;
 
-    struct : halp::spinbox_i32<"Number", halp::range{-1, 127, -1}>
+    struct : halp::spinbox_i32<"CC or note", halp::range{-1, 127, -1}>
     {
       halp_meta(
           description,
@@ -168,7 +168,7 @@ public:
 
     // ---- Limits ---------------------------------------------------------
     struct : halp::range_slider_f32<
-                 "Random", halp::range_slider_range{-64., 64., {0., 0.}}>
+                 "Random add", halp::range_slider_range{-64., 64., {0., 0.}}>
     {
       halp_meta(description, "A random amount drawn uniformly in this range is added")
     } random;
@@ -415,7 +415,15 @@ public:
         halp_meta(name, "Range")
         halp_meta(layout, halp::layouts::vbox)
         halp::item<&ins::fixed> fixed;
-        halp::item<&ins::fixed_value> fixed_value;
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::fixed, true>{};
+          }
+          halp::item<&ins::fixed_value> fixed_value;
+        } fixed_value;
         halp::item<&ins::in_range> in_range;
         halp::item<&ins::out_range> out_range;
       } range;
