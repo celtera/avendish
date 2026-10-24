@@ -412,6 +412,8 @@ private:
       m_taken = {};
       reset_expression();
       m_config_sent = false;
+      m_mpe_range = m_mpe_range_control;
+      m_param = {};
     }
 
     uint16_t mask = 0;
@@ -424,8 +426,11 @@ private:
 
     m_midi_range = std::clamp(int(inputs.midi_bend_range.value), 1, 96);
     const int mpe_range = std::clamp(int(inputs.mpe_bend_range.value), 1, 96);
-    if(mpe_range != m_mpe_range)
+    // A range announced by the MPE input (RPN 0 on a member channel) is used
+    // until the control changes.
+    if(mpe_range != m_mpe_range_control)
     {
+      m_mpe_range_control = mpe_range;
       m_mpe_range = mpe_range;
       m_config_sent = false;
     }
@@ -817,6 +822,13 @@ private:
           update_collapsed(ts, emit);
           break;
         }
+        if(ch != master_channel && is_parameter_cc(m.bytes[1]))
+        {
+          // Member channels configure the MPE input; on the single output
+          // channel these sequences would retune or reconfigure the receiver.
+          read_member_parameter(ch, m.bytes[1], m.bytes[2]);
+          break;
+        }
         if(is_all_notes_off(m))
           m_notes.end_all(ts, emit);
         set_channel(m, m_output_channel);
@@ -826,6 +838,43 @@ private:
       default:
         set_channel(m, m_output_channel);
         emit(std::move(m));
+        break;
+    }
+  }
+
+  //! Bank select excluded: the CCs that select or set an RPN or NRPN.
+  static constexpr bool is_parameter_cc(int cc) noexcept
+  {
+    return cc == 6 || cc == 38 || (cc >= 96 && cc <= 101);
+  }
+
+  //! Follows RPN 0 (pitch bend range) on a member channel.
+  void read_member_parameter(int ch, int cc, int value) noexcept
+  {
+    auto& p = m_param[ch - 1];
+    switch(cc)
+    {
+      case 101:
+        p.msb = value;
+        p.rpn = true;
+        break;
+      case 100:
+        p.lsb = value;
+        p.rpn = true;
+        break;
+      case 99:
+        p.msb = value;
+        p.rpn = false;
+        break;
+      case 98:
+        p.lsb = value;
+        p.rpn = false;
+        break;
+      case 6:
+        if(p.rpn && p.msb == 0 && p.lsb == 0)
+          m_mpe_range = std::clamp(value, 1, 96);
+        break;
+      default:
         break;
     }
   }
@@ -950,6 +999,14 @@ private:
   int m_output_channel{1};
   int m_midi_range{2};
   int m_mpe_range{48};
+  int m_mpe_range_control{48};
+  //! Parameter selected on each channel of the MPE input; 127/127 is none.
+  struct selected_parameter
+  {
+    int msb{127}, lsb{127};
+    bool rpn{true};
+  };
+  std::array<selected_parameter, 16> m_param{};
   double m_pressure_curve{1.};
   double m_slide_curve{1.};
   double m_bend_scale{1.};

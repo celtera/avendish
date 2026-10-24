@@ -17,10 +17,13 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <random>
+#include <utility>
 
 namespace mtk
 {
@@ -65,7 +68,7 @@ namespace mtk
  * The clock is the Rate grid (on the musical grid from the start of the
  * timeline when synced), the note-ons of the input (consumed with their
  * note-offs), or only the Step input. A Step impulse adds a step in any mode.
- * With a Seed, the same transport gives the same take; a rewind, a restart
+ * With a Seed, the same transport gives the same take; a seek, a restart
  * of the transport or Reset starts it again.
  */
 struct MidiRandomSequencer
@@ -560,6 +563,13 @@ struct MidiRandomSequencer
   //! The next tick, possibly of 0 frames, ends every note.
   void stop() noexcept { m_stop_requested = true; }
 
+  //! The host moved the transport: the next tick starts the grid over.
+  template <typename Rep, typename Period>
+  void transport(std::chrono::duration<Rep, Period>) noexcept
+  {
+    m_seek_requested = true;
+  }
+
   using tick = halp::tick_musical;
   void operator()(const halp::tick_musical& t) noexcept
   {
@@ -578,14 +588,17 @@ struct MidiRandomSequencer
     if(frames <= 0)
       return;
 
+    // position_in_frames only ever grows: a seek is told by transport(), or
+    // seen as the musical position going back
+    const bool sought = std::exchange(m_seek_requested, false);
     if(!m_running)
     {
       m_running = true;
       restart_take();
     }
-    else if(t.position_in_frames < m_last_position)
+    else if(sought || t.start_position_in_quarters < m_last_end_quarter - 1e-6)
     {
-      // A jump back: the grid starts again, and a seeded take with it
+      // The grid starts again, and a seeded take with it
       if(m_seed != 0)
       {
         end_all(0, 0);
@@ -596,7 +609,7 @@ struct MidiRandomSequencer
         restart_clock();
       }
     }
-    m_last_position = t.position_in_frames;
+    m_last_end_quarter = t.end_position_in_quarters;
 
     if(inputs.reset.value)
       restart_take();
@@ -1039,9 +1052,14 @@ private:
   template <typename Port, typename V>
   static void write_timed(Port& port, int ts, V v) noexcept
   {
-    // The map keeps 16 entries without allocating
-    if(port.values.size() < 16 || port.values.find(ts) != port.values.end())
-      port.values[ts] = v;
+    // The map keeps 16 entries without allocating. Once full, the last entry
+    // takes the latest value, so that the port ends the tick where the
+    // sequence does: a gate left open would hold forever.
+    auto& values = port.values;
+    if(values.size() < 16 || values.find(ts) != values.end())
+      values[ts] = v;
+    else if(!values.empty())
+      std::prev(values.end())->second = v;
   }
 
   void send(libremidi::message&& m, uint32_t tag) noexcept
@@ -1160,7 +1178,7 @@ private:
   double m_last_q{-std::numeric_limits<double>::infinity()};
   double m_free_next{-1.};
   int64_t m_now{};
-  int64_t m_last_position{};
+  double m_last_end_quarter{};
   int64_t m_step{};
   int64_t m_free_index{};
   int64_t m_manual_index{};
@@ -1171,6 +1189,7 @@ private:
   int m_note_count{};
   int m_total{};
   bool m_stop_requested{};
+  bool m_seek_requested{};
   bool m_running{};
 
   // Parameters, read at the start of each tick

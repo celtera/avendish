@@ -1001,6 +1001,16 @@ struct from_ossia_value_impl
         break;
     }
   }
+  //! Fixed-capacity containers keep the first elements of a vecNf
+  template <typename T, std::size_t N>
+  static void assign_clamped(T& f, const std::array<float, N>& v)
+  {
+    std::size_t n = N;
+    if constexpr(requires { T::static_capacity; })
+      n = std::min(n, std::size_t(T::static_capacity));
+    f.assign(v.begin(), v.begin() + n);
+  }
+
   template <avnd::vector_ish T>
     requires(!avnd::string_ish<T>)
   bool operator()(const ossia::value& src, T& f)
@@ -1053,7 +1063,7 @@ struct from_ossia_value_impl
         if constexpr(float_compatible<typename T::value_type>)
         {
           ossia::vec2f v = *src.target<ossia::vec2f>();
-          f.assign(v.begin(), v.end());
+          assign_clamped(f, v);
           return true;
         }
         else
@@ -1066,7 +1076,7 @@ struct from_ossia_value_impl
         if constexpr(float_compatible<typename T::value_type>)
         {
           ossia::vec3f v = *src.target<ossia::vec3f>();
-          f.assign(v.begin(), v.end());
+          assign_clamped(f, v);
           return true;
         }
         else
@@ -1079,7 +1089,7 @@ struct from_ossia_value_impl
         if constexpr(float_compatible<typename T::value_type>)
         {
           ossia::vec4f v = *src.target<ossia::vec4f>();
-          f.assign(v.begin(), v.end());
+          assign_clamped(f, v);
           return true;
         }
         else

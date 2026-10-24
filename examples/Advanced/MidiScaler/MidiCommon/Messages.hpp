@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -45,15 +46,20 @@ inline midi_kind classify(const libremidi::message& m) noexcept
   if((m.size() == 0))
     return midi_kind::other;
   const uint8_t s = m.bytes[0];
+  if(s < 0x80)
+    return midi_kind::other;
   if(s < 0xF0)
   {
+    // A truncated channel message carries no usable data byte.
+    const std::size_t expected = ((s & 0xF0) == 0xC0 || (s & 0xF0) == 0xD0) ? 2 : 3;
+    if(m.size() < expected)
+      return midi_kind::other;
     switch(s & 0xF0)
     {
       case 0x80:
         return midi_kind::note_off;
       case 0x90:
-        return (m.size() >= 3 && m.bytes[2] == 0) ? midi_kind::note_off
-                                                  : midi_kind::note_on;
+        return m.bytes[2] == 0 ? midi_kind::note_off : midi_kind::note_on;
       case 0xA0:
         return midi_kind::poly_pressure;
       case 0xB0:

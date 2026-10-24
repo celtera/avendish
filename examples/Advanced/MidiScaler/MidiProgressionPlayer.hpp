@@ -13,10 +13,12 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace mtk
 {
@@ -516,6 +518,15 @@ struct MidiProgressionPlayer
 
   void stop() noexcept { m_stop_requested = true; }
 
+  //! The host moved the transport to `date`: the next tick starts the take
+  //! over from there.
+  template <typename Rep, typename Period>
+  void transport(std::chrono::duration<Rep, Period> date) noexcept
+  {
+    m_seek_requested = true;
+    m_seek_seconds = std::chrono::duration<double>(date).count();
+  }
+
   using tick = halp::tick_musical;
   void operator()(const halp::tick_musical& t) noexcept
   {
@@ -527,18 +538,31 @@ struct MidiProgressionPlayer
       m_stop_requested = false;
       end_all(0, 0, true);
       reset();
+      m_free_position = 0;
     }
 
-    // A rewind (or a loop) restarts the take
+    // A seek, a rewind or a loop restarts the take. position_in_frames only
+    // ever grows: a seek is told by transport(), or seen as the musical
+    // position going back.
     const bool musical = m_frames > 0 && t.end_position_in_quarters != t.start_position_in_quarters;
-    if(m_started
-       && (t.position_in_frames < m_last_end
-           || (musical && t.start_position_in_quarters < m_last_quarter - 1e-6)))
+    if(std::exchange(m_seek_requested, false))
+    {
+      if(m_started)
+      {
+        end_all(0, 0, false);
+        reset();
+      }
+      m_free_position = std::max<int64_t>(0, std::llround(m_seek_seconds * m_rate));
+    }
+    else if(m_started && musical && t.start_position_in_quarters < m_last_quarter - 1e-6)
     {
       end_all(0, 0, false);
       reset();
+      // Exact at a constant tempo, the best guess otherwise
+      const double tempo = t.tempo > 0. ? t.tempo : 120.;
+      m_free_position = std::max<int64_t>(
+          0, std::llround(t.start_position_in_quarters * 60. / tempo * m_rate));
     }
-    m_last_end = t.position_in_frames + m_frames;
     if(musical)
       m_last_quarter = t.end_position_in_quarters;
     m_started = true;
@@ -587,6 +611,7 @@ struct MidiProgressionPlayer
     }
     run_until(m_frames - 1);
     m_now += m_frames;
+    m_free_position += m_frames;
   }
 
   //! Notes sounding now, for the tests.
@@ -705,7 +730,8 @@ private:
    * Grid points of the tick, each with the step of the timeline it starts.
    * Synced, the frames are those of score's quantification grid
    * (get_quantification_date) and the step is computed from the musical
-   * position; free, steps are counted in frames from the timeline's start.
+   * position; free, steps are counted in frames from the timeline's start,
+   * as far as the transport tells it (m_free_position).
    */
   void compute_grid(const halp::tick_musical& t) noexcept
   {
@@ -772,7 +798,7 @@ private:
     else
     {
       const int64_t step = std::max<int64_t>(1, std::llround(step_s * m_rate));
-      const int64_t pos = t.position_in_frames;
+      const int64_t pos = m_free_position;
       if(m_index < 0)
         push_grid(0, pos / step, step);
       int64_t next = ((pos + step - 1) / step) * step;
@@ -1077,11 +1103,15 @@ private:
   std::array<std::array<uint16_t, 128>, 16> m_sounding{};
 
   int64_t m_now{};
-  int64_t m_last_end{};
+  //! Frames from the start of the timeline, for the free steps: from 0 at
+  //! each start, moved by seeks.
+  int64_t m_free_position{};
   double m_last_quarter{-1e300};
   double m_rate{48000.};
+  double m_seek_seconds{};
   int m_frames{};
   bool m_started{};
   bool m_stop_requested{};
+  bool m_seek_requested{};
 };
 }

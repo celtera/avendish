@@ -465,7 +465,7 @@ private:
     const int in_ch = m_notes[victim].channel;
     const int in_pitch = m_notes[victim].pitch;
     auto emit = emitter();
-    m_notes.end(in_ch, in_pitch, ts, 0, emit);
+    m_notes.end_at(victim, ts, 0, emit);
     m_notes.begin(in_ch, in_pitch, ts, emit);
     m_alloc.take(ch);
     return ch;

@@ -23,6 +23,7 @@
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 namespace mtk
 {
@@ -375,8 +376,8 @@ struct life_view
  * each time); a pattern comes back centred, then at seeded random places.
  *
  * Synced, steps land on the musical grid of the timeline; free, they are
- * Rate seconds apart from the start of playback. Stop and rewind end every
- * note and restart the world from its seed. Clicking a cell of the layer
+ * Rate seconds apart from the start of playback. Stop, seeks and loops end
+ * every note and restart the world from its seed. Clicking a cell of the layer
  * toggles it in the running world. Incoming MIDI passes through; CC 120 and
  * 123 also end the notes that sound.
  */
@@ -856,6 +857,13 @@ struct MidiLife
 
   void stop() noexcept { m_stop_requested = true; }
 
+  //! The host moved the transport: the next tick starts the take over.
+  template <typename Rep, typename Period>
+  void transport(std::chrono::duration<Rep, Period>) noexcept
+  {
+    m_seek_requested = true;
+  }
+
   MidiLife() noexcept
   {
     m_free_rng = uint64_t(std::chrono::steady_clock::now().time_since_epoch().count())
@@ -868,6 +876,11 @@ struct MidiLife
     m_frames = t.frames > 0 ? t.frames : 0;
     cache_parameters();
 
+    // position_in_frames only ever grows: a seek is told by transport(), or
+    // seen as the musical position going back
+    const bool sought = std::exchange(m_seek_requested, false);
+    const bool went_back = m_has_last && m_frames > 0
+                           && t.start_position_in_quarters < m_last_end_quarter - 1e-6;
     if(m_stop_requested)
     {
       m_stop_requested = false;
@@ -878,9 +891,8 @@ struct MidiLife
       m_running = false;
       m_has_last = false;
     }
-    else if(m_has_last && m_frames > 0 && t.position_in_frames < m_last_end)
+    else if(m_has_last && (sought || went_back))
     {
-      // Rewind or loop: the take starts over
       end_all(0, 0);
       m_queue.clear();
       restart();
@@ -896,7 +908,7 @@ struct MidiLife
     {
       m_has_last = true;
       m_running = true;
-      m_last_end = t.position_in_frames + m_frames;
+      m_last_end_quarter = t.end_position_in_quarters;
       run_steps(t);
     }
 
@@ -1378,12 +1390,15 @@ private:
     return n;
   }
 
+  //! The cells the world shows, so that a change of size that keeps them is
+  //! not taken for a new generation.
   uint64_t hash(const life::grid& g) const noexcept
   {
-    uint64_t h = 1469598103934665603ull ^ uint64_t(m_w) ^ (uint64_t(m_h) << 8);
+    const uint32_t mask = m_w >= 32 ? 0xFFFFFFFFu : ((1u << m_w) - 1u);
+    uint64_t h = 1469598103934665603ull;
     for(int y = 0; y < m_h; y++)
     {
-      h ^= g[y];
+      h ^= g[y] & mask;
       h *= 1099511628211ull;
     }
     return h;
@@ -1484,7 +1499,7 @@ private:
   int64_t m_now{};
   double m_free_next{-1.};  //!< frame of the next free step; -1: from the next tick
   int64_t m_free_index{};
-  int64_t m_last_end{};
+  double m_last_end_quarter{};
   int64_t m_step{};
   uint64_t m_rng{};
   uint64_t m_free_rng{};
@@ -1502,6 +1517,7 @@ private:
   bool m_running{};
   bool m_view_dirty{true};
   bool m_stop_requested{};
+  bool m_seek_requested{};
   bool m_reseed_requested{};
 };
 }
