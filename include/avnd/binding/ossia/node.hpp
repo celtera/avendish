@@ -491,14 +491,17 @@ public:
 
     {
       this->midi_buffers.reserve_space(this->impl, this->buffer_size);
-      if constexpr(oscr::use_local_midi_tick_batch<T>)
+      if constexpr(
+          oscr::use_local_midi_tick_batch<T>
+          && avnd::midi_output_introspection<T>::size > 0)
       {
-        if constexpr(requires { T::local_midi_tick_batch_reserve(); })
-          this->midi_tick_batch.reserve(T::local_midi_tick_batch_reserve());
-        else if constexpr(requires { T::local_midi_tick_batch_reserve; })
-          this->midi_tick_batch.reserve(T::local_midi_tick_batch_reserve);
-        else
-          this->midi_tick_batch.reserve(this->buffer_size);
+        const auto reserve
+            = oscr::local_midi_tick_batch_reserve<T>(std::size_t(this->buffer_size));
+        this->midi_tick_batch.reserve(reserve);
+        // Each run copies the whole batch to the outlet
+        for(auto* outlet : this->m_outlets)
+          if(auto* port = outlet->template target<ossia::midi_port>())
+            port->messages.reserve(reserve);
       }
       this->control_buffers.reserve_space(this->impl, this->buffer_size);
       this->spectrums.reserve_space(this->impl, this->buffer_size);
