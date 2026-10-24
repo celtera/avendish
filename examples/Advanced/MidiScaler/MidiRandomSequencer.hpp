@@ -79,6 +79,7 @@ struct MidiRandomSequencer
                    "random distribution with loop memory (Marbles)")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-random-sequencer.html")
   halp_meta(uuid, "1fbb46dd-c422-40aa-8d0b-b9237ba91aa8")
+  halp_flag(process_exec);
 
   static constexpr int max_length = 16;
   static constexpr int max_steps_per_tick = 64;
@@ -372,10 +373,10 @@ struct MidiRandomSequencer
       halp_meta(description, "Each note may jump up by as many octaves, at random")
     } octaves;
 
-    struct : halp::hslider_i32<"Gate length", halp::irange{1, 200, 50}>
+    struct : halp::knob_f32<"Gate length", halp::range{0.01, 2., 0.5}>
     {
       halp_meta(
-          description, "Length of a note in percent of a step; above 100 the "
+          description, "Length of a note as a proportion of a step; above 1 the "
                        "notes overlap")
     } gate_length;
 
@@ -435,36 +436,46 @@ struct MidiRandomSequencer
       halp_meta(name, "Clock")
       halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::engine> engine;
-      halp::item<&ins::clock> clock;
-      halp::item<&ins::rate> rate;
       struct
       {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+        halp_meta(layout, halp::layouts::hbox)
+        halp::item<&ins::engine> engine;
+        halp::item<&ins::clock> clock;
+      } source;
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        halp::item<&ins::rate> rate;
+        struct
         {
-          return halp::enabled_when<&ins::clock, clock_control::rate>{};
-        }
-        halp::item<&ins::swing> swing;
-      } swing;
-      halp::item<&ins::length> length;
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::clock, clock_control::rate>{};
+          }
+          halp::item<&ins::swing> swing;
+        } swing;
+        halp::item<&ins::length> length;
+      } steps;
       struct
       {
         halp_meta(layout, halp::layouts::hbox)
         halp::item<&ins::step> step;
         halp::item<&ins::reset> reset;
+        halp::item<&ins::seed> seed;
       } buttons;
-      halp::item<&ins::seed> seed;
     } clock;
 
     struct
     {
-      halp_meta(name, "Turing")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
+      halp_meta(name, "Settings")
+      halp_meta(layout, halp::layouts::tabs)
+      halp_meta(background, halp::colors::background_darker)
+
       struct
       {
-        halp_meta(layout, halp::layouts::vbox)
+        halp_meta(name, "Turing")
+        halp_meta(layout, halp::layouts::hbox)
         static constexpr auto condition()
         {
           return halp::enabled_when<&ins::engine, Turing>{};
@@ -473,16 +484,11 @@ struct MidiRandomSequencer
         halp::item<&ins::write> write;
         halp::item<&ins::gate> gate;
       } turing;
-    } turing;
 
-    struct
-    {
-      halp_meta(name, "Marbles")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
       struct
       {
-        halp_meta(layout, halp::layouts::vbox)
+        halp_meta(name, "Marbles")
+        halp_meta(layout, halp::layouts::hbox)
         static constexpr auto condition()
         {
           return halp::enabled_when<&ins::engine, Marbles>{};
@@ -491,40 +497,49 @@ struct MidiRandomSequencer
         halp::item<&ins::bias> bias;
         halp::item<&ins::deja_vu> deja_vu;
       } marbles;
-    } marbles;
 
-    struct
-    {
-      halp_meta(name, "Rhythm")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::density> density;
-      halp::item<&ins::regularity> regularity;
-      halp::item<&ins::jitter> jitter;
-    } rhythm;
+      struct
+      {
+        halp_meta(name, "Rhythm")
+        halp_meta(layout, halp::layouts::hbox)
+        halp::item<&ins::density> density;
+        halp::item<&ins::regularity> regularity;
+        halp::item<&ins::jitter> jitter;
+      } rhythm;
 
-    struct
-    {
-      halp_meta(name, "Pitch")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::root> root;
-      halp::item<&ins::key_mode> key_mode;
-      halp::item<&ins::steps> steps;
-      halp::item<&ins::note_range> note_range;
-      halp::item<&ins::octaves> octaves;
-    } pitch;
+      struct
+      {
+        halp_meta(name, "Pitch")
+        halp_meta(layout, halp::layouts::vbox)
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::root> root;
+          halp::item<&ins::key_mode> key_mode;
+          halp::item<&ins::steps> steps;
+        } key;
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::note_range> note_range;
+          halp::item<&ins::octaves> octaves;
+        } span;
+      } pitch;
 
-    struct
-    {
-      halp_meta(name, "Notes")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::gate_length> gate_length;
-      halp::item<&ins::velocity> velocity;
-      halp::item<&ins::accent> accent;
-      halp::item<&ins::channel> channel;
-    } notes;
+      struct
+      {
+        halp_meta(name, "Notes")
+        halp_meta(layout, halp::layouts::vbox)
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::gate_length> gate_length;
+          halp::item<&ins::accent> accent;
+          halp::item<&ins::channel> channel;
+        } shape;
+        halp::item<&ins::velocity> velocity;
+      } notes;
+    } settings;
   };
 
   //! std::random_device may allocate, block or throw: it is read here, once,
@@ -900,7 +915,7 @@ private:
     if(m_low > m_high)
       std::swap(m_low, m_high);
     m_octaves = std::clamp(inputs.octaves.value, 0, 4);
-    m_gate_length = std::clamp(inputs.gate_length.value, 1, 200);
+    m_gate_length = std::clamp(double(inputs.gate_length.value), 0.01, 2.);
     m_vel_lo = std::clamp(double(inputs.velocity.value.start), 1., 127.);
     m_vel_hi = std::clamp(double(inputs.velocity.value.end), 1., 127.);
     if(m_vel_lo > m_vel_hi)
@@ -1002,7 +1017,7 @@ private:
     const int64_t on_at
         = at + int64_t(std::llround(s.jitter * m_jitter * 0.5 * m_step_frames));
     const int64_t len
-        = std::max<int64_t>(1, std::llround(m_step_frames * m_gate_length / 100.));
+        = std::max<int64_t>(1, std::llround(m_step_frames * m_gate_length));
     const int p = pitch_of(s);
     const int v = velocity_of(s);
     m_queue.schedule(on_at, libremidi::channel_events::note_on(m_channel, p, v));
@@ -1170,7 +1185,7 @@ private:
   int m_root{};
   int m_low{48}, m_high{72};
   int m_octaves{};
-  int m_gate_length{50};
+  double m_gate_length{0.5};
   int m_channel{1};
   double m_lock{0.9};
   double m_spread{0.5}, m_bias{0.5}, m_deja_vu{};

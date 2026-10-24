@@ -53,6 +53,7 @@ struct MidiTransform
       "bytes taken from the input or from arguments")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-transform.html")
   halp_meta(uuid, "1680d787-cb5d-4df3-8783-8bca4c3cad27")
+  halp_flag(process_exec);
 
   enum What
   {
@@ -261,43 +262,64 @@ struct MidiTransform
   struct ui
   {
     halp_meta(name, "Midi transform")
-    halp_meta(layout, halp::layouts::hbox)
-    halp_meta(background, halp::colors::background_dark)
+    halp_meta(layout, halp::layouts::tabs)
+    halp_meta(background, halp::colors::background_mid)
 
     struct
     {
       halp_meta(name, "Convert")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::what> what;
-      halp::item<&ins::into> into;
-      halp::item<&ins::mode> mode;
-      halp::item<&ins::realtime_first> realtime_first;
+      halp_meta(layout, halp::layouts::hbox)
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::what> what;
+        halp::item<&ins::into> into;
+      } kinds;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::mode> mode;
+        halp::item<&ins::realtime_first> realtime_first;
+      } how;
     } convert;
 
     struct
     {
       halp_meta(name, "Output")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::channel_source> channel_source;
-      halp::item<&ins::byte1_source> byte1_source;
-      halp::item<&ins::byte2_source> byte2_source;
-      halp::item<&ins::arg1> arg1;
-      halp::item<&ins::arg2> arg2;
-      halp::item<&ins::channel_arg> channel_arg;
+      halp_meta(layout, halp::layouts::hbox)
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::channel_source> channel_source;
+        halp::item<&ins::byte1_source> byte1_source;
+        halp::item<&ins::byte2_source> byte2_source;
+      } sources;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::channel_arg> channel_arg;
+        halp::item<&ins::arg1> arg1;
+        halp::item<&ins::arg2> arg2;
+      } constants;
     } output;
 
     struct
     {
       halp_meta(name, "Input filter")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
+      halp_meta(layout, halp::layouts::hbox)
       halp::item<&ins::channel> channel;
-      halp::item<&ins::byte1_range> byte1_range;
-      halp::item<&ins::byte1_test> byte1_test;
-      halp::item<&ins::byte2_range> byte2_range;
-      halp::item<&ins::byte2_test> byte2_test;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::byte1_range> byte1_range;
+        halp::item<&ins::byte1_test> byte1_test;
+      } byte1;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::byte2_range> byte2_range;
+        halp::item<&ins::byte2_test> byte2_test;
+      } byte2;
     } filter;
   };
 
@@ -331,6 +353,16 @@ struct MidiTransform
       end_everything(0);
     }
 
+    // The messages that would end a produced note may no longer reach it
+    const auto what = What(inputs.what.value);
+    const auto into = What(inputs.into.value);
+    if(what != m_what || into != m_into)
+    {
+      m_tracker.end_all(0, [this](libremidi::message&& m) { emit(m); });
+      m_what = what;
+      m_into = into;
+    }
+
     for(const auto& m : inputs.midi)
       process(m);
   }
@@ -352,6 +384,8 @@ private:
   std::array<std::array<uint8_t, 128>, 16> m_passed{};
   //! Note-ons that were replaced or dropped, by input channel and note.
   std::array<std::array<uint8_t, 128>, 16> m_removed{};
+  What m_what{NoteOn};
+  What m_into{NoteOn};
   bool m_stop{};
 
   void emit(const libremidi::message& m) { outputs.midi.push_back(m); }
@@ -615,18 +649,24 @@ private:
       const int c = channel_of(in) - 1;
       const int n = in.bytes[1];
 
+      // Whether the note-on went out decides the fate of the note-off,
+      // whatever What was when it came.
+      const bool removed = m_removed[c][n] > 0;
+      const bool kept_pair = !removed && m_passed[c][n] > 0;
+      if(removed)
+        m_removed[c][n]--;
+      else if(kept_pair)
+        m_passed[c][n]--;
+
       if(what == NoteOn)
       {
         const bool into_note = What(inputs.into.value) == NoteOn;
-        if(m_removed[c][n] > 0)
+        if(removed)
         {
-          m_removed[c][n]--;
           if(into_note)
             end_produced(in, k, in.bytes[2]);
           return;
         }
-        if(m_passed[c][n] > 0)
-          m_passed[c][n]--;
         const bool before = mode == InsertBefore;
         if(into_note && before)
           end_produced(in, k, in.bytes[2]);
@@ -636,23 +676,21 @@ private:
         return;
       }
 
-      const bool kept_pair = m_passed[c][n] > 0;
-      if(kept_pair)
-        m_passed[c][n]--;
-
       if(what != NoteOff || !matches_filter(in))
       {
-        emit(in);
+        if(!removed)
+          emit(in);
         return;
       }
 
       switch(mode)
       {
         case InsertBefore:
-          insert(in, k, true);
-          break;
         case InsertAfter:
-          insert(in, k, false);
+          if(removed)
+            produce(in, k);
+          else
+            insert(in, k, mode == InsertBefore);
           break;
         case Replace:
           if(kept_pair)

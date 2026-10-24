@@ -42,6 +42,7 @@ struct MidiSustain
   halp_meta(description, "Hold notes after their key is released, like a sustain pedal")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-sustain.html")
   halp_meta(uuid, "943f891c-e56f-4e60-a270-3420657fe368")
+  halp_flag(process_exec);
 
   enum Mode : uint8_t
   {
@@ -211,9 +212,10 @@ private:
     const int mode = inputs.mode.value;
     if(m_pedal_down[c] && m_keys_down[c] == 0 && (mode == Chord || mode == SemiSostenuto))
     {
-      // A new chord: the previous one stops ringing.
+      // A new chord: the previous one stops ringing. Semi-sostenuto keeps
+      // the notes held when the pedal went down.
       for(int k = 0; k < 128; k++)
-        if(m_notes[c][k].sustained && !m_notes[c][k].latched)
+        if(m_notes[c][k].sustained && (mode == Chord || !m_notes[c][k].latched))
           end_note(c, k, ts);
     }
 

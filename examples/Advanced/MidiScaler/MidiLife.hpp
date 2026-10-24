@@ -240,8 +240,9 @@ inline bool cell(const grid& g, int x, int y) noexcept
  */
 struct life_view
 {
-  static constexpr double width() { return 224.; }
-  static constexpr double height() { return 112.; }
+  // The host gives custom items a fixed size: 2:1 like the largest grid
+  static constexpr double width() { return 288.; }
+  static constexpr double height() { return 144.; }
 
   view_message state{};
   grid previous{};
@@ -273,11 +274,9 @@ struct life_view
     return previous_valid && !cell(previous, x, y);
   }
 
-  double cell_size() const noexcept
-  {
-    const int w = std::max<int>(1, state.width), h = std::max<int>(1, state.height);
-    return std::floor(std::min(width() / w, height() / h));
-  }
+  //! Cells fill the whole view: square for a 2:1 grid, stretched otherwise.
+  double cell_width() const noexcept { return width() / std::max<int>(1, state.width); }
+  double cell_height() const noexcept { return height() / std::max<int>(1, state.height); }
 
   void paint(auto ctx)
   {
@@ -297,12 +296,12 @@ struct life_view
     }
 
     const int w = state.width, h = state.height;
-    const double c = cell_size();
-    const double gap = c >= 6. ? 1. : 0.;
+    const double cw = cell_width(), ch = cell_height();
+    const double gap = std::min(cw, ch) >= 6. ? 1. : 0.;
 
     for(int y = 0; y < h; y++)
     {
-      const double py = (h - 1 - y) * c;
+      const double py = (h - 1 - y) * ch;
       for(int x = 0; x < w; x++)
       {
         const bool alive = cell(state.rows, x, y);
@@ -329,7 +328,7 @@ struct life_view
             ctx.set_fill_color({255, 176, 30, 255});
         }
         ctx.begin_path();
-        ctx.draw_rect(x * c + gap, py + gap, c - gap, c - gap);
+        ctx.draw_rect(x * cw + gap, py + gap, cw - gap, ch - gap);
         ctx.fill();
       }
     }
@@ -341,11 +340,8 @@ struct life_view
     if(!has_state || !state.running || !on_toggle || state.width == 0
        || state.height == 0)
       return false;
-    const double c = cell_size();
-    if(c <= 0.)
-      return false;
-    const int x = int(px / c);
-    const int row = int(py / c);
+    const int x = int(px / cell_width());
+    const int row = int(py / cell_height());
     if(px < 0. || py < 0. || x >= state.width || row >= state.height)
       return false;
     const int y = state.height - 1 - row;
@@ -395,6 +391,7 @@ struct MidiLife
                    "live cells play the notes of their rows")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-life.html")
   halp_meta(uuid, "04db97fd-2ccf-4271-a5a6-d66552baf0d7")
+  halp_flag(process_exec);
 
   enum Evolve
   {
@@ -443,15 +440,15 @@ struct MidiLife
           description, "Time between two steps of the play-head; synced, a note value "
                        "on the bars' grid")
     } rate;
-    struct : halp::hslider_i32<"Gate", halp::irange{5, 100, 50}>
+    struct : halp::knob_f32<"Gate", halp::range{0.05, 1., 0.5}>
     {
-      halp_meta(description, "Length of a note, in percent of a step")
+      halp_meta(description, "Length of a note, as a proportion of a step")
     } gate;
-    struct : halp::hslider_i32<"Swing", halp::irange{0, 100, 0}>
+    struct : halp::knob_f32<"Swing", halp::range{0., 1., 0.}>
     {
       halp_meta(
-          description, "Delays every second step: 50 puts it on the triplet, 100 at "
-                       "5/6 of the pair")
+          description, "Delays every second step of the grid: 0.5 puts it on the "
+                       "triplet, 1 at 5/6 of the pair")
     } swing;
     struct
     {
@@ -549,9 +546,9 @@ struct MidiLife
           description, "Rows from the top, separated by '/' or spaces: '.' a dead "
                        "cell, 'o' or '#' a live one")
     } pattern;
-    struct : halp::hslider_i32<"Density", halp::irange{1, 100, 30}>
+    struct : halp::knob_f32<"Density", halp::range{0.01, 1., 0.3}>
     {
-      halp_meta(description, "Percentage of live cells in a random world")
+      halp_meta(description, "Proportion of live cells in a random world")
     } density;
     struct : halp::spinbox_i32<"Seed", halp::irange{0, 9999, 0}>
     {
@@ -694,105 +691,135 @@ struct MidiLife
 
     struct
     {
-      halp_meta(name, "Time")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::rate> rate;
-      halp::item<&ins::gate> gate;
-      halp::item<&ins::swing> swing;
-      halp::item<&ins::evolve> evolve;
-      struct
-      {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
-        {
-          return halp::enabled_when<&ins::evolve, EveryNSteps>{};
-        }
-        halp::item<&ins::steps_per_gen> steps_per_gen;
-      } steps_per_gen;
-    } time;
+      halp_meta(name, "Settings")
+      halp_meta(layout, halp::layouts::tabs)
+      halp_meta(background, halp::colors::background_darker)
 
-    struct
-    {
-      halp_meta(name, "World")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      // Not named width and height: the layout reads those as its size
-      halp::item<&ins::width> columns;
-      halp::item<&ins::height> rows;
-      halp::item<&ins::wrap> wrap;
-      halp::item<&ins::rule> rule;
       struct
       {
+        halp_meta(name, "Time")
         halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+        struct
         {
-          return halp::enabled_when<&ins::rule, RuleCustom>{};
-        }
-        halp::item<&ins::custom_rule> custom_rule;
-      } custom_rule;
-    } world;
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::rate> rate;
+          halp::item<&ins::gate> gate;
+          halp::item<&ins::swing> swing;
+        } clock;
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::evolve> evolve;
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::evolve, EveryNSteps>{};
+            }
+            halp::item<&ins::steps_per_gen> steps_per_gen;
+          } steps_per_gen;
+        } generations;
+      } time;
 
-    struct
-    {
-      halp_meta(name, "Seed")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::start> start;
       struct
       {
+        halp_meta(name, "World")
         halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+        struct
         {
-          return halp::enabled_when<&ins::start, StartText>{};
-        }
-        halp::item<&ins::pattern> pattern;
-      } pattern;
-      struct
-      {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+          halp_meta(layout, halp::layouts::hbox)
+          // Not named width and height: the layout reads those as its size
+          halp::item<&ins::width> columns;
+          halp::item<&ins::height> rows;
+          halp::item<&ins::wrap> wrap;
+        } size;
+        halp::item<&ins::rule> rule;
+        struct
         {
-          return halp::enabled_when<&ins::start, StartRandom>{};
-        }
-        halp::item<&ins::density> density;
-      } density;
-      halp::item<&ins::seed> seed;
-      halp::item<&ins::reseed> reseed;
-      halp::item<&ins::auto_reseed> auto_reseed;
-      struct
-      {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
-        {
-          return halp::enabled_when<&ins::auto_reseed, true>{};
-        }
-        halp::item<&ins::patience> patience;
-      } patience;
-    } seeding;
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::rule, RuleCustom>{};
+          }
+          halp::item<&ins::custom_rule> custom_rule;
+        } custom_rule;
+      } world;
 
-    struct
-    {
-      halp_meta(name, "Notes")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::play> play;
-      halp::item<&ins::root> root;
-      halp::item<&ins::octave> octave;
-      halp::item<&ins::mode> mode;
-      halp::item<&ins::note_map> note_map;
-      halp::item<&ins::channel> channel;
-    } notes;
+      struct
+      {
+        halp_meta(name, "Seed")
+        halp_meta(layout, halp::layouts::vbox)
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::start> start;
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::start, StartRandom>{};
+            }
+            halp::item<&ins::density> density;
+          } density;
+          halp::item<&ins::seed> seed;
+        } first;
+        struct
+        {
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::start, StartText>{};
+          }
+          halp::item<&ins::pattern> pattern;
+        } pattern;
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::reseed> reseed;
+          halp::item<&ins::auto_reseed> auto_reseed;
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::auto_reseed, true>{};
+            }
+            halp::item<&ins::patience> patience;
+          } patience;
+        } again;
+      } seeding;
 
-    struct
-    {
-      halp_meta(name, "Dynamics")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::velocity> velocity;
-      halp::item<&ins::crowd> crowd;
-      halp::item<&ins::max_notes> max_notes;
-    } dynamics;
+      struct
+      {
+        halp_meta(name, "Notes")
+        halp_meta(layout, halp::layouts::vbox)
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::play> play;
+          halp::item<&ins::root> root;
+          halp::item<&ins::octave> octave;
+        } pitch;
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::mode> mode;
+          halp::item<&ins::channel> channel;
+        } key;
+        halp::item<&ins::note_map> note_map;
+      } notes;
+
+      struct
+      {
+        halp_meta(name, "Dynamics")
+        halp_meta(layout, halp::layouts::hbox)
+        halp::item<&ins::velocity> velocity;
+        halp::item<&ins::crowd> crowd;
+        halp::item<&ins::max_notes> max_notes;
+      } dynamics;
+    } settings;
 
     struct
     {
@@ -867,8 +894,6 @@ struct MidiLife
 
     if(m_frames > 0)
     {
-      if(!m_has_last)
-        m_free_next = m_now;
       m_has_last = true;
       m_running = true;
       m_last_end = t.position_in_frames + m_frames;
@@ -1034,7 +1059,10 @@ private:
         return;
       const double unit_q = rate <= 1. ? quarters_in_bar(t) / rate : 4. / rate;
       m_step_frames = unit_q * m_frames / dq;
-      for_each_grid_point(t, rate, [&](int frame) { step(m_now + frame); });
+      for_each_grid_point(
+          t, rate, [&](int frame, int64_t index) { step(m_now + frame, index); });
+      // Free steps start again from wherever the synced ones leave off
+      m_free_next = -1.;
     }
     else
     {
@@ -1042,13 +1070,18 @@ private:
         return;
       const double len = std::max(1., double(inputs.rate.value) * m_rate);
       m_step_frames = len;
-      const int64_t end = m_now + m_frames;
+      const double end = double(m_now + m_frames);
+      if(m_free_next < double(m_now))
+        m_free_next = double(m_now);
       int guard = 0;
       while(m_free_next < end && guard++ < max_steps_per_tick)
       {
-        step(std::max(m_free_next, m_now));
-        m_free_next += int64_t(std::llround(len));
+        step(int64_t(std::floor(m_free_next)), m_free_index++);
+        m_free_next += len;
       }
+      // A step too short for the tick drops the excess instead of piling up
+      if(m_free_next < end)
+        m_free_next = end;
     }
   }
 
@@ -1062,6 +1095,7 @@ private:
   //! The points of halp::tick_musical::get_quantification_date for forward
   //! playback, without allocating: subdivisions of the quarter restart at
   //! each bar line, a bar or longer counts from the last signature change.
+  //! `f(frame, index)` gets the point's index on that grid, for the swing.
   template <typename F>
   static void
   for_each_grid_point(const halp::tick_musical& t, double rate, F&& f) noexcept
@@ -1072,13 +1106,13 @@ private:
       return;
     constexpr double eps = 1e-9;
     int count = 0;
-    auto push = [&](double p) {
+    auto push = [&](double p, int64_t index) {
       if(p >= end || count >= max_steps_per_tick)
         return false;
       const int64_t fr = std::clamp(
           halp::musical_to_frame(p, start, end, t.frames), int64_t(0),
           int64_t(t.frames - 1));
-      f(int(fr));
+      f(int(fr), index);
       count++;
       return true;
     };
@@ -1089,7 +1123,7 @@ private:
       const double origin = t.last_signature_change;
       const int64_t first = int64_t(std::ceil((start - origin) / unit - eps));
       for(int64_t k = first; k * unit + origin < end - eps; k++)
-        if(!push(k * unit + origin))
+        if(!push(k * unit + origin, k))
           break;
       return;
     }
@@ -1106,7 +1140,7 @@ private:
           return;
         if(p < start)
           continue;
-        if(!push(p))
+        if(!push(p, k))
         {
           go = false;
           return;
@@ -1115,8 +1149,9 @@ private:
     });
   }
 
-  //! A step of the play-head at the absolute frame `at`.
-  void step(int64_t at) noexcept
+  //! A step of the play-head at the absolute frame `at`, `grid_index` on the
+  //! grid of steps: odd ones are swung.
+  void step(int64_t at, int64_t grid_index) noexcept
   {
     const int w = m_w;
     const int64_t s = m_step++;
@@ -1157,10 +1192,10 @@ private:
     const int played = std::min(n, max);
 
     const int64_t delay = std::llround(
-        swing_delay(s, inputs.swing.value / 100.) * m_step_frames);
+        swing_delay(grid_index, double(inputs.swing.value)) * m_step_frames);
     const int64_t on_at = at + std::max<int64_t>(0, delay);
     const int64_t len = std::max<int64_t>(
-        1, std::llround(m_step_frames * std::clamp(inputs.gate.value, 1, 100) / 100.));
+        1, std::llround(m_step_frames * std::clamp(double(inputs.gate.value), 0.01, 1.)));
     const int ch = std::clamp(inputs.channel.value, 1, 16);
 
     for(int k = 0; k < played; k++)
@@ -1200,7 +1235,8 @@ private:
     m_column = -1;
     m_reseeds = 0;
     m_reseed_requested = false;
-    m_free_next = m_now;
+    m_free_next = -1.;
+    m_free_index = 0;
     m_rng = 0;
     seed_world(true);
   }
@@ -1231,8 +1267,10 @@ private:
     const int w = m_w, h = m_h;
     if(inputs.start.value == StartRandom)
     {
-      const uint64_t threshold
-          = uint64_t(std::clamp(inputs.density.value, 0, 100)) * (UINT64_MAX / 100);
+      const double density = std::clamp(double(inputs.density.value), 0., 1.);
+      // 2^64 * density, saturated: 1 fills every cell
+      const uint64_t threshold = density >= 1. ? UINT64_MAX
+                                               : uint64_t(density * 18446744073709551616.);
       for(int y = 0; y < h; y++)
         for(int x = 0; x < w; x++)
           if(next_random() < threshold)
@@ -1444,7 +1482,8 @@ private:
   double m_rate{48000.};
   double m_step_frames{6000.};
   int64_t m_now{};
-  int64_t m_free_next{};
+  double m_free_next{-1.};  //!< frame of the next free step; -1: from the next tick
+  int64_t m_free_index{};
   int64_t m_last_end{};
   int64_t m_step{};
   uint64_t m_rng{};

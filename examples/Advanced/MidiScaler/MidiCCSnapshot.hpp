@@ -33,6 +33,7 @@ struct MidiCCSnapshot
   halp_meta(description, "Send up to 8 stored controller values on a channel")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-cc-snapshot.html")
   halp_meta(uuid, "e941cff0-8ebb-4259-a146-29ce10125791")
+  halp_flag(process_exec);
 
   static constexpr int slots = 8;
 
@@ -117,8 +118,12 @@ struct MidiCCSnapshot
       halp::item<&ins::send> send;
       halp::item<&ins::on_change> on_change;
       halp::item<&ins::mode> mode;
-      halp::item<&ins::channel> channel;
-      halp::item<&ins::count> count;
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        halp::item<&ins::channel> channel;
+        halp::item<&ins::count> count;
+      } numbers;
     } send;
 
     struct
@@ -129,7 +134,7 @@ struct MidiCCSnapshot
       struct
       {
         halp_meta(layout, halp::layouts::grid)
-        halp_meta(columns, 2)
+        halp_meta(columns, 4)
         halp::item<&ins::cc1> cc1;
         halp::item<&ins::value1> value1;
         halp::item<&ins::cc2> cc2;

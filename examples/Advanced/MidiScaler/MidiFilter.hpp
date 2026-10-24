@@ -255,6 +255,7 @@ struct MidiFilter
   halp_meta(c_name, "avnd_helpers_midifilter")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-filter.html")
   halp_meta(uuid, "f66d6cf7-693a-47d4-a249-5978cc946e43")
+  halp_flag(process_exec);
   halp_meta(category, "Midi/Routing")
   halp_meta(author, "ossia score")
   halp_meta(
@@ -432,47 +433,71 @@ struct MidiFilter
   struct ui
   {
     halp_meta(name, "Midi filter")
-    halp_meta(layout, halp::layouts::hbox)
-    halp_meta(background, halp::colors::background_dark)
+    halp_meta(layout, halp::layouts::tabs)
+    halp_meta(background, halp::colors::background_mid)
 
     struct
     {
       halp_meta(name, "Basic")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::filter> filter;
-      halp::item<&ins::channel> channel;
-      halp::item<&ins::index> index;
-      halp::item<&ins::mode> mode;
-      halp::item<&ins::note_off_to_zero> note_off_to_zero;
-      halp::item<&ins::zero_to_note_off> zero_to_note_off;
+      halp_meta(layout, halp::layouts::hbox)
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::filter> filter;
+        halp::item<&ins::mode> mode;
+      } kind;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          halp::item<&ins::channel> channel;
+          halp::item<&ins::index> index;
+        } numbers;
+        halp::item<&ins::note_off_to_zero> note_off_to_zero;
+        halp::item<&ins::zero_to_note_off> zero_to_note_off;
+      } options;
     } basic;
 
     struct
     {
       halp_meta(name, "Select")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::kinds> kinds;
-      halp::item<&ins::channels> channels;
-      halp::item<&ins::notes> notes;
-      halp::item<&ins::ccs> ccs;
-      halp::item<&ins::values> values;
-      halp::item<&ins::value_test> value_test;
-      halp::item<&ins::drop_in_range> drop_in_range;
+      halp_meta(layout, halp::layouts::hbox)
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::kinds> kinds;
+        halp::item<&ins::channels> channels;
+        halp::item<&ins::drop_in_range> drop_in_range;
+      } left;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::notes> notes;
+        halp::item<&ins::ccs> ccs;
+        halp::item<&ins::values> values;
+        halp::item<&ins::value_test> value_test;
+      } right;
     } select;
 
     struct
     {
       halp_meta(name, "Remap")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::channel_map> channel_map;
-      halp::item<&ins::note_map> note_map;
-      halp::item<&ins::cc_map> cc_map;
-      halp::item<&ins::out_of_map> out_of_map;
+      halp_meta(layout, halp::layouts::hbox)
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::channel_map> channel_map;
+        halp::item<&ins::cc_map> cc_map;
+      } left;
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::note_map> note_map;
+        halp::item<&ins::out_of_map> out_of_map;
+      } right;
     } remap;
-
   };
 
   ossia::small_flat_map<int, int, 128> running;

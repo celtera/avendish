@@ -49,6 +49,7 @@ public:
   halp_meta(description, "Loosen the timing, velocity and length of MIDI notes")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-humanize.html")
   halp_meta(uuid, "b9830e77-82fd-4d45-8b24-f78e5608eb21")
+  halp_flag(process_exec);
 
   //! Maximum number of events waiting to be released
   static constexpr int max_pending = 128;
@@ -112,7 +113,7 @@ public:
     } length;
 
     // ---- Chance ---------------------------------------------------------
-    struct : halp::hslider_f32<"Chance", halp::range{0., 1., 1.}>
+    struct : halp::knob_f32<"Chance", halp::range{0., 1., 1.}>
     {
       halp_meta(description, "Probability that a note is played at all")
     } chance;
@@ -340,11 +341,16 @@ public:
       halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
 
-      halp::item<&ins::velocity> velocity;
+      struct
+      {
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 2)
+        halp::item<&ins::length> length;
+        halp::item<&ins::chance> chance;
+        halp::item<&ins::velocity> velocity;
+        halp::item<&ins::pitch> pitch;
+      } amounts;
       halp::item<&ins::velocity_range> velocity_range;
-      halp::item<&ins::length> length;
-      halp::item<&ins::chance> chance;
-      halp::item<&ins::pitch> pitch;
     } notes;
 
     struct
@@ -399,10 +405,15 @@ public:
           {
             return halp::enabled_when<&ins::euclid, true>{};
           }
-          halp::item<&ins::euclid_steps> euclid_steps;
-          halp::item<&ins::euclid_pulses> euclid_pulses;
-          halp::item<&ins::euclid_rotation> euclid_rotation;
-          halp::item<&ins::euclid_step> euclid_step;
+          struct
+          {
+            halp_meta(layout, halp::layouts::grid)
+            halp_meta(columns, 2)
+            halp::item<&ins::euclid_steps> euclid_steps;
+            halp::item<&ins::euclid_pulses> euclid_pulses;
+            halp::item<&ins::euclid_rotation> euclid_rotation;
+            halp::item<&ins::euclid_step> euclid_step;
+          } controls;
         } rhythm;
       } gate;
 

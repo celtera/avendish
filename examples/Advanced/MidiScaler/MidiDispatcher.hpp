@@ -40,6 +40,7 @@ struct MidiDispatcher
   halp_meta(description, "Spread incoming notes over a set of MIDI channels")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-dispatcher.html")
   halp_meta(uuid, "f8d568dd-1dd4-4aad-9b49-03628f874557")
+  halp_flag(process_exec);
 
   static constexpr int max_chord = 32;
 
@@ -356,9 +357,10 @@ private:
         }
         if(!m_notes.end(ch, m.bytes[1], ts, m.bytes[2], emit))
         {
+          // Not a note this object started: its channel stays as it is.
           auto msg = m;
           msg.timestamp = ts;
-          emit(std::move(msg));
+          outputs.midi.push_back(std::move(msg));
         }
         break;
       }
