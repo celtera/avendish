@@ -468,6 +468,18 @@ struct MIDISyncIn
 
       mtc_state.has_valid_time = true;
       mtc_state.received_full_frame = true;
+
+      // A full frame is a locate: quarter frames received before it describe
+      // another position, and must not complete a sequence after it.
+      mtc_state.quarter_frames = {};
+      mtc_state.assembling = false;
+      mtc_state.quarter_frame_index = 0;
+
+      // Clocks received before it do not move the new position.
+      clock_interp.last_mtc_seconds = to_seconds(mtc_state);
+      clock_interp.last_mtc_timestamp = std::chrono::steady_clock::now();
+      clock_interp.ticks_since_mtc = 0;
+
       update_outputs();
     }
   }
