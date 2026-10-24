@@ -13,8 +13,12 @@ struct value_metadata_on
 {
   static constexpr bool local_midi_tick_batch = true;
 };
+struct value_metadata_absent
+{
+};
 static_assert(!oscr::use_local_midi_tick_batch<value_metadata_off>);
 static_assert(oscr::use_local_midi_tick_batch<value_metadata_on>);
+static_assert(oscr::use_local_midi_tick_batch<value_metadata_absent>);
 
 template <typename Message>
 struct raw_midi_port

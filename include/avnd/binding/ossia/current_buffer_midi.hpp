@@ -10,7 +10,12 @@
 
 namespace oscr
 {
-// This is a value property, not a presence-only flag: explicitly false opts out.
+// A node runs once per token it is given, and a buffer can hold several:
+// a process looping inside the buffer runs up to its loop point then from its
+// start, a process stopped inside it runs its last partial tick then an empty
+// one. The MIDI outlets keep what all the runs of a buffer sent, unless the
+// object sets local_midi_tick_batch to false: each run then replaces what the
+// previous one sent.
 template <typename T>
 inline constexpr bool use_local_midi_tick_batch = [] {
   if constexpr(requires { T::local_midi_tick_batch(); })
@@ -18,8 +23,21 @@ inline constexpr bool use_local_midi_tick_batch = [] {
   else if constexpr(requires { T::local_midi_tick_batch; })
     return bool(T::local_midi_tick_batch);
   else
-    return avnd::annotated_or_empty<T>("local_midi_tick_batch") == "true";
+    return avnd::annotated_or_empty<T>("local_midi_tick_batch") != "false";
 }();
+
+// Packets per MIDI output reserved for a buffer: local_midi_tick_batch_reserve,
+// or the buffer size.
+template <typename T>
+std::size_t local_midi_tick_batch_reserve(std::size_t buffer_size) noexcept
+{
+  if constexpr(requires { T::local_midi_tick_batch_reserve(); })
+    return T::local_midi_tick_batch_reserve();
+  else if constexpr(requires { T::local_midi_tick_batch_reserve; })
+    return T::local_midi_tick_batch_reserve;
+  else
+    return buffer_size;
+}
 
 // Already-emitted packets for one graph execution, not pending processor events.
 template <typename T>
