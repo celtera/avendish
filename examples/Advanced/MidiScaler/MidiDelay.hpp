@@ -27,8 +27,8 @@ namespace mtk
  * under Vel. floor, or when the pitch leaves 0 - 127.
  * An echo lasts as long as its source note, or Length with Fixed length.
  *
- * Dry/Wet follows Midihub: 0 plays the source only, 50 the source and the
- * echoes at full velocity, 100 the echoes only; in between, the other side's
+ * Dry/Wet follows Midihub: 0 plays the source only, 0.5 the source and the
+ * echoes at full velocity, 1 the echoes only; in between, the other side's
  * velocity is scaled down.
  *
  * Echoes keep the source's channel. With MPE, the pitch bend and pressure that
@@ -49,6 +49,7 @@ struct MidiDelay
   halp_meta(description, "Repeat the incoming notes as echoes, with feedback and transposition")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-delay.html")
   halp_meta(uuid, "5ba4e20c-8936-43ab-aee5-8ac4555e05c1")
+  halp_flag(process_exec);
 
   static constexpr int max_sources = 32;
   static constexpr int max_expression_echoes = 16;
@@ -72,9 +73,9 @@ struct MidiDelay
       halp_meta(description, "Echo until the velocity falls under the floor")
     } infinite;
 
-    struct : halp::hslider_i32<"Feedback", halp::irange{0, 100, 70}>
+    struct : halp::knob_f32<"Feedback", halp::range{0., 1., 0.7}>
     {
-      halp_meta(description, "Velocity of each echo, in percent of the previous one")
+      halp_meta(description, "Velocity of each echo, relative to the previous one")
     } feedback;
 
     struct : halp::spinbox_i32<"Vel. floor", halp::irange{1, 127, 1}>
@@ -89,10 +90,10 @@ struct MidiDelay
                        "leaves the MIDI range")
     } pitch_step;
 
-    struct : halp::hslider_i32<"Dry/Wet", halp::irange{0, 100, 50}>
+    struct : halp::knob_f32<"Dry/Wet", halp::range{0., 1., 0.5}>
     {
       halp_meta(
-          description, "0: the source only. 50: the source and the echoes. 100: "
+          description, "0: the source only. 0.5: the source and the echoes. 1: "
                        "the echoes only.")
     } mix;
 
@@ -130,47 +131,50 @@ struct MidiDelay
       halp_meta(name, "Echo")
       halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::time> time;
       struct
       {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 2)
+        halp::item<&ins::time> time;
+        halp::item<&ins::feedback> feedback;
+        struct
         {
-          return halp::enabled_when<&ins::infinite, false>{};
-        }
-        halp::item<&ins::repeats> repeats;
-      } repeats;
-      halp::item<&ins::infinite> infinite;
-      halp::item<&ins::feedback> feedback;
-      halp::item<&ins::floor> floor;
-      halp::item<&ins::pitch_step> pitch_step;
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::infinite, false>{};
+          }
+          halp::item<&ins::repeats> repeats;
+        } repeats;
+        halp::item<&ins::infinite> infinite;
+        halp::item<&ins::floor> floor;
+        halp::item<&ins::pitch_step> pitch_step;
+      } controls;
     } echo;
 
     struct
     {
-      halp_meta(name, "Mix")
+      halp_meta(name, "Output")
       halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::mix> mix;
-      halp::item<&ins::mpe> mpe;
-    } mix;
-
-    struct
-    {
-      halp_meta(name, "Length")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::fixed> fixed;
       struct
       {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 2)
+        halp::item<&ins::mix> mix;
+        struct
         {
-          return halp::enabled_when<&ins::fixed, true>{};
-        }
-        halp::item<&ins::length> length;
-      } length;
-    } length;
+          halp_meta(layout, halp::layouts::vbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::fixed, true>{};
+          }
+          halp::item<&ins::length> length;
+        } length;
+        halp::item<&ins::mpe> mpe;
+        halp::item<&ins::fixed> fixed;
+      } controls;
+    } output;
   };
 
   void prepare(halp::setup s) noexcept
@@ -318,9 +322,13 @@ private:
         }
         if(s.echo_on(k) >= limit)
           break;
-        m_queue.schedule(
-            s.echo_on(k),
-            libremidi::channel_events::note_on(s.channel, s.echo_pitch(k), v));
+        // An echo whose note-on is lost must not count as started: its
+        // note-off would end another note of the same pitch.
+        if(!make_room_for_note()
+           || !m_queue.schedule(
+               s.echo_on(k),
+               libremidi::channel_events::note_on(s.channel, s.echo_pitch(k), v)))
+          break;
         s.next_on++;
       }
       if(s.off_known())
@@ -328,6 +336,7 @@ private:
         while(s.next_off < s.next_on && s.echo_off(s.next_off) < limit)
         {
           const int k = s.next_off++;
+          make_room_for_note();
           m_queue.schedule(
               std::max(s.echo_off(k), s.echo_on(k)),
               libremidi::channel_events::note_off(
@@ -338,6 +347,14 @@ private:
         s = {};
     }
     m_queue.release(m_now, int(ts), [this](libremidi::message&& m) { send(std::move(m)); });
+  }
+
+  //! Expression echoes give way to notes when the queue is full.
+  bool make_room_for_note() noexcept
+  {
+    return m_queue.make_room([](const auto& e) {
+      return !is_note_on(e.msg) && !is_note_off(e.msg);
+    });
   }
 
   int64_t frames_of(float seconds) const noexcept
@@ -400,9 +417,9 @@ private:
       retire(*slot, ts);
     }
 
-    const int mix = std::clamp(inputs.mix.value, 0, 100);
-    const double dry = mix <= 50 ? 1. : (100 - mix) / 50.;
-    const double wet = mix >= 50 ? 1. : mix / 50.;
+    const double mix = std::clamp(double(inputs.mix.value), 0., 1.);
+    const double dry = mix <= 0.5 ? 1. : (1. - mix) * 2.;
+    const double wet = mix >= 0.5 ? 1. : mix * 2.;
 
     source& s = *slot;
     s = {};
@@ -418,7 +435,7 @@ private:
     s.repeats = inputs.infinite.value ? -1 : std::max(0, inputs.repeats.value);
     s.floor = inputs.floor.value;
     s.step = inputs.pitch_step.value;
-    s.feedback = std::clamp(inputs.feedback.value, 0, 100) / 100.;
+    s.feedback = std::clamp(double(inputs.feedback.value), 0., 1.);
     s.wet = wet;
     if(s.delay < 1)
       s.done = true;

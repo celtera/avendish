@@ -52,6 +52,7 @@ public:
       "velocities, controllers, pitch bend and pressure")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-value-shaper.html")
   halp_meta(uuid, "6ed46ee7-8d04-4e46-8a68-e2c6633fd217")
+  halp_flag(process_exec);
 
   enum Kind
   {
@@ -138,9 +139,9 @@ public:
     } ratio;
 
     // ---- Gain -----------------------------------------------------------
-    struct : halp::hslider_f32<"Gain", halp::range{0., 400., 100.}>
+    struct : halp::knob_f32<"Gain", halp::range{0., 4., 1.}>
     {
-      halp_meta(description, "Amplification, in percent")
+      halp_meta(description, "Amplification: 1 keeps the value, 2 doubles it")
     } gain;
 
     struct : halp::hslider_f32<"Offset", halp::range{-127., 127., 0.}>
@@ -148,22 +149,22 @@ public:
       halp_meta(description, "Added to the value after the gain")
     } offset;
 
-    struct : halp::knob_f32<"Low keys", halp::range{0., 200., 100.}>
+    struct : halp::knob_f32<"Low keys", halp::range{0., 2., 1.}>
     {
       halp_meta(
           description,
-          "Gain in percent at note 24, for the kinds that come with a note. "
+          "Gain at note 24, for the kinds that come with a note. "
           "Between 24, 60 and 96 the gains are interpolated.")
     } low_gain;
 
-    struct : halp::knob_f32<"Mid keys", halp::range{0., 200., 100.}>
+    struct : halp::knob_f32<"Mid keys", halp::range{0., 2., 1.}>
     {
-      halp_meta(description, "Gain in percent at note 60")
+      halp_meta(description, "Gain at note 60")
     } mid_gain;
 
-    struct : halp::knob_f32<"High keys", halp::range{0., 200., 100.}>
+    struct : halp::knob_f32<"High keys", halp::range{0., 2., 1.}>
     {
-      halp_meta(description, "Gain in percent at note 96")
+      halp_meta(description, "Gain at note 96")
     } high_gain;
 
     // ---- Limits ---------------------------------------------------------
@@ -210,14 +211,15 @@ public:
   using tick = halp::tick_musical;
   void operator()(halp::tick_musical t) noexcept
   {
+    // Seed 0 keeps running freely: only a seeded take restarts.
     const int seed = inputs.seed;
-    if(seed != m_seed || m_stop_requested
-       || (seed != 0 && t.position_in_frames < m_last_position))
-    {
-      m_seed = seed;
-      m_stop_requested = false;
+    const bool restart
+        = seed != m_seed
+          || (seed != 0 && (m_stop_requested || t.position_in_frames < m_last_position));
+    m_seed = seed;
+    m_stop_requested = false;
+    if(restart && seed != 0)
       reseed();
-    }
     m_last_position = t.position_in_frames;
 
     for(const auto& m : inputs.midi)
@@ -267,7 +269,7 @@ public:
     if(ratio != 1. && n > thresh)
       n = thresh + (n - thresh) / ratio;
 
-    n *= std::max(0., double(in.gain.value)) / 100. * key_gain(note);
+    n *= std::max(0., double(in.gain.value)) * key_gain(note);
 
     d = sign * n * (d < 0. ? span_down : span_up);
     u = origin + d;
@@ -293,9 +295,9 @@ public:
   {
     if(note < 0)
       return 1.;
-    const double lo = std::max(0., double(inputs.low_gain.value)) / 100.;
-    const double mid = std::max(0., double(inputs.mid_gain.value)) / 100.;
-    const double hi = std::max(0., double(inputs.high_gain.value)) / 100.;
+    const double lo = std::max(0., double(inputs.low_gain.value));
+    const double mid = std::max(0., double(inputs.mid_gain.value));
+    const double hi = std::max(0., double(inputs.high_gain.value));
     if(note <= 24)
       return lo;
     if(note <= 60)
@@ -413,7 +415,8 @@ public:
       struct
       {
         halp_meta(name, "Range")
-        halp_meta(layout, halp::layouts::vbox)
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 2)
         halp::item<&ins::fixed> fixed;
         struct
         {
@@ -431,12 +434,13 @@ public:
       struct
       {
         halp_meta(name, "Dynamics")
-        halp_meta(layout, halp::layouts::vbox)
-        halp::item<&ins::curve> curve;
-        halp::item<&ins::threshold> threshold;
-        halp::item<&ins::ratio> ratio;
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 3)
         halp::item<&ins::gain> gain;
+        halp::item<&ins::curve> curve;
+        halp::item<&ins::ratio> ratio;
         halp::item<&ins::offset> offset;
+        halp::item<&ins::threshold> threshold;
       } dynamics;
 
       struct
@@ -451,10 +455,11 @@ public:
       struct
       {
         halp_meta(name, "Limits")
-        halp_meta(layout, halp::layouts::vbox)
+        halp_meta(layout, halp::layouts::grid)
+        halp_meta(columns, 2)
         halp::item<&ins::random> random;
-        halp::item<&ins::seed> seed;
         halp::item<&ins::clip> clip;
+        halp::item<&ins::seed> seed;
       } limits;
     } shape;
   };

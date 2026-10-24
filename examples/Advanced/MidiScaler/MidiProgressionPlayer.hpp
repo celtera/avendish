@@ -65,6 +65,7 @@ struct MidiProgressionPlayer
                    "incoming notes in its harmony")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-progression-player.html")
   halp_meta(uuid, "213d75e7-3c2e-4b13-9686-fbfd2132fc2d")
+  halp_flag(process_exec);
 
   static constexpr int max_held = 128;
   static constexpr int custom_index = 0;
@@ -258,10 +259,10 @@ struct MidiProgressionPlayer
           "Free: seconds from the start.")
     } step;
 
-    struct : halp::hslider_i32<"Gate", halp::irange{1, 100, 100}>
+    struct : halp::knob_f32<"Gate", halp::range{0.01, 1., 1.}>
     {
       halp_meta(
-          description, "Chord length in percent of the step; 100 holds it until "
+          description, "Chord length as a proportion of the step; 1 holds it until "
                        "the next chord")
     } gate;
 
@@ -408,8 +409,12 @@ struct MidiProgressionPlayer
       halp_meta(name, "Harmony")
       halp_meta(layout, halp::layouts::section)
       halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::key> key;
-      halp::item<&ins::mode> mode;
+      struct
+      {
+        halp_meta(layout, halp::layouts::hbox)
+        halp::item<&ins::key> key;
+        halp::item<&ins::mode> mode;
+      } key;
       halp::item<&ins::progression> progression;
       struct
       {
@@ -426,61 +431,72 @@ struct MidiProgressionPlayer
 
     struct
     {
-      halp_meta(name, "Advance")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::advance> advance;
-      struct
-      {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
-        {
-          return halp::enabled_when<&ins::advance, advance_mode::every_step>{};
-        }
-        halp::item<&ins::step> step;
-        halp::item<&ins::gate> gate;
-      } grid;
-      struct
-      {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
-        {
-          return halp::enabled_when<&ins::advance, advance_mode::on_trigger>{};
-        }
-        halp::item<&ins::next> next;
-      } trigger;
-      struct
-      {
-        halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
-        {
-          return halp::enabled_when<&ins::advance, advance_mode::on_note>{};
-        }
-        halp::item<&ins::consume> consume;
-      } note;
-    } advance;
+      halp_meta(name, "Settings")
+      halp_meta(layout, halp::layouts::tabs)
+      halp_meta(background, halp::colors::background_darker)
 
-    struct
-    {
-      halp_meta(name, "Chords")
-      halp_meta(layout, halp::layouts::section)
-      halp_meta(background, halp::colors::background_mid)
-      halp::item<&ins::chords> chords;
       struct
       {
+        halp_meta(name, "Advance")
         halp_meta(layout, halp::layouts::vbox)
-        static constexpr auto condition()
+        halp::item<&ins::advance, halp::look{.widget = halp::control_widget::combo}>
+            advance;
+        struct
         {
-          return halp::enabled_when<&ins::chords, true>{};
-        }
-        halp::item<&ins::center> center;
-        halp::item<&ins::inversion> inversion;
-        halp::item<&ins::bass> bass;
-        halp::item<&ins::notes> notes;
-        halp::item<&ins::velocity> velocity;
-        halp::item<&ins::channel> channel;
-      } voicing;
-    } chords;
+          halp_meta(layout, halp::layouts::hbox)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::advance, advance_mode::every_step>{};
+          }
+          halp::item<&ins::step> step;
+          halp::item<&ins::gate> gate;
+        } grid;
+        struct
+        {
+          halp_meta(layout, halp::layouts::hbox)
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::advance, advance_mode::on_trigger>{};
+            }
+            halp::item<&ins::next> next;
+          } trigger;
+          struct
+          {
+            halp_meta(layout, halp::layouts::vbox)
+            static constexpr auto condition()
+            {
+              return halp::enabled_when<&ins::advance, advance_mode::on_note>{};
+            }
+            halp::item<&ins::consume> consume;
+          } note;
+        } manual;
+      } advance;
+
+      struct
+      {
+        halp_meta(name, "Chords")
+        halp_meta(layout, halp::layouts::vbox)
+        halp::item<&ins::chords> chords;
+        struct
+        {
+          halp_meta(layout, halp::layouts::grid)
+          halp_meta(columns, 2)
+          static constexpr auto condition()
+          {
+            return halp::enabled_when<&ins::chords, true>{};
+          }
+          halp::item<&ins::center> center;
+          halp::item<&ins::notes> notes;
+          halp::item<&ins::inversion> inversion;
+          halp::item<&ins::bass> bass;
+          halp::item<&ins::velocity> velocity;
+          halp::item<&ins::channel> channel;
+        } voicing;
+      } chords;
+    } settings;
   };
 
   MidiProgressionPlayer() noexcept
@@ -805,9 +821,11 @@ private:
         const int vel = std::clamp(inputs.velocity.value, 1, 127);
         for(int p : m_voicing.all())
           send_on(m_chord_channel, p, vel, ts);
-        const int gate = std::clamp(inputs.gate.value, 1, 100);
-        if(length > 0 && gate < 100)
-          m_gate_end = m_now + ts + std::max<int64_t>(1, length * gate / 100);
+        // Within half a percent of 1 the knob means "until the next chord"
+        const double gate = std::clamp(double(inputs.gate.value), 0.01, 1.);
+        if(length > 0 && gate < 0.995)
+          m_gate_end
+              = m_now + ts + std::max<int64_t>(1, std::llround(double(length) * gate));
       }
     }
 

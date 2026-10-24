@@ -43,12 +43,13 @@ struct event_queue
     uint32_t tag{};
   };
 
-  void schedule(int64_t at, const libremidi::message& m, uint32_t tag = 0) noexcept
+  //! False when the queue is full and `m` is not a note-off: it is dropped.
+  bool schedule(int64_t at, const libremidi::message& m, uint32_t tag = 0) noexcept
   {
     if(m_size == Capacity)
     {
       if(!is_note_off(m))
-        return;
+        return false;
       int victim = -1;
       for(int i = m_size - 1; i >= 0; i--)
       {
@@ -73,6 +74,25 @@ struct event_queue
     m_events[pos].msg.timestamp = 0;
     m_events[pos].tag = tag;
     m_size++;
+    return true;
+  }
+
+  //! When full, removes the latest event for which `pred` is true. Returns
+  //! whether there is room for one more event.
+  template <typename Pred>
+  bool make_room(Pred&& pred) noexcept
+  {
+    if(m_size < Capacity)
+      return true;
+    for(int i = m_size - 1; i >= 0; i--)
+    {
+      if(pred(m_events[i]))
+      {
+        erase(i);
+        return true;
+      }
+    }
+    return false;
   }
 
   //! Sends every message due before `now + frames`, with its offset in the
@@ -140,6 +160,7 @@ struct event_queue
   void clear() noexcept { m_size = 0; }
   int size() const noexcept { return m_size; }
   bool empty() const noexcept { return m_size == 0; }
+  bool full() const noexcept { return m_size == Capacity; }
   const event& operator[](int i) const noexcept { return m_events[i]; }
 
 private:
