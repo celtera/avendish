@@ -45,6 +45,7 @@ struct MidiScaler
   halp_meta(c_name, "avnd_helpers_midifile_scaled")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/midi-file-scaler.html")
   halp_meta(uuid, "c43300b0-6c98-4a38-81f2-b549f0297e38")
+  halp_flag(process_exec);
   halp_meta(category, "Midi/Pitch")
   halp_meta(description, "Convert active MIDI notes to frequencies using Scala tuning and keyboard-mapping files, and play them retuned on a MIDI output.")
 
@@ -328,8 +329,21 @@ struct MidiScaler
 
   //! MIDI Tuning Standard, real-time single note tuning change:
   //! F0 7F <device> 08 02 <program> <count> [<key> <semitone> <msb> <lsb>]... F7.
-  //! Four keys per message keep each message within libremidi's inline storage.
-  static constexpr int mts_keys_per_message = 4;
+  //! Bytes a message holds without allocating: 32 on 64-bit targets, 16 on
+  //! 32-bit ones (wasm).
+  static constexpr std::size_t mts_inline_bytes = [] {
+    if constexpr(requires { libremidi::midi_bytes::static_capacity; })
+      return std::size_t(libremidi::midi_bytes::static_capacity);
+    else
+      return std::size_t(24);
+  }();
+  //! A message is 8 bytes plus 4 per key; as many keys as fit inline, a
+  //! divisor of 128.
+  static constexpr int mts_keys_per_message
+      = 8 + 4 * 4 <= mts_inline_bytes ? 4 : 8 + 4 * 2 <= mts_inline_bytes ? 2 : 1;
+  static_assert(
+      8 + 4 * mts_keys_per_message <= mts_inline_bytes,
+      "an MTS message would allocate on the audio thread");
 
   template <typename Emit>
   void send_mts(int64_t ts, Emit& emit) const noexcept

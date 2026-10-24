@@ -132,7 +132,7 @@ public:
 
     halp::time_chooser<"Decay", halp::range{0., 20., 0.2}> decay;
 
-    struct : halp::hslider_f32<"Sustain", halp::range{0., 1., 0.7}>
+    struct : halp::knob_f32<"Sustain", halp::range{0., 1., 0.7}>
     {
       halp_meta(description, "Level held while the note is down, relative to the peak")
     } sustain;
@@ -144,7 +144,7 @@ public:
       halp_meta(description, "Time taken to traverse the drawn curve (Curve modes)")
     } curve_duration;
 
-    struct : halp::hslider_f32<"Sustain point", halp::range{0., 1., 0.5}>
+    struct : halp::knob_f32<"Sustain point", halp::range{0., 1., 0.5}>
     {
       halp_meta(description, "Position in the drawn curve held while the note is down")
     } sustain_point;
