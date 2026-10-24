@@ -610,14 +610,24 @@ private:
         for(int i = 0; i < slot.count; i++)
         {
           const auto& e = slot.entries[i];
-          auto off = e.to_main ? libremidi::channel_events::note_off(e.channel, e.note, 0)
-                               : libremidi::channel_events::note_off(c, n, 0);
+          auto off = libremidi::channel_events::note_off(c, n, 0);
+          const bool to_main = off_to_main(e, off);
+          if(to_main)
+            off = libremidi::channel_events::note_off(e.channel, e.note, 0);
           off.timestamp = ts;
-          send(e.to_main, off);
+          send(to_main, off);
         }
         slot.count = 0;
       }
     }
+  }
+
+  //! A note-off goes where its note-on went, so that a kept note is always
+  //! ended. When note-offs are selected, those of notes rejected only for
+  //! their kind go to the main output instead, since that is what was asked.
+  bool off_to_main(const held_entry& e, const libremidi::message& off) const noexcept
+  {
+    return e.to_main || (e.pass && kind_accepts(off, midi_kind::note_off));
   }
 
   //! Kind selection: the Kinds list, or the legacy Filter type when it is empty.
@@ -773,9 +783,7 @@ private:
       pass = base && index_accepts(in, k);
     }
 
-    // A note-off goes where its note-on went, whatever the type selection says,
-    // so that a kept note is always ended and a rejected one never is.
-    const bool to_main = is_tracked ? tracked.to_main : (kind_ok && pass);
+    const bool to_main = is_tracked ? off_to_main(tracked, in) : (kind_ok && pass);
     if(k == midi_kind::note_on)
     {
       push_held(

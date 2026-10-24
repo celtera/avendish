@@ -225,6 +225,8 @@ struct MidiScaler
     struct
     {
       halp_meta(name, "Frequency output");
+      //! At most one value per key: reserved in prepare so that the audio
+      //! thread never grows it.
       std::vector<float> value{};
     } freq;
 
@@ -272,7 +274,11 @@ struct MidiScaler
 
   std::array<int, 128> active = {};
 
-  void prepare(halp::setup s) { update_tuning(); }
+  void prepare(halp::setup s)
+  {
+    outputs.freq.value.reserve(128);
+    update_tuning();
+  }
 
   void stop() noexcept { m_stop = true; }
 
@@ -285,16 +291,16 @@ struct MidiScaler
     // Update the active notes
     for(auto& msg : this->inputs.midi)
     {
-      libremidi::message m;
-      m.bytes.assign(msg.bytes.begin(), msg.bytes.end());
-
-      switch(m.get_message_type())
+      const auto& b = msg.bytes;
+      if(b.size() < 3)
+        continue;
+      switch(b[0] & 0xF0)
       {
-        case libremidi::message_type::NOTE_ON:
-          this->active[m.bytes[1]] = m.bytes[2];
+        case 0x90:
+          this->active[b[1] & 0x7F] = b[2];
           break;
-        case libremidi::message_type::NOTE_OFF:
-          this->active[m.bytes[1]] = 0;
+        case 0x80:
+          this->active[b[1] & 0x7F] = 0;
           break;
         default:
           break;

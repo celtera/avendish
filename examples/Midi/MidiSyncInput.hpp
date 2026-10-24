@@ -100,7 +100,8 @@ struct MIDISyncIn
     {
       halp_meta(
           description,
-          "Clock out passes 1 of every N clocks, counted from each Start")
+          "Clock out passes 1 of every N clocks, counted from each Start or from "
+          "the position a Song Position Pointer gives")
     } clock_divide;
 
     struct : halp::spinbox_i32<"Start shift", halp::irange{-48, 48, 0}>
@@ -118,7 +119,10 @@ struct MIDISyncIn
 
     struct : halp::toggle<"Pass SPP", halp::default_on_toggle>
     {
-      halp_meta(description, "Clock out passes Song Position Pointer messages")
+      halp_meta(
+          description,
+          "Clock out passes Song Position Pointer messages, counted in the "
+          "divided and shifted clock")
     } pass_spp;
   } inputs;
 
@@ -237,9 +241,13 @@ struct MIDISyncIn
 
     // Clock tick tracking
     static constexpr size_t max_interval_history = 24; // 1 beat worth at 24 PPQN
-    std::chrono::steady_clock::time_point last_clock_tick;
-    ossia::small_pod_vector<double, max_interval_history>
-        tick_intervals; // Recent tick intervals for tempo estimation
+    //! Date of the last clock, in frames since the object started: from the
+    //! messages' timestamps, not from when the buffer is processed.
+    int64_t last_clock_tick = 0;
+    bool has_clock_tick = false;
+    //! Recent tick intervals for tempo estimation, never more than
+    //! max_interval_history: it does not allocate.
+    ossia::small_pod_vector<double, max_interval_history> tick_intervals;
     double estimated_tempo = 120.0;
     double filtered_tempo = 120.0;
     uint32_t ticks_since_mtc = 0;
@@ -255,6 +263,7 @@ struct MIDISyncIn
       active = false;
       ticks_since_mtc = 0;
       tick_intervals.clear();
+      has_clock_tick = false;
 
       estimated_tempo = 120.0;
       filtered_tempo = 120.0;
@@ -438,6 +447,10 @@ struct MIDISyncIn
 
     mtc_state.has_valid_time = true;
 
+    // The last piece arrives two frames after the time the eight of them
+    // carry: the position is that much later
+    mtc_state.frames += 2;
+
     // Reset clock interpolation when we get a new MTC frame
     clock_interp.last_mtc_seconds = to_seconds(mtc_state);
     clock_interp.last_mtc_timestamp = std::chrono::steady_clock::now();
@@ -560,24 +573,20 @@ struct MIDISyncIn
     }
   }
 
-  void process_clock_interpolation()
+  //! `at`: the clock's date in frames since the object started.
+  void process_clock_interpolation(int64_t at)
   {
-    auto now = std::chrono::steady_clock::now();
-
     // Calculate interval from last clock tick
-    if(clock_interp.last_clock_tick.time_since_epoch().count() > 0)
+    if(clock_interp.has_clock_tick)
     {
-      auto interval
-          = std::chrono::duration<double>(now - clock_interp.last_clock_tick).count();
+      const double rate = sample_rate > 0. ? sample_rate : 48000.;
+      const double interval = double(at - clock_interp.last_clock_tick) / rate;
 
-      // Store interval for tempo estimation
-      clock_interp.tick_intervals.push_back(interval);
-
-      // Keep only recent history
-      while(clock_interp.tick_intervals.size() > clock_interp.max_interval_history)
-      {
-        clock_interp.tick_intervals.erase(clock_interp.tick_intervals.begin());
-      }
+      // Keep only recent history, without growing past the inline storage
+      auto& iv = clock_interp.tick_intervals;
+      if(iv.size() >= clock_interp.max_interval_history)
+        iv.erase(iv.begin());
+      iv.push_back(interval);
 
       // Estimate tempo from tick intervals
       if(clock_interp.tick_intervals.size() >= 2)
@@ -610,7 +619,8 @@ struct MIDISyncIn
       clock_interp.estimated_tempo = inputs.base_tempo.value;
     }
 
-    clock_interp.last_clock_tick = now;
+    clock_interp.last_clock_tick = at;
+    clock_interp.has_clock_tick = true;
     clock_interp.active = true;
 
     // Handle based on sync mode
@@ -683,6 +693,32 @@ struct MIDISyncIn
     clock_queue.schedule(at, msg);
   }
 
+  /**
+   * Song Position: the divider and the shift take the phase they have at that
+   * position, as if the clock had run from Start, and the position goes out
+   * in sixteenths of the clock out, rounded down when it falls between two.
+   */
+  void song_position_out(int64_t at, const libremidi::message& msg) noexcept
+  {
+    if(msg.size() < 3)
+      return;
+    const int n = std::max(1, inputs.clock_divide.value);
+    const int64_t spp = int64_t(msg.bytes[1] & 0x7F) | (int64_t(msg.bytes[2] & 0x7F) << 7);
+    // Clocks from where the divider starts counting to the position
+    const int64_t c = spp * 6 - inputs.start_shift.value;
+    clock_counter = c > 0 ? int(c % n) : 0;
+    clocks_to_drop = c < 0 ? int(-c) : 0;
+
+    if(!inputs.pass_spp.value)
+      return;
+    // The clocks out before the position: the ones on k % n == 0, k < c
+    const int64_t out_clocks = c > 0 ? (c + n - 1) / n : 0;
+    const int64_t out_spp = std::min<int64_t>(out_clocks / 6, 16383);
+    libremidi::message m;
+    m.bytes = {0xF2, uint8_t(out_spp & 0x7F), uint8_t((out_spp >> 7) & 0x7F)};
+    schedule_clock_out(at, m);
+  }
+
   //! A clock that survived Start shift goes through the divider.
   void divide_clock(int64_t at, const libremidi::message& msg) noexcept
   {
@@ -715,8 +751,7 @@ struct MIDISyncIn
         schedule_clock_out(at, msg);
         break;
       case 0xF2:
-        if(inputs.pass_spp.value)
-          schedule_clock_out(at, msg);
+        song_position_out(at, msg);
         break;
       case 0xF8:
         if(clocks_to_drop > 0)
@@ -826,7 +861,8 @@ struct MIDISyncIn
             // Process clock tick based on mode
             if(inputs.sync_mode.value != SyncMode::MTC_Only)
             {
-              process_clock_interpolation();
+              process_clock_interpolation(
+                  clock_now + std::clamp<int64_t>(msg.timestamp, 0, std::max(frames - 1, 0)));
             }
             break;
 

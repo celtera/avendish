@@ -85,7 +85,8 @@ public:
     {
       halp_meta(
           description,
-          "Controller number for CC, note for poly pressure (-1: any)")
+          "Controller number for CC, note for poly pressure. -1: any note, or any "
+          "controller but bank select, RPN, NRPN and channel mode messages")
     } number;
 
     struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}>
@@ -347,7 +348,8 @@ private:
         break;
 
       case CC:
-        if(status == 0xB0 && m.size() >= 3 && (number < 0 || m.bytes[1] == number)
+        if(status == 0xB0 && m.size() >= 3
+           && (number < 0 ? is_continuous_controller(m.bytes[1]) : m.bytes[1] == number)
            && !is_all_notes_off(m))
           m.bytes[2] = to_7bit(shape(m.bytes[2], -1));
         break;
@@ -371,6 +373,23 @@ private:
         if(status == 0xA0 && m.size() >= 3 && (number < 0 || m.bytes[1] == number))
           m.bytes[2] = to_7bit(shape(m.bytes[2], m.bytes[1]));
         break;
+    }
+  }
+
+  //! Controllers whose value is a position that can be reshaped: not bank
+  //! select, the RPN / NRPN selection and data bytes, nor channel mode
+  //! messages, whose values are numbers or commands.
+  static constexpr bool is_continuous_controller(int cc) noexcept
+  {
+    switch(cc)
+    {
+      case 0:
+      case 32:
+      case 6:
+      case 38:
+        return false;
+      default:
+        return !(cc >= 96 && cc <= 101) && cc < 120;
     }
   }
 

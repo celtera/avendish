@@ -86,6 +86,14 @@ struct note_tracker
     return false;
   }
 
+  //! Releases the held note at `index`, as listed by operator[].
+  template <typename Emit>
+  void end_at(int index, int64_t ts, int velocity, Emit&& emit) noexcept
+  {
+    if(index >= 0 && index < m_count)
+      release_at(index, ts, velocity, emit);
+  }
+
   template <typename Emit>
   void end_all(int64_t ts, Emit&& emit) noexcept
   {
