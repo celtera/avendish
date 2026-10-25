@@ -46,20 +46,21 @@ struct drag_payload
 };
 
 /**
- * A file a custom item asks the host to place in the timeline next to the
+ * Files a custom item asks the host to place in the timeline next to the
  * process, through a member
  *
  *   std::function<void(halp::timeline_clip)> send_to_timeline;
  *
  * which the host sets when it can place clips, and leaves empty otherwise.
- * The host makes the clip the way it would on a drop of the file.
+ * The files go together in one new box, each made the way a drop of it
+ * would, in a slot of its own.
  */
 struct timeline_clip
 {
-  std::string file;
+  std::vector<std::string> files;
   //! Where the clip starts, in seconds from the start of the process.
   double date{};
-  //! Lane under the process, for several clips made at once.
-  int lane{};
+  //! Name of the box; the first file's name when empty.
+  std::string name;
 };
 }
