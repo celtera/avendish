@@ -8,8 +8,18 @@
 #include <halp/midi.hpp>
 #include <libremidi/message.hpp>
 
+#include <cstdint>
+
 namespace mo
 {
+/**
+ * Monophonic legato: one note sounds at a time. A new note-on ends the note
+ * that sounds, a note-off ends it only if it is its own key's.
+ *
+ * A note is identified by its channel and its pitch: its note-off goes on the
+ * channel its note-on went on, and a note-off of the same pitch on another
+ * channel leaves it sounding.
+ */
 struct MidiGlide
 {
   halp_meta(name, "Midi Glide")
@@ -20,6 +30,7 @@ struct MidiGlide
   halp_meta(
       manual_url, "https://ossia.io/score-docs/processes/midi-utilities.html#midi-glide")
   halp_meta(uuid, "74d26417-1ce5-4765-874e-055921f0a0bb")
+  halp_flag(process_exec);
 
   struct
   {
@@ -31,41 +42,70 @@ struct MidiGlide
     halp::midi_bus<"out", libremidi::message> out;
   } outputs;
 
-  void operator()()
+  //! The sounding note ends at the start of the next tick.
+  void stop() noexcept { m_stop_requested = true; }
+
+  void operator()() noexcept
   {
-    for(const auto& note : inputs.in)
+    if(m_stop_requested)
     {
-      if(note.is_note_on_or_off())
+      m_stop_requested = false;
+      end_current(0, 0);
+    }
+
+    for(const auto& m : inputs.in)
+    {
+      if(m.is_note_on_or_off())
       {
-        auto vel = note.bytes[2];
-        if(vel == 0 || note.get_message_type() == libremidi::message_type::NOTE_OFF)
+        const int channel = m.get_channel();
+        const uint8_t pitch = m.bytes[1];
+        const uint8_t vel = m.bytes[2];
+        const bool release
+            = vel == 0 || m.get_message_type() == libremidi::message_type::NOTE_OFF;
+        if(release)
         {
-          if(note.bytes[1] == current_note)
+          if(sounding() && pitch == m_note && channel == m_channel)
           {
-            outputs.out.push_back(libremidi::channel_events::note_off(note.get_channel(), current_note, 0));
-            outputs.out.back().timestamp = note.timestamp;
-            current_note = 255;
+            const bool is_off = m.get_message_type() == libremidi::message_type::NOTE_OFF;
+            end_current(is_off ? vel : 0, m.timestamp);
           }
         }
         else
         {
-          // Send a note off for the current note
-          if(current_note != 255)
-          {
-            outputs.out.push_back(libremidi::channel_events::note_off(note.get_channel(), current_note, 0));
-            outputs.out.back().timestamp = note.timestamp;
-          }
-          outputs.out.push_back(note);
-          current_note = note.bytes[1];
+          end_current(0, m.timestamp);
+          outputs.out.push_back(m);
+          m_note = pitch;
+          m_channel = channel;
         }
       }
       else
       {
-        outputs.out.push_back(note);
+        // All sound off and all notes off end the note at the receiver.
+        if(m.get_message_type() == libremidi::message_type::CONTROL_CHANGE
+           && (m.bytes[1] == 120 || m.bytes[1] == 123) && m.get_channel() == m_channel)
+          m_note = no_note;
+        outputs.out.push_back(m);
       }
     }
   }
 
-  uint8_t current_note{255};
+  //! Whether a note sounds at the output.
+  bool sounding() const noexcept { return m_note != no_note; }
+
+private:
+  static constexpr uint8_t no_note = 255;
+
+  void end_current(uint8_t velocity, int64_t ts) noexcept
+  {
+    if(!sounding())
+      return;
+    outputs.out.push_back(libremidi::channel_events::note_off(m_channel, m_note, velocity));
+    outputs.out.back().timestamp = ts;
+    m_note = no_note;
+  }
+
+  uint8_t m_note{no_note};
+  int m_channel{1};
+  bool m_stop_requested{};
 };
 }
