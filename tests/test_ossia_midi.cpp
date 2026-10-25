@@ -268,3 +268,182 @@ TEST_CASE("ossia MIDI publishes bank and RPN controllers without deferred conver
     REQUIRE(libremidi::midi1_from_ump(output.front()).bytes == message.bytes);
   }
 }
+
+namespace
+{
+using sysex_node = oscr::safe_node<midi_effect<false>>;
+
+const std::vector<uint8_t> mtc_full_frame{0xF0, 0x7F, 0x7F, 0x01, 0x01,
+                                          0x21, 0x02, 0x03, 0x04, 0xF7};
+
+std::vector<uint8_t> sysex_of(std::size_t data_bytes)
+{
+  std::vector<uint8_t> bytes{0xF0};
+  for(std::size_t i = 0; i < data_bytes; i++)
+    bytes.push_back(uint8_t(i % 0x80));
+  bytes.push_back(0xF7);
+  return bytes;
+}
+
+std::vector<libremidi::ump> packets_of(const std::vector<uint8_t>& bytes, int64_t ts)
+{
+  libremidi::midi1_to_midi2 conv;
+  std::vector<libremidi::ump> packets;
+  conv.convert_packets(
+      bytes.data(), bytes.size(), ts,
+      [&](const libremidi::ump& p) { packets.push_back(p); });
+  return packets;
+}
+
+std::vector<uint8_t> bytes_of(const auto& message)
+{
+  return {std::begin(message.bytes), std::end(message.bytes)};
+}
+
+struct sysex_rig
+{
+  ossia::execution_state state;
+  sysex_node node{64, 44100., 1};
+  ossia::midi_inlet input;
+
+  sysex_rig() { initialize(node, state); }
+  auto& effect() { return node.impl.effect; }
+
+  //! What the MIDI inputs see for one run over [start, start + frames).
+  void run(int start, int frames)
+  {
+    auto& fx = effect();
+    oscr::process_before_run<sysex_node, midi_effect<false>> before{
+        node, fx, start, frames};
+    before(fx.inputs.raw, input, avnd::field_index<0>{});
+    before(fx.inputs.midi1, input, avnd::field_index<1>{});
+    before(fx.inputs.ump, input, avnd::field_index<2>{});
+    before(fx.inputs.generic, input, avnd::field_index<3>{});
+  }
+
+  void add(const std::vector<libremidi::ump>& packets)
+  {
+    for(auto& p : packets)
+      input.data.messages.push_back(p);
+  }
+
+  //! One message on each MIDI 1 input, @p bytes at @p ts.
+  void require_midi1(const std::vector<uint8_t>& bytes, int64_t ts)
+  {
+    auto& in = effect().inputs;
+    REQUIRE(in.raw.size == 1);
+    CHECK(bytes_of(in.raw.midi_messages[0]) == bytes);
+    CHECK(in.raw.midi_messages[0].timestamp == ts);
+    REQUIRE(in.midi1.size() == 1);
+    CHECK(bytes_of(in.midi1.midi_messages[0]) == bytes);
+    CHECK(in.midi1.midi_messages[0].timestamp == ts);
+    REQUIRE(in.generic.size() == 1);
+    CHECK(bytes_of(in.generic.midi_messages[0]) == bytes);
+    CHECK(in.generic.midi_messages[0].timestamp == ts);
+  }
+
+  void require_no_midi1()
+  {
+    auto& in = effect().inputs;
+    CHECK(in.raw.size == 0);
+    CHECK(in.midi1.size() == 0);
+    CHECK(in.generic.size() == 0);
+  }
+};
+}
+
+TEST_CASE("ossia MIDI 1 inputs get an MTC full frame as one message, UMP inputs its packets")
+{
+  sysex_rig rig;
+  const auto packets = packets_of(mtc_full_frame, 5);
+  REQUIRE(packets.size() == 2);
+  rig.add(packets);
+  rig.run(4, 4);
+
+  rig.require_midi1(mtc_full_frame, 1);
+  auto& ump = rig.effect().inputs.ump;
+  REQUIRE(ump.size() == 2);
+  for(int i = 0; i < 2; i++)
+  {
+    CHECK(std::equal(
+        std::begin(ump.midi_messages[i].data), std::end(ump.midi_messages[i].data),
+        std::begin(packets[i].data)));
+    CHECK(ump.midi_messages[i].timestamp == 1);
+  }
+}
+
+TEST_CASE("ossia MIDI 1 inputs join system-exclusive split over the runs of a buffer")
+{
+  sysex_rig rig;
+  auto packets = packets_of(mtc_full_frame, 0);
+  packets[0].timestamp = 2;
+  packets[1].timestamp = 6;
+  rig.add(packets);
+
+  rig.run(0, 4);
+  rig.require_no_midi1();
+  CHECK(rig.effect().inputs.ump.size() == 1);
+
+  rig.run(4, 4);
+  rig.require_midi1(mtc_full_frame, 2);
+  CHECK(rig.effect().inputs.ump.size() == 1);
+}
+
+TEST_CASE("ossia MIDI 1 inputs join system-exclusive split over buffers")
+{
+  sysex_rig rig;
+  const auto bytes = sysex_of(40);
+  auto packets = packets_of(bytes, 0);
+  REQUIRE(packets.size() == 7);
+
+  for(int i = 0; i < 3; i++)
+    packets[i].timestamp = 7;
+  rig.add({packets.begin(), packets.begin() + 3});
+  rig.run(0, 8);
+  rig.require_no_midi1();
+
+  rig.input.data.messages.clear();
+  rig.add({packets.begin() + 3, packets.end()});
+  rig.run(0, 8);
+  rig.require_midi1(bytes, 0);
+}
+
+TEST_CASE("ossia MIDI 1 inputs get long system-exclusive whole, a too long one not at all")
+{
+  sysex_rig rig;
+  for(std::size_t n : {13, 300, 4094})
+  {
+    INFO(n << " data bytes");
+    const auto bytes = sysex_of(n);
+    rig.input.data.messages.clear();
+    rig.add(packets_of(bytes, 0));
+    rig.run(0, 8);
+    rig.require_midi1(bytes, 0);
+  }
+
+  rig.input.data.messages.clear();
+  rig.add(packets_of(sysex_of(oscr::midi_input_sysex_capacity - 1), 0));
+  rig.run(0, 8);
+  rig.require_no_midi1();
+
+  rig.input.data.messages.clear();
+  rig.add(packets_of(mtc_full_frame, 0));
+  rig.run(0, 8);
+  rig.require_midi1(mtc_full_frame, 0);
+}
+
+TEST_CASE("ossia MIDI 1 inputs drop a system-exclusive message cut short by the next one")
+{
+  sysex_rig rig;
+  auto cut = packets_of(sysex_of(20), 0);
+  cut.pop_back();
+  rig.add(cut);
+  rig.run(0, 8);
+  rig.require_no_midi1();
+
+  rig.input.data.messages.clear();
+  rig.add(packets_of(mtc_full_frame, 3));
+  rig.run(0, 8);
+  rig.require_midi1(mtc_full_frame, 3);
+  CHECK(rig.node.midi_input_assembly.input(avnd::field_index<0>{}).dropped() == 1);
+}

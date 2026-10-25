@@ -12,6 +12,7 @@ class safe_node;
 #include <avnd/binding/ossia/dynamic_ports.hpp>
 #include <avnd/binding/ossia/ffts.hpp>
 #include <avnd/binding/ossia/message_process.hpp>
+#include <avnd/binding/ossia/midi_input_assembly.hpp>
 #include <avnd/binding/ossia/port_reload.hpp>
 #include <avnd/binding/ossia/port_run_postprocess.hpp>
 #include <avnd/binding/ossia/port_run_preprocess.hpp>
@@ -150,6 +151,7 @@ public:
 
   AVND_NO_UNIQUE_ADDRESS avnd::midi_storage<T> midi_buffers;
   AVND_NO_UNIQUE_ADDRESS oscr::current_buffer_midi<T> midi_tick_batch;
+  AVND_NO_UNIQUE_ADDRESS oscr::midi_input_assembly<T> midi_input_assembly;
 
   void begin_execution() noexcept override
   {
