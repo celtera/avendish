@@ -396,8 +396,12 @@ struct process_before_run
     ctrl.ports.resize(ports.size());
   }
 
+  // An object taking UMP gets the packets as they are. One taking MIDI 1 gets
+  // a message when a packet completes one: a system-exclusive message once
+  // its last SysEx7 packet arrives, stamped with that packet's time.
   template <typename Message>
-  bool copy_midi_input(Message& dst, const libremidi::ump& src) const noexcept
+  bool copy_midi_input(
+      Message& dst, const libremidi::ump& src, auto& midi1_stream) const noexcept
   {
     if constexpr(std::is_same_v<Message, libremidi::ump>)
     {
@@ -405,11 +409,15 @@ struct process_before_run
     }
     else
     {
-      auto converted = libremidi::midi1_from_ump(src);
+      const auto converted = midi1_stream.feed(src);
       if(converted.empty())
         return false;
       if constexpr(requires { dst.bytes.resize(converted.size()); })
+      {
+        if(converted.size() > dst.bytes.max_size())
+          return false;
         dst.bytes.resize(converted.size());
+      }
       else if(converted.size() > std::size(dst.bytes))
         return false;
       std::copy(converted.begin(), converted.end(), std::begin(dst.bytes));
@@ -430,10 +438,11 @@ struct process_before_run
       storage.resize(port.data.messages.size());
     ctrl.midi_messages = storage.data();
     ctrl.size = 0;
+    auto& midi1_stream = self.midi_input_assembly.input(avnd::field_index<Idx>{});
     for(const auto& msg : port.data.messages)
     {
       if(msg.timestamp >= start && msg.timestamp < start + frames
-         && copy_midi_input(storage[ctrl.size], msg))
+         && copy_midi_input(storage[ctrl.size], msg, midi1_stream))
         ++ctrl.size;
     }
   }
@@ -536,12 +545,13 @@ struct process_before_run
 
     ctrl.midi_messages.clear();
     ctrl.midi_messages.reserve(port.data.messages.size());
+    auto& midi1_stream = self.midi_input_assembly.input(avnd::field_index<Idx>{});
     for(const auto& msg_in : port.data.messages)
     {
       if(msg_in.timestamp >= start && msg_in.timestamp < start + frames)
       {
         midi_msg_type msg{};
-        if(copy_midi_input(msg, msg_in))
+        if(copy_midi_input(msg, msg_in, midi1_stream))
           ctrl.midi_messages.push_back(std::move(msg));
       }
     }
