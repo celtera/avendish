@@ -63,6 +63,16 @@ enum class colors
   editable_value_dark,
 };
 
+// Where a container places its children across the free space of their cell,
+// row or column; it does not reach the containers nested in it.
+//   halp_meta(alignment, halp::alignments::left)
+enum class alignments
+{
+  left,
+  center,
+  right
+};
+
 struct spacing
 {
   halp_meta(layout, layouts::spacing)
