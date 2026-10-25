@@ -158,6 +158,47 @@ Setting the color is done by adding this to a layout:
 static constexpr auto background() { enum { dark } d{}; return d; }
 ```
 
+### Alignment
+
+By default, a grid makes every cell as large as its largest item and centres
+each item in its cell, a table centres each cell in its column, and box layouts
+put their children against the left edge. When items have different widths,
+their edges do not line up. An `alignment()` property on a layout chooses where
+its children sit instead:
+
+```cpp
+static constexpr auto alignment() { enum { left, center, right } d{}; return d; }
+
+// or, with the helpers:
+halp_meta(alignment, halp::alignments::left)
+```
+
+| Layout          | Effect                                                                                    |
+|-----------------|-------------------------------------------------------------------------------------------|
+| `grid`          | Each column is as wide as its widest item, each row as tall as its tallest; items sit at the left, centre or right of their column, still centred in their row. |
+| `table`         | Cells and column titles sit at the left, centre or right of their column.                  |
+| `vbox`, `section` | Children sit at the left, centre or right of the column, as wide as the widest child or as the box was stretched to. |
+| `hbox`, `group` | The row of children as a whole sits at the left, centre or right of the box, when a parent stretched it wider. |
+
+Other layouts (`tabs`, `split`, `container`) ignore it; set it on the pages
+or the boxes inside them.
+
+Alignment is not inherited: it applies to the children of the layout that
+declares it, and a nested layout uses its own. A table's rows always follow
+the table's columns.
+
+```cpp
+struct {
+  halp_meta(layout, halp::layouts::grid)
+  halp_meta(columns, 3)
+  halp_meta(alignment, halp::alignments::left)
+  halp::item<&ins::record> record;
+  halp::item<&ins::overdub> overdub;
+  halp::item<&ins::stop> stop;
+  halp::item<&ins::undo> undo;
+} buttons;
+```
+
 ### Explicit positioning
 
 In "group" or "container" layouts, widgets will not be positioned automatically. `x` and `y` methods can be used for that.
