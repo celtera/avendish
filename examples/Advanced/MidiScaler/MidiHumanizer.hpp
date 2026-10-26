@@ -1009,7 +1009,11 @@ private:
     if(m_seed != 0)
       m_rng.seed(uint64_t(m_seed), UINT64_C(0x9e3779b97f4a7c15));
     else
+    {
+      // Free-running: every reset, e.g. each new play, starts a different take.
       m_rng.seed(m_free_seed[0], m_free_seed[1]);
+      m_free_seed[0] += UINT64_C(0x9e3779b97f4a7c15);
+    }
   }
 
   //! Drops everything, including anything queued. Only safe when nothing can be
