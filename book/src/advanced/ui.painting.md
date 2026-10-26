@@ -163,6 +163,43 @@ struct custom_item
 };
 ```
 
+## Dragging files out, and placing clips in the timeline
+A custom item can hand files to the host. With a `drag_payload` method, the
+host calls it once the mouse has moved far enough with the button held, and
+starts a drag of the files it returns, as a file manager would:
+
+```cpp
+halp::drag_payload drag_payload(double x, double y)
+{
+  halp::drag_payload p;
+  p.files = {"/path/to/take.wav"};
+  return p;
+}
+```
+
+With a `send_to_timeline` member, which the host fills when it can place
+clips next to the process, the item asks for files to be put in the
+timeline at a date:
+
+```cpp
+std::function<void(halp::timeline_clip)> send_to_timeline;
+
+void send()
+{
+  if(send_to_timeline)
+    send_to_timeline(halp::timeline_clip{
+        .files = {"/path/to/take.wav"},
+        .date = 4.0, // seconds from the start of the process
+        .name = "take",
+        .stretch = halp::clip_stretch::timestretch});
+}
+```
+
+`stretch` says how the audio files follow the tempo of the host: `none`
+(they play at the speed they were recorded at), `repitch` or `repitch_fast`
+(resampled, the pitch follows), `timestretch` or `timestretch_percussive`
+(the pitch is kept). The default, `automatic`, leaves the choice to the host.
+
 ## Painter API
 Here is the complete supported API so far:
 

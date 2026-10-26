@@ -1,6 +1,7 @@
 #pragma once
 #include <halp/modules.hpp>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -46,6 +47,26 @@ struct drag_payload
 };
 
 /**
+ * How the host plays a clip's audio files at a tempo other than the one they
+ * were made at.
+ */
+enum class clip_stretch : uint8_t
+{
+  //! The host decides, e.g. from what it knows of the file.
+  automatic,
+  //! Not at all: the file plays at the speed it was recorded at.
+  none,
+  //! Resampled: the pitch follows the tempo.
+  repitch,
+  //! Resampled with a cheaper, lower quality resampler.
+  repitch_fast,
+  //! Time-stretched, the pitch kept: suited to melodic material.
+  timestretch,
+  //! Time-stretched, the pitch kept, attacks preserved: suited to drums.
+  timestretch_percussive
+};
+
+/**
  * Files a custom item asks the host to place in the timeline next to the
  * process, through a member
  *
@@ -53,7 +74,8 @@ struct drag_payload
  *
  * which the host sets when it can place clips, and leaves empty otherwise.
  * The files go together in one new box, each made the way a drop of it
- * would, in a slot of its own.
+ * would, in a slot of its own. `stretch` says how audio files follow the
+ * tempo; files that are not audio ignore it.
  */
 struct timeline_clip
 {
@@ -62,5 +84,7 @@ struct timeline_clip
   double date{};
   //! Name of the box; the first file's name when empty.
   std::string name;
+  //! How the audio files follow the tempo; automatic lets the host choose.
+  clip_stretch stretch{clip_stretch::automatic};
 };
 }
