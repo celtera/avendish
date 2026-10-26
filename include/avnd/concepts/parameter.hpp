@@ -143,6 +143,17 @@ concept rgba_value = requires(T t) {
 template <typename T>
 concept rgba_parameter = parameter_port<T> && rgba_value<decltype(T::value)>;
 
+//! A quantization grid, see halp::grid_value: a value in some unit (an enum),
+//! and an offset.
+template <typename T>
+concept grid_value_ish = requires(T t) {
+  t.unit;
+  t.value;
+  t.offset;
+} && std::is_enum_v<decltype(T::unit)>;
+template <typename T>
+concept grid_parameter = parameter_port<T> && grid_value_ish<decltype(T::value)>;
+
 template <typename C>
 concept parameter_with_minmax_range_ignore_init
     = parameter_port<C> && AVND_REQUIREMENT_ON_MEMBER(C, range, min)
