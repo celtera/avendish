@@ -48,6 +48,8 @@ template <typename T>
 concept string_control_port = string_parameter<T> && control_port<T>;
 template <typename T>
 concept time_control_port = float_control_port<T> && requires { T::time_chooser; };
+template <typename T>
+concept grid_control_port = grid_parameter<T> && requires { T::widget::grid_chooser; };
 
 template <typename T>
 concept int_value_port = int_parameter<T> && !control_port<T>;

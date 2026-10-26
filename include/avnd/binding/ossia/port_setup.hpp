@@ -436,6 +436,15 @@ struct setup_value_port
     port.domain = setup_value_port::range_to_domain<Field>();
   }
 
+  //! {value, unit}: see halp::grid_value
+  template <avnd::grid_parameter Field>
+  static void setup(ossia::value_port& port)
+  {
+    setup_port_is_event<Field>(port);
+    port.type = ossia::val_type::VEC2F;
+    port.domain = {};
+  }
+
   template <avnd::rgb_parameter Field>
     requires(!avnd::rgba_parameter<Field>)
   static void setup(ossia::value_port& port)

@@ -14,6 +14,7 @@
 #include <ossia/network/value/value_conversion.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -1451,7 +1452,7 @@ bool from_ossia_value_rec(const ossia::value& src, T& dst)
 }
 
 template <typename T>
-  requires(std::is_aggregate_v<T> && !avnd::tensor_like<T>)
+  requires(std::is_aggregate_v<T> && !avnd::tensor_like<T> && !avnd::grid_value_ish<T>)
 bool from_ossia_value(const ossia::value& src, T& dst)
 {
   using type = std::decay_t<T>;
@@ -1496,6 +1497,38 @@ bool from_ossia_value(const ossia::value& src, T& dst)
   else
   {
     return from_ossia_value_rec(src, dst);
+  }
+}
+
+//! A grid is {value, unit}, or {value, unit, offset}. A plain number (a
+//! cable, an OSC message) is seconds, unit 0.
+template <avnd::grid_value_ish T>
+inline bool from_ossia_value(const ossia::value& src, T& dst)
+{
+  using unit_type = decltype(dst.unit);
+  switch(src.get_type())
+  {
+    case ossia::val_type::FLOAT:
+    case ossia::val_type::INT:
+    case ossia::val_type::BOOL:
+      dst.value = ossia::convert<float>(src);
+      dst.unit = unit_type(0);
+      dst.offset = 0;
+      return true;
+    case ossia::val_type::VEC3F: {
+      const auto& v = *src.target<ossia::vec3f>();
+      dst.value = v[0];
+      dst.unit = unit_type(int(std::lround(v[1])));
+      dst.offset = v[2];
+      return true;
+    }
+    default: {
+      const auto v = ossia::convert<ossia::vec2f>(src);
+      dst.value = v[0];
+      dst.unit = unit_type(int(std::lround(v[1])));
+      dst.offset = 0;
+      return true;
+    }
   }
 }
 

@@ -582,6 +582,15 @@ ossia::value to_ossia_value(const avnd::enum_ish auto& v)
   return static_cast<int>(v);
 }
 
+//! {value, unit}; the offset only when there is one.
+template <avnd::grid_value_ish T>
+ossia::value to_ossia_value(const T& v)
+{
+  if(v.offset != 0)
+    return ossia::vec3f{float(v.value), float(int(v.unit)), float(v.offset)};
+  return ossia::vec2f{float(v.value), float(int(v.unit))};
+}
+
 inline ossia::value to_ossia_value(const bool& v)
 {
   return v;

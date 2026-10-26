@@ -45,6 +45,8 @@ enum class widget_type
   xyzw_spinbox,
   color,
   time_chooser,
+  //! A quantization grid, see halp::grid_chooser
+  grid_chooser,
   folder,
   bargraph,
   range_slider,
@@ -117,6 +119,8 @@ struct widget_reflection
         return "color";
       case widget_type::time_chooser:
         return "time_chooser";
+      case widget_type::grid_chooser:
+        return "grid_chooser";
       case widget_type::folder:
         return "folder";
       case widget_type::file:
@@ -233,6 +237,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::time_chooser; })
   {
     return time_chooser_reflection<float>{slider_orientation::horizontal};
+  }
+  else if constexpr(requires { T::widget::grid_chooser; })
+  {
+    return widget_reflection<value_type>{widget_type::grid_chooser};
   }
   else if constexpr(requires { T::widget::folder; })
   {
