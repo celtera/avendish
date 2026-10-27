@@ -14,12 +14,14 @@
 #include <halp/meta.hpp>
 #include <halp/midi.hpp>
 #include <halp/midifile_port.hpp>
+#include <halp/toggle_grid.hpp>
 #include <halp/value_list.hpp>
 #include <libremidi/message.hpp>
 #include <ossia/detail/flat_set.hpp>
 #include <ossia/detail/small_flat_map.hpp>
 #include <ossia/detail/small_vector.hpp>
 #include <ossia/detail/variant.hpp>
+#include <ossia/network/value/value.hpp>
 
 #include <array>
 #include <cstdint>
@@ -28,7 +30,8 @@
 namespace mtk
 {
 /**
- * @brief A set of message kinds written as text: "note, cc, bend, -sysex".
+ * @brief A set of message kinds written as text: "note, cc, bend, -sysex",
+ * what the Types of the Midi filter were before they were toggles.
  *
  * Tokens are separated by commas or spaces, case does not matter. A token
  * prefixed with '-' or '!' removes kinds; a list starting with a removal
@@ -153,29 +156,45 @@ struct kind_set
   }
 };
 
-//! Keeps a kind_set in sync with a text control without allocating.
-struct cached_kind_set
+//! An inclusive range of data byte values, a row of a range list control.
+struct byte_range
 {
-  static constexpr std::size_t max_text = 256;
-  kind_set set;
+  int from{};
+  int to{};
+};
 
-  const kind_set& update(std::string_view text) noexcept
+/**
+ * @brief The rows of a range list control: a value is in when a row holds
+ * it. No rows: inactive.
+ */
+struct byte_ranges
+{
+  static constexpr int max_rows = range_list::max_ranges;
+  std::array<byte_range, max_rows> rows{};
+  int count{};
+
+  bool empty() const noexcept { return count == 0; }
+
+  void assign(const auto& list, int min, int max) noexcept
   {
-    if(text.size() > max_text)
-      text = text.substr(0, max_text);
-    if(m_parsed && text == std::string_view{m_text.data(), m_size})
-      return set;
-    std::copy(text.begin(), text.end(), m_text.begin());
-    m_size = text.size();
-    m_parsed = true;
-    set.parse(text);
-    return set;
+    count = 0;
+    for(byte_range r : list)
+    {
+      if(count >= max_rows)
+        break;
+      const int a = std::clamp(r.from, min, max);
+      const int b = std::clamp(r.to, min, max);
+      rows[count++] = {std::min(a, b), std::max(a, b)};
+    }
   }
 
-private:
-  std::array<char, max_text> m_text{};
-  std::size_t m_size{};
-  bool m_parsed{};
+  bool contains(int v) const noexcept
+  {
+    for(int i = 0; i < count; i++)
+      if(v >= rows[i].from && v <= rows[i].to)
+        return true;
+    return false;
+  }
 };
 
 //! A linear map from [in_from, in_to] onto [out_from, out_to].
@@ -236,15 +255,56 @@ struct range_maps
 };
 
 /**
+ * @brief Rows of inclusive 0 - 127 ranges, the Notes and CCs of the Midi
+ * filter. They were texts such as "1-4, 6", or "C-1-B2, C4" with NoteNames.
+ */
+template <halp::static_string Name, bool NoteNames>
+struct range_rows : halp::value_list<Name, byte_range, byte_ranges::max_rows>
+{
+  static constexpr std::array<halp::list_column, 2> columns()
+  {
+    return {
+        halp::list_column{.name = "From", .min = 0, .max = 127, .init = 0},
+        halp::list_column{.name = "To", .min = 0, .max = 127, .init = 127}};
+  }
+
+  using value_type = decltype(halp::value_list<Name, byte_range, byte_ranges::max_rows>::value);
+
+  //! The rows a text of ranges stands for; none when it does not parse, as
+  //! such a text restricted nothing.
+  static value_type from_text(std::string_view text) noexcept
+  {
+    range_list list;
+    value_type res;
+    if(!list.parse(text, 0, 127, NoteNames))
+      for(int i = 0; i < list.count; i++)
+        res.push_back({list.ranges[i].lo, list.ranges[i].hi});
+    return res;
+  }
+
+  static ossia::value upgrade_value(const ossia::value& old)
+  {
+    const auto* text = old.target<std::string>();
+    if(!text)
+      return old;
+    std::vector<ossia::value> res;
+    for(const auto& r : from_text(*text))
+      res.push_back(std::vector<ossia::value>{r.from, r.to});
+    return res;
+  }
+};
+
+/**
  * @brief Filters MIDI messages by kind, channel, note, controller and value,
  * remaps channels, notes and controller numbers, and extracts values.
  *
  * Messages that are not kept go to the "Rejected" output, so the object also
  * splits a keyboard or a set of channels.
  *
- * Text lists ("Notes", "CCs", "Value range") are comma-separated inclusive
- * ranges such as "1-4, 6"; notes accept names such as "C-1-B2, C4". An empty
- * list, as every channel on in "Channels", does not restrict anything.
+ * "Types" are toggles, one per kind of message; none on leaves the choice to
+ * "Filter type". "Notes" and "CCs" are rows of inclusive ranges, "Value range"
+ * a text such as "1-63, 100". An empty list, as every channel on in
+ * "Channels", does not restrict anything.
  *
  * A note-off always goes to the output its note-on went to, with the same
  * remapped channel and note, even when the settings changed in between.
@@ -309,7 +369,8 @@ struct MidiFilter
     {
       halp_meta(
           description,
-          "Kind of message kept when Kinds is empty, and kind of the value outputs")
+          "Kind of message kept when no Types toggle is on, and kind of the value "
+          "outputs")
     } filter;
     struct : halp::spinbox_i32<"Channel", halp::range{0, 16, 0}>
     {
@@ -323,27 +384,64 @@ struct MidiFilter
     halp::toggle<"Note off to zero"> note_off_to_zero;
     halp::toggle<"Zero to note off"> zero_to_note_off;
 
-    struct : halp::lineedit<"Types", "">
+    //! One toggle per midi_kind, in its order. Undefined status bytes and
+    //! truncated messages, which are of no kind, are kept when every kind is.
+    struct kinds_grid : halp::toggle_grid<"Types", midi_kind_count - 1>
     {
       halp_meta(
           description,
-          "Message types kept, e.g. note, cc, program, bend, pressure, poly, sysex, mtc, "
-          "spp, song, tune, clock, start, continue, stop, sensing, reset, or the "
-          "groups all, channel, system, realtime, transport. A leading '-' "
-          "removes. Empty: Filter type decides.")
+          "Kinds of message kept: notes, controllers, program changes, pitch bend, "
+          "channel and poly pressure, sysex, MIDI time code, song position, song "
+          "select, tune request, and the real-time clock, start, continue, stop, "
+          "active sensing and reset. None on: Filter type decides.")
+      static constexpr std::array<std::string_view, midi_kind_count - 1> labels()
+      {
+        return {"Note on", "Note off", "CC",    "Program", "Bend",     "Pressure",
+                "Poly",    "Sysex",    "MTC",   "SPP",     "Song",     "Tune",
+                "Clock",   "Start",    "Continue", "Stop", "Sensing", "Reset"};
+      }
+      static constexpr int items_per_line() { return 6; }
+
+      //! The toggles a text of kinds such as "note, cc, -sysex" turns on.
+      static std::array<bool, midi_kind_count - 1> from_text(std::string_view text) noexcept
+      {
+        kind_set k;
+        k.parse(text);
+        std::array<bool, midi_kind_count - 1> res{};
+        for(std::size_t i = 0; i < res.size(); i++)
+          res[i] = k.contains(midi_kind(i));
+        return res;
+      }
+
+      //! Types was such a text.
+      static ossia::value upgrade_value(const ossia::value& old)
+      {
+        const auto* text = old.target<std::string>();
+        if(!text)
+          return old;
+        std::vector<ossia::value> res;
+        for(bool b : from_text(*text))
+          res.push_back(b);
+        return res;
+      }
     } kinds;
     struct : halp::channel_mask<"Channels">
     {
       halp_meta(description, "Channels kept")
     } channels;
-    struct : halp::lineedit<"Notes", "">
+    struct notes_list : range_rows<"Notes", true>
     {
       halp_meta(
-          description, "Notes kept, by number or name, e.g. C-1-B2, 60. Empty: all.")
+          description,
+          "Notes kept, as ranges from one note number to another (60 is C4). No "
+          "rows: all.")
     } notes;
-    struct : halp::lineedit<"CCs", "">
+    struct ccs_list : range_rows<"CCs", false>
     {
-      halp_meta(description, "Controller numbers kept, e.g. 1, 7, 64-69. Empty: all.")
+      halp_meta(
+          description,
+          "Controller numbers kept, as ranges from one number to another. No rows: "
+          "all.")
     } ccs;
     struct : halp::toggle<"Invert ranges">
     {
@@ -539,9 +637,10 @@ private:
     uint8_t count{};
   };
 
-  // Settings parsed from the text controls
-  cached_kind_set m_kinds;
-  cached_range_list m_notes, m_ccs, m_values;
+  // Settings taken from the controls
+  uint32_t m_kinds{};
+  byte_ranges m_notes, m_ccs;
+  cached_range_list m_values;
   range_maps m_channel_map, m_note_map, m_cc_map;
 
   //! Indexed by input (channel - 1) * 128 + note: what each held note-on became.
@@ -550,9 +649,9 @@ private:
 
   void update_settings() noexcept
   {
-    m_kinds.update(inputs.kinds.value);
-    m_notes.update(inputs.notes.value, 0, 127, true);
-    m_ccs.update(inputs.ccs.value, 0, 127);
+    m_kinds = uint32_t(inputs.kinds.mask());
+    m_notes.assign(inputs.notes.value, 0, 127);
+    m_ccs.assign(inputs.ccs.value, 0, 127);
     m_values.update(inputs.values.value, 0, 127);
     m_channel_map.assign(inputs.channel_map.value, 1, 16);
     m_note_map.assign(inputs.note_map.value, 0, 127);
@@ -630,11 +729,16 @@ private:
     return e.to_main || (e.pass && kind_accepts(off, midi_kind::note_off));
   }
 
-  //! Kind selection: the Kinds list, or the legacy Filter type when it is empty.
+  //! Kind selection: the Types, or the Filter type when none is on.
   bool kind_accepts(const libremidi::message& m, midi_kind k) const noexcept
   {
-    if(!m_kinds.set.empty)
-      return m_kinds.set.contains(k);
+    if(m_kinds != 0)
+    {
+      constexpr uint32_t every = (1u << (midi_kind_count - 1)) - 1;
+      if(k == midi_kind::other)
+        return m_kinds == every;
+      return (m_kinds >> int(k)) & 1;
+    }
 
     using mt = libremidi::message_type;
     const auto t = m.get_message_type();
@@ -687,15 +791,15 @@ private:
       tested = true;
       inside = inside && ((mask >> (ch - 1)) & 1);
     }
-    if(is_note_kind(k) && !m_notes.list.empty() && m.size() >= 2)
+    if(is_note_kind(k) && !m_notes.empty() && m.size() >= 2)
     {
       tested = true;
-      inside = inside && m_notes.list.contains(m.bytes[1]);
+      inside = inside && m_notes.contains(m.bytes[1]);
     }
-    if(k == midi_kind::control_change && !m_ccs.list.empty() && m.size() >= 2)
+    if(k == midi_kind::control_change && !m_ccs.empty() && m.size() >= 2)
     {
       tested = true;
-      inside = inside && m_ccs.list.contains(m.bytes[1]);
+      inside = inside && m_ccs.contains(m.bytes[1]);
     }
     if(tested && inside == bool(inputs.drop_in_range))
       return false;

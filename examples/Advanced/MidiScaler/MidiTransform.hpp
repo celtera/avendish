@@ -6,6 +6,7 @@
 #include <Advanced/MidiScaler/MidiCommon/NoteTracker.hpp>
 
 #include <halp/audio.hpp>
+#include <halp/callback.hpp>
 #include <halp/controls.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
@@ -40,6 +41,11 @@ namespace mtk
  *   value of 0, or a produced velocity of 0. A source that has no end
  *   (program change, clock, start) ends its previous note when it fires again.
  * - CC 120 and 123 end every produced note and pass through untransformed.
+ *
+ * The Value output gives the value of each message the transformation
+ * produces, at its time, as message_value() reads it: 0 - 127 for the data
+ * bytes, -1 to 1 for pitch bend, 0 - 16383 for song position. Messages that
+ * pass through untransformed, and the note-offs sent on stop, have none.
  */
 struct MidiTransform
 {
@@ -257,6 +263,14 @@ struct MidiTransform
   struct
   {
     halp::midi_bus<"MIDI", libremidi::message> midi;
+    struct : halp::timed_callback<"Value", float>
+    {
+      halp_meta(
+          description,
+          "The value of each produced message: velocity, controller value, "
+          "pressure, program or other data byte in 0 - 127, pitch bend in -1 to "
+          "1, song position in 0 - 16383. Real-time messages have none.")
+    } value;
   } outputs;
 
   struct ui
@@ -390,6 +404,14 @@ private:
 
   void emit(const libremidi::message& m) { outputs.midi.push_back(m); }
 
+  //! A message the transformation produced: its value goes out as well.
+  void emit_produced(const libremidi::message& m)
+  {
+    emit(m);
+    if(auto v = message_value(m))
+      outputs.value(m.timestamp, *v);
+  }
+
   static bool is_realtime(const libremidi::message& m) noexcept
   {
     return m.size() > 0 && m.bytes[0] >= 0xF8;
@@ -511,7 +533,7 @@ private:
   {
     const auto [ic, ip] = identity(in, k);
     while(m_tracker.end(ic, ip, in.timestamp, velocity, [this](libremidi::message&& m) {
-      emit(m);
+      emit_produced(m);
     }))
       ;
   }
@@ -533,7 +555,7 @@ private:
         if(is_end(in, k) || b2 == 0)
           return;
         const auto [ic, ip] = identity(in, k);
-        auto emitter = [this](libremidi::message&& m) { emit(m); };
+        auto emitter = [this](libremidi::message&& m) { emit_produced(m); };
         auto& h = m_tracker.begin(ic, ip, in.timestamp, emitter);
         m_tracker.play(h, ch, b1, b2, in.timestamp, emitter);
         return;
@@ -590,7 +612,7 @@ private:
         return;
     }
     out.timestamp = in.timestamp;
-    emit(out);
+    emit_produced(out);
   }
 
   bool into_is_realtime() const noexcept

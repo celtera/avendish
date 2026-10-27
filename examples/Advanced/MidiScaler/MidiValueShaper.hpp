@@ -4,6 +4,7 @@
 
 #include <Advanced/MidiScaler/MidiCommon/Messages.hpp>
 #include <halp/audio.hpp>
+#include <halp/callback.hpp>
 #include <halp/controls.hpp>
 #include <halp/layout.hpp>
 #include <halp/meta.hpp>
@@ -38,6 +39,10 @@ namespace mtk
  * The curve is a single exponent rather than breakpoints: one knob, neutral in
  * the middle, monotonic for any setting, as in the velocity curves of Live and
  * Bitwig. Rescale and clip together give the corners that breakpoints would.
+ *
+ * The Value output gives each shaped value as it is sent, at its time: 0 - 127
+ * for velocities, controllers and pressure, -1 to 1 for pitch bend (see
+ * message_value()).
  */
 struct MidiValueShaper
 {
@@ -195,6 +200,13 @@ public:
   struct
   {
     halp::midi_bus<"MIDI", libremidi::message> midi;
+    struct : halp::timed_callback<"Value", float>
+    {
+      halp_meta(
+          description,
+          "Each shaped value as it is sent: 0 - 127 for velocities, controllers "
+          "and pressure, -1 to 1 for pitch bend")
+    } value;
   } outputs;
 
   //! std::random_device can allocate, block and throw: it is only used here.
@@ -226,7 +238,10 @@ public:
     for(const auto& m : inputs.midi)
     {
       auto out = m;
-      process(out);
+      const bool shaped = process(out);
+      if(shaped)
+        if(auto v = message_value(out))
+          outputs.value(out.timestamp, *v);
       outputs.midi.push_back(std::move(out));
     }
   }
@@ -321,12 +336,13 @@ public:
   }
 
 private:
-  void process(libremidi::message& m) noexcept
+  //! Whether the message was of the kind shaped.
+  bool process(libremidi::message& m) noexcept
   {
     if(!is_channel_message(m))
-      return;
+      return false;
     if(inputs.channel != 0 && channel_of(m) != inputs.channel)
-      return;
+      return false;
 
     const int number = inputs.number;
     const uint8_t status = m.bytes[0] & 0xF0;
@@ -337,6 +353,7 @@ private:
         {
           const double u = shape(m.bytes[2], m.bytes[1]);
           m.bytes[2] = uint8_t(std::clamp(int(std::lround(u)), 1, 127));
+          return true;
         }
         break;
 
@@ -344,14 +361,20 @@ private:
       // giving it one would turn it into a note-on.
       case Release:
         if(status == 0x80 && m.size() >= 3)
+        {
           m.bytes[2] = to_7bit(shape(m.bytes[2], m.bytes[1]));
+          return true;
+        }
         break;
 
       case CC:
         if(status == 0xB0 && m.size() >= 3
            && (number < 0 ? is_continuous_controller(m.bytes[1]) : m.bytes[1] == number)
            && !is_all_notes_off(m))
+        {
           m.bytes[2] = to_7bit(shape(m.bytes[2], -1));
+          return true;
+        }
         break;
 
       case PitchBend:
@@ -361,19 +384,27 @@ private:
           const int out = scale_to_bend(shape(bend_to_scale(v), -1));
           m.bytes[1] = uint8_t(out & 0x7F);
           m.bytes[2] = uint8_t((out >> 7) & 0x7F);
+          return true;
         }
         break;
 
       case Pressure:
         if(status == 0xD0 && m.size() >= 2)
+        {
           m.bytes[1] = to_7bit(shape(m.bytes[1], -1));
+          return true;
+        }
         break;
 
       case PolyPressure:
         if(status == 0xA0 && m.size() >= 3 && (number < 0 || m.bytes[1] == number))
+        {
           m.bytes[2] = to_7bit(shape(m.bytes[2], m.bytes[1]));
+          return true;
+        }
         break;
     }
+    return false;
   }
 
   //! Controllers whose value is a position that can be reshaped: not bank

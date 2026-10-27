@@ -133,6 +133,44 @@ inline void set_channel(libremidi::message& m, int channel) noexcept
     m.bytes[0] = uint8_t((m.bytes[0] & 0xF0) | ((channel - 1) & 0x0F));
 }
 
+/**
+ * @brief The value a message carries, in its natural range, or nothing for a
+ * message that has none:
+ * - note on, note off, poly pressure and CC: the second data byte, 0 - 127
+ *   (velocity, pressure, controller value);
+ * - program change, channel pressure, MTC quarter frame and song select: the
+ *   first data byte, 0 - 127;
+ * - pitch bend: -1 to 1, 0 at the center (8192), -1 at 0 and 1 at 16383;
+ * - song position: 0 - 16383, in sixteenth notes;
+ * - sysex, tune request and the real-time messages: nothing.
+ */
+inline std::optional<float> message_value(const libremidi::message& m) noexcept
+{
+  using enum midi_kind;
+  const auto byte = [&](std::size_t i) { return m.size() > i ? float(m.bytes[i]) : 0.f; };
+  switch(classify(m))
+  {
+    case note_on:
+    case note_off:
+    case poly_pressure:
+    case control_change:
+      return byte(2);
+    case program_change:
+    case channel_pressure:
+    case time_code:
+    case song_select:
+      return byte(1);
+    case pitch_bend: {
+      const int v = (int(byte(2)) << 7) | int(byte(1));
+      return v < 8192 ? float(v - 8192) / 8192.f : float(v - 8192) / 8191.f;
+    }
+    case song_position:
+      return float((int(byte(2)) << 7) | int(byte(1)));
+    default:
+      return std::nullopt;
+  }
+}
+
 //! CC 120 (all sound off) and CC 123 (all notes off).
 inline bool is_all_notes_off(const libremidi::message& m) noexcept
 {

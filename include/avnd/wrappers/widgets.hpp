@@ -36,6 +36,8 @@ enum class widget_type
   note_matrix,
   //! The 16 MIDI channels, see halp::channel_mask
   channel_mask,
+  //! Named toggles, see halp::toggle_grid
+  toggle_grid,
   choices,
   xy,
   xy_spinbox,
@@ -101,6 +103,8 @@ struct widget_reflection
         return "note_matrix";
       case widget_type::channel_mask:
         return "channel_mask";
+      case widget_type::toggle_grid:
+        return "toggle_grid";
       case widget_type::choices:
         return "choices";
       case widget_type::xy:
@@ -257,6 +261,10 @@ consteval auto get_widget()
   else if constexpr(requires { T::widget::channel_mask; })
   {
     return widget_reflection<value_type>{widget_type::channel_mask};
+  }
+  else if constexpr(requires { T::widget::toggle_grid; })
+  {
+    return widget_reflection<value_type>{widget_type::toggle_grid};
   }
   else if constexpr(requires { T::widget::note_matrix; })
   {
