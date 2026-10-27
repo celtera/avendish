@@ -70,9 +70,11 @@ struct MidiSustain
       };
     } mode;
 
-    struct : halp::toggle<"Pedal">
+    struct : halp::maintained_button<"Pedal">
     {
-      halp_meta(description, "Holds the pedal down on every channel, as CC 64 does on one")
+      halp_meta(
+          description,
+          "Holds the pedal down on every channel while pressed, as CC 64 does on one")
     } pedal;
 
     struct : halp::toggle<"Pass CC 64", halp::toggle_setup{.init = true}>
