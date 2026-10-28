@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-064e1a0a.js";
+            window.path_to_searchindex_js = "../searchindex-def4ce8e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ae0bcd33.js"></script>
@@ -234,20 +234,23 @@ binding adds the slice offset once without changing the processor’s timestamp.
 A one-sample note starting on the last frame therefore releases at frame zero of
 the next writable invocation. A zero-frame invocation cannot publish that release.</p>
 <p>The ossia graph initializes native ports, runs all requested token slices, then
-publishes the node’s aggregate output. Processors that need all slices preserved
-can opt in:</p>
-<pre><code class="language-cpp">halp_meta(local_midi_tick_batch, true)
-halp_meta(local_midi_tick_batch_reserve, 4096) // Optional per-MIDI-port reserve.
+publishes the node’s aggregate output. A buffer holds several slices when a
+process loops inside it, or when a process stopped inside it runs its last
+partial slice and then an empty one. The binding keeps the MIDI of all the
+slices of a buffer: it stores the already-produced packets in executor-local
+storage and rebuilds the native output from them after each slice, even an empty
+one. The <code>ossia::graph_node::begin_execution()</code> hook resets this storage before
+each graph execution, independently of seeks, repeated positions, callback
+counters, and buffer sizes. Direct users of <code>safe_node::run()</code> must call
+<code>begin_execution()</code> once before each group of slices they will publish together.</p>
+<p>The storage of each MIDI output, and the native output port, reserve the buffer
+size in packets. A processor that sends more can raise it, or go back to each
+slice replacing the output of the previous one:</p>
+<pre><code class="language-cpp">halp_meta(local_midi_tick_batch_reserve, 4096) // Per-MIDI-port reserve.
+halp_meta(local_midi_tick_batch, false)       // Per-slice replacement.
 </code></pre>
-<p>This stores only already-produced packets in executor-local storage. The
-<code>ossia::graph_node::begin_execution()</code> hook resets it before each graph execution,
-independently of seeks, repeated positions, callback counters, and buffer sizes.
-The native output is rebuilt from the batch even for empty slices. Bindings
-without the opt-in retain per-slice replacement; an explicit <code>false</code> disables
-batching. Direct users of <code>safe_node::run()</code> must call <code>begin_execution()</code> once
-before each group of slices they will publish together. This requires a libossia
-version providing that graph hook. A reserve is a capacity hint, not a bound or
-an allocation-free guarantee for arbitrary host traffic.</p>
+<p>A reserve is a capacity hint, not a bound or an allocation-free guarantee for
+arbitrary host traffic.</p>
 <p>A lifecycle callback such as <code>stop()</code> is not itself a writable publication
 window. A host must run and publish a final release-only invocation before
 disconnecting or destroying a processor that owns notes. In score’s current

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-064e1a0a.js";
+            window.path_to_searchindex_js = "../searchindex-def4ce8e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ae0bcd33.js"></script>
@@ -294,6 +294,45 @@ lighter
 </code></pre>
 <p>Setting the color is done by adding this to a layout:</p>
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
+</code></pre>
+<h3 id="alignment"><a class="header" href="#alignment">Alignment</a></h3>
+<p>By default, a grid makes every cell as large as its largest item and centres
+each item in its cell, a table centres each cell in its column, and box layouts
+put their children against the left edge. When items have different widths,
+their edges do not line up. An <code>alignment()</code> property on a layout chooses where
+its children sit instead:</p>
+<pre><code class="language-cpp">static constexpr auto alignment() { enum { left, center, right } d{}; return d; }
+
+// or, with the helpers:
+halp_meta(alignment, halp::alignments::left)
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Layout</th><th>Effect</th></tr>
+</thead>
+<tbody>
+<tr><td><code>grid</code></td><td>Each column is as wide as its widest item, each row as tall as its tallest; items sit at the left, centre or right of their column, still centred in their row.</td></tr>
+<tr><td><code>table</code></td><td>Cells and column titles sit at the left, centre or right of their column.</td></tr>
+<tr><td><code>vbox</code>, <code>section</code></td><td>Children sit at the left, centre or right of the column, as wide as the widest child or as the box was stretched to.</td></tr>
+<tr><td><code>hbox</code>, <code>group</code></td><td>The row of children as a whole sits at the left, centre or right of the box, when a parent stretched it wider.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Other layouts (<code>tabs</code>, <code>split</code>, <code>container</code>) ignore it; set it on the pages
+or the boxes inside them.</p>
+<p>Alignment is not inherited: it applies to the children of the layout that
+declares it, and a nested layout uses its own. A table’s rows always follow
+the table’s columns.</p>
+<pre><code class="language-cpp">struct {
+  halp_meta(layout, halp::layouts::grid)
+  halp_meta(columns, 3)
+  halp_meta(alignment, halp::alignments::left)
+  halp::item&lt;&amp;ins::record&gt; record;
+  halp::item&lt;&amp;ins::overdub&gt; overdub;
+  halp::item&lt;&amp;ins::stop&gt; stop;
+  halp::item&lt;&amp;ins::undo&gt; undo;
+} buttons;
 </code></pre>
 <h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
 <p>In “group” or “container” layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>

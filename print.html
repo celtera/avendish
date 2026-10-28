@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "searchindex-064e1a0a.js";
+            window.path_to_searchindex_js = "searchindex-def4ce8e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ae0bcd33.js"></script>
@@ -870,10 +870,65 @@ xy, xy_spinbox,
 xyz, xyz_spinbox,
 color, 
 time_chooser,
+grid_chooser,
 hbargraph, vbargraph, bargraph,
 range_slider, range_spinbox
 </code></pre>
 <p>This kind of widget definition is here to enable host DAWs to automatically generate appropriate UIs automatically.</p>
+<h2 id="time-and-grid-choosers"><a class="header" href="#time-and-grid-choosers">Time and grid choosers</a></h2>
+<p><code>halp::time_chooser</code> is a duration: a knob whose readout switches between free
+seconds and a note value synced to the tempo. The object only sees seconds (and
+a <code>sync</code> flag): the host recomputes them when the tempo changes.</p>
+<pre><code class="language-cpp">halp::time_chooser&lt;"Delay", halp::range{.min = 0.001, .max = 5., .init = 0.25}&gt; delay;
+</code></pre>
+<p><code>halp::grid_chooser</code> (<code>&lt;halp/grid_chooser.hpp&gt;</code>) is a quantization grid. Its
+value is musical and the object receives it as is, a <code>halp::grid_value</code>:</p>
+<pre><code class="language-cpp">struct grid_value
+{
+  grid_unit unit;  // free, note, bars, period (and parent, reserved)
+  double value;
+  double offset;   // reserved
+};
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>unit</th><th>value</th><th>e.g.</th></tr>
+</thead>
+<tbody>
+<tr><td><code>free</code></td><td>seconds; 0 means no quantization</td><td><code>0.5 s</code>, <code>None</code></td></tr>
+<tr><td><code>note</code></td><td>fraction of a whole note (4 quarters)</td><td><code>1/8T</code> is 1/12, <code>1/8.</code> is 3/16, <code>2/1</code> is 2</td></tr>
+<tr><td><code>bars</code></td><td>bars of the current signature</td><td><code>1 bar</code>, <code>3 bars</code></td></tr>
+<tr><td><code>period</code></td><td>multiple of the object’s own period</td><td><code>Loop</code>, <code>2x loop</code>, <code>1/2 loop</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>A note value is always that many whole notes, never a bar: <code>1/1</code> is four
+quarters in 3/4 too. The object declares which units the user may pick, the
+default, the longest grid in bars and the name of its period:</p>
+<pre><code class="language-cpp">halp::grid_chooser&lt;
+    "Quantize",
+    halp::grid_setup{
+        .units = halp::grid_units::musical | halp::grid_units::period,
+        .init = halp::grid_value::bars(1),
+        .max_bars = 8},
+    "loop"&gt;
+    quantize;
+</code></pre>
+<p><code>halp::next_grid_point</code> (<code>&lt;halp/grid.hpp&gt;</code>) finds where the next point of a
+grid falls in the current buffer, from a <code>halp::tick_musical</code> and, for the
+<code>period</code> unit, the object’s period length and position in frames. It does not
+allocate and can be called from the audio thread:</p>
+<pre><code class="language-cpp">void operator()(halp::tick_musical tk)
+{
+  const halp::grid_period loop{.length = loop_frames, .position = played_frames};
+  if(auto frame = halp::next_grid_point(inputs.quantize.value, tk, sample_rate, loop))
+    start_at(*frame);
+}
+</code></pre>
+<p>Notes shorter than a bar restart at every bar line; bars and longer notes
+count from the last signature change; free times and periods count from the
+period’s origin (or the start of playback, for free times without a period).</p>
 <p>A further chapter will present how to create entirely custom painted UIs and widgets.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="defining-a-mapping-function"><a class="header" href="#defining-a-mapping-function">Defining a mapping function</a></h1>
@@ -2046,20 +2101,23 @@ binding adds the slice offset once without changing the processor’s timestamp.
 A one-sample note starting on the last frame therefore releases at frame zero of
 the next writable invocation. A zero-frame invocation cannot publish that release.</p>
 <p>The ossia graph initializes native ports, runs all requested token slices, then
-publishes the node’s aggregate output. Processors that need all slices preserved
-can opt in:</p>
-<pre><code class="language-cpp">halp_meta(local_midi_tick_batch, true)
-halp_meta(local_midi_tick_batch_reserve, 4096) // Optional per-MIDI-port reserve.
+publishes the node’s aggregate output. A buffer holds several slices when a
+process loops inside it, or when a process stopped inside it runs its last
+partial slice and then an empty one. The binding keeps the MIDI of all the
+slices of a buffer: it stores the already-produced packets in executor-local
+storage and rebuilds the native output from them after each slice, even an empty
+one. The <code>ossia::graph_node::begin_execution()</code> hook resets this storage before
+each graph execution, independently of seeks, repeated positions, callback
+counters, and buffer sizes. Direct users of <code>safe_node::run()</code> must call
+<code>begin_execution()</code> once before each group of slices they will publish together.</p>
+<p>The storage of each MIDI output, and the native output port, reserve the buffer
+size in packets. A processor that sends more can raise it, or go back to each
+slice replacing the output of the previous one:</p>
+<pre><code class="language-cpp">halp_meta(local_midi_tick_batch_reserve, 4096) // Per-MIDI-port reserve.
+halp_meta(local_midi_tick_batch, false)       // Per-slice replacement.
 </code></pre>
-<p>This stores only already-produced packets in executor-local storage. The
-<code>ossia::graph_node::begin_execution()</code> hook resets it before each graph execution,
-independently of seeks, repeated positions, callback counters, and buffer sizes.
-The native output is rebuilt from the batch even for empty slices. Bindings
-without the opt-in retain per-slice replacement; an explicit <code>false</code> disables
-batching. Direct users of <code>safe_node::run()</code> must call <code>begin_execution()</code> once
-before each group of slices they will publish together. This requires a libossia
-version providing that graph hook. A reserve is a capacity hint, not a bound or
-an allocation-free guarantee for arbitrary host traffic.</p>
+<p>A reserve is a capacity hint, not a bound or an allocation-free guarantee for
+arbitrary host traffic.</p>
 <p>A lifecycle callback such as <code>stop()</code> is not itself a writable publication
 window. A host must run and publish a final release-only invocation before
 disconnecting or destroying a processor that owns notes. In score’s current
@@ -3219,6 +3277,45 @@ lighter
 <p>Setting the color is done by adding this to a layout:</p>
 <pre><code class="language-cpp">static constexpr auto background() { enum { dark } d{}; return d; }
 </code></pre>
+<h3 id="alignment"><a class="header" href="#alignment">Alignment</a></h3>
+<p>By default, a grid makes every cell as large as its largest item and centres
+each item in its cell, a table centres each cell in its column, and box layouts
+put their children against the left edge. When items have different widths,
+their edges do not line up. An <code>alignment()</code> property on a layout chooses where
+its children sit instead:</p>
+<pre><code class="language-cpp">static constexpr auto alignment() { enum { left, center, right } d{}; return d; }
+
+// or, with the helpers:
+halp_meta(alignment, halp::alignments::left)
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Layout</th><th>Effect</th></tr>
+</thead>
+<tbody>
+<tr><td><code>grid</code></td><td>Each column is as wide as its widest item, each row as tall as its tallest; items sit at the left, centre or right of their column, still centred in their row.</td></tr>
+<tr><td><code>table</code></td><td>Cells and column titles sit at the left, centre or right of their column.</td></tr>
+<tr><td><code>vbox</code>, <code>section</code></td><td>Children sit at the left, centre or right of the column, as wide as the widest child or as the box was stretched to.</td></tr>
+<tr><td><code>hbox</code>, <code>group</code></td><td>The row of children as a whole sits at the left, centre or right of the box, when a parent stretched it wider.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Other layouts (<code>tabs</code>, <code>split</code>, <code>container</code>) ignore it; set it on the pages
+or the boxes inside them.</p>
+<p>Alignment is not inherited: it applies to the children of the layout that
+declares it, and a nested layout uses its own. A table’s rows always follow
+the table’s columns.</p>
+<pre><code class="language-cpp">struct {
+  halp_meta(layout, halp::layouts::grid)
+  halp_meta(columns, 3)
+  halp_meta(alignment, halp::alignments::left)
+  halp::item&lt;&amp;ins::record&gt; record;
+  halp::item&lt;&amp;ins::overdub&gt; overdub;
+  halp::item&lt;&amp;ins::stop&gt; stop;
+  halp::item&lt;&amp;ins::undo&gt; undo;
+} buttons;
+</code></pre>
 <h3 id="explicit-positioning"><a class="header" href="#explicit-positioning">Explicit positioning</a></h3>
 <p>In “group” or “container” layouts, widgets will not be positioned automatically. <code>x</code> and <code>y</code> methods can be used for that.</p>
 <pre><code class="language-cpp">static constexpr auto x() { return 20; }
@@ -3441,6 +3538,36 @@ struct custom_item
   decltype(F) control = F;
 };
 </code></pre>
+<h2 id="dragging-files-out-and-placing-clips-in-the-timeline"><a class="header" href="#dragging-files-out-and-placing-clips-in-the-timeline">Dragging files out, and placing clips in the timeline</a></h2>
+<p>A custom item can hand files to the host. With a <code>drag_payload</code> method, the
+host calls it once the mouse has moved far enough with the button held, and
+starts a drag of the files it returns, as a file manager would:</p>
+<pre><code class="language-cpp">halp::drag_payload drag_payload(double x, double y)
+{
+  halp::drag_payload p;
+  p.files = {"/path/to/take.wav"};
+  return p;
+}
+</code></pre>
+<p>With a <code>send_to_timeline</code> member, which the host fills when it can place
+clips next to the process, the item asks for files to be put in the
+timeline at a date:</p>
+<pre><code class="language-cpp">std::function&lt;void(halp::timeline_clip)&gt; send_to_timeline;
+
+void send()
+{
+  if(send_to_timeline)
+    send_to_timeline(halp::timeline_clip{
+        .files = {"/path/to/take.wav"},
+        .date = 4.0, // seconds from the start of the process
+        .name = "take",
+        .stretch = halp::clip_stretch::timestretch});
+}
+</code></pre>
+<p><code>stretch</code> says how the audio files follow the tempo of the host: <code>none</code>
+(they play at the speed they were recorded at), <code>repitch</code> or <code>repitch_fast</code>
+(resampled, the pitch follows), <code>timestretch</code> or <code>timestretch_percussive</code>
+(the pitch is kept). The default, <code>automatic</code>, leaves the choice to the host.</p>
 <h2 id="painter-api"><a class="header" href="#painter-api">Painter API</a></h2>
 <p>Here is the complete supported API so far:</p>
 <pre><code class="language-cpp">#pragma once

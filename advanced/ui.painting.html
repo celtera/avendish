@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "ayu";
             const default_dark_theme = "ayu";
-            window.path_to_searchindex_js = "../searchindex-064e1a0a.js";
+            window.path_to_searchindex_js = "../searchindex-def4ce8e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ae0bcd33.js"></script>
@@ -329,6 +329,36 @@ struct custom_item
   decltype(F) control = F;
 };
 </code></pre>
+<h2 id="dragging-files-out-and-placing-clips-in-the-timeline"><a class="header" href="#dragging-files-out-and-placing-clips-in-the-timeline">Dragging files out, and placing clips in the timeline</a></h2>
+<p>A custom item can hand files to the host. With a <code>drag_payload</code> method, the
+host calls it once the mouse has moved far enough with the button held, and
+starts a drag of the files it returns, as a file manager would:</p>
+<pre><code class="language-cpp">halp::drag_payload drag_payload(double x, double y)
+{
+  halp::drag_payload p;
+  p.files = {"/path/to/take.wav"};
+  return p;
+}
+</code></pre>
+<p>With a <code>send_to_timeline</code> member, which the host fills when it can place
+clips next to the process, the item asks for files to be put in the
+timeline at a date:</p>
+<pre><code class="language-cpp">std::function&lt;void(halp::timeline_clip)&gt; send_to_timeline;
+
+void send()
+{
+  if(send_to_timeline)
+    send_to_timeline(halp::timeline_clip{
+        .files = {"/path/to/take.wav"},
+        .date = 4.0, // seconds from the start of the process
+        .name = "take",
+        .stretch = halp::clip_stretch::timestretch});
+}
+</code></pre>
+<p><code>stretch</code> says how the audio files follow the tempo of the host: <code>none</code>
+(they play at the speed they were recorded at), <code>repitch</code> or <code>repitch_fast</code>
+(resampled, the pitch follows), <code>timestretch</code> or <code>timestretch_percussive</code>
+(the pitch is kept). The default, <code>automatic</code>, leaves the choice to the host.</p>
 <h2 id="painter-api"><a class="header" href="#painter-api">Painter API</a></h2>
 <p>Here is the complete supported API so far:</p>
 <pre><code class="language-cpp">#pragma once
