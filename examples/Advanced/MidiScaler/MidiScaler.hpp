@@ -56,7 +56,9 @@ struct MidiScaler
         description,
         "Pitch bend: each note gets a channel of its own and a pitch bend. "
         "MTS sysex: notes pass unchanged and the tuning of the 128 keys is sent "
-        "as MIDI Tuning Standard messages whenever it changes.")
+        "as MIDI Tuning Standard messages, followed on every channel by the "
+        "tuning program select, whenever it changes, when playback starts and "
+        "on Send tuning.")
     enum enum_type
     {
       pitch_bend,
@@ -179,6 +181,15 @@ struct MidiScaler
           "Range in semitones of the incoming pitch bend, e.g. 2 for a keyboard "
           "wheel; the output uses Bend range")
     } input_bend_range;
+
+    struct : halp::impulse_button<"Send tuning">
+    {
+      halp_meta(
+          description,
+          "Send the MTS tuning and the tuning program select again, e.g. to a "
+          "synth started or connected after playback")
+      void update(MidiScaler& self) { self.m_send_tuning = true; }
+    } send_tuning;
   } inputs;
 
   struct ui
@@ -217,6 +228,16 @@ struct MidiScaler
         halp::item<&ins::always_bend> always_bend;
         halp::item<&ins::input_bend_range> input_bend_range;
       } bend;
+
+      struct
+      {
+        halp_meta(layout, halp::layouts::vbox)
+        static constexpr auto condition()
+        {
+          return halp::enabled_when<&ins::output_mode, output_mode_control::mts_sysex>{};
+        }
+        halp::item<&ins::send_tuning> send_tuning;
+      } mts;
     } output;
   };
 
@@ -277,9 +298,14 @@ struct MidiScaler
   void prepare(halp::setup s)
   {
     outputs.freq.value.reserve(128);
+    // A tuning send and a tick of notes fit without growing on the audio thread.
+    outputs.midi.midi_messages.reserve(4 * mts_tuning_messages);
     update_tuning();
   }
 
+  //! The receiver may have been reset or started since the tuning was last
+  //! sent: it goes out again when playback starts.
+  void start() noexcept { m_send_tuning = true; }
   void stop() noexcept { m_stop = true; }
 
   void operator()(int N)
@@ -350,6 +376,47 @@ struct MidiScaler
   static_assert(
       8 + 4 * mts_keys_per_message <= mts_inline_bytes,
       "an MTS message would allocate on the audio thread");
+
+  //! Per channel: tuning bank select (RPN 0 4), tuning program select (RPN 0 3),
+  //! both 0 as in the MTS messages, then the null RPN so that later data entry
+  //! changes nothing.
+  static constexpr int mts_select_messages_per_channel = 8;
+  static constexpr int mts_tuning_messages
+      = 128 / mts_keys_per_message + 16 * mts_select_messages_per_channel;
+
+  //! A synth applies a tuning program only to the channels that selected it:
+  //! FluidSynth leaves the keys of a channel untuned until RPN 3 picks the
+  //! program, and takes the bank from RPN 4.
+  template <typename Emit>
+  static void send_tuning_select(int64_t ts, Emit& emit) noexcept
+  {
+    for(int ch = 1; ch <= 16; ch++)
+    {
+      const uint8_t c = uint8_t(ch);
+      using libremidi::channel_events;
+      for(auto m :
+          {channel_events::control_change(c, 101, 0),
+           channel_events::control_change(c, 100, 4),
+           channel_events::control_change(c, 6, 0),
+           channel_events::control_change(c, 101, 0),
+           channel_events::control_change(c, 100, 3),
+           channel_events::control_change(c, 6, 0),
+           channel_events::control_change(c, 101, 127),
+           channel_events::control_change(c, 100, 127)})
+      {
+        m.timestamp = ts;
+        emit(std::move(m));
+      }
+    }
+  }
+
+  //! The tuning of the 128 keys, then the selection of its program.
+  template <typename Emit>
+  void send_tuning(int64_t ts, Emit& emit) const noexcept
+  {
+    send_mts(ts, emit);
+    send_tuning_select(ts, emit);
+  }
 
   template <typename Emit>
   void send_mts(int64_t ts, Emit& emit) const noexcept
@@ -451,11 +518,12 @@ struct MidiScaler
     m_adjust = adjust;
     m_rescale = rescale;
 
-    if(mode == output_mode_control::mts_sysex && (retuned || !m_mts_sent))
+    if(mode == output_mode_control::mts_sysex && (retuned || !m_mts_sent || m_send_tuning))
     {
-      send_mts(0, emit);
+      send_tuning(0, emit);
       m_mts_sent = true;
     }
+    m_send_tuning = false;
 
     for(const auto& in : this->inputs.midi)
     {
@@ -648,6 +716,7 @@ struct MidiScaler
   float m_rescale{1.f};
   bool m_tuning_changed{true};
   bool m_mts_sent{false};
+  bool m_send_tuning{false};
   bool m_stop{false};
 };
 }
