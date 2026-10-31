@@ -57,7 +57,7 @@ struct PulseView
 {
   halp_meta(name, "Pulse View")
   halp_meta(c_name, "pulse_view")
-  halp_meta(category, "Monitoring")
+  halp_meta(category, "Monitoring/Control")
   halp_meta(manual_url, "https://ossia.io/score-docs/processes/pulse-view.html")
   halp_meta(author, "Jean-Michaël Celerier")
   halp_meta(description, "Pulses on incoming messages")
