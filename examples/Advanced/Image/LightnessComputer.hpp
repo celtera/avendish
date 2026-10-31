@@ -6,7 +6,9 @@
 #include <halp/meta.hpp>
 #include <halp/texture.hpp>
 
+#include <array>
 #include <chrono>
+#include <memory>
 #include <vector>
 
 #include <halp/controls.enums.hpp>
@@ -778,28 +780,49 @@ public:
       auto t = clk::now();
       if((t - last_ui_message) > 30ms)
       {
-        if(m_last_ui_buffer_size != in_tex.bytesize())
+        const std::size_t n = std::size_t(in_tex.width) * in_tex.height * 4;
+        if(auto buf = free_ui_buffer(n))
         {
-          const std::size_t n = std::size_t(in_tex.width) * in_tex.height * 4;
-          ui_buffer = std::shared_ptr<float[]>{
-              static_cast<float*>(
-                  ::operator new[](n * sizeof(float), std::align_val_t{16})),
-              [](float* p) { ::operator delete[](p, std::align_val_t{16}); }};
-          m_last_ui_buffer_size = in_tex.bytesize();
-        }
-
-        if(ui_buffer)
-        {
-          std::copy_n(in_tex.bytes, in_tex.width * in_tex.height * 4, ui_buffer.get());
+          std::copy_n(in_tex.bytes, n, buf.get());
           last_ui_message = t;
-          send_message({.bytes = ui_buffer, .w = in_tex.width, .h = in_tex.height});
+          send_message({.bytes = std::move(buf), .w = in_tex.width, .h = in_tex.height});
         }
       }
     }
   }
 
-  std::shared_ptr<float[]> ui_buffer;
-  int m_last_ui_buffer_size{};
+  //! Buffers handed to the view in turn. One the view or a message still
+  //! holds is not written over, as it may be painting it: with three, one is
+  //! shown, one is on its way and one is free, so none is allocated once the
+  //! size of the texture is settled.
+  struct ui_buffer
+  {
+    std::shared_ptr<float[]> data;
+    std::size_t size{};
+  };
+  std::array<ui_buffer, 3> ui_buffers;
+
+  //! A buffer of `n` floats that nothing but this holds, or null when all are
+  //! still in use.
+  std::shared_ptr<float[]> free_ui_buffer(std::size_t n)
+  {
+    ui_buffer* spare{};
+    for(auto& b : ui_buffers)
+    {
+      if(b.data && b.data.use_count() > 1)
+        continue;
+      if(b.data && b.size == n)
+        return b.data;
+      spare = &b;
+    }
+    if(!spare)
+      return {};
+    spare->data = std::shared_ptr<float[]>{
+        static_cast<float*>(::operator new[](n * sizeof(float), std::align_val_t{16})),
+        [](float* p) { ::operator delete[](p, std::align_val_t{16}); }};
+    spare->size = n;
+    return spare->data;
+  }
   // UI layout definition... we only have one widget here
   struct ui
   {
