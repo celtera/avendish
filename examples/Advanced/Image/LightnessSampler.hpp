@@ -169,7 +169,7 @@ public:
                  in_tex.bytes, in_tex.bytes + in_tex.bytesize()),
              .w = in_tex.width,
              .h = in_tex.height,
-             .positions = std::move(inputs.positions.value)});
+             .positions = inputs.positions.value});
       }
     }
   }
