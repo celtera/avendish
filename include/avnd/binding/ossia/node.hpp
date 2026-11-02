@@ -127,6 +127,8 @@ public:
   //! Frames of the engine buffer for the current tick, which the audio
   //! channels span; can be smaller than buffer_size.
   int tick_buffer_size{};
+  //! Once it has ticked, it is set up again on the audio thread
+  bool ticking{false};
   bool audio_channels_changed{false};
   double sample_rate{};
   double tempo{ossia::root_tempo};
@@ -511,7 +513,7 @@ public:
             port->messages.reserve(reserve);
       }
       this->control_buffers.reserve_space(this->impl, this->buffer_size);
-      this->spectrums.reserve_space(this->impl, this->buffer_size);
+      this->spectrums.reserve_space(this->impl, this->buffer_size, !this->ticking);
     }
 
     // Effect-specific preparation
@@ -562,6 +564,7 @@ public:
     // its samples [start, start + frames). Buffers prepared for fewer frames
     // are reallocated; larger ones are kept, a smaller tick fits in them.
     this->tick_buffer_size = std::max(st.bufferSize(), start + frames);
+    this->ticking = true;
     bool changed = false;
     if(this->tick_buffer_size > this->buffer_size)
     {
