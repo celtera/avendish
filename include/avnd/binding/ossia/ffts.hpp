@@ -44,25 +44,25 @@ struct spectrum_complex_bus_fft_type
 template <typename T>
 struct spectrum_split_channel_input_storage
 {
-  void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead) { }
 };
 
 template <typename T>
 struct spectrum_complex_channel_input_storage
 {
-  void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead) { }
 };
 
 template <typename T>
 struct spectrum_split_bus_input_storage
 {
-  void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead) { }
 };
 
 template <typename T>
 struct spectrum_complex_bus_input_storage
 {
-  void init(avnd::effect_container<T>& t, int buffer_size) { }
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead) { }
 };
 
 // Field:
@@ -79,7 +79,7 @@ struct spectrum_split_channel_input_storage<T>
   // std::tuple< ossia::fft, ossia::fft >
   AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
-  void init(avnd::effect_container<T>& t, int buffer_size)
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead)
   {
     if constexpr(sc_in::size > 0)
     {
@@ -89,7 +89,7 @@ struct spectrum_split_channel_input_storage<T>
         ossia::fft& fft = get<Idx>(this->ffts);
 
         // Reserve space for the current buffer size
-        fft.reset(buffer_size);
+        ahead ? fft.prepare(buffer_size) : fft.reset(buffer_size);
 
         port.spectrum.amplitude = nullptr;
         port.spectrum.phase = nullptr;
@@ -114,7 +114,7 @@ struct spectrum_split_bus_input_storage<T>
   // std::tuple< std::vector<ossia::fft>, std::vector<ossia::fft> >
   AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
-  void init(avnd::effect_container<T>& t, int buffer_size)
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead)
   {
     if constexpr(sc_in::size > 0)
     {
@@ -131,7 +131,7 @@ struct spectrum_split_bus_input_storage<T>
         // Reserve space for the current buffer size
         for(auto& fft : ffts.ffts)
         {
-          fft.reset(buffer_size);
+          ahead ? fft.prepare(buffer_size) : fft.reset(buffer_size);
         }
       };
       sc_in::for_all_n(avnd::get_inputs(t), init_raw_in);
@@ -151,7 +151,7 @@ struct spectrum_complex_channel_input_storage<T>
   // std::tuple< ossia::fft, ossia::fft >
   AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
-  void init(avnd::effect_container<T>& t, int buffer_size)
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead)
   {
     if constexpr(sc_in::size > 0)
     {
@@ -161,7 +161,7 @@ struct spectrum_complex_channel_input_storage<T>
         ossia::fft& fft = get<Idx>(this->ffts);
 
         // Reserve space for the current buffer size
-        fft.reset(buffer_size);
+        ahead ? fft.prepare(buffer_size) : fft.reset(buffer_size);
 
         port.spectrum.bin = nullptr;
       };
@@ -185,7 +185,7 @@ struct spectrum_complex_bus_input_storage<T>
   // std::tuple< std::vector<ossia::fft>, std::vector<ossia::fft> >
   AVND_NO_UNIQUE_ADDRESS fft_tuple ffts;
 
-  void init(avnd::effect_container<T>& t, int buffer_size)
+  void init(avnd::effect_container<T>& t, int buffer_size, bool ahead)
   {
     if constexpr(sc_in::size > 0)
     {
@@ -200,7 +200,7 @@ struct spectrum_complex_bus_input_storage<T>
         // Reserve space for the current buffer size
         for(auto& fft : ffts.ffts)
         {
-          fft.reset(buffer_size);
+          ahead ? fft.prepare(buffer_size) : fft.reset(buffer_size);
         }
       };
       sc_in::for_all_n(avnd::get_inputs(t), init_raw_in);
@@ -216,12 +216,14 @@ struct spectrum_storage
   AVND_NO_UNIQUE_ADDRESS spectrum_split_bus_input_storage<T> split_bus;
   AVND_NO_UNIQUE_ADDRESS spectrum_complex_bus_input_storage<T> complex_bus;
 
-  void reserve_space(avnd::effect_container<T>& t, int buffer_size)
+  //! `ahead`: not on the audio thread, where FFTs are planned for more
+  //! sizes than this one, so that a later change of block size finds them
+  void reserve_space(avnd::effect_container<T>& t, int buffer_size, bool ahead)
   {
-    split_channel.init(t, buffer_size);
-    complex_channel.init(t, buffer_size);
-    split_bus.init(t, buffer_size);
-    complex_bus.init(t, buffer_size);
+    split_channel.init(t, buffer_size, ahead);
+    complex_channel.init(t, buffer_size, ahead);
+    split_bus.init(t, buffer_size, ahead);
+    complex_bus.init(t, buffer_size, ahead);
   }
 };
 
