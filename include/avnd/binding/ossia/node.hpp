@@ -122,7 +122,11 @@ public:
   int start_frame_for_this_tick = 0;
   int frame_count_for_this_tick = 0;
 
+  //! Frames the node is prepared for: grows with the largest tick seen.
   int buffer_size{};
+  //! Frames of the engine buffer for the current tick, which the audio
+  //! channels span; can be smaller than buffer_size.
+  int tick_buffer_size{};
   bool audio_channels_changed{false};
   double sample_rate{};
   double tempo{ossia::root_tempo};
@@ -205,6 +209,7 @@ public:
       , instance{uid}
   {
     this->buffer_size = buffer_size;
+    this->tick_buffer_size = buffer_size;
     this->sample_rate = sample_rate;
 
     reinit();
@@ -522,10 +527,12 @@ public:
       port.set_channels(channels);
     }
 
+    // Exactly the tick: a channel sized for another block size would carry
+    // stale frames past the end of the tick to the downstream nodes.
     for(auto& chan : port)
     {
-      if(chan.size() < this->buffer_size)
-        chan.resize(this->buffer_size);
+      if(chan.size() != std::size_t(this->tick_buffer_size))
+        chan.resize(this->tick_buffer_size);
     }
   }
 
@@ -549,13 +556,16 @@ public:
     // Update metadatas
     this->update_tempo(tk.tempo);
 
-    // Grow the buffer size first: the channel scan below sizes the audio
-    // channels to it, and the processor reads and writes the samples
-    // [start, start + frames) of the engine buffer.
+    // The engine buffer can change size at runtime (another client of the
+    // audio server imposing its block size): the channel scan below sizes the
+    // audio channels to this tick's buffer, and the processor reads and writes
+    // its samples [start, start + frames). Buffers prepared for fewer frames
+    // are reallocated; larger ones are kept, a smaller tick fits in them.
+    this->tick_buffer_size = std::max(st.bufferSize(), start + frames);
     bool changed = false;
-    if(start + frames > this->buffer_size)
+    if(this->tick_buffer_size > this->buffer_size)
     {
-      this->buffer_size = start + frames;
+      this->buffer_size = this->tick_buffer_size;
       changed = true;
     }
 

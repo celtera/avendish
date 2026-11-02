@@ -97,6 +97,18 @@ struct release_momentary_buttons
   }
 };
 
+//! Windows N samples into the FFT input. The FFT is planned for the samples it
+//! gets: one planned for another block size would be overrun by a larger
+//! input, and would transform stale frames past the end of a smaller one.
+template <typename Field>
+inline void load_fft(Field& ctrl, ossia::fft& fft, const double* samples, int N) noexcept
+{
+  if(fft.size() != std::size_t(N))
+    fft.reset(N);
+  apply_window{}(ctrl, samples, fft.input(), N);
+  std::fill(fft.input() + N, fft.input() + fft.storage_size(), ossia::fft_real{});
+}
+
 template <typename Exec_T, typename Obj_T>
 struct process_before_run
 {
@@ -293,7 +305,7 @@ struct process_before_run
       const int N = samples.size();
       if(N > 0)
       {
-        apply_window{}(ctrl, samples.data(), fft.input(), N);
+        load_fft(ctrl, fft, samples.data(), N);
 
         auto fftOut = reinterpret_cast<ossia::fft_real*>(fft.execute());
         deinterleave(fftOut, N);
@@ -319,7 +331,7 @@ struct process_before_run
       const int N = samples.size();
       if(N > 0)
       {
-        apply_window{}(ctrl, samples.data(), fft.input(), N);
+        load_fft(ctrl, fft, samples.data(), N);
 
         ctrl.spectrum.bin = reinterpret_cast<decltype(ctrl.spectrum.bin)>(fft.execute());
       }
@@ -344,7 +356,7 @@ struct process_before_run
         const int N = samples.size();
         if(N > 0)
         {
-          apply_window{}(ctrl, samples.data(), fft.input(), N);
+          load_fft(ctrl, fft, samples.data(), N);
 
           auto fftOut = reinterpret_cast<ossia::fft_real*>(fft.execute());
           deinterleave(fftOut, N);
@@ -374,7 +386,7 @@ struct process_before_run
         const int N = samples.size();
         if(N > 0)
         {
-          apply_window{}(ctrl, samples.data(), fft.input(), N);
+          load_fft(ctrl, fft, samples.data(), N);
 
           ctrl.spectrum.bin[c]
               = reinterpret_cast<decltype(ctrl.spectrum.bin[c])>(fft.execute());

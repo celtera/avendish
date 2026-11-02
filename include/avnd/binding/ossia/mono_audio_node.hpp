@@ -47,8 +47,8 @@ public:
     const int current_input_channels = this->channels.actual_runtime_inputs;
     for(auto& chan : *audio_inlet())
     {
-      if(chan.size() < this->buffer_size)
-        chan.resize(this->buffer_size);
+      if(chan.size() != std::size_t(this->tick_buffer_size))
+        chan.resize(this->tick_buffer_size);
     }
 
     int port_input_channels = audio_inlet()->channels();
