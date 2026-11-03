@@ -330,7 +330,9 @@ struct LEDView
 
       auto fact = portFactory.get(led_inl->concreteKey());
       auto port = fact->makePortItem(*led_inl, doc, this, this);
-      port->setPos(0, 5);
+      // Centered on the top strip, where score puts the first inlet of its
+      // own monitoring views
+      port->setPos(0, 3);
 
       // An edit in the inspector and a value sent through a cable while
       // playing both replace the setting; the latest one wins
