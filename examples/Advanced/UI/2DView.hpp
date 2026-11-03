@@ -204,7 +204,9 @@ struct Point2DView
       auto xy_inl = static_cast<Process::ControlInlet*>(process.inlets()[0]);
       auto fact = portFactory.get(xy_inl->concreteKey());
       auto port = fact->makePortItem(*xy_inl, doc, this, this);
-      port->setPos(0, 5);
+      // Centered on the top strip, where score puts the first inlet of its
+      // own monitoring views
+      port->setPos(0, 3);
 
       // Absent from processes which have not been reloaded since they were added
       auto control = [&](std::size_t i) -> const Process::ControlInlet* {
