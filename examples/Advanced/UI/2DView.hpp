@@ -111,6 +111,53 @@ inline std::vector<QPointF> pointsOf(const ossia::value& v)
   return pts;
 }
 
+//! What the points an auto range is fit to span.
+struct SeenRange
+{
+  double x0{}, x1{}, y0{}, y1{};
+  bool any{false};
+
+  void clear() noexcept { any = false; }
+
+  void add(QPointF pt) noexcept
+  {
+    const double x = pt.x(), y = pt.y();
+    if(!std::isfinite(x) || !std::isfinite(y))
+      return;
+    if(!any)
+    {
+      x0 = x1 = x;
+      y0 = y1 = y;
+      any = true;
+      return;
+    }
+    x0 = std::min(x0, x);
+    x1 = std::max(x1, x);
+    y0 = std::min(y0, y);
+    y1 = std::max(y1, y);
+  }
+
+  void add(const std::vector<QPointF>& pts) noexcept
+  {
+    for(auto& pt : pts)
+      add(pt);
+  }
+};
+
+struct AxisRange
+{
+  double x0, x1, y0, y1;
+};
+
+//! The range shown for what was seen: a margin around it, and at least
+//! \p minMargin around a single point.
+inline AxisRange fitRange(const SeenRange& s, double minMargin) noexcept
+{
+  const double mx = std::max((s.x1 - s.x0) * 0.05, minMargin);
+  const double my = std::max((s.y1 - s.y0) * 0.05, minMargin);
+  return {s.x0 - mx, s.x1 + mx, s.y0 - my, s.y1 + my};
+}
+
 struct Point2DView
 {
   halp_meta(name, "Point2D View")
@@ -157,7 +204,10 @@ struct Point2DView
     } labels;
     struct : halp::toggle<"Auto range">
     {
-      halp_meta(description, "Fit the range to the points received instead of Min and Max")
+      halp_meta(
+          description,
+          "Fit the range to the points received instead of Min and Max. A double "
+          "click on the view fits it again to the points shown")
     } auto_range;
     struct : halp::toggle<"Keep aspect">
     {
@@ -172,8 +222,9 @@ struct Point2DView
     std::vector<QColor> m_colors;
     //! Previous point sets, newest last
     std::deque<std::vector<QPointF>> m_trail;
-    //! What the points received since execution started span
-    QRectF m_seen;
+    //! What the auto range is fit to: the points received since execution
+    //! started, or since it was last fit to the points shown
+    SeenRange m_seen;
 
     // The settings: what the model holds, then whatever playback sends
     float min_x{0.f}, min_y{0.f}, max_x{1.f}, max_y{1.f};
@@ -238,8 +289,23 @@ struct Point2DView
       bind(6, m_trail_length);
       bind(7, m_point_size);
       bind(8, m_labels);
-      bind(9, m_auto_range);
       bind(10, m_keep_aspect);
+
+      // An auto range turned on fits what is shown, not every point received
+      // while it was off
+      if(auto* c = control(9))
+      {
+        m_auto_range = ossia::convert<bool>(c->value());
+        auto set = [this](const ossia::value& v) {
+          const bool on = ossia::convert<bool>(v);
+          if(on && !m_auto_range)
+            fitAutoRange();
+          m_auto_range = on;
+          update();
+        };
+        connect(c, &Process::ControlInlet::valueChanged, this, set);
+        connect(c, &Process::ControlInlet::executionValueChanged, this, set);
+      }
 
       // The auto range fits one playback
       connect(&process, &Process::ProcessModel::startExecution, this, [this] { reset(); });
@@ -271,15 +337,15 @@ struct Point2DView
         else if(trail == 0)
           m_trail.clear();
         m_points = std::move(pts);
-        for(auto& pt : m_points)
-          m_seen = m_seen.isNull() ? QRectF{pt, QSizeF{1e-9, 1e-9}} : m_seen.united(QRectF{pt, QSizeF{1e-9, 1e-9}});
+        m_seen.add(m_points);
         update();
       });
     }
 
     //! A first press goes on to the node, to select or move it. The scene
     //! hands the second press of a double click to whoever took the first, so
-    //! the double click is recognised here, from the presses.
+    //! the double click is recognised here, from the presses. It fits the
+    //! auto range, or else Min and Max, to the points shown.
     void mousePressEvent(QGraphicsSceneMouseEvent* ev) override
     {
       const bool second = m_lastPress.isValid()
@@ -294,26 +360,38 @@ struct Point2DView
       }
       ev->accept();
       m_lastPress.invalidate();
-      fitToPoints();
+      if(m_auto_range)
+        fitAutoRange();
+      else
+        fitToPoints();
+    }
+
+    //! What the points shown, and their trails, span
+    SeenRange shown() const
+    {
+      SeenRange r;
+      r.add(m_points);
+      for(auto& t : m_trail)
+        r.add(t);
+      return r;
+    }
+
+    //! The auto range starts over from the points shown, and grows from there
+    //! with the points received. The view's own state: nothing is edited.
+    void fitAutoRange()
+    {
+      m_seen = shown();
+      update();
     }
 
     //! The range is set to what the points shown span, as one undoable edit
     void fitToPoints()
     {
-      QRectF r;
-      auto add = [&](const std::vector<QPointF>& pts) {
-        for(auto& pt : pts)
-          r = r.isNull() ? QRectF{pt, QSizeF{1e-9, 1e-9}} : r.united(QRectF{pt, QSizeF{1e-9, 1e-9}});
-      };
-      add(m_points);
-      for(auto& t : m_trail)
-        add(t);
-      if(r.isNull() || !std::all_of(m_bounds.begin(), m_bounds.end(), [](auto* c) { return c; }))
+      const auto s = shown();
+      if(!s.any || !std::all_of(m_bounds.begin(), m_bounds.end(), [](auto* c) { return c; }))
         return;
-      // A margin, and some room around a single point
-      const double mx = std::max(r.width() * 0.05, 1e-3), my = std::max(r.height() * 0.05, 1e-3);
-      const float v[4]{
-          float(r.left() - mx), float(r.top() - my), float(r.right() + mx), float(r.bottom() + my)};
+      const auto r = fitRange(s, 1e-3);
+      const float v[4]{float(r.x0), float(r.y0), float(r.x1), float(r.y1)};
       MultiOngoingCommandDispatcher disp{m_stack};
       for(int i = 0; i < 4; i++)
         disp.submit(new Process::SetControlValue{*m_bounds[i], v[i]});
@@ -324,22 +402,14 @@ struct Point2DView
     {
       m_points.clear();
       m_trail.clear();
-      m_seen = {};
+      m_seen.clear();
       update();
     }
 
-    struct Range
+    AxisRange range() const
     {
-      double x0, x1, y0, y1;
-    };
-    Range range() const
-    {
-      if(m_auto_range && !m_seen.isNull())
-      {
-        const double mx = std::max(m_seen.width() * 0.05, 1e-6);
-        const double my = std::max(m_seen.height() * 0.05, 1e-6);
-        return {m_seen.left() - mx, m_seen.right() + mx, m_seen.top() - my, m_seen.bottom() + my};
-      }
+      if(m_auto_range && m_seen.any)
+        return fitRange(m_seen, 1e-6);
       return {min_x, max_x, min_y, max_y};
     }
 
