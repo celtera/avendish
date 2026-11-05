@@ -150,11 +150,19 @@ struct AxisRange
 };
 
 //! The range shown for what was seen: a margin around it, and at least
-//! \p minMargin around a single point.
+//! \p minMargin around a single point. Far from zero an absolute margin is
+//! below the precision of the values, and Min would equal Max once they are
+//! stored as floats: the margin is also at least a fraction of their magnitude,
+//! a hundred or so float steps.
 inline AxisRange fitRange(const SeenRange& s, double minMargin) noexcept
 {
-  const double mx = std::max((s.x1 - s.x0) * 0.05, minMargin);
-  const double my = std::max((s.y1 - s.y0) * 0.05, minMargin);
+  constexpr double relative = 1e-5;
+  const auto margin = [=](double lo, double hi) {
+    return std::max(
+        {(hi - lo) * 0.05, minMargin, std::max(std::abs(lo), std::abs(hi)) * relative});
+  };
+  const double mx = margin(s.x0, s.x1);
+  const double my = margin(s.y0, s.y1);
   return {s.x0 - mx, s.x1 + mx, s.y0 - my, s.y1 + my};
 }
 
@@ -392,6 +400,10 @@ struct Point2DView
         return;
       const auto r = fitRange(s, 1e-3);
       const float v[4]{float(r.x0), float(r.y0), float(r.x1), float(r.y1)};
+      // Points beyond what a float holds: no range to set
+      if(!std::all_of(std::begin(v), std::end(v), [](float f) { return std::isfinite(f); })
+         || !axisUsable(v[0], v[2]) || !axisUsable(v[1], v[3]))
+        return;
       MultiOngoingCommandDispatcher disp{m_stack};
       for(int i = 0; i < 4; i++)
         disp.submit(new Process::SetControlValue{*m_bounds[i], v[i]});
