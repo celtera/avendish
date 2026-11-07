@@ -1,34 +1,14 @@
 #include "AudioParticles.hpp"
 
 #include <ossia/detail/algorithms.hpp>
-#include <score/tools/Debug.hpp>
-#include <score/tools/RecursiveWatch.hpp>
-#include <score/tools/Debug.hpp>
-#include <ossia/detail/algorithms.hpp>
-#include <QDirIterator>
+
+#include <algorithm>
 namespace ao
 {
 void AudioParticles::prepare(halp::setup info)
 {
   this->rate = info.rate;
-  // Initialization, this method will be called with buffer size, etc.
-  m_sounds.clear();
-  m_sounds.reserve(1000);
   m_playheads.reserve(max_playheads);
-
-  // FIXME move to worker thread
-  score::for_all_files(inputs.folder.value, [this](std::string_view v) {
-    if(!v.ends_with(".wav"))
-      return;
-
-    const QString& path = QString::fromUtf8(v.data(), v.size());
-
-    auto dec = Media::AudioDecoder::decode_synchronous(path, this->rate);
-    if(!dec)
-      return;
-
-    m_sounds.push_back(std::move(dec->second));
-  });
 }
 
 std::optional<int>
@@ -57,9 +37,6 @@ void AudioParticles::operator()(const halp::tick_musical& t)
     return;
   }
 
-  if(m_sounds.empty())
-    return;
-
   // FIXME range is not respected
 
   if(inputs.frequency > 0.)
@@ -80,48 +57,49 @@ void AudioParticles::operator()(const halp::tick_musical& t)
           t.position_in_frames, t.position_in_frames + t.frames, rate,
           inputs.frequency));
     }
-    if(is_in_frame && m_playheads.size() < max_playheads)
+    const auto& sounds = inputs.folder;
+    if(is_in_frame && m_playheads.size() < max_playheads && !sounds.empty()
+       && this->outputs.audio.channels > 0)
     {
       if((1. - inputs.density) < std::exponential_distribution<float>()(m_rng))
-        m_playheads.push_back(
-            Playhead{
-                0, uint16_t(unsigned(m_rng()) % m_sounds.size()),
-                uint16_t(unsigned(m_rng()) % this->outputs.audio.channels)});
+      {
+        const auto index = unsigned(m_rng()) % sounds.size();
+        if(const auto& sound = sounds[index];
+           sound.status == halp::sound_status::ready && sound.frames > 0)
+        {
+          m_playheads.push_back(Playhead{
+              .data = sound.data,
+              .frames = sound.frames,
+              .frame = 0,
+              .channels = sound.channels,
+              .channel = uint16_t(unsigned(m_rng()) % this->outputs.audio.channels),
+              .pin = sounds.pin(index)});
+        }
+      }
     }
   }
 
   for(auto& playhead : m_playheads)
   {
-    if(m_sounds.size() <= playhead.index)
-      continue;
-
-    auto& sound = m_sounds[playhead.index];
-    int sound_frames = sound[0].size();
-
     if(outputs.audio.channels <= playhead.channel)
       continue;
     auto channel = outputs.audio.channel(playhead.channel, t.frames);
 
-    if(sound_frames - playhead.frame > t.frames)
-      for(int i = playhead.frame; i < playhead.frame + t.frames; i++)
-        channel[i - playhead.frame] += sound[0][i];
-    else
+    // Every channel of the file, mixed down to the one it plays on
+    const int64_t n = std::min<int64_t>(t.frames, playhead.frames - playhead.frame);
+    const double gain = 1. / playhead.channels;
+    for(int c = 0; c < playhead.channels; c++)
     {
-      for(int i = playhead.frame; i < sound_frames; i++)
-        channel[i - playhead.frame] += sound[0][i];
+      const float* src = playhead.data[c] + playhead.frame;
+      for(int64_t i = 0; i < n; i++)
+        channel[i] += gain * src[i];
     }
     playhead.frame += t.frames;
   }
 
   ossia::remove_erase_if(m_playheads, [this](const auto& playhead) {
-    if(outputs.audio.channels <= playhead.channel)
-      return true;
-    if(std::ssize(m_sounds) <= playhead.index)
-      return true;
-
-    auto& sound = m_sounds[playhead.index];
-    SCORE_ASSERT(!sound.empty());
-    return playhead.frame >= std::ssize(sound[0]);
+    return outputs.audio.channels <= playhead.channel
+           || playhead.frame >= playhead.frames;
   });
 }
 }

@@ -32,4 +32,13 @@ concept raw_file_port = requires(T t) {
 // Folder port is simply a value port with a std::string as there's not really any
 // filtering or special operations to be done
 AVND_DEFINE_TAG(file_watch)
+
+//! A folder of sound files that the host lists and decodes (halp::sound_set):
+//! a path-valued control, plus the files the host publishes into it.
+template <typename T>
+concept sound_set_port = requires(T t) {
+                           t.value;
+                           t.files.sounds;
+                           t.files.generation;
+                         };
 }
