@@ -1,17 +1,14 @@
 #pragma once
-#include <Media/AudioDecoder.hpp>
 #include <halp/audio.hpp>
 #include <halp/controls.hpp>
 #include <halp/mappers.hpp>
 #include <halp/meta.hpp>
+#include <halp/sound_set.hpp>
 #include <rnd/random.hpp>
 
-#include <QFile>
 #include <vector>
 
-// Note: this example leverages a lot of built-in Qt & ossia score API features,
-// in particular to decode audio files on the fly.
-// It shouldn't be too hard to reimplement using separate APIs though :)
+// The host lists, decodes and watches the folder: see halp::sound_set.
 
 namespace ao
 {
@@ -27,7 +24,10 @@ public:
 
   struct ins
   {
-    halp::lineedit<"Folder", ""> folder;
+    struct : halp::sound_set<"Folder">
+    {
+      static constexpr bool recursive() { return true; }
+    } folder;
     halp::spinbox_i32<"Channels", halp::range{.min = 0., .max = 128, .init = 16}>
         channels;
     struct : halp::time_chooser<"Frequency", halp::range{0.00001, 30., 0.2}>
@@ -51,13 +51,16 @@ public:
   // Defined in the .cpp
   void operator()(const halp::tick_musical& t);
 
-  std::vector<Media::audio_array> m_sounds;
-
+  //! A sound playing: it keeps its file alive until it ends, even if the folder
+  //! changes meanwhile.
   struct Playhead
   {
-    int frame{};
-    uint16_t index{};
+    const float* const* data{};
+    int64_t frames{};
+    int64_t frame{};
+    int channels{};
     uint16_t channel{};
+    halp::sound_pin pin;
   };
 
   //! Sounds playing at once: reserved in prepare(), so that a new one never
