@@ -31,6 +31,25 @@ struct time_control_input_storage<T>
   AVND_NO_UNIQUE_ADDRESS hdl_tuple handles;
 };
 
+//! A synced time chooser's mode, the second component of its {value, mode}:
+//! 1 restarts at the bar lines as the object declares, 2 always does, 3 never
+//! does and keeps one pulse across them. Anything else synced reads as 1.
+template <typename Field>
+static constexpr bool bar_sync_of(float mode) noexcept
+{
+  constexpr bool fallback = [] {
+    if constexpr(requires { Field::bar_sync_default; })
+      return bool(Field::bar_sync_default);
+    else
+      return true;
+  }();
+  if(mode > 1.5f && mode < 2.5f)
+    return true;
+  if(mode > 2.5f && mode < 3.5f)
+    return false;
+  return fallback;
+}
+
 static constexpr float to_seconds(float ratio, float tempo) noexcept
 {
   const float q_ratio = 4. * ratio; // e.g 1. for a quarter note, 4. for a whole

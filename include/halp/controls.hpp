@@ -218,8 +218,10 @@ template <static_string lit>
 using maintained_button = maintained_button_t<lit>;
 
 #if !HALP_GCC10_SLIDERS_WORKAROUND
-template <static_string lit, auto setup = range{.min = 0.001, .max = 5., .init = 0.25}>
-using time_chooser = time_chooser_t<float, lit, setup>;
+template <
+    static_string lit, auto setup = range{.min = 0.001, .max = 5., .init = 0.25},
+    bar_sync bars = bar_sync::none>
+using time_chooser = time_chooser_t<float, lit, setup, bars>;
 
 template <static_string lit, range_slider_range setup = range_slider_range{}>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
@@ -228,8 +230,8 @@ template <static_string lit, range_slider_range setup = range_slider_range{}>
 using range_spinbox_f32 = halp::range_spinbox_t<float, lit, setup>;
 #else
 
-template <static_string lit, auto setup = range{}>
-using time_chooser = time_chooser_t<float, lit, setup>;
+template <static_string lit, auto setup = range{}, bar_sync bars = bar_sync::none>
+using time_chooser = time_chooser_t<float, lit, setup, bars>;
 
 template <static_string lit, range_slider_range setup = default_range<float>>
 using range_slider_f32 = halp::range_slider_t<float, lit, setup>;
