@@ -735,7 +735,7 @@ public:
       this->time_controls.update_control(this->impl, idx, vec[0], true);
       if_possible(field.sync = true);
       if constexpr(requires { field.bar_sync = true; })
-        field.bar_sync = bar_sync_of<Field>(vec[1]);
+        field.bar_sync = bar_sync_of(vec[1]);
     }
     return true;
   }

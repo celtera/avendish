@@ -1,7 +1,24 @@
 #pragma once
 #include <avnd/introspection/input.hpp>
+
+#include <type_traits>
 namespace oscr
 {
+//! A time chooser that lets the user choose what its synced steps do at a bar
+//! line (halp::bar_sync): `offers_bar_sync` a constant expression that is
+//! true. Any other field, one with a non-constant member of that name too, is
+//! not one.
+template <typename Field>
+concept offers_bar_sync = requires {
+  typename std::bool_constant<bool(Field::offers_bar_sync)>;
+} && bool(Field::offers_bar_sync);
+
+//! One whose new controls keep one pulse across the bar lines.
+template <typename Field>
+concept starts_as_pulse = offers_bar_sync<Field> && requires {
+  typename std::bool_constant<bool(Field::bar_sync_default)>;
+} && !bool(Field::bar_sync_default);
+
 struct time_control_state
 {
   float value{};
@@ -32,22 +49,13 @@ struct time_control_input_storage<T>
 };
 
 //! A synced time chooser's mode, the second component of its {value, mode}:
-//! 1 restarts at the bar lines as the object declares, 2 always does, 3 never
-//! does and keeps one pulse across them. Anything else synced reads as 1.
-template <typename Field>
+//! 3 keeps one pulse across the bar lines, anything else restarts the steps
+//! at each of them. 1 is what a value carries when it was saved before the
+//! choice existed, when the steps always restarted, so it keeps doing so;
+//! 2 is the restart chosen.
 static constexpr bool bar_sync_of(float mode) noexcept
 {
-  constexpr bool fallback = [] {
-    if constexpr(requires { Field::bar_sync_default; })
-      return bool(Field::bar_sync_default);
-    else
-      return true;
-  }();
-  if(mode > 1.5f && mode < 2.5f)
-    return true;
-  if(mode > 2.5f && mode < 3.5f)
-    return false;
-  return fallback;
+  return !(mode > 2.5f && mode < 3.5f);
 }
 
 static constexpr float to_seconds(float ratio, float tempo) noexcept
