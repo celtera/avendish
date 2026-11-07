@@ -84,7 +84,8 @@ enum class bar_sync : int8_t
   //! They start again from the bar line (a dotted quarter in 4/4 falls on 0,
   //! 1.5, 3, then the next bar), unless the user picks the pulse.
   restart,
-  //! They go on as one pulse across it, unless the user picks the restart.
+  //! A new control goes on as one pulse across it, unless the user picks the
+  //! restart. A value saved before the choice existed still restarts.
   pulse
 };
 
@@ -119,7 +120,7 @@ struct time_chooser_t
   bool sync{false};
 
   //! Whether the user may choose what the steps do at a bar line, see
-  //! halp::bar_sync, and the choice when they did not.
+  //! halp::bar_sync, and the choice a new control starts with.
   static constexpr bool offers_bar_sync = bars != halp::bar_sync::none;
   static constexpr bool bar_sync_default = bars != halp::bar_sync::pulse;
 
