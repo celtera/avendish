@@ -5,6 +5,7 @@
 #include <halp/static_string.hpp>
 #include <halp/value_types.hpp>
 
+#include <cstdint>
 #include <limits>
 #include <string_view>
 #include <type_traits>
@@ -74,7 +75,20 @@ struct slider_t
 };
 
 /// Time chooser ///
-template <typename T, static_string lit, range setup>
+//! What the steps of a synced time do at a bar line they do not fill.
+enum class bar_sync : int8_t
+{
+  //! The object does not say: it uses the bar grid, and the host offers no
+  //! choice.
+  none,
+  //! They start again from the bar line (a dotted quarter in 4/4 falls on 0,
+  //! 1.5, 3, then the next bar), unless the user picks the pulse.
+  restart,
+  //! They go on as one pulse across it, unless the user picks the restart.
+  pulse
+};
+
+template <typename T, static_string lit, range setup, bar_sync bars = bar_sync::none>
 struct time_chooser_t
 {
   enum widget
@@ -103,6 +117,14 @@ struct time_chooser_t
 
   // false: time in seconds ; true: time in musical denominations
   bool sync{false};
+
+  //! Whether the user may choose what the steps do at a bar line, see
+  //! halp::bar_sync, and the choice when they did not.
+  static constexpr bool offers_bar_sync = bars != halp::bar_sync::none;
+  static constexpr bool bar_sync_default = bars != halp::bar_sync::pulse;
+
+  //! Synced: true when the steps start again at each bar line.
+  bool bar_sync{bar_sync_default};
 };
 
 /// Toggle ///

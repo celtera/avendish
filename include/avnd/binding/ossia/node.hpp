@@ -708,7 +708,8 @@ public:
       Field& field, const ossia::value& src, Val& dst, avnd::field_index<NField> idx)
   {
     // The inspector sends {time, mode}: mode 0 is seconds, anything else a
-    // musical ratio. A plain number (a cable, an OSC message) is seconds.
+    // musical ratio (see bar_sync_of). A plain number (a cable, an OSC
+    // message) is seconds.
     ossia::vec2f vec;
     switch(src.get_type())
     {
@@ -733,6 +734,8 @@ public:
       dst = to_seconds(vec[0], this->tempo);
       this->time_controls.update_control(this->impl, idx, vec[0], true);
       if_possible(field.sync = true);
+      if constexpr(requires { field.bar_sync = true; })
+        field.bar_sync = bar_sync_of<Field>(vec[1]);
     }
     return true;
   }
