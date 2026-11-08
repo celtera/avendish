@@ -6,11 +6,18 @@
 #include <halp/static_string.hpp>
 
 #include <array>
-#include <charconv>
 #include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
+
+// The floating-point std::from_chars is missing from some standard libraries
+// (older Apple deployment targets, FreeBSD's libc++)
+#if defined(__cpp_lib_to_chars)
+#include <charconv>
+#else
+#include <boost/lexical_cast/try_lexical_convert.hpp>
+#endif
 
 namespace halp
 {
@@ -20,9 +27,17 @@ namespace halp
 [[nodiscard]] inline std::optional<int> folder_index(std::string_view value) noexcept
 {
   double d{};
+#if defined(__cpp_lib_to_chars)
   const auto end = value.data() + value.size();
   const auto [ptr, ec] = std::from_chars(value.data(), end, d);
-  if(ec != std::errc{} || ptr != end || !(d >= 0.))
+  if(ec != std::errc{} || ptr != end)
+    return std::nullopt;
+#else
+  // lexical_cast also takes a leading '+', which from_chars does not
+  if(value.starts_with('+') || !boost::conversion::try_lexical_convert(value, d))
+    return std::nullopt;
+#endif
+  if(!(d >= 0.))
     return std::nullopt;
   return d < double(std::numeric_limits<int>::max()) ? int(d)
                                                      : std::numeric_limits<int>::max();
