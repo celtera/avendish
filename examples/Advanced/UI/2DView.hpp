@@ -12,6 +12,7 @@
 #include <avnd/concepts/painter.hpp>
 #include <avnd/concepts/processor.hpp>
 #include <avnd/wrappers/controls.hpp>
+#include <halp/safe_math.hpp>
 #include <halp/controls.hpp>
 #include <halp/meta.hpp>
 #include <ossia/network/value/format_value.hpp>
@@ -122,7 +123,7 @@ struct SeenRange
   void add(QPointF pt) noexcept
   {
     const double x = pt.x(), y = pt.y();
-    if(!std::isfinite(x) || !std::isfinite(y))
+    if(!halp::safe_isfinite(x) || !halp::safe_isfinite(y))
       return;
     if(!any)
     {
@@ -401,7 +402,7 @@ struct Point2DView
       const auto r = fitRange(s, 1e-3);
       const float v[4]{float(r.x0), float(r.y0), float(r.x1), float(r.y1)};
       // Points beyond what a float holds: no range to set
-      if(!std::all_of(std::begin(v), std::end(v), [](float f) { return std::isfinite(f); })
+      if(!std::all_of(std::begin(v), std::end(v), [](float f) { return halp::safe_isfinite(f); })
          || !axisUsable(v[0], v[2]) || !axisUsable(v[1], v[3]))
         return;
       MultiOngoingCommandDispatcher disp{m_stack};

@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <halp/polyfill.hpp>
+#include <halp/safe_math.hpp>
 #include <halp/static_string.hpp>
 
 #include <array>
@@ -37,7 +38,7 @@ namespace halp
   if(value.starts_with('+') || !boost::conversion::try_lexical_convert(value, d))
     return std::nullopt;
 #endif
-  if(!(d >= 0.))
+  if(safe_isnan(d) || d < 0.)
     return std::nullopt;
   return d < double(std::numeric_limits<int>::max()) ? int(d)
                                                      : std::numeric_limits<int>::max();
