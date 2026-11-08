@@ -6,6 +6,8 @@
 #include <halp/static_string.hpp>
 
 #include <array>
+#include <charconv>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -40,6 +42,19 @@ struct folder_combobox
   static clang_buggy_consteval auto extensions() { return std::string_view{exts.value}; }
 
   std::string value{};
+
+  //! A number rather than a file name, e.g. sent by automation or a cable:
+  //! the index of a file in the folder's list. File names have an extension,
+  //! so a name is never taken for a number.
+  [[nodiscard]] std::optional<int> index() const noexcept
+  {
+    double d{};
+    const auto end = value.data() + value.size();
+    const auto [ptr, ec] = std::from_chars(value.data(), end, d);
+    if(ec != std::errc{} || ptr != end || !(d >= 0.))
+      return std::nullopt;
+    return int(d);
+  }
 
   operator std::string&() noexcept { return value; }
   operator const std::string&() const noexcept { return value; }
