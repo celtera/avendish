@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
+#include <cstdlib>
 #include <halp/audio.hpp>
 #include <halp/meta.hpp>
 
