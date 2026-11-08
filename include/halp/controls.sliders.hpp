@@ -144,7 +144,25 @@ inline constexpr auto default_toggle = toggle_setup{.init = false};
 inline constexpr auto default_on_toggle = toggle_setup{.init = true};
 
 /// XY position ///
-template <typename T, static_string lit, range setup>
+//! The setup of an xy control that starts elsewhere than on its diagonal:
+//! one range for both axes, and a point.
+struct xy_range
+{
+  double min{0.};
+  double max{1.};
+  xy_type<double> init{0., 0.};
+};
+
+template <typename T>
+struct xy_range_t
+{
+  T min;
+  T max;
+  xy_type<T> init;
+};
+
+//! \p setup: a halp::range, the same start on both axes, or a halp::xy_range
+template <typename T, static_string lit, auto setup>
 struct xy_pad_t
 {
   using value_type = xy_type<T>;
@@ -154,11 +172,24 @@ struct xy_pad_t
   };
   static clang_buggy_consteval auto range()
   {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+    if constexpr(requires { setup.init.x; })
+      return xy_range_t<T>{
+          .min = T(setup.min),
+          .max = T(setup.max),
+          .init = {T(setup.init.x), T(setup.init.y)}};
+    else
+      return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
   }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  value_type value = {T(setup.init), T(setup.init)};
+  static constexpr value_type initial_value() noexcept
+  {
+    if constexpr(requires { setup.init.x; })
+      return {T(setup.init.x), T(setup.init.y)};
+    else
+      return {T(setup.init), T(setup.init)};
+  }
+  value_type value = initial_value();
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
