@@ -111,8 +111,9 @@ enum class value_display
 enum class control_widget
 {
   automatic,
-  knob, // for a slider parameter
-  combo // for an enumeration
+  knob,  // for a slider parameter
+  combo, // for an enumeration
+  none   // the port and its label only: edited elsewhere, e.g. by a custom item
 };
 
 // Presentation of a control in a layout. Unsupported options are ignored.
