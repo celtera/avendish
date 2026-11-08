@@ -7,12 +7,27 @@
 
 #include <array>
 #include <charconv>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
 
 namespace halp
 {
+//! A folder combobox's value as an index, when it is a number: one that is
+//! not, below 0 or not a number, is a file name. Past the largest int (or
+//! infinite): the largest int.
+[[nodiscard]] inline std::optional<int> folder_index(std::string_view value) noexcept
+{
+  double d{};
+  const auto end = value.data() + value.size();
+  const auto [ptr, ec] = std::from_chars(value.data(), end, d);
+  if(ec != std::errc{} || ptr != end || !(d >= 0.))
+    return std::nullopt;
+  return d < double(std::numeric_limits<int>::max()) ? int(d)
+                                                     : std::numeric_limits<int>::max();
+}
+
 // Combobox whose items are the files of a sibling folder port, listed by the
 // host at edit time (and refreshed when the folder changes) — no execution
 // needed. The VALUE is the selected file name (a string), so an object can use
@@ -46,15 +61,7 @@ struct folder_combobox
   //! A number rather than a file name, e.g. sent by automation or a cable:
   //! the index of a file in the folder's list. File names have an extension,
   //! so a name is never taken for a number.
-  [[nodiscard]] std::optional<int> index() const noexcept
-  {
-    double d{};
-    const auto end = value.data() + value.size();
-    const auto [ptr, ec] = std::from_chars(value.data(), end, d);
-    if(ec != std::errc{} || ptr != end || !(d >= 0.))
-      return std::nullopt;
-    return int(d);
-  }
+  [[nodiscard]] std::optional<int> index() const noexcept { return folder_index(value); }
 
   operator std::string&() noexcept { return value; }
   operator const std::string&() const noexcept { return value; }
