@@ -161,6 +161,29 @@ struct xy_range_t
   xy_type<T> init;
 };
 
+//! The range of an xy control from \p setup: a halp::range, the same start
+//! on both axes, or a halp::xy_range
+template <typename T, auto setup>
+constexpr auto xy_setup_range() noexcept
+{
+  if constexpr(requires { setup.init.x; })
+    return xy_range_t<T>{
+        .min = T(setup.min),
+        .max = T(setup.max),
+        .init = {T(setup.init.x), T(setup.init.y)}};
+  else
+    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+}
+
+template <typename T, auto setup>
+constexpr xy_type<T> xy_setup_init() noexcept
+{
+  if constexpr(requires { setup.init.x; })
+    return {T(setup.init.x), T(setup.init.y)};
+  else
+    return {T(setup.init), T(setup.init)};
+}
+
 //! \p setup: a halp::range, the same start on both axes, or a halp::xy_range
 template <typename T, static_string lit, auto setup>
 struct xy_pad_t
@@ -170,26 +193,10 @@ struct xy_pad_t
   {
     xy
   };
-  static clang_buggy_consteval auto range()
-  {
-    if constexpr(requires { setup.init.x; })
-      return xy_range_t<T>{
-          .min = T(setup.min),
-          .max = T(setup.max),
-          .init = {T(setup.init.x), T(setup.init.y)}};
-    else
-      return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
-  }
+  static clang_buggy_consteval auto range() { return xy_setup_range<T, setup>(); }
   static clang_buggy_consteval auto name() { return std::string_view{lit.value}; }
 
-  static constexpr value_type initial_value() noexcept
-  {
-    if constexpr(requires { setup.init.x; })
-      return {T(setup.init.x), T(setup.init.y)};
-    else
-      return {T(setup.init), T(setup.init)};
-  }
-  value_type value = initial_value();
+  value_type value = xy_setup_init<T, setup>();
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
@@ -200,7 +207,8 @@ struct xy_pad_t
   }
 };
 
-template <typename T, static_string lit, range setup>
+//! \p setup: as for xy_pad_t
+template <typename T, static_string lit, auto setup>
 struct xy_spinboxes_t
 {
   using value_type = xy_type<T>;
@@ -211,14 +219,14 @@ struct xy_spinboxes_t
   };
   static clang_buggy_consteval auto range() noexcept
   {
-    return range_t<T>{.min = T(setup.min), .max = T(setup.max), .init = T(setup.init)};
+    return xy_setup_range<T, setup>();
   }
   static clang_buggy_consteval auto name() noexcept
   {
     return std::string_view{lit.value};
   }
 
-  value_type value = {T(setup.init), T(setup.init)};
+  value_type value = xy_setup_init<T, setup>();
 
   operator value_type&() noexcept { return value; }
   operator const value_type&() const noexcept { return value; }
