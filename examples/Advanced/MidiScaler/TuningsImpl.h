@@ -462,7 +462,9 @@ inline Tuning::Tuning(const Scale &s, const KeyboardMapping &k, bool allowTuning
 
     // From the KBM Spec: When not all scale degrees need to be mapped, the size of the map can be
     // smaller than the size of the scale.
-    if (k.octaveDegrees > s.count)
+    // A mapping of size 0 is linear: it has no pattern for a formal octave to
+    // repeat, so whatever its file holds there does not apply.
+    if (k.count > 0 && k.octaveDegrees > s.count)
     {
         throw TuningError("Unable to apply mapping of size " + std::to_string(k.octaveDegrees) +
                           " to smaller scale of size " + std::to_string(s.count));
