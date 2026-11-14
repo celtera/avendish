@@ -6,6 +6,8 @@
 #include <avnd/common/no_unique_address.hpp>
 #include <avnd/concepts/all.hpp>
 
+#include <algorithm>
+#include <type_traits>
 #include <vector>
 
 namespace avnd
@@ -48,7 +50,7 @@ struct member_iterator_poly_effect
   void operator++() noexcept { i++; }
   auto& operator*() const noexcept
   {
-    if constexpr(std::is_same_v<decltype(self.effect), typename T::type>)
+    if constexpr(std::is_same_v<std::remove_cvref_t<decltype(self.effect[i])>, typename T::type>)
       return self.effect[i];
     else
       return self.effect[i].effect;
@@ -452,7 +454,8 @@ struct effect_container<T>
   {
     // TODO maybe a runtime check
     int orig = effect.size();
-    int sz = std::max(input, output);
+    // Keep one inactive instance to retain controls while disconnected.
+    int sz = std::max({1, input, output});
     effect.resize(sz);
     if(orig > 0)
     {
@@ -506,7 +509,8 @@ struct effect_container<T>
   {
     // TODO maybe a runtime check
     int orig = effect.size();
-    int sz = std::max(input, output);
+    // Keep one inactive instance to retain controls while disconnected.
+    int sz = std::max({1, input, output});
     effect.resize(sz);
     if(orig > 0)
     {

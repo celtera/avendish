@@ -58,6 +58,8 @@ if(BUILD_TESTING)
     target_link_libraries(test_ossia_values PRIVATE ossia::ossia)
     avnd_add_catch_test(test_ossia_midi tests/test_ossia_midi.cpp)
     target_link_libraries(test_ossia_midi PRIVATE ossia::ossia)
+    avnd_add_catch_test(test_ossia_audio tests/test_ossia_audio.cpp)
+    target_link_libraries(test_ossia_audio PRIVATE ossia::ossia)
   endif()
 
   # Polyphony: one effect instance per channel, each seeing only its own
