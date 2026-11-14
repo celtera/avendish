@@ -45,6 +45,13 @@ public:
   bool scan_audio_input_channels()
   {
     const int current_input_channels = this->channels.actual_runtime_inputs;
+    // An inlet left empty by libossia keeps its channels, silent.
+    if(audio_inlet()->channels() == 0 && current_input_channels > 0)
+    {
+      audio_inlet()->set_channels(current_input_channels);
+      for(auto& chan : *audio_inlet())
+        chan.assign(this->tick_buffer_size, 0.);
+    }
     for(auto& chan : *audio_inlet())
     {
       if(chan.size() != std::size_t(this->tick_buffer_size))

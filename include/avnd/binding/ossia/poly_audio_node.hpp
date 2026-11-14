@@ -25,6 +25,18 @@ public:
     void operator()(ossia::audio_inlet& in) noexcept
     {
       int expected = in.data.channels();
+      // An inlet left empty by libossia keeps its channels, silent.
+      if(expected == 0)
+      {
+        const int previous = self.channels.get_input_channels(self.impl, k);
+        if(previous > 0)
+        {
+          in.data.set_channels(previous);
+          for(auto& chan : in.data)
+            chan.assign(self.tick_buffer_size, 0.);
+          expected = previous;
+        }
+      }
       self.channels.set_input_channels(self.impl, k, expected);
       int actual = self.channels.get_input_channels(self.impl, k);
       ok &= (expected == actual);
