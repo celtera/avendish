@@ -1,5 +1,8 @@
 #pragma once
 #include <avnd/binding/ossia/node.hpp>
+
+#include <array>
+
 namespace oscr
 {
 
@@ -12,7 +15,47 @@ public:
   using out_busses = avnd::audio_bus_output_introspection<T>;
   using safe_node_base<T, safe_node<T>>::safe_node_base;
 
-  bool scan_audio_input_channels() { return false; }
+  //! The channels each bus is set up with. libossia empties every inlet after
+  //! its tick, so an inlet without a live source (no cable, a disabled box
+  //! upstream) has no channel at all: it is given the channels of its layout,
+  //! silent, as a plug-in host flags silent channels instead of removing them,
+  //! and the processor keeps running (tails ring out) without being set up
+  //! again. Any other channel count of a bus is a new layout.
+  std::array<int, in_busses::size> input_layout{};
+  std::array<int, out_busses::size> output_layout{};
+
+  bool scan_audio_input_channels()
+  {
+    bool changed = false;
+    in_busses::for_all_n2(
+        this->impl.inputs(), [&]<std::size_t NPred, std::size_t NField>(
+                                 auto& field, avnd::predicate_index<NPred>,
+                                 avnd::field_index<NField>) {
+          auto& port = tuplet::get<NField>(this->ossia_inlets.ports);
+          int chans = port->channels();
+          if constexpr(requires { field.channels(); })
+            chans = field.channels();
+          if(chans > 0 && chans != input_layout[NPred])
+          {
+            input_layout[NPred] = chans;
+            changed = true;
+          }
+          this->channels.set_input_channels(this->impl, NPred, input_layout[NPred]);
+        });
+    out_busses::for_all_n2(
+        this->impl.outputs(), [&]<std::size_t NPred, std::size_t NField>(
+                                  auto& field, avnd::predicate_index<NPred>,
+                                  avnd::field_index<NField>) {
+          const int chans = this->template compute_output_channels<NPred>(field);
+          if(chans != output_layout[NPred])
+          {
+            output_layout[NPred] = chans;
+            changed = true;
+          }
+          this->channels.set_output_channels(this->impl, NPred, chans);
+        });
+    return changed;
+  }
 
   template <std::size_t NPred>
   int compute_output_channels(auto& field)
@@ -92,7 +135,15 @@ public:
           ossia::audio_inlet& port = tuplet::get<NField>(this->ossia_inlets.ports);
 
           if constexpr(requires { field.channels(); })
+          {
             port->set_channels(field.channels());
+          }
+          else if(port->channels() == 0 && input_layout[NPred] > 0)
+          {
+            port->set_channels(input_layout[NPred]);
+            for(auto& chan : *port)
+              chan.assign(st.bufferSize(), 0.);
+          }
 
           total_input_channels += port->channels();
         });

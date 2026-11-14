@@ -6,6 +6,86 @@
 
 namespace avnd
 {
+// One mono block processor per negotiated channel, with independent state.
+template <typename T>
+  requires(
+      avnd::mono_per_channel_port_processor<double, T>
+      || avnd::mono_per_channel_port_processor<float, T>)
+struct process_adapter<T> : audio_buffer_storage<T>
+{
+  using i_info = avnd::audio_channel_input_introspection<T>;
+  using o_info = avnd::audio_channel_output_introspection<T>;
+
+  template <std::floating_point FP>
+  void allocate_buffers(process_setup setup, FP)
+  {
+    if constexpr(needs_storage<FP, T>::value)
+    {
+      using sample_type = typename needs_storage<FP, T>::needed_storage_t;
+      // Conversion scratch is reused sequentially, never copied between instances.
+      this->input_buffer_for(sample_type{}).resize(setup.frames_per_buffer);
+      this->output_buffer_for(sample_type{}).resize(setup.frames_per_buffer);
+    }
+  }
+
+  template <typename FP>
+  void process_channel(FP* input, FP* output, auto state, const auto& tick)
+  {
+    i_info::for_all(state.inputs, [&](auto& port) { port.channel = input; });
+    o_info::for_all(state.outputs, [&](auto& port) { port.channel = output; });
+    auto& fx = state.effect;
+    if constexpr(requires { fx(state.inputs, state.outputs, tick); })
+      fx(state.inputs, state.outputs, tick);
+    else if constexpr(requires { fx(state.inputs, tick); })
+      fx(state.inputs, tick);
+    else if constexpr(requires { fx(state.outputs, tick); })
+      fx(state.outputs, tick);
+    else if constexpr(requires { fx(tick); })
+      fx(tick);
+    else if constexpr(requires { fx(state.inputs, state.outputs); })
+      fx(state.inputs, state.outputs);
+    else if constexpr(requires { fx(state.inputs); })
+      fx(state.inputs);
+    else if constexpr(requires { fx(state.outputs); })
+      fx(state.outputs);
+    else if constexpr(requires { fx(); })
+      fx();
+    else
+      static_assert(std::is_void_v<T>, "Cannot call mono block processor");
+    i_info::for_all(state.inputs, [](auto& port) { port.channel = nullptr; });
+    o_info::for_all(state.outputs, [](auto& port) { port.channel = nullptr; });
+  }
+
+  template <std::floating_point FP>
+  void process(
+      avnd::effect_container<T>& implementation, avnd::span<FP*> in,
+      avnd::span<FP*> out, const auto& tick, auto&&... params)
+  {
+    assert(in.size() == out.size());
+    process_smooth(implementation, params...);
+    const auto frames = get_frames(tick);
+    const auto local_tick = get_tick_or_frames(implementation, tick);
+    auto states = implementation.full_state();
+    auto it = states.begin();
+    for(std::size_t channel = 0; channel < in.size() && it != states.end(); ++channel, ++it)
+    {
+      if constexpr(needs_storage<FP, T>::value)
+      {
+        using sample_type = typename needs_storage<FP, T>::needed_storage_t;
+        auto* input = this->input_buffer_for(sample_type{}).data();
+        auto* output = this->output_buffer_for(sample_type{}).data();
+        std::copy_n(in[channel], frames, input);
+        process_channel(input, output, *it, local_tick);
+        std::copy_n(output, frames, out[channel]);
+      }
+      else
+      {
+        process_channel(in[channel], out[channel], *it, local_tick);
+      }
+    }
+  }
+};
+
 
 /**
  * Handles case where inputs / outputs are e.g. float** ports with fixed channels being set.

@@ -22,6 +22,7 @@
 #include <avnd/wrappers/prepare.hpp>
 
 #include <halp/controls.hpp>
+#include <halp/audio.hpp>
 #include <halp/meta.hpp>
 
 #include <vector>
@@ -106,6 +107,53 @@ std::vector<std::vector<float>> distinct_inputs(int channels, int frames)
       in[c][i] = float(c + 1) * (1.f + float(i));
   return in;
 }
+
+template <typename Sample>
+struct MonoBlockAccumulator
+{
+  struct
+  {
+    halp::audio_channel<"In", Sample> audio{};
+  } inputs;
+  struct
+  {
+    halp::audio_channel<"Out", Sample> audio{};
+  } outputs;
+  Sample sum{};
+
+  void prepare(halp::setup) { sum = Sample{3}; }
+  void operator()(int frames)
+  {
+    for(int i = 0; i < frames; ++i)
+    {
+      sum += inputs.audio.channel[i];
+      outputs.audio.channel[i] = sum;
+    }
+  }
+};
+
+struct TypedMonoBlockAccumulator
+{
+  struct inputs
+  {
+    halp::audio_channel<"In", float> audio{};
+  };
+  struct outputs
+  {
+    halp::audio_channel<"Out", float> audio{};
+  };
+  float sum{};
+
+  void prepare(halp::setup) { sum = 3.f; }
+  void operator()(const inputs& in, outputs& out, int frames)
+  {
+    for(int i = 0; i < frames; ++i)
+    {
+      sum += in.audio.channel[i];
+      out.audio.channel[i] = sum;
+    }
+  }
+};
 }
 
 TEST_CASE("every channel is processed, whatever the channel count", "[polyphony]")
@@ -158,4 +206,64 @@ TEST_CASE("per-channel state is not shared between channels", "[polyphony]")
       REQUIRE(out[c][i] == Catch::Approx(sum));
     }
   }
+}
+
+TEMPLATE_TEST_CASE(
+    "mono block ports prepare and process independent channels with native or converted samples",
+    "[polyphony][block]", MonoBlockAccumulator<float>, MonoBlockAccumulator<double>,
+    TypedMonoBlockAccumulator)
+{
+  constexpr int frames = 17;
+  for(int channels : {0, 1, 2, 4})
+  {
+    const auto input = distinct_inputs(channels, frames);
+    const auto output = run<TestType>(channels, frames, input);
+    REQUIRE(output.size() == input.size());
+    for(int channel = 0; channel < channels; ++channel)
+    {
+      float sum = 3.f;
+      for(int sample = 0; sample < frames; ++sample)
+      {
+        sum += input[channel][sample];
+        REQUIRE(output[channel][sample] == Catch::Approx(sum));
+      }
+    }
+  }
+}
+
+TEST_CASE("controls survive a channel count going to zero and back", "[polyphony]")
+{
+  // Without channels the container keeps one instance: the controls live in
+  // the instances, and new ones copy them from the first.
+  avnd::effect_container<MonoGain> effect;
+  effect.init_channels(3, 3);
+  for(auto state : effect.full_state())
+    state.inputs.gain.value = 0.5f;
+
+  effect.init_channels(0, 0);
+  effect.init_channels(3, 3);
+
+  int instances = 0;
+  for(auto state : effect.full_state())
+  {
+    REQUIRE(state.inputs.gain.value == 0.5f);
+    ++instances;
+  }
+  REQUIRE(instances == 3);
+
+  constexpr int frames = 8;
+  const auto in = distinct_inputs(3, frames);
+  avnd::process_adapter<MonoGain> processor;
+  std::vector<std::vector<float>> ins = in;
+  std::vector<std::vector<float>> outs(3, std::vector<float>(frames, 0.f));
+  std::vector<float*> in_ptrs, out_ptrs;
+  for(auto& c : ins)
+    in_ptrs.push_back(c.data());
+  for(auto& c : outs)
+    out_ptrs.push_back(c.data());
+  processor.process(
+      effect, avnd::span<float*>{in_ptrs.data(), 3}, avnd::span<float*>{out_ptrs.data(), 3},
+      frames);
+  for(int c = 0; c < 3; c++)
+    REQUIRE(outs[c][frames - 1] == Catch::Approx(0.5f * in[c][frames - 1]));
 }
