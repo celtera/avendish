@@ -66,6 +66,20 @@ constexpr AVND_INLINE auto structure_to_tpltuple(const T& val) noexcept
       boost::pfr::detail::make_index_sequence<boost::pfr::tuple_size_v<T>>());
 }
 
+// The decayed member types of an aggregate, as a tpl::tuple. Only types are
+// computed: members which cannot be copied are fine.
+template <typename T>
+struct tie_tuple_to_tpltuple;
+template <typename... Args>
+struct tie_tuple_to_tpltuple<boost::pfr::detail::sequence_tuple::tuple<Args&...>>
+{
+  using type = tpl::tuple<std::decay_t<Args>...>;
+};
+
+template <typename T>
+using structure_to_tpltuple_t = typename tie_tuple_to_tpltuple<
+    decltype(boost::pfr::detail::tie_as_tuple(std::declval<T&>()))>::type;
+
 // type_or_value_qualification(modules)
 // type_or_value_reflection(modules)
 
@@ -106,8 +120,7 @@ using recursive_groups_transform_t = typename recursive_groups_transform<T>::typ
 template <typename T>
 struct recursive_groups_transform
 {
-  using tuple_type
-      = decltype(avnd::structure_to_tpltuple(std::declval<std::decay_t<T>>()));
+  using tuple_type = avnd::structure_to_tpltuple_t<std::decay_t<T>>;
   using transformed_type = boost::mp11::mp_transform_if<
       avnd::is_recursive_group, recursive_groups_transform_t, tuple_type>;
   using type = boost::mp11::mp_flatten<transformed_type>;
@@ -119,8 +132,7 @@ struct has_recursive_groups_impl
 {
   static_assert(std::is_aggregate_v<T>);
   static constexpr bool value = boost::mp11::mp_any_of<
-      decltype(avnd::structure_to_tpltuple(std::declval<std::decay_t<T>>())),
-      is_recursive_group>::value;
+      avnd::structure_to_tpltuple_t<std::decay_t<T>>, is_recursive_group>::value;
 };
 
 // Quick fix to catch std::array which otherwise causes a compile error with MSVC
