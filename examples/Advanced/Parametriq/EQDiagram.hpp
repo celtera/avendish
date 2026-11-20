@@ -12,6 +12,7 @@
 #include <tuple>
 #include <utility>
 
+
 namespace examples::parametriq
 {
 struct EQDiagram
@@ -52,12 +53,20 @@ struct EQDiagram
   bool needs_response = false;
   bool has_curve = false;
   std::array<double, points> ordinate{};
+  // Where the curve is interpolated across a measurement that did not settle:
+  // drawn dashed.
+  std::array<bool, points> estimated{};
   int selected = -1;
   bool dragging = false, editing = false;
+  // What a handle drag edits: the frequency along x; along y the gain of a band
+  // that has one, else the parameter shaping it (the Q of a low-pass...), which
+  // a drag with alt edits alone on any band. On a band without gain the handle
+  // follows that parameter, through the scale it had when the drag started.
   Field drag_shape = field_count;
+  bool drag_frequency = true, drag_mapped = false;
   int wheel_edit = -1;
   ConfigurationValues wheel_configuration{};
-  double press_x = 0., press_y = 0., drag_x = 0., drag_y = 0., drag_value = 0.;
+  double press_x = 0., press_y = 0., drag_x = 0., drag_y = 0., drag_value = 0., drag_level = 0.;
 
   void repaint()
   {
@@ -171,27 +180,101 @@ struct EQDiagram
   {
     return std::clamp(36. - (py - top) * 72. / plot_height, -24., 24.);
   }
-  static double handle_gain(const Parameters& p)
+  // Where a band's handle sits: at its gain when it has one. A band without
+  // gain sits where its own response is at its frequency, as the curve shows
+  // it when that band shapes it alone: a flat low-pass at its -3 dB, a resonant
+  // one up on its peak. Its shape parameter moves it there, so that a vertical
+  // drag maps the level the mouse points at back to the parameter. The levels
+  // are made to rise with the parameter, at least `min_slope` dB over its
+  // range, so that every value of it can be reached: where the band's own
+  // level falls (a vintage ladder past self-oscillation) or stays put (a
+  // band-pass normalized to 0 dB, a notch, an all-pass), the handle leaves the
+  // curve, and with less than `min_span` dB of change it shows the parameter
+  // along `direct_low` to `direct_high` instead.
+  static constexpr double level_low = -30., level_high = 30.;
+  static constexpr double min_slope = 6., min_span = 6.;
+  static constexpr double direct_low = -24., direct_high = 24.;
+  struct HandleScale
   {
-    return applicable(p, Gain) ? p.gain : 0.;
-  }
-  static Field shape_field(const Parameters& p)
-  {
-    for(const Field field : {Q, Bandwidth, Resonance, ShelfSlope})
-      if(applicable(p, field))
-        return field;
-    return field_count;
-  }
-  static double shape_value(const Parameters& p, Field field)
-  {
-    switch(field)
+    bool direct = true;
+    std::array<double, level_points> db{};
+    double level(double position) const noexcept
     {
-      case Q: return p.q;
-      case Bandwidth: return p.bandwidth;
-      case Resonance: return p.resonance;
-      case ShelfSlope: return p.shelf_slope;
-      default: return 0.;
+      if(direct)
+        return direct_low + (direct_high - direct_low) * std::clamp(position, 0., 1.);
+      for(int k = 1; k < level_points; ++k)
+      {
+        if(position <= level_position(k) || k == level_points - 1)
+        {
+          const double from = level_position(k - 1), to = level_position(k);
+          const double t = std::clamp((position - from) / (to - from), 0., 1.);
+          return db[k - 1] + t * (db[k] - db[k - 1]);
+        }
+      }
+      return db.back();
     }
+    // The inverse of level(), clamped to the parameter's range.
+    double position(double level) const noexcept
+    {
+      if(direct)
+        return std::clamp((level - direct_low) / (direct_high - direct_low), 0., 1.);
+      if(level <= db.front())
+        return 0.;
+      for(int k = 1; k < level_points; ++k)
+      {
+        if(level <= db[k])
+        {
+          const double from = level_position(k - 1), to = level_position(k);
+          return from + (to - from) * (level - db[k - 1]) / (db[k] - db[k - 1]);
+        }
+      }
+      return 1.;
+    }
+  };
+  // Levels measured along with the curve, for nonlinear bands.
+  std::array<BandLevels, band_count> measured_levels{};
+  HandleScale drag_scale{};
+  static bool same_configuration(const Parameters& a, const Parameters& b) noexcept
+  {
+    return a.model == b.model && a.response == b.response && a.slope == b.slope
+           && a.character == b.character && a.submodel == b.submodel;
+  }
+  // `p` is the band's sanitized edited settings.
+  HandleScale handle_scale(int band, const Parameters& p) const
+  {
+    HandleScale scale;
+    BandLevels analytic;
+    const BandLevels* levels = nullptr;
+    auto edited = sanitize(settings(), sample_rate);
+    edited.bands[band] = p;
+    if(analytic_levels(edited, band, parametriq::sample_rate(sample_rate), analytic))
+      levels = &analytic;
+    // A measurement made for other settings of the same filter, while a new
+    // one is under way: close enough to keep the handle where it was.
+    else if(measured_levels[band].valid && same_configuration(measured_levels[band].band, p))
+      levels = &measured_levels[band];
+    if(!levels)
+      return scale;
+    for(int k = 0; k < level_points; ++k)
+      scale.db[k] = std::clamp(levels->db[k], level_low, level_high);
+    const bool shaped = shape_field(p) != field_count;
+    const auto [lo, hi] = std::minmax_element(scale.db.begin(), scale.db.end());
+    if(shaped && *hi - *lo < min_span)
+      return scale;
+    scale.direct = false;
+    if(shaped)
+      for(int k = 1; k < level_points; ++k)
+        scale.db[k] = std::max(scale.db[k], scale.db[k - 1]
+            + min_slope * (level_position(k) - level_position(k - 1)));
+    return scale;
+  }
+  double handle_level(int band, const Parameters& p) const
+  {
+    if(applicable(p, Gain))
+      return p.gain;
+    if(dragging && band == selected && drag_mapped)
+      return drag_scale.level(shape_position(p, drag_shape));
+    return handle_scale(band, p).level(shape_position(p, shape_field(p)));
   }
   template<std::size_t Band>
   void set_shape(Parameters p, Field field, double value)
@@ -234,7 +317,7 @@ struct EQDiagram
       const auto p = sanitize(current.bands[i], sample_rate);
       if(!p.enabled)
         continue;
-      const double dx = px - x(p.frequency), dy = py - y(handle_gain(p));
+      const double dx = px - x(p.frequency), dy = py - y(handle_level(i, p));
       const double d = dx * dx + dy * dy;
       if(d < distance || (d == distance && i == selected))
       {
@@ -253,15 +336,21 @@ struct EQDiagram
     if(index < 0)
       return !(event.modifiers & event.alt);
     const auto p = sanitize(settings().bands[index], sample_rate);
-    drag_shape = (event.modifiers & event.alt) ? shape_field(p) : field_count;
-    if((event.modifiers & event.alt) && drag_shape == field_count)
+    const bool shape_only = event.modifiers & event.alt;
+    drag_shape = (shape_only || !applicable(p, Gain)) ? shape_field(p) : field_count;
+    if(shape_only && drag_shape == field_count)
       return false;
+    drag_frequency = !shape_only;
+    drag_mapped = drag_shape != field_count && !applicable(p, Gain);
+    if(drag_mapped)
+      drag_scale = handle_scale(index, p);
     select_band(index);
+    drag_level = handle_level(index, p);
     dragging = true;
     press_x = event.x;
     press_y = event.y;
     drag_x = x(p.frequency);
-    drag_y = y(handle_gain(p));
+    drag_y = y(drag_level);
     drag_value = shape_value(p, drag_shape);
     return true;
   }
@@ -270,25 +359,33 @@ struct EQDiagram
     if(!dragging || (!editing && event.x == press_x && event.y == press_y))
       return;
     visit_band(selected, [&]<std::size_t Band> {
-      const auto p = sanitize(band<Band>(), sample_rate);
+      auto p = sanitize(band<Band>(), sample_rate);
       if(!p.enabled)
         return;
-      if(drag_shape != field_count)
+      if(drag_frequency)
+      {
+        // The limits of the other parameters follow the frequency.
+        p.frequency = frequency_at(drag_x + event.x - press_x);
+        p = sanitize(p, sample_rate);
+        set<Band * field_count + Frequency>(p.frequency);
+      }
+      if(drag_mapped)
+      {
+        // The handle goes where the mouse goes, within the parameter's range.
+        const double level = drag_level + (press_y - event.y) * 72. / plot_height;
+        set_shape<Band>(p, drag_shape, shape_at(drag_shape, drag_scale.position(level)));
+      }
+      else if(drag_shape != field_count)
       {
         const double amount = std::clamp((press_y - event.y) * 0.02, -20., 20.);
         const double value = drag_shape == Resonance ? drag_value + amount * 0.1
             : drag_value * std::exp(drag_shape == Bandwidth ? -amount : amount);
         set_shape<Band>(p, drag_shape, value);
       }
-      else
+      else if(applicable(p, Gain))
       {
-        set<Band * field_count + Frequency>(frequency_at(drag_x + event.x - press_x));
-        if(applicable(p, Gain))
-        {
-          auto next = p;
-          next.gain = gain_at(drag_y + event.y - press_y);
-          set<Band * field_count + Gain>(sanitize(next, sample_rate).gain);
-        }
+        p.gain = gain_at(drag_y + event.y - press_y);
+        set<Band * field_count + Gain>(sanitize(p, sample_rate).gain);
       }
     });
   }
@@ -423,15 +520,40 @@ struct EQDiagram
       needs_response = false;
       revision = response.request(cached, cached_rate);
     }
+    const auto show = [&](const ResponseResult& result) {
+      for(int i = 0; i < points; ++i)
+        ordinate[i] = y(result.db[i]);
+      estimated = result.estimated;
+      repaint();
+    };
+    // Levels are keyed by the settings they were measured for: those of an
+    // earlier request still place handles until the latest ones come.
+    const auto keep_levels = [&](const ResponseResult& result) {
+      for(int i = 0; i < band_count; ++i)
+        if(result.levels[i].valid)
+        {
+          measured_levels[i] = result.levels[i];
+          repaint();
+        }
+    };
     ResponseResult result;
-    if(response.take(result) && result.revision == revision)
+    const bool taken = response.take(result);
+    if(taken)
+      keep_levels(result);
+    if(taken && result.revision == revision)
     {
       status = result.status;
       has_curve = status == ResponseStatus::Analytic || status == ResponseStatus::Reference;
       if(has_curve)
-        for(int i = 0; i < points; ++i)
-          ordinate[i] = y(result.db[i]);
-      repaint();
+        show(result);
+      else
+        repaint();
+    }
+    else if(status == ResponseStatus::Pending && response.take_preview(result))
+    {
+      keep_levels(result);
+      has_curve = true;
+      show(result);
     }
     return status == ResponseStatus::Pending;
   }
@@ -487,7 +609,7 @@ struct EQDiagram
       ctx.set_stroke_color({curve[0], curve[1], curve[2], curve[3]});
       ctx.set_stroke_width(2.);
       ctx.begin_path();
-      bool segment = false;
+      bool segment = false, dashed = false;
       for(int i = 0; i < points; ++i)
       {
         if(!std::isfinite(ordinate[i]))
@@ -496,13 +618,22 @@ struct EQDiagram
           continue;
         }
         const double px = left + plot_width * i / (points - 1);
-        if(segment)
+        const bool estimate = i > 0 && (estimated[i - 1] || estimated[i]);
+        dashed |= estimate;
+        if(segment && !(estimate && (i / 4) % 2))
           ctx.line_to(px, ordinate[i]);
         else
           ctx.move_to(px, ordinate[i]);
         segment = true;
       }
       ctx.stroke();
+      if(dashed)
+      {
+        ctx.set_fill_color({text[0], text[1], text[2], text[3]});
+        ctx.begin_path();
+        ctx.draw_text(left + plot_width - 196., top - 6., "Dashed where the response does not settle");
+        ctx.fill();
+      }
     }
     // Handles represent editable parameters, not the sum of all filters.
     ctx.set_font_size(10.);
@@ -511,7 +642,7 @@ struct EQDiagram
       const auto& p = edited.bands[i];
       if(!p.enabled)
         continue;
-      const double px = x(p.frequency), py = y(handle_gain(p));
+      const double px = x(p.frequency), py = y(handle_level(i, p));
       const auto& c = i == selected ? curve : text;
       ctx.set_fill_color({c[0], c[1], c[2], c[3]});
       ctx.set_stroke_color({c[0], c[1], c[2], c[3]});
