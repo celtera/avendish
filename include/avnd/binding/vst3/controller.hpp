@@ -2,7 +2,9 @@
 #include <avnd/binding/vst3/controller_base.hpp>
 #include <avnd/binding/vst3/programs.hpp>
 #include <avnd/binding/vst3/refcount.hpp>
+#include <avnd/binding/vst3/vstgui_editor.hpp>
 #include <avnd/common/widechar.hpp>
+#include <avnd/concepts/parameter.hpp>
 #include <avnd/introspection/input.hpp>
 #include <avnd/introspection/output.hpp>
 #include <avnd/wrappers/control_display.hpp>
@@ -69,7 +71,32 @@ public:
 
   virtual ~Controller();
 
+#if defined(AVND_VST3_VSTGUI)
+  Steinberg::IPlugView* createView(const char* name) override
+  {
+    if(name && std::strcmp(name, Steinberg::Vst::ViewType::kEditor) == 0)
+      return new stv3::VstGuiEditor{this, std::string{avnd::get_name<T>()}};
+    return nullptr;
+  }
+#endif
+
   int32 getParameterCount() override { return inputs_info_t::size; }
+
+  bool isMomentaryParameter(Steinberg::Vst::ParamID id) const noexcept override
+  {
+    bool momentary = false;
+    inputs_info_t::for_nth_raw(
+        id, [&]<std::size_t Index, typename C>(avnd::field_reflection<Index, C>) {
+      // Momentary widgets expose a `pushbutton` (maintained button) or
+      // `bang` / `impulse` (impulse button) enumerator; latched toggles
+      // don't.
+      if constexpr(
+          requires { C::pushbutton; } || requires { C::bang; }
+          || requires { C::impulse; })
+        momentary = true;
+        });
+    return momentary;
+  }
 
   Steinberg::tresult getParameterInfo(int32 paramIndex, ParameterInfo& info) override
   {
@@ -99,6 +126,10 @@ public:
         if constexpr(requires { range.step; })
           info.stepCount = avnd::get_range<C>().step;
       }
+      // A boolean control is a stepped (on/off) parameter: hosts then show a
+      // checkbox and our VSTGUI editor a toggle button instead of a knob.
+      if constexpr(avnd::bool_parameter<C>)
+        info.stepCount = 1;
         });
 
     info.unitId = 1;
