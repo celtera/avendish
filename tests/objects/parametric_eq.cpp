@@ -315,6 +315,19 @@ struct GraphFixture
     }(std::make_index_sequence<std::tuple_size_v<eq::EQDiagram::Values>>{});
     std::get<eq::band_count * eq::field_count + 1>(graph.values) = -18.f;
   }
+  // Where the band's handle is drawn.
+  double handle_y(int band) const
+  {
+    return graph.y(graph.handle_level(band, eq::sanitize(graph.settings().bands[band], rate)));
+  }
+  // Polls until the response of the latest settings is there.
+  void settle()
+  {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    while(graph.poll() && std::chrono::steady_clock::now() < deadline)
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    REQUIRE(graph.status != eq::ResponseStatus::Pending);
+  }
 };
 }
 
@@ -367,7 +380,7 @@ TEST_CASE("Parametriq graph edits only the active model shape parameter", "[para
     f.assign<0>(p);
     const auto before = f.graph.settings().bands[0];
     const double px = f.graph.x(p.frequency);
-    REQUIRE(f.graph.wheel(px, f.graph.y(0.), 120.));
+    REQUIRE(f.graph.wheel(px, f.handle_y(0), 120.));
     auto after = f.graph.settings().bands[0];
     if(model == eq::Butterworth)
     {
@@ -384,15 +397,78 @@ TEST_CASE("Parametriq graph edits only the active model shape parameter", "[para
       CHECK(after.q > before.q);
       CHECK(after.bandwidth == before.bandwidth);
     }
-    const double unused_gain = after.gain;
-    REQUIRE(f.graph.mouse_press(Mouse{px, f.graph.y(0.)}));
-    f.graph.mouse_move(Mouse{f.graph.x(2000.), f.graph.y(12.)});
-    f.graph.mouse_release(Mouse{f.graph.x(2000.), f.graph.y(12.)});
+    // These bands have no gain: dragging their handle up shapes them instead.
+    const auto wheeled = after;
+    double py = f.handle_y(0);
+    REQUIRE(f.graph.mouse_press(Mouse{px, py}));
+    f.graph.mouse_move(Mouse{f.graph.x(2000.), py - 28.});
+    f.graph.mouse_release(Mouse{f.graph.x(2000.), py - 28.});
     after = f.graph.settings().bands[0];
     CHECK(after.frequency == Catch::Approx(2000.).epsilon(1.e-6));
-    CHECK(after.gain == unused_gain);
+    CHECK(after.gain == wheeled.gain);
+    if(model == eq::Butterworth)
+    {
+      CHECK(after.bandwidth < wheeled.bandwidth);
+      CHECK(after.q == wheeled.q);
+    }
+    else if(model == eq::K35)
+    {
+      CHECK(after.resonance > wheeled.resonance);
+      CHECK(after.q == wheeled.q);
+    }
+    else
+    {
+      CHECK(after.q > wheeled.q);
+      CHECK(after.bandwidth == wheeled.bandwidth);
+    }
     CHECK(f.starts == 2);
     CHECK(f.commits == 2);
+
+    // Down goes the other way, and a horizontal drag leaves the shape alone.
+    const auto raised = after;
+    const double at = f.graph.x(after.frequency);
+    py = f.handle_y(0);
+    REQUIRE(f.graph.mouse_press(Mouse{at, py}));
+    f.graph.mouse_move(Mouse{at, py + 14.});
+    f.graph.mouse_release(Mouse{at, py + 14.});
+    after = f.graph.settings().bands[0];
+    CHECK(after.frequency == Catch::Approx(raised.frequency).epsilon(1.e-6));
+    if(model == eq::Butterworth)
+      CHECK(after.bandwidth > raised.bandwidth);
+    else if(model == eq::K35)
+      CHECK(after.resonance < raised.resonance);
+    else
+      CHECK(after.q < raised.q);
+    const auto lowered = after;
+    py = f.handle_y(0);
+    REQUIRE(f.graph.mouse_press(Mouse{at, py}));
+    f.graph.mouse_move(Mouse{f.graph.x(500.), py});
+    f.graph.mouse_release(Mouse{f.graph.x(500.), py});
+    after = f.graph.settings().bands[0];
+    CHECK(after.frequency == Catch::Approx(500.).epsilon(1.e-6));
+    CHECK(after.q == lowered.q);
+    CHECK(after.resonance == lowered.resonance);
+    if(model != eq::Butterworth)
+      CHECK(after.bandwidth == lowered.bandwidth);
+  }
+}
+
+TEST_CASE("Parametriq graph drags the gain of a band that has one, not its shape", "[parametriq][ui]")
+{
+  for(int response : {eq::Bell, eq::LowShelf, eq::HighShelf})
+  {
+    GraphFixture f;
+    const auto p = setting(eq::RBJ, response).bands[0];
+    f.assign<0>(p);
+    const auto before = f.graph.settings().bands[0];
+    REQUIRE(f.graph.mouse_press(Mouse{f.graph.x(p.frequency), f.graph.y(before.gain)}));
+    f.graph.mouse_move(Mouse{f.graph.x(p.frequency), f.graph.y(9.)});
+    f.graph.mouse_release(Mouse{f.graph.x(p.frequency), f.graph.y(9.)});
+    const auto after = f.graph.settings().bands[0];
+    CHECK(after.gain == Catch::Approx(9.));
+    CHECK(after.q == before.q);
+    CHECK(after.shelf_slope == before.shelf_slope);
+    CHECK(after.bandwidth == before.bandwidth);
   }
 }
 
@@ -401,7 +477,7 @@ TEST_CASE("Parametriq wheel edits share a gesture until its target or model chan
   GraphFixture f;
   auto p = setting(eq::RBJ, eq::LowPass).bands[0];
   f.assign<0>(p);
-  const double px = f.graph.x(p.frequency), py = f.graph.y(0.);
+  const double px = f.graph.x(p.frequency), py = f.handle_y(0);
   REQUIRE(f.graph.wheel(px, py, 120.));
   REQUIRE(f.graph.wheel(px, py, 120.));
   REQUIRE(f.graph.wheel(px, py, -60.)); // Reversing direction is the same adjustment.
@@ -423,7 +499,7 @@ TEST_CASE("Parametriq wheel edits share a gesture until its target or model chan
 
   p.q = 50.;
   f.assign<0>(p);
-  REQUIRE(f.graph.wheel(px, py, 120.));
+  REQUIRE(f.graph.wheel(px, f.handle_y(0), 120.));
   f.graph.finish_wheel();
   CHECK(f.graph.settings().bands[0].q == 50.);
   CHECK(f.starts == 2);
@@ -479,6 +555,108 @@ TEST_CASE("Parametriq retains a curve during reference work but clears unavailab
   CHECK(f.graph.ordinate.front() > f.graph.ordinate.back());
 }
 
+TEST_CASE("Parametriq reference measurements give a preview, then the same curve as alone", "[parametriq]")
+{
+  auto s = setting(eq::K35, eq::LowPass);
+  const auto wait = [](eq::ResponseService& service, eq::ResponseResult& result, int& previews) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    while(std::chrono::steady_clock::now() < deadline)
+    {
+      eq::ResponseResult preview;
+      if(service.take_preview(preview))
+      {
+        ++previews;
+        CHECK(preview.status == eq::ResponseStatus::Reference);
+      }
+      if(service.take(result))
+        return true;
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    return false;
+  };
+  eq::ResponseService alone;
+  eq::ResponseResult expected;
+  int previews = 0;
+  const auto first = alone.request(s, rate);
+  REQUIRE(wait(alone, expected, previews));
+  REQUIRE(expected.revision == first);
+  REQUIRE(expected.status == eq::ResponseStatus::Reference);
+  CHECK(previews <= 1);
+  // Its response once taken, a measurement has no preview left to draw over it.
+  eq::ResponseResult none;
+  CHECK_FALSE(alone.take_preview(none));
+
+  // Parameters that keep changing, as in a drag: curves keep coming meanwhile,
+  // each of a later request than the one before.
+  eq::ResponseService dragged;
+  std::uint64_t last{}, shown{};
+  previews = 0;
+  const auto until = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+  for(int i = 0; previews < 3 && std::chrono::steady_clock::now() < until; ++i)
+  {
+    auto moving = s;
+    moving.bands[0].frequency = 200. + 10. * (i % 300);
+    last = dragged.request(moving, rate);
+    eq::ResponseResult preview;
+    if(dragged.take_preview(preview))
+    {
+      ++previews;
+      CHECK(preview.revision > shown);
+      CHECK(preview.revision <= last);
+      shown = preview.revision;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+  CHECK(previews == 3);
+  // Then the response of the last request is the one a measurement alone gives.
+  last = dragged.request(s, rate);
+  eq::ResponseResult result;
+  REQUIRE(wait(dragged, result, previews));
+  CHECK(result.revision == last);
+  REQUIRE(result.status == eq::ResponseStatus::Reference);
+  CHECK(result.unsettled == expected.unsettled);
+  for(int i = 0; i < eq::response_points; ++i)
+    CHECK((result.db[i] == expected.db[i]
+           || (std::isnan(result.db[i]) && std::isnan(expected.db[i]))));
+}
+
+TEST_CASE("Parametriq draws reference previews until the response, never over an analytic curve", "[parametriq][ui]")
+{
+  GraphFixture f;
+  f.assign<0>(setting(eq::RBJ, eq::Bell).bands[0]);
+  REQUIRE_FALSE(f.graph.poll());
+  const auto analytic_curve = f.graph.ordinate;
+  f.assign<0>(setting(eq::K35, eq::LowPass).bands[0]);
+  int curves = 0;
+  auto previous = f.graph.ordinate;
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+  while(f.graph.poll() && std::chrono::steady_clock::now() < deadline)
+  {
+    CHECK(f.graph.has_curve);
+    if(f.graph.ordinate != previous)
+    {
+      ++curves;
+      CHECK(f.graph.status == eq::ResponseStatus::Pending);
+      previous = f.graph.ordinate;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  REQUIRE(f.graph.status == eq::ResponseStatus::Reference);
+  CHECK(curves <= 1);
+  CHECK(f.graph.ordinate != analytic_curve);
+
+  // A reference measurement under way gives nothing once the band is analytic.
+  f.assign<0>(setting(eq::K35, eq::HighPass).bands[0]);
+  REQUIRE(f.graph.poll());
+  f.assign<0>(setting(eq::RBJ, eq::Bell).bands[0]);
+  REQUIRE_FALSE(f.graph.poll());
+  CHECK(f.graph.ordinate == analytic_curve);
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  REQUIRE_FALSE(f.graph.poll());
+  CHECK(f.graph.status == eq::ResponseStatus::Analytic);
+  CHECK(f.graph.ordinate == analytic_curve);
+}
+
 TEST_CASE("Parametriq repeated prepare preserves sounding histories", "[parametriq]")
 {
   const auto settings = setting(eq::Ivantsov, eq::LowPass, 250.);
@@ -493,7 +671,7 @@ TEST_CASE("Parametriq repeated prepare preserves sounding histories", "[parametr
   }
 }
 
-TEST_CASE("Parametriq omits nonstationary circuit leakage from reference curves", "[parametriq]")
+TEST_CASE("Parametriq draws nonstationary circuit leakage as an estimate, never as gain", "[parametriq]")
 {
   auto s = setting(eq::K35, eq::LowPass);
   for(const auto& c : eq::choices(s.bands[0], eq::Character))
@@ -518,8 +696,28 @@ TEST_CASE("Parametriq omits nonstationary circuit leakage from reference curves"
   REQUIRE(result.revision == revision);
   REQUIRE(result.status == eq::ResponseStatus::Reference);
   const int near_cutoff = int(std::lround(std::log(50.) / std::log(1000.) * (eq::response_points - 1)));
-  CHECK(std::isnan(result.db[near_cutoff]));
   CHECK(result.unsettled > 0);
+  // Where windows disagree, points are drawn dashed, between the settled
+  // ones around them, not at what one window caught.
+  int estimated = 0;
+  for(int i = 0; i < eq::response_points; ++i)
+  {
+    REQUIRE(std::isfinite(result.db[i]));
+    if(!result.estimated[i])
+      continue;
+    ++estimated;
+    int below = i, above = i;
+    while(below > 0 && result.estimated[below]) --below;
+    while(above + 1 < eq::response_points && result.estimated[above]) ++above;
+    CHECK(result.db[i] >= std::min(result.db[below], result.db[above]) - 0.1);
+    CHECK(result.db[i] <= std::max(result.db[below], result.db[above]) + 0.1);
+  }
+  CHECK(estimated > 0);
+  // Its peak is measured as a second-long run gives it.
+  eq::Engine e;
+  e.prepare(rate, 1, s);
+  CHECK_FALSE(result.estimated[near_cutoff]);
+  CHECK(result.db[near_cutoff] == Catch::Approx(tone(e, 1000., std::pow(10., s.reference_db / 20.))).margin(0.5));
 }
 
 TEST_CASE("Parametriq editing one band preserves other resonant histories", "[parametriq]")
@@ -1298,4 +1496,267 @@ TEST_CASE("Parametriq classic sections share the design's gain", "[parametriq]")
   auto b = a;
   b.bandwidth = 0.3150269110874246;
   CHECK(noise_step_overshoot(a, eq::sanitize(b, rate), 16) < 3.);
+}
+
+namespace
+{
+eq::ResponseResult measure_response(const eq::Settings& s)
+{
+  eq::ResponseService service;
+  const auto revision = service.request(s, rate);
+  eq::ResponseResult result;
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+  while(!service.take(result) && std::chrono::steady_clock::now() < deadline)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  REQUIRE(result.revision == revision);
+  return result;
+}
+std::array<double, eq::response_points> grid()
+{
+  std::array<double, eq::response_points> frequencies;
+  for(int i = 0; i < eq::response_points; ++i)
+    frequencies[i] = 20. * std::pow(1000., double(i) / (eq::response_points - 1));
+  return frequencies;
+}
+eq::Parameters with_name(eq::Parameters p, eq::Field field, std::string_view name)
+{
+  for(const auto& c : eq::choices(p, field))
+    if(c.name == name)
+    {
+      switch(field)
+      {
+        case eq::ResponseField: p.response = c.value; break;
+        case eq::Character: p.character = c.value; break;
+        default: break;
+      }
+    }
+  return eq::resolve(p, field);
+}
+// The reported settings: a self-oscillating OB-Xd low-pass and a low shelf.
+eq::Settings oscillating()
+{
+  eq::Settings s;
+  auto& p = s.bands[0];
+  p.enabled = true;
+  p.model = eq::OBXd2;
+  p = with_name(with_name(p, eq::ResponseField, "Low-pass"), eq::Character, "Standard");
+  p.frequency = 1030.;
+  p.resonance = 1.;
+  auto& shelf = s.bands[1];
+  shelf.enabled = true;
+  shelf.model = eq::RBJ;
+  shelf.response = eq::LowShelf;
+  shelf.frequency = 40.;
+  shelf.gain = 2.;
+  shelf = eq::resolve(shelf);
+  s.quality = 0;
+  s.reference_db = -18.;
+  return s;
+}
+}
+
+TEST_CASE("Parametriq measures a self-oscillating band beside its oscillation", "[parametriq]")
+{
+  const auto s = oscillating();
+  REQUIRE(s.bands[0].character == eq::resolve(s.bands[0]).character);
+  const auto result = measure_response(s);
+  REQUIRE(result.status == eq::ResponseStatus::Reference);
+  int estimated = 0;
+  for(int i = 0; i < eq::response_points; ++i)
+  {
+    REQUIRE(std::isfinite(result.db[i]));
+    estimated += result.estimated[i];
+  }
+  // Away from its cutoff, the probe passes as it does through a long run of
+  // the oscillating filter.
+  eq::Engine e;
+  e.prepare(rate, 1, s);
+  const double amplitude = std::pow(10., s.reference_db / 20.);
+  const auto frequencies = grid();
+  for(int i : {120, 200, 340, 420})
+  {
+    e.reset();
+    CHECK(result.db[i] == Catch::Approx(tone(e, frequencies[i], amplitude)).margin(0.3));
+  }
+  CHECK(estimated <= 16);
+  // It resonates up to its peak.
+  const auto peak = std::max_element(result.db.begin() + 240, result.db.begin() + 340);
+  CHECK(*peak > 12.);
+
+  // The shelf's shape is all there, whatever the oscillating band does: the
+  // chain with it is the chain without it, times its exact response.
+  auto without = s;
+  without.bands[1].enabled = false;
+  const auto alone = measure_response(without);
+  REQUIRE(alone.status == eq::ResponseStatus::Reference);
+  eq::Settings shelf;
+  shelf.bands[0] = s.bands[1];
+  std::array<double, eq::response_points> exact{};
+  REQUIRE(eq::analytic_response(shelf, rate, frequencies, exact));
+  for(int i = 0; i < eq::response_points; ++i)
+    CHECK(result.db[i] - alone.db[i] == Catch::Approx(exact[i]).margin(0.3));
+}
+
+TEST_CASE("Parametriq draws every nonlinear model at every resonance", "[parametriq]")
+{
+  int curves = 0;
+  for(int model = eq::VemberClassic; model < eq::model_count; ++model)
+  {
+    if(model == eq::FastSVF || model == eq::SampleHold)
+      continue;
+    eq::Parameters base;
+    base.enabled = true;
+    base.model = model;
+    base = eq::resolve(base);
+    for(const auto& response : eq::choices(base, eq::ResponseField))
+    {
+      auto p = base;
+      p.response = response.value;
+      p = eq::resolve(p, eq::ResponseField);
+      for(double resonance : {0., 0.5, 0.9, 1.})
+      {
+        CAPTURE(eq::model_names()[model], response.name, resonance);
+        eq::Settings s;
+        s.bands[0] = p;
+        s.bands[0].resonance = resonance;
+        const auto result = measure_response(s);
+        REQUIRE(result.status == eq::ResponseStatus::Reference);
+        int estimated = 0, visible = 0;
+        for(int i = 0; i < eq::response_points; ++i)
+        {
+          REQUIRE(std::isfinite(result.db[i]));
+          estimated += result.estimated[i];
+          visible += result.estimated[i] && result.db[i] > -36.;
+        }
+        // Dashed spans stay narrow on the plot. The tri-pole is chaotic at high
+        // resonance: its probe's gain scatters by a dB from window to window
+        // over octaves around its frequency.
+        CHECK(visible <= (model == eq::Tripole ? 128 : 16));
+        CHECK(estimated <= (model == eq::Tripole ? 256 : 64));
+        // Levels place the handle on the curve.
+        CHECK(result.levels[0].valid);
+        for(double level : result.levels[0].db)
+          CHECK(std::isfinite(level));
+        ++curves;
+      }
+    }
+  }
+  CHECK(curves > 100);
+}
+
+TEST_CASE("Parametriq handles of bands without gain sit on their own level", "[parametriq][ui]")
+{
+  GraphFixture f;
+  // A resonant RBJ cut peaks at its Q at its frequency.
+  auto p = setting(eq::RBJ, eq::LowPass).bands[0];
+  for(double q : {0.3, 0.7071067811865476, 2., 10.})
+  {
+    p.q = q;
+    f.assign<0>(p);
+    CHECK(f.graph.handle_level(0, eq::sanitize(p, rate)) == Catch::Approx(20. * std::log10(q)).margin(0.05));
+  }
+  // A Butterworth cut, with nothing to shape, at its -3 dB.
+  const auto butterworth = setting(eq::Butterworth, eq::HighPass).bands[0];
+  f.assign<0>(butterworth);
+  CHECK(f.graph.handle_level(0, eq::sanitize(butterworth, rate)) == Catch::Approx(-3.01).margin(0.05));
+
+  // A nonlinear band, once measured: rising with its resonance, near its curve.
+  auto obxd = with_name(setting(eq::OBXd2, eq::LowPass).bands[0], eq::Character, "Standard");
+  double previous = -100.;
+  for(double resonance : {0., 0.5, 0.9, 1.})
+  {
+    obxd.resonance = resonance;
+    f.assign<0>(obxd);
+    f.settle();
+    REQUIRE(f.graph.status == eq::ResponseStatus::Reference);
+    REQUIRE(f.graph.measured_levels[0].valid);
+    const double level = f.graph.handle_level(0, eq::sanitize(obxd, rate));
+    CHECK(level > previous + 1.);
+    previous = level;
+    if(resonance == 0.5)
+    {
+      const int i = int(std::lround(std::log(obxd.frequency / 20.) / std::log(1000.) * (eq::response_points - 1)));
+      CHECK(f.handle_y(0) == Catch::Approx(f.graph.ordinate[i]).margin(3.));
+    }
+  }
+}
+
+TEST_CASE("Parametriq vertical drags move the handle of a band without gain to the mouse", "[parametriq][ui]")
+{
+  struct Case { int model, response; };
+  for(const auto [model, response] : std::array<Case, 9>{{
+          {eq::RBJ, eq::LowPass}, {eq::RBJ, eq::HighPass}, {eq::RBJ, eq::BandPass},
+          {eq::RBJ, eq::Notch}, {eq::RBJ, eq::AllPass}, {eq::Butterworth, eq::BandPass},
+          {eq::Ivantsov, eq::LowPass}, {eq::OBXd2, eq::LowPass}, {eq::K35, eq::HighPass}}})
+  {
+    CAPTURE(model, response);
+    GraphFixture f;
+    auto p = setting(model, response).bands[0];
+    if(model == eq::OBXd2 || model == eq::K35)
+      p.resonance = 0.3;
+    f.assign<0>(p);
+    f.settle();
+    const auto field = eq::shape_field(eq::sanitize(p, rate));
+    REQUIRE(field != eq::field_count);
+    const double px = f.graph.x(p.frequency);
+    const double start = f.handle_y(0);
+    REQUIRE(f.graph.mouse_press(Mouse{px, start}));
+    // The handle follows the mouse, up and down, within the parameter's range.
+    for(double dy : {-20., -40., 5., -10.})
+    {
+      f.graph.mouse_move(Mouse{px, start + dy});
+      CHECK(f.handle_y(0) == Catch::Approx(start + dy).margin(0.5));
+    }
+    // Past its range, it stops at the limit.
+    f.graph.mouse_move(Mouse{px, -400.});
+    const auto top = eq::sanitize(f.graph.settings().bands[0], rate);
+    CHECK(eq::shape_position(top, field) == Catch::Approx(1.).margin(1.e-9));
+    f.graph.mouse_move(Mouse{px, 800.});
+    const auto bottom = eq::sanitize(f.graph.settings().bands[0], rate);
+    CHECK(eq::shape_position(bottom, field) < 0.05);
+    f.graph.mouse_move(Mouse{px, start - 20.});
+    f.graph.mouse_release(Mouse{px, start - 20.});
+    CHECK(f.commits == 1);
+    // Released, the handle stays where it was dropped, under the mouse, and
+    // is hit there.
+    CHECK(f.handle_y(0) == Catch::Approx(start - 20.).margin(model == eq::OBXd2 || model == eq::K35 ? 4. : 0.5));
+    CHECK(f.graph.hit(px, start - 20.) == 0);
+    const auto after = eq::sanitize(f.graph.settings().bands[0], rate);
+    CHECK(eq::shape_value(after, field) != eq::shape_value(eq::sanitize(p, rate), field));
+    CHECK(after.frequency == Catch::Approx(eq::sanitize(p, rate).frequency));
+  }
+}
+
+TEST_CASE("Parametriq alt drags edit the shape alone", "[parametriq][ui]")
+{
+  constexpr int alt = Mouse::alt;
+  // A bell keeps its gain and frequency; its handle stays at its gain.
+  {
+    GraphFixture f;
+    const auto p = setting(eq::RBJ, eq::Bell).bands[0];
+    f.assign<0>(p);
+    const double px = f.graph.x(p.frequency), py = f.handle_y(0);
+    REQUIRE(f.graph.mouse_press(Mouse{px, py, 1, alt}));
+    f.graph.mouse_move(Mouse{px + 40., py - 30., 1, alt});
+    f.graph.mouse_release(Mouse{px + 40., py - 30., 1, alt});
+    const auto after = f.graph.settings().bands[0];
+    CHECK(after.q > p.q);
+    CHECK(after.gain == p.gain);
+    CHECK(after.frequency == p.frequency);
+    CHECK(f.handle_y(0) == Catch::Approx(py));
+  }
+  // A cut keeps its frequency; its handle follows the mouse vertically.
+  {
+    GraphFixture f;
+    const auto p = setting(eq::RBJ, eq::LowPass).bands[0];
+    f.assign<0>(p);
+    const double px = f.graph.x(p.frequency), py = f.handle_y(0);
+    REQUIRE(f.graph.mouse_press(Mouse{px, py, 1, alt}));
+    f.graph.mouse_move(Mouse{px + 40., py - 30., 1, alt});
+    f.graph.mouse_release(Mouse{px + 40., py - 30., 1, alt});
+    const auto after = f.graph.settings().bands[0];
+    CHECK(after.q > p.q);
+    CHECK(after.frequency == p.frequency);
+    CHECK(f.handle_y(0) == Catch::Approx(py - 30.).margin(0.5));
+  }
 }
