@@ -34,6 +34,20 @@ avnd_make_all(
 )
 
 avnd_make_all(
+  TARGET CustomState
+  MAIN_FILE examples/Raw/CustomState.hpp
+  MAIN_CLASS examples::CustomState
+  C_NAME avnd_custom_state
+)
+
+avnd_make_all(
+  TARGET MixedParams
+  MAIN_FILE examples/Raw/MixedParams.hpp
+  MAIN_CLASS examples::MixedParams
+  C_NAME avnd_mixed_params
+)
+
+avnd_make_all(
   TARGET PerSampleProcessor
   MAIN_FILE examples/Raw/PerSampleProcessor.hpp
   MAIN_CLASS examples::PerSampleProcessor
