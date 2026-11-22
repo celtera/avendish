@@ -195,14 +195,17 @@ public:
     halp_flag(recursive_group);
     halp_meta(name, Band == 0 ? "Band 1" : Band == 1 ? "Band 2" : "Band 3")
 
+    static constexpr halp::toggle_setup begin_setup{.init = Band != 0};
+    static constexpr halp::toggle_setup end_setup{.init = Band != 2};
+
     struct : halp::toggle<"Enabled", halp::toggle_setup{.init = true}>
     {
       halp_meta(description, "Disabled bands contribute neither audio nor feedback sends")
     } enabled;
-    halp::toggle<"Begin enabled", halp::toggle_setup{.init = Band != 0}> begin_enabled;
+    halp::toggle<"Begin enabled", begin_setup> begin_enabled;
     halp::log_hslider_f32<"Begin", halp::range{20., 20000., Band == 2 ? 2500. : 250.}>
         begin_hz;
-    halp::toggle<"End enabled", halp::toggle_setup{.init = Band != 2}> end_enabled;
+    halp::toggle<"End enabled", end_setup> end_enabled;
     halp::log_hslider_f32<"End", halp::range{20., 20000., Band == 0 ? 250. : 2500.}>
         end_hz;
     AlgorithmControl algorithm;
