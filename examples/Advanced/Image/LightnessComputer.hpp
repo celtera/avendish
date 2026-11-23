@@ -44,8 +44,8 @@ struct LightnessComputerTextureDisplay
   int m_h{0};
 };
 
-template <halp::static_string swizzle, int eightbit, std::size_t N>
-static void make_swizzle_static(auto* samples, int& i, const auto (&rgbw)[N], auto a)
+template <halp::static_string swizzle, int eightbit, std::size_t N, typename Channel>
+static void make_swizzle_static(auto* samples, int& i, const Channel (&rgbw)[N], auto a)
 {
   for(char c : swizzle.value)
   {
@@ -114,9 +114,9 @@ static void make_swizzle_static(auto* samples, int& i, const auto (&rgbw)[N], au
   }
 }
 
-template <int eightbit, std::size_t N>
+template <int eightbit, std::size_t N, typename Channel>
 static void make_swizzle_dynamic(
-    std::string_view swizzle, auto* samples, int& i, const auto (&rgbw)[N], auto a)
+    std::string_view swizzle, auto* samples, int& i, const Channel (&rgbw)[N], auto a)
 {
   if(swizzle.empty())
     return;
