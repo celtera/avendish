@@ -20,6 +20,7 @@
 #include <vstgui/vstgui.h>
 #include <vstgui/lib/controls/cknob.h>
 #include <vstgui/lib/controls/cbuttons.h>
+#include <vstgui/lib/controls/coptionmenu.h>
 #include <vstgui/lib/controls/ctextlabel.h>
 #include <vstgui/lib/cgradient.h>
 
@@ -293,7 +294,26 @@ private:
       const std::string name = title_of(info);
 
       VSTGUI::CControl* ctl = nullptr;
-      if(info.stepCount == 1)
+      if(info.flags & Steinberg::Vst::ParameterInfo::kIsList)
+      {
+        VSTGUI::CRect rc(x + 8, y + 22, x + cell_w - 8, y + 54);
+        auto* menu = new VSTGUI::COptionMenu(rc, this, info.id);
+        for(int k = 0; k <= info.stepCount; ++k)
+          menu->addEntry(
+              value_string(info.id, info.stepCount > 0 ? double(k) / info.stepCount : 0.)
+                  .c_str());
+        menu->setMin(0.f);
+        menu->setMax(static_cast<float>(info.stepCount));
+        menu->setStyle(VSTGUI::CParamDisplay::kRoundRectStyle);
+        menu->setRoundRectRadius(5.);
+        menu->setFrameColor(accent);
+        menu->setBackColor(VSTGUI::CColor{54, 54, 60, 255});
+        menu->setFontColor(VSTGUI::CColor{225, 225, 230, 255});
+        menu->setHoriAlign(VSTGUI::kCenterText);
+        ctl = menu;
+        addNameLabel(x, y, name, labelCol);
+      }
+      else if(info.stepCount == 1)
       {
         // Momentary (bang) -> kick button: 1 while pressed, 0 on release.
         // Latched toggle -> on/off button. Both show the parameter name.
@@ -347,19 +367,25 @@ private:
         m_valueLabels.push_back({info.id, vlbl});
 
         // Name label.
-        VSTGUI::CRect lr(x, y + cell_h - 24, x + cell_w, y + cell_h - 6);
-        auto* lbl = new VSTGUI::CTextLabel(lr, name.c_str());
-        lbl->setFrameColor(VSTGUI::kTransparentCColor);
-        lbl->setBackColor(VSTGUI::kTransparentCColor);
-        lbl->setFontColor(labelCol);
-        lbl->setHoriAlign(VSTGUI::kCenterText);
-        frame->addView(lbl);
+        addNameLabel(x, y, name, labelCol);
       }
 
       ctl->setValueNormalized(static_cast<float>(ec->getParamNormalized(info.id)));
       frame->addView(ctl);
       ++idx;
     }
+  }
+
+  void addNameLabel(
+      VSTGUI::CCoord x, VSTGUI::CCoord y, const std::string& name, VSTGUI::CColor color)
+  {
+    VSTGUI::CRect lr(x, y + cell_h - 24, x + cell_w, y + cell_h - 6);
+    auto* lbl = new VSTGUI::CTextLabel(lr, name.c_str());
+    lbl->setFrameColor(VSTGUI::kTransparentCColor);
+    lbl->setBackColor(VSTGUI::kTransparentCColor);
+    lbl->setFontColor(color);
+    lbl->setHoriAlign(VSTGUI::kCenterText);
+    frame->addView(lbl);
   }
 
   // Formatted plain-value string for a normalized value (reuses the
