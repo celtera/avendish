@@ -99,10 +99,19 @@ public:
         if constexpr(requires { range.step; })
           info.stepCount = avnd::get_range<C>().step;
       }
+      if constexpr(avnd::enum_ish_parameter<C> && !avnd::string_parameter<C>)
+      {
+        static constexpr int choices = avnd::get_enum_choices_count<C>();
+        if constexpr(choices > 1)
+        {
+          info.stepCount = choices - 1;
+          info.flags |= ParameterInfo::kIsList;
+        }
+      }
         });
 
     info.unitId = 1;
-    info.flags = ParameterInfo::kCanAutomate;
+    info.flags |= ParameterInfo::kCanAutomate;
 
     return Steinberg::kResultTrue;
   }
